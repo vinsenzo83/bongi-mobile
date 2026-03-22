@@ -62,11 +62,12 @@ export const TOOLS = [
   },
   {
     name: 'get_bundle_discount',
-    description: '결합할인 정보를 조회합니다. 통신사별 결합 유형, 할인 금액.',
+    description: '결합할인 정보를 조회합니다. 통신사별 결합 유형, 회선 수별 할인 금액.',
     input_schema: {
       type: 'object',
       properties: {
         provider: { type: 'string', enum: ['skt', 'kt', 'lg'] },
+        num_lines: { type: 'number', description: '결합 회선 수 (1~5)' },
       },
       required: ['provider'],
     },
@@ -169,58 +170,92 @@ export async function executeTool(name, input) {
 
 function searchProducts({ provider, speed, include_tv }) {
   if (!provider) {
-    // 통신사 미지정 → 전체 카탈로그 요약
-    const summary = {};
-    for (const [id, p] of Object.entries(productCatalog)) {
-      const prov = p.provider;
-      if (!summary[prov]) summary[prov] = { count: 0, minPrice: Infinity, maxPrice: 0 };
-      summary[prov].count++;
-      summary[prov].minPrice = Math.min(summary[prov].minPrice, p.price);
-      summary[prov].maxPrice = Math.max(summary[prov].maxPrice, p.price);
-    }
     return {
-      message: '통신사를 선택해주세요. 3사 모두 취급합니다.',
-      providers: summary,
-      total: Object.keys(productCatalog).length,
+      message: '통신사를 선택해주세요. SKT, KT, LG U+ 3사 모두 취급합니다.',
+      providers: {
+        SKT: { 상품수: Object.values(productCatalog).filter(p => p.provider === 'SKT').length },
+        KT: { 상품수: Object.values(productCatalog).filter(p => p.provider === 'KT').length },
+        'LG U+': { 상품수: Object.values(productCatalog).filter(p => p.provider === 'LG U+').length },
+      },
     };
   }
 
   const provData = allProviders[provider];
   if (!provData) return { error: '해당 통신사 데이터가 없습니다' };
 
-  const provName = { skt: 'SKT', kt: 'KT', lg: 'LG U+' }[provider];
-  const itvProducts = provData.internet_tv || [];
+  const provName = provData.provider;
+  const itvList = provData.internet_tv || [];
+  const cards = provData.cards || [];
 
-  // 카탈로그에서 해당 통신사 상품
-  const catalogItems = Object.entries(productCatalog)
-    .filter(([, p]) => p.provider === provName)
-    .map(([id, p]) => ({ id, ...p }));
+  // 최고 카드할인 찾기
+  const bestCard = cards.reduce((best, c) => (c.discount_amount > (best?.discount_amount || 0) ? c : best), null);
+  const cardDiscount = bestCard?.discount_amount || 0;
 
-  // 속도 필터
-  let filtered = catalogItems;
-  if (speed) {
-    filtered = filtered.filter(p => p.speed && p.speed.includes(speed));
+  // 속도 키 매핑
+  const speedKey = {
+    '100M': 'price_100m', '100m': 'price_100m',
+    '500M': 'price_500m', '500m': 'price_500m',
+    '1G': 'price_1g', '1g': 'price_1g',
+  };
+  const giftKey = {
+    '100M': 'gift_100m', '100m': 'gift_100m',
+    '500M': 'gift_500m', '500m': 'gift_500m',
+    '1G': 'gift_1g', '1g': 'gift_1g',
+  };
+
+  // 1대결합 상품만 (실제 고객이 가입하는 가격)
+  let results = itvList.filter(p => p.type === '1대결합');
+
+  // TV 필터
+  if (include_tv === true) {
+    results = results.filter(p => p.name.includes('TV') || p.name.includes('Btv') || p.name.includes('지니'));
+  } else if (include_tv === false) {
+    results = results.filter(p => p.name === '인터넷');
   }
 
-  // TV 포함 필터
-  if (include_tv !== undefined) {
-    if (include_tv) {
-      filtered = filtered.filter(p => p.name.includes('TV') || p.name.includes('Btv') || p.name.includes('지니'));
-    } else {
-      filtered = filtered.filter(p => !p.name.includes('TV') && !p.name.includes('Btv') && !p.name.includes('지니'));
-    }
-  }
+  // 미결합 상품에서 사은품 가져오기
+  const unconbinedList = itvList.filter(p => p.type === '미결합');
+
+  // 속도별 계산
+  const speeds = speed ? [speed] : ['500M']; // 기본 500M
+
+  const products = results.map(p => {
+    const sk = speedKey[speeds[0]] || 'price_500m';
+    const gk = giftKey[speeds[0]] || 'gift_500m';
+    const monthlyFee = p[sk];
+    if (!monthlyFee) return null;
+
+    // 사은품은 미결합 상품에서 가져옴
+    const uncombined = unconbinedList.find(u => u.name === p.name);
+    const gift = uncombined?.[gk] || p[gk] || '-';
+
+    // 최종 요금 = 1대결합가 - 카드할인
+    const finalPrice = monthlyFee - cardDiscount;
+
+    // 상품번호 찾기
+    const catalogEntry = Object.entries(productCatalog).find(([, v]) =>
+      v.provider === provName && v.name.includes(p.name.split('+')[0].trim()) && v.speed === speeds[0]
+    );
+    const productId = catalogEntry ? catalogEntry[0] : '-';
+
+    return {
+      상품번호: productId,
+      상품명: p.name,
+      속도: speeds[0],
+      채널수: p.channels || '-',
+      '인터넷+TV_월요금': `${monthlyFee.toLocaleString()}원`,
+      카드할인: cardDiscount > 0 ? `-${cardDiscount.toLocaleString()}원 (${bestCard.name})` : '없음',
+      '★최종_월요금': `${finalPrice.toLocaleString()}원`,
+      사은품: gift,
+    };
+  }).filter(Boolean);
 
   return {
     provider: provName,
-    count: filtered.length,
-    products: filtered.slice(0, 10).map(p => ({
-      상품번호: p.id,
-      상품명: p.name,
-      속도: p.speed,
-      '1대결합가': `${p.price.toLocaleString()}원`,
-    })),
-    사은품_기준: '아정당(ajd.co.kr) 기준',
+    속도: speeds[0],
+    count: products.length,
+    최고카드: bestCard ? `${bestCard.name} (-${cardDiscount.toLocaleString()}원/월, ${bestCard.min_performance})` : '없음',
+    products,
   };
 }
 
@@ -268,11 +303,36 @@ function compareProducts({ product_ids }) {
   return { 비교: items };
 }
 
-function getBundleDiscount({ provider }) {
+function getBundleDiscount({ provider, num_lines }) {
   const data = bundleDiscount[provider];
   if (!data) return { error: '결합할인 데이터가 없습니다' };
   const notes = bundleDiscount['유의사항'] || {};
-  return { provider, 결합할인: data, 유의사항: notes };
+
+  // 회선 수별 요약 생성
+  const summary = {};
+  for (const [name, info] of Object.entries(data)) {
+    if (name === 'provider') continue;
+    summary[name] = {
+      설명: info.description || '',
+      조건: info.conditions || info.할인 || '',
+    };
+    if (info.table) {
+      summary[name].회선별_할인 = info.table;
+    }
+    if (info['프리미엄_에센스_베이직']) {
+      summary[name].총액별_할인 = info['프리미엄_에센스_베이직'];
+    }
+  }
+
+  return {
+    provider: data.provider || provider,
+    결합_종류: Object.keys(summary),
+    상세: summary,
+    유의사항: notes,
+    안내: num_lines
+      ? `${num_lines}회선 결합 기준으로 가장 유리한 할인을 적용해드립니다.`
+      : '회선 수를 알려주시면 정확한 결합할인을 계산해드릴게요.',
+  };
 }
 
 function searchMobilePlans({ provider, max_fee, network }) {
