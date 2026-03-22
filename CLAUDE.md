@@ -58,12 +58,43 @@ npm run dev        # 서버(3001) + 클라이언트(5173) 동시 실행
 - 어드민 CRM: http://localhost:3001/admin
 - API: http://localhost:3001/api
 
-## 에이전트 사용 규칙
-- 코드 작성 후 반드시 `code-reviewer` 에이전트로 리뷰
-- 새 기능은 `tdd-guide`로 테스트 먼저 작성
-- DB 변경 시 `database-reviewer`로 스키마 검증
-- 배포 전 `verify-agent`로 빌드/테스트 확인
-- 보안 관련 변경 시 `security-reviewer` 실행
+## 자동화 규칙 (필수)
+
+### 1. 매 턴 대시보드 보고
+모든 응답 시작 시 아래 형식으로 팀 상태를 표시한다:
+```
+📊 팀 상태 | Git: [커밋수] | Task: [진행/전체]
+🟢 agent-name — 작업 중 (상세)
+⏸️ agent-name — 대기
+🔴 agent-name — 미소집
+```
+
+### 2. 자동 Git 커밋
+- 태스크 완료 시 자동 커밋 (태스크명 기반 메시지)
+- 파일 3개 이상 수정 시 중간 커밋
+- .env, 시크릿 파일은 절대 커밋하지 않음
+
+### 3. 에이전트 자동 소집
+- 코드 작성/수정 후 → `code-reviewer` 자동 소집 (백그라운드)
+- DB 스키마 변경 후 → `database-reviewer` 자동 소집
+- 인증/보안 관련 변경 후 → `security-reviewer` 자동 소집
+- 태스크 전체 완료 시 → `verify-agent` 자동 소집
+- 새 Phase 시작 시 → `architect` + `tdd-guide` 자동 소집
+
+## 에이전트 목록
+| 에이전트 | 트리거 |
+|---|---|
+| architect | 새 Phase/기능 설계 시 |
+| planner | 큰 작업 계획 시 |
+| code-reviewer | **코드 변경 후 항상** |
+| security-reviewer | 인증/보안 변경 시 |
+| database-reviewer | DB 변경 시 |
+| tdd-guide | 새 기능 전 테스트 계획 |
+| build-error-resolver | 빌드 에러 시 |
+| refactor-cleaner | 리팩토링 시 |
+| doc-updater | Phase 완료 시 보고서 |
+| e2e-runner | 배포 전 E2E |
+| verify-agent | **태스크 완료 후 항상** |
 
 ## 코드 규칙
 - ES modules (import/export)
