@@ -19,13 +19,20 @@ const mobilePlans = {
   lg: JSON.parse(readFileSync(join(providerDir, 'lguplus_mobile.json'), 'utf8')),
 };
 
+// 모바일(핸드폰) 판매 시세 데이터
+let mobilePrices = {};
+try {
+  mobilePrices = JSON.parse(readFileSync(join(providerDir, 'mobile_prices.json'), 'utf8'));
+} catch { /* 파일 없으면 빈 객체 */ }
+
 // 중고폰 매입 시세 데이터
 let tradeinPhones = [];
 try {
   tradeinPhones = JSON.parse(readFileSync(join(providerDir, 'tradein_phones.json'), 'utf8'));
 } catch { /* 파일 없으면 빈 배열 */ }
 
-console.log(`✅ 3사 데이터 로드: 상품 ${Object.keys(productCatalog).length}개, 모바일 ${mobilePlans.skt.length + mobilePlans.kt.length + mobilePlans.lg.length}개, 중고폰 ${tradeinPhones.length}개`);
+const mobileCount = Object.values(mobilePrices.carriers || {}).reduce((s, c) => s + (c.plans?.length || 0), 0);
+console.log(`✅ 3사 데이터 로드: 상품 ${Object.keys(productCatalog).length}개, 모바일요금제 ${mobilePlans.skt.length + mobilePlans.kt.length + mobilePlans.lg.length}개, 핸드폰시세 ${mobileCount}개, 중고폰매입 ${tradeinPhones.length}개`);
 
 // Claude Tool Use 도구 정의
 export const TOOLS = [
@@ -104,6 +111,17 @@ export const TOOLS = [
     },
   },
   {
+    name: 'search_mobile_prices',
+    description: '핸드폰 기기 판매 가격(번호이동/기기변경)을 조회합니다. 공시지원금 기준.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        provider: { type: 'string', enum: ['skt', 'kt', 'lg'], description: '통신사' },
+        model: { type: 'string', description: '모델명 (예: S26, 아이폰17, 플립7)' },
+      },
+    },
+  },
+  {
     name: 'create_lead',
     description: '고객이 상담/가입을 원할 때 CRM에 리드를 등록합니다.',
     input_schema: {
@@ -166,6 +184,7 @@ export async function executeTool(name, input) {
     case 'get_bundle_discount': return getBundleDiscount(input);
     case 'search_mobile_plans': return searchMobilePlans(input);
     case 'get_card_discounts': return getCardDiscounts(input);
+    case 'search_mobile_prices': return searchMobilePrices(input);
     case 'create_lead': return createLead(input);
     case 'request_callback': return requestCallback(input);
     case 'check_store': return checkStore(input);
@@ -526,6 +545,78 @@ async function requestCallback({ name, phone, preferred_time, product_id }) {
     phone,
     preferred_time: preferred_time || '가능한 빨리',
     ui: { type: 'callback_confirmed', phone },
+  };
+}
+
+function searchMobilePrices({ provider, model }) {
+  const carriers = mobilePrices.carriers || {};
+
+  // 모델명 정규화
+  const normalize = (s) => s.toLowerCase()
+    .replace(/갤럭시\s*/g, '').replace(/galaxy\s*/g, '')
+    .replace(/아이폰\s*/g, 'iphone').replace(/iphone\s*/g, 'iphone')
+    .replace(/프로\s*맥스/g, 'pm').replace(/프로/g, 'p')
+    .replace(/울트라/g, 'u').replace(/ultra/g, 'u')
+    .replace(/플립/g, 'flip').replace(/flip/g, 'flip')
+    .replace(/폴드/g, 'fold').replace(/fold/g, 'fold')
+    .replace(/에어/g, 'air').replace(/플러스/g, '+')
+    .replace(/\s+/g, '').trim();
+
+  const query = model ? normalize(model) : '';
+
+  // 통신사 필터
+  const targetCarriers = provider
+    ? { [provider]: carriers[provider] }
+    : carriers;
+
+  const results = [];
+
+  for (const [key, carrier] of Object.entries(targetCarriers)) {
+    if (!carrier?.plans) continue;
+
+    const filtered = model
+      ? carrier.plans.filter(p => {
+          const n = normalize(p.model);
+          const s = normalize(p.short);
+          return n.includes(query) || s.includes(query) || query.includes(s);
+        })
+      : carrier.plans;
+
+    for (const p of filtered) {
+      const fmtPrice = (v) => {
+        if (v === 0) return '공짜폰!';
+        if (v < 0) return `기기값 0원 + ${Math.abs(v)}만원 캐시백`;
+        return `${v}만원`;
+      };
+      results.push({
+        통신사: carrier.name,
+        모델: p.model,
+        번호이동: fmtPrice(p['번이']),
+        기기변경: fmtPrice(p['기변']),
+        '번이_raw': p['번이'],
+        '기변_raw': p['기변'],
+      });
+    }
+  }
+
+  // 부가서비스
+  const addServices = {};
+  const svcData = mobilePrices.additional_services || {};
+  for (const [key, svcs] of Object.entries(svcData)) {
+    if (provider && key !== provider) continue;
+    addServices[carriers[key]?.name || key] = svcs.map(s => ({
+      서비스: s.service,
+      월정액: `${s.fee.toLocaleString()}원`,
+    }));
+  }
+
+  return {
+    date: mobilePrices.date || '미정',
+    count: results.length,
+    단위: '만원 (번호이동/기기변경 기준)',
+    results: results.slice(0, 15),
+    부가서비스: addServices,
+    안내: '가격은 공시지원금 기준이며 매일 변동됩니다. 정확한 가격은 상담사에게 문의해주세요.',
   };
 }
 
