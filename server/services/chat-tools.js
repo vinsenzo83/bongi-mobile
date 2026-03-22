@@ -582,17 +582,25 @@ function searchMobilePrices({ provider, model }) {
         })
       : carrier.plans;
 
+    const subsidy = carrier.subsidy_amount || 0;
+    const subsidyMan = Math.round(subsidy / 10000); // 만원 단위
+
     for (const p of filtered) {
       const fmtPrice = (v) => {
         if (v === 0) return '공짜폰!';
         if (v < 0) return `기기값 0원 + ${Math.abs(v)}만원 캐시백`;
         return `${v}만원`;
       };
+      // 선택약정 = 공시지원금만큼 추가
+      const selectPrice = (v) => fmtPrice(v + subsidyMan);
+
       results.push({
         통신사: carrier.name,
         모델: p.model,
-        번호이동: fmtPrice(p['번이']),
-        기기변경: fmtPrice(p['기변']),
+        '공시지원금_번이': fmtPrice(p['번이']),
+        '공시지원금_기변': fmtPrice(p['기변']),
+        '선택약정_번이': selectPrice(p['번이']),
+        '선택약정_기변': selectPrice(p['기변']),
         '번이_raw': p['번이'],
         '기변_raw': p['기변'],
       });
@@ -616,7 +624,7 @@ function searchMobilePrices({ provider, model }) {
     단위: '만원 (번호이동/기기변경 기준)',
     results: results.slice(0, 15),
     부가서비스: addServices,
-    안내: '가격은 공시지원금 기준이며 매일 변동됩니다. 정확한 가격은 상담사에게 문의해주세요.',
+    안내: '공시지원금 기준 가격이며 매일 변동됩니다. 선택약정 시 공시지원금만큼 기기값 추가 (대신 통신비 25% 할인). 정확한 가격은 상담사에게 문의해주세요.',
   };
 }
 
