@@ -11,6 +11,7 @@ import ctiRoutes from './routes/cti.js';
 import aiRoutes from './routes/ai.js';
 import mockRoutes from './routes/mock.js';
 import authRoutes from './routes/auth.js';
+import dashboardRoutes from './routes/dashboard.js';
 import { sanitizeBody } from './middleware/sanitize.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiLimiter, applicationLimiter } from './middleware/rateLimit.js';
@@ -35,6 +36,8 @@ app.use(apiLimiter);
 
 // 정적 서빙
 app.use('/admin', express.static(join(__dirname, 'public', 'admin')));
+app.use('/dashboard', express.static(join(__dirname, 'public', 'dashboard')));
+app.use('/api/dashboard', dashboardRoutes);
 
 // ── 공개 API (인증 불필요) ──
 app.use('/api/auth', authRoutes);
