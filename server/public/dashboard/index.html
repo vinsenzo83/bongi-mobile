@@ -88,6 +88,17 @@ h1 { font-size:20px; margin-bottom:4px; }
 </div>
 
 <div class="section">
+  <div class="section-title">에이전트 업무보고</div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="refresh-btn" style="font-size:11px;padding:4px 10px;background:var(--border)" onclick="filterReports('all')">전체</button>
+    <button class="refresh-btn" style="font-size:11px;padding:4px 10px;background:rgba(63,185,80,.2);color:var(--green)" onclick="filterReports('success')">완료</button>
+    <button class="refresh-btn" style="font-size:11px;padding:4px 10px;background:rgba(210,153,34,.2);color:var(--yellow)" onclick="filterReports('warning')">경고</button>
+    <button class="refresh-btn" style="font-size:11px;padding:4px 10px;background:rgba(248,81,73,.2);color:var(--red)" onclick="filterReports('error')">에러</button>
+  </div>
+  <div id="report-area" style="background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:350px;overflow-y:auto"></div>
+</div>
+
+<div class="section">
   <div class="section-title">활동 로그</div>
   <div class="log-area" id="log-area">
     <div class="log-line"><span class="time">--:--</span> 대시보드 시작됨. 데이터 로드 중...</div>
@@ -208,9 +219,163 @@ setInterval(() => {
   }
 }, 1000);
 
+// 업무보고 로드
+let currentFilter = 'all';
+async function loadReports() {
+  try {
+    const res = await fetch(`${API}/dashboard/reports`);
+    const data = await res.json();
+    renderReports(data);
+  } catch(e) {
+    renderReports([]);
+  }
+}
+
+function renderReports(data) {
+  const el = document.getElementById('report-area');
+  const filtered = currentFilter === 'all' ? data : data.filter(r => r.status === currentFilter);
+
+  if (!filtered.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">업무보고 없음</div>';
+    return;
+  }
+
+  const statusIcon = { info:'ℹ️', success:'✅', warning:'⚠️', error:'❌' };
+  const statusColor = { info:'var(--blue)', success:'var(--green)', warning:'var(--yellow)', error:'var(--red)' };
+
+  el.innerHTML = filtered.map(r => {
+    const time = new Date(r.timestamp).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+    const icon = statusIcon[r.status] || 'ℹ️';
+    const color = statusColor[r.status] || 'var(--text2)';
+    return `<div style="display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:flex-start">
+      <div style="font-size:14px;flex-shrink:0;margin-top:2px">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+          <span style="font-size:12px;font-weight:600;color:${color}">${r.agent}</span>
+          <span style="font-size:10px;color:var(--text2)">${time}</span>
+        </div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px">${r.action}</div>
+        ${r.detail ? `<div style="font-size:11px;color:var(--text2);line-height:1.5">${r.detail}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterReports(status) {
+  currentFilter = status;
+  loadReports();
+  // 버튼 하이라이트
+  document.querySelectorAll('#report-area').forEach(()=>{});
+}
+
 // 초기 로드
 refresh();
+loadReports();
 addLog('system', '대시보드 시작됨');
+
+// 보고서도 주기적 갱신
+setInterval(loadReports, 5000);
 </script>
+
+<!-- 운영 시스템 -->
+<div class="section" style="margin-top:24px">
+  <div class="section-title">Claude Forge 운영 시스템</div>
+
+  <!-- 워크플로우 -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--blue)">개발 워크플로우 (HARD-GATE)</div>
+    <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap">
+      <div style="background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);border-radius:6px;padding:8px 12px;font-size:12px;text-align:center;min-width:100px">
+        <div style="font-size:16px;margin-bottom:2px">📋</div>
+        <div style="font-weight:600;color:var(--blue)">/plan</div>
+        <div style="font-size:10px;color:var(--text2)">3+파일 시 필수</div>
+      </div>
+      <div style="color:var(--text2);padding:0 6px">→</div>
+      <div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:12px;text-align:center;min-width:100px">
+        <div style="font-size:16px;margin-bottom:2px">🧪</div>
+        <div style="font-weight:600;color:var(--green)">/tdd</div>
+        <div style="font-size:10px;color:var(--text2)">테스트 먼저</div>
+      </div>
+      <div style="color:var(--text2);padding:0 6px">→</div>
+      <div style="background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.3);border-radius:6px;padding:8px 12px;font-size:12px;text-align:center;min-width:100px">
+        <div style="font-size:16px;margin-bottom:2px">🔍</div>
+        <div style="font-weight:600;color:var(--purple)">/code-review</div>
+        <div style="font-size:10px;color:var(--text2)">보안+품질</div>
+      </div>
+      <div style="color:var(--text2);padding:0 6px">→</div>
+      <div style="background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.3);border-radius:6px;padding:8px 12px;font-size:12px;text-align:center;min-width:100px">
+        <div style="font-size:16px;margin-bottom:2px">✅</div>
+        <div style="font-weight:600;color:var(--yellow)">/handoff-verify</div>
+        <div style="font-size:10px;color:var(--text2)">빌드/테스트</div>
+      </div>
+      <div style="color:var(--text2);padding:0 6px">→</div>
+      <div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:12px;text-align:center;min-width:100px">
+        <div style="font-size:16px;margin-bottom:2px">🚀</div>
+        <div style="font-weight:600;color:var(--red)">/commit-push-pr</div>
+        <div style="font-size:10px;color:var(--text2)">커밋+푸시</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 자동 Hooks -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--green)">자동 실행 Hooks (15개)</div>
+      <div style="font-size:11px;line-height:2;color:var(--text2)">
+        <div>🟢 <span style="color:var(--text)">SessionStart</span> — context-sync, forge-update-check</div>
+        <div>🟢 <span style="color:var(--text)">UserPromptSubmit</span> — work-tracker</div>
+        <div>🟢 <span style="color:var(--text)">PreToolUse</span> — remote-guard, rate-limiter, mcp-tracker</div>
+        <div>🟢 <span style="color:var(--text)">PostToolUse</span> — secret-filter, code-quality, security-trigger, observe</div>
+        <div>🟢 <span style="color:var(--text)">TaskCompleted</span> — task-completed</div>
+        <div>🟢 <span style="color:var(--text)">Stop</span> — work-tracker-stop, session-wrap</div>
+      </div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--yellow)">규칙 Rules (9개)</div>
+      <div style="font-size:11px;line-height:2;color:var(--text2)">
+        <div>📐 <span style="color:var(--text)">Golden Principles</span> — 12개 핵심 원칙</div>
+        <div>🤖 <span style="color:var(--text)">Agents v2</span> — 매 턴 agent-router 체크</div>
+        <div>🎨 <span style="color:var(--text)">Coding Style</span> — 불변성, 파일&lt;800줄, 함수&lt;50줄</div>
+        <div>🔀 <span style="color:var(--text)">Git Workflow</span> — feat/fix/refactor 커밋 형식</div>
+        <div>🛡️ <span style="color:var(--text)">Security</span> — 커밋 전 보안 체크리스트 필수</div>
+        <div>🧪 <span style="color:var(--text)">Testing</span> — TDD, 80%+ 커버리지</div>
+        <div>✅ <span style="color:var(--text)">Verification</span> — 증거 없는 완료 금지</div>
+        <div>💬 <span style="color:var(--text)">Interaction</span> — 결론 우선, 유추 사용</div>
+        <div>📅 <span style="color:var(--text)">Date Calculation</span> — 수동 계산 금지</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 에이전트 트리거 조건 -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px">
+    <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--purple)">에이전트 자동 소집 트리거</div>
+    <table style="width:100%;font-size:11px;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th style="text-align:left;padding:6px 8px;color:var(--text2)">에이전트</th>
+          <th style="text-align:left;padding:6px 8px;color:var(--text2)">트리거 조건</th>
+          <th style="text-align:left;padding:6px 8px;color:var(--text2)">빈도</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(48,54,61,.5)"><td style="padding:5px 8px">🏗️ architect</td><td style="padding:5px 8px;color:var(--text2)">새 Phase/기능 설계 시</td><td style="padding:5px 8px;color:var(--yellow)">Phase당 1회</td></tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,.5)"><td style="padding:5px 8px">📋 planner</td><td style="padding:5px 8px;color:var(--text2)">큰 작업 계획 시 (/plan)</td><td style="padding:5px 8px;color:var(--yellow)">기능당 1회</td></tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,.5)"><td style="padding:5px 8px">🔍 code-reviewer</td><td style="padding:5px 8px;color:var(--text2)">코드 변경 후 항상</td><td style="padding:5px 8px;color:var(--red)">매번</td></tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,.5)"><td style="padding:5px 8px">🛡️ security-reviewer</td><td style="padding:5px 8px;color:var(--text2)">인증/보안 변경 시</td><td style="padding:5px 8px;color:var(--yellow)">해당 시</td></tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,.5)"><td style="padding:5px 8px">🗄️ database-reviewer</td><td style="padding:5px 8px;color:var(--text2)">DB 스키마 변경 시</td><td style="padding:5px 8px;color:var(--yellow)">해당 시</td></tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,.5)"><td style="padding:5px 8px">🧪 tdd-guide</td><td style="padding:5px 8px;color:var(--text2)">새 기능 전 테스트 계획 (/tdd)</td><td style="padding:5px 8px;color:var(--yellow)">기능당 1회</td></tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,.5)"><td style="padding:5px 8px">🔧 build-error-resolver</td><td style="padding:5px 8px;color:var(--text2)">빌드 에러 발생 시</td><td style="padding:5px 8px;color:var(--text2)">에러 시</td></tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,.5)"><td style="padding:5px 8px">✨ refactor-cleaner</td><td style="padding:5px 8px;color:var(--text2)">리팩토링 시 (/simplify)</td><td style="padding:5px 8px;color:var(--text2)">요청 시</td></tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,.5)"><td style="padding:5px 8px">📝 doc-updater</td><td style="padding:5px 8px;color:var(--text2)">Phase 완료 시 보고서</td><td style="padding:5px 8px;color:var(--yellow)">Phase당 1회</td></tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,.5)"><td style="padding:5px 8px">🎯 e2e-runner</td><td style="padding:5px 8px;color:var(--text2)">배포 전 E2E 테스트</td><td style="padding:5px 8px;color:var(--text2)">배포 전</td></tr>
+        <tr><td style="padding:5px 8px">✅ verify-agent</td><td style="padding:5px 8px;color:var(--text2)">태스크 완료 후 항상 (/handoff-verify)</td><td style="padding:5px 8px;color:var(--red)">매번</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>
 </body>
 </html>

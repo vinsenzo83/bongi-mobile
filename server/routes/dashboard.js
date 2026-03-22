@@ -106,4 +106,31 @@ router.get('/agents', (req, res) => {
   });
 });
 
+// 에이전트 업무보고 저장소
+const reports = [];
+
+// 에이전트 업무보고 등록
+router.post('/report', (req, res) => {
+  const { agent, action, status, detail, timestamp } = req.body;
+  const report = {
+    id: Date.now().toString(36),
+    agent: agent || 'unknown',
+    action: action || '',
+    status: status || 'info', // info, success, warning, error
+    detail: detail || '',
+    timestamp: timestamp || new Date().toISOString(),
+  };
+  reports.unshift(report);
+  if (reports.length > 100) reports.pop();
+  res.status(201).json(report);
+});
+
+// 업무보고 목록 조회
+router.get('/reports', (req, res) => {
+  const { agent, limit = 50 } = req.query;
+  let result = [...reports];
+  if (agent) result = result.filter(r => r.agent === agent);
+  res.json(result.slice(0, Number(limit)));
+});
+
 export default router;
