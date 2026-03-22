@@ -91,11 +91,22 @@ router.get('/agents', (req, res) => {
     }
   } catch {}
 
-  // 활성 에이전트와 프로젝트 에이전트 병합
+  // 활성 에이전트와 프로젝트 에이전트 병합 + 업무보고 반영
   const mergedAgents = projectAgents.map(pa => {
     const active = agents.find(a => a.name === pa.name);
-    if (active) return { ...pa, ...active };
-    return pa;
+    const latestReport = reports.find(r => r.agent === pa.name);
+    const merged = active ? { ...pa, ...active } : pa;
+
+    // 업무보고가 있으면 상태 업그레이드
+    if (latestReport) {
+      if (latestReport.status === 'success' && merged.status === 'offline') {
+        merged.status = 'idle';
+      }
+      merged.lastAction = latestReport.action;
+      merged.lastReport = latestReport.timestamp;
+    }
+
+    return merged;
   });
 
   res.json({

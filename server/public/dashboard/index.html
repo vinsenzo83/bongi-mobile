@@ -162,7 +162,9 @@ function renderAgents(activeAgents) {
     const active = activeAgents.find(aa => aa.name === a.name);
     const cls = active ? (active.status === 'working' ? 'active' : 'idle') : 'offline';
     const statusCls = active ? (active.status === 'working' ? 's-active' : 's-idle') : 's-offline';
-    const statusText = active ? (active.status === 'working' ? active.task || '작업 중' : '대기') : '미소집';
+    const statusText = active
+      ? (active.status === 'working' ? active.task || '작업 중' : active.lastAction || '대기')
+      : '미소집';
     const dotCls = active ? (active.status === 'working' ? 'dot-green' : 'dot-yellow') : 'dot-gray';
 
     return `<div class="agent-card ${cls}">
