@@ -169,15 +169,79 @@ export async function processMessage(sessionId, userMessage) {
 
   return {
     reply,
-    ui_elements: extractUIElements(response.content),
+    ui_elements: extractUIElements(session.messages),
   };
 }
 
 // UI 요소 추출 (도구 결과에서)
-function extractUIElements(content) {
+function extractUIElements(messages) {
   const elements = [];
-  // 향후: 도구 결과에서 상품 카드, 비교표 등 추출
-  // Phase B에서 구현
+
+  // 세션 메시지에서 최근 도구 결과를 역순 탐색
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (!Array.isArray(msg.content)) continue;
+
+    for (const block of msg.content) {
+      if (block.type !== 'tool_result') continue;
+
+      try {
+        const data = JSON.parse(block.content);
+
+        // search_products 결과 → 상품 카드 + 액션 버튼
+        if (data.products && Array.isArray(data.products)) {
+          // 상품 카드 (최대 2개)
+          const topProducts = data.products.slice(0, 2);
+          if (topProducts.length > 0) {
+            elements.push({
+              type: 'product_cards',
+              products: topProducts,
+            });
+          }
+
+          const productIds = data.products
+            .map(p => p.상품번호)
+            .filter(id => id && id !== '-')
+            .slice(0, 3);
+
+          if (productIds.length > 0) {
+            elements.push({
+              type: 'actions',
+              buttons: [
+                { label: '이거 가입하고 싶어요', action: `${productIds[0]} 가입 상담 받고 싶어요` },
+                ...(productIds.length >= 2 ? [{ label: '두 개 비교해줘', action: `${productIds.slice(0, 2).join(', ')} 비교해줘` }] : []),
+                { label: '다른 상품도 보여줘', action: '다른 상품도 추천해줘' },
+                { label: '상담사 연결해줘', action: '상담사 연결해주세요' },
+              ],
+            });
+          }
+        }
+
+        // compare_products 결과 → 비교표
+        if (data.비교 && Array.isArray(data.비교)) {
+          elements.push({
+            type: 'compare_table',
+            items: data.비교,
+          });
+        }
+
+        // create_lead / request_callback 결과 → 확인 UI
+        if (data.ui?.type === 'lead_confirmed' || data.ui?.type === 'callback_confirmed') {
+          elements.push({
+            type: 'actions',
+            buttons: [
+              { label: '다른 것도 궁금해요', action: '다른 상품도 알려주세요' },
+              { label: '매장 위치 알려줘', action: '가까운 매장 어디야?' },
+            ],
+          });
+        }
+      } catch { /* not JSON */ }
+    }
+
+    // 최근 도구 결과 1세트만
+    if (elements.length > 0) break;
+  }
+
   return elements;
 }
 

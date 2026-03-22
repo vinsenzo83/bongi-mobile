@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { stores } from '../data/stores.js';
 import { customers } from '../data/mock/store.js';
+import { supabase } from '../db/supabase.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const providerDir = join(__dirname, '..', 'data', 'providers');
@@ -402,18 +403,56 @@ function getCardDiscounts({ provider }) {
   };
 }
 
-function createLead({ name, phone, product_id, message }) {
-  const lead = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    name: name || '',
-    phone,
-    productId: product_id || null,
-    message: message || '',
-    type: 'chat',
-    status: 'new',
-    createdAt: new Date().toISOString(),
-  };
+async function createLead({ name, phone, product_id, message }) {
+  // 전화번호 형식 검증
+  if (!phone || !/^01[016789]-?\d{3,4}-?\d{4}$/.test(phone.replace(/\*/g, '0'))) {
+    return { success: false, error: '올바른 전화번호를 입력해주세요 (예: 010-1234-5678)' };
+  }
 
+  const leadId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+  // Supabase에 저장
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from('bongi_applications').insert({
+        type: 'ai_chat',
+        channel: 'ai_chat',
+        name: name || '',
+        phone,
+        product_ticket: product_id || null,
+        form_data: { message: message || '', source: 'chat_ai' },
+        status: 'new',
+      }).select('id').single();
+
+      if (!error && data) {
+        // Mock 고객 DB에도 추가 (어드민에서 보이도록)
+        const exists = customers.find(c => c.phone === phone);
+        if (!exists) {
+          customers.unshift({
+            name: name || '채팅고객',
+            source: 'kakao_chat',
+            phone,
+            type: '자연유입',
+            product: product_id ? '인터넷/TV' : '미정',
+            agent: '미배정',
+            status: '신규유입',
+            time: '방금 (AI채팅)',
+          });
+        }
+        console.log(`📥 AI채팅 리드 등록: ${name || phone} (${product_id || '미정'})`);
+        return {
+          success: true,
+          lead_id: data.id,
+          message: `상담 신청이 접수되었습니다! 상담사가 곧 연락드릴게요. 😊`,
+          ui: { type: 'lead_confirmed', lead_id: data.id, phone },
+        };
+      }
+    } catch (e) {
+      console.warn('Supabase 리드 저장 실패:', e.message);
+    }
+  }
+
+  // Supabase 없으면 Mock
   customers.unshift({
     name: name || '채팅고객',
     source: 'kakao_chat',
@@ -422,18 +461,64 @@ function createLead({ name, phone, product_id, message }) {
     product: product_id ? '인터넷/TV' : '미정',
     agent: '미배정',
     status: '신규유입',
-    time: '방금 (채팅)',
+    time: '방금 (AI채팅)',
   });
 
-  return { success: true, lead_id: lead.id, message: '상담 신청이 접수되었습니다! 상담사가 곧 연락드릴게요.' };
-}
-
-function requestCallback({ name, phone, preferred_time, product_id }) {
   return {
     success: true,
-    message: `콜백 요청 완료! ${preferred_time || '가능한 빨리'} 연락드리겠습니다.`,
+    lead_id: leadId,
+    message: '상담 신청이 접수되었습니다! 상담사가 곧 연락드릴게요. 😊',
+    ui: { type: 'lead_confirmed', lead_id: leadId, phone },
+  };
+}
+
+async function requestCallback({ name, phone, preferred_time, product_id }) {
+  if (!phone || !/^01[016789]-?\d{3,4}-?\d{4}$/.test(phone.replace(/\*/g, '0'))) {
+    return { success: false, error: '올바른 전화번호를 입력해주세요 (예: 010-1234-5678)' };
+  }
+
+  // Supabase에 저장
+  if (supabase) {
+    try {
+      await supabase.from('bongi_applications').insert({
+        type: 'callback',
+        channel: 'ai_chat',
+        name: name || '',
+        phone,
+        product_ticket: product_id || null,
+        form_data: {
+          preferred_time: preferred_time || '가능한 빨리',
+          source: 'chat_ai',
+        },
+        status: 'new',
+      });
+      console.log(`📞 AI채팅 콜백 요청: ${name || phone} (${preferred_time || 'ASAP'})`);
+    } catch (e) {
+      console.warn('Supabase 콜백 저장 실패:', e.message);
+    }
+  }
+
+  // Mock 고객 DB 추가
+  const exists = customers.find(c => c.phone === phone);
+  if (!exists) {
+    customers.unshift({
+      name: name || '콜백고객',
+      source: 'callback',
+      phone,
+      type: '자연유입',
+      product: product_id ? '인터넷/TV' : '미정',
+      agent: '미배정',
+      status: '콜백요청',
+      time: '방금 (AI채팅)',
+    });
+  }
+
+  return {
+    success: true,
+    message: `콜백 요청 완료! ${preferred_time || '가능한 빨리'} 연락드리겠습니다. 😊`,
     phone,
     preferred_time: preferred_time || '가능한 빨리',
+    ui: { type: 'callback_confirmed', phone },
   };
 }
 

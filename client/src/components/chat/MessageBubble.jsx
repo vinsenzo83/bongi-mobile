@@ -1,4 +1,9 @@
-export default function MessageBubble({ message }) {
+import ActionButtons from './ActionButtons.jsx';
+import ProductCard from './ProductCard.jsx';
+import CompareTable from './CompareTable.jsx';
+import InlineForm from './InlineForm.jsx';
+
+export default function MessageBubble({ message, onAction }) {
   const isUser = message.role === 'user';
 
   return (
@@ -6,15 +11,15 @@ export default function MessageBubble({ message }) {
       {!isUser && <div style={styles.avatar}>🐟</div>}
 
       <div style={{ ...styles.bubble, ...(isUser ? styles.userBubble : styles.aiBubble) }}>
-        {/* 마크다운 간이 렌더링 */}
+        {/* 마크다운 렌더링 */}
         <div
           style={styles.content}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content || '') }}
         />
 
-        {/* 리치 UI 요소 (Phase B 확장) */}
+        {/* 리치 UI 요소 */}
         {message.ui_elements?.map((el, i) => (
-          <RichElement key={i} element={el} />
+          <RichElement key={i} element={el} onAction={onAction} />
         ))}
       </div>
 
@@ -23,23 +28,103 @@ export default function MessageBubble({ message }) {
   );
 }
 
-function RichElement({ element }) {
-  // Phase B 확장: product_card, compare_table, image, map, form, actions
-  return null;
+function RichElement({ element, onAction }) {
+  if (!element) return null;
+
+  switch (element.type) {
+    case 'actions':
+      return <ActionButtons buttons={element.buttons} onAction={onAction} />;
+    case 'product_cards':
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {element.products?.map((p, i) => (
+            <ProductCard key={i} product={p} onAction={onAction} />
+          ))}
+        </div>
+      );
+    case 'compare_table':
+      return <CompareTable items={element.items} onAction={onAction} />;
+    case 'form':
+      return (
+        <InlineForm
+          fields={element.fields}
+          submitLabel={element.submitLabel}
+          onSubmit={values => {
+            const parts = Object.entries(values).map(([k, v]) => `${k}: ${v}`).join(', ');
+            onAction(`상담 신청합니다. ${parts}`);
+          }}
+        />
+      );
+    default:
+      return null;
+  }
 }
 
-// 간이 마크다운 → HTML
-function renderMarkdown(text) {
+// 마크다운 테이블 → HTML 테이블
+function renderTable(tableLines) {
+  const rows = tableLines.map(line =>
+    line.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim())
+  );
+  if (rows.length < 2) return '';
+
+  const header = rows[0];
+  // 구분선(---|---) 스킵
+  const startIdx = /^[-:\s]+$/.test(rows[1].join('')) ? 2 : 1;
+  const body = rows.slice(startIdx);
+
+  const thCells = header.map(h =>
+    `<th style="padding:6px 12px;border-bottom:2px solid #444;text-align:left;color:#fff;font-size:13px;white-space:nowrap">${renderInline(h)}</th>`
+  ).join('');
+
+  const bodyRows = body.map(row => {
+    const cells = row.map(c =>
+      `<td style="padding:5px 12px;border-bottom:1px solid #333;font-size:13px">${renderInline(c)}</td>`
+    ).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  return `<div style="overflow-x:auto;margin:8px 0"><table style="border-collapse:collapse;width:100%;background:#1a1a1a;border-radius:8px">`
+    + `<thead><tr>${thCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
+}
+
+// 인라인 마크다운 (볼드, 이탤릭, 코드)
+function renderInline(text) {
   if (!text) return '';
   return text
-    // 코드블록 (backtick)
     .replace(/`([^`]+)`/g, '<code style="background:#333;padding:1px 6px;border-radius:4px;font-size:13px;color:#7ee787">$1</code>')
-    // 볼드
     .replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#fff">$1</strong>')
-    // 이탤릭
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    // 줄바꿈
-    .replace(/\n/g, '<br/>');
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+}
+
+// 마크다운 → HTML (테이블 지원)
+function renderMarkdown(text) {
+  if (!text) return '';
+
+  const lines = text.split('\n');
+  const parts = [];
+  let tableBuffer = [];
+
+  for (const line of lines) {
+    const isTableLine = /^\|.*\|/.test(line.trim());
+
+    if (isTableLine) {
+      tableBuffer.push(line.trim());
+    } else {
+      if (tableBuffer.length > 0) {
+        parts.push(renderTable(tableBuffer));
+        tableBuffer = [];
+      }
+      // 일반 텍스트
+      parts.push(renderInline(line));
+    }
+  }
+
+  // 마지막 테이블 버퍼 처리
+  if (tableBuffer.length > 0) {
+    parts.push(renderTable(tableBuffer));
+  }
+
+  return parts.join('<br/>');
 }
 
 const styles = {

@@ -34,7 +34,7 @@ export default function Chat() {
         {chat.messages.length === 0 ? (
           <WelcomeScreen onChipClick={chat.sendMessage} />
         ) : (
-          <MessageList messages={chat.messages} loading={chat.loading} />
+          <MessageList messages={chat.messages} loading={chat.loading} onAction={chat.sendMessage} />
         )}
 
         {/* 입력창 */}

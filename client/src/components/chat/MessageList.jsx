@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble.jsx';
 
-export default function MessageList({ messages, loading }) {
+export default function MessageList({ messages, loading, onAction }) {
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -12,7 +12,7 @@ export default function MessageList({ messages, loading }) {
     <div style={styles.container}>
       <div style={styles.inner}>
         {messages.map((msg, i) => (
-          <MessageBubble key={i} message={msg} />
+          <MessageBubble key={i} message={msg} onAction={onAction} />
         ))}
 
         {loading && (
