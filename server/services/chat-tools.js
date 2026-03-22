@@ -112,12 +112,12 @@ export const TOOLS = [
   },
   {
     name: 'search_mobile_prices',
-    description: '핸드폰 기기 판매 가격(번호이동/기기변경)을 조회합니다. 공시지원금 기준.',
+    description: '핸드폰 기기 판매 가격(번호이동/기기변경)을 조회합니다. 공시지원금 기준. 중요: 폴드와 플립은 완전히 다른 모델이므로 정확히 구분해서 입력하세요.',
     input_schema: {
       type: 'object',
       properties: {
         provider: { type: 'string', enum: ['skt', 'kt', 'lg'], description: '통신사' },
-        model: { type: 'string', description: '모델명 (예: S26, 아이폰17, 플립7)' },
+        model: { type: 'string', description: '정확한 모델명. 폴드7=Z Fold7, 플립7=Z Flip7 (완전히 다른 모델). 예: 갤럭시 Z 폴드7, 갤럭시 Z 플립7, 아이폰 17 에어' },
       },
     },
   },
@@ -611,13 +611,21 @@ function searchMobilePrices({ provider, model }) {
     }));
   }
 
+  if (results.length === 0) {
+    return {
+      error: `"${model || ''}" 모델을 찾을 수 없습니다.`,
+      안내: '정확한 모델명으로 다시 검색해주세요. 폴드와 플립은 다른 모델입니다. 예: 갤럭시 Z 폴드7, 갤럭시 Z 플립7, 아이폰 17 에어',
+      available_models: Object.values(carriers).flatMap(c => (c.plans || []).map(p => p.model)),
+    };
+  }
+
   return {
     date: mobilePrices.date || '미정',
     count: results.length,
     단위: '만원 (번호이동/기기변경 기준)',
     results: results.slice(0, 15),
     부가서비스: addServices,
-    안내: '공시지원금 기준 가격이며 매일 변동됩니다. 선택약정 시 공시지원금만큼 기기값 추가 (대신 통신비 25% 할인). 정확한 가격은 상담사에게 문의해주세요.',
+    안내: '공시지원금 기준 가격이며 매일 변동됩니다. 정확한 가격은 상담사에게 문의해주세요.',
   };
 }
 
