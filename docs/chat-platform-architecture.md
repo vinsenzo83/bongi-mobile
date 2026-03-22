@@ -209,6 +209,7 @@ server/
 │   ├── chat-tools.js           # 도구 레지스트리 (플러그인에서 도구 수집)
 │   ├── plugin-registry.js      # [신규] 플러그인 로더 + 레지스트리
 │   ├── chat-session.js         # 세션(대화 상태) 관리
+│   ├── rule-engine.js          # [신규] 룰엔진 (상품 매칭/가격 계산/에스컬레이션)
 │   └── ai.js                   # 기존 유지 (CRM용)
 ├── plugins/                     # [신규] 서비스별 플러그인
 │   ├── index.js                 # 플러그인 자동 로드 (디렉토리 스캔)
@@ -715,28 +716,69 @@ export default {
 
 도구 정의는 위 플러그인 시스템(3.1.3)에서 동적으로 수집. 정적 `CHAT_TOOLS` 배열은 사용하지 않는다.
 
-#### 3.1.4 시스템 프롬프트 (동적 구성 + smartchoice-v2 전략)
+#### 3.1.4 시스템 프롬프트 (NLU 전용 + 응답 생성 이원화)
 
-시스템 프롬프트는 **고정 코어 + 플러그인 동적 섹션**으로 구성된다.
+프롬프트가 2개로 분리된다: **NLU 분석용** (analyze_message 도구 강제) + **응답 생성용** (자연어 + 리치 UI).
+
+##### NLU 분석 프롬프트 (`NLU_SYSTEM_PROMPT`)
+
+`processMessage()` Layer 1+2에서 사용. `tool_choice: { type: "tool", name: "analyze_message" }`로 호출하므로 반드시 구조화된 분석 결과만 반환.
 
 ```javascript
-// 프롬프트 빌더
-function buildSystemPrompt(activePlugins) {
+const NLU_SYSTEM_PROMPT = `당신은 봉이모바일의 NLU(자연어 이해) 분석 엔진입니다.
+
+## 역할
+고객 메시지를 분석하여 의도(intent), 정보(slot), 다음 액션을 판별합니다.
+반드시 analyze_message 도구를 호출하여 구조화된 결과를 반환하세요.
+
+## 의도 분류 기준
+- internet_tv: 인터넷, TV, 와이파이, Wi-Fi, 결합상품, 통신사 관련
+- appliance_rental: 정수기, 공기청정기, 비데, 렌탈 관련
+- usim: 알뜰폰, 유심, 요금제, 데이터 관련
+- budget_phone: 알뜰요금제, 저렴한 요금 관련
+- used_phone_tradein: 중고폰, 폰 판매, 매입, 보상판매 관련
+- mixed_intent: 2개 이상 카테고리 동시 언급
+- consultation_direct: "상담원", "전화", "사람과 이야기", 즉시 상담 요청
+- unknown: 위 어디에도 해당하지 않음
+
+## 슬롯 추출 규칙
+- 이번 메시지에서 **새로 언급된 정보만** extracted_slots에 포함
+- 이전 대화에서 이미 추출된 슬롯은 반복하지 않음
+- 추론 가능한 슬롯도 추출 (예: "3인 가족" → family_size: "3~4명")
+- 가격/캐시백 계산은 하지 않음 (룰엔진 담당)
+
+## 다음 액션 판단
+- missing_slots가 0개 → show_recommendation
+- missing_slots가 1개 이상 → ask_question
+- confidence_score < 0.5 또는 consultation_direct → escalate
+- 대화 10턴 초과 시 → escalate
+
+## 카테고리별 필수 슬롯
+- internet_tv: family_size, tv_needed (최소 2개 충족 시 추천 가능)
+- appliance_rental: product_type (최소 1개 충족 시 추천 가능)
+- usim/budget_phone: data_usage (최소 1개 충족 시 추천 가능)
+- used_phone_tradein: brand, model, condition (최소 3개 충족 시 추천 가능)
+`;
+```
+
+##### 응답 생성 프롬프트 (`RESPONSE_SYSTEM_PROMPT`)
+
+Layer 3 질문 생성, Layer 4 추천 문구 생성에 사용. 플러그인 동적 섹션 포함.
+
+```javascript
+function buildResponsePrompt(activePlugins) {
   const pluginDescriptions = activePlugins
     .map(p => `- ${p.name}: ${p.description}`)
     .join('\n');
 
-  return `${CORE_PROMPT}
+  return `${RESPONSE_CORE_PROMPT}
 
 ## 현재 활성 서비스
 ${pluginDescriptions}
-
-각 서비스의 도구를 활용하여 고객에게 최적의 추천과 비교를 제공하세요.
-도구 이름은 "{서비스}_{기능}" 형태입니다 (예: telecom_search, rental_compare).
 `;
 }
 
-const CORE_PROMPT = `당신은 봉이모바일 AI — 생활 서비스 AI 플랫폼의 상담 어시스턴트입니다.
+const RESPONSE_CORE_PROMPT = `당신은 봉이모바일 AI — 생활 서비스 AI 플랫폼의 상담 어시스턴트입니다.
 
 ## 봉이모바일 AI 플랫폼
 "AI에게 물어보면 생활의 모든 것을 해결"
@@ -748,7 +790,6 @@ const CORE_PROMPT = `당신은 봉이모바일 AI — 생활 서비스 AI 플랫
 3. 추천 시 반드시 상품번호(K227, S340, R001 등) 포함
 4. 답변 마지막에 자연스럽게 상담 유도:
    "전문 상담사가 더 좋은 조건을 안내해드릴 수 있어요!"
-   "지금 연락처 남겨주시면 최적의 혜택을 안내드려요!"
 5. 최종 목표는 TM 상담 연결 (리드 전환)
 
 ## 추천 형식 (필수)
@@ -764,17 +805,11 @@ const CORE_PROMPT = `당신은 봉이모바일 AI — 생활 서비스 AI 플랫
 
 💡 전문 상담사가 추가 할인을 안내해드릴 수 있어요!
 
-## 가이디드 플로우 (설문 결과 기반 추천)
-설문 답변이 제공되면 search_products 도구로 검색 후 가장 적합한 2개를 위 형식으로 추천.
-- 가족 3명 이상 → 500Mbps 이상 추천
-- TV 필요 → 인터넷+TV 결합 추천
-- 가격 민감 → 실납부가 낮은 순 + 캐시백 강조
-
-## 자유 대화
-- 상품 관련 질문 → search_products로 검색 후 추천
-- 비교 요청 → compare_products로 비교표
-- "얼마야?" → 가격 정보 + 사은품 강조 + 상담 유도
-- 모르는 질문 → "전문 상담사에게 바로 확인해드릴게요! 연락처 남겨주시면 빠르게 안내드려요."
+## 질문 생성 규칙
+- 누락 슬롯 중 가장 중요한 1개만 질문
+- 버튼/칩으로 선택지를 제공 (타이핑보다 터치 우선)
+- 질문은 1문장, 친근한 대화체
+- 같은 질문 재질문 금지
 
 ## 리드 전환 전략 (적극적)
 - 추천 2개 제시 후 → "어떤 상품이 끌리세요? 상담사가 더 좋은 조건 안내 가능!"
@@ -784,12 +819,11 @@ const CORE_PROMPT = `당신은 봉이모바일 AI — 생활 서비스 AI 플랫
 
 ## 행동 규칙
 1. 항상 한국어, 친근한 대화체 (존댓말)
-2. 상품 추천 시 반드시 search_products 도구 사용
-3. 가격 비교 시 compare_products 도구 사용
-4. 경쟁사 비방 금지
-5. 답변은 간결하게 (3~5문장 + 상품 카드)
-6. collect_customer_info는 고객이 자발적으로 정보를 제공했을 때만 호출
-7. create_lead는 고객이 가입/상담을 원할 때 호출 (연락처 필수)
+2. 가격/캐시백 숫자는 룰엔진이 제공한 값 그대로 사용 (직접 계산 금지)
+3. 경쟁사 비방 금지
+4. 답변은 간결하게 (3~5문장 + 상품 카드)
+5. collect_customer_info는 고객이 자발적으로 정보를 제공했을 때만 호출
+6. create_lead는 고객이 가입/상담을 원할 때 호출 (연락처 필수)
 `;
 ```
 
@@ -1368,41 +1402,69 @@ function useModal() {
 
 ## 5. AI 파이프라인 설계
 
-### 5.1 Claude Tool Use 기반 (RAG 대체)
+### 5.1 NLU 4레이어 파이프라인 (RAG 대체)
 
-상품 데이터가 제한적(약 10개)이므로 벡터 DB 기반 RAG는 과도하다. **Claude Tool Use**로 충분:
+상품 데이터가 제한적(약 10개)이므로 벡터 DB 기반 RAG는 과도하다. **Claude Tool Use + 룰엔진** 이원화 구조로 처리:
 
 ```
 고객 메시지
     ↓
-Claude API (Tool Use 모드)
-    ↓ (Claude가 자율적으로 판단)
-    ├→ search_products(category="internet") → 상품 목록 반환
-    ├→ compare_products(["K227","K310"]) → 비교 데이터 반환
-    ├→ collect_customer_info(phone="010-...") → 세션에 저장
-    ├→ create_lead(phone="010-...") → CRM 등록
-    └→ 텍스트 응답 (도구 불필요 시)
+┌─ Claude API 호출 #1: NLU 분석 ────────────────────────────┐
+│  system: NLU_SYSTEM_PROMPT                                  │
+│  tools: [analyze_message]                                   │
+│  tool_choice: { type: "tool", name: "analyze_message" }     │
+│                                                              │
+│  → 구조화된 분석 결과 반환:                                  │
+│    intent, confidence, extracted_slots, missing_slots, action│
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─ 룰엔진 (코드) ────────────────────────────────────────────┐
+│  - 슬롯 충족 여부 판단                                       │
+│  - 상품 매칭 (필터 + 캐시백 정렬)                            │
+│  - 에스컬레이션 조건 판단                                     │
+│  - 가격/할인 계산                                            │
+└────────────────────────┬────────────────────────────────────┘
+                         ↓
+┌─ Claude API 호출 #2: 응답 생성 ────────────────────────────┐
+│  system: RESPONSE_SYSTEM_PROMPT                              │
+│  - ask_question → 자연스러운 질문 1개 + 버튼 옵션            │
+│  - show_recommendation → 상품 추천 문구 (룰엔진 결과 기반)   │
+│  - escalate → 상담 연결 안내 문구                            │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-- 상품 데이터가 늘어나면 (50개+) `search_products` 내부에 필터 로직 강화
-- 향후 Supabase로 상품 DB 이전 시 도구 내부만 변경, AI 인터페이스는 동일
+- Claude는 NLU(의도/슬롯 분석)와 응답 생성만 담당
+- 가격 계산, 상품 매칭, 에스컬레이션 판단은 룰엔진(코드)이 담당
+- 상품 데이터가 늘어나면 (50개+) 룰엔진의 필터 로직 강화
+- 향후 Supabase로 상품 DB 이전 시 룰엔진 내부만 변경, AI 인터페이스는 동일
 
 ### 5.2 대화 맥락 관리
 
 - Claude messages 배열을 세션에 통째로 저장
+- 슬롯 누적: 이전 턴에서 수집한 슬롯 + 이번 턴 추출 슬롯을 `session.slots`에 병합
 - 대화가 길어지면 (20턴+) 오래된 메시지 요약 후 압축
-- 수집된 고객 정보(`collected_info`)는 시스템 프롬프트에 주입하여 반복 질문 방지
+- 수집된 슬롯은 NLU 분석 시 대화 이력에 포함되어 반복 질문 방지
 
-### 5.3 응답 파싱
+### 5.3 응답 구조화
 
-Claude의 텍스트 응답에서 구조화된 UI 요소를 추출:
+응답은 `processMessage()` (3.1.2)에서 결정된 action 타입에 따라 `ui_elements` 배열을 직접 구성. 별도 파싱 불필요:
 
 ```javascript
-function extractUIElements(content) {
-  // Tool Use 결과에서 상품 데이터가 반환되었으면 → ProductCard
-  // compare_products 호출이 있었으면 → CompareTable
-  // collect_customer_info 호출이 있었으면 → LeadForm 표시 고려
-  // 이 정보는 tool_use 블록 파싱으로 추출
+// action 타입에 따른 ui_elements 구성 (chat-engine.js 내부)
+switch (action.type) {
+  case "ask_question":
+    // 룰엔진이 결정한 missing_slot의 옵션을 버튼으로 표시
+    uiElements = [{ type: "actions", buttons: action.options }];
+    break;
+  case "show_recommendation":
+    // 룰엔진이 매칭한 상품 2개를 카드로 표시
+    uiElements = products.map(p => ({ type: "product_card", data: p }));
+    uiElements.push({ type: "cta", data: { products } });
+    break;
+  case "escalate":
+    // 상담사 연결 CTA 표시
+    uiElements = [{ type: "cta", data: { escalation: true } }];
+    break;
 }
 ```
 
@@ -1470,8 +1532,14 @@ CREATE TABLE bongi_chat_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   messages JSONB NOT NULL DEFAULT '[]',
   collected_info JSONB DEFAULT '{}',
+  -- NLU 상태
+  detected_intent TEXT,                -- 현재 의도 (internet_tv, appliance_rental 등)
+  filled_slots JSONB DEFAULT '{}',     -- 누적된 슬롯 { family_size: "3~4명", tv_needed: true, ... }
+  turn_count INTEGER DEFAULT 0,        -- 대화 턴 수
+  -- 리드 상태
   lead_status TEXT DEFAULT 'browsing',  -- browsing, interested, info_collecting, lead_created
   lead_id UUID REFERENCES bongi_customers(id),
+  channel TEXT DEFAULT 'web',           -- web, kakao, app
   ip_address TEXT,
   user_agent TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -1526,9 +1594,10 @@ CREATE INDEX idx_chat_sessions_active ON bongi_chat_sessions(last_active_at);
 
 | 파일 | 설명 |
 |------|------|
-| `server/services/chat-engine.js` | Claude Tool Use 오케스트레이터 |
+| `server/services/chat-engine.js` | NLU 4레이어 채팅 엔진 (Claude Tool Use 오케스트레이터) |
+| `server/services/rule-engine.js` | 룰엔진 (상품 매칭, 가격 계산, 에스컬레이션 판단) |
 | `server/services/plugin-registry.js` | 플러그인 로더 + 레지스트리 |
-| `server/services/chat-session.js` | 세션 관리 |
+| `server/services/chat-session.js` | 세션 관리 (슬롯 누적, 대화 상태) |
 | `server/services/guided-flow.js` | 가이디드 플로우 (플러그인에서 설문 동적 수집) |
 | `server/plugins/index.js` | 플러그인 자동 로드 |
 | `server/plugins/telecom/*` | 인터넷+TV 플러그인 (manifest, tools, data, survey) |
@@ -1570,16 +1639,17 @@ CREATE INDEX idx_chat_sessions_active ON bongi_chat_sessions(last_active_at);
 
 ## 9. 구현 Phase 계획
 
-### Phase A: 플러그인 시스템 + 채팅 엔진 (백엔드)
-1. `plugin-registry.js` — 플러그인 로더, 도구 수집, 실행 라우팅
-2. `plugins/telecom/*` — 1차 플러그인: 인터넷+TV (manifest, tools, data, survey)
-3. `plugins/rental/*`, `plugins/usim/*`, `plugins/usedPhone/*` — 1차 나머지 플러그인
-4. `plugins/_template/*` — 신규 플러그인 템플릿
-5. `chat-session.js` — 인메모리 세션 관리 (guided_flow 상태 포함)
-6. `guided-flow.js` — 플러그인에서 설문 동적 수집 + 추천 프롬프트 빌더
-7. `chat-engine.js` — Claude Tool Use 루프 (플러그인 도구 동적 주입)
-8. `routes/chat.js` — 전체 API (session, message, survey, guided, lead)
-9. `index.js` — 라우트 등록
+### Phase A: NLU 엔진 + 플러그인 시스템 + 채팅 엔진 (백엔드)
+1. `rule-engine.js` — 룰엔진: 상품 매칭(슬롯 기반 필터 + 캐시백 정렬), 가격 계산, 에스컬레이션 판단
+2. `plugin-registry.js` — 플러그인 로더, 도구 수집, 실행 라우팅
+3. `plugins/telecom/*` — 1차 플러그인: 인터넷+TV (manifest, tools, data, survey, **슬롯 정의**)
+4. `plugins/rental/*`, `plugins/usim/*`, `plugins/usedPhone/*` — 1차 나머지 플러그인 (각 카테고리별 슬롯 포함)
+5. `plugins/_template/*` — 신규 플러그인 템플릿
+6. `chat-session.js` — 인메모리 세션 관리 (guided_flow 상태 + **슬롯 누적** 포함)
+7. `guided-flow.js` — 플러그인에서 설문 동적 수집 + 추천 프롬프트 빌더
+8. `chat-engine.js` — **NLU 4레이어 엔진**: analyze_message 도구 정의, processMessage() 핵심 루프 (NLU 분석 → 룰엔진 → 응답 생성), NLU/응답 프롬프트 이원화
+9. `routes/chat.js` — 전체 API (session, message, survey, guided, lead)
+10. `index.js` — 라우트 등록
 
 ### Phase B: 채팅 UI + 가이디드 플로우 + 리치 UI (프론트엔드)
 1. `Chat.jsx` + `useChat.js` + `useModal.js` — 기본 대화 UI + 모달 상태
@@ -1641,6 +1711,9 @@ CREATE INDEX idx_chat_sessions_active ON bongi_chat_sessions(last_active_at);
 | **플러그인 아키텍처** | 서비스 확장의 핵심 — 도구만 추가하면 새 서비스 지원, 프론트 변경 최소 |
 | 네임스페이스 도구명 (`telecom_search`) | 플러그인 간 도구 충돌 방지, 라우팅 자동화 |
 | 동적 시스템 프롬프트 | 활성 플러그인 목록에 따라 AI 역할 자동 조정 |
+| **NLU 4레이어 엔진** | 의도→슬롯→질문→액션 구조로 최소 질문+정확한 추천, AI/비즈니스 로직 분리로 가격 오류 방지 |
+| **AI/룰엔진 이원화** | Claude는 NLU+응답 생성만, 가격/매칭/에스컬레이션은 코드가 담당 — 할루시네이션 방지, 정책 변경 시 코드만 수정 |
+| **analyze_message 단일 도구** | tool_choice 강제로 구조화된 NLU 출력 보장, 자유 텍스트 응답 방지 |
 | Claude Tool Use (벡터 RAG 아님) | 구조화된 데이터 → Tool Use가 정확하고 간단, 플러그인과 자연스럽게 통합 |
 | 가이디드 + 자유 대화 하이브리드 | smartchoice-v2 설문→추천(검증됨) + 자유 대화(확장성) 병행 |
 | "사은품 중심" 프롬프트 전략 | smartchoice-v2에서 검증 — 캐시백/사은품이 주요 의사결정 요인 |

@@ -12,6 +12,7 @@ import aiRoutes from './routes/ai.js';
 import mockRoutes from './routes/mock.js';
 import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboard.js';
+import chatRoutes from './routes/chat.js';
 import { sanitizeBody } from './middleware/sanitize.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiLimiter, applicationLimiter } from './middleware/rateLimit.js';
@@ -45,6 +46,9 @@ app.use('/api/products', productRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/applications', applicationLimiter, applicationRoutes);
 app.use('/api/mock', mockRoutes);
+
+// ── 채팅 (공개) ──
+app.use('/api/chat', chatRoutes);
 
 // ── 선택적 인증 ──
 app.use('/api/ai', optionalAuth, aiRoutes);
