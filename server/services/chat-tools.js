@@ -320,33 +320,114 @@ function getProductDetail({ product_id }) {
   const product = productCatalog[id];
   if (!product) return { error: `상품번호 ${id}를 찾을 수 없습니다` };
 
-  // 통신사 데이터에서 상세 정보 찾기
   const provKey = { 'SKT': 'skt', 'KT': 'kt', 'LG U+': 'lg' }[product.provider];
   const provData = allProviders[provKey] || {};
   const itvList = provData.internet_tv || [];
 
-  // 관련 인터넷+TV 상품 매칭
-  let detail = null;
+  // 상품 매칭 (1대결합 우선)
+  let matchedProduct = null;
   for (const itv of itvList) {
-    if (product.name.includes(itv.name) || itv.name.includes(product.speed)) {
-      detail = itv;
+    if (itv.type === '1대결합' && product.name.includes(itv.name)) {
+      matchedProduct = itv;
       break;
     }
   }
+  if (!matchedProduct) {
+    for (const itv of itvList) {
+      if (product.name.includes(itv.name) || itv.name.includes(product.name.split('+')[0].trim())) {
+        matchedProduct = itv;
+        break;
+      }
+    }
+  }
 
-  // 카드할인 정보
+  // 미결합 상품에서 사은품
+  const uncombined = itvList.find(itv => itv.type === '미결합' && product.name.includes(itv.name));
+  const speedGiftKey = { '100M': 'gift_100m', '500M': 'gift_500m', '1G': 'gift_1g' }[product.speed] || 'gift_500m';
+  const gift = uncombined?.[speedGiftKey] || matchedProduct?.[speedGiftKey] || '-';
+
+  // 카드할인
   const cards = provData.cards || [];
-  const bestCard = cards.length > 0 ? cards[0] : null;
+  const bestCard = cards.reduce((best, c) => (c.discount_amount > (best?.discount_amount || 0) ? c : best), null);
+
+  // 결합할인 정보
+  const bundleTypes = provData.bundle_types || [];
+  const bundleInfo = bundleTypes.flat ? bundleTypes.flat().filter(b => b.구분) : [];
+
+  // 셋탑박스
+  const settopBoxes = provData.settop_box || [];
+
+  // OTT 지원
+  const ottSupport = provData.ott_support || [];
+
+  // WiFi
+  const wifiOptions = provData.wifi || [];
+
+  // 설치비
+  const installFee = provData.install_fee || {};
+
+  // 속도별 가격 키
+  const speedPriceKey = { '100M': 'price_100m', '500M': 'price_500m', '1G': 'price_1g' }[product.speed] || 'price_500m';
+  const monthlyFee = matchedProduct?.[speedPriceKey] || product.price;
 
   return {
     상품번호: id,
     통신사: product.provider,
     상품명: product.name,
     속도: product.speed,
-    '1대결합가': `${product.price.toLocaleString()}원`,
-    카드할인: bestCard ? `${bestCard.name} -${bestCard.discount_amount?.toLocaleString()}원/월` : '없음',
-    설치비: provData.install_fee || {},
-    detail: detail || null,
+
+    // 요금 정보
+    요금: {
+      '1대결합_월요금': `${monthlyFee.toLocaleString()}원`,
+      카드할인: bestCard ? { 카드명: bestCard.name, 할인: `-${bestCard.discount_amount?.toLocaleString()}원/월`, 실적조건: bestCard.min_performance || '-' } : '없음',
+      최종월요금: bestCard ? `${(monthlyFee - (bestCard.discount_amount || 0)).toLocaleString()}원` : `${monthlyFee.toLocaleString()}원`,
+    },
+    사은품: gift,
+
+    // TV 정보
+    TV정보: matchedProduct ? {
+      채널수: matchedProduct.channels || '-',
+      상품명: matchedProduct.name,
+    } : null,
+
+    // 셋탑박스 옵션
+    셋탑박스: settopBoxes.map(s => ({
+      이름: s['셋톱박스'] || s.name,
+      월임대료: s['월 임대료'] || s.fee,
+      특징: s['특징'] || s.feature,
+    })),
+
+    // OTT 지원 현황
+    OTT지원: ottSupport.slice(0, 3).map(o => ({
+      셋탑: o.구분,
+      넷플릭스: o.넷플릭스,
+      유튜브: o.유튜브,
+      디즈니플러스: o['디즈니+'],
+      티빙: o.티빙,
+      쿠팡플레이: o.쿠팡플레이,
+    })),
+
+    // 설치비
+    설치비: {
+      '평일_인터넷+TV': installFee['평일_인터넷+ TV'] || installFee['평일_인터넷+TV'] || '-',
+      '주말_인터넷+TV': installFee['주말_인터넷+ TV'] || installFee['주말_인터넷+TV'] || '-',
+      'TV추가_1대당': installFee['평일_TV추가(1대 당)'] || '-',
+    },
+
+    // WiFi 옵션
+    WiFi: wifiOptions.slice(0, 3).map(w => ({
+      이름: w.구분,
+      특징: w.특징,
+      요금: w['100M'] || w.fee || '-',
+    })),
+
+    // 결합할인 비교
+    결합할인_옵션: bundleInfo.slice(0, 3).map(b => ({
+      결합명: b.구분,
+      조건: b['결합 조건'] || '',
+      인터넷할인: b['인터넷 할인'] || '',
+      휴대폰할인: b['휴대폰 할인'] || '',
+    })),
   };
 }
 
