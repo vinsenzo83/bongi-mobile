@@ -227,8 +227,8 @@ function searchProducts({ provider, speed, include_tv, bundle_type, num_lines })
   let iptvDiscount = 0;
   let phoneDiscount = 0;
 
-  // 결합 종류 결정 (고객 지정 or 기본값)
-  const defaultBundle = { skt: '온가족할인', kt: '총액가족결합', lg: '참쉬운가족결합' };
+  // 결합 종류 결정 (고객 지정 or 기본값 = 요즘가족결합 계열)
+  const defaultBundle = { skt: '요즘가족결합', kt: '총액가족결합', lg: '참쉬운가족결합' };
   const selectedBundle = bundle_type || defaultBundle[provider] || '';
   const lines = num_lines || 1;
 
