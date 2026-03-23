@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 
-const API = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
+const API = import.meta.env.VITE_API_BASE || (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
 
 export function useChat() {
   const [messages, setMessages] = useState([]);

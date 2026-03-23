@@ -61,6 +61,19 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: '봉이모바일 API' });
 });
 
+// 프로덕션: 클라이언트 정적 파일 서빙
+const clientDist = join(__dirname, '..', 'client', 'dist');
+import { existsSync } from 'fs';
+if (existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/dashboard')) {
+      return next();
+    }
+    res.sendFile(join(clientDist, 'index.html'));
+  });
+}
+
 // 전역 에러 핸들러
 app.use(errorHandler);
 
