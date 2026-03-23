@@ -341,8 +341,11 @@ function getProductDetail({ product_id }) {
     }
   }
 
-  // 미결합 상품에서 사은품
-  const uncombined = itvList.find(itv => itv.type === '미결합' && product.name.includes(itv.name));
+  // 미결합 상품에서 사은품 (이름이 가장 긴 = 정확한 매칭)
+  const uncombinedList = itvList
+    .filter(itv => itv.type === '미결합' && product.name.includes(itv.name))
+    .sort((a, b) => b.name.length - a.name.length);
+  const uncombined = uncombinedList[0] || null;
   const speedGiftKey = { '100M': 'gift_100m', '500M': 'gift_500m', '1G': 'gift_1g' }[product.speed] || 'gift_500m';
   const gift = uncombined?.[speedGiftKey] || matchedProduct?.[speedGiftKey] || '-';
 
@@ -350,9 +353,15 @@ function getProductDetail({ product_id }) {
   const cards = provData.cards || [];
   const bestCard = cards.reduce((best, c) => (c.discount_amount > (best?.discount_amount || 0) ? c : best), null);
 
-  // 결합할인 정보
-  const bundleTypes = provData.bundle_types || [];
-  const bundleInfo = bundleTypes.flat ? bundleTypes.flat().filter(b => b.구분) : [];
+  // 결합할인 정보 (bundle_discount_detail.json에서)
+  const bdDetail = bundleDiscount[provKey] || {};
+  const bundleOptions = Object.entries(bdDetail)
+    .filter(([k]) => k !== 'provider')
+    .map(([name, info]) => ({
+      이름: name,
+      설명: info.description || '',
+      조건: info.conditions || '',
+    }));
 
   // 셋탑박스
   const settopBoxes = provData.settop_box || [];
@@ -421,13 +430,8 @@ function getProductDetail({ product_id }) {
       요금: w['100M'] || w.fee || '-',
     })),
 
-    // 결합할인 비교
-    결합할인_옵션: bundleInfo.slice(0, 3).map(b => ({
-      결합명: b.구분,
-      조건: b['결합 조건'] || '',
-      인터넷할인: b['인터넷 할인'] || '',
-      휴대폰할인: b['휴대폰 할인'] || '',
-    })),
+    // 결합할인 비교 (고객이 선택할 수 있도록)
+    결합할인_옵션: bundleOptions,
   };
 }
 
