@@ -747,10 +747,14 @@ function searchMobilePrices({ provider, model }) {
   const addServices = {};
   const svcData = mobilePrices.additional_services || {};
   for (const [key, svcs] of Object.entries(svcData)) {
+    if (key === 'conditions') continue; // 조건 설명은 스킵
+    if (!Array.isArray(svcs)) continue;
     if (provider && key !== provider) continue;
-    addServices[carriers[key]?.name || key] = svcs.map(s => ({
+    const carrierName = carriers[key]?.name || key;
+    addServices[carrierName] = svcs.map(s => ({
       서비스: s.service,
-      월정액: `${s.fee.toLocaleString()}원`,
+      월정액: typeof s.fee === 'number' ? `${s.fee.toLocaleString()}원` : s.fee,
+      유지기간: s.period || '-',
     }));
   }
 
