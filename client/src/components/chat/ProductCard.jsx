@@ -11,9 +11,15 @@ export default function ProductCard({ product, onAction }) {
 
       <div style={styles.details}>
         {product.속도 && <Row label="📶 속도" value={product.속도} />}
-        {product.채널수 && product.채널수 !== '-' && <Row label="📺 채널" value={product.채널수} />}
-        {product['인터넷+TV_월요금'] && <Row label="💰 기본요금" value={product['인터넷+TV_월요금']} />}
+        {product.채널수 && product.채널수 !== '-' && <Row label="📺 채널" value={`${product.채널수}채널`} />}
+        {product.인터넷요금 && <Row label="🌐 인터넷" value={product.인터넷요금} />}
+        {product.TV요금 && <Row label="📺 TV" value={product.TV요금} />}
+        {product.셋탑박스 && <Row label="📦 셋탑" value={product.셋탑박스} />}
+        {product.WiFi && <Row label="📡 WiFi" value={product.WiFi} />}
+        {product['인터넷+TV_월요금'] && !product.인터넷요금 && <Row label="💰 기본요금" value={product['인터넷+TV_월요금']} />}
+        {product.소계 && <Row label="소계" value={product.소계} sub />}
         {product.결합할인 && product.결합할인 !== '없음' && <Row label="🏷️ 결합할인" value={product.결합할인} highlight />}
+        {product.휴대폰할인 && <Row label="📱 폰할인" value={product.휴대폰할인} highlight />}
         {product.카드할인 && product.카드할인 !== '없음' && <Row label="💳 카드할인" value={product.카드할인} highlight />}
       </div>
 
@@ -46,11 +52,11 @@ export default function ProductCard({ product, onAction }) {
   );
 }
 
-function Row({ label, value, highlight }) {
+function Row({ label, value, highlight, sub }) {
   return (
-    <div style={styles.row}>
+    <div style={{ ...styles.row, ...(sub ? { borderTop: '1px solid #333', paddingTop: 4, marginTop: 4 } : {}) }}>
       <span style={styles.label}>{label}</span>
-      <span style={{ ...styles.value, ...(highlight ? { color: '#f87171' } : {}) }}>{value}</span>
+      <span style={{ ...styles.value, ...(highlight ? { color: '#f87171' } : {}), ...(sub ? { fontWeight: 600 } : {}) }}>{value}</span>
     </div>
   );
 }

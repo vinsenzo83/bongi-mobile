@@ -45,6 +45,7 @@ export const TOOLS = [
         provider: { type: 'string', enum: ['skt', 'kt', 'lg'], description: '통신사' },
         speed: { type: 'string', description: '속도 (100M/500M/1G)' },
         include_tv: { type: 'boolean', description: 'TV 포함 여부 (기본 true)' },
+        include_wifi: { type: 'boolean', description: '와이파이 포함 여부' },
         bundle_type: { type: 'string', description: 'SKT: 온가족할인/요즘가족결합, KT: 총액가족결합, LG: 참쉬운가족결합. 고객 상황에 맞게 선택.' },
         num_lines: { type: 'number', description: '결합 회선 수 (1~5). 요즘가족결합 등에서 회선 수별 할인이 다름.' },
       },
@@ -197,7 +198,7 @@ export async function executeTool(name, input) {
 
 // ─── 도구 구현 ───
 
-function searchProducts({ provider, speed, include_tv, bundle_type, num_lines }) {
+function searchProducts({ provider, speed, include_tv, include_wifi, bundle_type, num_lines }) {
   if (!provider) {
     return {
       message: '통신사를 선택해주세요. SKT, KT, LG U+ 3사 모두 취급합니다.',
@@ -295,25 +296,46 @@ function searchProducts({ provider, speed, include_tv, bundle_type, num_lines })
   // 속도별 계산
   const speeds = speed ? [speed] : ['500M']; // 기본 500M
 
+  // 인터넷 단독 1대결합 가격 (TV 요금 분리용)
+  const internetOnly = itvList.find(p => p.type === '1대결합' && p.name === '인터넷');
+
+  // 셋탑박스 기본 요금 (스마트3 기본)
+  const settopBoxes = provData.settop_box || [];
+  const defaultSettop = settopBoxes.find(s => (s['셋톱박스'] || s.name || '').includes('스마트3') && !(s['셋톱박스'] || s.name || '').includes('미니'));
+  const settopFee = defaultSettop ? parseInt(String(defaultSettop['월 임대료'] || '0').replace(/[^0-9]/g, '')) : 4400;
+
+  // WiFi 기본 요금
+  const wifiOptions = provData.wifi || [];
+  const defaultWifi = wifiOptions.find(w => (w.구분 || '').includes('WiFi 6') || (w.구분 || '').includes('기가')) || wifiOptions[0];
+  const wifiFee = include_wifi && defaultWifi ? parseInt(String(defaultWifi['100M'] || '0').replace(/[^0-9]/g, '')) : 0;
+
   const products = results.map(p => {
     const sk = speedKey[speeds[0]] || 'price_500m';
     const gk = giftKey[speeds[0]] || 'gift_500m';
     const monthlyFee = p[sk];
     if (!monthlyFee) return null;
 
-    // 사은품은 미결합 상품에서 가져옴
-    const uncombined = unconbinedList.find(u => u.name === p.name);
+    // 인터넷/TV 요금 분리
+    const internetFee = internetOnly?.[sk] || monthlyFee;
+    const hasTV = p.name.includes('TV') || p.name.includes('Btv') || p.name.includes('지니');
+    const tvFee = hasTV ? (monthlyFee - internetFee) : 0;
+
+    // 사은품은 미결합 상품에서 가져옴 (이름 긴 순서 우선)
+    const uncombinedMatches = unconbinedList
+      .filter(u => p.name.includes(u.name) || u.name.includes(p.name))
+      .sort((a, b) => b.name.length - a.name.length);
+    const uncombined = uncombinedMatches[0];
     const gift = uncombined?.[gk] || p[gk] || '-';
 
-    // 최종 요금 = 1대결합가 - 인터넷결합할인 - IPTV할인 - 카드할인
-    const finalPrice = monthlyFee - bundleDiscountAmount - iptvDiscount - cardDiscount;
+    // 최종 요금 = 인터넷+TV + 셋탑 + WiFi - 결합할인 - 카드할인
+    const totalBeforeDiscount = monthlyFee + (hasTV ? settopFee : 0) + wifiFee;
+    const finalPrice = totalBeforeDiscount - bundleDiscountAmount - iptvDiscount - cardDiscount;
 
-    // 상품번호 찾기 (전체 이름으로 매칭, 부분 매칭 시 가장 긴 이름 우선)
+    // 상품번호 찾기
     const catalogEntries = Object.entries(productCatalog).filter(([, v]) =>
       v.provider === provName && v.speed === speeds[0] &&
       (v.name === p.name || v.name.includes(p.name) || p.name.includes(v.name))
     );
-    // 이름이 가장 긴 것 = 가장 정확한 매칭 (인터넷+TV > 인터넷 단독)
     const catalogEntry = catalogEntries.sort((a, b) => b[1].name.length - a[1].name.length)[0];
     const productId = catalogEntry ? catalogEntry[0] : '-';
 
@@ -322,7 +344,11 @@ function searchProducts({ provider, speed, include_tv, bundle_type, num_lines })
       상품명: p.name,
       속도: speeds[0],
       채널수: p.channels || '-',
-      '인터넷+TV_월요금': `${monthlyFee.toLocaleString()}원`,
+      인터넷요금: `${internetFee.toLocaleString()}원`,
+      ...(hasTV ? { TV요금: `${tvFee.toLocaleString()}원` } : {}),
+      ...(hasTV ? { 셋탑박스: `${settopFee.toLocaleString()}원 (${defaultSettop?.['셋톱박스'] || '기본'})` } : {}),
+      ...(wifiFee > 0 ? { WiFi: `${wifiFee.toLocaleString()}원 (${defaultWifi?.구분 || '기본'})` } : {}),
+      '소계': `${totalBeforeDiscount.toLocaleString()}원`,
       결합할인: bundleDiscountAmount > 0 ? `-${(bundleDiscountAmount + iptvDiscount).toLocaleString()}원 (${bundleDiscountName}${lines > 1 ? ` ${lines}회선` : ''})` : '없음',
       ...(phoneDiscount > 0 ? { 휴대폰할인: `-${phoneDiscount.toLocaleString()}원/회선` } : {}),
       카드할인: cardDiscount > 0 ? `-${cardDiscount.toLocaleString()}원 (${bestCard.name})` : '없음',
