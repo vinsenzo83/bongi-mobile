@@ -1,6 +1,6 @@
 const carrierColors = {
   'SK': { bg: '#e60012', border: '#e60012' },
-  'KT': { bg: '#000000', border: '#444' },
+  'KT': { bg: '#1a73e8', border: '#1a73e8' },
   'LG U+': { bg: '#e5007d', border: '#e5007d' },
 };
 
