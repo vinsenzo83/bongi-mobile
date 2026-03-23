@@ -2,14 +2,24 @@
   "name": "bongi-mobile",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "봉이모바일 통합 플랫폼",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
-    "build": "cd client && npm install && npm run build",
+    "postinstall": "cd client && npm install",
+    "build": "cd client && npm run build",
     "start": "cd server && node index.js",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "express-rate-limit": "^8.3.1"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
