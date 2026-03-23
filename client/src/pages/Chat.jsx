@@ -58,6 +58,7 @@ function WelcomeScreen({ onChipClick }) {
     <div style={styles.welcome}>
       <div style={styles.welcomeIcon}>🐟</div>
       <h1 style={styles.welcomeTitle}>봉이모바일</h1>
+      <p style={styles.welcomeSlogan}>돈 버는 소비의 시작, 봉이모바일</p>
       <p style={styles.welcomeSub}>인터넷, 렌탈, 알뜰폰, 중고폰 매입까지<br/>무엇이든 물어보세요</p>
       <div style={styles.chips}>
         {chips.map(c => (
@@ -121,7 +122,8 @@ const styles = {
     padding: 20,
   },
   welcomeIcon: { fontSize: 48, marginBottom: 12 },
-  welcomeTitle: { fontSize: 28, fontWeight: 700, marginBottom: 8, color: '#fff' },
+  welcomeTitle: { fontSize: 28, fontWeight: 700, marginBottom: 4, color: '#fff' },
+  welcomeSlogan: { fontSize: 14, color: '#60a5fa', fontWeight: 500, marginBottom: 12 },
   welcomeSub: { fontSize: 15, color: '#888', textAlign: 'center', lineHeight: 1.6, marginBottom: 28 },
   chips: {
     display: 'flex',
