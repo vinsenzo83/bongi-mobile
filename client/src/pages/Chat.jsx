@@ -50,7 +50,7 @@ function WelcomeScreen({ onChipClick }) {
     { label: '정수기 렌탈 알려줘', icon: '🧺' },
     { label: '알뜰폰 저렴한 거', icon: '📱' },
     { label: '중고폰 매입가', icon: '📦' },
-    { label: '가까운 매장 어디야', icon: '🏪' },
+    { label: '오늘 휴대폰 시세', icon: '📱' },
     { label: '3사 비교해줘', icon: '📊' },
   ];
 
