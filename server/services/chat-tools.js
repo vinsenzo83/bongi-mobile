@@ -285,7 +285,12 @@ function searchProducts({ provider, speed, include_tv, include_wifi, bundle_type
 
   // TV 필터
   if (include_tv === true) {
-    results = results.filter(p => p.name.includes('TV') || p.name.includes('Btv') || p.name.includes('지니'));
+    results = results.filter(p =>
+      p.name.includes('TV') || p.name.includes('Btv') || p.name.includes('지니') ||
+      p.name.includes('실속') || p.name.includes('기본형') || p.name.includes('프리미엄') ||
+      p.name.includes('넷플릭스') || p.name.includes('디즈니') ||
+      (p.channels && p.channels !== '')
+    );
   } else if (include_tv === false) {
     results = results.filter(p => p.name === '인터넷');
   }
