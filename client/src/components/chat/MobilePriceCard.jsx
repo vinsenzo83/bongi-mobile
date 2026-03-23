@@ -1,20 +1,27 @@
+const carrierColors = {
+  'SK': { bg: '#e60012', border: '#e60012' },
+  'KT': { bg: '#000000', border: '#444' },
+  'LG U+': { bg: '#e5007d', border: '#e5007d' },
+};
+
 export default function MobilePriceCard({ item, services, plan, onAction }) {
   if (!item) return null;
 
   const 번이 = item['번이_raw'];
   const 기변 = item['기변_raw'];
+  const colors = carrierColors[item.통신사] || { bg: '#555', border: '#555' };
 
   return (
-    <div style={styles.card}>
+    <div style={{ ...styles.card, borderColor: colors.border }}>
       <div style={styles.header}>
-        <span style={styles.carrier}>{item.통신사}</span>
+        <span style={{ ...styles.carrier, background: colors.bg }}>{item.통신사}</span>
         <span style={styles.model}>{item.모델}</span>
       </div>
 
       {plan && (
         <div style={styles.planRow}>
           <span style={styles.planLabel}>📋 요금제</span>
-          <span style={styles.planValue}>{plan.요금제} ({plan.월정액 ? `${(plan.월정액).toLocaleString()}원` : '-'})</span>
+          <span style={styles.planValue}>{plan.요금제}</span>
         </div>
       )}
 
@@ -49,7 +56,7 @@ export default function MobilePriceCard({ item, services, plan, onAction }) {
       {onAction && (
         <div style={styles.actions}>
           <button
-            style={styles.actionBtn}
+            style={{ ...styles.actionBtn, background: colors.bg }}
             onClick={() => onAction(`${item.모델} ${item.통신사} 번호이동으로 가입 상담 받고 싶어요`)}
           >
             가입 상담
