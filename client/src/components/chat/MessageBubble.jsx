@@ -2,6 +2,7 @@ import ActionButtons from './ActionButtons.jsx';
 import ProductCard from './ProductCard.jsx';
 import CompareTable from './CompareTable.jsx';
 import InlineForm from './InlineForm.jsx';
+import MobilePriceCard from './MobilePriceCard.jsx';
 
 export default function MessageBubble({ message, onAction }) {
   const isUser = message.role === 'user';
@@ -44,6 +45,16 @@ function RichElement({ element, onAction }) {
       );
     case 'compare_table':
       return <CompareTable items={element.items} onAction={onAction} />;
+    case 'mobile_price_cards':
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {element.items?.map((item, i) => {
+            const carrierKey = { 'SK': 'skt', 'KT': 'kt', 'LG U+': 'lg' }[item.통신사] || '';
+            const services = element.services?.[item.통신사] || element.services?.[carrierKey] || [];
+            return <MobilePriceCard key={i} item={item} services={services} onAction={onAction} />;
+          })}
+        </div>
+      );
     case 'form':
       return (
         <InlineForm
