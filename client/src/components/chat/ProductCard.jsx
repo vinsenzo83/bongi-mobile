@@ -1,11 +1,21 @@
+const carrierColors = {
+  'SKT': { bg: '#e60012', border: '#e60012' },
+  'SK': { bg: '#e60012', border: '#e60012' },
+  'KT': { bg: '#1a73e8', border: '#1a73e8' },
+  'LG U+': { bg: '#e5007d', border: '#e5007d' },
+  'LG': { bg: '#e5007d', border: '#e5007d' },
+};
+
 export default function ProductCard({ product, onAction }) {
   if (!product) return null;
 
+  const colors = carrierColors[product.통신사] || { bg: '#5b5fc7', border: '#5b5fc7' };
+
   return (
-    <div style={styles.card}>
+    <div style={{ ...styles.card, borderColor: colors.border }}>
       <div style={styles.header}>
-        <span style={styles.badge}>{product.상품번호}</span>
-        <span style={styles.provider}>{product.통신사 || ''}</span>
+        <span style={{ ...styles.badge, background: colors.bg }}>{product.상품번호}</span>
+        {product.통신사 && <span style={{ ...styles.carrierBadge, background: colors.bg }}>{product.통신사}</span>}
       </div>
       <div style={styles.name}>{product.상품명}</div>
 
@@ -35,7 +45,7 @@ export default function ProductCard({ product, onAction }) {
       {onAction && (
         <div style={styles.actions}>
           <button
-            style={styles.actionBtn}
+            style={{ ...styles.actionBtn, background: colors.bg }}
             onClick={() => onAction(`${product.상품번호} 가입 상담 받고 싶어요`)}
           >
             가입 상담
@@ -77,7 +87,13 @@ const styles = {
     marginBottom: 6,
   },
   badge: {
-    background: '#5b5fc7',
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 700,
+    padding: '2px 8px',
+    borderRadius: 10,
+  },
+  carrierBadge: {
     color: '#fff',
     fontSize: 11,
     fontWeight: 700,

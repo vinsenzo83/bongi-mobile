@@ -341,6 +341,7 @@ function searchProducts({ provider, speed, include_tv, include_wifi, bundle_type
 
     return {
       상품번호: productId,
+      통신사: provName,
       상품명: p.name,
       속도: speeds[0],
       채널수: p.channels || '-',
