@@ -282,10 +282,13 @@ function searchProducts({ provider, speed, include_tv }) {
     // 최종 요금 = 1대결합가 - 결합할인 - 카드할인
     const finalPrice = monthlyFee - bundleDiscountAmount - cardDiscount;
 
-    // 상품번호 찾기
-    const catalogEntry = Object.entries(productCatalog).find(([, v]) =>
-      v.provider === provName && v.name.includes(p.name.split('+')[0].trim()) && v.speed === speeds[0]
+    // 상품번호 찾기 (전체 이름으로 매칭, 부분 매칭 시 가장 긴 이름 우선)
+    const catalogEntries = Object.entries(productCatalog).filter(([, v]) =>
+      v.provider === provName && v.speed === speeds[0] &&
+      (v.name === p.name || v.name.includes(p.name) || p.name.includes(v.name))
     );
+    // 이름이 가장 긴 것 = 가장 정확한 매칭 (인터넷+TV > 인터넷 단독)
+    const catalogEntry = catalogEntries.sort((a, b) => b[1].name.length - a[1].name.length)[0];
     const productId = catalogEntry ? catalogEntry[0] : '-';
 
     return {
