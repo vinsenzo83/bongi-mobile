@@ -47,12 +47,20 @@ function RichElement({ element, onAction }) {
       return <CompareTable items={element.items} onAction={onAction} />;
     case 'mobile_price_cards':
       return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {element.items?.map((item, i) => {
-            const carrierKey = { 'SK': 'skt', 'KT': 'kt', 'LG U+': 'lg' }[item.통신사] || '';
-            const services = element.services?.[item.통신사] || element.services?.[carrierKey] || [];
-            return <MobilePriceCard key={i} item={item} services={services} onAction={onAction} />;
-          })}
+        <div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {element.items?.map((item, i) => {
+              const carrierKey = { 'SK': 'skt', 'KT': 'kt', 'LG U+': 'lg' }[item.통신사] || '';
+              const services = element.services?.[item.통신사] || element.services?.[carrierKey] || [];
+              const plan = element.plans?.[item.통신사] || element.plans?.[carrierKey] || null;
+              return <MobilePriceCard key={i} item={item} services={services} plan={plan} onAction={onAction} />;
+            })}
+          </div>
+          {element.date && (
+            <div style={{ fontSize: 11, color: '#666', marginTop: 8, textAlign: 'center' }}>
+              📅 {element.date} 기준 시세 | 변동될 수 있으며 자세한 내용은 매장에 문의 바랍니다
+            </div>
+          )}
         </div>
       );
     case 'form':

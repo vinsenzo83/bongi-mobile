@@ -766,6 +766,12 @@ function searchMobilePrices({ provider, model }) {
     date: mobilePrices.date || '미정',
     count: results.length,
     단위: '만원 (번호이동/기기변경 기준)',
+    요금제: Object.fromEntries(
+      Object.entries(targetCarriers).map(([key, c]) => [
+        c.name,
+        { 요금제: c['5g_plan'] || (mobilePrices['5g_plans']?.[key]?.plan || '-'), 월정액: mobilePrices['5g_plans']?.[key]?.fee || 0 }
+      ])
+    ),
     results: results.slice(0, 15),
     부가서비스: addServices,
     안내: '공시지원금 기준 가격이며 매일 변동됩니다. 정확한 가격은 상담사에게 문의해주세요.',

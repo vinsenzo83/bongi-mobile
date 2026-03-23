@@ -276,6 +276,7 @@ function extractUIElements(messages) {
             type: 'mobile_price_cards',
             items: data.results.slice(0, 6),
             services: data.부가서비스 || {},
+            plans: data.요금제 || {},
             date: data.date || '',
           });
 

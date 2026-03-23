@@ -1,4 +1,4 @@
-export default function MobilePriceCard({ item, services, onAction }) {
+export default function MobilePriceCard({ item, services, plan, onAction }) {
   if (!item) return null;
 
   const 번이 = item['번이_raw'];
@@ -10,6 +10,13 @@ export default function MobilePriceCard({ item, services, onAction }) {
         <span style={styles.carrier}>{item.통신사}</span>
         <span style={styles.model}>{item.모델}</span>
       </div>
+
+      {plan && (
+        <div style={styles.planRow}>
+          <span style={styles.planLabel}>📋 요금제</span>
+          <span style={styles.planValue}>{plan.요금제} ({plan.월정액 ? `${(plan.월정액).toLocaleString()}원` : '-'})</span>
+        </div>
+      )}
 
       <div style={styles.priceRow}>
         <div style={styles.priceBox}>
@@ -86,8 +93,19 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 6,
   },
+  planRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: 11,
+    padding: '4px 8px',
+    background: '#252525',
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  planLabel: { color: '#999' },
+  planValue: { color: '#60a5fa', fontWeight: 600 },
   carrier: {
     background: '#dc2626',
     color: '#fff',
