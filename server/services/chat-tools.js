@@ -995,18 +995,34 @@ function searchRental({ category, brand, max_price }) {
     items = items.filter(i => i.monthlyRental <= max_price);
   }
 
+  // 브랜드별 최고 카드할인 매핑
+  const brandCardMap = {};
+  for (const card of rentalCards) {
+    const brand = card.rentalBrand;
+    const maxDiscount = card.maxMonthlyDiscount || 0;
+    if (!brandCardMap[brand] || maxDiscount > brandCardMap[brand].maxDiscount) {
+      brandCardMap[brand] = { name: card.cardName, maxDiscount, condition: card.discountCondition || '' };
+    }
+  }
+
   const results = items
     .sort((a, b) => a.monthlyRental - b.monthlyRental)
-    .map(i => ({
-      상품명: i.name,
-      브랜드: i.brand,
-      모델번호: i.model,
-      월렌탈료: `${i.monthlyRental.toLocaleString()}원`,
-      사은품: i.gift ? `${i.gift.toLocaleString()}원` : '-',
-      상품URL: i.url,
-      썸네일: i.thumbnail || '',
-      이미지: i.images?.[0] || '',
-    }));
+    .map(i => {
+      const cardInfo = brandCardMap[i.brand] || null;
+      const mainFuncNames = (i.specs?.mainFunctions || []).map(f => f.name).slice(0, 4);
+      return {
+        상품명: i.name,
+        브랜드: i.brand,
+        모델번호: i.model,
+        월렌탈료: `${i.monthlyRental.toLocaleString()}원`,
+        사은품: i.gift ? `${i.gift.toLocaleString()}원` : '-',
+        ...(cardInfo ? { 카드할인: `최대 -${cardInfo.maxDiscount.toLocaleString()}원 (${cardInfo.name})` } : {}),
+        ...(mainFuncNames.length > 0 ? { 기본기능: mainFuncNames } : {}),
+        상품URL: i.url,
+        썸네일: i.thumbnail || '',
+        이미지: i.images?.[0] || '',
+      };
+    });
 
   return {
     카테고리: RENTAL_CATEGORY_NAMES[category],

@@ -3,6 +3,7 @@ import ProductCard from './ProductCard.jsx';
 import CompareTable from './CompareTable.jsx';
 import InlineForm from './InlineForm.jsx';
 import MobilePriceCard from './MobilePriceCard.jsx';
+import RentalCard from './RentalCard.jsx';
 
 export default function MessageBubble({ message, onAction }) {
   const isUser = message.role === 'user';
@@ -40,6 +41,14 @@ function RichElement({ element, onAction }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {element.products?.map((p, i) => (
             <ProductCard key={i} product={p} onAction={onAction} />
+          ))}
+        </div>
+      );
+    case 'rental_cards':
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {element.products?.map((p, i) => (
+            <RentalCard key={i} product={p} onAction={onAction} />
           ))}
         </div>
       );

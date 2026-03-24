@@ -317,6 +317,27 @@ function extractUIElements(messages) {
           });
         }
 
+        // search_rental 결과 → 렌탈 카드
+        if (data.카테고리 && data.results && Array.isArray(data.results)) {
+          const topResults = data.results.slice(0, 3);
+          if (topResults.length > 0) {
+            elements.push({
+              type: 'rental_cards',
+              products: topResults,
+            });
+
+            elements.push({
+              type: 'actions',
+              buttons: [
+                { label: '이거 렌탈 상담받고 싶어요', action: `${topResults[0].상품명} 렌탈 상담 받고 싶어요` },
+                ...(topResults.length >= 2 ? [{ label: '두 개 비교해줘', action: `렌탈 비교 ${topResults.slice(0, 2).map((_, idx) => topResults[idx].모델번호).join(', ')}` }] : []),
+                { label: '다른 상품도 보여줘', action: '다른 렌탈 상품도 추천해줘' },
+                { label: '상담사 연결해줘', action: '상담사 연결해주세요' },
+              ],
+            });
+          }
+        }
+
         // compare_products 결과 → 비교표
         if (data.비교 && Array.isArray(data.비교)) {
           elements.push({
