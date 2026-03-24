@@ -88,6 +88,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+    uploadImage: (base64Image) => request('/reviews/upload-image', {
+      method: 'POST',
+      body: JSON.stringify({ image: base64Image }),
+    }),
   },
 
   // AI

@@ -12,6 +12,8 @@ const INITIAL_REVIEW_FORM = {
   productName: '',
   rating: 0,
   content: '',
+  imagePreview: null,
+  imageFile: null,
 };
 
 function StarRating({ value, onChange, readOnly = false }) {
@@ -63,6 +65,38 @@ export default function MyPage() {
     setReviewForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setReviewError('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setReviewError('이미지 크기는 3MB 이하여야 합니다.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setReviewForm(prev => ({
+        ...prev,
+        imagePreview: reader.result,
+        imageFile: file,
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageRemove = () => {
+    setReviewForm(prev => ({
+      ...prev,
+      imagePreview: null,
+      imageFile: null,
+    }));
+  };
+
   const handleReviewSubmit = async () => {
     setReviewError('');
     if (!reviewForm.category) {
@@ -84,11 +118,19 @@ export default function MyPage() {
 
     try {
       setReviewSubmitting(true);
+
+      let imageUrl = null;
+      if (reviewForm.imagePreview) {
+        const uploadResult = await api.reviews.uploadImage(reviewForm.imagePreview);
+        imageUrl = uploadResult.url;
+      }
+
       const created = await api.reviews.create({
         category: reviewForm.category,
         product_name: reviewForm.productName.trim(),
         rating: reviewForm.rating,
         content: reviewForm.content.trim(),
+        image_url: imageUrl,
       });
       setReviews(prev => [created, ...prev]);
       setReviewForm(INITIAL_REVIEW_FORM);
@@ -224,6 +266,53 @@ export default function MyPage() {
                     style={inputStyle}
                   />
                 </div>
+                <div>
+                  <label>사진 첨부 (선택, 3MB 이하)</label>
+                  {reviewForm.imagePreview ? (
+                    <div style={{ position: 'relative', display: 'inline-block', marginTop: 8 }}>
+                      <img
+                        src={reviewForm.imagePreview}
+                        alt="미리보기"
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: 200,
+                          borderRadius: 8,
+                          border: '1px solid var(--border)',
+                          display: 'block',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleImageRemove}
+                        style={{
+                          position: 'absolute',
+                          top: -8,
+                          right: -8,
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          background: 'var(--danger)',
+                          color: '#fff',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          lineHeight: '24px',
+                          textAlign: 'center',
+                          padding: 0,
+                        }}
+                      >
+                        X
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      style={{ ...inputStyle, marginTop: 4, padding: 8 }}
+                    />
+                  )}
+                </div>
                 {reviewError && (
                   <p style={{ color: 'var(--danger)', fontSize: 13 }}>{reviewError}</p>
                 )}
@@ -264,6 +353,19 @@ export default function MyPage() {
                       <div style={{ marginBottom: 8 }}>
                         <StarRating value={review.rating} readOnly />
                       </div>
+                      {review.image_url && (
+                        <img
+                          src={review.image_url}
+                          alt="후기 사진"
+                          style={{
+                            maxWidth: '100%',
+                            maxHeight: 200,
+                            borderRadius: 8,
+                            marginBottom: 8,
+                            display: 'block',
+                          }}
+                        />
+                      )}
                       <p style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6 }}>
                         {review.content}
                       </p>

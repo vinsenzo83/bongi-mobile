@@ -148,6 +148,19 @@ export default function Home() {
                     <StarRatingDisplay value={review.rating} />
                     <span className="badge badge-blue" style={{ fontSize: 11 }}>{review.category}</span>
                   </div>
+                  {review.image_url && (
+                    <img
+                      src={review.image_url}
+                      alt="후기 사진"
+                      style={{
+                        width: '100%',
+                        height: 120,
+                        objectFit: 'cover',
+                        borderRadius: 6,
+                        marginBottom: 8,
+                      }}
+                    />
+                  )}
                   <p style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, minHeight: 42, marginBottom: 10 }}>
                     {review.content && review.content.length > 60
                       ? review.content.slice(0, 60) + '...'

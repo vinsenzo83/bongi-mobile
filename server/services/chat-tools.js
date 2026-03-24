@@ -232,6 +232,17 @@ export const TOOLS = [
       required: ['product_id'],
     },
   },
+  {
+    name: 'search_reviews',
+    description: '카테고리별 고객 후기를 조회합니다. 상품 추천 시 관련 후기를 보여줘서 전환을 돕습니다.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        category: { type: 'string', description: '카테고리 (water-purifier, air-purifier, tv, washer-dryer, bidet, internet 등)' },
+        limit: { type: 'number', description: '조회 개수 (기본 3)' },
+      },
+    },
+  },
 ];
 
 // 도구 실행
@@ -251,6 +262,7 @@ export async function executeTool(name, input) {
     case 'search_rental': return searchRental(input);
     case 'compare_rental': return compareRental(input);
     case 'get_rental_detail': return getRentalDetail(input);
+    case 'search_reviews': return searchReviews(input);
     default: return { error: `알 수 없는 도구: ${name}` };
   }
 }
@@ -965,7 +977,7 @@ const RENTAL_CATEGORY_NAMES = {
   'dresser': '의류관리기',
 };
 
-function searchRental({ category, brand, max_price }) {
+async function searchRental({ category, brand, max_price }) {
   if (!category) {
     const summary = Object.entries(rentalProducts).map(([cat, items]) => ({
       카테고리: RENTAL_CATEGORY_NAMES[cat] || cat,
@@ -1036,11 +1048,14 @@ function searchRental({ category, brand, max_price }) {
       };
     });
 
+  // 해당 카테고리 후기 2개 자동 포함
+  const reviews = await searchReviews({ category, limit: 2 });
+
   return {
     카테고리: RENTAL_CATEGORY_NAMES[category],
     count: results.length,
     results,
-    후기안내: '이 카테고리 고객 후기를 보려면 "후기 보여줘"라고 말해주세요.',
+    관련후기: reviews.reviews,
   };
 }
 
@@ -1147,4 +1162,42 @@ function getRentalDetail({ product_id }) {
     썸네일: item.thumbnail || '',
     이미지: item.images || [],
   };
+}
+
+// ─── 고객 후기 조회 ───
+
+async function searchReviews({ category, limit = 3 }) {
+  if (!supabase) {
+    return { reviews: [], message: '후기 데이터를 불러올 수 없습니다.' };
+  }
+
+  try {
+    let query = supabase.from('bongi_reviews')
+      .select('*')
+      .order('rating', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      return { reviews: [], error: error.message };
+    }
+
+    return {
+      count: data.length,
+      reviews: data.map(r => ({
+        작성자: r.author_name,
+        별점: '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating),
+        상품: r.product_name,
+        내용: r.content,
+        작성일: new Date(r.created_at).toLocaleDateString('ko-KR'),
+      })),
+    };
+  } catch (err) {
+    return { reviews: [], error: err.message };
+  }
 }
