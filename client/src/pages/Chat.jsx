@@ -70,7 +70,7 @@ function WelcomeScreen({ onChipClick }) {
   const [chips, setChips] = useState(pickRandom);
 
   useEffect(() => {
-    const timer = setInterval(() => setChips(pickRandom()), 5000);
+    const timer = setInterval(() => setChips(pickRandom()), 8000);
     return () => clearInterval(timer);
   }, []);
 
