@@ -37,8 +37,11 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
 
         {/* 하단 */}
         <div style={styles.footer}>
-          <div style={styles.footerText}>🐟 리턴AI</div>
-          <div style={styles.footerSub}>광주/전라 8개 직영 매장</div>
+          <a href="/mypage" style={styles.mypageBtn}>📋 마이페이지</a>
+          <div style={{ marginTop: 12 }}>
+            <div style={styles.footerText}>🐟 리턴AI</div>
+            <div style={styles.footerSub}>광주/전라 8개 직영 매장</div>
+          </div>
         </div>
       </div>
     </>
@@ -122,6 +125,19 @@ const styles = {
   footer: {
     padding: '16px',
     borderTop: '1px solid #333',
+  },
+  mypageBtn: {
+    display: 'block',
+    padding: '10px 12px',
+    borderRadius: 8,
+    border: '1px solid #444',
+    background: '#2a2a2a',
+    color: '#ddd',
+    fontSize: 13,
+    fontWeight: 600,
+    textDecoration: 'none',
+    textAlign: 'center',
+    cursor: 'pointer',
   },
   footerText: { fontSize: 13, fontWeight: 600, color: '#aaa' },
   footerSub: { fontSize: 11, color: '#666', marginTop: 2 },
