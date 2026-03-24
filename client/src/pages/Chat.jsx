@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useChat } from '../hooks/useChat.js';
 import Sidebar from '../components/chat/Sidebar.jsx';
 import MessageList from '../components/chat/MessageList.jsx';
@@ -66,10 +66,13 @@ function WelcomeScreen({ onChipClick }) {
     { label: '가까운 매장 어디야?', icon: '📍' },
   ];
 
-  const [chips] = useState(() => {
-    const shuffled = [...allChips].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 6);
-  });
+  const pickRandom = () => [...allChips].sort(() => Math.random() - 0.5).slice(0, 6);
+  const [chips, setChips] = useState(pickRandom);
+
+  useEffect(() => {
+    const timer = setInterval(() => setChips(pickRandom()), 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div style={styles.welcome}>
