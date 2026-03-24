@@ -31,8 +31,22 @@ try {
   tradeinPhones = JSON.parse(readFileSync(join(providerDir, 'tradein_phones.json'), 'utf8'));
 } catch { /* 파일 없으면 빈 배열 */ }
 
+// 가전렌탈 상품 데이터 (rentre.kr)
+let rentalProducts = {};
+try {
+  rentalProducts = JSON.parse(readFileSync(join(providerDir, 'rental_products.json'), 'utf8'));
+} catch { /* 파일 없으면 빈 객체 */ }
+
+// 렌탈 제휴카드 데이터
+let rentalCards = [];
+try {
+  const rentalCardsData = JSON.parse(readFileSync(join(providerDir, 'rental_cards.json'), 'utf8'));
+  rentalCards = rentalCardsData.cards || rentalCardsData;
+} catch { /* 파일 없으면 빈 배열 */ }
+
 const mobileCount = Object.values(mobilePrices.carriers || {}).reduce((s, c) => s + (c.plans?.length || 0), 0);
-console.log(`✅ 3사 데이터 로드: 상품 ${Object.keys(productCatalog).length}개, 모바일요금제 ${mobilePlans.skt.length + mobilePlans.kt.length + mobilePlans.lg.length}개, 핸드폰시세 ${mobileCount}개, 중고폰매입 ${tradeinPhones.length}개`);
+const rentalCount = Object.values(rentalProducts).reduce((s, arr) => s + arr.length, 0);
+console.log(`✅ 3사 데이터 로드: 상품 ${Object.keys(productCatalog).length}개, 모바일요금제 ${mobilePlans.skt.length + mobilePlans.kt.length + mobilePlans.lg.length}개, 핸드폰시세 ${mobileCount}개, 중고폰매입 ${tradeinPhones.length}개, 가전렌탈 ${rentalCount}개, 제휴카드 ${rentalCards.length}개`);
 
 // Claude Tool Use 도구 정의
 export const TOOLS = [
@@ -176,6 +190,48 @@ export const TOOLS = [
       required: ['model'],
     },
   },
+  {
+    name: 'search_rental',
+    description: '가전렌탈 상품을 검색합니다. 공기청정기, TV, 세탁건조기, 비데 카테고리.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        category: {
+          type: 'string',
+          enum: ['air-purifier', 'tv', 'washer-dryer', 'bidet', 'water-purifier', 'fridge', 'air-conditioner', 'dish-washer', 'robot-cleaner', 'massage-chair', 'dryer', 'dresser'],
+          description: '카테고리: water-purifier(정수기), air-purifier(공기청정기), tv(TV), washer-dryer(세탁건조기), bidet(비데), fridge(냉장고), air-conditioner(에어컨), dish-washer(식기세척기), robot-cleaner(로봇청소기), massage-chair(안마의자), dryer(건조기), dresser(의류관리기)',
+        },
+        brand: { type: 'string', description: '브랜드 (코웨이, LG, 삼성, 쿠쿠, 현대큐밍, 현대유버스 등)' },
+        max_price: { type: 'number', description: '월 렌탈료 상한 (원)' },
+      },
+    },
+  },
+  {
+    name: 'compare_rental',
+    description: '2~3개 렌탈 상품을 비교합니다. 상품 ID로 비교.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        product_ids: {
+          type: 'array',
+          items: { type: 'string' },
+          description: '비교할 상품 ID 배열 (예: ["1522012053", "1600003603"])',
+        },
+      },
+      required: ['product_ids'],
+    },
+  },
+  {
+    name: 'get_rental_detail',
+    description: '렌탈 상품 ID로 상세 정보를 조회합니다.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        product_id: { type: 'string', description: '상품 ID' },
+      },
+      required: ['product_id'],
+    },
+  },
 ];
 
 // 도구 실행
@@ -192,6 +248,9 @@ export async function executeTool(name, input) {
     case 'request_callback': return requestCallback(input);
     case 'check_store': return checkStore(input);
     case 'estimate_tradein': return estimateTradein(input);
+    case 'search_rental': return searchRental(input);
+    case 'compare_rental': return compareRental(input);
+    case 'get_rental_detail': return getRentalDetail(input);
     default: return { error: `알 수 없는 도구: ${name}` };
   }
 }
@@ -886,5 +945,136 @@ function estimateTradein({ brand, model, condition, storage }) {
       ? `${results[0].모델명} ${grade}등급 매입가: ${results[0].매입가}\n(A등급 최대: ${topPrice.toLocaleString()}원)`
       : `${model} 매입가를 찾았어요! 용량별로 확인해주세요.`,
     안내: '정확한 금액은 매장 방문 시 기기 상태 검수 후 확정됩니다.',
+  };
+}
+
+// ─── 가전렌탈 검색 ───
+
+const RENTAL_CATEGORY_NAMES = {
+  'air-purifier': '공기청정기',
+  'tv': 'TV',
+  'washer-dryer': '세탁건조기',
+  'bidet': '비데',
+  'water-purifier': '정수기',
+  'fridge': '냉장고',
+  'air-conditioner': '에어컨',
+  'dish-washer': '식기세척기',
+  'robot-cleaner': '로봇청소기',
+  'massage-chair': '안마의자',
+  'dryer': '건조기',
+  'dresser': '의류관리기',
+};
+
+function searchRental({ category, brand, max_price }) {
+  if (!category) {
+    const summary = Object.entries(rentalProducts).map(([cat, items]) => ({
+      카테고리: RENTAL_CATEGORY_NAMES[cat] || cat,
+      상품수: items.length,
+      가격범위: `${Math.min(...items.map(i => i.monthlyRental)).toLocaleString()}원 ~ ${Math.max(...items.map(i => i.monthlyRental)).toLocaleString()}원`,
+    }));
+    return {
+      message: '어떤 가전을 찾으세요? 카테고리를 선택해주세요.',
+      categories: summary,
+    };
+  }
+
+  let items = rentalProducts[category] || [];
+  if (items.length === 0) {
+    return { error: `${RENTAL_CATEGORY_NAMES[category] || category} 카테고리에 상품이 없습니다.` };
+  }
+
+  if (brand) {
+    const brandLower = brand.toLowerCase();
+    items = items.filter(i =>
+      i.brand.toLowerCase().includes(brandLower) ||
+      i.name.toLowerCase().includes(brandLower)
+    );
+  }
+
+  if (max_price) {
+    items = items.filter(i => i.monthlyRental <= max_price);
+  }
+
+  const results = items
+    .sort((a, b) => a.monthlyRental - b.monthlyRental)
+    .map(i => ({
+      상품명: i.name,
+      브랜드: i.brand,
+      모델번호: i.model,
+      월렌탈료: `${i.monthlyRental.toLocaleString()}원`,
+      상품URL: i.url,
+      썸네일: i.thumbnail || '',
+      이미지: i.images?.[0] || '',
+    }));
+
+  return {
+    카테고리: RENTAL_CATEGORY_NAMES[category],
+    count: results.length,
+    results,
+  };
+}
+
+// ─── 렌탈 상품 비교 ───
+
+function getAllRentalProducts() {
+  return Object.values(rentalProducts).flat();
+}
+
+function findRentalById(productId) {
+  return getAllRentalProducts().find(item => item.id === productId || item.sku === productId);
+}
+
+function compareRental({ product_ids }) {
+  if (!Array.isArray(product_ids) || product_ids.length < 2 || product_ids.length > 3) {
+    return { error: '2~3개 상품 ID를 입력해주세요.' };
+  }
+
+  const found = [];
+  const notFound = [];
+
+  for (const pid of product_ids) {
+    const item = findRentalById(pid);
+    if (item) {
+      found.push({
+        상품ID: item.id,
+        상품명: item.name,
+        브랜드: item.brand,
+        모델번호: item.model,
+        월렌탈료: `${item.monthlyRental.toLocaleString()}원`,
+        카테고리: RENTAL_CATEGORY_NAMES[item.category] || item.category,
+        상품URL: item.url,
+        썸네일: item.thumbnail || '',
+      });
+    } else {
+      notFound.push(pid);
+    }
+  }
+
+  return {
+    비교: found,
+    count: found.length,
+    ...(notFound.length > 0 ? { error: `찾을 수 없는 상품 ID: ${notFound.join(', ')}` } : {}),
+  };
+}
+
+// ─── 렌탈 상품 상세 ───
+
+function getRentalDetail({ product_id }) {
+  const item = findRentalById(product_id);
+  if (!item) {
+    return { error: `상품 ID ${product_id}를 찾을 수 없습니다.` };
+  }
+
+  return {
+    상품ID: item.id,
+    상품명: item.name,
+    브랜드: item.brand,
+    모델번호: item.model,
+    월렌탈료: `${item.monthlyRental.toLocaleString()}원`,
+    카테고리: RENTAL_CATEGORY_NAMES[item.category] || item.category,
+    상품URL: item.url,
+    썸네일: item.thumbnail || '',
+    이미지: item.images || [],
+    ...(item.sku ? { SKU: item.sku } : {}),
   };
 }
