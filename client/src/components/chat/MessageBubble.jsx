@@ -134,7 +134,7 @@ function renderInline(text) {
       if (!isSafeImageUrl(url)) return `![${alt}](${url})`;
       const safeAlt = alt.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const safeUrl = url.replace(/"/g, '&quot;');
-      return `<img src="${safeUrl}" alt="${safeAlt}" style="max-width:100%;border-radius:8px;margin:8px 0;display:block" loading="lazy" />`;
+      return `<img src="${safeUrl}" alt="${safeAlt}" style="max-width:120px;max-height:120px;border-radius:8px;margin:8px 0;display:block;object-fit:contain;background:#fff;padding:4px" loading="lazy" />`;
     })
     .replace(/`([^`]+)`/g, '<code style="background:#333;padding:1px 6px;border-radius:4px;font-size:13px;color:#7ee787">$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#fff">$1</strong>')
