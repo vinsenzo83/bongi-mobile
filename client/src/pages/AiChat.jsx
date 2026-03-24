@@ -4,7 +4,7 @@ import { api } from '../utils/api.js';
 
 export default function AiChat() {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: '안녕하세요! 봉이모바일 AI 상담사입니다 🐟\n\n인터넷+TV, 가전렌탈, 알뜰폰, 중고폰 매입 등 궁금한 점을 편하게 물어보세요!\n\n예시:\n• "인터넷 요금 비교해줘"\n• "정수기 렌탈 얼마야?"\n• "알뜰폰 추천해줘"\n• "중고폰 팔고 싶어"' },
+    { role: 'assistant', content: '안녕하세요! 리턴AI 상담사입니다 🐟\n\n인터넷+TV, 가전렌탈, 알뜰폰, 중고폰 매입 등 궁금한 점을 편하게 물어보세요!\n\n예시:\n• "인터넷 요금 비교해줘"\n• "정수기 렌탈 얼마야?"\n• "알뜰폰 추천해줘"\n• "중고폰 팔고 싶어"' },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,7 +40,7 @@ export default function AiChat() {
       <div style={s.header}>
         <Link to="/" style={{ color: '#fff', textDecoration: 'none', fontSize: 13 }}>← 홈</Link>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>🐟 봉이모바일 AI 상담</div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>🐟 리턴AI 상담</div>
           <div style={{ fontSize: 11, opacity: 0.7 }}>무엇이든 물어보세요</div>
         </div>
         <div style={{ width: 40 }} />

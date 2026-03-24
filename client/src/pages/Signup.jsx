@@ -39,7 +39,7 @@ export default function Signup() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>🐟</div>
           <h2 style={{ fontSize: 24, marginBottom: 4 }}>회원가입</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>봉이모바일에 가입하고 혜택을 받으세요</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>리턴AI에 가입하고 혜택을 받으세요</p>
         </div>
 
         {error && (

@@ -32,7 +32,7 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
 
         {/* 하단 */}
         <div style={styles.footer}>
-          <div style={styles.footerText}>🐟 봉이모바일 AI</div>
+          <div style={styles.footerText}>🐟 리턴AI</div>
           <div style={styles.footerSub}>광주/전라 8개 직영 매장</div>
         </div>
       </div>

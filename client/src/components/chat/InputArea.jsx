@@ -41,7 +41,7 @@ export default function InputArea({ onSend, loading }) {
           </button>
         </div>
         <div style={styles.disclaimer}>
-          봉이모바일 AI는 실수할 수 있습니다. 정확한 가격은 상담사 확인을 권장합니다.
+          리턴AI는 실수할 수 있습니다. 정확한 가격은 상담사 확인을 권장합니다.
         </div>
       </div>
     </div>

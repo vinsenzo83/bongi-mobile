@@ -1,4 +1,4 @@
-# 봉이모바일 생활 서비스 AI 플랫폼 아키텍처 설계서
+# 리턴AI 생활 서비스 AI 플랫폼 아키텍처 설계서
 
 > 작성일: 2026-03-23 (v3 — 최종 비전 반영)
 > 작성: architect 에이전트
@@ -11,11 +11,11 @@
 
 ### "AI에게 물어보면 생활의 모든 것을 해결"
 
-봉이모바일 AI는 단순한 통신 챗봇이 아니라, **ChatGPT/Gemini 같은 AI 채팅 플랫폼**을 생활 서비스에 특화한 것이다.
+리턴AI는 단순한 통신 챗봇이 아니라, **ChatGPT/Gemini 같은 AI 채팅 플랫폼**을 생활 서비스에 특화한 것이다.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                    봉이모바일 AI 플랫폼                        │
+│                    리턴AI 플랫폼                        │
 │                                                               │
 │   "인터넷 추천해줘"  "정수기 렌탈 비교"  "이사 견적 알려줘"     │
 │   "보험 비교해줘"    "중고폰 팔래"       "카드 추천"            │
@@ -725,7 +725,7 @@ export default {
 `processMessage()` Layer 1+2에서 사용. `tool_choice: { type: "tool", name: "analyze_message" }`로 호출하므로 반드시 구조화된 분석 결과만 반환.
 
 ```javascript
-const NLU_SYSTEM_PROMPT = `당신은 봉이모바일의 NLU(자연어 이해) 분석 엔진입니다.
+const NLU_SYSTEM_PROMPT = `당신은 리턴AI의 NLU(자연어 이해) 분석 엔진입니다.
 
 ## 역할
 고객 메시지를 분석하여 의도(intent), 정보(slot), 다음 액션을 판별합니다.
@@ -778,9 +778,9 @@ ${pluginDescriptions}
 `;
 }
 
-const RESPONSE_CORE_PROMPT = `당신은 봉이모바일 AI — 생활 서비스 AI 플랫폼의 상담 어시스턴트입니다.
+const RESPONSE_CORE_PROMPT = `당신은 리턴AI — 생활 서비스 AI 플랫폼의 상담 어시스턴트입니다.
 
-## 봉이모바일 AI 플랫폼
+## 리턴AI 플랫폼
 "AI에게 물어보면 생활의 모든 것을 해결"
 광주/전라 8개 직영 매장 운영. 대표번호: 1600-XXXX
 
@@ -1019,7 +1019,7 @@ client/src/
 #### `Chat.jsx` — 메인 페이지
 
 - 전체 화면 채팅 인터페이스 (모바일 퍼스트, max-width: 768px)
-- 상단: 봉이모바일 로고 + "AI 상담" 타이틀
+- 상단: 리턴AI 로고 + "AI 상담" 타이틀
 - 중앙: 메시지 목록 (자동 스크롤)
 - 하단: 입력 영역 고정
 
@@ -1028,7 +1028,7 @@ client/src/
 **Step 1: 진입 — 카테고리 선택**
 ```
 ┌──────────────────────────────────┐
-│ AI: 안녕하세요! 봉이모바일이에요  │
+│ AI: 안녕하세요! 리턴AI이에요  │
 │ 어떤 상품이 궁금하세요?          │
 │                                  │
 │ ┌─ CategoryChips ─────────────┐  │
@@ -1728,15 +1728,15 @@ CREATE INDEX idx_chat_sessions_active ON bongi_chat_sessions(last_active_at);
 
 ---
 
-## 12. smartchoice-v2 → 봉이모바일 전환 매핑
+## 12. smartchoice-v2 → 리턴AI 전환 매핑
 
-| smartchoice-v2 | 봉이모바일 | 변경 이유 |
+| smartchoice-v2 | 리턴AI | 변경 이유 |
 |----------------|-----------|----------|
 | Python + Streamlit | React + Vite + Express | 리치 UI, 모바일 최적화, 기존 코드베이스 활용 |
 | Claude Haiku 4.5 | Claude Sonnet 4 (Tool Use) | Tool Use로 구조화된 상품 검색/비교, 더 정확한 추천 |
 | 상품 JSON → system prompt | Tool Use → search_products | 상품 수 확장 시 토큰 절약, 동적 필터링 |
 | 3사 인터넷/TV만 | 인터넷+TV + 가전렌탈 + 알뜰폰 + 중고폰 | 4개 카테고리 확장, 카테고리별 설문 분기 |
-| 아정당 크롤링 데이터 | 봉이모바일 자체 상품 DB (products.js → Supabase) | 자체 데이터, 가격/사은품 직접 관리 |
+| 아정당 크롤링 데이터 | 리턴AI 자체 상품 DB (products.js → Supabase) | 자체 데이터, 가격/사은품 직접 관리 |
 | 리드 CSV 저장 | Supabase bongi_applications + bongi_customers | CRM 자동 연동, 상담사 자동 배정 |
 | 통신사 선택 칩 | 카테고리 선택 칩 (4종) | 상품 카테고리가 4개로 확장 |
 | 설문 4개 라디오 | 카테고리별 2~4개 라디오 | 각 카테고리 특성에 맞는 설문 |

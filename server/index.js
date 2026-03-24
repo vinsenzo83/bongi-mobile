@@ -58,7 +58,7 @@ app.use('/api/crm', authenticateJWT, requireMinRole('agent'), crmRoutes);
 app.use('/api/cti', authenticateJWT, requireMinRole('agent'), ctiRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: '봉이모바일 API' });
+  res.json({ status: 'ok', service: '리턴AI API' });
 });
 
 // 프로덕션: 클라이언트 정적 파일 서빙
@@ -78,5 +78,5 @@ if (existsSync(clientDist)) {
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`봉이모바일 서버 실행: http://localhost:${PORT}`);
+  console.log(`리턴AI 서버 실행: http://localhost:${PORT}`);
 });

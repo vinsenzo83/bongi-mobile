@@ -1,4 +1,4 @@
-// 봉이모바일 8개 직영 매장 정보
+// 리턴AI 8개 직영 매장 정보
 export const stores = [
   {
     id: 1,

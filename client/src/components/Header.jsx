@@ -19,7 +19,7 @@ export default function Header() {
       <div className="container" style={styles.inner}>
         <Link to="/" style={styles.logo}>
           <span style={styles.logoIcon}>🐟</span>
-          <span style={styles.logoText}>봉이모바일</span>
+          <span style={styles.logoText}>리턴AI</span>
         </Link>
         <nav style={styles.nav}>
           {navItems.map(item => (

@@ -23,7 +23,7 @@ export default function Home() {
           <div style={styles.heroBadge}>🐟 광주/전라 8개 직영 매장</div>
           <h1 style={styles.heroTitle}>
             인터넷, 렌탈, 알뜰폰<br />
-            <span style={{ color: 'var(--primary)' }}>봉이모바일</span>에서 한 번에
+            <span style={{ color: 'var(--primary)' }}>리턴AI</span>에서 한 번에
           </h1>
           <p style={styles.heroDesc}>
             업계 최고 현금 사은품 + 직영 매장의 신뢰<br />
@@ -80,7 +80,7 @@ export default function Home() {
       {/* Trust */}
       <section className="section">
         <div className="container">
-          <h2 className="section-title">왜 봉이모바일인가?</h2>
+          <h2 className="section-title">왜 리턴AI인가?</h2>
           <div className="grid-3" style={{ marginTop: 24 }}>
             <div className="card">
               <div style={{ fontSize: 28, marginBottom: 12 }}>🏪</div>

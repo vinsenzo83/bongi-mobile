@@ -92,7 +92,7 @@ async function processMessage(sessionId, userMessage) {
 ### 3.3 시스템 프롬프트
 
 ```
-당신은 봉이모바일 AI입니다. 생활 서비스 전문.
+당신은 리턴AI입니다. 생활 서비스 전문.
 
 취급: 인터넷+TV, 가전렌탈, 알뜰폰, 중고폰 매입 / 8개 직영 매장 (광주/전라)
 

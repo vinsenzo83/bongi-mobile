@@ -3,14 +3,14 @@ export default function Footer() {
     <footer style={styles.footer}>
       <div className="container" style={styles.inner}>
         <div>
-          <div style={styles.brand}>🐟 봉이모바일</div>
+          <div style={styles.brand}>🐟 리턴AI</div>
           <p style={styles.text}>광주/전라 8개 직영 매장 운영</p>
           <p style={styles.text}>대표번호: 1600-XXXX</p>
         </div>
         <div style={styles.links}>
           <a href="/stores" style={styles.link}>매장 안내</a>
           <a href="/apply" style={styles.link}>상담 신청</a>
-          <span style={styles.text}>© 2026 봉이모바일</span>
+          <span style={styles.text}>© 2026 리턴AI</span>
         </div>
       </div>
     </footer>

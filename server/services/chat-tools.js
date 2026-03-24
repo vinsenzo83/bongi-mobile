@@ -154,7 +154,7 @@ export const TOOLS = [
   },
   {
     name: 'check_store',
-    description: '봉이모바일 직영 매장 정보를 조회합니다.',
+    description: '리턴AI 직영 매장 정보를 조회합니다.',
     input_schema: {
       type: 'object',
       properties: {

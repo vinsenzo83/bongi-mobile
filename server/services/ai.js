@@ -7,9 +7,9 @@ const client = process.env.ANTHROPIC_API_KEY
 
 if (!client) console.warn('⚠ ANTHROPIC_API_KEY 미설정 — AI 기능 비활성화');
 
-const SYSTEM_PROMPT = `당신은 봉이모바일의 AI 상담 어시스턴트입니다.
+const SYSTEM_PROMPT = `당신은 리턴AI의 AI 상담 어시스턴트입니다.
 
-## 봉이모바일 소개
+## 리턴AI 소개
 - 광주/전라 8개 직영 매장을 운영하는 통신 판매 전문 기업
 - 인터넷+TV, 가전렌탈, 알뜰폰(유심), 중고폰 매입 4가지 상품을 취급
 - 대표번호: 1600-XXXX
@@ -124,7 +124,7 @@ function getStaticRecommendation(customer) {
 // CRM 상담사용 — 상담 스크립트 생성
 export async function generateScript(customer, product) {
   if (!client) {
-    return `안녕하세요 ${customer.name}님, 봉이모바일입니다. ${product ? product.name + ' 상품에 관심을 가져주셔서 감사합니다.' : '무엇을 도와드릴까요?'}`;
+    return `안녕하세요 ${customer.name}님, 리턴AI입니다. ${product ? product.name + ' 상품에 관심을 가져주셔서 감사합니다.' : '무엇을 도와드릴까요?'}`;
   }
 
   const response = await client.messages.create({
@@ -132,7 +132,7 @@ export async function generateScript(customer, product) {
     max_tokens: 200,
     messages: [{
       role: 'user',
-      content: `봉이모바일 상담사 스크립트를 생성해주세요.
+      content: `리턴AI 상담사 스크립트를 생성해주세요.
 고객: ${customer.name} (${customer.db_type === 'mnp' ? '통신사 변경' : customer.db_type === 'device_change' ? '기기변경' : '신규'})
 ${product ? '관심 상품: ' + product.name : ''}
 3문장 이내의 자연스러운 상담 오프닝 멘트를 만들어주세요.`,

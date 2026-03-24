@@ -39,7 +39,7 @@ export default function Dashboard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800 }}>CRM 대시보드</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>봉이모바일 고객 관리 시스템</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>리턴AI 고객 관리 시스템</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <Link to="/admin/incentive" className="btn btn-outline">인센티브</Link>

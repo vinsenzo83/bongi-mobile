@@ -1,4 +1,4 @@
-// 봉이모바일 상품 데이터 (1차 MVP)
+// 리턴AI 상품 데이터 (1차 MVP)
 // 실제 운영 시 Supabase DB로 이전
 
 export const products = {

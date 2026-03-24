@@ -35,7 +35,7 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>🐟</div>
           <h2 style={{ fontSize: 24, marginBottom: 4 }}>로그인</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>봉이모바일 계정으로 로그인하세요</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>리턴AI 계정으로 로그인하세요</p>
         </div>
 
         {error && (

@@ -1,4 +1,4 @@
-# 봉이모바일 Phase 1-1 TDD 테스트 계획
+# 리턴AI Phase 1-1 TDD 테스트 계획
 
 ## 1. 테스트 프레임워크 선택: Vitest
 

@@ -1,4 +1,4 @@
-// 봉이모바일 인센티브 계산 엔진
+// 리턴AI 인센티브 계산 엔진
 import { BASE_SALARY, INCENTIVE_PER_ITEM, GRADES } from '../data/constants.js';
 
 export function calculateGrade(totalCount) {

@@ -12,7 +12,7 @@ export default function Stores() {
     <section className="section">
       <div className="container">
         <h2 className="section-title">매장 안내</h2>
-        <p className="section-desc">가까운 봉이모바일 직영 매장을 방문하세요</p>
+        <p className="section-desc">가까운 리턴AI 직영 매장을 방문하세요</p>
         <div className="grid-2">
           {stores.map(store => (
             <div key={store.id} className="card">

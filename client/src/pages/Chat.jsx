@@ -26,7 +26,7 @@ export default function Chat() {
         {/* 탑바 */}
         <div style={styles.topbar}>
           <button onClick={() => setSidebarOpen(true)} style={styles.menuBtn}>☰</button>
-          <span style={styles.title}>🐟 봉이모바일</span>
+          <span style={styles.title}>🐟 리턴AI</span>
           <button onClick={chat.startNewSession} style={styles.newBtn}>+</button>
         </div>
 
@@ -57,8 +57,8 @@ function WelcomeScreen({ onChipClick }) {
   return (
     <div style={styles.welcome}>
       <div style={styles.welcomeIcon}>🐟</div>
-      <h1 style={styles.welcomeTitle}>봉이모바일</h1>
-      <p style={styles.welcomeSlogan}>돈 버는 소비의 시작, 봉이모바일</p>
+      <h1 style={styles.welcomeTitle}>리턴AI</h1>
+      <p style={styles.welcomeSlogan}>돈 버는 소비의 시작, 리턴AI</p>
       <p style={styles.welcomeSub}>인터넷, 렌탈, 알뜰폰, 중고폰 매입까지<br/>무엇이든 물어보세요</p>
       <div style={styles.chips}>
         {chips.map(c => (
