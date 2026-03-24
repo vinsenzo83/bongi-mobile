@@ -38,13 +38,27 @@ export default function DonJikimi() {
   const [editForm, setEditForm] = useState({ title: '', target_date: '', memo: '' });
   const [editingId, setEditingId] = useState(null);
 
-  const fetchAlarms = useCallback(async () => {
-    if (!user) return;
+  const STORAGE_KEY = 'donjikimi_alarms';
+
+  const getLocalAlarms = () => {
     try {
-      const data = await api.alarms.list();
-      setAlarms(data.alarms || []);
-    } catch {
-      // 조용히 실패
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    } catch { return []; }
+  };
+  const saveLocalAlarms = (items) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  };
+
+  const fetchAlarms = useCallback(async () => {
+    if (user) {
+      try {
+        const data = await api.alarms.list();
+        setAlarms(data.alarms || []);
+      } catch {
+        setAlarms(getLocalAlarms());
+      }
+    } else {
+      setAlarms(getLocalAlarms());
     }
   }, [user]);
 
@@ -61,10 +75,20 @@ export default function DonJikimi() {
         memo: editForm.memo,
       };
 
-      if (editingId) {
-        await api.alarms.update(editingId, payload);
+      if (user) {
+        if (editingId) {
+          await api.alarms.update(editingId, payload);
+        } else {
+          await api.alarms.create(payload);
+        }
       } else {
-        await api.alarms.create(payload);
+        const local = getLocalAlarms();
+        if (editingId) {
+          const updated = local.map(a => a.id === editingId ? { ...a, ...payload } : a);
+          saveLocalAlarms(updated);
+        } else {
+          saveLocalAlarms([...local, { ...payload, id: `local_${Date.now()}`, created_at: new Date().toISOString() }]);
+        }
       }
       setEditingType(null);
       setEditingId(null);
@@ -77,7 +101,11 @@ export default function DonJikimi() {
 
   const handleDelete = async (id) => {
     try {
-      await api.alarms.remove(id);
+      if (user) {
+        await api.alarms.remove(id);
+      } else {
+        saveLocalAlarms(getLocalAlarms().filter(a => a.id !== id));
+      }
       fetchAlarms();
     } catch (e) {
       alert(e.message || '삭제 실패');
@@ -101,24 +129,6 @@ export default function DonJikimi() {
     setEditingId(null);
     setEditForm({ title: '', target_date: '', memo: '' });
   };
-
-  // 비로그인
-  if (!user) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.header} onClick={() => setExpanded(!expanded)}>
-          <span style={styles.headerIcon}>{'\uD83D\uDEE1\uFE0F'}</span>
-          <span style={styles.headerTitle}>돈지키미</span>
-          <span style={styles.chevron}>{expanded ? '\u25B2' : '\u25BC'}</span>
-        </div>
-        {expanded && (
-          <div style={styles.loginNotice}>
-            로그인하면 약정/요금 알람을 받을 수 있어요
-          </div>
-        )}
-      </div>
-    );
-  }
 
   const getAlarmsForType = (type) => alarms.filter(a => a.alarm_type === type);
 

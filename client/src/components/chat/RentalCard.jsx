@@ -87,7 +87,7 @@ export default function RentalCard({ product, onAction }) {
       )}
 
       <div style={styles.ctaMent}>
-        <span>🎁 평균 25만원 사은품 수령</span>
+        <span>🎁 사은품 {product.사은품 || product.gift ? (product.사은품 || `${Number(product.gift).toLocaleString()}원`) : ''} 지급</span>
       </div>
 
       {onAction && (
