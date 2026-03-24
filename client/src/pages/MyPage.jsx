@@ -3,17 +3,101 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { api } from '../utils/api.js';
 
+const REVIEW_CATEGORIES = [
+  '인터넷', '정수기', '공기청정기', 'TV', '세탁건조기', '비데', '냉장고', '에어컨', '기타',
+];
+
+const INITIAL_REVIEW_FORM = {
+  category: '',
+  productName: '',
+  rating: 0,
+  content: '',
+};
+
+function StarRating({ value, onChange, readOnly = false }) {
+  return (
+    <span style={{ display: 'inline-flex', gap: 2 }}>
+      {[1, 2, 3, 4, 5].map(star => (
+        <span
+          key={star}
+          onClick={() => !readOnly && onChange(star)}
+          style={{
+            cursor: readOnly ? 'default' : 'pointer',
+            fontSize: readOnly ? 14 : 24,
+            color: star <= value ? '#FFD700' : '#555',
+            userSelect: 'none',
+          }}
+        >
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export default function MyPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('applications');
   const [applications, setApplications] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [reviewForm, setReviewForm] = useState(INITIAL_REVIEW_FORM);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
   useEffect(() => {
     api.crm.getApplications()
       .then(setApplications)
       .catch(() => setApplications([]));
   }, []);
+
+  useEffect(() => {
+    if (tab === 'reviews') {
+      api.reviews.list()
+        .then(data => setReviews(Array.isArray(data) ? data : (data.reviews || [])))
+        .catch(() => setReviews([]));
+    }
+  }, [tab]);
+
+  const handleReviewChange = (field, value) => {
+    setReviewForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleReviewSubmit = async () => {
+    setReviewError('');
+    if (!reviewForm.category) {
+      setReviewError('카테고리를 선택해주세요');
+      return;
+    }
+    if (!reviewForm.productName.trim()) {
+      setReviewError('상품명을 입력해주세요');
+      return;
+    }
+    if (reviewForm.rating === 0) {
+      setReviewError('별점을 선택해주세요');
+      return;
+    }
+    if (reviewForm.content.trim().length < 10) {
+      setReviewError('후기 내용을 10자 이상 입력해주세요');
+      return;
+    }
+
+    try {
+      setReviewSubmitting(true);
+      const created = await api.reviews.create({
+        category: reviewForm.category,
+        product_name: reviewForm.productName.trim(),
+        rating: reviewForm.rating,
+        content: reviewForm.content.trim(),
+      });
+      setReviews(prev => [created, ...prev]);
+      setReviewForm(INITIAL_REVIEW_FORM);
+    } catch (error) {
+      setReviewError(error.message || '후기 작성에 실패했습니다');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -23,6 +107,7 @@ export default function MyPage() {
   const tabs = [
     { id: 'applications', label: '신청 내역' },
     { id: 'contracts', label: '계약 상태' },
+    { id: 'reviews', label: '후기' },
     { id: 'profile', label: '내 정보' },
   ];
 
@@ -90,6 +175,111 @@ export default function MyPage() {
           </div>
         )}
 
+        {/* 후기 */}
+        {tab === 'reviews' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* 후기 작성 폼 */}
+            <div className="card">
+              <h3 style={{ fontSize: 16, marginBottom: 16 }}>후기 작성</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label>카테고리</label>
+                  <select
+                    value={reviewForm.category}
+                    onChange={e => handleReviewChange('category', e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">카테고리 선택</option>
+                    {REVIEW_CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label>상품명</label>
+                  <input
+                    type="text"
+                    placeholder="이용 중인 상품명"
+                    value={reviewForm.productName}
+                    onChange={e => handleReviewChange('productName', e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label>별점</label>
+                  <div>
+                    <StarRating
+                      value={reviewForm.rating}
+                      onChange={val => handleReviewChange('rating', val)}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label>후기 내용 (최소 10자)</label>
+                  <textarea
+                    rows={4}
+                    placeholder="최소 10자 이상"
+                    value={reviewForm.content}
+                    onChange={e => handleReviewChange('content', e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+                {reviewError && (
+                  <p style={{ color: 'var(--danger)', fontSize: 13 }}>{reviewError}</p>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={handleReviewSubmit}
+                  disabled={reviewSubmitting}
+                  style={{ alignSelf: 'flex-start' }}
+                >
+                  {reviewSubmitting ? '작성 중...' : '후기 작성'}
+                </button>
+              </div>
+            </div>
+
+            {/* 내 후기 목록 */}
+            <div className="card">
+              <h3 style={{ fontSize: 16, marginBottom: 16 }}>내 후기 목록</h3>
+              {reviews.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+                  아직 작성한 후기가 없어요. 이용 중인 상품의 후기를 남겨주세요!
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {reviews.map(review => (
+                    <div
+                      key={review.id}
+                      style={{
+                        padding: 16,
+                        borderRadius: 8,
+                        border: '1px solid var(--border)',
+                        background: 'var(--bg)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 15 }}>{review.product_name}</span>
+                        <span className="badge badge-blue">{review.category}</span>
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <StarRating value={review.rating} readOnly />
+                      </div>
+                      <p style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6 }}>
+                        {review.content}
+                      </p>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>
+                        {review.created_at
+                          ? new Date(review.created_at).toLocaleDateString('ko-KR')
+                          : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 내 정보 */}
         {tab === 'profile' && (
           <div className="card">
@@ -109,3 +299,4 @@ export default function MyPage() {
 
 const th = { textAlign: 'left', padding: '8px 10px', fontSize: 12, color: 'var(--text-secondary)' };
 const td = { padding: '10px', verticalAlign: 'middle' };
+const inputStyle = { background: '#2a2a2a', border: '1px solid #444', borderRadius: 6, padding: '10px 12px', color: 'var(--text)', width: '100%', fontSize: 14 };

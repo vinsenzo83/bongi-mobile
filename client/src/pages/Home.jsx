@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../utils/api.js';
 
 const categories = [
   { id: 'internet', name: '인터넷+TV', icon: '📡', desc: '초고속 인터넷과 IPTV 결합', color: '#2563eb', badge: '수익 1위' },
@@ -14,7 +16,33 @@ const applySteps = [
   { icon: '✅', title: '가입 완료', desc: '상담사가 바로 처리해드립니다' },
 ];
 
+function maskName(name) {
+  if (!name || name.length <= 1) return name || '익명';
+  if (name.length === 2) return name[0] + '*';
+  return name[0] + '*'.repeat(name.length - 2) + name[name.length - 1];
+}
+
+function StarRatingDisplay({ value }) {
+  return (
+    <span style={{ display: 'inline-flex', gap: 1 }}>
+      {[1, 2, 3, 4, 5].map(star => (
+        <span key={star} style={{ fontSize: 14, color: star <= value ? '#FFD700' : 'var(--border)' }}>
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export default function Home() {
+  const [recentReviews, setRecentReviews] = useState([]);
+
+  useEffect(() => {
+    api.reviews.list({ limit: 4 })
+      .then(data => setRecentReviews(Array.isArray(data) ? data.slice(0, 4) : (data.reviews || []).slice(0, 4)))
+      .catch(() => setRecentReviews([]));
+  }, []);
+
   return (
     <>
       {/* Hero */}
@@ -106,6 +134,35 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 실제 고객 후기 */}
+      {recentReviews.length > 0 && (
+        <section className="section" style={{ background: '#f1f5f9' }}>
+          <div className="container">
+            <h2 className="section-title">실제 고객 후기</h2>
+            <p className="section-desc">리턴AI를 이용하신 고객님들의 솔직한 후기</p>
+            <div style={styles.reviewScroll}>
+              {recentReviews.map(review => (
+                <div key={review.id} className="card" style={styles.reviewCard}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <StarRatingDisplay value={review.rating} />
+                    <span className="badge badge-blue" style={{ fontSize: 11 }}>{review.category}</span>
+                  </div>
+                  <p style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, minHeight: 42, marginBottom: 10 }}>
+                    {review.content && review.content.length > 60
+                      ? review.content.slice(0, 60) + '...'
+                      : review.content}
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--text-secondary)' }}>
+                    <span>{maskName(review.author_name || review.display_name)}님</span>
+                    <span>{review.created_at ? new Date(review.created_at).toLocaleDateString('ko-KR') : ''}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }
@@ -136,5 +193,18 @@ const styles = {
     opacity: 0.85,
     lineHeight: 1.7,
     marginBottom: 28,
+  },
+  reviewScroll: {
+    display: 'flex',
+    gap: 16,
+    overflowX: 'auto',
+    paddingBottom: 8,
+    scrollSnapType: 'x mandatory',
+  },
+  reviewCard: {
+    minWidth: 260,
+    maxWidth: 280,
+    flex: '0 0 auto',
+    scrollSnapAlign: 'start',
   },
 };

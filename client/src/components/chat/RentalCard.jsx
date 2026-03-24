@@ -80,6 +80,16 @@ export default function RentalCard({ product, onAction }) {
         </div>
       )}
 
+      {product.rating && (
+        <div style={styles.ratingBadge}>
+          <span>★ {product.rating} 고객만족도</span>
+        </div>
+      )}
+
+      <div style={styles.ctaMent}>
+        <span>🎁 평균 25만원 사은품 수령</span>
+      </div>
+
       {onAction && (
         <div style={styles.actions}>
           <button
@@ -261,5 +271,28 @@ const styles = {
     color: '#ccc',
     fontSize: 13,
     cursor: 'pointer',
+  },
+  ratingBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '4px 10px',
+    background: '#2d1f0f',
+    border: '1px solid #6b4c1e',
+    borderRadius: 8,
+    fontSize: 12,
+    color: '#fbbf24',
+    fontWeight: 600,
+    marginBottom: 6,
+  },
+  ctaMent: {
+    padding: '6px 10px',
+    background: '#0f2d1a',
+    border: '1px solid #1e6b3a',
+    borderRadius: 8,
+    fontSize: 12,
+    color: '#4ade80',
+    fontWeight: 600,
+    textAlign: 'center',
+    marginBottom: 6,
   },
 };

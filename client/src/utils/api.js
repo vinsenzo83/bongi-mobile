@@ -78,6 +78,18 @@ export const api = {
     }),
   },
 
+  // 후기
+  reviews: {
+    list: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return request(`/reviews${qs ? '?' + qs : ''}`);
+    },
+    create: (data) => request('/reviews', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  },
+
   // AI
   ai: {
     chat: (messages) => request('/ai/chat', {

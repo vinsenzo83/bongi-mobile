@@ -7,6 +7,7 @@ import productRoutes from './routes/products.js';
 import applicationRoutes from './routes/applications.js';
 import storeRoutes from './routes/stores.js';
 import crmRoutes from './routes/crm.js';
+import reviewRoutes from './routes/reviews.js';
 import ctiRoutes from './routes/cti.js';
 import aiRoutes from './routes/ai.js';
 import mockRoutes from './routes/mock.js';
@@ -46,6 +47,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/applications', applicationLimiter, applicationRoutes);
 app.use('/api/mock', mockRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // ── 채팅 (공개) ──
 app.use('/api/chat', chatRoutes);
