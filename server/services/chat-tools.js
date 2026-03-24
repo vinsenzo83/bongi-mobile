@@ -1040,6 +1040,7 @@ function searchRental({ category, brand, max_price }) {
     카테고리: RENTAL_CATEGORY_NAMES[category],
     count: results.length,
     results,
+    후기안내: '이 카테고리 고객 후기를 보려면 "후기 보여줘"라고 말해주세요.',
   };
 }
 
