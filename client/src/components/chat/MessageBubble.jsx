@@ -4,15 +4,21 @@ import CompareTable from './CompareTable.jsx';
 import InlineForm from './InlineForm.jsx';
 import MobilePriceCard from './MobilePriceCard.jsx';
 import RentalCard from './RentalCard.jsx';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 export default function MessageBubble({ message, onAction }) {
   const isUser = message.role === 'user';
+  const isMobile = useIsMobile();
 
   return (
     <div style={{ ...styles.row, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
       {!isUser && <div style={styles.avatar}>🐟</div>}
 
-      <div style={{ ...styles.bubble, ...(isUser ? styles.userBubble : styles.aiBubble) }}>
+      <div style={{
+        ...styles.bubble,
+        ...(isUser ? styles.userBubble : styles.aiBubble),
+        ...(isMobile ? styles.bubbleMobile : {}),
+      }}>
         {/* 마크다운 렌더링 */}
         <div
           style={styles.content}
@@ -106,12 +112,12 @@ function renderTable(tableLines) {
 
   const bodyRows = body.map(row => {
     const cells = row.map(c =>
-      `<td style="padding:5px 12px;border-bottom:1px solid #333;font-size:13px">${renderInline(c)}</td>`
+      `<td style="padding:5px 12px;border-bottom:1px solid #333;font-size:13px;white-space:nowrap">${renderInline(c)}</td>`
     ).join('');
     return `<tr>${cells}</tr>`;
   }).join('');
 
-  return `<div style="overflow-x:auto;margin:8px 0"><table style="border-collapse:collapse;width:100%;background:#1a1a1a;border-radius:8px">`
+  return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0"><table style="border-collapse:collapse;width:max-content;min-width:100%;background:#1a1a1a;border-radius:8px">`
     + `<thead><tr>${thCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
 }
 
@@ -210,6 +216,11 @@ const styles = {
     lineHeight: 1.7,
     fontSize: 15,
   },
+  bubbleMobile: {
+    maxWidth: '88%',
+    fontSize: 14,
+    padding: '8px 12px',
+  },
   userBubble: {
     background: '#303030',
     borderBottomRightRadius: 4,
@@ -222,5 +233,6 @@ const styles = {
   },
   content: {
     wordBreak: 'break-word',
+    overflowX: 'auto',
   },
 };

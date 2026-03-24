@@ -171,10 +171,10 @@ export default function MyPage() {
         </div>
 
         {/* 탭 */}
-        <div style={{ display: 'flex', gap: 4, marginTop: 20, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 4, marginTop: 20, marginBottom: 16, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingBottom: 2 }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`btn ${tab === t.id ? 'btn-primary' : 'btn-outline'}`} style={{ fontSize: 14 }}>
+              className={`btn ${tab === t.id ? 'btn-primary' : 'btn-outline'}`} style={{ fontSize: 14, whiteSpace: 'nowrap', flexShrink: 0 }}>
               {t.label}
             </button>
           ))}
@@ -187,7 +187,8 @@ export default function MyPage() {
             {applications.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>아직 신청 내역이 없습니다</p>
             ) : (
-              <table style={{ width: '100%', fontSize: 14, borderCollapse: 'collapse' }}>
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', fontSize: 14, borderCollapse: 'collapse', minWidth: 500 }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border)' }}>
                     <th style={th}>접수번호</th>
@@ -209,6 +210,7 @@ export default function MyPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         )}

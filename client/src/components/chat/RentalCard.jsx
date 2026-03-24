@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 export default function RentalCard({ product, onAction }) {
   const [expanded, setExpanded] = useState(false);
+  const isMobile = useIsMobile();
 
   if (!product) return null;
 
@@ -10,7 +12,10 @@ export default function RentalCard({ product, onAction }) {
   const cardDiscount = product.카드할인 || null;
 
   return (
-    <div style={styles.card}>
+    <div style={{
+      ...styles.card,
+      ...(isMobile ? { maxWidth: '100%', width: '100%' } : {}),
+    }}>
       <div style={styles.topSection}>
         {thumbnail && (
           <div style={styles.thumbnailWrap}>

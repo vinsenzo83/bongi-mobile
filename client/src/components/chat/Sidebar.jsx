@@ -66,7 +66,11 @@ const styles = {
     top: 0,
     bottom: 0,
     zIndex: 999,
-    transition: 'left 0.2s',
+    transition: 'left 0.25s ease-out',
+    paddingTop: 'env(safe-area-inset-top)',
+    paddingBottom: 'env(safe-area-inset-bottom)',
+    overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
   },
   sidebarOpen: { left: 0 },
   newBtn: {

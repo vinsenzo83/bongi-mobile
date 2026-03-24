@@ -1,7 +1,7 @@
 // 채팅 엔진 — Claude Tool Use 오케스트레이터
 import Anthropic from '@anthropic-ai/sdk';
 import { TOOLS, executeTool } from './chat-tools.js';
-import { getSession, saveSession } from './chat-session.js';
+import { getSession, saveSession, persistMessage, updateSessionTitle } from './chat-session.js';
 
 const client = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -227,11 +227,21 @@ export async function processMessage(sessionId, userMessage, context = {}) {
 
   session.messages.push({ role: 'user', content: userMessage });
 
+  // DB에 유저 메시지 영속화
+  persistMessage(sessionId, 'user', userMessage);
+
+  // 첫 메시지면 세션 제목 업데이트
+  const isFirstMessage = session.messages.filter(m => m.role === 'user' && typeof m.content === 'string').length === 1;
+  if (isFirstMessage) {
+    updateSessionTitle(sessionId, userMessage);
+  }
+
   // API 키 없으면 Mock 응답
   if (!client) {
     const mockReply = getMockReply(userMessage);
     session.messages.push({ role: 'assistant', content: mockReply });
     await saveSession(session);
+    persistMessage(sessionId, 'assistant', mockReply);
     return { reply: mockReply, ui_elements: [] };
   }
 
@@ -285,6 +295,11 @@ export async function processMessage(sessionId, userMessage, context = {}) {
 
   session.messages.push({ role: 'assistant', content: response.content });
   await saveSession(session);
+
+  // DB에 어시스턴트 텍스트 메시지 영속화
+  if (reply) {
+    persistMessage(sessionId, 'assistant', reply);
+  }
 
   return {
     reply,

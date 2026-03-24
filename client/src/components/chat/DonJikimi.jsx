@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { api } from '../../utils/api.js';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 const ALARM_CATEGORIES = [
   { type: 'plan_change', label: '요금제 변경 가능일', icon: '\uD83D\uDCF1', defaultTitle: '요금제 변경 가능' },
@@ -32,7 +33,9 @@ function getDdayColor(dday) {
 
 export default function DonJikimi() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [alarms, setAlarms] = useState([]);
+  // 모바일에서는 기본 접기
   const [expanded, setExpanded] = useState(false);
   const [editingType, setEditingType] = useState(null);
   const [editForm, setEditForm] = useState({ title: '', target_date: '', memo: '' });
@@ -138,6 +141,12 @@ export default function DonJikimi() {
     return d >= 0 && d <= 30;
   }).length;
 
+  // 모바일 컴팩트 모드: 접힌 상태에서 긴급 알람 요약 표시
+  const urgentAlarms = alarms.filter(a => {
+    const d = calcDday(a.target_date);
+    return d >= 0 && d <= 30;
+  });
+
   return (
     <div style={styles.container}>
       {/* 헤더 */}
@@ -147,6 +156,26 @@ export default function DonJikimi() {
         {urgentCount > 0 && <span style={styles.badge}>{urgentCount}</span>}
         <span style={styles.chevron}>{expanded ? '\u25B2' : '\u25BC'}</span>
       </div>
+
+      {/* 모바일 컴팩트 요약: 접힌 상태에서 긴급 알람만 표시 */}
+      {!expanded && isMobile && urgentAlarms.length > 0 && (
+        <div style={styles.compactSummary}>
+          {urgentAlarms.slice(0, 2).map(a => {
+            const dday = calcDday(a.target_date);
+            return (
+              <div key={a.id} style={styles.compactItem}>
+                <span style={styles.compactTitle}>{a.title}</span>
+                <span style={{ ...styles.compactDday, color: getDdayColor(dday) }}>
+                  {formatDday(dday)}
+                </span>
+              </div>
+            );
+          })}
+          {urgentAlarms.length > 2 && (
+            <div style={styles.compactMore}>+{urgentAlarms.length - 2}건 더</div>
+          )}
+        </div>
+      )}
 
       {/* 카테고리 목록 */}
       {expanded && (
@@ -274,6 +303,36 @@ const styles = {
     textAlign: 'center',
   },
   chevron: { fontSize: 10, color: '#666' },
+  compactSummary: {
+    padding: '0 12px 8px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  compactItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: 11,
+  },
+  compactTitle: {
+    color: '#aaa',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    flex: 1,
+    marginRight: 8,
+  },
+  compactDday: {
+    fontSize: 11,
+    fontWeight: 700,
+    flexShrink: 0,
+  },
+  compactMore: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'right',
+  },
   body: { padding: '0 8px 8px' },
   loginNotice: {
     padding: '12px',

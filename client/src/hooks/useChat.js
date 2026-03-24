@@ -12,40 +12,75 @@ export function useChat() {
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
   const bottomRef = useRef(null);
 
-  // 세션 목록 localStorage에서 로드
+  // 세션 목록을 API에서 로드 (Supabase 영속화)
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
-    setSessions(saved);
+    async function loadSessions() {
+      try {
+        const res = await fetch(`${API}/chat/sessions`, {
+          headers: { ...getAuthHeaders() },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSessions(data.sessions || []);
+        } else {
+          // API 실패 시 localStorage 폴백
+          const saved = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
+          setSessions(saved);
+        }
+      } catch {
+        const saved = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
+        setSessions(saved);
+      } finally {
+        setSessionsLoading(false);
+      }
+    }
+    loadSessions();
   }, []);
 
   // 새 세션 시작
   const startNewSession = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/chat/session`, { method: 'POST' });
+      const res = await fetch(`${API}/chat/session`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders() },
+      });
       const { session_id } = await res.json();
       setSessionId(session_id);
       setMessages([]);
 
-      // localStorage에 세션 추가
-      const newSession = { id: session_id, title: '새 대화', createdAt: new Date().toISOString() };
-      const updated = [newSession, ...sessions.filter(s => s.id !== session_id)].slice(0, 20);
-      setSessions(updated);
-      localStorage.setItem('chat_sessions', JSON.stringify(updated));
+      // 로컬 세션 목록에 추가 (서버에는 이미 저장됨)
+      const newSession = { id: session_id, title: '새 대화', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      setSessions(prev => {
+        const updated = [newSession, ...prev.filter(s => s.id !== session_id)].slice(0, 20);
+        localStorage.setItem('chat_sessions', JSON.stringify(updated));
+        return updated;
+      });
 
       return session_id;
     } catch (e) {
       console.error('세션 생성 실패:', e);
       return null;
     }
-  }, [sessions]);
+  }, []);
 
-  // 기존 세션 복원
+  // 기존 세션 복원 (API에서 메시지 로드)
   const restoreSession = useCallback(async (id) => {
     try {
-      const res = await fetch(`${API}/chat/session/${id}`);
-      if (!res.ok) return false;
+      const res = await fetch(`${API}/chat/sessions/${id}/messages`, {
+        headers: { ...getAuthHeaders() },
+      });
+      if (!res.ok) {
+        // 새 엔드포인트 실패 시 기존 엔드포인트로 폴백
+        const fallback = await fetch(`${API}/chat/session/${id}`);
+        if (!fallback.ok) return false;
+        const data = await fallback.json();
+        setSessionId(id);
+        setMessages(data.messages || []);
+        return true;
+      }
       const data = await res.json();
       setSessionId(id);
       setMessages(data.messages || []);
@@ -102,20 +137,23 @@ export function useChat() {
 
   // 세션 삭제
   const deleteSession = useCallback((id) => {
-    const updated = sessions.filter(s => s.id !== id);
-    setSessions(updated);
-    localStorage.setItem('chat_sessions', JSON.stringify(updated));
+    setSessions(prev => {
+      const updated = prev.filter(s => s.id !== id);
+      localStorage.setItem('chat_sessions', JSON.stringify(updated));
+      return updated;
+    });
     if (sessionId === id) {
       setSessionId(null);
       setMessages([]);
     }
-  }, [sessions, sessionId]);
+  }, [sessionId]);
 
   return {
     messages,
     loading,
     sessionId,
     sessions,
+    sessionsLoading,
     sendMessage,
     startNewSession,
     restoreSession,

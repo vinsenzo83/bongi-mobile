@@ -184,7 +184,7 @@ const styles = {
   hero: {
     background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)',
     color: '#fff',
-    padding: '80px 0',
+    padding: '60px 0',
   },
   heroBadge: {
     display: 'inline-block',
@@ -211,8 +211,11 @@ const styles = {
     display: 'flex',
     gap: 16,
     overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
     paddingBottom: 8,
     scrollSnapType: 'x mandatory',
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none',
   },
   reviewCard: {
     minWidth: 260,

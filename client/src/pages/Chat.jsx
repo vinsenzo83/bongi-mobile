@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useChat } from '../hooks/useChat.js';
+import { useIsMobile } from '../hooks/useIsMobile.js';
 import Sidebar from '../components/chat/Sidebar.jsx';
 import MessageList from '../components/chat/MessageList.jsx';
 import InputArea from '../components/chat/InputArea.jsx';
@@ -7,6 +8,7 @@ import InputArea from '../components/chat/InputArea.jsx';
 export default function Chat() {
   const chat = useChat();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   return (
     <div style={styles.container}>
@@ -24,7 +26,10 @@ export default function Chat() {
       {/* 메인 영역 */}
       <div style={styles.main}>
         {/* 탑바 */}
-        <div style={styles.topbar}>
+        <div style={{
+          ...styles.topbar,
+          ...(isMobile ? styles.topbarMobile : {}),
+        }}>
           <button onClick={() => setSidebarOpen(true)} style={styles.menuBtn}>☰</button>
           <span style={styles.title}>🐟 리턴AI</span>
           <button onClick={chat.startNewSession} style={styles.newBtn}>+</button>
@@ -32,7 +37,7 @@ export default function Chat() {
 
         {/* 메시지 영역 */}
         {chat.messages.length === 0 ? (
-          <WelcomeScreen onChipClick={chat.sendMessage} />
+          <WelcomeScreen onChipClick={chat.sendMessage} isMobile={isMobile} />
         ) : (
           <MessageList messages={chat.messages} loading={chat.loading} onAction={chat.sendMessage} />
         )}
@@ -44,7 +49,7 @@ export default function Chat() {
   );
 }
 
-function WelcomeScreen({ onChipClick }) {
+function WelcomeScreen({ onChipClick, isMobile }) {
   const allChips = [
     { label: '인터넷 추천해줘', icon: '📡' },
     { label: '정수기 렌탈 얼마야?', icon: '💧' },
@@ -77,12 +82,24 @@ function WelcomeScreen({ onChipClick }) {
   return (
     <div style={styles.welcome}>
       <div style={styles.welcomeIcon}>🐟</div>
-      <h1 style={styles.welcomeTitle}>리턴AI</h1>
+      <h1 style={{
+        ...styles.welcomeTitle,
+        ...(isMobile ? { fontSize: 22 } : {}),
+      }}>리턴AI</h1>
       <p style={styles.welcomeSlogan}>돈 버는 소비의 시작, 리턴AI</p>
-      <p style={styles.welcomeSub}>인터넷, 렌탈, 알뜰폰, 중고폰 매입까지<br/>무엇이든 물어보세요</p>
-      <div style={styles.chips}>
+      <p style={{
+        ...styles.welcomeSub,
+        ...(isMobile ? { fontSize: 13 } : {}),
+      }}>인터넷, 렌탈, 알뜰폰, 중고폰 매입까지<br/>무엇이든 물어보세요</p>
+      <div style={{
+        ...styles.chips,
+        ...(isMobile ? { maxWidth: '100%', padding: '0 8px' } : {}),
+      }}>
         {chips.map(c => (
-          <button key={c.label} onClick={() => onChipClick(c.label)} style={styles.chip}>
+          <button key={c.label} onClick={() => onChipClick(c.label)} style={{
+            ...styles.chip,
+            ...(isMobile ? { fontSize: 13, padding: '8px 12px' } : {}),
+          }}>
             <span>{c.icon}</span> {c.label}
           </button>
         ))}
@@ -94,16 +111,18 @@ function WelcomeScreen({ onChipClick }) {
 const styles = {
   container: {
     display: 'flex',
-    height: '100vh',
+    height: '100dvh',
     background: '#212121',
     color: '#ececec',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    overflow: 'hidden',
   },
   main: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
+    height: '100dvh',
   },
   topbar: {
     display: 'flex',
@@ -111,6 +130,10 @@ const styles = {
     justifyContent: 'space-between',
     padding: '10px 16px',
     borderBottom: '1px solid #333',
+    flexShrink: 0,
+  },
+  topbarMobile: {
+    paddingTop: 'max(10px, env(safe-area-inset-top))',
   },
   menuBtn: {
     background: 'none',
@@ -140,6 +163,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
+    overflow: 'auto',
   },
   welcomeIcon: { fontSize: 48, marginBottom: 12 },
   welcomeTitle: { fontSize: 28, fontWeight: 700, marginBottom: 4, color: '#fff' },

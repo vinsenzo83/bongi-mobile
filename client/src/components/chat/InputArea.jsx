@@ -1,8 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 export default function InputArea({ onSend, loading }) {
   const [text, setText] = useState('');
   const inputRef = useRef(null);
+  const isMobile = useIsMobile();
 
   const handleSend = () => {
     if (!text.trim() || loading) return;
@@ -18,8 +20,38 @@ export default function InputArea({ onSend, loading }) {
     }
   };
 
+  // 모바일 키보드 올라올 때 visualViewport 활용해 입력창 위치 보정
+  useEffect(() => {
+    if (!isMobile || !window.visualViewport) return;
+
+    const vv = window.visualViewport;
+    const containerEl = document.getElementById('chat-input-container');
+    if (!containerEl) return;
+
+    const handleResize = () => {
+      const offsetFromBottom = window.innerHeight - vv.height - vv.offsetTop;
+      containerEl.style.paddingBottom = `max(${offsetFromBottom}px, env(safe-area-inset-bottom))`;
+    };
+
+    vv.addEventListener('resize', handleResize);
+    vv.addEventListener('scroll', handleResize);
+    return () => {
+      vv.removeEventListener('resize', handleResize);
+      vv.removeEventListener('scroll', handleResize);
+      if (containerEl) {
+        containerEl.style.paddingBottom = '';
+      }
+    };
+  }, [isMobile]);
+
   return (
-    <div style={styles.container}>
+    <div
+      id="chat-input-container"
+      style={{
+        ...styles.container,
+        ...(isMobile ? styles.containerMobile : {}),
+      }}
+    >
       <div style={styles.inner}>
         <div style={styles.inputWrap}>
           <textarea
@@ -29,7 +61,10 @@ export default function InputArea({ onSend, loading }) {
             onKeyDown={handleKeyDown}
             placeholder="메시지를 입력하세요..."
             rows={1}
-            style={styles.textarea}
+            style={{
+              ...styles.textarea,
+              ...(isMobile ? { fontSize: 16 } : {}),
+            }}
             disabled={loading}
           />
           <button
@@ -52,6 +87,11 @@ const styles = {
   container: {
     padding: '12px 20px 16px',
     background: '#212121',
+    flexShrink: 0,
+  },
+  containerMobile: {
+    padding: '8px 12px',
+    paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
   },
   inner: {
     maxWidth: 720,

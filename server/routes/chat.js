@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import { createSession, restoreSession } from '../services/chat-session.js';
+import { createSession, restoreSession, listSessions, getSessionMessages } from '../services/chat-session.js';
 import { processMessage } from '../services/chat-engine.js';
 
 const router = Router();
 
 // 새 세션 생성
 router.post('/session', (req, res) => {
-  const session = createSession();
+  const userId = req.user?.id || null;
+  const session = createSession(userId);
   res.status(201).json({ session_id: session.id });
 });
 
@@ -29,6 +30,30 @@ router.get('/session/:id', async (req, res) => {
   res.json({ session_id: session.id, messages });
 });
 
+// 세션 목록 조회 (사이드바용)
+router.get('/sessions', async (req, res) => {
+  try {
+    const userId = req.user?.id || null;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+    const sessions = await listSessions(userId, limit);
+    res.json({ sessions });
+  } catch (e) {
+    console.error('세션 목록 조회 에러:', e.message);
+    res.status(500).json({ error: '세션 목록을 불러올 수 없습니다' });
+  }
+});
+
+// 세션 메시지 조회 (대화 이력 복원용)
+router.get('/sessions/:id/messages', async (req, res) => {
+  try {
+    const messages = await getSessionMessages(req.params.id);
+    res.json({ messages });
+  } catch (e) {
+    console.error('메시지 조회 에러:', e.message);
+    res.status(500).json({ error: '메시지를 불러올 수 없습니다' });
+  }
+});
+
 // 메시지 전송 → AI 응답
 router.post('/message', async (req, res) => {
   const { session_id, message } = req.body;
@@ -38,7 +63,8 @@ router.post('/message', async (req, res) => {
   }
 
   try {
-    const result = await processMessage(session_id, message);
+    const context = { userId: req.user?.id || null };
+    const result = await processMessage(session_id, message, context);
     res.json(result);
   } catch (e) {
     console.error('채팅 에러:', e.message);
