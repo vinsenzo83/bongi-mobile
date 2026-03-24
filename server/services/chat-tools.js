@@ -1209,6 +1209,7 @@ async function searchReviews({ category, limit = 3 }) {
         별점: '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating),
         상품: r.product_name,
         내용: r.content,
+        이미지: r.image_url || '',
         작성일: new Date(r.created_at).toLocaleDateString('ko-KR'),
       })),
     };
