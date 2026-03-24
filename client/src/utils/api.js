@@ -94,6 +94,18 @@ export const api = {
     }),
   },
 
+  // 돈지키미 알람
+  alarms: {
+    list: () => request('/alarms'),
+    create: (data) => request('/alarms', {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+    update: (id, data) => request(`/alarms/${id}`, {
+      method: 'PATCH', body: JSON.stringify(data),
+    }),
+    remove: (id) => request(`/alarms/${id}`, { method: 'DELETE' }),
+  },
+
   // AI
   ai: {
     chat: (messages) => request('/ai/chat', {

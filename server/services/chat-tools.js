@@ -243,10 +243,24 @@ export const TOOLS = [
       },
     },
   },
+  {
+    name: 'set_alarm',
+    description: '돈지키미에 약정/요금 알람을 등록합니다. 채팅 중 고객의 약정 정보를 파악하면 자동으로 등록 제안.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        alarm_type: { type: 'string', enum: ['plan_change', 'addon_cancel', 'internet_expire', 'rental_expire'], description: '알람 종류' },
+        title: { type: 'string', description: '알람 제목 (예: KT 인터넷 약정 종료)' },
+        target_date: { type: 'string', description: 'YYYY-MM-DD 형식 목표 날짜' },
+        memo: { type: 'string', description: '메모 (선택)' },
+      },
+      required: ['alarm_type', 'title', 'target_date'],
+    },
+  },
 ];
 
 // 도구 실행
-export async function executeTool(name, input) {
+export async function executeTool(name, input, context = {}) {
   switch (name) {
     case 'search_products': return searchProducts(input);
     case 'get_product_detail': return getProductDetail(input);
@@ -263,6 +277,7 @@ export async function executeTool(name, input) {
     case 'compare_rental': return compareRental(input);
     case 'get_rental_detail': return getRentalDetail(input);
     case 'search_reviews': return searchReviews(input);
+    case 'set_alarm': return setAlarm(input, context);
     default: return { error: `알 수 없는 도구: ${name}` };
   }
 }
@@ -1199,5 +1214,65 @@ async function searchReviews({ category, limit = 3 }) {
     };
   } catch (err) {
     return { reviews: [], error: err.message };
+  }
+}
+
+// ─── 돈지키미 알람 등록 (채팅에서 자동 수집) ───
+async function setAlarm({ alarm_type, title, target_date, memo }, context = {}) {
+  const userId = context.userId;
+  if (!userId) {
+    return {
+      success: false,
+      message: '로그인이 필요한 기능이에요! 로그인하시면 돈지키미에 알람을 등록해드릴 수 있어요.',
+    };
+  }
+
+  if (!supabase) {
+    return { success: false, message: '현재 알람 서비스를 이용할 수 없습니다.' };
+  }
+
+  const validTypes = ['plan_change', 'addon_cancel', 'internet_expire', 'rental_expire'];
+  if (!validTypes.includes(alarm_type)) {
+    return { success: false, message: '유효하지 않은 알람 종류입니다.' };
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(target_date)) {
+    return { success: false, message: '날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식이 필요해요.' };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('bongi_user_alarms')
+      .insert({
+        user_id: userId,
+        alarm_type,
+        title: (title || '').slice(0, 100),
+        target_date,
+        memo: (memo || '').slice(0, 500),
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const typeLabels = {
+      plan_change: '요금제 변경',
+      addon_cancel: '부가서비스 해지',
+      internet_expire: '인터넷 약정 종료',
+      rental_expire: '렌탈 약정 종료',
+    };
+
+    return {
+      success: true,
+      message: `돈지키미에 "${title}" 알람을 등록했어요! ${target_date}에 ${typeLabels[alarm_type]} 알림을 보내드릴게요.`,
+      alarm: {
+        id: data.id,
+        type: alarm_type,
+        title,
+        target_date,
+      },
+    };
+  } catch (err) {
+    return { success: false, message: '알람 등록에 실패했어요. 잠시 후 다시 시도해주세요.' };
   }
 }

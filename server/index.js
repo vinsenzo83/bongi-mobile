@@ -14,6 +14,7 @@ import mockRoutes from './routes/mock.js';
 import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboard.js';
 import chatRoutes from './routes/chat.js';
+import alarmRoutes from './routes/alarms.js';
 import { sanitizeBody } from './middleware/sanitize.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiLimiter, applicationLimiter } from './middleware/rateLimit.js';
@@ -49,11 +50,14 @@ app.use('/api/applications', applicationLimiter, applicationRoutes);
 app.use('/api/mock', mockRoutes);
 app.use('/api/reviews', reviewRoutes);
 
-// ── 채팅 (공개) ──
-app.use('/api/chat', chatRoutes);
+// ── 채팅 (공개, 선택적 인증 — 돈지키미 set_alarm용) ──
+app.use('/api/chat', optionalAuth, chatRoutes);
 
 // ── 선택적 인증 ──
 app.use('/api/ai', optionalAuth, aiRoutes);
+
+// ── 인증 필요 (일반 유저) ──
+app.use('/api/alarms', authenticateJWT, alarmRoutes);
 
 // ── 인증 필요 (agent 이상) ──
 app.use('/api/crm', authenticateJWT, requireMinRole('agent'), crmRoutes);

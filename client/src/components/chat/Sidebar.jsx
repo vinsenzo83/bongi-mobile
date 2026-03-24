@@ -1,3 +1,5 @@
+import DonJikimi from './DonJikimi.jsx';
+
 export default function Sidebar({ open, onClose, sessions, currentId, onNewChat, onSelectSession, onDeleteSession }) {
   return (
     <>
@@ -5,6 +7,9 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
       {open && <div onClick={onClose} style={styles.overlay} />}
 
       <div style={{ ...styles.sidebar, ...(open ? styles.sidebarOpen : {}) }}>
+        {/* 돈지키미 — 사이드바 상단 고정 */}
+        <DonJikimi />
+
         {/* 새 대화 버튼 */}
         <button onClick={() => { onNewChat(); onClose(); }} style={styles.newBtn}>
           + 새 대화

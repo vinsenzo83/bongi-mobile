@@ -2,6 +2,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 
 const API = import.meta.env.VITE_API_BASE || (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
 
+function getAuthHeaders() {
+  const token = sessionStorage.getItem('access_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export function useChat() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -68,7 +73,7 @@ export function useChat() {
     try {
       const res = await fetch(`${API}/chat/message`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ session_id: sid, message: text }),
       });
       const data = await res.json();

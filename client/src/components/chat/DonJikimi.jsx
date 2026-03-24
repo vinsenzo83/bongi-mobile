@@ -1,0 +1,392 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../hooks/useAuth.jsx';
+import { api } from '../../utils/api.js';
+
+const ALARM_CATEGORIES = [
+  { type: 'plan_change', label: '요금제 변경 가능일', icon: '\uD83D\uDCF1', defaultTitle: '요금제 변경 가능' },
+  { type: 'addon_cancel', label: '부가서비스 해지일', icon: '\uD83D\uDDD1\uFE0F', defaultTitle: '부가서비스 해지' },
+  { type: 'internet_expire', label: '인터넷 약정 종료일', icon: '\uD83C\uDF10', defaultTitle: '인터넷 약정 종료' },
+  { type: 'rental_expire', label: '렌탈 약정 종료일', icon: '\uD83C\uDFE0', defaultTitle: '렌탈 약정 종료', multiple: true },
+];
+
+function calcDday(targetDate) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(targetDate + 'T00:00:00');
+  const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+  return diff;
+}
+
+function formatDday(dday) {
+  if (dday === 0) return 'D-DAY';
+  if (dday > 0) return `D-${dday}`;
+  return `D+${Math.abs(dday)}`;
+}
+
+function getDdayColor(dday) {
+  if (dday <= 0) return '#ef4444';
+  if (dday <= 7) return '#ef4444';
+  if (dday <= 30) return '#f59e0b';
+  return '#6b7280';
+}
+
+export default function DonJikimi() {
+  const { user } = useAuth();
+  const [alarms, setAlarms] = useState([]);
+  const [expanded, setExpanded] = useState(false);
+  const [editingType, setEditingType] = useState(null);
+  const [editForm, setEditForm] = useState({ title: '', target_date: '', memo: '' });
+  const [editingId, setEditingId] = useState(null);
+
+  const fetchAlarms = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await api.alarms.list();
+      setAlarms(data.alarms || []);
+    } catch {
+      // 조용히 실패
+    }
+  }, [user]);
+
+  useEffect(() => { fetchAlarms(); }, [fetchAlarms]);
+
+  const handleSave = async () => {
+    if (!editForm.target_date) return;
+    try {
+      const category = ALARM_CATEGORIES.find(c => c.type === editingType);
+      const payload = {
+        alarm_type: editingType,
+        title: editForm.title || category?.defaultTitle || '',
+        target_date: editForm.target_date,
+        memo: editForm.memo,
+      };
+
+      if (editingId) {
+        await api.alarms.update(editingId, payload);
+      } else {
+        await api.alarms.create(payload);
+      }
+      setEditingType(null);
+      setEditingId(null);
+      setEditForm({ title: '', target_date: '', memo: '' });
+      fetchAlarms();
+    } catch (e) {
+      alert(e.message || '저장 실패');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await api.alarms.remove(id);
+      fetchAlarms();
+    } catch (e) {
+      alert(e.message || '삭제 실패');
+    }
+  };
+
+  const openEdit = (type, alarm = null) => {
+    setEditingType(type);
+    if (alarm) {
+      setEditingId(alarm.id);
+      setEditForm({ title: alarm.title, target_date: alarm.target_date, memo: alarm.memo || '' });
+    } else {
+      const category = ALARM_CATEGORIES.find(c => c.type === type);
+      setEditingId(null);
+      setEditForm({ title: category?.defaultTitle || '', target_date: '', memo: '' });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingType(null);
+    setEditingId(null);
+    setEditForm({ title: '', target_date: '', memo: '' });
+  };
+
+  // 비로그인
+  if (!user) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.header} onClick={() => setExpanded(!expanded)}>
+          <span style={styles.headerIcon}>{'\uD83D\uDEE1\uFE0F'}</span>
+          <span style={styles.headerTitle}>돈지키미</span>
+          <span style={styles.chevron}>{expanded ? '\u25B2' : '\u25BC'}</span>
+        </div>
+        {expanded && (
+          <div style={styles.loginNotice}>
+            로그인하면 약정/요금 알람을 받을 수 있어요
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const getAlarmsForType = (type) => alarms.filter(a => a.alarm_type === type);
+
+  // 긴급 알람 개수 (D-30 이내)
+  const urgentCount = alarms.filter(a => {
+    const d = calcDday(a.target_date);
+    return d >= 0 && d <= 30;
+  }).length;
+
+  return (
+    <div style={styles.container}>
+      {/* 헤더 */}
+      <div style={styles.header} onClick={() => setExpanded(!expanded)}>
+        <span style={styles.headerIcon}>{'\uD83D\uDEE1\uFE0F'}</span>
+        <span style={styles.headerTitle}>돈지키미</span>
+        {urgentCount > 0 && <span style={styles.badge}>{urgentCount}</span>}
+        <span style={styles.chevron}>{expanded ? '\u25B2' : '\u25BC'}</span>
+      </div>
+
+      {/* 카테고리 목록 */}
+      {expanded && (
+        <div style={styles.body}>
+          {ALARM_CATEGORIES.map(cat => {
+            const items = getAlarmsForType(cat.type);
+            return (
+              <div key={cat.type} style={styles.category}>
+                <div style={styles.catHeader}>
+                  <span style={styles.catIcon}>{cat.icon}</span>
+                  <span style={styles.catLabel}>{cat.label}</span>
+                  {cat.multiple && (
+                    <button
+                      onClick={() => openEdit(cat.type)}
+                      style={styles.addBtn}
+                      title="항목 추가"
+                    >+</button>
+                  )}
+                </div>
+
+                {items.length === 0 ? (
+                  <div
+                    style={styles.emptyItem}
+                    onClick={() => openEdit(cat.type)}
+                  >
+                    날짜를 설정해주세요
+                  </div>
+                ) : (
+                  items.map(alarm => {
+                    const dday = calcDday(alarm.target_date);
+                    const ddayColor = getDdayColor(dday);
+                    return (
+                      <div
+                        key={alarm.id}
+                        style={styles.alarmItem}
+                        onClick={() => openEdit(cat.type, alarm)}
+                      >
+                        <div style={styles.alarmInfo}>
+                          <span style={styles.alarmTitle}>{alarm.title}</span>
+                          <span style={styles.alarmDate}>{alarm.target_date}</span>
+                        </div>
+                        <span style={{ ...styles.dday, color: ddayColor }}>
+                          {formatDday(dday)}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            );
+          })}
+
+          {/* 편집 패널 */}
+          {editingType && (
+            <div style={styles.editPanel}>
+              <div style={styles.editHeader}>
+                {editingId ? '알람 수정' : '알람 추가'}
+              </div>
+              <input
+                type="text"
+                placeholder="제목"
+                value={editForm.title}
+                onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                style={styles.input}
+              />
+              <input
+                type="date"
+                value={editForm.target_date}
+                onChange={e => setEditForm({ ...editForm, target_date: e.target.value })}
+                style={styles.input}
+              />
+              <input
+                type="text"
+                placeholder="메모 (선택)"
+                value={editForm.memo}
+                onChange={e => setEditForm({ ...editForm, memo: e.target.value })}
+                style={styles.input}
+              />
+              <div style={styles.editActions}>
+                <button onClick={handleSave} style={styles.saveBtn}>저장</button>
+                {editingId && (
+                  <button onClick={() => handleDelete(editingId)} style={styles.delBtn}>삭제</button>
+                )}
+                <button onClick={cancelEdit} style={styles.cancelBtn}>취소</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const styles = {
+  container: {
+    margin: '12px 12px 0',
+    borderRadius: 10,
+    border: '1px solid #333',
+    background: '#1e1e1e',
+    overflow: 'hidden',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '10px 12px',
+    cursor: 'pointer',
+    userSelect: 'none',
+  },
+  headerIcon: { fontSize: 16 },
+  headerTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#60a5fa',
+    flex: 1,
+  },
+  badge: {
+    background: '#ef4444',
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 700,
+    borderRadius: 10,
+    padding: '1px 6px',
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  chevron: { fontSize: 10, color: '#666' },
+  body: { padding: '0 8px 8px' },
+  loginNotice: {
+    padding: '12px',
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
+  },
+  category: {
+    marginBottom: 6,
+  },
+  catHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '4px 4px 2px',
+  },
+  catIcon: { fontSize: 12 },
+  catLabel: { fontSize: 11, color: '#999', flex: 1 },
+  addBtn: {
+    background: 'none',
+    border: '1px solid #555',
+    borderRadius: 4,
+    color: '#aaa',
+    fontSize: 12,
+    cursor: 'pointer',
+    padding: '0 5px',
+    lineHeight: '18px',
+  },
+  emptyItem: {
+    padding: '6px 8px',
+    fontSize: 12,
+    color: '#555',
+    cursor: 'pointer',
+    borderRadius: 6,
+    transition: 'background 0.1s',
+  },
+  alarmItem: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '6px 8px',
+    borderRadius: 6,
+    cursor: 'pointer',
+    transition: 'background 0.1s',
+  },
+  alarmInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 1,
+    flex: 1,
+    minWidth: 0,
+  },
+  alarmTitle: {
+    fontSize: 12,
+    color: '#ccc',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  alarmDate: { fontSize: 10, color: '#666' },
+  dday: {
+    fontSize: 13,
+    fontWeight: 700,
+    flexShrink: 0,
+    marginLeft: 8,
+  },
+  editPanel: {
+    marginTop: 8,
+    padding: 10,
+    background: '#252525',
+    borderRadius: 8,
+    border: '1px solid #444',
+  },
+  editHeader: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#ddd',
+    marginBottom: 8,
+  },
+  input: {
+    width: '100%',
+    padding: '7px 8px',
+    marginBottom: 6,
+    borderRadius: 6,
+    border: '1px solid #444',
+    background: '#1a1a1a',
+    color: '#ddd',
+    fontSize: 12,
+    outline: 'none',
+    boxSizing: 'border-box',
+  },
+  editActions: {
+    display: 'flex',
+    gap: 6,
+    marginTop: 4,
+  },
+  saveBtn: {
+    flex: 1,
+    padding: '6px 0',
+    borderRadius: 6,
+    border: 'none',
+    background: '#3b82f6',
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  delBtn: {
+    padding: '6px 10px',
+    borderRadius: 6,
+    border: 'none',
+    background: '#dc2626',
+    color: '#fff',
+    fontSize: 12,
+    cursor: 'pointer',
+  },
+  cancelBtn: {
+    padding: '6px 10px',
+    borderRadius: 6,
+    border: '1px solid #555',
+    background: 'transparent',
+    color: '#aaa',
+    fontSize: 12,
+    cursor: 'pointer',
+  },
+};
