@@ -106,10 +106,27 @@ function renderTable(tableLines) {
     + `<thead><tr>${thCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
 }
 
-// 인라인 마크다운 (볼드, 이탤릭, 코드)
+// 안전한 이미지 URL 검증 (javascript: 프로토콜 차단)
+function isSafeImageUrl(url) {
+  if (!url) return false;
+  const trimmed = url.trim().toLowerCase();
+  if (trimmed.startsWith('javascript:') || trimmed.startsWith('data:') || trimmed.startsWith('vbscript:')) {
+    return false;
+  }
+  return trimmed.startsWith('https://') || trimmed.startsWith('http://');
+}
+
+// 인라인 마크다운 (볼드, 이탤릭, 코드, 이미지)
 function renderInline(text) {
   if (!text) return '';
   return text
+    // 이미지: ![alt](url)
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
+      if (!isSafeImageUrl(url)) return `![${alt}](${url})`;
+      const safeAlt = alt.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const safeUrl = url.replace(/"/g, '&quot;');
+      return `<img src="${safeUrl}" alt="${safeAlt}" style="max-width:100%;border-radius:8px;margin:8px 0;display:block" loading="lazy" />`;
+    })
     .replace(/`([^`]+)`/g, '<code style="background:#333;padding:1px 6px;border-radius:4px;font-size:13px;color:#7ee787">$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#fff">$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>');
