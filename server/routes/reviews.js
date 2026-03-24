@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { supabase } from '../db/supabase.js';
-import { authenticateJWT } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -26,10 +26,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/reviews — 후기 작성 (인증 필수)
-router.post('/', authenticateJWT, async (req, res) => {
+// POST /api/reviews — 후기 작성 (비로그인도 가능)
+router.post('/', optionalAuth, async (req, res) => {
   try {
-    const { category, product_name, rating, content } = req.body;
+    const { category, product_name, rating, content, author_name } = req.body;
 
     if (!product_name || !rating || !content) {
       return res.status(400).json({ error: '상품명, 별점, 내용은 필수입니다.' });
@@ -46,12 +46,12 @@ router.post('/', authenticateJWT, async (req, res) => {
     const { data, error } = await supabase
       .from('bongi_reviews')
       .insert({
-        user_id: req.user.id,
+        user_id: req.user?.id || null,
         category: category || 'general',
         product_name,
         rating: +rating,
         content,
-        author_name: req.user.displayName || req.user.email?.split('@')[0] || '익명',
+        author_name: req.user?.displayName || author_name || '익명',
         image_url: req.body.image_url || null,
       })
       .select()
@@ -64,8 +64,8 @@ router.post('/', authenticateJWT, async (req, res) => {
   }
 });
 
-// POST /api/reviews/upload-image — 이미지 업로드 (인증 필수)
-router.post('/upload-image', authenticateJWT, async (req, res) => {
+// POST /api/reviews/upload-image — 이미지 업로드
+router.post('/upload-image', optionalAuth, async (req, res) => {
   try {
     const { image } = req.body;
 

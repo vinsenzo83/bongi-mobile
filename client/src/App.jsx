@@ -22,7 +22,7 @@ function AppRoutes() {
       {/* 인증 */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/mypage" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
+      <Route path="/mypage" element={<MyPage />} />
 
       {/* CRM 어드민 */}
       <Route path="/admin" element={<ProtectedRoute minRole="agent"><Dashboard /></ProtectedRoute>} />

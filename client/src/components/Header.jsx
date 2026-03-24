@@ -37,11 +37,7 @@ export default function Header() {
         </nav>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <Link to="/apply" className="btn btn-primary" style={{ fontSize: 14 }}>상담 신청</Link>
-          {user ? (
-            <Link to="/mypage" className="btn btn-outline" style={{ fontSize: 13 }}>{user.displayName || '마이페이지'}</Link>
-          ) : (
-            <Link to="/login" className="btn btn-outline" style={{ fontSize: 13 }}>로그인</Link>
-          )}
+          <Link to="/mypage" className="btn btn-outline" style={{ fontSize: 13 }}>{user?.displayName || '마이페이지'}</Link>
         </div>
       </div>
     </header>

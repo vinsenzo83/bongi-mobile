@@ -8,6 +8,7 @@ const VALID_TYPES = ['plan_change', 'addon_cancel', 'internet_expire', 'rental_e
 // GET /api/alarms — 내 알람 목록
 router.get('/', async (req, res) => {
   try {
+    if (!req.user) return res.json({ alarms: [] });
     const { data, error } = await supabase
       .from('bongi_user_alarms')
       .select('*')
@@ -18,7 +19,7 @@ router.get('/', async (req, res) => {
     res.json({ alarms: data });
   } catch (e) {
     console.error('알람 조회 실패:', e.message);
-    res.status(500).json({ error: '알람 목록을 불러올 수 없습니다' });
+    res.json({ alarms: [] });
   }
 });
 

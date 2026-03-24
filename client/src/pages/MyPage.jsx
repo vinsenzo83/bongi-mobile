@@ -159,11 +159,15 @@ export default function MyPage() {
         {/* 프로필 헤더 */}
         <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ fontSize: 22, marginBottom: 4 }}>{user?.displayName || user?.email}</h2>
-            <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{user?.email}</div>
-            <span className="badge badge-blue" style={{ marginTop: 8 }}>{user?.role || 'customer'}</span>
+            <h2 style={{ fontSize: 22, marginBottom: 4 }}>{user?.displayName || user?.email || '게스트'}</h2>
+            <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{user?.email || '로그인 없이 이용 중'}</div>
+            <span className="badge badge-blue" style={{ marginTop: 8 }}>{user?.role || 'guest'}</span>
           </div>
-          <button onClick={handleLogout} className="btn btn-outline" style={{ color: 'var(--danger)' }}>로그아웃</button>
+          {user ? (
+            <button onClick={handleLogout} className="btn btn-outline" style={{ color: 'var(--danger)' }}>로그아웃</button>
+          ) : (
+            <button onClick={() => navigate('/login')} className="btn btn-outline">로그인</button>
+          )}
         </div>
 
         {/* 탭 */}

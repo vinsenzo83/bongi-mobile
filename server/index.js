@@ -57,7 +57,7 @@ app.use('/api/chat', optionalAuth, chatRoutes);
 app.use('/api/ai', optionalAuth, aiRoutes);
 
 // ── 인증 필요 (일반 유저) ──
-app.use('/api/alarms', authenticateJWT, alarmRoutes);
+app.use('/api/alarms', optionalAuth, alarmRoutes);
 
 // ── 인증 필요 (agent 이상) ──
 app.use('/api/crm', authenticateJWT, requireMinRole('agent'), crmRoutes);
