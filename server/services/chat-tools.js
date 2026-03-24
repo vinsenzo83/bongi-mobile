@@ -1008,16 +1008,28 @@ function searchRental({ category, brand, max_price }) {
   const results = items
     .sort((a, b) => a.monthlyRental - b.monthlyRental)
     .map(i => {
-      const cardInfo = brandCardMap[i.brand] || null;
-      const mainFuncNames = (i.specs?.mainFunctions || []).map(f => f.name).slice(0, 4);
+      // 카드할인 매칭 (브랜드명 유연 매칭)
+      const cardInfo = brandCardMap[i.brand]
+        || brandCardMap[i.brand + '전자']
+        || Object.entries(brandCardMap).find(([k]) => k.includes(i.brand))?.[1]
+        || null;
+      // 부가기능 (additionalFunctions 또는 mainFunctions)
+      const funcs = (i.specs?.additionalFunctions || []).map(f => f.funcName || f).filter(Boolean).slice(0, 4);
+      const rating = i.rating || {};
+      const pricing = i.pricing || {};
+      const colors = (i.colorOptions || []).map(c => c.name).filter(Boolean);
       return {
+        상품ID: i.id,
         상품명: i.name,
         브랜드: i.brand,
         모델번호: i.model,
         월렌탈료: `${i.monthlyRental.toLocaleString()}원`,
         사은품: i.gift ? `${i.gift.toLocaleString()}원` : '-',
+        ...(pricing.halfPricePromotion ? { 반값프로모션: true } : {}),
         ...(cardInfo ? { 카드할인: `최대 -${cardInfo.maxDiscount.toLocaleString()}원 (${cardInfo.name})` } : {}),
-        ...(mainFuncNames.length > 0 ? { 기본기능: mainFuncNames } : {}),
+        ...(funcs.length > 0 ? { 주요기능: funcs.join(', ') } : {}),
+        ...(rating.value ? { 평점: `${rating.value}점 (${rating.reviewCount || 0}건)` } : {}),
+        ...(colors.length > 0 ? { 색상: `${colors.length}가지` } : {}),
         상품URL: i.url,
         썸네일: i.thumbnail || '',
         이미지: i.images?.[0] || '',
@@ -1083,17 +1095,55 @@ function getRentalDetail({ product_id }) {
     return { error: `상품 ID ${product_id}를 찾을 수 없습니다.` };
   }
 
+  const specs = item.specs || {};
+  const pricing = item.pricing || {};
+  const rating = item.rating || {};
+
+  // 색상 옵션
+  const colors = (item.colorOptions || []).map(c => c.name).filter(Boolean);
+
+  // 약정 옵션
+  const contracts = (item.contractOptions || []).map(c =>
+    (c.details || []).map(d => d.content).join('\n')
+  ).filter(Boolean);
+
+  // 관리 서비스
+  const services = (item.serviceInfo || []).map(s => ({
+    유형: s.tabName,
+    내용: (s.details || []).map(d => `${d.title}: ${d.content}`).join('\n'),
+  }));
+
+  // 부가기능
+  const functions = (specs.additionalFunctions || []).map(f => f.funcName || (typeof f === 'string' ? f : '')).filter(Boolean);
+
+  // 카드할인 매칭
+  const brandCards = rentalCards.filter(c =>
+    item.brand && c.rentalBrand && (
+      c.rentalBrand.includes(item.brand) || item.brand.includes(c.rentalBrand.replace('전자',''))
+    )
+  );
+  const bestCard = brandCards.sort((a, b) => (b.maxMonthlyDiscount || 0) - (a.maxMonthlyDiscount || 0))[0];
+
   return {
     상품ID: item.id,
     상품명: item.name,
     브랜드: item.brand,
     모델번호: item.model,
+    카테고리: RENTAL_CATEGORY_NAMES[item.category] || item.category,
     월렌탈료: `${item.monthlyRental.toLocaleString()}원`,
     사은품: item.gift ? `${item.gift.toLocaleString()}원` : '-',
-    카테고리: RENTAL_CATEGORY_NAMES[item.category] || item.category,
+    ...(pricing.halfPricePromotion ? { 반값프로모션: `${pricing.halfPriceMonths || ''}개월간 반값` } : {}),
+    ...(colors.length > 0 ? { 색상옵션: colors.join(', ') } : {}),
+    ...(specs.dimensions ? { 크기: `${specs.dimensions.width}x${specs.dimensions.depth}x${specs.dimensions.height}mm` } : {}),
+    ...(specs.recommendedAreaPyung ? { 적용면적: `${specs.recommendedAreaPyung}평` } : {}),
+    ...(functions.length > 0 ? { 주요기능: functions.join(', ') } : {}),
+    ...(rating.value ? { 평점: `${rating.value}점 (${rating.reviewCount || 0}건)` } : {}),
+    ...(item.attentionCount ? { 견적비교: item.attentionCount } : {}),
+    ...(bestCard ? { 카드할인: `${bestCard.cardName} 최대 ${(bestCard.maxMonthlyDiscount || 0).toLocaleString()}원/월` } : {}),
+    ...(contracts.length > 0 ? { 약정혜택: contracts[0] } : {}),
+    ...(services.length > 0 ? { 관리서비스: services } : {}),
     상품URL: item.url,
     썸네일: item.thumbnail || '',
     이미지: item.images || [],
-    ...(item.sku ? { SKU: item.sku } : {}),
   };
 }
