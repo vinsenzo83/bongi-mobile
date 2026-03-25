@@ -71,7 +71,7 @@ app.use('/api/cti', authenticateJWT, requireMinRole('agent'), ctiRoutes);
 app.use('/api/cache', authenticateJWT, requireMinRole('agent'), cacheRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: '리턴AI API' });
+  res.json({ status: 'ok', service: '리턴AI API', version: 'v3-intent' });
 });
 
 // 프로덕션: 클라이언트 정적 파일 서빙
