@@ -106,6 +106,21 @@ export const api = {
     remove: (id) => request(`/alarms/${id}`, { method: 'DELETE' }),
   },
 
+  // 리턴캐쉬
+  cash: {
+    getBalance: () => request('/cash/balance'),
+    getHistory: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return request(`/cash/history${qs ? '?' + qs : ''}`);
+    },
+    withdraw: (data) => request('/cash/withdraw', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    getBanks: () => request('/cash/banks'),
+    getPolicy: () => request('/cash/policy'),
+  },
+
   // 친구초대 (추천인)
   referrals: {
     getMyCode: (code) => request(`/referrals/my-code${code ? '?code=' + code : ''}`),

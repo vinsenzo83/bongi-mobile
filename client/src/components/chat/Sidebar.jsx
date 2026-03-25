@@ -1,8 +1,18 @@
+import { useState, useEffect } from 'react';
 import DonJikimi from './DonJikimi.jsx';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { api } from '../../utils/api.js';
 
 export default function Sidebar({ open, onClose, sessions, currentId, onNewChat, onSelectSession, onDeleteSession }) {
   const { user, logout } = useAuth();
+  const [cashBalance, setCashBalance] = useState(0);
+
+  useEffect(() => {
+    api.cash.getBalance()
+      .then(res => setCashBalance(res.balance || 0))
+      .catch(() => setCashBalance(0));
+  }, []);
+
   return (
     <>
       {/* 모바일 오버레이 */}
@@ -38,7 +48,10 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
         <div style={styles.footer}>
           <DonJikimi />
           <a href="/mypage?tab=referral" style={{ ...styles.mypageBtn, background: 'linear-gradient(135deg, #1a3a5c, #2a4a6c)', border: '1px solid #3a6a9c', marginBottom: 8 }}>🎁 친구초대</a>
-          <a href="/mypage" style={styles.mypageBtn}>📋 마이페이지</a>
+          <a href="/mypage" style={{ ...styles.mypageBtn, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>📋 마이페이지</span>
+            <span style={{ color: '#fbbf24', fontWeight: 700, fontSize: 13 }}>{cashBalance > 0 ? `${cashBalance.toLocaleString()}원` : ''}</span>
+          </a>
           {user ? (
             <button onClick={() => { logout(); onClose(); }} style={{ ...styles.mypageBtn, marginTop: 8, background: 'transparent', border: '1px solid #555', color: '#aaa', cursor: 'pointer' }}>
               🔓 로그아웃 ({user.displayName || user.email?.split('@')[0]})

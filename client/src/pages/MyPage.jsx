@@ -219,8 +219,8 @@ export default function MyPage() {
       return;
     }
     const amount = parseInt(withdrawForm.amount);
-    if (!amount || amount < 10000) {
-      setWithdrawError('최소 출금 금액은 10,000원입니다.');
+    if (!amount || amount < 30000) {
+      setWithdrawError('최소 출금 금액은 30,000원입니다.');
       return;
     }
     if (amount > cashBalance) {
@@ -687,7 +687,7 @@ export default function MyPage() {
                   </div>
                   <div>
                     <label style={{ fontSize: 13, color: '#aaa', marginBottom: 4, display: 'block' }}>출금 금액</label>
-                    <input type="number" placeholder="10,000원 이상" value={withdrawForm.amount} onChange={e => handleWithdrawChange('amount', e.target.value)} style={inputStyle} />
+                    <input type="number" placeholder="30,000원 이상" value={withdrawForm.amount} onChange={e => handleWithdrawChange('amount', e.target.value)} style={inputStyle} />
                   </div>
                   {withdrawError && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{withdrawError}</p>}
                   {withdrawSuccess && <p style={{ color: '#34d399', fontSize: 13 }}>{withdrawSuccess}</p>}
@@ -731,12 +731,11 @@ export default function MyPage() {
               <h3 style={{ fontSize: 16, marginBottom: 16 }}>출금 정책</h3>
               <div style={{ fontSize: 14, color: '#aaa', lineHeight: 2 }}>
                 <div>- 출금 자격: 1회 이상 계약 완료 고객</div>
-                <div>- 최소 출금 금액: 10,000원</div>
+                <div>- 최소 출금 금액: 30,000원</div>
                 <div>- 출금 수수료: 무료</div>
-                <div>- 처리 기간: 영업일 기준 3~5일</div>
+                <div>- 처리 기간: 영업일 기준 1~2일</div>
                 <div>- 출금 계좌: 본인 명의만 가능</div>
-                <div>- 월 출금 한도: 500,000원</div>
-              </div>
+                              </div>
             </div>
           </div>
         )}
