@@ -1,6 +1,8 @@
 import DonJikimi from './DonJikimi.jsx';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 export default function Sidebar({ open, onClose, sessions, currentId, onNewChat, onSelectSession, onDeleteSession }) {
+  const { user, logout } = useAuth();
   return (
     <>
       {/* 모바일 오버레이 */}
@@ -39,6 +41,15 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
         <div style={styles.footer}>
           <a href="/mypage?tab=referral" style={{ ...styles.mypageBtn, background: 'linear-gradient(135deg, #1a3a5c, #2a4a6c)', border: '1px solid #3a6a9c', marginBottom: 8 }}>🎁 친구초대</a>
           <a href="/mypage" style={styles.mypageBtn}>📋 마이페이지</a>
+          {user ? (
+            <button onClick={() => { logout(); onClose(); }} style={{ ...styles.mypageBtn, marginTop: 8, background: 'transparent', border: '1px solid #555', color: '#aaa', cursor: 'pointer' }}>
+              🔓 로그아웃 ({user.displayName || user.email?.split('@')[0]})
+            </button>
+          ) : (
+            <a href="/login" style={{ ...styles.mypageBtn, marginTop: 8, background: 'linear-gradient(135deg, #2a6a2a, #3a8a3a)', border: '1px solid #4a9a4a' }}>
+              🔐 로그인 / 회원가입
+            </a>
+          )}
           <div style={{ marginTop: 12 }}>
             <div style={styles.footerText}>🐟 리턴AI</div>
             <div style={styles.footerSub}>광주/전라 8개 직영 매장</div>
