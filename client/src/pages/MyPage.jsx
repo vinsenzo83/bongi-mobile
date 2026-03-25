@@ -175,7 +175,8 @@ export default function MyPage() {
 
   return (
     <section className="section">
-      <div className="container" style={{ maxWidth: 700 }}>
+      <div className="container" style={{ maxWidth: 700, position: 'relative' }}>
+        <button onClick={() => navigate('/')} style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', color: '#aaa', fontSize: 24, cursor: 'pointer', padding: 8, zIndex: 1 }}>✕</button>
         {/* 프로필 헤더 */}
         <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>

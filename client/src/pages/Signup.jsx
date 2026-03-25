@@ -36,7 +36,8 @@ export default function Signup() {
 
   return (
     <section className="section">
-      <div className="container" style={{ maxWidth: 420 }}>
+      <div className="container" style={{ maxWidth: 420, position: 'relative' }}>
+        <button onClick={() => navigate('/')} style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', color: '#aaa', fontSize: 24, cursor: 'pointer', padding: 8 }}>✕</button>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>🐟</div>
           <h2 style={{ fontSize: 24, marginBottom: 4 }}>회원가입</h2>

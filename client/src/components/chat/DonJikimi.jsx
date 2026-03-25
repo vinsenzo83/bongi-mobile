@@ -271,10 +271,10 @@ export default function DonJikimi() {
 
 const styles = {
   container: {
-    margin: '12px 12px 0',
-    borderRadius: 10,
-    border: '1px solid #333',
-    background: '#1e1e1e',
+    marginBottom: 8,
+    borderRadius: 8,
+    border: '1px solid #444',
+    background: '#2a2a2a',
     overflow: 'hidden',
   },
   header: {
@@ -285,11 +285,11 @@ const styles = {
     cursor: 'pointer',
     userSelect: 'none',
   },
-  headerIcon: { fontSize: 16 },
+  headerIcon: { fontSize: 14 },
   headerTitle: {
     fontSize: 13,
-    fontWeight: 700,
-    color: '#60a5fa',
+    fontWeight: 600,
+    color: '#ddd',
     flex: 1,
   },
   badge: {
