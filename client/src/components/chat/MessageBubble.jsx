@@ -36,6 +36,28 @@ export default function MessageBubble({ message, onAction }) {
   );
 }
 
+function ScrollableCards({ children, count }) {
+  return (
+    <div style={{ position: 'relative' }}>
+      <div style={{
+        display: 'flex',
+        gap: 10,
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        scrollSnapType: 'x mandatory',
+        paddingBottom: 10,
+      }}>
+        {children}
+      </div>
+      {count > 1 && (
+        <div style={{ textAlign: 'center', fontSize: 11, color: '#888', marginTop: 2 }}>
+          ← 좌우로 스와이프 ({count}개) →
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RichElement({ element, onAction }) {
   if (!element) return null;
 
@@ -44,30 +66,30 @@ function RichElement({ element, onAction }) {
       return <ActionButtons buttons={element.buttons} onAction={onAction} />;
     case 'product_cards':
       return (
-        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', paddingBottom: 8, scrollbarWidth: 'none' }}>
+        <ScrollableCards count={element.products?.length || 0}>
           {element.products?.map((p, i) => (
             <div key={i} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
               <ProductCard product={p} onAction={onAction} />
             </div>
           ))}
-        </div>
+        </ScrollableCards>
       );
     case 'rental_cards':
       return (
-        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', paddingBottom: 8, scrollbarWidth: 'none' }}>
+        <ScrollableCards count={element.products?.length || 0}>
           {element.products?.map((p, i) => (
             <div key={i} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
               <RentalCard product={p} onAction={onAction} />
             </div>
           ))}
-        </div>
+        </ScrollableCards>
       );
     case 'compare_table':
       return <CompareTable items={element.items} onAction={onAction} />;
     case 'mobile_price_cards':
       return (
         <div>
-          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', paddingBottom: 8, scrollbarWidth: 'none' }}>
+          <ScrollableCards count={element.items?.length || 0}>
             {element.items?.map((item, i) => {
               const carrierKey = { 'SK': 'skt', 'KT': 'kt', 'LG U+': 'lg' }[item.통신사] || '';
               const services = element.services?.[item.통신사] || element.services?.[carrierKey] || [];
@@ -78,7 +100,7 @@ function RichElement({ element, onAction }) {
                 </div>
               );
             })}
-          </div>
+          </ScrollableCards>
           {element.date && (
             <div style={{ fontSize: 11, color: '#666', marginTop: 8, textAlign: 'center' }}>
               📅 {element.date} 기준 시세 | 변동될 수 있으며 자세한 내용은 매장에 문의 바랍니다
