@@ -102,6 +102,7 @@ router.post('/message/stream', async (req, res) => {
 
 // 메시지 전송 → AI 응답 (non-streaming fallback)
 router.post('/message', async (req, res) => {
+  console.log(`[chat/message] v2 received: "${(req.body.message || '').slice(0, 30)}"`);
   const { session_id, message } = req.body;
 
   if (!session_id || !message) {
