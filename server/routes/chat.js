@@ -102,7 +102,6 @@ router.post('/message/stream', async (req, res) => {
 
 // 메시지 전송 → AI 응답 (non-streaming fallback)
 router.post('/message', async (req, res) => {
-  console.log(`[chat/message] v2 received: "${(req.body.message || '').slice(0, 30)}"`);
   const { session_id, message } = req.body;
 
   if (!session_id || !message) {
@@ -112,6 +111,7 @@ router.post('/message', async (req, res) => {
   try {
     const context = { userId: req.user?.id || null };
     const result = await processMessage(session_id, message, context);
+    result._debug_intent = result._debug_intent || null;
     res.json(result);
   } catch (e) {
     console.error('채팅 에러:', e.message);

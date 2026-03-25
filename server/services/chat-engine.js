@@ -378,16 +378,13 @@ export async function processMessage(sessionId, userMessage, context = {}) {
 
   // 인텐트 감지 (캐시/Claude보다 먼저!)
   const intent = detectIntent(userMessage);
-  if (intent) console.log(`[인텐트 감지] type=${intent.type}, message="${userMessage.slice(0, 30)}"`);
-
   // 확정 인텐트: Claude 거치지 않고 서버에서 직접 응답
   if (intent?.directReply) {
-    console.log(`[직접응답] type=${intent.type}`);
     const reply = intent.directReply;
     session.messages.push({ role: 'assistant', content: reply });
     await saveSession(session);
     persistMessage(sessionId, 'assistant', reply);
-    return { reply, ui_elements: intent.ui_elements || [] };
+    return { reply, ui_elements: intent.ui_elements || [], _debug_intent: intent.type };
   }
 
   // 확정 인텐트 중 도구 호출이 필요한 경우 (후기 등)
@@ -397,7 +394,7 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     session.messages.push({ role: 'assistant', content: toolReply });
     await saveSession(session);
     persistMessage(sessionId, 'assistant', toolReply);
-    return { reply: toolReply, ui_elements: [] };
+    return { reply: toolReply, ui_elements: [], _debug_intent: intent.type };
   }
 
   const systemPrompt = intent
