@@ -4,9 +4,9 @@ import { api } from '../../utils/api.js';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 const ALARM_CATEGORIES = [
-  { type: 'plan_change', label: '요금제 변경 가능일', icon: '\uD83D\uDCF1', defaultTitle: '요금제 변경 가능' },
-  { type: 'addon_cancel', label: '부가서비스 해지일', icon: '\uD83D\uDDD1\uFE0F', defaultTitle: '부가서비스 해지' },
-  { type: 'internet_expire', label: '인터넷 약정 종료일', icon: '\uD83C\uDF10', defaultTitle: '인터넷 약정 종료' },
+  { type: 'plan_change', label: '요금제 변경 가능일', icon: '\uD83D\uDCF1', defaultTitle: '요금제 변경 가능', multiple: true },
+  { type: 'addon_cancel', label: '부가서비스 해지일', icon: '\uD83D\uDDD1\uFE0F', defaultTitle: '부가서비스 해지', multiple: true },
+  { type: 'internet_expire', label: '인터넷 약정 종료일', icon: '\uD83C\uDF10', defaultTitle: '인터넷 약정 종료', multiple: true },
   { type: 'rental_expire', label: '렌탈 약정 종료일', icon: '\uD83C\uDFE0', defaultTitle: '렌탈 약정 종료', multiple: true },
 ];
 
