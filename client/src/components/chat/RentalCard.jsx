@@ -14,7 +14,7 @@ export default function RentalCard({ product, onAction }) {
   return (
     <div style={{
       ...styles.card,
-      ...(isMobile ? { maxWidth: '100%', width: '100%' } : {}),
+      ...(isMobile ? { minWidth: 250, width: 250 } : {}),
     }}>
       <div style={styles.topSection}>
         {thumbnail && (
@@ -131,7 +131,9 @@ const styles = {
     borderRadius: 12,
     padding: 14,
     marginTop: 8,
+    minWidth: 270,
     maxWidth: 320,
+    width: 270,
   },
   topSection: {
     display: 'flex',

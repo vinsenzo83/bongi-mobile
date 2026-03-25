@@ -7,6 +7,47 @@ function getAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// 글자 단위 타이핑 큐 (GPT처럼 자연스러운 출력)
+function createTypingQueue(onChar, speed = 18) {
+  let queue = '';
+  let timer = null;
+  let running = false;
+
+  function flush() {
+    if (queue.length === 0) {
+      running = false;
+      return;
+    }
+    running = true;
+    // 한번에 1~3글자씩 출력 (자연스러운 속도감)
+    const chunk = queue.slice(0, Math.random() < 0.3 ? 2 : 1);
+    queue = queue.slice(chunk.length);
+    onChar(chunk);
+    timer = setTimeout(flush, speed + Math.random() * 12);
+  }
+
+  return {
+    push(text) {
+      queue += text;
+      if (!running) flush();
+    },
+    // 남은 큐 즉시 출력 (done 이벤트 시)
+    drain() {
+      if (timer) clearTimeout(timer);
+      if (queue.length > 0) {
+        onChar(queue);
+        queue = '';
+      }
+      running = false;
+    },
+    clear() {
+      if (timer) clearTimeout(timer);
+      queue = '';
+      running = false;
+    },
+  };
+}
+
 export function useChat() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -14,6 +55,7 @@ export function useChat() {
   const [sessions, setSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const bottomRef = useRef(null);
+  const typingQueueRef = useRef(null);
 
   // 세션 목록을 API에서 로드 (Supabase 영속화)
   useEffect(() => {
@@ -147,9 +189,24 @@ export function useChat() {
         return;
       }
 
+      // 글자 단위 타이핑 큐 생성
+      const typing = createTypingQueue((chars) => {
+        setMessages(prev => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          updated[updated.length - 1] = {
+            ...last,
+            content: last.content + chars,
+          };
+          return updated;
+        });
+      });
+      typingQueueRef.current = typing;
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let doneEvent = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -157,7 +214,6 @@ export function useChat() {
 
         buffer += decoder.decode(value, { stream: true });
 
-        // 완전한 SSE 메시지만 처리 (더블 newline으로 구분)
         const parts = buffer.split('\n\n');
         buffer = parts.pop() || '';
 
@@ -165,27 +221,11 @@ export function useChat() {
           const events = parseSSELines(part);
           for (const data of events) {
             if (data.type === 'text') {
-              setMessages(prev => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                updated[updated.length - 1] = {
-                  ...last,
-                  content: last.content + data.text,
-                };
-                return updated;
-              });
+              typing.push(data.text);
             } else if (data.type === 'done') {
-              setMessages(prev => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                updated[updated.length - 1] = {
-                  ...last,
-                  streaming: false,
-                  ui_elements: data.ui_elements || [],
-                };
-                return updated;
-              });
+              doneEvent = data;
             } else if (data.type === 'error') {
+              typing.clear();
               setMessages(prev => {
                 const updated = [...prev];
                 updated[updated.length - 1] = {
@@ -204,19 +244,26 @@ export function useChat() {
       if (buffer.trim()) {
         const events = parseSSELines(buffer);
         for (const data of events) {
-          if (data.type === 'done') {
-            setMessages(prev => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              updated[updated.length - 1] = {
-                ...last,
-                streaming: false,
-                ui_elements: data.ui_elements || [],
-              };
-              return updated;
-            });
-          }
+          if (data.type === 'text') typing.push(data.text);
+          if (data.type === 'done') doneEvent = data;
         }
+      }
+
+      // 큐에 남은 글자 모두 출력 후 완료 처리
+      typing.drain();
+      typingQueueRef.current = null;
+
+      if (doneEvent) {
+        setMessages(prev => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          updated[updated.length - 1] = {
+            ...last,
+            streaming: false,
+            ui_elements: doneEvent.ui_elements || [],
+          };
+          return updated;
+        });
       }
 
       // 세션 제목 업데이트 (첫 메시지로)
@@ -229,6 +276,8 @@ export function useChat() {
         });
       }
     } catch (e) {
+      if (typingQueueRef.current) typingQueueRef.current.clear();
+      typingQueueRef.current = null;
       setMessages(prev => {
         const updated = [...prev];
         updated[updated.length - 1] = {

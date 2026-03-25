@@ -67,12 +67,16 @@ function RichElement({ element, onAction }) {
     case 'mobile_price_cards':
       return (
         <div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', paddingBottom: 8, scrollbarWidth: 'none' }}>
             {element.items?.map((item, i) => {
               const carrierKey = { 'SK': 'skt', 'KT': 'kt', 'LG U+': 'lg' }[item.통신사] || '';
               const services = element.services?.[item.통신사] || element.services?.[carrierKey] || [];
               const plan = element.plans?.[item.통신사] || element.plans?.[carrierKey] || null;
-              return <MobilePriceCard key={i} item={item} services={services} plan={plan} onAction={onAction} />;
+              return (
+                <div key={i} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
+                  <MobilePriceCard item={item} services={services} plan={plan} onAction={onAction} />
+                </div>
+              );
             })}
           </div>
           {element.date && (

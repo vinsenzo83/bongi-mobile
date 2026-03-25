@@ -78,7 +78,9 @@ const styles = {
     borderRadius: 12,
     padding: 14,
     marginTop: 8,
+    minWidth: 280,
     maxWidth: 340,
+    width: 280,
   },
   header: {
     display: 'flex',
