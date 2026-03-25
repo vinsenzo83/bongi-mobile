@@ -2,6 +2,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { TOOLS, executeTool } from './chat-tools.js';
 import { getSession, saveSession, persistMessage, updateSessionTitle } from './chat-session.js';
+import { getCachedResponse, setCachedResponse, isCacheable } from './cache.js';
 
 const client = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -246,6 +247,17 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     updateSessionTitle(sessionId, userMessage);
   }
 
+  // 캐시 체크 — 첫 메시지(단독 질문)만 캐시 대상
+  if (isFirstMessage) {
+    const cached = getCachedResponse(userMessage);
+    if (cached) {
+      session.messages.push({ role: 'assistant', content: cached.reply });
+      await saveSession(session);
+      persistMessage(sessionId, 'assistant', cached.reply);
+      return { reply: cached.reply, ui_elements: cached.ui_elements || [], fromCache: true };
+    }
+  }
+
   // API 키 없으면 Mock 응답
   if (!client) {
     const mockReply = getMockReply(userMessage);
@@ -311,9 +323,16 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     persistMessage(sessionId, 'assistant', reply);
   }
 
+  const ui_elements = extractUIElements(session.messages);
+
+  // 첫 메시지 응답을 캐시에 저장 (다음 동일 질문에서 API 호출 절약)
+  if (isFirstMessage && reply) {
+    setCachedResponse(userMessage, { reply, ui_elements });
+  }
+
   return {
     reply,
-    ui_elements: extractUIElements(session.messages),
+    ui_elements,
   };
 }
 
@@ -428,6 +447,122 @@ function extractUIElements(messages) {
   }
 
   return elements;
+}
+
+// 스트리밍 메시지 처리
+export async function processMessageStream(sessionId, userMessage, context = {}, onChunk) {
+  const session = getSession(sessionId);
+  if (!session) throw new Error('세션을 찾을 수 없습니다');
+
+  session.messages.push({ role: 'user', content: userMessage });
+
+  // DB에 유저 메시지 영속화
+  persistMessage(sessionId, 'user', userMessage);
+
+  // 첫 메시지면 세션 제목 업데이트
+  const isFirstMessage = session.messages.filter(m => m.role === 'user' && typeof m.content === 'string').length === 1;
+  if (isFirstMessage) {
+    updateSessionTitle(sessionId, userMessage);
+  }
+
+  // 캐시 체크 — 첫 메시지(단독 질문)만 캐시 대상
+  if (isFirstMessage) {
+    const cached = getCachedResponse(userMessage);
+    if (cached) {
+      onChunk({ type: 'text', text: cached.reply });
+      session.messages.push({ role: 'assistant', content: cached.reply });
+      await saveSession(session);
+      persistMessage(sessionId, 'assistant', cached.reply);
+      return { ui_elements: cached.ui_elements || [], fromCache: true };
+    }
+  }
+
+  // API 키 없으면 Mock 응답 (청크 단위로 전송)
+  if (!client) {
+    const mockReply = getMockReply(userMessage);
+    // Mock은 한번에 전송
+    onChunk({ type: 'text', text: mockReply });
+    session.messages.push({ role: 'assistant', content: mockReply });
+    await saveSession(session);
+    persistMessage(sessionId, 'assistant', mockReply);
+    return { ui_elements: [] };
+  }
+
+  // 스트리밍 Claude 호출 + Tool Use 루프
+  let loopCount = 0;
+  let lastResponse = null;
+
+  // 첫 호출 (스트리밍)
+  lastResponse = await streamClaudeResponse(session, onChunk);
+
+  // Tool Use 루프: 도구 호출이 필요하면 실행 후 재호출
+  while (lastResponse.stop_reason === 'tool_use' && loopCount < 5) {
+    const toolUseBlocks = lastResponse.content.filter(b => b.type === 'tool_use');
+    const toolResults = [];
+
+    onChunk({ type: 'tool_start', tools: toolUseBlocks.map(b => b.name) });
+
+    for (const block of toolUseBlocks) {
+      const result = await executeTool(block.name, block.input, context);
+      toolResults.push({
+        type: 'tool_result',
+        tool_use_id: block.id,
+        content: JSON.stringify(result),
+      });
+    }
+
+    session.messages.push({ role: 'assistant', content: lastResponse.content });
+    session.messages.push({ role: 'user', content: toolResults });
+
+    onChunk({ type: 'tool_done' });
+
+    // 도구 결과 이후 재호출 (스트리밍)
+    lastResponse = await streamClaudeResponse(session, onChunk);
+    loopCount++;
+  }
+
+  // 최종 응답을 세션에 저장
+  session.messages.push({ role: 'assistant', content: lastResponse.content });
+  await saveSession(session);
+
+  // DB에 어시스턴트 텍스트 메시지 영속화
+  const textBlocks = lastResponse.content.filter(b => b.type === 'text');
+  const reply = textBlocks.map(b => b.text).join('\n');
+  if (reply) {
+    persistMessage(sessionId, 'assistant', reply);
+  }
+
+  const ui_elements = extractUIElements(session.messages);
+
+  // 첫 메시지 응답을 캐시에 저장
+  if (isFirstMessage && reply) {
+    setCachedResponse(userMessage, { reply, ui_elements });
+  }
+
+  return {
+    ui_elements,
+  };
+}
+
+// Claude 스트리밍 호출 헬퍼
+async function streamClaudeResponse(session, onChunk) {
+  const stream = client.messages.stream({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1024,
+    system: SYSTEM_PROMPT,
+    tools: TOOLS,
+    messages: session.messages.map(m => ({
+      role: m.role,
+      content: m.content,
+    })),
+  });
+
+  stream.on('text', (text) => {
+    onChunk({ type: 'text', text });
+  });
+
+  const finalMessage = await stream.finalMessage();
+  return finalMessage;
 }
 
 // Mock 응답 (API 키 없을 때)

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createSession, restoreSession, listSessions, getSessionMessages } from '../services/chat-session.js';
-import { processMessage } from '../services/chat-engine.js';
+import { processMessage, processMessageStream } from '../services/chat-engine.js';
 
 const router = Router();
 
@@ -54,7 +54,53 @@ router.get('/sessions/:id/messages', async (req, res) => {
   }
 });
 
-// 메시지 전송 → AI 응답
+// 메시지 전송 → AI 응답 (SSE 스트리밍)
+router.post('/message/stream', async (req, res) => {
+  const { session_id, message } = req.body;
+
+  if (!session_id || !message) {
+    return res.status(400).json({ error: 'session_id와 message는 필수입니다' });
+  }
+
+  // SSE 헤더 설정
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  // 클라이언트 연결 끊김 감지
+  let clientDisconnected = false;
+  req.on('close', () => {
+    clientDisconnected = true;
+  });
+
+  const sendSSE = (data) => {
+    if (clientDisconnected) return;
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    const context = { userId: req.user?.id || null };
+    const result = await processMessageStream(session_id, message, context, (chunk) => {
+      sendSSE(chunk);
+    });
+
+    // 완료 이벤트 (UI 요소 포함)
+    sendSSE({ type: 'done', ui_elements: result.ui_elements || [] });
+  } catch (e) {
+    console.error('스트리밍 채팅 에러:', e.message);
+    sendSSE({
+      type: 'error',
+      message: '죄송합니다. 일시적인 오류가 발생했어요. 다시 시도해주시거나 1600-XXXX로 전화주세요.',
+    });
+  } finally {
+    res.end();
+  }
+});
+
+// 메시지 전송 → AI 응답 (non-streaming fallback)
 router.post('/message', async (req, res) => {
   const { session_id, message } = req.body;
 

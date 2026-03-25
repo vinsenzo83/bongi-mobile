@@ -208,12 +208,14 @@ function SelfPage({ product, ticket }) {
 
   const handleSubmit = async () => {
     try {
+      const referralCode = localStorage.getItem('referral_code') || '';
       const data = await api.submitApplication({
         type: 'self',
         channel: 'web',
         name: form.name,
         phone: form.phone,
         productTicket: ticket,
+        referralCode,
         message: JSON.stringify({
           customerType: form.customerType,
           birthDate: form.birthDate,

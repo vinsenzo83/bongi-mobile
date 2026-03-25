@@ -90,7 +90,21 @@ export function useChat() {
     }
   }, []);
 
-  // 메시지 전송
+  // SSE 스트리밍 파서
+  const parseSSELines = useCallback((text) => {
+    const events = [];
+    const lines = text.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          events.push(JSON.parse(line.slice(6)));
+        } catch { /* 파싱 실패 무시 */ }
+      }
+    }
+    return events;
+  }, []);
+
+  // 메시지 전송 (SSE 스트리밍)
   const sendMessage = useCallback(async (text) => {
     if (!text.trim() || loading) return;
 
@@ -101,20 +115,109 @@ export function useChat() {
     }
 
     // 유저 메시지 추가
-    const userMsg = { role: 'user', content: text };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    // 빈 AI 메시지 추가 (스트리밍으로 채워짐)
+    setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true, ui_elements: [] }]);
     setLoading(true);
 
     try {
-      const res = await fetch(`${API}/chat/message`, {
+      const res = await fetch(`${API}/chat/message/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ session_id: sid, message: text }),
       });
-      const data = await res.json();
 
-      const aiMsg = { role: 'assistant', content: data.reply, ui_elements: data.ui_elements || [] };
-      setMessages(prev => [...prev, aiMsg]);
+      if (!res.ok) {
+        // 스트리밍 실패 시 non-streaming fallback
+        const fallbackRes = await fetch(`${API}/chat/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({ session_id: sid, message: text }),
+        });
+        const data = await fallbackRes.json();
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: 'assistant',
+            content: data.reply,
+            ui_elements: data.ui_elements || [],
+          };
+          return updated;
+        });
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // 완전한 SSE 메시지만 처리 (더블 newline으로 구분)
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+
+        for (const part of parts) {
+          const events = parseSSELines(part);
+          for (const data of events) {
+            if (data.type === 'text') {
+              setMessages(prev => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                updated[updated.length - 1] = {
+                  ...last,
+                  content: last.content + data.text,
+                };
+                return updated;
+              });
+            } else if (data.type === 'done') {
+              setMessages(prev => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                updated[updated.length - 1] = {
+                  ...last,
+                  streaming: false,
+                  ui_elements: data.ui_elements || [],
+                };
+                return updated;
+              });
+            } else if (data.type === 'error') {
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  role: 'assistant',
+                  content: data.message,
+                  streaming: false,
+                };
+                return updated;
+              });
+            }
+          }
+        }
+      }
+
+      // 남은 버퍼 처리
+      if (buffer.trim()) {
+        const events = parseSSELines(buffer);
+        for (const data of events) {
+          if (data.type === 'done') {
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              updated[updated.length - 1] = {
+                ...last,
+                streaming: false,
+                ui_elements: data.ui_elements || [],
+              };
+              return updated;
+            });
+          }
+        }
+      }
 
       // 세션 제목 업데이트 (첫 메시지로)
       if (messages.length === 0) {
@@ -126,14 +229,19 @@ export function useChat() {
         });
       }
     } catch (e) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: '죄송합니다. 오류가 발생했어요. 다시 시도하거나 1600-XXXX로 전화주세요.',
-      }]);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: 'assistant',
+          content: '죄송합니다. 오류가 발생했어요. 다시 시도하거나 1600-XXXX로 전화주세요.',
+          streaming: false,
+        };
+        return updated;
+      });
     } finally {
       setLoading(false);
     }
-  }, [sessionId, loading, messages.length, startNewSession]);
+  }, [sessionId, loading, messages.length, startNewSession, parseSSELines]);
 
   // 세션 삭제
   const deleteSession = useCallback((id) => {
