@@ -312,11 +312,16 @@ function detectIntent(message) {
         }
         let text = '고객님들의 실제 후기를 보여드릴게요! ⭐\n\n';
         for (const r of result.reviews) {
-          const stars = '★'.repeat(Math.min(r.rating || 5, 5));
-          text += `**${stars}** ${r.product_name || r.category || '상품'}\n`;
-          if (r.image_url) text += `![후기](${r.image_url})\n`;
-          text += `"${r.content}"\n`;
-          text += `— ${r.author || '고객'} (${r.created_at?.slice(0, 10) || ''})\n\n`;
+          const stars = r['별점'] || '★★★★★';
+          const product = r['상품'] || '상품';
+          const content = r['내용'] || '';
+          const author = r['작성자'] || '고객';
+          const date = r['작성일'] || '';
+          const image = r['이미지'] || '';
+          text += `**${stars}** ${product}\n`;
+          if (image) text += `![후기](${image})\n`;
+          text += `"${content}"\n`;
+          text += `— ${author} (${date})\n\n`;
         }
         text += '만족하셨다면 친구분도 소개해주세요! 친구가 가입하면 2천원, 계약까지 하면 2만원 추가 보상! 🎁';
         return text;
@@ -384,7 +389,7 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     session.messages.push({ role: 'assistant', content: reply });
     await saveSession(session);
     persistMessage(sessionId, 'assistant', reply);
-    return { reply, ui_elements: intent.ui_elements || [], _debug_intent: intent.type };
+    return { reply, ui_elements: intent.ui_elements || [] };
   }
 
   // 확정 인텐트 중 도구 호출이 필요한 경우 (후기 등)
@@ -394,7 +399,7 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     session.messages.push({ role: 'assistant', content: toolReply });
     await saveSession(session);
     persistMessage(sessionId, 'assistant', toolReply);
-    return { reply: toolReply, ui_elements: [], _debug_intent: intent.type };
+    return { reply: toolReply, ui_elements: [] };
   }
 
   const systemPrompt = intent
@@ -487,10 +492,6 @@ export async function processMessage(sessionId, userMessage, context = {}) {
   return {
     reply,
     ui_elements,
-    _debug_intent: intent?.type || null,
-    _debug_msg: userMessage.slice(0, 30),
-    _debug_has_kw: /알뜰|후기|친구/.test(userMessage),
-    _debug_len: userMessage.length,
   };
 }
 
