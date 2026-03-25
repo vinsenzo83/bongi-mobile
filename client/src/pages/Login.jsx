@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
+import SocialLoginButtons from '../components/SocialLoginButtons.jsx';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -43,6 +44,16 @@ export default function Login() {
             {error}
           </div>
         )}
+
+        <div className="card" style={{ marginBottom: 16 }}>
+          <SocialLoginButtons />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--border-color, #e5e7eb)' }} />
+          <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>또는 이메일로 로그인</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border-color, #e5e7eb)' }} />
+        </div>
 
         <form onSubmit={handleSubmit} className="card">
           <div style={{ marginBottom: 16 }}>

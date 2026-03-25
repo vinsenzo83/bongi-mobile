@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase.js';
 
 const AuthContext = createContext(null);
 const API = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
@@ -77,10 +78,53 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setToken(null);
     setUser(null);
+    supabase.auth.signOut().catch(() => {});
+  };
+
+  // Supabase auth state 변경 감지 (소셜 로그인 콜백 처리)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          setToken(session.access_token);
+
+          // /me 호출로 사용자 정보 가져오기
+          try {
+            const res = await fetch(`${API}/auth/me`, {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              setUser(data.user);
+            }
+          } catch {
+            // AuthCallback에서 처리
+          }
+        }
+
+        if (event === 'SIGNED_OUT') {
+          setToken(null);
+          setUser(null);
+        }
+      },
+    );
+
+    return () => subscription.unsubscribe();
+  }, [setToken]);
+
+  // 소셜 로그인
+  const socialLogin = async (provider) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) throw new Error(error.message);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, getToken }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, socialLogin, getToken }}>
       {children}
     </AuthContext.Provider>
   );

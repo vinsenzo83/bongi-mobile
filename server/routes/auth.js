@@ -97,6 +97,48 @@ router.post('/login', authLimiter, async (req, res) => {
   }
 });
 
+// 소셜 로그인 후 프로필 확인/생성
+router.post('/social-profile', authenticateJWT, async (req, res) => {
+  try {
+    const { name, avatar } = req.body;
+
+    // 프로필 존재 확인
+    const { data: existing } = await supabase
+      .from('bongi_user_profiles')
+      .select('id')
+      .eq('id', req.user.id)
+      .single();
+
+    if (!existing) {
+      // 프로필 생성
+      const { error: insertError } = await supabase
+        .from('bongi_user_profiles')
+        .insert({
+          id: req.user.id,
+          role: 'customer',
+          display_name: name || req.user.email?.split('@')[0] || 'User',
+          avatar_url: avatar || null,
+        });
+
+      if (insertError) {
+        console.error('소셜 프로필 생성 실패:', insertError.message);
+        return res.status(500).json({ error: '프로필 생성 실패' });
+      }
+    } else if (avatar) {
+      // 기존 프로필에 아바타 업데이트 (없는 경우만)
+      await supabase
+        .from('bongi_user_profiles')
+        .update({ avatar_url: avatar })
+        .eq('id', req.user.id)
+        .is('avatar_url', null);
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // FIX #1: /me 엔드포인트 — authenticateJWT 미들웨어 사용
 router.get('/me', authenticateJWT, (req, res) => {
   res.json({ user: req.user });
