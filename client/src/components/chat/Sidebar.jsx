@@ -9,9 +9,6 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
       {open && <div onClick={onClose} style={styles.overlay} />}
 
       <div style={{ ...styles.sidebar, ...(open ? styles.sidebarOpen : {}) }}>
-        {/* 돈지키미 — 사이드바 상단 고정 */}
-        <DonJikimi />
-
         {/* 새 대화 버튼 */}
         <button onClick={() => { onNewChat(); onClose(); }} style={styles.newBtn}>
           + 새 대화
@@ -39,6 +36,7 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
 
         {/* 하단 */}
         <div style={styles.footer}>
+          <DonJikimi />
           <a href="/mypage?tab=referral" style={{ ...styles.mypageBtn, background: 'linear-gradient(135deg, #1a3a5c, #2a4a6c)', border: '1px solid #3a6a9c', marginBottom: 8 }}>🎁 친구초대</a>
           <a href="/mypage" style={styles.mypageBtn}>📋 마이페이지</a>
           {user ? (
@@ -50,10 +48,6 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
               🔐 로그인 / 회원가입
             </a>
           )}
-          <div style={{ marginTop: 12 }}>
-            <div style={styles.footerText}>🐟 리턴AI</div>
-            <div style={styles.footerSub}>광주/전라 8개 직영 매장</div>
-          </div>
         </div>
       </div>
     </>
