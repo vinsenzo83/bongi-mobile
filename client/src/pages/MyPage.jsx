@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { api } from '../utils/api.js';
 
@@ -40,18 +40,37 @@ function StarRating({ value, onChange, readOnly = false }) {
 export default function MyPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState('applications');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'applications';
+  const [tab, setTab] = useState(initialTab);
   const [applications, setApplications] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState(INITIAL_REVIEW_FORM);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState('');
+  const [referralCode, setReferralCode] = useState('');
+  const [referralStats, setReferralStats] = useState(null);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   useEffect(() => {
     api.crm.getApplications()
       .then(setApplications)
       .catch(() => setApplications([]));
   }, []);
+
+  useEffect(() => {
+    if (tab === 'referral') {
+      const savedCode = localStorage.getItem('my_referral_code');
+      api.referrals.getMyCode(savedCode || undefined)
+        .then(res => {
+          setReferralCode(res.code);
+          localStorage.setItem('my_referral_code', res.code);
+          return api.referrals.getStats(res.code);
+        })
+        .then(setReferralStats)
+        .catch(() => {});
+    }
+  }, [tab]);
 
   useEffect(() => {
     if (tab === 'reviews') {
@@ -150,6 +169,7 @@ export default function MyPage() {
     { id: 'applications', label: '신청 내역' },
     { id: 'contracts', label: '계약 상태' },
     { id: 'reviews', label: '후기' },
+    { id: 'referral', label: '친구초대' },
     { id: 'profile', label: '내 정보' },
   ];
 
@@ -383,6 +403,140 @@ export default function MyPage() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 친구초대 */}
+        {tab === 'referral' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* 혜택 안내 */}
+            <div className="card" style={{ background: 'linear-gradient(135deg, #1a3a5c, #2a4a6c)', border: '1px solid #3a6a9c' }}>
+              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>친구초대 프로그램</div>
+              <div style={{ fontSize: 14, color: '#ccc', lineHeight: 1.8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ background: '#60a5fa', color: '#fff', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontWeight: 700 }}>1단계</span>
+                  <span>친구 가입 시: <strong style={{ color: '#60a5fa' }}>2,000원</strong></span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ background: '#34d399', color: '#fff', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontWeight: 700 }}>2단계</span>
+                  <span>친구 계약 시: <strong style={{ color: '#34d399' }}>+20,000원</strong>(나) + <strong style={{ color: '#fbbf24' }}>10,000원</strong>(친구)</span>
+                </div>
+                <div style={{ marginTop: 8, fontSize: 13, color: '#aaa' }}>
+                  1명당 최대 <strong style={{ color: '#fff' }}>22,000원</strong> 보상!
+                </div>
+              </div>
+            </div>
+
+            {/* 내 추천 코드 */}
+            <div className="card">
+              <h3 style={{ fontSize: 16, marginBottom: 12 }}>내 추천코드</h3>
+              {referralCode ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <code style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    background: '#2a2a2a',
+                    borderRadius: 8,
+                    border: '1px solid #444',
+                    fontSize: 18,
+                    fontWeight: 700,
+                    letterSpacing: 2,
+                    color: '#60a5fa',
+                    textAlign: 'center',
+                  }}>{referralCode}</code>
+                  <button
+                    className="btn btn-primary"
+                    style={{ flexShrink: 0 }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(referralCode);
+                      setCodeCopied(true);
+                      setTimeout(() => setCodeCopied(false), 2000);
+                    }}
+                  >
+                    {codeCopied ? '복사됨!' : '복사'}
+                  </button>
+                </div>
+              ) : (
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>코드 불러오는 중...</p>
+              )}
+
+              {/* 공유 버튼 */}
+              {referralCode && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <button
+                    className="btn btn-primary"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      const shareUrl = `https://bongi-mobile-production.up.railway.app/?ref=${referralCode}`;
+                      const shareText = `리턴AI에서 인터넷/렌탈 상담받고 보상 받자! 내 추천 코드: ${referralCode}\n${shareUrl}`;
+                      if (navigator.share) {
+                        navigator.share({ title: '리턴AI 친구초대', text: shareText, url: shareUrl }).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(shareText);
+                        alert('공유 링크가 복사되었습니다!');
+                      }
+                    }}
+                  >
+                    공유하기
+                  </button>
+                  <button
+                    className="btn btn-outline"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      const shareUrl = `https://bongi-mobile-production.up.railway.app/?ref=${referralCode}`;
+                      navigator.clipboard.writeText(shareUrl);
+                      alert('링크가 복사되었습니다!');
+                    }}
+                  >
+                    링크 복사
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 내 실적 */}
+            <div className="card">
+              <h3 style={{ fontSize: 16, marginBottom: 12 }}>내 실적</h3>
+              {referralStats ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {/* 실적 카운트 */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ flex: 1, padding: 12, background: '#2a2a2a', borderRadius: 8, textAlign: 'center' }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: '#60a5fa' }}>{referralStats.total_invited}</div>
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>초대</div>
+                    </div>
+                    <div style={{ flex: 1, padding: 12, background: '#2a2a2a', borderRadius: 8, textAlign: 'center' }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: '#818cf8' }}>{referralStats.registered}</div>
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>가입</div>
+                    </div>
+                    <div style={{ flex: 1, padding: 12, background: '#2a2a2a', borderRadius: 8, textAlign: 'center' }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: '#34d399' }}>{referralStats.contracted}</div>
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>계약</div>
+                    </div>
+                  </div>
+
+                  {/* 보상 금액 */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ flex: 1, padding: 12, background: '#2a2a2a', borderRadius: 8, textAlign: 'center' }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: '#fbbf24' }}>{(referralStats.total_earned || 0).toLocaleString()}원</div>
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>누적 보상</div>
+                    </div>
+                    <div style={{ flex: 1, padding: 12, background: '#2a2a2a', borderRadius: 8, textAlign: 'center' }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: '#f97316' }}>{(referralStats.pending || 0).toLocaleString()}원</div>
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>대기 중</div>
+                    </div>
+                  </div>
+
+                  {/* 보상 계산 안내 */}
+                  <div style={{ fontSize: 12, color: '#666', lineHeight: 1.6, marginTop: 4 }}>
+                    가입 {referralStats.registered}명 x 2,000원 = {(referralStats.registered * 2000).toLocaleString()}원<br/>
+                    계약 {referralStats.contracted}명 x 20,000원 = {(referralStats.contracted * 20000).toLocaleString()}원
+                  </div>
+                </div>
+              ) : (
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>아직 초대한 친구가 없습니다</p>
               )}
             </div>
           </div>

@@ -106,6 +106,16 @@ export const api = {
     remove: (id) => request(`/alarms/${id}`, { method: 'DELETE' }),
   },
 
+  // 친구초대 (추천인)
+  referrals: {
+    getMyCode: (code) => request(`/referrals/my-code${code ? '?code=' + code : ''}`),
+    getStats: (code) => request(`/referrals/stats?code=${code}`),
+    register: (data) => request('/referrals/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  },
+
   // AI
   ai: {
     chat: (messages) => request('/ai/chat', {

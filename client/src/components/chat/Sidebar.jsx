@@ -37,6 +37,7 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
 
         {/* 하단 */}
         <div style={styles.footer}>
+          <a href="/mypage?tab=referral" style={{ ...styles.mypageBtn, background: 'linear-gradient(135deg, #1a3a5c, #2a4a6c)', border: '1px solid #3a6a9c', marginBottom: 8 }}>🎁 친구초대</a>
           <a href="/mypage" style={styles.mypageBtn}>📋 마이페이지</a>
           <div style={{ marginTop: 12 }}>
             <div style={styles.footerText}>🐟 리턴AI</div>

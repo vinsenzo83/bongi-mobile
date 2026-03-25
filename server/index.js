@@ -15,6 +15,7 @@ import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboard.js';
 import chatRoutes from './routes/chat.js';
 import alarmRoutes from './routes/alarms.js';
+import referralRoutes from './routes/referrals.js';
 import { sanitizeBody } from './middleware/sanitize.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiLimiter, applicationLimiter } from './middleware/rateLimit.js';
@@ -49,6 +50,7 @@ app.use('/api/stores', storeRoutes);
 app.use('/api/applications', applicationLimiter, applicationRoutes);
 app.use('/api/mock', mockRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/referrals', referralRoutes);
 
 // ── 채팅 (공개, 선택적 인증 — 돈지키미 set_alarm용) ──
 app.use('/api/chat', optionalAuth, chatRoutes);
