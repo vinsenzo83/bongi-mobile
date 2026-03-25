@@ -228,42 +228,51 @@ export default function DonJikimi() {
             );
           })}
 
-          {/* 편집 패널 */}
-          {editingType && (
-            <div style={styles.editPanel}>
-              <div style={styles.editHeader}>
-                {editingId ? '알람 수정' : '알람 추가'}
-              </div>
+        </div>
+      )}
+
+      {/* 모달 */}
+      {editingType && (
+        <>
+          <div onClick={cancelEdit} style={modalStyles.overlay} />
+          <div style={modalStyles.modal}>
+            <div style={modalStyles.header}>
+              <span style={modalStyles.headerTitle}>{editingId ? '🛡️ 알람 수정' : '🛡️ 알람 추가'}</span>
+              <button onClick={cancelEdit} style={modalStyles.closeBtn}>✕</button>
+            </div>
+            <div style={modalStyles.body}>
+              <label style={modalStyles.label}>제목</label>
               <input
                 type="text"
-                placeholder="제목"
+                placeholder="예: KT 인터넷 약정 종료"
                 value={editForm.title}
-                onChange={e => setEditForm({ ...editForm, title: e.target.value })}
-                style={styles.input}
+                onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                style={modalStyles.input}
               />
+              <label style={modalStyles.label}>날짜</label>
               <input
                 type="date"
                 value={editForm.target_date}
-                onChange={e => setEditForm({ ...editForm, target_date: e.target.value })}
-                style={styles.input}
+                onChange={e => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
+                style={modalStyles.input}
               />
+              <label style={modalStyles.label}>메모 (선택)</label>
               <input
                 type="text"
-                placeholder="메모 (선택)"
+                placeholder="추가 메모"
                 value={editForm.memo}
-                onChange={e => setEditForm({ ...editForm, memo: e.target.value })}
-                style={styles.input}
+                onChange={e => setEditForm(prev => ({ ...prev, memo: e.target.value }))}
+                style={modalStyles.input}
               />
-              <div style={styles.editActions}>
-                <button onClick={handleSave} style={styles.saveBtn}>저장</button>
-                {editingId && (
-                  <button onClick={() => handleDelete(editingId)} style={styles.delBtn}>삭제</button>
-                )}
-                <button onClick={cancelEdit} style={styles.cancelBtn}>취소</button>
-              </div>
             </div>
-          )}
-        </div>
+            <div style={modalStyles.actions}>
+              <button onClick={handleSave} style={modalStyles.saveBtn}>저장</button>
+              {editingId && (
+                <button onClick={() => handleDelete(editingId)} style={modalStyles.delBtn}>삭제</button>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -456,6 +465,95 @@ const styles = {
     background: 'transparent',
     color: '#aaa',
     fontSize: 12,
+    cursor: 'pointer',
+  },
+};
+
+const modalStyles = {
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.6)',
+    zIndex: 2000,
+  },
+  modal: {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 320,
+    maxWidth: '90vw',
+    background: '#1e1e1e',
+    borderRadius: 16,
+    border: '1px solid #444',
+    zIndex: 2001,
+    overflow: 'hidden',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '14px 16px',
+    borderBottom: '1px solid #333',
+  },
+  headerTitle: {
+    fontSize: 15,
+    fontWeight: 700,
+    color: '#fff',
+  },
+  closeBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#aaa',
+    fontSize: 18,
+    cursor: 'pointer',
+    padding: '0 4px',
+  },
+  body: {
+    padding: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#999',
+  },
+  input: {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: 8,
+    border: '1px solid #444',
+    background: '#2a2a2a',
+    color: '#ececec',
+    fontSize: 14,
+    outline: 'none',
+    boxSizing: 'border-box',
+  },
+  actions: {
+    display: 'flex',
+    gap: 8,
+    padding: '0 16px 16px',
+  },
+  saveBtn: {
+    flex: 1,
+    padding: '10px 0',
+    borderRadius: 8,
+    border: 'none',
+    background: '#3b82f6',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  delBtn: {
+    padding: '10px 16px',
+    borderRadius: 8,
+    border: 'none',
+    background: '#dc2626',
+    color: '#fff',
+    fontSize: 14,
     cursor: 'pointer',
   },
 };
