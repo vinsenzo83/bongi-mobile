@@ -488,8 +488,9 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     reply,
     ui_elements,
     _debug_intent: intent?.type || null,
-    _debug_msg_start: userMessage.slice(0, 20),
-    _debug_has_알뜰: userMessage.includes('알뜰'),
+    _debug_msg: userMessage.slice(0, 30),
+    _debug_has_kw: /알뜰|후기|친구/.test(userMessage),
+    _debug_len: userMessage.length,
   };
 }
 
