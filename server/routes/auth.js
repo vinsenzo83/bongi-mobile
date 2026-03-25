@@ -100,7 +100,11 @@ router.post('/login', authLimiter, async (req, res) => {
 // 소셜 로그인 후 프로필 확인/생성
 router.post('/social-profile', authenticateJWT, async (req, res) => {
   try {
-    const { name, avatar } = req.body;
+    const { name, phone, avatar } = req.body;
+
+    if (!name || !phone) {
+      return res.status(400).json({ error: '이름과 전화번호는 필수입니다' });
+    }
 
     // 프로필 존재 확인
     const { data: existing } = await supabase
@@ -116,7 +120,8 @@ router.post('/social-profile', authenticateJWT, async (req, res) => {
         .insert({
           id: req.user.id,
           role: 'customer',
-          display_name: name || req.user.email?.split('@')[0] || 'User',
+          display_name: name,
+          phone: phone || null,
           avatar_url: avatar || null,
         });
 
@@ -124,13 +129,18 @@ router.post('/social-profile', authenticateJWT, async (req, res) => {
         console.error('소셜 프로필 생성 실패:', insertError.message);
         return res.status(500).json({ error: '프로필 생성 실패' });
       }
-    } else if (avatar) {
-      // 기존 프로필에 아바타 업데이트 (없는 경우만)
-      await supabase
-        .from('bongi_user_profiles')
-        .update({ avatar_url: avatar })
-        .eq('id', req.user.id)
-        .is('avatar_url', null);
+    } else {
+      // 기존 프로필 업데이트
+      const updates = {};
+      if (name) updates.display_name = name;
+      if (phone) updates.phone = phone;
+      if (avatar) updates.avatar_url = avatar;
+      if (Object.keys(updates).length > 0) {
+        await supabase
+          .from('bongi_user_profiles')
+          .update(updates)
+          .eq('id', req.user.id);
+      }
     }
 
     res.json({ ok: true });
