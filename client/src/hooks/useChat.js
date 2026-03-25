@@ -57,6 +57,15 @@ export function useChat() {
   const bottomRef = useRef(null);
   const typingQueueRef = useRef(null);
 
+  // 깨진 세션 제목 필터 (인코딩 깨진 문자 제거)
+  const cleanSessions = (list) => {
+    return list.filter(s => {
+      if (!s.title) return true;
+      // 깨진 인코딩 문자 감지 (replacement char, surrogate 등)
+      return !/[\uFFFD\uDC00-\uDFFF]/.test(s.title) && !/^[\x00-\x1F\x80-\x9F�]+$/.test(s.title);
+    });
+  };
+
   // 세션 목록을 API에서 로드 (Supabase 영속화)
   useEffect(() => {
     async function loadSessions() {
@@ -66,19 +75,27 @@ export function useChat() {
         });
         if (res.ok) {
           const data = await res.json();
-          setSessions(data.sessions || []);
+          const cleaned = cleanSessions(data.sessions || []);
+          setSessions(cleaned);
         } else {
-          // API 실패 시 localStorage 폴백
           const saved = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
-          setSessions(saved);
+          setSessions(cleanSessions(saved));
         }
       } catch {
         const saved = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
-        setSessions(saved);
+        setSessions(cleanSessions(saved));
       } finally {
         setSessionsLoading(false);
       }
     }
+    // localStorage에서 깨진 세션도 정리
+    try {
+      const saved = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
+      const cleaned = cleanSessions(saved);
+      if (cleaned.length !== saved.length) {
+        localStorage.setItem('chat_sessions', JSON.stringify(cleaned));
+      }
+    } catch { /* ignore */ }
     loadSessions();
   }, []);
 
