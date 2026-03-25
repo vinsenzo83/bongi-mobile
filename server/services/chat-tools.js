@@ -1041,7 +1041,7 @@ async function searchRental({ category, brand, max_price }) {
         || Object.entries(brandCardMap).find(([k]) => k.includes(i.brand))?.[1]
         || null;
       // 부가기능 (additionalFunctions 또는 mainFunctions)
-      const funcs = (i.specs?.additionalFunctions || []).map(f => f.funcName || f).filter(Boolean).slice(0, 4);
+      const funcs = (i.specs?.additionalFunctions || []).map(f => typeof f === 'object' ? (f.funcName || f.name || JSON.stringify(f)) : String(f)).filter(Boolean).slice(0, 4);
       const rating = i.rating || {};
       const pricing = i.pricing || {};
       const colors = (i.colorOptions || []).map(c => c.name).filter(Boolean);
@@ -1145,7 +1145,7 @@ function getRentalDetail({ product_id }) {
   }));
 
   // 부가기능
-  const functions = (specs.additionalFunctions || []).map(f => f.funcName || (typeof f === 'string' ? f : '')).filter(Boolean);
+  const functions = (specs.additionalFunctions || []).map(f => typeof f === 'object' ? (f.funcName || f.name || JSON.stringify(f)) : String(f)).filter(Boolean);
 
   // 카드할인 매칭
   const brandCards = rentalCards.filter(c =>
@@ -1172,10 +1172,10 @@ function getRentalDetail({ product_id }) {
     ...(item.attentionCount ? { 견적비교: item.attentionCount } : {}),
     ...(bestCard ? { 카드할인: `${bestCard.cardName} 최대 ${(bestCard.maxMonthlyDiscount || 0).toLocaleString()}원/월` } : {}),
     ...(contracts.length > 0 ? { 약정혜택: contracts[0] } : {}),
-    ...(services.length > 0 ? { 관리서비스: services } : {}),
+    ...(services.length > 0 ? { 관리서비스: services.map(s => typeof s === 'object' ? (s.name || s.서비스명 || JSON.stringify(s)) : s).join(', ') } : {}),
     상품URL: item.url,
     썸네일: item.thumbnail || '',
-    이미지: item.images || [],
+    이미지: Array.isArray(item.images) ? item.images[0] || '' : (item.images || ''),
   };
 }
 

@@ -2,7 +2,7 @@
 // 반복되는 단독 질문에 대해 Claude API 호출 없이 캐시된 응답 즉시 반환
 
 const MAX_CACHE = 500;
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
+const CACHE_TTL = 5 * 60 * 1000; // 5분 (세션 간 캐시 오염 방지)
 
 // LRU 메모리 캐시 (서버 재시작 시 초기화)
 const memoryCache = new Map();
