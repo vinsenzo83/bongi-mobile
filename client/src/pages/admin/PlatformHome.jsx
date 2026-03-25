@@ -1,17 +1,26 @@
+import { useState, useEffect } from 'react';
 import Topbar from '../../components/admin/Topbar.jsx';
 import KpiCard from '../../components/admin/KpiCard.jsx';
 import { theme } from '../../styles/admin-theme.js';
+import { api } from '../../utils/api.js';
 
 export default function PlatformHome() {
+  const [stats, setStats] = useState({});
+
+  useEffect(() => {
+    api.admin.getStats().then(setStats).catch(() => {});
+  }, []);
+
   return (
     <>
       <Topbar title="플랫폼 관리" />
       <div style={{ padding: '24px 0' }}>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-          <KpiCard label="총 회원" value="1,247" icon="👥" trend={12} />
-          <KpiCard label="이번 달 계약" value="38" icon="📄" trend={5} color={theme.green} />
-          <KpiCard label="미지급 사은품" value="12" icon="🎁" trend={-3} color={theme.yellow} />
-          <KpiCard label="출금 대기" value="5" icon="💳" color={theme.orange} />
+          <KpiCard label="총 회원" value={stats.members || 0} icon="👥" />
+          <KpiCard label="후기" value={stats.reviews || 0} icon="⭐" color={theme.blue} />
+          <KpiCard label="추천" value={stats.referrals || 0} icon="🤝" color={theme.green} />
+          <KpiCard label="출금 대기" value={stats.pending_withdrawals || 0} icon="💳" color={theme.orange} />
+          <KpiCard label="신청" value={stats.applications || 0} icon="📄" color={theme.yellow} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>

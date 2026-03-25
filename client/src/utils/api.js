@@ -131,6 +131,34 @@ export const api = {
     }),
   },
 
+  // 어드민 플랫폼
+  admin: {
+    getStats: () => request('/admin/platform/stats'),
+    // 상품
+    getProducts: () => request('/admin/platform/products'),
+    createProduct: (data) => request('/admin/platform/products', { method: 'POST', body: JSON.stringify(data) }),
+    updateProduct: (id, data) => request(`/admin/platform/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteProduct: (id) => request(`/admin/platform/products/${id}`, { method: 'DELETE' }),
+    // 사은품
+    getGifts: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/gifts${q ? '?' + q : ''}`); },
+    updateGift: (id, data) => request(`/admin/platform/gifts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    // 정산
+    getSettlements: () => request('/admin/platform/settlements'),
+    // 후기
+    getReviews: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/reviews${q ? '?' + q : ''}`); },
+    updateReview: (id, data) => request(`/admin/platform/reviews/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteReview: (id) => request(`/admin/platform/reviews/${id}`, { method: 'DELETE' }),
+    // 회원
+    getMembers: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/members${q ? '?' + q : ''}`); },
+    updateMemberRole: (id, data) => request(`/admin/platform/members/${id}/role`, { method: 'PATCH', body: JSON.stringify(data) }),
+    // 친구초대
+    getReferrals: () => request('/admin/platform/referrals'),
+    // 리턴캐쉬
+    getWithdrawals: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/cash/withdrawals${q ? '?' + q : ''}`); },
+    updateWithdrawal: (id, data) => request(`/admin/platform/cash/withdrawals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    manualCredit: (data) => request('/admin/platform/cash/manual-credit', { method: 'POST', body: JSON.stringify(data) }),
+  },
+
   // AI
   ai: {
     chat: (messages) => request('/ai/chat', {

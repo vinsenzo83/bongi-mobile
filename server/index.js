@@ -18,6 +18,7 @@ import alarmRoutes from './routes/alarms.js';
 import referralRoutes from './routes/referrals.js';
 import cashRoutes from './routes/cash.js';
 import cacheRoutes from './routes/cache.js';
+import adminPlatformRoutes from './routes/admin-platform.js';
 import { sanitizeBody } from './middleware/sanitize.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiLimiter, applicationLimiter } from './middleware/rateLimit.js';
@@ -69,6 +70,7 @@ app.use('/api/alarms', optionalAuth, alarmRoutes);
 app.use('/api/crm', authenticateJWT, requireMinRole('agent'), crmRoutes);
 app.use('/api/cti', authenticateJWT, requireMinRole('agent'), ctiRoutes);
 app.use('/api/cache', authenticateJWT, requireMinRole('agent'), cacheRoutes);
+app.use('/api/admin/platform', authenticateJWT, requireMinRole('agent'), adminPlatformRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: '리턴AI API' });
