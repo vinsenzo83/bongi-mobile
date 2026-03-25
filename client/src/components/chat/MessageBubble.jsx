@@ -44,17 +44,21 @@ function RichElement({ element, onAction }) {
       return <ActionButtons buttons={element.buttons} onAction={onAction} />;
     case 'product_cards':
       return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', paddingBottom: 8, scrollbarWidth: 'none' }}>
           {element.products?.map((p, i) => (
-            <ProductCard key={i} product={p} onAction={onAction} />
+            <div key={i} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
+              <ProductCard product={p} onAction={onAction} />
+            </div>
           ))}
         </div>
       );
     case 'rental_cards':
       return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', paddingBottom: 8, scrollbarWidth: 'none' }}>
           {element.products?.map((p, i) => (
-            <RentalCard key={i} product={p} onAction={onAction} />
+            <div key={i} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
+              <RentalCard product={p} onAction={onAction} />
+            </div>
           ))}
         </div>
       );
