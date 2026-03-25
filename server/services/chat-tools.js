@@ -52,7 +52,7 @@ console.log(`✅ 3사 데이터 로드: 상품 ${Object.keys(productCatalog).len
 export const TOOLS = [
   {
     name: 'search_products',
-    description: '인터넷/TV 상품을 검색합니다. 결합 종류와 회선 수에 따라 할인이 달라집니다.',
+    description: '인터넷/TV 상품을 검색합니다. 결합 종류와 회선 수에 따라 할인이 달라집니다. 주의: 알뜰폰/유심/MVNO 질문에는 이 도구를 사용하지 마세요!',
     input_schema: {
       type: 'object',
       properties: {
@@ -129,7 +129,7 @@ export const TOOLS = [
   },
   {
     name: 'search_mobile_prices',
-    description: '핸드폰 기기 판매 가격(번호이동/기기변경)을 조회합니다. 공시지원금 기준. 중요: 폴드와 플립은 완전히 다른 모델이므로 정확히 구분해서 입력하세요.',
+    description: '핸드폰 기기 판매 가격(번호이동/기기변경)을 조회합니다. 공시지원금 기준. 중요: 폴드와 플립은 완전히 다른 모델이므로 정확히 구분해서 입력하세요. 두 모델을 비교하려면 이 도구를 2번 호출하세요(각 모델 1번씩).',
     input_schema: {
       type: 'object',
       properties: {
@@ -234,7 +234,7 @@ export const TOOLS = [
   },
   {
     name: 'search_reviews',
-    description: '카테고리별 고객 후기를 조회합니다. 상품 추천 시 관련 후기를 보여줘서 전환을 돕습니다.',
+    description: '고객 후기를 조회합니다. "후기", "리뷰", "평가", "만족도" 키워드가 있으면 반드시 이 도구를 호출하세요. category 없이 호출하면 전체 후기를 반환합니다.',
     input_schema: {
       type: 'object',
       properties: {
@@ -813,7 +813,10 @@ function searchMobilePrices({ provider, model }) {
       ? carrier.plans.filter(p => {
           const n = normalize(p.model);
           const s = normalize(p.short);
-          return n.includes(query) || s.includes(query) || query.includes(s);
+          // 엄격 매칭: 폴드/플립 등 혼동 방지
+          // query가 s를 포함하되, s가 너무 짧으면(3자 이하) 정확 매칭 요구
+          const queryMatchesShort = s.length > 3 ? query.includes(s) : query === s;
+          return n.includes(query) || s.includes(query) || queryMatchesShort;
         })
       : carrier.plans;
 
