@@ -33,7 +33,7 @@ export default function Login() {
   return (
     <section className="section">
       <div className="container" style={{ maxWidth: 420, position: 'relative' }}>
-        <button onClick={() => navigate('/')} style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', color: '#aaa', fontSize: 24, cursor: 'pointer', padding: 8 }}>✕</button>
+        <button onClick={() => navigate('/')} style={{ position: 'fixed', top: 16, right: 16, background: '#333', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', padding: '4px 10px', borderRadius: '50%', zIndex: 1000, lineHeight: 1 }}>✕</button>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>🐟</div>
           <h2 style={{ fontSize: 24, marginBottom: 4 }}>로그인</h2>

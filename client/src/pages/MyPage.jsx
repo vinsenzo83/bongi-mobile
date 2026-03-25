@@ -7,6 +7,12 @@ const REVIEW_CATEGORIES = [
   '인터넷', '정수기', '공기청정기', 'TV', '세탁건조기', '비데', '냉장고', '에어컨', '기타',
 ];
 
+const BANK_LIST = [
+  '신한은행', '국민은행', 'NH농협은행', '우리은행', '하나은행',
+  'IBK기업은행', 'SC제일은행', '카카오뱅크', '토스뱅크', '케이뱅크',
+  '광주은행', '전북은행', '새마을금고', '신협', '우체국',
+];
+
 const INITIAL_REVIEW_FORM = {
   category: '',
   productName: '',
@@ -52,6 +58,21 @@ export default function MyPage() {
   const [referralStats, setReferralStats] = useState(null);
   const [codeCopied, setCodeCopied] = useState(false);
 
+  // 리턴캐쉬 상태
+  const [cashBalance, setCashBalance] = useState(0);
+  const [cashHistory, setCashHistory] = useState([]);
+  const [cashLoading, setCashLoading] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawForm, setWithdrawForm] = useState({
+    bank_name: '',
+    account_number: '',
+    account_holder: '',
+    amount: '',
+  });
+  const [withdrawSubmitting, setWithdrawSubmitting] = useState(false);
+  const [withdrawError, setWithdrawError] = useState('');
+  const [withdrawSuccess, setWithdrawSuccess] = useState('');
+
   useEffect(() => {
     api.crm.getApplications()
       .then(setApplications)
@@ -69,6 +90,19 @@ export default function MyPage() {
         })
         .then(setReferralStats)
         .catch(() => {});
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab === 'cash') {
+      setCashLoading(true);
+      Promise.all([
+        api.cash.getBalance().catch(() => ({ balance: 0 })),
+        api.cash.getHistory().catch(() => ({ history: [] })),
+      ]).then(([balanceRes, historyRes]) => {
+        setCashBalance(balanceRes.balance || 0);
+        setCashHistory(historyRes.history || []);
+      }).finally(() => setCashLoading(false));
     }
   }, [tab]);
 
@@ -160,6 +194,67 @@ export default function MyPage() {
     }
   };
 
+  const handleWithdrawChange = (field, value) => {
+    setWithdrawForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleWithdrawSubmit = async () => {
+    setWithdrawError('');
+    setWithdrawSuccess('');
+
+    if (!user) {
+      setWithdrawError('출금 신청은 로그인이 필요합니다.');
+      return;
+    }
+    if (!withdrawForm.bank_name) {
+      setWithdrawError('은행을 선택해주세요.');
+      return;
+    }
+    if (!withdrawForm.account_number || withdrawForm.account_number.trim().length < 8) {
+      setWithdrawError('올바른 계좌번호를 입력해주세요.');
+      return;
+    }
+    if (!withdrawForm.account_holder || withdrawForm.account_holder.trim().length < 2) {
+      setWithdrawError('예금주명을 입력해주세요.');
+      return;
+    }
+    const amount = parseInt(withdrawForm.amount);
+    if (!amount || amount < 10000) {
+      setWithdrawError('최소 출금 금액은 10,000원입니다.');
+      return;
+    }
+    if (amount > cashBalance) {
+      setWithdrawError('잔액이 부족합니다.');
+      return;
+    }
+
+    try {
+      setWithdrawSubmitting(true);
+      const result = await api.cash.withdraw({
+        bank_name: withdrawForm.bank_name,
+        account_number: withdrawForm.account_number.trim(),
+        account_holder: withdrawForm.account_holder.trim(),
+        amount,
+      });
+      setWithdrawSuccess(result.message);
+      setCashBalance(prev => prev - amount);
+      setCashHistory(prev => [{
+        id: result.withdrawal_id,
+        type: 'withdraw',
+        amount,
+        description: `출금 신청 (${withdrawForm.bank_name})`,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      }, ...prev]);
+      setWithdrawForm({ bank_name: '', account_number: '', account_holder: '', amount: '' });
+      setWithdrawOpen(false);
+    } catch (error) {
+      setWithdrawError(error.message || '출금 신청에 실패했습니다.');
+    } finally {
+      setWithdrawSubmitting(false);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -170,13 +265,14 @@ export default function MyPage() {
     { id: 'contracts', label: '계약 상태' },
     { id: 'reviews', label: '후기' },
     { id: 'referral', label: '친구초대' },
+    { id: 'cash', label: '리턴캐쉬' },
     { id: 'profile', label: '내 정보' },
   ];
 
   return (
     <section className="section">
       <div className="container" style={{ maxWidth: 700, position: 'relative' }}>
-        <button onClick={() => navigate('/')} style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', color: '#aaa', fontSize: 24, cursor: 'pointer', padding: 8, zIndex: 1 }}>✕</button>
+        <button onClick={() => navigate('/')} style={{ position: 'fixed', top: 16, right: 16, background: '#333', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', padding: '4px 10px', borderRadius: '50%', zIndex: 1000, lineHeight: 1 }}>✕</button>
         {/* 프로필 헤더 */}
         <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -539,6 +635,108 @@ export default function MyPage() {
               ) : (
                 <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>아직 초대한 친구가 없습니다</p>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* 리턴캐쉬 */}
+        {tab === 'cash' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* 잔액 카드 */}
+            <div className="card" style={{ background: 'linear-gradient(135deg, #2a1a00, #3a2a10)', border: '1px solid #5a4a20', textAlign: 'center', padding: '28px 20px' }}>
+              <div style={{ fontSize: 14, color: '#aaa', marginBottom: 8 }}>내 리턴캐쉬</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: '#fbbf24', marginBottom: 16 }}>
+                {cashLoading ? '...' : `${cashBalance.toLocaleString()}원`}
+              </div>
+              <button
+                className="btn btn-primary"
+                style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)', border: 'none', padding: '10px 32px', fontSize: 15, fontWeight: 700 }}
+                onClick={() => {
+                  if (!user) {
+                    setWithdrawError('출금 신청은 로그인이 필요합니다.');
+                    return;
+                  }
+                  setWithdrawOpen(prev => !prev);
+                  setWithdrawError('');
+                  setWithdrawSuccess('');
+                }}
+              >
+                출금 신청
+              </button>
+            </div>
+
+            {/* 출금 신청 폼 */}
+            {withdrawOpen && (
+              <div className="card">
+                <h3 style={{ fontSize: 16, marginBottom: 16 }}>출금 신청</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <label style={{ fontSize: 13, color: '#aaa', marginBottom: 4, display: 'block' }}>은행</label>
+                    <select value={withdrawForm.bank_name} onChange={e => handleWithdrawChange('bank_name', e.target.value)} style={inputStyle}>
+                      <option value="">은행 선택</option>
+                      {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 13, color: '#aaa', marginBottom: 4, display: 'block' }}>계좌번호</label>
+                    <input type="text" placeholder="- 없이 입력" value={withdrawForm.account_number} onChange={e => handleWithdrawChange('account_number', e.target.value)} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 13, color: '#aaa', marginBottom: 4, display: 'block' }}>예금주</label>
+                    <input type="text" placeholder="예금주명" value={withdrawForm.account_holder} onChange={e => handleWithdrawChange('account_holder', e.target.value)} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 13, color: '#aaa', marginBottom: 4, display: 'block' }}>출금 금액</label>
+                    <input type="number" placeholder="10,000원 이상" value={withdrawForm.amount} onChange={e => handleWithdrawChange('amount', e.target.value)} style={inputStyle} />
+                  </div>
+                  {withdrawError && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{withdrawError}</p>}
+                  {withdrawSuccess && <p style={{ color: '#34d399', fontSize: 13 }}>{withdrawSuccess}</p>}
+                  <button className="btn btn-primary" onClick={handleWithdrawSubmit} disabled={withdrawSubmitting} style={{ alignSelf: 'flex-start' }}>
+                    {withdrawSubmitting ? '처리 중...' : '출금 신청'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 적립/출금 내역 */}
+            <div className="card">
+              <h3 style={{ fontSize: 16, marginBottom: 16 }}>적립/출금 내역</h3>
+              {cashLoading ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>불러오는 중...</p>
+              ) : cashHistory.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>아직 내역이 없습니다</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {cashHistory.map(item => (
+                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #333' }}>
+                      <div>
+                        <div style={{ fontSize: 14, color: 'var(--text)' }}>{item.description || (item.type === 'earn' ? '적립' : '출금')}</div>
+                        <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>
+                          {item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : ''}
+                          {item.status === 'pending' && <span style={{ color: '#f59e0b', marginLeft: 8 }}>대기중</span>}
+                          {item.status === 'rejected' && <span style={{ color: 'var(--danger)', marginLeft: 8 }}>거절</span>}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: item.type === 'earn' ? '#34d399' : '#f87171', whiteSpace: 'nowrap' }}>
+                        {item.type === 'earn' ? '+' : '-'}{item.amount.toLocaleString()}원
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 출금 정책 */}
+            <div className="card">
+              <h3 style={{ fontSize: 16, marginBottom: 16 }}>출금 정책</h3>
+              <div style={{ fontSize: 14, color: '#aaa', lineHeight: 2 }}>
+                <div>- 출금 자격: 1회 이상 계약 완료 고객</div>
+                <div>- 최소 출금 금액: 10,000원</div>
+                <div>- 출금 수수료: 무료</div>
+                <div>- 처리 기간: 영업일 기준 3~5일</div>
+                <div>- 출금 계좌: 본인 명의만 가능</div>
+                <div>- 월 출금 한도: 500,000원</div>
+              </div>
             </div>
           </div>
         )}
