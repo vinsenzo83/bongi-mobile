@@ -327,8 +327,14 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     updateSessionTitle(sessionId, userMessage);
   }
 
-  // 캐시 체크 — 첫 메시지(단독 질문)만 캐시 대상
-  if (isFirstMessage) {
+  // 인텐트 감지 → 시스템 프롬프트 보강 (캐시보다 먼저!)
+  const intent = detectIntent(userMessage);
+  const systemPrompt = intent
+    ? `${SYSTEM_PROMPT}\n\n${intent.instruction}`
+    : SYSTEM_PROMPT;
+
+  // 캐시 체크 — 인텐트 감지된 경우 캐시 스킵 (정확한 응답 보장)
+  if (isFirstMessage && !intent) {
     const cached = getCachedResponse(userMessage);
     if (cached) {
       session.messages.push({ role: 'assistant', content: cached.reply });
@@ -346,12 +352,6 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     persistMessage(sessionId, 'assistant', mockReply);
     return { reply: mockReply, ui_elements: [] };
   }
-
-  // 인텐트 감지 → 시스템 프롬프트 보강
-  const intent = detectIntent(userMessage);
-  const systemPrompt = intent
-    ? `${SYSTEM_PROMPT}\n\n${intent.instruction}`
-    : SYSTEM_PROMPT;
 
   // Claude Tool Use 호출
   let response = await client.messages.create({
@@ -551,8 +551,14 @@ export async function processMessageStream(sessionId, userMessage, context = {},
     updateSessionTitle(sessionId, userMessage);
   }
 
-  // 캐시 체크 — 첫 메시지(단독 질문)만 캐시 대상
-  if (isFirstMessage) {
+  // 인텐트 감지 → 시스템 프롬프트 보강 (캐시보다 먼저!)
+  const intent = detectIntent(userMessage);
+  const systemPrompt = intent
+    ? `${SYSTEM_PROMPT}\n\n${intent.instruction}`
+    : SYSTEM_PROMPT;
+
+  // 캐시 체크 — 인텐트 감지된 경우 캐시 스킵
+  if (isFirstMessage && !intent) {
     const cached = getCachedResponse(userMessage);
     if (cached) {
       onChunk({ type: 'text', text: cached.reply });
@@ -566,19 +572,12 @@ export async function processMessageStream(sessionId, userMessage, context = {},
   // API 키 없으면 Mock 응답 (청크 단위로 전송)
   if (!client) {
     const mockReply = getMockReply(userMessage);
-    // Mock은 한번에 전송
     onChunk({ type: 'text', text: mockReply });
     session.messages.push({ role: 'assistant', content: mockReply });
     await saveSession(session);
     persistMessage(sessionId, 'assistant', mockReply);
     return { ui_elements: [] };
   }
-
-  // 인텐트 감지 → 시스템 프롬프트 보강
-  const intent = detectIntent(userMessage);
-  const systemPrompt = intent
-    ? `${SYSTEM_PROMPT}\n\n${intent.instruction}`
-    : SYSTEM_PROMPT;
 
   // 스트리밍 Claude 호출 + Tool Use 루프
   let loopCount = 0;
