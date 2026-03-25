@@ -1,21 +1,43 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AdminLayout from './layouts/AdminLayout.jsx';
 import Chat from './pages/Chat.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 import AuthCallback from './pages/AuthCallback.jsx';
 import MyPage from './pages/MyPage.jsx';
-import Dashboard from './pages/admin/Dashboard.jsx';
-import CustomerDetail from './pages/admin/CustomerDetail.jsx';
-import Incentive from './pages/admin/Incentive.jsx';
+
+// 어드민 페이지 (lazy load)
+const PlatformHome = lazy(() => import('./pages/admin/PlatformHome.jsx'));
+const ProductManage = lazy(() => import('./pages/admin/ProductManage.jsx'));
+const GiftManage = lazy(() => import('./pages/admin/GiftManage.jsx'));
+const CommissionSettle = lazy(() => import('./pages/admin/CommissionSettle.jsx'));
+const ReviewManage = lazy(() => import('./pages/admin/ReviewManage.jsx'));
+const MemberList = lazy(() => import('./pages/admin/MemberList.jsx'));
+const ReferralManage = lazy(() => import('./pages/admin/ReferralManage.jsx'));
+const CashManage = lazy(() => import('./pages/admin/CashManage.jsx'));
+
+// CRM
+const TodoDashboard = lazy(() => import('./pages/admin/TodoDashboard.jsx'));
+const CustomerList = lazy(() => import('./pages/admin/CustomerList.jsx'));
+const CustomerDetail = lazy(() => import('./pages/admin/CustomerDetail.jsx'));
+const ContractList = lazy(() => import('./pages/admin/ContractList.jsx'));
+const KpiDashboard = lazy(() => import('./pages/admin/KpiDashboard.jsx'));
+const Incentive = lazy(() => import('./pages/admin/Incentive.jsx'));
+
+// CTI
+const CtiConsole = lazy(() => import('./pages/admin/CtiConsole.jsx'));
+
+const AdminFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', color: '#888' }}>
+    로딩 중...
+  </div>
+);
 
 function AppRoutes() {
   const location = useLocation();
-  const { pathname } = location;
-  const isAdmin = pathname.startsWith('/admin');
-  const isAuth = ['/login', '/signup'].includes(pathname);
 
   // ?ref= 파라미터 처리: localStorage에 저장
   useEffect(() => {
@@ -28,7 +50,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* 메인: 채팅 (ChatGPT 스타일) */}
+      {/* 메인: 채팅 */}
       <Route path="/" element={<Chat />} />
 
       {/* 인증 */}
@@ -37,10 +59,29 @@ function AppRoutes() {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/mypage" element={<MyPage />} />
 
-      {/* CRM 어드민 */}
-      <Route path="/admin" element={<ProtectedRoute minRole="agent"><Dashboard /></ProtectedRoute>} />
-      <Route path="/admin/customer/:id" element={<ProtectedRoute minRole="agent"><CustomerDetail /></ProtectedRoute>} />
-      <Route path="/admin/incentive" element={<ProtectedRoute minRole="agent"><Incentive /></ProtectedRoute>} />
+      {/* 어드민 (중첩 라우트 + AdminLayout) */}
+      <Route path="/admin" element={<ProtectedRoute minRole="agent"><AdminLayout /></ProtectedRoute>}>
+        {/* 플랫폼 관리 */}
+        <Route index element={<Suspense fallback={<AdminFallback />}><PlatformHome /></Suspense>} />
+        <Route path="products" element={<Suspense fallback={<AdminFallback />}><ProductManage /></Suspense>} />
+        <Route path="gifts" element={<Suspense fallback={<AdminFallback />}><GiftManage /></Suspense>} />
+        <Route path="settlements" element={<Suspense fallback={<AdminFallback />}><CommissionSettle /></Suspense>} />
+        <Route path="reviews" element={<Suspense fallback={<AdminFallback />}><ReviewManage /></Suspense>} />
+        <Route path="members" element={<Suspense fallback={<AdminFallback />}><MemberList /></Suspense>} />
+        <Route path="referrals" element={<Suspense fallback={<AdminFallback />}><ReferralManage /></Suspense>} />
+        <Route path="cash" element={<Suspense fallback={<AdminFallback />}><CashManage /></Suspense>} />
+
+        {/* CRM */}
+        <Route path="crm" element={<Suspense fallback={<AdminFallback />}><TodoDashboard /></Suspense>} />
+        <Route path="crm/customers" element={<Suspense fallback={<AdminFallback />}><CustomerList /></Suspense>} />
+        <Route path="crm/customers/:id" element={<Suspense fallback={<AdminFallback />}><CustomerDetail /></Suspense>} />
+        <Route path="crm/contracts" element={<Suspense fallback={<AdminFallback />}><ContractList /></Suspense>} />
+        <Route path="crm/kpi" element={<Suspense fallback={<AdminFallback />}><KpiDashboard /></Suspense>} />
+        <Route path="crm/incentive" element={<Suspense fallback={<AdminFallback />}><Incentive /></Suspense>} />
+
+        {/* CTI */}
+        <Route path="cti" element={<Suspense fallback={<AdminFallback />}><CtiConsole /></Suspense>} />
+      </Route>
     </Routes>
   );
 }
