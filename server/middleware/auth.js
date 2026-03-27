@@ -17,7 +17,7 @@ export async function authenticateJWT(req, res, next) {
     // 사용자 프로필에서 역할 조회
     const { data: profile } = await supabase
       .from('bongi_user_profiles')
-      .select('role, agent_id, store_id, display_name')
+      .select('role, agent_id, store_id, display_name, member_tier, total_conversions')
       .eq('id', user.id)
       .single();
 
@@ -28,6 +28,8 @@ export async function authenticateJWT(req, res, next) {
       agentId: profile?.agent_id || null,
       storeId: profile?.store_id || null,
       displayName: profile?.display_name || user.email,
+      memberTier: profile?.member_tier || 'normal',
+      totalConversions: profile?.total_conversions || 0,
     };
 
     next();
@@ -50,7 +52,7 @@ export async function optionalAuth(req, res, next) {
     if (user) {
       const { data: profile } = await supabase
         .from('bongi_user_profiles')
-        .select('role, agent_id, store_id, display_name')
+        .select('role, agent_id, store_id, display_name, member_tier, total_conversions')
         .eq('id', user.id)
         .single();
 
@@ -61,6 +63,8 @@ export async function optionalAuth(req, res, next) {
         agentId: profile?.agent_id || null,
         storeId: profile?.store_id || null,
         displayName: profile?.display_name || user.email,
+        memberTier: profile?.member_tier || 'normal',
+        totalConversions: profile?.total_conversions || 0,
       };
     } else {
       req.user = null;

@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { supabase } from '../db/supabase.js';
 import { optionalAuth } from '../middleware/auth.js';
+import { getTierRewardPolicy, incrementConversions } from '../services/dealer-tier.js';
 
 const router = Router();
 
-const REWARD_POLICY = {
-  signup: { referrer: 2000 },
-  contract: { referrer: 20000, referred: 10000 },
+// 폴백: DB 조회 실패 시 기본 보상 (normal/bronze 기준)
+const FALLBACK_POLICY = {
+  signup: { referrer: 3000 },
+  contract: { referrer: 12000, referred: 5000 },
 };
 
 function generateCode() {
@@ -16,6 +18,35 @@ function generateCode() {
     code += chars[Math.floor(Math.random() * chars.length)];
   }
   return `RETURN_${code}`;
+}
+
+// 추천인의 등급별 보상 정책 조회
+async function getReferrerRewardPolicy(referrerCode) {
+  if (!supabase) return { policy: FALLBACK_POLICY, tier: 'normal' };
+
+  // 추천 코드로 추천인 user_id 찾기
+  const { data: referral } = await supabase
+    .from('bongi_referrals')
+    .select('referrer_user_id')
+    .eq('referrer_code', referrerCode)
+    .limit(1)
+    .maybeSingle();
+
+  if (!referral?.referrer_user_id) {
+    return { policy: FALLBACK_POLICY, tier: 'normal' };
+  }
+
+  // 추천인 등급 조회
+  const { data: profile } = await supabase
+    .from('bongi_user_profiles')
+    .select('member_tier')
+    .eq('id', referral.referrer_user_id)
+    .single();
+
+  const tier = profile?.member_tier || 'normal';
+  const policy = await getTierRewardPolicy(tier);
+
+  return { policy: policy || FALLBACK_POLICY, tier };
 }
 
 // GET /api/referrals/my-code — 내 추천 코드 생성/조회
@@ -57,7 +88,7 @@ router.get('/my-code', optionalAuth, async (req, res) => {
   }
 });
 
-// GET /api/referrals/stats — 내 추천 실적 (보상 포함)
+// GET /api/referrals/stats — 내 추천 실적 (보상 + 등급 포함)
 router.get('/stats', optionalAuth, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'DB 연결 필요' });
@@ -97,8 +128,12 @@ router.get('/stats', optionalAuth, async (req, res) => {
     const total_earned = paidRewards.reduce((s, r) => s + r.amount, 0);
     const pending = pendingRewards.reduce((s, r) => s + r.amount, 0);
 
+    // 추천인 등급 정보
+    const { tier } = await getReferrerRewardPolicy(code);
+
     res.json({
       code,
+      tier,
       total_invited,
       registered,
       contracted,
@@ -111,7 +146,7 @@ router.get('/stats', optionalAuth, async (req, res) => {
   }
 });
 
-// POST /api/referrals/register — 추천 코드로 친구 등록 (1단계 보상)
+// POST /api/referrals/register — 추천 코드로 친구 등록 (가입 보상)
 router.post('/register', optionalAuth, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'DB 연결 필요' });
@@ -136,7 +171,7 @@ router.post('/register', optionalAuth, async (req, res) => {
       return res.status(409).json({ error: '이미 등록된 번호입니다.' });
     }
 
-    // 사기 방지: 자가추천 방지 (추천인 코드의 phone과 비교)
+    // 사기 방지: 자가추천 방지
     const { data: referrerRows } = await supabase
       .from('bongi_referrals')
       .select('referrer_phone')
@@ -149,6 +184,9 @@ router.post('/register', optionalAuth, async (req, res) => {
         return res.status(400).json({ error: '본인 추천은 불가합니다.' });
       }
     }
+
+    // 추천인 등급별 보상 정책 조회
+    const { policy, tier } = await getReferrerRewardPolicy(referrer_code);
 
     // referral 레코드 생성
     const { data: referral, error } = await supabase
@@ -164,14 +202,15 @@ router.post('/register', optionalAuth, async (req, res) => {
 
     if (error) return res.status(500).json({ error: error.message });
 
-    // 1단계 보상: 추천인 가입 보너스
+    // 가입 보상: 추천인에게 즉시 지급
+    const signupAmount = policy.signup.referrer;
     const { error: rewardErr } = await supabase
       .from('bongi_rewards')
       .insert({
         referral_id: referral.id,
         recipient_type: 'referrer',
         reward_type: 'signup',
-        amount: REWARD_POLICY.signup.referrer,
+        amount: signupAmount,
         status: 'pending',
       });
 
@@ -182,11 +221,97 @@ router.post('/register', optionalAuth, async (req, res) => {
     res.status(201).json({
       referral_id: referral.id,
       status: referral.status,
+      tier,
       rewards: {
-        referrer_signup_bonus: REWARD_POLICY.signup.referrer,
-        referrer_contract_bonus: REWARD_POLICY.contract.referrer,
-        referred_contract_bonus: REWARD_POLICY.contract.referred,
+        referrer_signup_bonus: signupAmount,
+        referrer_contract_bonus: policy.contract.referrer,
+        referred_contract_bonus: policy.contract.referred,
       },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/referrals/convert — 계약 완료 처리 (계약 보상 + 자동 승급)
+router.post('/convert', optionalAuth, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'DB 연결 필요' });
+
+    const { referral_id } = req.body;
+    if (!referral_id) {
+      return res.status(400).json({ error: 'referral_id가 필요합니다.' });
+    }
+
+    const { data: referral } = await supabase
+      .from('bongi_referrals')
+      .select('*')
+      .eq('id', referral_id)
+      .single();
+
+    if (!referral) {
+      return res.status(404).json({ error: '추천 기록을 찾을 수 없습니다.' });
+    }
+
+    if (referral.status === 'contracted' || referral.status === 'rewarded') {
+      return res.status(409).json({ error: '이미 계약 완료 처리된 건입니다.' });
+    }
+
+    // 추천인 등급별 보상 정책 조회
+    const { policy, tier } = await getReferrerRewardPolicy(referral.referrer_code);
+
+    // 상태 변경
+    await supabase
+      .from('bongi_referrals')
+      .update({ status: 'contracted' })
+      .eq('id', referral_id);
+
+    // 계약 보상: 추천인 + 피추천인
+    const { error: rewardErr } = await supabase
+      .from('bongi_rewards')
+      .insert([
+        {
+          referral_id,
+          recipient_type: 'referrer',
+          reward_type: 'contract',
+          amount: policy.contract.referrer,
+          status: 'pending',
+        },
+        {
+          referral_id,
+          recipient_type: 'referred',
+          reward_type: 'contract',
+          amount: policy.contract.referred,
+          status: 'pending',
+        },
+      ]);
+
+    if (rewardErr) {
+      console.error('Contract reward insert error:', rewardErr.message);
+    }
+
+    // 자동 승급: 추천인의 계약 건수 증가 + 등급 재계산
+    let promotion = null;
+    const { data: refRow } = await supabase
+      .from('bongi_referrals')
+      .select('referrer_user_id')
+      .eq('referrer_code', referral.referrer_code)
+      .limit(1)
+      .maybeSingle();
+
+    if (refRow?.referrer_user_id) {
+      promotion = await incrementConversions(refRow.referrer_user_id);
+    }
+
+    res.json({
+      referral_id,
+      status: 'contracted',
+      tier,
+      rewards: {
+        referrer_contract_bonus: policy.contract.referrer,
+        referred_contract_bonus: policy.contract.referred,
+      },
+      promotion,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
