@@ -24,6 +24,9 @@ export default function MemberList() {
     }
   }
 
+  const tierLabels = { normal: '일반', bronze: '브론즈', silver: '실버', gold: '골드' };
+  const tierColors = { normal: '#888', bronze: '#cd7f32', silver: '#c0c0c0', gold: '#fbbf24' };
+
   const columns = [
     { key: 'name', label: '이름', sortable: true },
     { key: 'email', label: '이메일' },
@@ -35,6 +38,17 @@ export default function MemberList() {
     {
       key: 'role', label: '역할',
       render: (v) => <Badge label={v || 'customer'} variant={v || 'customer'} />,
+    },
+    {
+      key: 'member_tier', label: '등급',
+      render: (v) => {
+        const tier = v || 'normal';
+        return <span style={{ color: tierColors[tier], fontWeight: 600, fontSize: 13 }}>{tierLabels[tier] || '일반'}</span>;
+      },
+    },
+    {
+      key: 'total_conversions', label: '계약수',
+      render: (v) => <span style={{ fontWeight: 600 }}>{v || 0}건</span>,
     },
     { key: 'created_at', label: '가입일', render: (v) => v ? new Date(v).toLocaleDateString('ko-KR') : '-' },
   ];

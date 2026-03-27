@@ -129,6 +129,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+    getRewardPolicy: () => request('/referrals/reward-policy'),
   },
 
   // 어드민 플랫폼

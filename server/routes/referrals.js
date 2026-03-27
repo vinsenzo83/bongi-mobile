@@ -318,4 +318,38 @@ router.post('/convert', optionalAuth, async (req, res) => {
   }
 });
 
+// GET /api/referrals/reward-policy — 전체 등급별 보상 정책 조회
+router.get('/reward-policy', async (_req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'DB 연결 필요' });
+
+    const { data, error } = await supabase
+      .from('bongi_reward_policy')
+      .select('tier, reward_type, recipient_type, amount')
+      .order('tier');
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const tiers = ['normal', 'bronze', 'silver', 'gold'];
+    const labels = { normal: '일반', bronze: '브론즈', silver: '실버', gold: '골드' };
+    const ranges = { normal: '0건', bronze: '1-2건', silver: '3-9건', gold: '10건+' };
+
+    const policy = tiers.map(tier => {
+      const rows = (data || []).filter(d => d.tier === tier);
+      return {
+        tier,
+        label: labels[tier],
+        range: ranges[tier],
+        signup_referrer: rows.find(r => r.reward_type === 'signup' && r.recipient_type === 'referrer')?.amount || 0,
+        contract_referrer: rows.find(r => r.reward_type === 'contract' && r.recipient_type === 'referrer')?.amount || 0,
+        contract_referred: rows.find(r => r.reward_type === 'contract' && r.recipient_type === 'referred')?.amount || 0,
+      };
+    });
+
+    res.json({ policy });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

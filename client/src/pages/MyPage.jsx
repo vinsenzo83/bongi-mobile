@@ -57,6 +57,7 @@ export default function MyPage() {
   const [referralCode, setReferralCode] = useState('');
   const [referralStats, setReferralStats] = useState(null);
   const [codeCopied, setCodeCopied] = useState(false);
+  const [rewardPolicy, setRewardPolicy] = useState([]);
 
   // 리턴캐쉬 상태
   const [cashBalance, setCashBalance] = useState(0);
@@ -89,6 +90,9 @@ export default function MyPage() {
           return api.referrals.getStats(res.code);
         })
         .then(setReferralStats)
+        .catch(() => {});
+      api.referrals.getRewardPolicy()
+        .then(res => setRewardPolicy(res.policy || []))
         .catch(() => {});
     }
   }, [tab]);
@@ -508,20 +512,68 @@ export default function MyPage() {
         {/* 친구초대 */}
         {tab === 'referral' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* 혜택 안내 */}
-            <div className="card" style={{ background: 'linear-gradient(135deg, #1a3a5c, #2a4a6c)', border: '1px solid #3a6a9c' }}>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>친구초대 프로그램</div>
-              <div style={{ fontSize: 14, color: '#ccc', lineHeight: 1.8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ background: '#60a5fa', color: '#fff', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontWeight: 700 }}>1단계</span>
-                  <span>친구 가입 시: <strong style={{ color: '#60a5fa' }}>2,000원</strong></span>
+            {/* 내 등급 카드 */}
+            {(() => {
+              const tierColors = { normal: '#888', bronze: '#cd7f32', silver: '#c0c0c0', gold: '#fbbf24' };
+              const tierLabels = { normal: '일반', bronze: '브론즈', silver: '실버', gold: '골드' };
+              const tierRanges = { normal: '0건', bronze: '1-2건', silver: '3-9건', gold: '10건+' };
+              const myTier = referralStats?.tier || user?.memberTier || 'normal';
+              const myConversions = user?.totalConversions || 0;
+              const nextTiers = { normal: { tier: 'bronze', need: 1 }, bronze: { tier: 'silver', need: 3 }, silver: { tier: 'gold', need: 10 }, gold: null };
+              const next = nextTiers[myTier];
+              const myPolicy = rewardPolicy.find(p => p.tier === myTier);
+              return (
+                <div className="card" style={{ background: `linear-gradient(135deg, #1a1a2e, #16213e)`, border: `1px solid ${tierColors[myTier]}40`, position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 12, right: 16, fontSize: 32, opacity: 0.15 }}>
+                    {myTier === 'gold' ? '👑' : myTier === 'silver' ? '🥈' : myTier === 'bronze' ? '🥉' : '⭐'}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#aaa', marginBottom: 4 }}>내 등급</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: tierColors[myTier], marginBottom: 8 }}>
+                    {tierLabels[myTier]}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#ccc', marginBottom: 12 }}>
+                    누적 계약 <strong style={{ color: '#fff' }}>{myConversions}건</strong>
+                    {next && <span> · 다음 등급({tierLabels[next.tier]})까지 <strong style={{ color: tierColors[next.tier] }}>{next.need - myConversions}건</strong></span>}
+                    {!next && <span style={{ color: '#fbbf24' }}> · 최고 등급 달성!</span>}
+                  </div>
+                  {next && (
+                    <div style={{ background: '#333', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min((myConversions / next.need) * 100, 100)}%`, height: '100%', background: tierColors[next.tier], borderRadius: 4, transition: 'width 0.3s' }} />
+                    </div>
+                  )}
+                  {myPolicy && (
+                    <div style={{ marginTop: 12, fontSize: 13, color: '#aaa', lineHeight: 1.8 }}>
+                      내 보상: 가입 <strong style={{ color: '#60a5fa' }}>{myPolicy.signup_referrer.toLocaleString()}원</strong> · 계약 <strong style={{ color: '#34d399' }}>{myPolicy.contract_referrer.toLocaleString()}원</strong>(나) + <strong style={{ color: '#fbbf24' }}>{myPolicy.contract_referred.toLocaleString()}원</strong>(친구)
+                    </div>
+                  )}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ background: '#34d399', color: '#fff', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontWeight: 700 }}>2단계</span>
-                  <span>친구 계약 시: <strong style={{ color: '#34d399' }}>+20,000원</strong>(나) + <strong style={{ color: '#fbbf24' }}>10,000원</strong>(친구)</span>
-                </div>
-                <div style={{ marginTop: 8, fontSize: 13, color: '#aaa' }}>
-                  1명당 최대 <strong style={{ color: '#fff' }}>22,000원</strong> 보상!
+              );
+            })()}
+
+            {/* 등급별 보상 안내 */}
+            <div className="card">
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>등급별 보상</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {rewardPolicy.map(p => {
+                  const colors = { normal: '#888', bronze: '#cd7f32', silver: '#c0c0c0', gold: '#fbbf24' };
+                  const isMyTier = p.tier === (referralStats?.tier || user?.memberTier || 'normal');
+                  return (
+                    <div key={p.tier} style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px',
+                      background: isMyTier ? '#1a2a3a' : '#2a2a2a', borderRadius: 8,
+                      border: isMyTier ? `1px solid ${colors[p.tier]}60` : '1px solid transparent',
+                    }}>
+                      <span style={{ fontWeight: 700, color: colors[p.tier], minWidth: 56, fontSize: 13 }}>{p.label}</span>
+                      <span style={{ fontSize: 11, color: '#888', minWidth: 40 }}>{p.range}</span>
+                      <span style={{ flex: 1, fontSize: 12, color: '#ccc', textAlign: 'right' }}>
+                        {p.signup_referrer.toLocaleString()} / {p.contract_referrer.toLocaleString()} / {p.contract_referred.toLocaleString()}
+                      </span>
+                      {isMyTier && <span style={{ fontSize: 10, color: colors[p.tier] }}>현재</span>}
+                    </div>
+                  );
+                })}
+                <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
+                  가입보상(추천인) / 계약보상(추천인) / 계약보상(친구) · 출금: 계약 1건 이상 시 가능
                 </div>
               </div>
             </div>
@@ -627,10 +679,17 @@ export default function MyPage() {
                   </div>
 
                   {/* 보상 계산 안내 */}
-                  <div style={{ fontSize: 12, color: '#666', lineHeight: 1.6, marginTop: 4 }}>
-                    가입 {referralStats.registered}명 x 2,000원 = {(referralStats.registered * 2000).toLocaleString()}원<br/>
-                    계약 {referralStats.contracted}명 x 20,000원 = {(referralStats.contracted * 20000).toLocaleString()}원
-                  </div>
+                  {(() => {
+                    const myPolicy = rewardPolicy.find(p => p.tier === (referralStats?.tier || 'normal'));
+                    const su = myPolicy?.signup_referrer || 3000;
+                    const cr = myPolicy?.contract_referrer || 12000;
+                    return (
+                      <div style={{ fontSize: 12, color: '#666', lineHeight: 1.6, marginTop: 4 }}>
+                        가입 {referralStats.registered}명 x {su.toLocaleString()}원 = {(referralStats.registered * su).toLocaleString()}원<br/>
+                        계약 {referralStats.contracted}명 x {cr.toLocaleString()}원 = {(referralStats.contracted * cr).toLocaleString()}원
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>아직 초대한 친구가 없습니다</p>
