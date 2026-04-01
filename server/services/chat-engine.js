@@ -465,10 +465,15 @@ export async function processMessage(sessionId, userMessage, context = {}) {
 
     for (const block of toolUseBlocks) {
       const result = await executeTool(block.name, block.input, context);
+      const resultStr = JSON.stringify(result);
+      console.log(`[Tool] ${block.name}(${JSON.stringify(block.input)}): ${resultStr.length}bytes`);
+      if (block.name === 'check_store') {
+        console.log(`[Tool] check_store stores: ${result.stores?.length}, first: ${result.stores?.[0]?.name}`);
+      }
       toolResults.push({
         type: 'tool_result',
         tool_use_id: block.id,
-        content: JSON.stringify(result),
+        content: resultStr,
       });
     }
 
