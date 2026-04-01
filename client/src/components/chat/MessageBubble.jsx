@@ -10,6 +10,10 @@ export default function MessageBubble({ message, onAction }) {
   const isUser = message.role === 'user';
   const isMobile = useIsMobile();
 
+  // 스트리밍 중이고 내용이 비어있으면 렌더링 스킵 (로딩 dots와 중복 방지)
+  const isEmptyStreaming = !isUser && message.streaming && !message.content && !message.ui_elements?.length;
+  if (isEmptyStreaming) return null;
+
   return (
     <div style={{ ...styles.row, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
       {!isUser && <div style={styles.avatar}>🐟</div>}
