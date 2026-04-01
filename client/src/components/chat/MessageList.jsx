@@ -15,17 +15,23 @@ export default function MessageList({ messages, loading, onAction }) {
           <MessageBubble key={i} message={msg} onAction={onAction} />
         ))}
 
-        {loading && (
-          <div style={styles.loading}>
-            <div style={styles.avatar}>🐟</div>
-            <div style={styles.dots}>
-              <span style={{ ...styles.dot, animationDelay: '0s' }} />
-              <span style={{ ...styles.dot, animationDelay: '0.2s' }} />
-              <span style={{ ...styles.dot, animationDelay: '0.4s' }} />
+        {loading && (() => {
+          // 스트리밍 중 텍스트가 이미 있으면 로딩 dots 숨김 (아이콘 중복 방지)
+          const lastMsg = messages[messages.length - 1];
+          const hasStreamingContent = lastMsg?.role === 'assistant' && lastMsg?.content;
+          if (hasStreamingContent) return null;
+          return (
+            <div style={styles.loading}>
+              <div style={styles.avatar}>🐟</div>
+              <div style={styles.dots}>
+                <span style={{ ...styles.dot, animationDelay: '0s' }} />
+                <span style={{ ...styles.dot, animationDelay: '0.2s' }} />
+                <span style={{ ...styles.dot, animationDelay: '0.4s' }} />
+              </div>
+              <style>{`@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}`}</style>
             </div>
-            <style>{`@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}`}</style>
-          </div>
-        )}
+          );
+        })()}
 
         <div ref={bottomRef} />
       </div>
