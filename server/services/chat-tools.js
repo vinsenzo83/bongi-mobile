@@ -44,9 +44,86 @@ try {
   rentalCards = rentalCardsData.cards || rentalCardsData;
 } catch { /* 파일 없으면 빈 배열 */ }
 
+// ─── 신규 데이터 (2026-04-01 엑셀 기반) ───
+
+// 모바일 요금제 상세 (OTT혜택, 테더링 등 보강)
+let mobilePlansEnriched = [];
+try {
+  const enriched = JSON.parse(readFileSync(join(providerDir, 'mobile_plans_enriched.json'), 'utf8'));
+  mobilePlansEnriched = enriched.data || [];
+} catch { /* 파일 없으면 빈 배열 */ }
+
+// 무선 제휴카드 (SKT 9 + KT 17 + LG 7 = 33개)
+let wirelessCards = [];
+try {
+  const wc = JSON.parse(readFileSync(join(providerDir, 'wireless_cards.json'), 'utf8'));
+  wirelessCards = wc.data || [];
+} catch { /* 파일 없으면 빈 배열 */ }
+
+// 공시지원금
+let subsidyData = {};
+try {
+  subsidyData = JSON.parse(readFileSync(join(providerDir, 'subsidy.json'), 'utf8'));
+} catch { /* 파일 없으면 빈 객체 */ }
+
+// 휴대폰 시세표 (부가서비스 포함)
+let devicePriceTable = {};
+try {
+  devicePriceTable = JSON.parse(readFileSync(join(providerDir, 'device_price_table.json'), 'utf8'));
+} catch { /* 파일 없으면 빈 객체 */ }
+
+// AI 운영 가이드 (인터넷TV→CRM, 휴대폰→매장유도, 중고폰→트레딧)
+let aiGuide = [];
+try {
+  aiGuide = JSON.parse(readFileSync(join(providerDir, 'ai_operation_guide.json'), 'utf8'));
+} catch { /* 파일 없으면 빈 배열 */ }
+
+// 무선/유선 가입 가이드
+let wirelessGuide = [], wiredGuide = [];
+try {
+  wirelessGuide = JSON.parse(readFileSync(join(providerDir, 'wireless_guide.json'), 'utf8'));
+} catch {}
+try {
+  wiredGuide = JSON.parse(readFileSync(join(providerDir, 'wired_guide.json'), 'utf8'));
+} catch {}
+
+// 사기방지 꿀팁
+let fraudPrevention = [];
+try {
+  fraudPrevention = JSON.parse(readFileSync(join(providerDir, 'fraud_prevention.json'), 'utf8'));
+} catch {}
+
+// 매장 정보 (업데이트: 8개 매장 + 카카오톡)
+let storesUpdated = {};
+try {
+  storesUpdated = JSON.parse(readFileSync(join(providerDir, 'stores_updated.json'), 'utf8'));
+} catch {}
+
+// 유선 3사 보강 데이터 (결합할인 상세, 장기혜택 등)
+let wiredEnriched = {};
+try {
+  wiredEnriched = {
+    skt: JSON.parse(readFileSync(join(providerDir, 'skt_wired_enriched.json'), 'utf8')),
+    kt: JSON.parse(readFileSync(join(providerDir, 'kt_wired_enriched.json'), 'utf8')),
+    lg: JSON.parse(readFileSync(join(providerDir, 'lgu_wired_enriched.json'), 'utf8')),
+  };
+} catch {}
+
+// 렌트리 상품 (카테고리별)
+let rentreProducts = {};
+try {
+  rentreProducts = JSON.parse(readFileSync(join(providerDir, 'rentre_all_products.json'), 'utf8'));
+} catch {}
+let rentreCards = [];
+try {
+  const rc = JSON.parse(readFileSync(join(providerDir, 'rentre_affiliate_cards.json'), 'utf8'));
+  rentreCards = rc.data || [];
+} catch {}
+
 const mobileCount = Object.values(mobilePrices.carriers || {}).reduce((s, c) => s + (c.plans?.length || 0), 0);
 const rentalCount = Object.values(rentalProducts).reduce((s, arr) => s + arr.length, 0);
-console.log(`✅ 3사 데이터 로드: 상품 ${Object.keys(productCatalog).length}개, 모바일요금제 ${mobilePlans.skt.length + mobilePlans.kt.length + mobilePlans.lg.length}개, 핸드폰시세 ${mobileCount}개, 중고폰매입 ${tradeinPhones.length}개, 가전렌탈 ${rentalCount}개, 제휴카드 ${rentalCards.length}개`);
+console.log(`✅ 3사 데이터 로드: 상품 ${Object.keys(productCatalog).length}개, 모바일요금제 ${mobilePlans.skt.length + mobilePlans.kt.length + mobilePlans.lg.length}개, 핸드폰시세 ${mobileCount}개, 중고폰매입 ${tradeinPhones.length}개, 가전렌탈 ${rentalCount}개, 렌탈카드 ${rentalCards.length}개`);
+console.log(`✅ 보강 데이터: 모바일상세 ${mobilePlansEnriched.length}개, 무선카드 ${wirelessCards.length}개, 매장 ${storesUpdated.stores?.length || 0}개, 렌트리 ${rentreProducts.data?.length || 0}개, 가이드 ${wirelessGuide.length + wiredGuide.length}개 섹션`);
 
 // Claude Tool Use 도구 정의
 export const TOOLS = [
@@ -257,6 +334,39 @@ export const TOOLS = [
       required: ['alarm_type', 'title', 'target_date'],
     },
   },
+  {
+    name: 'get_subsidy',
+    description: '공시지원금 정보를 조회합니다. 스마트초이스 기준 최신 데이터.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        model: { type: 'string', description: '모델명 (예: 갤럭시 S26, 아이폰 17 PRO MAX)' },
+      },
+      required: ['model'],
+    },
+  },
+  {
+    name: 'get_guide',
+    description: '무선/유선 가입 가이드 정보를 제공합니다. 공시지원금 vs 선택약정, 위약금, 약정, 속도 선택 등.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', enum: ['wireless', 'wired'], description: '무선 또는 유선' },
+        topic: { type: 'string', description: '주제 (공시지원금, 선택약정, 위약금, 부가서비스, 약정, 속도, TV, 대칭형, 셋톱박스 등)' },
+      },
+      required: ['type'],
+    },
+  },
+  {
+    name: 'get_fraud_tips',
+    description: '사기방지 꿀팁, 호구 안 되는 법을 안내합니다. 인터넷/휴대폰 사기 유형과 방지법.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        category: { type: 'string', enum: ['internet', 'phone', 'all'], description: '인터넷 사기, 휴대폰 사기, 전체' },
+      },
+    },
+  },
 ];
 
 // 도구 실행
@@ -278,6 +388,9 @@ export async function executeTool(name, input, context = {}) {
     case 'get_rental_detail': return getRentalDetail(input);
     case 'search_reviews': return searchReviews(input);
     case 'set_alarm': return setAlarm(input, context);
+    case 'get_subsidy': return getSubsidy(input);
+    case 'get_guide': return getGuide(input);
+    case 'get_fraud_tips': return getFraudTips(input);
     default: return { error: `알 수 없는 도구: ${name}` };
   }
 }
@@ -650,18 +763,30 @@ function searchMobilePlans({ provider, max_fee, network }) {
 }
 
 function getCardDiscounts({ provider }) {
-  const provData = allProviders[provider];
-  if (!provData) return { error: '데이터 없음' };
-  return {
-    provider: provData.provider,
-    cards: (provData.cards || []).map(c => ({
-      카드사: c.issuer,
-      카드명: c.name,
-      할인금액: c.discount_amount ? `${c.discount_amount.toLocaleString()}원/월` : '-',
-      실적조건: c.min_performance || '-',
-      기간: c.period || '-',
-    })),
-  };
+  const provKey = provider?.toLowerCase();
+  const provNameMap = { skt: 'SKT', kt: 'KT', lg: 'LG U+' };
+  const provName = provNameMap[provKey] || provider;
+
+  // 무선 제휴카드 (엑셀 보강)
+  const wireless = wirelessCards.filter(c => c['통신사'] === provName).map(c => ({
+    카드사: c['발급사'] || '-',
+    카드명: c['카드명'] || '-',
+    할인금액: c['할인금액'] || '-',
+    실적조건: c['최소실적'] || c['혜택'] || '-',
+    유형: '무선(휴대폰)',
+  }));
+
+  // 유선 제휴카드 (기존)
+  const provData = allProviders[provKey];
+  const wired = (provData?.cards || []).map(c => ({
+    카드사: c.issuer,
+    카드명: c.name,
+    할인금액: c.discount_amount ? `${c.discount_amount.toLocaleString()}원/월` : '-',
+    실적조건: c.min_performance || '-',
+    유형: '유선(인터넷/TV)',
+  }));
+
+  return { provider: provName, 무선_제휴카드: wireless, 유선_제휴카드: wired, 총_카드수: wireless.length + wired.length };
 }
 
 async function createLead({ name, phone, product_id, message }) {
@@ -878,13 +1003,25 @@ function searchMobilePrices({ provider, model }) {
 }
 
 function checkStore({ region }) {
-  let result = stores;
+  // 업데이트된 매장 데이터 사용 (8개 매장 + 카카오톡)
+  const storeList = storesUpdated.stores || stores;
+  let result = storeList;
   if (region) {
-    result = stores.filter(s => s.name.includes(region) || s.address.includes(region));
+    result = storeList.filter(s => 
+      (s.name || '').includes(region) || (s.address || '').includes(region)
+    );
   }
   return {
+    homepage: storesUpdated.homepage || 'https://bong2mobile.com',
+    instagram: storesUpdated.instagram || '@bongee_phone',
     count: result.length,
-    stores: result.map(s => ({ name: s.name, address: s.address, phone: s.phone, hours: s.hours })),
+    stores: result.map(s => ({
+      name: s.name,
+      address: s.address,
+      phone: s.phone,
+      kakao: s.kakao || '',
+      naver_map: s.naver_map || '',
+    })),
   };
 }
 
@@ -1279,4 +1416,68 @@ async function setAlarm({ alarm_type, title, target_date, memo }, context = {}) 
   } catch (err) {
     return { success: false, message: '알람 등록에 실패했어요. 잠시 후 다시 시도해주세요.' };
   }
+}
+
+// ─── 신규 도구 구현 (2026-04-01) ───
+
+function getSubsidy({ model }) {
+  if (!subsidyData.data || subsidyData.data.length === 0) {
+    return { message: '공시지원금 데이터가 아직 로드되지 않았습니다. 스마트초이스(smartchoice.or.kr)에서 직접 확인해주세요.' };
+  }
+
+  const keyword = model.toLowerCase().replace(/\s+/g, '');
+  const matched = subsidyData.data.filter(s => {
+    const title = (s.title || '').toLowerCase().replace(/\s+/g, '');
+    return title.includes(keyword) || keyword.includes(title);
+  });
+
+  if (matched.length === 0) {
+    return { message: `"${model}" 모델의 공시지원금 정보를 찾을 수 없습니다.`, source: 'smartchoice.or.kr' };
+  }
+
+  return {
+    model,
+    updated: subsidyData.updated,
+    source: 'smartchoice.or.kr',
+    data: matched,
+    note: '공시지원금은 통신사가 수시로 변경 가능합니다. 정확한 금액은 매장 방문 시 확인해주세요.',
+  };
+}
+
+function getGuide({ type, topic }) {
+  const guide = type === 'wireless' ? wirelessGuide : wiredGuide;
+  
+  if (!guide || guide.length === 0) {
+    return { message: `${type === 'wireless' ? '무선' : '유선'} 가입 가이드 데이터가 없습니다.` };
+  }
+
+  if (topic) {
+    const keyword = topic.toLowerCase();
+    const matched = guide.filter(section => {
+      const title = (section.title || '').toLowerCase();
+      const items = JSON.stringify(section.items || []).toLowerCase();
+      return title.includes(keyword) || items.includes(keyword);
+    });
+    
+    if (matched.length > 0) return { type, topic, sections: matched };
+  }
+
+  return { type, sections: guide };
+}
+
+function getFraudTips({ category }) {
+  if (!fraudPrevention || fraudPrevention.length === 0) {
+    return { message: '사기방지 가이드 데이터가 없습니다.' };
+  }
+
+  if (category && category !== 'all') {
+    const keyword = category === 'internet' ? '인터넷' : '휴대폰';
+    const matched = fraudPrevention.filter(s => {
+      const text = JSON.stringify(s).toLowerCase();
+      return text.includes(keyword);
+    });
+    if (matched.length > 0) return { category, sections: matched };
+  }
+
+  return { category: 'all', sections: fraudPrevention };
 }
