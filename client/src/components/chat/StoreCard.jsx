@@ -5,7 +5,13 @@ export default function StoreCard({ store, index = 0 }) {
 
   return (
     <div style={styles.card}>
-      <div style={{ ...styles.colorBar, background: color }} />
+      {store.image ? (
+        <div style={styles.imageWrap}>
+          <img src={store.image} alt={store.name} style={styles.storeImage} loading="lazy" />
+        </div>
+      ) : (
+        <div style={{ ...styles.colorBar, background: color }} />
+      )}
       <div style={styles.body}>
         <div style={{ ...styles.badge, background: color + '22', color }}>직영점</div>
         <div style={styles.name}>{store.name}</div>
@@ -45,6 +51,18 @@ const styles = {
     borderRadius: 14,
     overflow: 'hidden',
     border: '1px solid #2a2a2a',
+  },
+  imageWrap: {
+    width: '100%',
+    height: 140,
+    overflow: 'hidden',
+  },
+  storeImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'center 70%',
+    filter: 'brightness(1.05) contrast(1.05)',
   },
   colorBar: {
     height: 3,

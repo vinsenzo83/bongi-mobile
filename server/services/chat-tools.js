@@ -1030,6 +1030,7 @@ function checkStore({ region }) {
     instagram: '@bongee_phone',
     stores: result.map(s => ({
       name: s.name,
+      image: s.image || '',
       address: s.address,
       phone: s.phone + (s.phone2 ? ' / ' + s.phone2 : ''),
       hours: s.hours || '10:00 ~ 21:00',
