@@ -1009,14 +1009,21 @@ function searchMobilePrices({ provider, model }) {
 
 function checkStore({ region }) {
   const storeList = storesUpdated.stores || stores;
+  
+  // "전체", "모두", "다", 빈값 등은 필터링 없이 전체 반환
+  const skipFilter = !region || ['전체', '모두', '다', '전부', 'all'].includes(region.trim());
   let result = storeList;
-  if (region) {
+  if (!skipFilter) {
     result = storeList.filter(s =>
       (s.name || '').includes(region) || (s.address || '').includes(region)
     );
   }
 
-  // 단순한 형태로 반환 (Claude가 읽기 쉽게)
+  // 필터 결과 없으면 전체 반환
+  if (result.length === 0) result = storeList;
+
+  console.log(`[checkStore] region="${region}", skipFilter=${skipFilter}, result=${result.length}개`);
+
   return {
     count: result.length,
     homepage: 'https://bong2mobile.com',
