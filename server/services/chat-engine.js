@@ -588,6 +588,21 @@ function extractUIElements(messages) {
           });
         }
 
+        // check_store 결과 → 매장 카드
+        if (data.ui_elements && data.stores) {
+          for (const el of data.ui_elements) {
+            elements.push(el);
+          }
+          elements.push({
+            type: 'actions',
+            buttons: [
+              { label: '인터넷+TV 상담받기', action: '인터넷 추천해줘' },
+              { label: '휴대폰 시세 보기', action: '갤럭시 S26 시세 알려줘' },
+              { label: '상담사 연결해줘', action: '상담사 연결해주세요' },
+            ],
+          });
+        }
+
         // create_lead / request_callback 결과 → 확인 UI
         if (data.ui?.type === 'lead_confirmed' || data.ui?.type === 'callback_confirmed') {
           elements.push({

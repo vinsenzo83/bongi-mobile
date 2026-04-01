@@ -4,6 +4,7 @@ import CompareTable from './CompareTable.jsx';
 import InlineForm from './InlineForm.jsx';
 import MobilePriceCard from './MobilePriceCard.jsx';
 import RentalCard from './RentalCard.jsx';
+import StoreCard from './StoreCard.jsx';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 export default function MessageBubble({ message, onAction }) {
@@ -111,6 +112,16 @@ function RichElement({ element, onAction }) {
             </div>
           )}
         </div>
+      );
+    case 'store_cards':
+      return (
+        <ScrollableCards count={element.stores?.length || 0}>
+          {element.stores?.map((store, i) => (
+            <div key={i} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
+              <StoreCard store={store} index={i} />
+            </div>
+          ))}
+        </ScrollableCards>
       );
     case 'form':
       return (

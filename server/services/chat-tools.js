@@ -1003,14 +1003,14 @@ function searchMobilePrices({ provider, model }) {
 }
 
 function checkStore({ region }) {
-  // 업데이트된 매장 데이터 사용 (8개 매장 + 카카오톡)
   const storeList = storesUpdated.stores || stores;
   let result = storeList;
   if (region) {
-    result = storeList.filter(s => 
+    result = storeList.filter(s =>
       (s.name || '').includes(region) || (s.address || '').includes(region)
     );
   }
+
   return {
     homepage: storesUpdated.homepage || 'https://bong2mobile.com',
     instagram: storesUpdated.instagram || '@bongee_phone',
@@ -1018,10 +1018,26 @@ function checkStore({ region }) {
     stores: result.map(s => ({
       name: s.name,
       address: s.address,
+      landmark: s.landmark || '',
       phone: s.phone,
+      phone2: s.phone2 || '',
+      hours: s.hours || '',
       kakao: s.kakao || '',
       naver_map: s.naver_map || '',
     })),
+    ui_elements: [{
+      type: 'store_cards',
+      stores: result.map(s => ({
+        name: s.name,
+        address: s.address,
+        landmark: s.landmark || '',
+        phone: s.phone,
+        phone2: s.phone2 || '',
+        hours: s.hours || '10:00 ~ 21:00',
+        kakao: s.kakao || '',
+        naver_map: s.naver_map || '',
+      })),
+    }],
   };
 }
 
