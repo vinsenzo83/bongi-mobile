@@ -3,6 +3,7 @@ export const stores = [
   {
     id: 1,
     name: '봉이모바일 상무점',
+    image: '/stores/sangmu.jpg',
     address: '광주 서구 상무대로 826 1층',
     landmark: '상무역 6번출구, 운천저수지방향 도보 5분',
     phone: '010-9442-8528',
@@ -16,6 +17,7 @@ export const stores = [
   {
     id: 2,
     name: '봉이모바일 익산점',
+    image: '/stores/iksan.jpg',
     address: '전북 익산시 무왕로 1031 1층',
     landmark: '홈플러스 옆',
     phone: '010-5190-0383',
@@ -28,6 +30,7 @@ export const stores = [
   {
     id: 3,
     name: '봉이모바일 전대점',
+    image: '/stores/jeondae.jpg',
     address: '광주 북구 호동로 4-1',
     landmark: '전대후문 복개도로',
     phone: '010-4453-7172',
@@ -43,6 +46,7 @@ export const stores = [
   {
     id: 4,
     name: '봉이모바일 신창점',
+    image: '/stores/sinchang.jpg',
     address: '광주 광산구 신창로 36',
     landmark: '신가중사거리',
     phone: '010-5755-2650',
@@ -57,6 +61,7 @@ export const stores = [
   {
     id: 5,
     name: '봉이모바일 첨단점',
+    image: '/stores/cheomdan.jpg',
     address: '광주 북구 첨단연신로 261 1층 105호',
     landmark: '첨단2지구 휴먼시아 2차 건너편',
     phone: '010-8300-4947',
@@ -70,6 +75,7 @@ export const stores = [
   {
     id: 6,
     name: '봉이모바일 순천점',
+    image: '/stores/suncheon.jpg',
     address: '순천시 충효로 109',
     landmark: '용전갈치 입구',
     phone: '010-4758-5135',
@@ -83,6 +89,7 @@ export const stores = [
   {
     id: 7,
     name: '봉이모바일 남악점',
+    image: '/stores/namak.jpg',
     address: '전남 무안군 삼향읍 후광대로274 도청프라자 108호',
     landmark: '버스정류장 앞',
     phone: '010-2554-8245',
@@ -96,6 +103,7 @@ export const stores = [
   {
     id: 8,
     name: '봉이모바일 여수점',
+    image: '/stores/yeosu.jpg',
     address: '여수시 문수로 62 1층',
     phone: '010-2789-5135',
     hours: '10:00 ~ 21:00',

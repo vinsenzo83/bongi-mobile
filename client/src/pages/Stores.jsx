@@ -33,8 +33,14 @@ export default function Stores() {
         <div style={{ ...styles.grid, gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)' }}>
           {stores.map((store, i) => (
             <div key={store.id} style={styles.card}>
-              {/* 상단 컬러바 */}
-              <div style={{ ...styles.colorBar, background: COLORS[i % COLORS.length] }} />
+              {/* 매장 이미지 */}
+              {store.image ? (
+                <div style={styles.imageWrap}>
+                  <img src={store.image} alt={store.name} style={styles.storeImage} loading="lazy" />
+                </div>
+              ) : (
+                <div style={{ ...styles.colorBar, background: COLORS[i % COLORS.length] }} />
+              )}
 
               {/* 매장명 */}
               <div style={styles.cardHeader}>
@@ -150,6 +156,18 @@ const styles = {
     overflow: 'hidden',
     border: '1px solid #222',
     transition: 'transform 0.2s, border-color 0.2s',
+  },
+  imageWrap: {
+    width: '100%',
+    height: 180,
+    overflow: 'hidden',
+  },
+  storeImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'center 70%',
+    filter: 'brightness(1.05) contrast(1.05)',
   },
   colorBar: {
     height: 4,
