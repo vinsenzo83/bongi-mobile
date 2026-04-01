@@ -97,7 +97,12 @@ try {
 let storesUpdated = {};
 try {
   storesUpdated = JSON.parse(readFileSync(join(providerDir, 'stores_updated.json'), 'utf8'));
-} catch {}
+  console.log(`  매장 로드: ${storesUpdated.stores?.length || 0}개`);
+} catch (e) {
+  console.log(`  ⚠️ stores_updated.json 로드 실패: ${e.message}`);
+  // 폴백: stores.js 사용
+  storesUpdated = { homepage: 'https://bong2mobile.com', stores: stores };
+}
 
 // 유선 3사 보강 데이터 (결합할인 상세, 장기혜택 등)
 let wiredEnriched = {};
@@ -1004,6 +1009,7 @@ function searchMobilePrices({ provider, model }) {
 
 function checkStore({ region }) {
   const storeList = storesUpdated.stores || stores;
+  console.log(`[checkStore] storesUpdated.stores: ${storesUpdated.stores?.length}, stores: ${stores.length}, using: ${storeList.length}`);
   let result = storeList;
   if (region) {
     result = storeList.filter(s =>
