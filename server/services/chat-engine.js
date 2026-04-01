@@ -608,10 +608,11 @@ function extractUIElements(messages) {
         }
 
         // check_store 결과 → 매장 카드
-        if (data.ui_elements && data.stores) {
-          for (const el of data.ui_elements) {
-            elements.push(el);
-          }
+        if (data.stores && Array.isArray(data.stores) && data.stores.length > 0) {
+          elements.push({
+            type: 'store_cards',
+            stores: data.stores,
+          });
           elements.push({
             type: 'actions',
             buttons: [
