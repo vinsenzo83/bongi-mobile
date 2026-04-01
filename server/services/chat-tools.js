@@ -1009,7 +1009,6 @@ function searchMobilePrices({ provider, model }) {
 
 function checkStore({ region }) {
   const storeList = storesUpdated.stores || stores;
-  console.log(`[checkStore] storesUpdated.stores: ${storesUpdated.stores?.length}, stores: ${stores.length}, using: ${storeList.length}`);
   let result = storeList;
   if (region) {
     result = storeList.filter(s =>
@@ -1017,33 +1016,19 @@ function checkStore({ region }) {
     );
   }
 
+  // 단순한 형태로 반환 (Claude가 읽기 쉽게)
   return {
-    homepage: storesUpdated.homepage || 'https://bong2mobile.com',
-    instagram: storesUpdated.instagram || '@bongee_phone',
     count: result.length,
+    homepage: 'https://bong2mobile.com',
+    instagram: '@bongee_phone',
     stores: result.map(s => ({
       name: s.name,
       address: s.address,
-      landmark: s.landmark || '',
-      phone: s.phone,
-      phone2: s.phone2 || '',
-      hours: s.hours || '',
+      phone: s.phone + (s.phone2 ? ' / ' + s.phone2 : ''),
+      hours: s.hours || '10:00 ~ 21:00',
       kakao: s.kakao || '',
       naver_map: s.naver_map || '',
     })),
-    ui_elements: [{
-      type: 'store_cards',
-      stores: result.map(s => ({
-        name: s.name,
-        address: s.address,
-        landmark: s.landmark || '',
-        phone: s.phone,
-        phone2: s.phone2 || '',
-        hours: s.hours || '10:00 ~ 21:00',
-        kakao: s.kakao || '',
-        naver_map: s.naver_map || '',
-      })),
-    }],
   };
 }
 
