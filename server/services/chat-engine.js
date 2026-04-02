@@ -475,17 +475,20 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     const toolResults = [];
 
     for (const block of toolUseBlocks) {
-      const result = await executeTool(block.name, block.input, context);
-      const resultStr = JSON.stringify(result);
-      console.log(`[Tool] ${block.name}(${JSON.stringify(block.input)}): ${resultStr.length}bytes`);
-      if (block.name === 'check_store') {
-        console.log(`[Tool] check_store stores: ${result.stores?.length}, first: ${result.stores?.[0]?.name}`);
+      try {
+        const result = await executeTool(block.name, block.input, context);
+        let resultStr = JSON.stringify(result);
+        // 토큰 초과 방지: 결과가 너무 크면 잘라냄
+        if (resultStr.length > 15000) {
+          console.log(`[Tool] ${block.name}: 결과 너무 큼 (${resultStr.length}bytes), 잘라냄`);
+          resultStr = JSON.stringify({ message: result.message || '결과를 확인했습니다.', count: result.count || result.results?.length || 0, truncated: true });
+        }
+        console.log(`[Tool] ${block.name}: ${resultStr.length}bytes`);
+        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: resultStr });
+      } catch (toolErr) {
+        console.error(`[Tool Error] ${block.name}:`, toolErr.message);
+        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: toolErr.message }) });
       }
-      toolResults.push({
-        type: 'tool_result',
-        tool_use_id: block.id,
-        content: resultStr,
-      });
     }
 
     session.messages.push({ role: 'assistant', content: response.content });
@@ -616,30 +619,36 @@ function extractUIElements(messages) {
         }
 
         // estimate_tradein 결과 → 중고폰 매입 카드
-        if (data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
-          elements.push({
-            type: 'tradein_cards',
-            items: data.matches.slice(0, 6),
-            tradein_url: 'https://bonge.tredit.ai/model_chk.php',
-          });
+        if (data.results && Array.isArray(data.results) && data.results.length > 0 && data.results[0]?.매입가) {
           elements.push({
             type: 'actions',
             buttons: [
-              { label: '트레딧에서 매입 신청', action: '중고폰 매입 신청하고 싶어요' },
+              { label: '트레딧에서 매입 신청', action: '중고폰 매입 신청 링크 알려줘' },
               { label: '다른 모델도 확인', action: '다른 중고폰 매입가도 알려줘' },
               { label: '매장 방문 상담', action: '매장 알려줘' },
             ],
           });
         }
 
-        // get_bundle_discount 결과 → 결합할인 카드
-        if (data.결합할인 || (data.provider && data.인터넷할인 !== undefined)) {
+        // get_bundle_discount 결과 → 결합할인 액션
+        if (data.결합종류 || data.인터넷할인 !== undefined || data.요즘가족결합 || data.총액가족결합 || data.투게더결합) {
           elements.push({
             type: 'actions',
             buttons: [
               { label: '이 결합으로 가입하기', action: '결합할인 가입 상담 받고 싶어요' },
               { label: '다른 통신사도 비교', action: '3사 결합할인 비교해줘' },
               { label: '상담사 연결해줘', action: '상담사 연결해주세요' },
+            ],
+          });
+        }
+
+        // get_guide / get_fraud_tips 결과 → 액션
+        if (data.sections && Array.isArray(data.sections)) {
+          elements.push({
+            type: 'actions',
+            buttons: [
+              { label: '상담사 연결해줘', action: '상담사 연결해주세요' },
+              { label: '매장 방문하기', action: '매장 알려줘' },
             ],
           });
         }

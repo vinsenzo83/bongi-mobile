@@ -1461,23 +1461,30 @@ function getSubsidy({ model }) {
 
 function getGuide({ type, topic }) {
   const guide = type === 'wireless' ? wirelessGuide : wiredGuide;
-  
   if (!guide || guide.length === 0) {
     return { message: `${type === 'wireless' ? '무선' : '유선'} 가입 가이드 데이터가 없습니다.` };
   }
 
+  let sections = guide;
   if (topic) {
     const keyword = topic.toLowerCase();
     const matched = guide.filter(section => {
       const title = (section.title || '').toLowerCase();
-      const items = JSON.stringify(section.items || []).toLowerCase();
-      return title.includes(keyword) || items.includes(keyword);
+      return title.includes(keyword);
     });
-    
-    if (matched.length > 0) return { type, topic, sections: matched };
+    if (matched.length > 0) sections = matched;
   }
 
-  return { type, sections: guide };
+  // 토큰 절약: 각 섹션의 items를 5개로 제한
+  const trimmed = sections.slice(0, 3).map(s => ({
+    title: s.title,
+    items: (s.items || []).slice(0, 5).map(item => ({
+      label: item.label,
+      description: (item.description || '').slice(0, 100),
+    })),
+  }));
+
+  return { type, topic: topic || '전체', sections: trimmed };
 }
 
 function getFraudTips({ category }) {
@@ -1485,14 +1492,24 @@ function getFraudTips({ category }) {
     return { message: '사기방지 가이드 데이터가 없습니다.' };
   }
 
+  let sections = fraudPrevention;
   if (category && category !== 'all') {
     const keyword = category === 'internet' ? '인터넷' : '휴대폰';
     const matched = fraudPrevention.filter(s => {
       const text = JSON.stringify(s).toLowerCase();
       return text.includes(keyword);
     });
-    if (matched.length > 0) return { category, sections: matched };
+    if (matched.length > 0) sections = matched;
   }
 
-  return { category: 'all', sections: fraudPrevention };
+  // 토큰 절약: 섹션 3개, 항목 5개로 제한
+  const trimmed = sections.slice(0, 3).map(s => ({
+    title: s.title,
+    items: (s.items || []).slice(0, 5).map(item => ({
+      label: item.label,
+      description: (item.description || item.values?.[0] || '').slice(0, 150),
+    })),
+  }));
+
+  return { category: category || 'all', sections: trimmed };
 }
