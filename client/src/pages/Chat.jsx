@@ -68,7 +68,6 @@ function WelcomeScreen({ onChipClick, isMobile }) {
     // 휴대폰
     { label: '휴대폰 사은품 얼마?', icon: '📱' },
     { label: '중고폰 매입 사은품 얼마?', icon: '📦' },
-    { label: '알뜰폰 사은품 얼마?', icon: '📱' },
     // 매장
     { label: '가까운 매장 어디야?', icon: '📍' },
   ];
