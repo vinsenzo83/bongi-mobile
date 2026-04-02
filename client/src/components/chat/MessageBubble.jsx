@@ -5,6 +5,7 @@ import InlineForm from './InlineForm.jsx';
 import MobilePriceCard from './MobilePriceCard.jsx';
 import RentalCard from './RentalCard.jsx';
 import StoreCard from './StoreCard.jsx';
+import TradeinCard from './TradeinCard.jsx';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 export default function MessageBubble({ message, onAction }) {
@@ -119,6 +120,16 @@ function RichElement({ element, onAction }) {
           {element.stores?.map((store, i) => (
             <div key={i} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
               <StoreCard store={store} index={i} />
+            </div>
+          ))}
+        </ScrollableCards>
+      );
+    case 'tradein_cards':
+      return (
+        <ScrollableCards count={element.items?.length || 0}>
+          {element.items?.map((item, i) => (
+            <div key={i} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
+              <TradeinCard item={item} tradeinUrl={element.tradein_url} />
             </div>
           ))}
         </ScrollableCards>

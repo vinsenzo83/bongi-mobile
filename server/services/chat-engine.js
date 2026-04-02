@@ -604,6 +604,35 @@ function extractUIElements(messages) {
           }
         }
 
+        // estimate_tradein 결과 → 중고폰 매입 카드
+        if (data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
+          elements.push({
+            type: 'tradein_cards',
+            items: data.matches.slice(0, 6),
+            tradein_url: 'https://bonge.tredit.ai/model_chk.php',
+          });
+          elements.push({
+            type: 'actions',
+            buttons: [
+              { label: '트레딧에서 매입 신청', action: '중고폰 매입 신청하고 싶어요' },
+              { label: '다른 모델도 확인', action: '다른 중고폰 매입가도 알려줘' },
+              { label: '매장 방문 상담', action: '매장 알려줘' },
+            ],
+          });
+        }
+
+        // get_bundle_discount 결과 → 결합할인 카드
+        if (data.결합할인 || (data.provider && data.인터넷할인 !== undefined)) {
+          elements.push({
+            type: 'actions',
+            buttons: [
+              { label: '이 결합으로 가입하기', action: '결합할인 가입 상담 받고 싶어요' },
+              { label: '다른 통신사도 비교', action: '3사 결합할인 비교해줘' },
+              { label: '상담사 연결해줘', action: '상담사 연결해주세요' },
+            ],
+          });
+        }
+
         // compare_products 결과 → 비교표
         if (data.비교 && Array.isArray(data.비교)) {
           elements.push({
