@@ -92,7 +92,7 @@ function WelcomeScreen({ onChipClick, isMobile }) {
       <p style={{
         ...styles.welcomeSub,
         ...(isMobile ? { fontSize: 13 } : {}),
-      }}>인터넷, 렌탈, 알뜰폰, 중고폰 매입까지<br/>무엇이든 물어보세요</p>
+      }}>인터넷, 렌탈, 휴대폰시세, 중고폰 매입까지<br/>무엇이든 물어보세요</p>
       <div style={{
         ...styles.chips,
         ...(isMobile ? { maxWidth: '100%', padding: '0 8px' } : {}),
