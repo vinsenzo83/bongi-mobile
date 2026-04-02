@@ -1,10 +1,64 @@
 import { useState, useRef, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 
+const PLACEHOLDERS = [
+  "인터넷 사은품 얼마야?",
+  "정수기 렌탈 추천해줘",
+  "갤럭시 S26 시세 알려줘",
+  "공기청정기 사은품 얼마?",
+  "아이폰 17 중고 매입가",
+  "KT 인터넷 500M 얼마?",
+  "TV 렌탈 비교해줘",
+  "가까운 매장 어디야?",
+  "냉장고 사은품 얼마?",
+  "비데 렌탈 추천해줘",
+  "세탁건조기 사은품 얼마?",
+  "결합할인 얼마나 돼?",
+  "휴대폰 번호이동 시세",
+  "안마의자 렌탈 얼마?",
+];
+
+function useTypingPlaceholder() {
+  const [display, setDisplay] = useState('');
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const text = PLACEHOLDERS[idx % PLACEHOLDERS.length];
+    let charIdx = 0;
+    let deleting = false;
+    let pause = false;
+
+    const timer = setInterval(() => {
+      if (pause) return;
+
+      if (!deleting) {
+        charIdx++;
+        setDisplay(text.slice(0, charIdx));
+        if (charIdx === text.length) {
+          pause = true;
+          setTimeout(() => { pause = false; deleting = true; }, 2000);
+        }
+      } else {
+        charIdx--;
+        setDisplay(text.slice(0, charIdx));
+        if (charIdx === 0) {
+          deleting = false;
+          setIdx(prev => prev + 1);
+        }
+      }
+    }, 80);
+
+    return () => clearInterval(timer);
+  }, [idx]);
+
+  return display;
+}
+
 export default function InputArea({ onSend, loading }) {
   const [text, setText] = useState('');
   const inputRef = useRef(null);
   const isMobile = useIsMobile();
+  const typingPlaceholder = useTypingPlaceholder();
 
   const handleSend = () => {
     if (!text.trim() || loading) return;
@@ -20,37 +74,28 @@ export default function InputArea({ onSend, loading }) {
     }
   };
 
-  // 모바일 키보드 올라올 때 visualViewport 활용해 입력창 위치 보정
   useEffect(() => {
     if (!isMobile || !window.visualViewport) return;
-
     const vv = window.visualViewport;
     const containerEl = document.getElementById('chat-input-container');
     if (!containerEl) return;
-
     const handleResize = () => {
       const offsetFromBottom = window.innerHeight - vv.height - vv.offsetTop;
       containerEl.style.paddingBottom = `max(${offsetFromBottom}px, env(safe-area-inset-bottom))`;
     };
-
     vv.addEventListener('resize', handleResize);
     vv.addEventListener('scroll', handleResize);
     return () => {
       vv.removeEventListener('resize', handleResize);
       vv.removeEventListener('scroll', handleResize);
-      if (containerEl) {
-        containerEl.style.paddingBottom = '';
-      }
+      if (containerEl) containerEl.style.paddingBottom = '';
     };
   }, [isMobile]);
 
   return (
     <div
       id="chat-input-container"
-      style={{
-        ...styles.container,
-        ...(isMobile ? styles.containerMobile : {}),
-      }}
+      style={{ ...styles.container, ...(isMobile ? styles.containerMobile : {}) }}
     >
       <div style={styles.inner}>
         <div style={styles.inputWrap}>
@@ -59,12 +104,9 @@ export default function InputArea({ onSend, loading }) {
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="메시지를 입력하세요..."
+            placeholder={typingPlaceholder || '메시지를 입력하세요...'}
             rows={1}
-            style={{
-              ...styles.textarea,
-              ...(isMobile ? { fontSize: 16 } : {}),
-            }}
+            style={{ ...styles.textarea, ...(isMobile ? { fontSize: 16 } : {}) }}
             disabled={loading}
           />
           <button
