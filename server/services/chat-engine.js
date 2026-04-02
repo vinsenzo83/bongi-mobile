@@ -477,17 +477,17 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     for (const block of toolUseBlocks) {
       try {
         const result = await executeTool(block.name, block.input, context);
+        result._tool = block.name; // UI 추출용 도구명 태깅
         let resultStr = JSON.stringify(result);
-        // 토큰 초과 방지: 결과가 너무 크면 잘라냄
         if (resultStr.length > 15000) {
           console.log(`[Tool] ${block.name}: 결과 너무 큼 (${resultStr.length}bytes), 잘라냄`);
-          resultStr = JSON.stringify({ message: result.message || '결과를 확인했습니다.', count: result.count || result.results?.length || 0, truncated: true });
+          resultStr = JSON.stringify({ _tool: block.name, message: result.message || '결과를 확인했습니다.', count: result.count || result.results?.length || 0, truncated: true });
         }
         console.log(`[Tool] ${block.name}: ${resultStr.length}bytes`);
         toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: resultStr });
       } catch (toolErr) {
         console.error(`[Tool Error] ${block.name}:`, toolErr.message);
-        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: toolErr.message }) });
+        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ _tool: block.name, error: toolErr.message }) });
       }
     }
 
@@ -618,20 +618,23 @@ function extractUIElements(messages) {
           }
         }
 
-        // estimate_tradein 결과 → 중고폰 매입 카드
-        if (data.results && Array.isArray(data.results) && data.results.length > 0 && data.results[0]?.매입가) {
+        // _tool 기반 UI 매칭
+        const tool = data._tool || '';
+
+        // estimate_tradein → 중고폰 매입
+        if (tool === 'estimate_tradein' || (data.results?.[0]?.매입가 && data.grade)) {
           elements.push({
             type: 'actions',
             buttons: [
-              { label: '트레딧에서 매입 신청', action: '중고폰 매입 신청 링크 알려줘' },
+              { label: '♻️ 트레딧 매입 신청', action: '중고폰 매입 신청 링크 알려줘' },
               { label: '다른 모델도 확인', action: '다른 중고폰 매입가도 알려줘' },
-              { label: '매장 방문 상담', action: '매장 알려줘' },
+              { label: '📍 매장 방문 상담', action: '매장 알려줘' },
             ],
           });
         }
 
-        // get_bundle_discount 결과 → 결합할인 액션
-        if (data.결합종류 || data.인터넷할인 !== undefined || data.요즘가족결합 || data.총액가족결합 || data.투게더결합) {
+        // get_bundle_discount → 결합할인
+        if (tool === 'get_bundle_discount') {
           elements.push({
             type: 'actions',
             buttons: [
@@ -642,13 +645,62 @@ function extractUIElements(messages) {
           });
         }
 
-        // get_guide / get_fraud_tips 결과 → 액션
-        if (data.sections && Array.isArray(data.sections)) {
+        // get_guide → 가이드
+        if (tool === 'get_guide') {
           elements.push({
             type: 'actions',
             buttons: [
+              { label: '인터넷 사은품 보기', action: '인터넷 사은품 얼마?' },
+              { label: '휴대폰 시세 보기', action: '갤럭시 S26 사은품 얼마?' },
               { label: '상담사 연결해줘', action: '상담사 연결해주세요' },
-              { label: '매장 방문하기', action: '매장 알려줘' },
+            ],
+          });
+        }
+
+        // get_fraud_tips → 사기방지
+        if (tool === 'get_fraud_tips') {
+          elements.push({
+            type: 'actions',
+            buttons: [
+              { label: '인터넷 사은품 보기', action: '인터넷 사은품 얼마?' },
+              { label: '📍 매장 방문하기', action: '매장 알려줘' },
+              { label: '상담사 연결해줘', action: '상담사 연결해주세요' },
+            ],
+          });
+        }
+
+        // get_subsidy → 공시지원금
+        if (tool === 'get_subsidy') {
+          elements.push({
+            type: 'actions',
+            buttons: [
+              { label: '이 모델 가입하기', action: '가입 상담 받고 싶어요' },
+              { label: '다른 모델도 보기', action: '다른 휴대폰 시세도 보여줘' },
+              { label: '상담사 연결해줘', action: '상담사 연결해주세요' },
+            ],
+          });
+        }
+
+        // search_mobile_plans → 요금제 검색
+        if (tool === 'search_mobile_plans') {
+          elements.push({
+            type: 'actions',
+            buttons: [
+              { label: '이 요금제로 가입', action: '가입 상담 받고 싶어요' },
+              { label: '다른 요금제 보기', action: '다른 요금제도 추천해줘' },
+              { label: '📍 매장 방문', action: '매장 알려줘' },
+            ],
+          });
+        }
+
+        // get_card_discounts → 제휴카드
+        if (tool === 'get_card_discounts') {
+          elements.push({
+            type: 'actions',
+            buttons: [
+              { label: '카드 발급 상담', action: '제휴카드 발급 상담 받고 싶어요' },
+              { label: '다른 통신사 카드', action: '다른 통신사 제휴카드도 보여줘' },
+              { label: '상담사 연결해줘', action: '상담사 연결해주세요' },
             ],
           });
         }
@@ -692,6 +744,19 @@ function extractUIElements(messages) {
 
     // 최근 도구 결과 1세트만
     if (elements.length > 0) break;
+  }
+
+  // 도구 호출 없이 텍스트만 응답한 경우에도 기본 액션 버튼 추가
+  if (elements.length === 0) {
+    elements.push({
+      type: 'actions',
+      buttons: [
+        { label: '📡 인터넷 사은품', action: '인터넷 사은품 얼마?' },
+        { label: '📱 휴대폰 시세', action: '갤럭시 S26 사은품 얼마?' },
+        { label: '💧 렌탈 사은품', action: '정수기 사은품 얼마?' },
+        { label: '📍 매장 안내', action: '매장 알려줘' },
+      ],
+    });
   }
 
   return elements;
