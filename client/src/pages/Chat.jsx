@@ -51,22 +51,25 @@ export default function Chat() {
 
 function WelcomeScreen({ onChipClick, isMobile }) {
   const allChips = [
-    { label: '인터넷 추천해줘', icon: '📡' },
+    // 인터넷+TV
+    { label: '인터넷 사은품 얼마?', icon: '📡' },
+    { label: '인터넷+TV 추천해줘', icon: '📺' },
+    // 렌탈
+    { label: '냉장고 사은품 얼마?', icon: '🧊' },
+    { label: '공기청정기 사은품 얼마?', icon: '🌬️' },
     { label: '정수기 렌탈 얼마야?', icon: '💧' },
-    { label: '공기청정기 추천해줘', icon: '🌬️' },
     { label: 'TV 렌탈 비교', icon: '📺' },
     { label: '비데 렌탈 추천', icon: '🚿' },
     { label: '세탁건조기 렌탈', icon: '👕' },
-    { label: '냉장고 렌탈 비교', icon: '🧊' },
     { label: '에어컨 렌탈 얼마야?', icon: '❄️' },
     { label: '식기세척기 추천', icon: '🍽️' },
     { label: '로봇청소기 렌탈', icon: '🤖' },
     { label: '안마의자 렌탈', icon: '💆' },
-    { label: '의류관리기 추천', icon: '👔' },
-    { label: '건조기 렌탈 비교', icon: '🔥' },
-    { label: '알뜰폰 저렴한 거', icon: '📱' },
-    { label: '중고폰 매입가', icon: '📦' },
+    // 휴대폰
     { label: '오늘 휴대폰 시세', icon: '📱' },
+    { label: '중고폰 매입가', icon: '📦' },
+    { label: '알뜰폰 저렴한 거', icon: '📱' },
+    // 매장
     { label: '가까운 매장 어디야?', icon: '📍' },
   ];
 
