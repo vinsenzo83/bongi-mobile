@@ -43,7 +43,7 @@ export default function Chat() {
         )}
 
         {/* 입력창 */}
-        <InputArea onSend={chat.sendMessage} loading={chat.loading} />
+        <InputArea onSend={chat.sendMessage} loading={chat.loading} hasMessages={chat.messages.length > 0} />
       </div>
     </div>
   );

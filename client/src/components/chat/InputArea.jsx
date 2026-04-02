@@ -54,7 +54,7 @@ function useTypingPlaceholder() {
   return display;
 }
 
-export default function InputArea({ onSend, loading }) {
+export default function InputArea({ onSend, loading, hasMessages = false }) {
   const [text, setText] = useState('');
   const inputRef = useRef(null);
   const isMobile = useIsMobile();
@@ -104,7 +104,7 @@ export default function InputArea({ onSend, loading }) {
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={typingPlaceholder || '메시지를 입력하세요...'}
+            placeholder={hasMessages ? '메시지를 입력하세요...' : (typingPlaceholder || '메시지를 입력하세요...')}
             rows={1}
             style={{ ...styles.textarea, ...(isMobile ? { fontSize: 16 } : {}) }}
             disabled={loading}
