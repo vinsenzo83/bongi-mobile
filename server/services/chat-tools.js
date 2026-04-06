@@ -31,8 +31,12 @@ try {
 
 // 중고폰 매입 시세 데이터
 let tradeinPhones = [];
+let usedPhonePrices = [];
 try {
   tradeinPhones = JSON.parse(readFileSync(join(providerDir, 'tradein_phones.json'), 'utf8'));
+} catch { /* 파일 없으면 빈 배열 */ }
+try {
+  usedPhonePrices = JSON.parse(readFileSync(join(providerDir, 'used_phone_prices.json'), 'utf8'));
 } catch { /* 파일 없으면 빈 배열 */ }
 
 // 가전렌탈 상품 데이터 (rentre.kr)
@@ -1047,92 +1051,82 @@ function checkStore({ region }) {
 }
 
 function estimateTradein({ brand, model, condition, storage }) {
-  if (!model) return { error: '모델명을 알려주세요 (예: 아이폰 16 프로, 갤럭시 S25 울트라)' };
+  if (!model) return { error: '모델명을 알려주세요 (예: 아이폰 16 프로, 갤럭시 S25 울트라)', _tool: 'estimate_tradein' };
 
   const query = model.toLowerCase()
-    .replace(/아이폰/g, 'iphone')
-    .replace(/갤럭시/g, 'galaxy')
-    .replace(/프로\s*맥스/g, 'pro max')
-    .replace(/프로/g, 'pro')
-    .replace(/플러스/g, 'plus')
-    .replace(/울트라/g, 'ultra')
-    .replace(/플립/g, 'flip')
-    .replace(/폴드/g, 'fold')
-    .replace(/미니/g, 'mini')
-    .replace(/에어/g, 'air')
-    .trim();
+    .replace(/아이폰/g, 'iphone').replace(/갤럭시/g, 'galaxy')
+    .replace(/프로\s*맥스/g, 'pro max').replace(/프로/g, 'pro')
+    .replace(/플러스/g, 'plus').replace(/울트라/g, 'ultra')
+    .replace(/플립/g, 'flip').replace(/폴드/g, 'fold')
+    .replace(/미니/g, 'mini').replace(/에어/g, 'air').trim();
 
-  // 1차: full_name 매칭
-  let matches = tradeinPhones.filter(p => {
-    const name = p.full_name.toLowerCase();
-    return name.includes(query) || query.includes(name.split(' ').slice(0, -1).join(' '));
+  // 어드민 데이터(used_phone_prices.json) 우선 검색
+  let matches = usedPhonePrices.filter(p => {
+    const name = (p['모델명'] || '').toLowerCase();
+    return name.includes(query) || query.includes(name.replace(/\s/g, ''));
   });
 
-  // 2차: model 필드 매칭
+  // 어드민에서 못 찾으면 Tredit 데이터에서 검색
   if (matches.length === 0) {
-    matches = tradeinPhones.filter(p => {
-      const name = p.model.toLowerCase();
-      return name.includes(query) || query.includes(name);
+    const treditMatches = tradeinPhones.filter(p => {
+      const name = (p.full_name || p.model || '').toLowerCase();
+      return name.includes(query) || query.includes(name.split(' ').slice(0, -1).join(' '));
     });
-  }
-
-  // 3차: 키워드 분할 매칭
-  if (matches.length === 0) {
-    const keywords = query.split(/\s+/).filter(w => w.length > 1);
-    matches = tradeinPhones.filter(p => {
-      const name = p.full_name.toLowerCase();
-      return keywords.every(kw => name.includes(kw));
-    });
+    // Tredit 결과를 어드민 형식으로 변환
+    matches = treditMatches.map(p => ({
+      '제조사': p.manufacturer,
+      '시리즈': p.series,
+      '모델명': p.full_name || p.model,
+      '용량': p.storage,
+      'A등급': p.prices?.A || 0,
+      'B등급': p.prices?.B || 0,
+      'C등급': p.prices?.C || 0,
+      'D등급': p.prices?.D || 0,
+      'E등급': p.prices?.E || 0,
+    }));
   }
 
   if (matches.length === 0) {
     return {
-      model,
-      error: '해당 모델을 찾을 수 없습니다.',
-      message: `"${model}" 모델을 데이터에서 찾지 못했어요.\n정확한 모델명을 알려주시거나, 매장에서 직접 확인해드릴 수 있어요!`,
+      model, error: '해당 모델을 찾을 수 없습니다.',
+      message: `"${model}" 모델을 데이터에서 찾지 못했어요. 정확한 모델명을 알려주세요!`,
       available_brands: ['Apple (iPhone)', '삼성전자 (Galaxy)', 'LG'],
+      _tool: 'estimate_tradein',
     };
   }
 
-  // 용량 필터 (지정된 경우)
+  // 용량 필터
   if (storage) {
-    const storageQuery = storage.toUpperCase().replace(/GB?/i, 'G').replace(/TB?/i, 'T');
-    const storageMatches = matches.filter(p => p.storage.toUpperCase().includes(storageQuery));
-    if (storageMatches.length > 0) matches = storageMatches;
+    const sq = storage.toUpperCase().replace(/GB?/i, 'G').replace(/TB?/i, 'T');
+    const sm = matches.filter(p => (p['용량'] || '').toUpperCase().includes(sq));
+    if (sm.length > 0) matches = sm;
   }
 
-  // 등급 매핑 (상/중/하 → A/B/C)
-  const gradeMap = { '상': 'A', '중': 'B', '하': 'C', 'A': 'A', 'B': 'B', 'C': 'C', 'D': 'D', 'E': 'E' };
-  const grade = gradeMap[condition] || 'B';
+  // 결과 (등급별 가격 모두 표시)
+  const results = matches.slice(0, 8).map(p => ({
+    모델명: p['모델명'],
+    제조사: p['제조사'],
+    용량: p['용량'],
+    'A등급': p['A등급'] ? `${p['A등급'].toLocaleString()}원` : '-',
+    'B등급': p['B등급'] ? `${p['B등급'].toLocaleString()}원` : '-',
+    'C등급': p['C등급'] ? `${p['C등급'].toLocaleString()}원` : '-',
+    'D등급': p['D등급'] ? `${p['D등급'].toLocaleString()}원` : '-',
+    'E등급': p['E등급'] ? `${p['E등급'].toLocaleString()}원` : '-',
+    'A등급_raw': p['A등급'] || 0,
+  }));
 
-  // 용량별로 그룹핑해서 보여주기
-  const results = matches.slice(0, 5).map(p => {
-    const price = p.prices[grade] || p.prices['B'] || p.prices['A'] || 0;
-    return {
-      모델명: p.full_name,
-      용량: p.storage,
-      등급: `${grade}등급`,
-      매입가: `${price.toLocaleString()}원`,
-      전등급: Object.entries(p.prices)
-        .map(([g, v]) => `${g}등급: ${v.toLocaleString()}원`)
-        .join(' / '),
-    };
-  });
-
-  const topPrice = Math.max(...matches.map(p => p.prices['A'] || 0));
+  const topPrice = Math.max(...results.map(r => r['A등급_raw'] || 0));
 
   return {
     model,
-    brand: matches[0]?.manufacturer || brand || '확인필요',
-    condition: condition || '중',
-    grade,
+    brand: matches[0]?.['제조사'] || brand || '확인필요',
     count: results.length,
     '최대매입가(A등급)': `${topPrice.toLocaleString()}원`,
+    등급안내: 'A=외관깨끗 / B=미세기스 / C=눈에보이는기스 / D=파손·깨짐 / E=심각손상',
     results,
-    message: results.length === 1
-      ? `${results[0].모델명} ${grade}등급 매입가: ${results[0].매입가}\n(A등급 최대: ${topPrice.toLocaleString()}원)`
-      : `${model} 매입가를 찾았어요! 용량별로 확인해주세요.`,
-    안내: '정확한 금액은 매장 방문 시 기기 상태 검수 후 확정됩니다.',
+    message: `${model} 매입가를 찾았어요! 등급별로 확인해주세요.`,
+    안내: '정확한 금액은 기기 상태 검수 후 확정됩니다. 접수 신청하시면 수거 후 검수해드려요!',
+    _tool: 'estimate_tradein',
   };
 }
 
