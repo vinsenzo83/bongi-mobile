@@ -71,7 +71,14 @@ export default function Chat() {
         )}
 
         {/* 입력창 */}
-        <InputArea onSend={chat.sendMessage} loading={chat.loading} hasMessages={chat.messages.length > 0} />
+        <InputArea onSend={(msg) => {
+          const phoneKw = ['휴대폰 시세', '휴대폰 가격', '휴대폰 사은품', '핸드폰 시세', '핸드폰 가격', '핸드폰 사은품', '폰 시세', '폰 가격'];
+          if (phoneKw.some(k => msg.includes(k)) && !msg.includes('시세 알려줘')) {
+            setShowPhoneSelect(true);
+          } else {
+            chat.sendMessage(msg);
+          }
+        }} loading={chat.loading} hasMessages={chat.messages.length > 0} />
       </div>
 
       {/* 휴대폰 기종 선택 */}
