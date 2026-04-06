@@ -47,8 +47,8 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
         {/* 하단 */}
         <div style={styles.footer}>
           <DonJikimi />
-          <a href="/mypage?tab=referral" style={{ ...styles.mypageBtn, background: 'linear-gradient(135deg, #1a3a5c, #2a4a6c)', border: '1px solid #3a6a9c', marginBottom: 8 }}>🎁 친구초대</a>
-          <a href="/mypage" style={{ ...styles.mypageBtn, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <a href="/my/referral" style={{ ...styles.mypageBtn, background: 'linear-gradient(135deg, #1a3a5c, #2a4a6c)', border: '1px solid #3a6a9c', marginBottom: 8 }}>🎁 친구초대</a>
+          <a href="/my" style={{ ...styles.mypageBtn, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>📋 마이페이지</span>
             <span style={{ color: '#fbbf24', fontWeight: 700, fontSize: 13 }}>{cashBalance > 0 ? `${cashBalance.toLocaleString()}원` : ''}</span>
           </a>
