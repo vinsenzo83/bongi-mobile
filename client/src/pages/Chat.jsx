@@ -10,17 +10,17 @@ import PhoneSelectCard from '../components/chat/PhoneSelectCard.jsx';
 
 // 휴대폰 관련 질문 감지 (모달로 전환)
 function isPhoneQuery(msg) {
-  // 이미 기종이 특정된 시세 조회는 AI로 보냄
-  if (msg.includes('시세 알려줘') || msg.includes('시세 비교')) return false;
+  // 특정 모델명이 포함되면 AI로 보냄 (이미 기종 특정됨)
+  const models = ['갤럭시', '아이폰', 'S26', 'S25', '폴드', '플립', 'iPhone', 'Galaxy'];
+  if (models.some(m => msg.includes(m))) return false;
+
+  // 휴대폰 관련 키워드 → 모달 오픈
   const kw = [
     '휴대폰', '핸드폰', '스마트폰',
     '폰 시세', '폰 가격', '폰 사은품', '폰 얼마',
     '기기변경', '기변', '번호이동', '번이',
     '개통', '공시지원금', '공시',
   ];
-  // 특정 모델명이 포함되면 AI로 보냄 (이미 기종 특정됨)
-  const models = ['갤럭시', '아이폰', 'S26', 'S25', '폴드', '플립', 'iPhone', 'Galaxy'];
-  if (models.some(m => msg.includes(m))) return false;
   return kw.some(k => msg.includes(k));
 }
 
