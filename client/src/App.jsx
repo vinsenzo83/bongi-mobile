@@ -9,37 +9,44 @@ import Signup from './pages/Signup.jsx';
 import AuthCallback from './pages/AuthCallback.jsx';
 import MyPage from './pages/MyPage.jsx';
 
-// 어드민 페이지 (lazy load)
-const PlatformHome = lazy(() => import('./pages/admin/PlatformHome.jsx'));
-const ProductManage = lazy(() => import('./pages/admin/ProductManage.jsx'));
+// 어드민 페이지 (lazy load) — wireframe 25개 화면
+const Dashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
+const Members = lazy(() => import('./pages/admin/Members.jsx'));
+const CarrierProducts = lazy(() => import('./pages/admin/CarrierProducts.jsx'));
+const RentalProducts = lazy(() => import('./pages/admin/RentalProducts.jsx'));
+const UsedPhones = lazy(() => import('./pages/admin/UsedPhones.jsx'));
+const StoreManage = lazy(() => import('./pages/admin/StoreManage.jsx'));
+const TicketManage = lazy(() => import('./pages/admin/TicketManage.jsx'));
+const Applications = lazy(() => import('./pages/admin/Applications.jsx'));
+const UsedPhoneBuyback = lazy(() => import('./pages/admin/UsedPhoneBuyback.jsx'));
 const GiftManage = lazy(() => import('./pages/admin/GiftManage.jsx'));
-const CommissionSettle = lazy(() => import('./pages/admin/CommissionSettle.jsx'));
+const PointManage = lazy(() => import('./pages/admin/PointManage.jsx'));
 const ReviewManage = lazy(() => import('./pages/admin/ReviewManage.jsx'));
-const MemberList = lazy(() => import('./pages/admin/MemberList.jsx'));
-const ReferralManage = lazy(() => import('./pages/admin/ReferralManage.jsx'));
-const CashManage = lazy(() => import('./pages/admin/CashManage.jsx'));
-
-// CRM
-const TodoDashboard = lazy(() => import('./pages/admin/TodoDashboard.jsx'));
-const CustomerList = lazy(() => import('./pages/admin/CustomerList.jsx'));
-const CustomerDetail = lazy(() => import('./pages/admin/CustomerDetail.jsx'));
-const ContractList = lazy(() => import('./pages/admin/ContractList.jsx'));
-const KpiDashboard = lazy(() => import('./pages/admin/KpiDashboard.jsx'));
-const Incentive = lazy(() => import('./pages/admin/Incentive.jsx'));
-
-// CTI
-const CtiConsole = lazy(() => import('./pages/admin/CtiConsole.jsx'));
+const DonJikimi = lazy(() => import('./pages/admin/DonJikimi.jsx'));
+const AlertManage = lazy(() => import('./pages/admin/AlertManage.jsx'));
+const Statistics = lazy(() => import('./pages/admin/Statistics.jsx'));
+const MobilePlans = lazy(() => import('./pages/admin/MobilePlans.jsx'));
+const SubsidyData = lazy(() => import('./pages/admin/SubsidyData.jsx'));
+const FamilyBundle = lazy(() => import('./pages/admin/FamilyBundle.jsx'));
+const GuideManage = lazy(() => import('./pages/admin/GuideManage.jsx'));
+const BundleSimulator = lazy(() => import('./pages/admin/BundleSimulator.jsx'));
+const CrawlManage = lazy(() => import('./pages/admin/CrawlManage.jsx'));
+const FeatureChecklist = lazy(() => import('./pages/admin/FeatureChecklist.jsx'));
 
 const AdminFallback = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', color: '#888' }}>
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', color: '#999', fontSize: 14 }}>
     로딩 중...
   </div>
 );
 
+function W({ C }) {
+  return <Suspense fallback={<AdminFallback />}><C /></Suspense>;
+}
+
 function AppRoutes() {
   const location = useLocation();
 
-  // ?ref= 파라미터 처리: localStorage에 저장
+  // ?ref= 파라미터 처리
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const ref = params.get('ref');
@@ -59,28 +66,52 @@ function AppRoutes() {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/mypage" element={<MyPage />} />
 
-      {/* 어드민 (중첩 라우트 + AdminLayout) */}
-      <Route path="/admin" element={<ProtectedRoute minRole="agent"><AdminLayout /></ProtectedRoute>}>
-        {/* 플랫폼 관리 */}
-        <Route index element={<Suspense fallback={<AdminFallback />}><PlatformHome /></Suspense>} />
-        <Route path="products" element={<Suspense fallback={<AdminFallback />}><ProductManage /></Suspense>} />
-        <Route path="gifts" element={<Suspense fallback={<AdminFallback />}><GiftManage /></Suspense>} />
-        <Route path="settlements" element={<Suspense fallback={<AdminFallback />}><CommissionSettle /></Suspense>} />
-        <Route path="reviews" element={<Suspense fallback={<AdminFallback />}><ReviewManage /></Suspense>} />
-        <Route path="members" element={<Suspense fallback={<AdminFallback />}><MemberList /></Suspense>} />
-        <Route path="referrals" element={<Suspense fallback={<AdminFallback />}><ReferralManage /></Suspense>} />
-        <Route path="cash" element={<Suspense fallback={<AdminFallback />}><CashManage /></Suspense>} />
-
-        {/* CRM */}
-        <Route path="crm" element={<Suspense fallback={<AdminFallback />}><TodoDashboard /></Suspense>} />
-        <Route path="crm/customers" element={<Suspense fallback={<AdminFallback />}><CustomerList /></Suspense>} />
-        <Route path="crm/customers/:id" element={<Suspense fallback={<AdminFallback />}><CustomerDetail /></Suspense>} />
-        <Route path="crm/contracts" element={<Suspense fallback={<AdminFallback />}><ContractList /></Suspense>} />
-        <Route path="crm/kpi" element={<Suspense fallback={<AdminFallback />}><KpiDashboard /></Suspense>} />
-        <Route path="crm/incentive" element={<Suspense fallback={<AdminFallback />}><Incentive /></Suspense>} />
-
-        {/* CTI */}
-        <Route path="cti" element={<Suspense fallback={<AdminFallback />}><CtiConsole /></Suspense>} />
+      {/* 어드민 (25개 화면) */}
+      <Route path="/admin" element={<AdminLayout />}>
+        {/* 01. 대시보드 */}
+        <Route index element={<W C={Dashboard} />} />
+        {/* 02. 회원 관리 */}
+        <Route path="members" element={<W C={Members} />} />
+        {/* 03-05. 통신사별 상품 */}
+        <Route path="products/:carrier" element={<W C={CarrierProducts} />} />
+        {/* 06. 렌탈 상품 */}
+        <Route path="rental" element={<W C={RentalProducts} />} />
+        {/* 07. 중고폰 매입 */}
+        <Route path="used-phones" element={<W C={UsedPhones} />} />
+        {/* 08. 매장·시세 */}
+        <Route path="stores" element={<W C={StoreManage} />} />
+        {/* 09. 티켓 관리 */}
+        <Route path="tickets" element={<W C={TicketManage} />} />
+        {/* 10. 신청 현황 */}
+        <Route path="applications" element={<W C={Applications} />} />
+        {/* 11. 중고폰 매입 현황 */}
+        <Route path="buyback" element={<W C={UsedPhoneBuyback} />} />
+        {/* 12. 사은품 관리 */}
+        <Route path="gifts" element={<W C={GiftManage} />} />
+        {/* 13. 포인트 관리 */}
+        <Route path="points" element={<W C={PointManage} />} />
+        {/* 14. 후기 관리 */}
+        <Route path="reviews" element={<W C={ReviewManage} />} />
+        {/* 15. 돈지키미 */}
+        <Route path="donjikimi" element={<W C={DonJikimi} />} />
+        {/* 16. 알림 관리 */}
+        <Route path="alerts" element={<W C={AlertManage} />} />
+        {/* 17. 통계 */}
+        <Route path="statistics" element={<W C={Statistics} />} />
+        {/* 18. 모바일 요금제 (AI) */}
+        <Route path="ai/mobile-plans" element={<W C={MobilePlans} />} />
+        {/* 19. 공시지원금 (AI) */}
+        <Route path="ai/subsidy" element={<W C={SubsidyData} />} />
+        {/* 20. 가족결합 (AI) */}
+        <Route path="ai/family-bundle" element={<W C={FamilyBundle} />} />
+        {/* 21. 가이드 (AI) */}
+        <Route path="ai/guides" element={<W C={GuideManage} />} />
+        {/* 22. 결합할인 시뮬레이터 */}
+        <Route path="simulator" element={<W C={BundleSimulator} />} />
+        {/* 23. 크롤링 관리 */}
+        <Route path="crawling" element={<W C={CrawlManage} />} />
+        {/* 24. 기능 체크리스트 */}
+        <Route path="checklist" element={<W C={FeatureChecklist} />} />
       </Route>
     </Routes>
   );

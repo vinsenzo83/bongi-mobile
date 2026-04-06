@@ -3,41 +3,62 @@ import { theme } from '../../styles/admin-theme.js';
 
 const MENU = [
   {
-    section: '플랫폼 관리',
-    icon: '🏢',
+    section: '어드민',
     items: [
-      { path: '/admin', label: '홈', icon: '🏠', exact: true },
-      { path: '/admin/products', label: '상품 관리', icon: '📦' },
-      { path: '/admin/gifts', label: '사은품 관리', icon: '🎁' },
-      { path: '/admin/settlements', label: '수수료 정산', icon: '💰' },
-      { path: '/admin/reviews', label: '후기 관리', icon: '⭐' },
+      { path: '/admin', label: '대시보드', icon: '📊', exact: true },
       { path: '/admin/members', label: '회원 관리', icon: '👥' },
-      { path: '/admin/referrals', label: '친구초대', icon: '🤝' },
-      { path: '/admin/cash', label: '리턴캐쉬', icon: '💳' },
     ],
   },
   {
-    section: 'CRM',
-    icon: '📋',
+    section: '상품 관리 (인터넷·TV)',
     items: [
-      { path: '/admin/crm', label: '오늘 할 일', icon: '📝', exact: true },
-      { path: '/admin/crm/customers', label: '고객 리스트', icon: '👤' },
-      { path: '/admin/crm/contracts', label: '계약 관리', icon: '📄' },
-      { path: '/admin/crm/kpi', label: 'KPI', icon: '📊' },
-      { path: '/admin/crm/happycall', label: '해피콜', icon: '📞' },
-      { path: '/admin/crm/tickets', label: '티켓', icon: '🎫' },
-      { path: '/admin/crm/assignment', label: '배정', icon: '🔀' },
-      { path: '/admin/crm/voc', label: 'VOC', icon: '📢' },
-      { path: '/admin/crm/incentive', label: '인센티브', icon: '💎' },
+      { path: '/admin/products/skt', label: 'SKT 상품', icon: '📦' },
+      { path: '/admin/products/kt', label: 'KT 상품', icon: '📦' },
+      { path: '/admin/products/lgu', label: 'LG U+ 상품', icon: '📦' },
     ],
   },
   {
-    section: 'CTI',
-    icon: '📞',
+    section: '상품 관리 (기타)',
     items: [
-      { path: '/admin/cti', label: '상담 콘솔', icon: '🎧', exact: true },
-      { path: '/admin/cti/history', label: '통화 이력', icon: '📜' },
-      { path: '/admin/cti/monitor', label: '상담원 현황', icon: '📡' },
+      { path: '/admin/rental', label: '렌탈 상품', icon: '🏠' },
+      { path: '/admin/used-phones', label: '중고폰 매입', icon: '📱' },
+      { path: '/admin/stores', label: '매장 · 시세', icon: '📍' },
+      { path: '/admin/tickets', label: '티켓 관리', icon: '🎫' },
+      { path: '/admin/applications', label: '신청 현황', icon: '📋' },
+      { path: '/admin/buyback', label: '중고폰 매입 현황', icon: '📱' },
+      { path: '/admin/gifts', label: '사은품 관리', icon: '🎁' },
+      { path: '/admin/points', label: '포인트 관리', icon: '💰' },
+      { path: '/admin/reviews', label: '후기 관리', icon: '⭐' },
+      { path: '/admin/donjikimi', label: '돈지키미 관리', icon: '🔔' },
+      { path: '/admin/alerts', label: '알림 관리', icon: '🔔' },
+      { path: '/admin/statistics', label: '통계', icon: '📈' },
+    ],
+  },
+  {
+    section: 'AI 학습 데이터',
+    items: [
+      { path: '/admin/ai/mobile-plans', label: '모바일 요금제', icon: '📱' },
+      { path: '/admin/ai/subsidy', label: '공시지원금', icon: '💲' },
+      { path: '/admin/ai/family-bundle', label: '가족결합', icon: '👨‍👩‍👧‍👦' },
+      { path: '/admin/ai/guides', label: '가이드', icon: '📖' },
+    ],
+  },
+  {
+    section: '시뮬레이터',
+    items: [
+      { path: '/admin/simulator', label: '결합할인 시뮬레이터', icon: '🧮' },
+    ],
+  },
+  {
+    section: '크롤링',
+    items: [
+      { path: '/admin/crawling', label: '크롤링 관리', icon: '🤖' },
+    ],
+  },
+  {
+    section: '개발 현황',
+    items: [
+      { path: '/admin/checklist', label: '기능 체크리스트', icon: '✅' },
     ],
   },
 ];
@@ -54,22 +75,25 @@ export default function Sidebar({ collapsed, onToggle }) {
   return (
     <div style={{
       ...styles.sidebar,
-      width: collapsed ? theme.sidebarCollapsed : theme.sidebarWidth,
+      width: collapsed ? 60 : theme.sidebarWidth,
     }}>
       {/* 로고 */}
       <div style={styles.logo} onClick={() => navigate('/admin')}>
-        <span style={{ fontSize: 20 }}>🐟</span>
-        {!collapsed && <span style={styles.logoText}>리턴AI 어드민</span>}
+        <span style={{ fontSize: 16 }}>🐟</span>
+        {!collapsed && (
+          <div>
+            <span style={styles.logoText}>봉이모바일</span>
+            <span style={styles.logoSub}> 어드민</span>
+          </div>
+        )}
       </div>
 
       {/* 메뉴 */}
       <nav style={styles.nav}>
         {MENU.map(group => (
-          <div key={group.section} style={styles.group}>
+          <div key={group.section}>
             {!collapsed && (
-              <div style={styles.sectionLabel}>
-                {group.icon} {group.section}
-              </div>
+              <div style={styles.sectionLabel}>{group.section}</div>
             )}
             {group.items.map(item => {
               const active = isActive(item);
@@ -83,7 +107,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                   onClick={() => navigate(item.path)}
                   title={collapsed ? item.label : ''}
                 >
-                  <span style={{ fontSize: 15 }}>{item.icon}</span>
+                  <span style={{ fontSize: 13 }}>{item.icon}</span>
                   {!collapsed && <span>{item.label}</span>}
                 </button>
               );
@@ -103,7 +127,6 @@ export default function Sidebar({ collapsed, onToggle }) {
 const styles = {
   sidebar: {
     background: theme.bgSidebar,
-    borderRight: `1px solid ${theme.border}`,
     height: '100vh',
     position: 'fixed',
     top: 0,
@@ -117,62 +140,66 @@ const styles = {
   logo: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
-    padding: '16px 16px',
+    gap: 8,
+    padding: '14px 14px',
     cursor: 'pointer',
-    borderBottom: `1px solid ${theme.border}`,
+    borderBottom: '1px solid rgba(255,255,255,0.06)',
     flexShrink: 0,
   },
   logoText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: 700,
-    color: theme.textWhite,
-    whiteSpace: 'nowrap',
+    color: '#60a5fa',
+  },
+  logoSub: {
+    fontSize: 12,
+    fontWeight: 500,
+    color: '#fff',
   },
   nav: {
     flex: 1,
     overflow: 'auto',
-    padding: '8px 0',
-  },
-  group: {
-    marginBottom: 8,
+    padding: '4px 0',
   },
   sectionLabel: {
-    fontSize: 11,
-    color: theme.textDim,
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.25)',
     fontWeight: 600,
-    padding: '8px 16px 4px',
+    padding: '12px 14px 4px',
+    letterSpacing: 1.5,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   menuItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     width: '100%',
-    padding: '9px 16px',
+    padding: '7px 14px',
     background: 'transparent',
     border: 'none',
-    color: theme.textMuted,
-    fontSize: 13,
+    borderLeft: '2px solid transparent',
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 12,
     cursor: 'pointer',
     textAlign: 'left',
-    transition: 'all 0.1s',
+    transition: 'all 0.12s',
     whiteSpace: 'nowrap',
+    fontFamily: theme.sans,
   },
   menuActive: {
-    background: theme.bgHover,
-    color: theme.textWhite,
-    borderRight: `3px solid ${theme.blue}`,
+    background: 'rgba(96,165,250,0.1)',
+    color: '#60a5fa',
+    borderLeftColor: '#60a5fa',
+    fontWeight: 600,
   },
   collapseBtn: {
-    padding: '10px',
+    padding: '8px',
     background: 'transparent',
     border: 'none',
-    borderTop: `1px solid ${theme.border}`,
-    color: theme.textDim,
+    borderTop: '1px solid rgba(255,255,255,0.06)',
+    color: 'rgba(255,255,255,0.3)',
     cursor: 'pointer',
-    fontSize: 12,
+    fontSize: 11,
     flexShrink: 0,
   },
 };
