@@ -10,6 +10,9 @@ import PhoneSelectCard from '../components/chat/PhoneSelectCard.jsx';
 
 // 휴대폰 관련 질문 감지 (모달로 전환)
 function isPhoneQuery(msg) {
+  // 중고폰/매입은 별도 플로우 → 모달 안 열림
+  if (msg.includes('중고폰') || msg.includes('매입') || msg.includes('보상') || msg.includes('팔고')) return false;
+
   // 특정 모델명이 포함되면 AI로 보냄 (이미 기종 특정됨)
   const models = ['갤럭시', '아이폰', 'S26', 'S25', '폴드', '플립', 'iPhone', 'Galaxy'];
   if (models.some(m => msg.includes(m))) return false;
