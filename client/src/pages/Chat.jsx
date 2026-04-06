@@ -7,10 +7,11 @@ import InputArea from '../components/chat/InputArea.jsx';
 import MyPageModal from '../components/chat/MyPageModal.jsx';
 import ConsultSheet from '../components/chat/ConsultSheet.jsx';
 import PhoneSelectCard from '../components/chat/PhoneSelectCard.jsx';
+import UsedPhoneSelectCard from '../components/chat/UsedPhoneSelectCard.jsx';
 
 // 휴대폰 관련 질문 감지 (모달로 전환)
 function isPhoneQuery(msg) {
-  // 중고폰/매입은 별도 플로우 → 모달 안 열림
+  // 중고폰/매입은 별도 모달
   if (msg.includes('중고폰') || msg.includes('매입') || msg.includes('보상') || msg.includes('팔고')) return false;
 
   // 특정 모델명이 포함되면 AI로 보냄 (이미 기종 특정됨)
@@ -27,6 +28,11 @@ function isPhoneQuery(msg) {
   return kw.some(k => msg.includes(k));
 }
 
+function isUsedPhoneQuery(msg) {
+  const kw = ['중고폰', '매입', '보상판매', '팔고 싶', '폰 팔', '중고 매입'];
+  return kw.some(k => msg.includes(k));
+}
+
 export default function Chat() {
   const chat = useChat();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,6 +40,7 @@ export default function Chat() {
   const [myPageTab, setMyPageTab] = useState('home');
   const [consultSheet, setConsultSheet] = useState({ open: false, product: null, category: null });
   const [showPhoneSelect, setShowPhoneSelect] = useState(false);
+  const [showUsedPhoneSelect, setShowUsedPhoneSelect] = useState(false);
   const isMobile = useIsMobile();
 
   return (
@@ -65,7 +72,9 @@ export default function Chat() {
         {/* 메시지 영역 */}
         {chat.messages.length === 0 ? (
           <WelcomeScreen onChipClick={(msg) => {
-            if (isPhoneQuery(msg)) {
+            if (isUsedPhoneQuery(msg)) {
+              setShowUsedPhoneSelect(true);
+            } else if (isPhoneQuery(msg)) {
               setShowPhoneSelect(true);
             } else {
               chat.sendMessage(msg);
@@ -78,10 +87,11 @@ export default function Chat() {
                 const data = JSON.parse(msg.replace('__consult__', ''));
                 setConsultSheet({ open: true, product: data.product, category: data.category });
               } catch { setConsultSheet({ open: true, product: {}, category: 'internet' }); }
+            } else if (isUsedPhoneQuery(msg)) {
+              setShowUsedPhoneSelect(true);
             } else if (isPhoneQuery(msg)) {
               setShowPhoneSelect(true);
             } else {
-              setShowPhoneSelect(false);
               chat.sendMessage(msg);
             }
           }} />
@@ -89,7 +99,9 @@ export default function Chat() {
 
         {/* 입력창 */}
         <InputArea onSend={(msg) => {
-          if (isPhoneQuery(msg)) {
+          if (isUsedPhoneQuery(msg)) {
+            setShowUsedPhoneSelect(true);
+          } else if (isPhoneQuery(msg)) {
             setShowPhoneSelect(true);
           } else {
             chat.sendMessage(msg);
@@ -107,6 +119,21 @@ export default function Chat() {
                 <button onClick={() => setShowPhoneSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
               </div>
               <PhoneSelectCard onComplete={(query) => { setShowPhoneSelect(false); chat.sendMessage(query); }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 중고폰 매입 선택 */}
+      {showUsedPhoneSelect && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 420, animation: 'slideUp 0.25s ease' }}>
+            <div style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '16px 16px 24px', maxHeight: '80vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#1a2744' }}>{'📦'} 중고폰 매입 시세</span>
+                <button onClick={() => setShowUsedPhoneSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
+              </div>
+              <UsedPhoneSelectCard onComplete={(query) => { setShowUsedPhoneSelect(false); chat.sendMessage(query); }} />
             </div>
           </div>
         </div>
