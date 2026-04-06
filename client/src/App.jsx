@@ -9,6 +9,20 @@ import Signup from './pages/Signup.jsx';
 import AuthCallback from './pages/AuthCallback.jsx';
 import MyPage from './pages/MyPage.jsx';
 
+// 마이페이지 (lazy load)
+const MyPageLayout = lazy(() => import('./layouts/MyPageLayout.jsx'));
+const MyHome = lazy(() => import('./pages/my/Home.jsx'));
+const MyProfile = lazy(() => import('./pages/my/Profile.jsx'));
+const MyApplications = lazy(() => import('./pages/my/Applications.jsx'));
+const MyGifts = lazy(() => import('./pages/my/Gifts.jsx'));
+const MyPoints = lazy(() => import('./pages/my/Points.jsx'));
+const MyMoneyGuard = lazy(() => import('./pages/my/MoneyGuard.jsx'));
+const MyReferral = lazy(() => import('./pages/my/Referral.jsx'));
+const MyAlertSettings = lazy(() => import('./pages/my/AlertSettings.jsx'));
+const MyVerification = lazy(() => import('./pages/my/Verification.jsx'));
+const MyBankAccount = lazy(() => import('./pages/my/BankAccount.jsx'));
+const MyAddress = lazy(() => import('./pages/my/Address.jsx'));
+
 // 어드민 페이지 (lazy load) — wireframe 25개 화면
 const Dashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
 const Members = lazy(() => import('./pages/admin/Members.jsx'));
@@ -65,6 +79,21 @@ function AppRoutes() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/mypage" element={<MyPage />} />
+
+      {/* 마이페이지 (와이어프레임 14개 화면) */}
+      <Route path="/my" element={<Suspense fallback={<AdminFallback />}><MyPageLayout /></Suspense>}>
+        <Route index element={<W C={MyHome} />} />
+        <Route path="profile" element={<W C={MyProfile} />} />
+        <Route path="applications" element={<W C={MyApplications} />} />
+        <Route path="gifts" element={<W C={MyGifts} />} />
+        <Route path="points" element={<W C={MyPoints} />} />
+        <Route path="guard" element={<W C={MyMoneyGuard} />} />
+        <Route path="referral" element={<W C={MyReferral} />} />
+        <Route path="alerts" element={<W C={MyAlertSettings} />} />
+        <Route path="verification" element={<W C={MyVerification} />} />
+        <Route path="account" element={<W C={MyBankAccount} />} />
+        <Route path="address" element={<W C={MyAddress} />} />
+      </Route>
 
       {/* 어드민 (25개 화면) */}
       <Route path="/admin" element={<AdminLayout />}>
