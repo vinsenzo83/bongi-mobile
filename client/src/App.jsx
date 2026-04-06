@@ -27,6 +27,8 @@ const MyUsedPhone = lazy(() => import('./pages/my/UsedPhone.jsx'));
 
 // 신청 페이지
 const ApplyInternet = lazy(() => import('./pages/ApplyInternet.jsx'));
+const ApplyRental = lazy(() => import('./pages/ApplyRental.jsx'));
+const ApplyUsedPhone = lazy(() => import('./pages/ApplyUsedPhone.jsx'));
 
 // 어드민 페이지 (lazy load) — wireframe 25개 화면
 const Dashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
@@ -87,6 +89,8 @@ function AppRoutes() {
 
       {/* 신청 페이지 */}
       <Route path="/apply/internet" element={<W C={ApplyInternet} />} />
+      <Route path="/apply/rental" element={<W C={ApplyRental} />} />
+      <Route path="/apply/used-phone" element={<W C={ApplyUsedPhone} />} />
 
       {/* 마이페이지 (와이어프레임 14개 화면) */}
       <Route path="/my" element={<Suspense fallback={<AdminFallback />}><MyPageLayout /></Suspense>}>
