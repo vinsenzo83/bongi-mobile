@@ -19,10 +19,14 @@ const mobilePlans = {
   lg: JSON.parse(readFileSync(join(providerDir, 'lguplus_mobile.json'), 'utf8')),
 };
 
-// 모바일(핸드폰) 판매 시세 데이터
+// 모바일(핸드폰) 판매 시세 데이터 — 어드민 가격표 우선
 let mobilePrices = {};
+let phonePriceAdmin = {};
 try {
   mobilePrices = JSON.parse(readFileSync(join(providerDir, 'mobile_prices.json'), 'utf8'));
+} catch { /* 파일 없으면 빈 객체 */ }
+try {
+  phonePriceAdmin = JSON.parse(readFileSync(join(providerDir, 'phone_price_admin.json'), 'utf8'));
 } catch { /* 파일 없으면 빈 객체 */ }
 
 // 중고폰 매입 시세 데이터
@@ -914,9 +918,10 @@ async function requestCallback({ name, phone, preferred_time, product_id }) {
 }
 
 function searchMobilePrices({ provider, model }) {
-  const carriers = mobilePrices.carriers || {};
+  // 어드민 가격표 우선 사용
+  const adminModels = phonePriceAdmin.models_5g || [];
+  const adminPlans = phonePriceAdmin.plans || {};
 
-  // 모델명 정규화
   const normalize = (s) => s.toLowerCase()
     .replace(/갤럭시\s*/g, '').replace(/galaxy\s*/g, '')
     .replace(/아이폰\s*/g, 'iphone').replace(/iphone\s*/g, 'iphone')
@@ -929,41 +934,40 @@ function searchMobilePrices({ provider, model }) {
 
   const query = model ? normalize(model) : '';
 
-  // 통신사 필터
-  const targetCarriers = provider
-    ? { [provider]: carriers[provider] }
-    : carriers;
+  const fmtPrice = (v) => {
+    if (v === null || v === undefined) return '-';
+    if (v === 0) return '공짜폰!';
+    if (v < 0) return `공짜+${Math.abs(v)}만원`;
+    return `${v}만원`;
+  };
 
+  // 어드민 데이터에서 검색
   const results = [];
+  const filtered = model
+    ? adminModels.filter(m => {
+        const n = normalize(m.model);
+        const s = normalize(m.short);
+        return n.includes(query) || s.includes(query) || query.includes(s);
+      })
+    : adminModels;
 
-  for (const [key, carrier] of Object.entries(targetCarriers)) {
-    if (!carrier?.plans) continue;
+  for (const m of filtered) {
+    const carrierData = [
+      { key: 'skt', name: 'SK', 번이: m.skt_번이, 기변: m.skt_기변 },
+      { key: 'kt', name: 'KT', 번이: m.kt_번이, 기변: m.kt_기변 },
+      { key: 'lg', name: 'LG U+', 번이: m.lg_번이, 기변: m.lg_기변 },
+    ];
 
-    const filtered = model
-      ? carrier.plans.filter(p => {
-          const n = normalize(p.model);
-          const s = normalize(p.short);
-          // 엄격 매칭: 폴드/플립 등 혼동 방지
-          // query가 s를 포함하되, s가 너무 짧으면(3자 이하) 정확 매칭 요구
-          const queryMatchesShort = s.length > 3 ? query.includes(s) : query === s;
-          return n.includes(query) || s.includes(query) || queryMatchesShort;
-        })
-      : carrier.plans;
-
-    for (const p of filtered) {
-      const fmtPrice = (v) => {
-        if (v === 0) return '공짜폰!';
-        if (v < 0) return `기기값 0원 + ${Math.abs(v)}만원 캐시백`;
-        return `${v}만원`;
-      };
-
+    for (const c of carrierData) {
+      if (provider && c.key !== provider) continue;
       results.push({
-        통신사: carrier.name,
-        모델: p.model,
-        '번호이동(공시)': fmtPrice(p['번이']),
-        '기기변경(공시)': fmtPrice(p['기변']),
-        '번이_raw': p['번이'],
-        '기변_raw': p['기변'],
+        통신사: c.name,
+        모델: m.model,
+        '번호이동(공시)': fmtPrice(c.번이),
+        '기기변경(공시)': fmtPrice(c.기변),
+        '번이_raw': c.번이,
+        '기변_raw': c.기변,
+        _tool: 'search_mobile_prices',
       });
     }
   }
@@ -972,10 +976,10 @@ function searchMobilePrices({ provider, model }) {
   const addServices = {};
   const svcData = mobilePrices.additional_services || {};
   for (const [key, svcs] of Object.entries(svcData)) {
-    if (key === 'conditions') continue; // 조건 설명은 스킵
+    if (key === 'conditions') continue;
     if (!Array.isArray(svcs)) continue;
     if (provider && key !== provider) continue;
-    const carrierName = carriers[key]?.name || key;
+    const carrierName = { skt: 'SK', kt: 'KT', lg: 'LG U+' }[key] || key;
     addServices[carrierName] = svcs.map(s => ({
       서비스: s.service,
       월정액: typeof s.fee === 'number' ? `${s.fee.toLocaleString()}원` : s.fee,
@@ -986,24 +990,26 @@ function searchMobilePrices({ provider, model }) {
   if (results.length === 0) {
     return {
       error: `"${model || ''}" 모델을 찾을 수 없습니다.`,
-      안내: '정확한 모델명으로 다시 검색해주세요. 폴드와 플립은 다른 모델입니다. 예: 갤럭시 Z 폴드7, 갤럭시 Z 플립7, 아이폰 17 에어',
-      available_models: Object.values(carriers).flatMap(c => (c.plans || []).map(p => p.model)),
+      안내: '정확한 모델명으로 다시 검색해주세요.',
+      available_models: adminModels.map(m => m.model),
+      _tool: 'search_mobile_prices',
     };
   }
 
   return {
-    date: mobilePrices.date || '미정',
+    date: phonePriceAdmin.updated || mobilePrices.date || '미정',
+    source: '봉이모바일 어드민 시세표',
     count: results.length,
-    단위: '만원 (번호이동/기기변경 기준)',
-    요금제: Object.fromEntries(
-      Object.entries(targetCarriers).map(([key, c]) => [
-        c.name,
-        { 요금제: c['5g_plan'] || (mobilePrices['5g_plans']?.[key]?.plan || '-'), 월정액: mobilePrices['5g_plans']?.[key]?.fee || 0 }
-      ])
-    ),
-    results: results.slice(0, 15),
+    단위: '만원 (공시지원금 기준, 번이=번호이동, 기변=기기변경)',
+    요금제: {
+      'SK': { 요금제: adminPlans.skt?.plan || '프리미엄', 월정액: adminPlans.skt?.fee || 109000 },
+      'KT': { 요금제: adminPlans.kt?.plan || '초이스스페셜', 월정액: adminPlans.kt?.fee || 110000 },
+      'LG U+': { 요금제: adminPlans.lg?.plan || '프리미어슈퍼', 월정액: adminPlans.lg?.fee || 115000 },
+    },
+    results: results.slice(0, 20),
     부가서비스: addServices,
-    안내: '공시지원금 기준 가격이며 매일 변동됩니다. 정확한 가격은 상담사에게 문의해주세요.',
+    안내: '공시지원금 기준 가격이며 매일 변동됩니다. 정확한 가격은 매장에 문의해주세요.',
+    _tool: 'search_mobile_prices',
   };
 }
 
