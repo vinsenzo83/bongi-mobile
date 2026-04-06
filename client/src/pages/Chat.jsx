@@ -5,16 +5,14 @@ import Sidebar from '../components/chat/Sidebar.jsx';
 import MessageList from '../components/chat/MessageList.jsx';
 import InputArea from '../components/chat/InputArea.jsx';
 import MyPageModal from '../components/chat/MyPageModal.jsx';
-import RentalApplySheet from '../components/chat/RentalApplySheet.jsx';
-import UsedPhoneIntakeSheet from '../components/chat/UsedPhoneIntakeSheet.jsx';
+import ConsultSheet from '../components/chat/ConsultSheet.jsx';
 
 export default function Chat() {
   const chat = useChat();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [myPageOpen, setMyPageOpen] = useState(false);
   const [myPageTab, setMyPageTab] = useState('home');
-  const [rentalSheet, setRentalSheet] = useState({ open: false, product: null });
-  const [phoneSheet, setPhoneSheet] = useState({ open: false, phone: null });
+  const [consultSheet, setConsultSheet] = useState({ open: false, product: null, category: null });
   const isMobile = useIsMobile();
 
   return (
@@ -48,10 +46,11 @@ export default function Chat() {
           <WelcomeScreen onChipClick={chat.sendMessage} isMobile={isMobile} />
         ) : (
           <MessageList messages={chat.messages} loading={chat.loading} onAction={(msg) => {
-            if (msg === '__rental_apply__') {
-              setRentalSheet({ open: true, product: { name: '렌탈 상품', gift: '사은품 협의' } });
-            } else if (msg === '__phone_intake__') {
-              setPhoneSheet({ open: true, phone: { model: '중고폰', storage: '' } });
+            if (msg.startsWith('__consult__')) {
+              try {
+                const data = JSON.parse(msg.replace('__consult__', ''));
+                setConsultSheet({ open: true, product: data.product, category: data.category });
+              } catch { setConsultSheet({ open: true, product: {}, category: 'internet' }); }
             } else {
               chat.sendMessage(msg);
             }
@@ -65,18 +64,13 @@ export default function Chat() {
       {/* 마이페이지 모달 */}
       <MyPageModal open={myPageOpen} onClose={() => setMyPageOpen(false)} initialTab={myPageTab} />
 
-      {/* 렌탈 셀프신청 바텀시트 */}
-      <RentalApplySheet
-        open={rentalSheet.open}
-        onClose={() => setRentalSheet({ open: false, product: null })}
-        product={rentalSheet.product}
-      />
-
-      {/* 중고폰 접수 바텀시트 */}
-      <UsedPhoneIntakeSheet
-        open={phoneSheet.open}
-        onClose={() => setPhoneSheet({ open: false, phone: null })}
-        phone={phoneSheet.phone}
+      {/* 가입상담 바텀시트 (바로상담/셀프가입 선택) */}
+      <ConsultSheet
+        open={consultSheet.open}
+        onClose={() => setConsultSheet({ open: false, product: null, category: null })}
+        product={consultSheet.product}
+        category={consultSheet.category}
+        onNavigate={(path) => window.location.href = path}
       />
     </div>
   );
