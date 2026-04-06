@@ -1,156 +1,85 @@
 import { useState } from 'react';
-import { theme, card, button, tableStyles, filterBtn, statusStyle, input } from '../../styles/admin-theme.js';
+import { theme, statusStyle, tableStyles, card, button, filterBtn, kpiCard, input } from '../../styles/admin-theme.js';
 
-const MAKERS = ['전체','삼성','애플'];
-const GRADES = ['전체','S','A','B','C','D'];
-
-const initialPhones = [
-  { id: 1, model: 'Galaxy S25 Ultra', maker: '삼성', storage: '256GB', S: 950000, A: 880000, B: 790000, C: 650000, D: 450000, source: '민팃', updated: '2026-04-05' },
-  { id: 2, model: 'Galaxy S25+', maker: '삼성', storage: '256GB', S: 780000, A: 720000, B: 640000, C: 530000, D: 370000, source: '민팃', updated: '2026-04-05' },
-  { id: 3, model: 'Galaxy S25', maker: '삼성', storage: '256GB', S: 650000, A: 590000, B: 520000, C: 420000, D: 290000, source: '민팃', updated: '2026-04-05' },
-  { id: 4, model: 'iPhone 16 Pro Max', maker: '애플', storage: '256GB', S: 1250000, A: 1150000, B: 1020000, C: 850000, D: 600000, source: '셀잇', updated: '2026-04-04' },
-  { id: 5, model: 'iPhone 16 Pro', maker: '애플', storage: '256GB', S: 1050000, A: 970000, B: 860000, C: 710000, D: 500000, source: '셀잇', updated: '2026-04-04' },
-  { id: 6, model: 'iPhone 16', maker: '애플', storage: '128GB', S: 780000, A: 720000, B: 640000, C: 530000, D: 370000, source: '셀잇', updated: '2026-04-04' },
-  { id: 7, model: 'Galaxy Z Flip7', maker: '삼성', storage: '256GB', S: 820000, A: 750000, B: 660000, C: 540000, D: 380000, source: '민팃', updated: '2026-04-03' },
-  { id: 8, model: 'Galaxy Z Fold7', maker: '삼성', storage: '256GB', S: 1350000, A: 1240000, B: 1100000, C: 910000, D: 640000, source: '민팃', updated: '2026-04-03' },
+const priceData = [
+  { model: '갤럭시 S26', s1: '9만', s2: '19만', k1: '-10만', k2: '-5만', l1: '-15만', l2: '-10만', date: '04.05' },
+  { model: '갤럭시 S26+', s1: '29만', s2: '39만', k1: '9만', k2: '14만', l1: '5만', l2: '9만', date: '04.05' },
+  { model: '아이폰 16 Pro', s1: '44만', s2: '54만', k1: '24만', k2: '29만', l1: '19만', l2: '24만', date: '04.05' },
+  { model: '아이폰 16', s1: '14만', s2: '24만', k1: '-6만', k2: '-1만', l1: '-11만', l2: '-6만', date: '04.05' },
 ];
 
 export default function UsedPhones() {
-  const [phones, setPhones] = useState(initialPhones);
-  const [makerFilter, setMakerFilter] = useState('전체');
-  const [gradeFilter, setGradeFilter] = useState('전체');
-  const [editModal, setEditModal] = useState(false);
-  const [editPhone, setEditPhone] = useState(null);
-  const [form, setForm] = useState({ S: '', A: '', B: '', C: '', D: '', source: '' });
+  const [tab, setTab] = useState('신규');
 
-  const filtered = phones.filter(p =>
-    (makerFilter === '전체' || p.maker === makerFilter) &&
-    (gradeFilter === '전체' || true) // grade filter highlights column
-  );
-
-  function openEdit(p) {
-    setEditPhone(p);
-    setForm({ S: p.S, A: p.A, B: p.B, C: p.C, D: p.D, source: p.source });
-    setEditModal(true);
-  }
-
-  function handleSave() {
-    const today = new Date().toISOString().slice(0, 10);
-    setPhones(prev => prev.map(p => p.id === editPhone.id ? {
-      ...p,
-      S: Number(form.S), A: Number(form.A), B: Number(form.B), C: Number(form.C), D: Number(form.D),
-      source: form.source, updated: today,
-    } : p));
-    setEditModal(false);
-  }
-
-  const fmt = (v) => v ? v.toLocaleString() + '원' : '-';
-
-  const gradeHighlight = (grade) => gradeFilter !== '전체' && gradeFilter === grade;
-
-  const gradeTd = (val, grade) => ({
-    ...tableStyles.td,
-    fontWeight: 600,
-    color: gradeHighlight(grade) ? theme.blue : theme.text,
-    background: gradeHighlight(grade) ? theme.blueBg : undefined,
-  });
-
-  const priceFld = (label, key) => (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: theme.textSecondary, marginBottom: 4 }}>{label}</label>
-      <input style={{ ...input }} type="number" value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
-    </div>
-  );
+  const valColor = (v) => v.startsWith('-') ? theme.green : theme.navy;
 
   return (
-    <div style={{ padding: 24, fontFamily: theme.sans }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: theme.text, margin: 0 }}>중고폰 매입 관리</h2>
-      </div>
+    <div style={{ padding: 24, fontFamily: theme.sans, background: theme.bg, minHeight: '100vh' }}>
 
-      {/* Filters */}
-      <div style={{ ...card, marginBottom: 16 }}>
-        <div style={{ marginBottom: 12 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: theme.textSecondary, marginRight: 8 }}>제조사</span>
-          <div style={{ display: 'inline-flex', gap: 4 }}>
-            {MAKERS.map(m => (
-              <button key={m} style={filterBtn(makerFilter === m)} onClick={() => setMakerFilter(m)}>{m}</button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <span style={{ fontSize: 11, fontWeight: 600, color: theme.textSecondary, marginRight: 8 }}>등급</span>
-          <div style={{ display: 'inline-flex', gap: 4 }}>
-            {GRADES.map(g => (
-              <button key={g} style={filterBtn(gradeFilter === g)} onClick={() => setGradeFilter(g)}>{g}</button>
-            ))}
-          </div>
+      {/* 탭 + 액션 */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center' }}>
+        <span style={filterBtn(tab === '신규')} onClick={() => setTab('신규')}>휴대폰 시세 (신규)</span>
+        <span style={filterBtn(tab === '중고')} onClick={() => setTab('중고')}>중고폰 시세</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <span style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: 34, width: 120, borderRadius: 6, fontSize: 12, fontWeight: 600,
+            border: `1px solid ${theme.borderDark}`, background: '#fff', color: theme.textSecondary, cursor: 'pointer'
+          }}>엑셀 업로드</span>
+          <span style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: 34, width: 90, borderRadius: 6, fontSize: 12, fontWeight: 600,
+            background: theme.blue, color: '#fff', cursor: 'pointer'
+          }}>+ 등록</span>
         </div>
       </div>
 
-      {/* Table */}
-      <div style={{ ...card, padding: 0, overflow: 'auto' }}>
-        <table style={tableStyles.table}>
+      {/* 업데이트 경고 */}
+      <div style={{ ...card, background: theme.orangeBg, borderColor: '#fcd34d', marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: theme.orange }}>⚠️ 마지막 업데이트: 2026.04.04 — 오늘 시세 업데이트가 필요합니다</div>
+      </div>
+
+      {/* 필터 바 */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+        <input style={{ ...input, width: 180 }} placeholder="모델명 검색" />
+        <span style={filterBtn(true)}>전체</span>
+        <span style={filterBtn(false)}>삼성</span>
+        <span style={filterBtn(false)}>애플</span>
+        <span style={filterBtn(false)}>5G</span>
+      </div>
+
+      {/* 테이블 */}
+      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+        <table style={{ ...tableStyles.table, marginBottom: 0 }}>
           <thead>
             <tr>
-              {['모델명','제조사','용량','S등급','A등급','B등급','C등급','D등급','매입처','수정일','관리'].map(h => (
-                <th key={h} style={tableStyles.th}>{h}</th>
-              ))}
+              <th style={tableStyles.th}>모델명</th>
+              <th style={tableStyles.th}>SKT 번이</th>
+              <th style={tableStyles.th}>SKT 기변</th>
+              <th style={tableStyles.th}>KT 번이</th>
+              <th style={tableStyles.th}>KT 기변</th>
+              <th style={tableStyles.th}>LG 번이</th>
+              <th style={tableStyles.th}>LG 기변</th>
+              <th style={tableStyles.th}>업데이트일</th>
+              <th style={tableStyles.th}>관리</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map(p => (
-              <tr key={p.id} onMouseOver={e => e.currentTarget.style.background = theme.bgHover} onMouseOut={e => e.currentTarget.style.background = ''}>
-                <td style={{ ...tableStyles.td, fontWeight: 600, color: theme.text }}>{p.model}</td>
-                <td style={tableStyles.td}>{p.maker}</td>
-                <td style={tableStyles.td}>{p.storage}</td>
-                <td style={gradeTd(p.S, 'S')}>{fmt(p.S)}</td>
-                <td style={gradeTd(p.A, 'A')}>{fmt(p.A)}</td>
-                <td style={gradeTd(p.B, 'B')}>{fmt(p.B)}</td>
-                <td style={gradeTd(p.C, 'C')}>{fmt(p.C)}</td>
-                <td style={gradeTd(p.D, 'D')}>{fmt(p.D)}</td>
-                <td style={tableStyles.td}><span style={statusStyle('blue')}>{p.source}</span></td>
-                <td style={{ ...tableStyles.td, fontSize: 11, color: theme.textMuted }}>{p.updated}</td>
+            {priceData.map((row, i) => (
+              <tr key={i}>
+                <td style={{ ...tableStyles.td, fontWeight: 600 }}>{row.model}</td>
+                {[row.s1, row.s2, row.k1, row.k2, row.l1, row.l2].map((v, j) => (
+                  <td key={j} style={{ ...tableStyles.td, fontWeight: 600, color: valColor(v) }}>{v}</td>
+                ))}
+                <td style={tableStyles.td}>{row.date}</td>
                 <td style={tableStyles.td}>
-                  <button style={button.success} onClick={() => openEdit(p)}>수정</button>
+                  <span style={{ ...button.secondary, fontSize: 10, padding: '3px 8px' }}>수정</span>
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
-              <tr><td colSpan={11} style={{ ...tableStyles.td, textAlign: 'center', padding: 40, color: theme.textMuted }}>조건에 맞는 중고폰이 없습니다</td></tr>
-            )}
           </tbody>
         </table>
       </div>
-
-      {/* Edit Modal */}
-      {editModal && editPhone && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setEditModal(false)}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 24, width: 440, boxShadow: theme.shadowLg }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: theme.text, marginTop: 0, marginBottom: 4 }}>매입가 수정</h3>
-            <p style={{ fontSize: 12, color: theme.textMuted, marginTop: 0, marginBottom: 16 }}>{editPhone.model} ({editPhone.storage})</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {priceFld('S등급 매입가', 'S')}
-              {priceFld('A등급 매입가', 'A')}
-              {priceFld('B등급 매입가', 'B')}
-              {priceFld('C등급 매입가', 'C')}
-              {priceFld('D등급 매입가', 'D')}
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: theme.textSecondary, marginBottom: 4 }}>매입처</label>
-                <select style={{ ...input }} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
-                  <option value="민팃">민팃</option>
-                  <option value="셀잇">셀잇</option>
-                  <option value="직접매입">직접매입</option>
-                </select>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
-              <button style={button.secondary} onClick={() => setEditModal(false)}>취소</button>
-              <button style={button.primary} onClick={handleSave}>저장</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,153 +1,179 @@
 import { useState } from 'react';
-import { theme, card, button, tableStyles, filterBtn, statusStyle } from '../../styles/admin-theme.js';
+import { theme, statusStyle, tableStyles, card, button, filterBtn, kpiCard } from '../../styles/admin-theme.js';
 
-const initialGifts = [
-  { id: 1, name: '홍길동', product: '5G 프리미엄 77', amount: 320000, method: '계좌이체', status: '지급완료', date: '2026-03-28', bank: '국민은행', account: '123-456-789012', phone: '010-1234-5678' },
-  { id: 2, name: '김철수', product: 'LTE 안심 49', amount: 300000, method: '계좌이체', status: '지급대기', date: null, bank: '신한은행', account: '987-654-321098', phone: '010-2345-6789' },
-  { id: 3, name: '이영희', product: '5G 슬림 55', amount: 400000, method: '상품권', status: '지급대기', date: null, bank: '-', account: '-', phone: '010-3456-7890' },
-  { id: 4, name: '최지은', product: 'LTE 실속 34', amount: 150000, method: '계좌이체', status: '지급완료', date: '2026-03-30', bank: '우리은행', account: '111-222-333444', phone: '010-4567-8901' },
-  { id: 5, name: '정수민', product: '5G 표준 62', amount: 200000, method: '계좌이체', status: '지급완료', date: '2026-04-01', bank: '하나은행', account: '555-666-777888', phone: '010-5678-9012' },
+const mockData = [
+  ['홍길동','010-1234-5678','앱회원','셀프신청','KT0311','KT 1G+지니TV모든G+기가지니3','45만','2026.04.03','인증완료','국민 123-456-789012','지급 대기'],
+  ['김철수','010-2345-6789','앱회원','티켓','SK0188','SKT 500M+Btv이코노미+AI NUGU','43만','2026.04.05','인증완료','신한 110-456-789012','지급 대기'],
+  ['이영희','010-3456-7890','비회원','셀프신청','LG0079','LG U+ 500M+프리미엄+UHD4','47만','2026.03.15','미인증','미등록','비회원 대기'],
+  ['정수민','010-6789-0123','앱회원','셀프신청','R015','LG 퓨리케어 공기청정기 28평','15만','2026.04.06','인증완료','카카오뱅크 3333-01-1234567','지급 대기'],
+  ['박민수','010-4567-8901','비회원','CRM등록','-','KT 인터넷+TV (미정)','37만','2026.03.05','미인증','미등록','비회원 대기'],
+  ['임도현','010-9012-3456','비회원','CRM등록','-','코웨이 아이콘3 정수기','반값할인','2026.04.01','미인증','미등록','비회원 대기'],
+  ['강민준','010-0123-4567','앱회원','셀프신청','KT0146','KT 500M+지니TV베이직+기가지니A','45만','2026.03.20','인증완료','우리 1002-123-456789','지급 완료'],
+  ['한지민','010-7890-1234','비회원','CRM등록','-','LG U+ 인터넷+TV','40만','2026.03.25','미인증','미등록','지급 보류'],
 ];
 
+const statusColors = { '지급 대기': 'orange', '비회원 대기': 'red', '지급 완료': 'green', '지급 보류': 'gray' };
+const typeColors = { '앱회원': 'green', '비회원': 'orange' };
+const authColors = { '인증완료': 'green', '미인증': 'red' };
+
+const statusFilters = ['전체', '지급 대기', '비회원 대기', '지급 완료', '지급 보류'];
+const typeFilters = ['전체', '앱회원', '비회원'];
+
 export default function GiftManage() {
-  const [gifts, setGifts] = useState(initialGifts);
   const [statusFilter, setStatusFilter] = useState('전체');
+  const [typeFilter, setTypeFilter] = useState('전체');
   const [search, setSearch] = useState('');
-  const [selectedGift, setSelectedGift] = useState(null);
 
-  const statusOptions = ['전체', '지급대기', '지급완료', '보류'];
-
-  const filtered = gifts.filter(g => {
-    if (statusFilter !== '전체' && g.status !== statusFilter) return false;
-    if (search && !g.name.includes(search) && !g.product.includes(search)) return false;
+  const filtered = mockData.filter(r => {
+    if (statusFilter !== '전체' && r[10] !== statusFilter) return false;
+    if (typeFilter !== '전체' && r[2] !== typeFilter) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      if (!r[0].toLowerCase().includes(s) && !r[1].includes(s) && !r[4].toLowerCase().includes(s)) return false;
+    }
     return true;
   });
 
-  const totalCount = gifts.length;
-  const paidItems = gifts.filter(g => g.status === '지급완료');
-  const pendingItems = gifts.filter(g => g.status === '지급대기');
-  const paidTotal = paidItems.reduce((s, g) => s + g.amount, 0);
-  const pendingTotal = pendingItems.reduce((s, g) => s + g.amount, 0);
-
-  function handlePay(id) {
-    setGifts(prev => prev.map(g => g.id === id ? { ...g, status: '지급완료', date: '2026-04-06' } : g));
-    if (selectedGift && selectedGift.id === id) {
-      setSelectedGift(prev => ({ ...prev, status: '지급완료', date: '2026-04-06' }));
-    }
-  }
-
-  const giftStatusColor = (s) => {
-    if (s === '지급완료') return 'green';
-    if (s === '지급대기') return 'orange';
-    if (s === '보류') return 'red';
-    return 'gray';
-  };
-
   return (
-    <div style={{ padding: 24, fontFamily: theme.sans, background: theme.bg, minHeight: '100vh' }}>
-      <h2 style={{ fontSize: 20, fontWeight: 700, color: theme.text, marginBottom: 20 }}>사은품 관리</h2>
-
-      {/* KPI */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
-        <div style={{ ...card, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 4 }}>총 사은품</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: theme.text }}>{totalCount}건</div>
-        </div>
-        <div style={{ ...card, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 4 }}>지급완료</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: theme.green }}>{paidItems.length}건</div>
-          <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>{(paidTotal / 10000).toFixed(0)}만원</div>
-        </div>
-        <div style={{ ...card, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 4 }}>지급대기</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: theme.orange }}>{pendingItems.length}건</div>
-          <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>{(pendingTotal / 10000).toFixed(0)}만원</div>
-        </div>
+    <div>
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 14 }}>
+        <div style={kpiCard}><div style={{ fontSize: 22, fontWeight: 900, color: theme.orange }}>47</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>지급 대기</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 22, fontWeight: 900, color: theme.red }}>23</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>비회원 대기</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 22, fontWeight: 900, color: theme.green }}>1,823</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>지급 완료</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 22, fontWeight: 900, color: theme.textMuted }}>8</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>지급 보류</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 22, fontWeight: 900, color: theme.navy }}>1,901</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>전체</div></div>
       </div>
 
-      {/* Filter */}
-      <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: theme.text, marginRight: 4 }}>상태</span>
-        {statusOptions.map(s => (
-          <button key={s} style={filterBtn(statusFilter === s)} onClick={() => setStatusFilter(s)}>{s}</button>
-        ))}
-        <div style={{ flex: 1 }} />
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="고객명 / 상품 검색"
-          style={{ padding: '6px 12px', border: `1px solid ${theme.borderDark}`, borderRadius: 6, fontSize: 12, width: 200, outline: 'none', fontFamily: theme.sans }}
-        />
-      </div>
-
-      {/* Table */}
-      <div style={card}>
-        <table style={tableStyles.table}>
+      {/* 비회원 가입 유도 알림톡 자동 발송 */}
+      <div style={{ ...card, background: '#dbeafe', borderColor: '#bfdbfe', marginBottom: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: theme.navy, marginBottom: 8 }}>📱 비회원 가입 유도 알림톡 자동 발송 (3단계)</div>
+        <table style={{ ...tableStyles.table, fontSize: 11, marginBottom: 0 }}>
           <thead>
             <tr>
-              <th style={tableStyles.th}>고객명</th>
-              <th style={tableStyles.th}>신청상품</th>
-              <th style={tableStyles.th}>사은품 금액</th>
-              <th style={tableStyles.th}>지급방식</th>
+              <th style={tableStyles.th}>발송 시점</th>
+              <th style={tableStyles.th}>내용</th>
               <th style={tableStyles.th}>상태</th>
-              <th style={tableStyles.th}>지급일</th>
-              <th style={tableStyles.th}>계좌정보</th>
-              <th style={tableStyles.th}>관리</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map(g => (
-              <tr key={g.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedGift(g)}>
-                <td style={tableStyles.td}>{g.name}</td>
-                <td style={tableStyles.td}>{g.product}</td>
-                <td style={tableStyles.td}>{g.amount.toLocaleString()}원</td>
-                <td style={tableStyles.td}>{g.method}</td>
-                <td style={tableStyles.td}><span style={statusStyle(giftStatusColor(g.status))}>{g.status}</span></td>
-                <td style={tableStyles.td}>{g.date || '-'}</td>
-                <td style={tableStyles.td}>{g.bank !== '-' ? `${g.bank} ${g.account}` : '-'}</td>
-                <td style={tableStyles.td}>
-                  {g.status === '지급대기' && (
-                    <button style={button.success} onClick={e => { e.stopPropagation(); handlePay(g.id); }}>지급 처리</button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr><td colSpan={8} style={{ ...tableStyles.td, textAlign: 'center', padding: 32, color: theme.textMuted }}>데이터가 없습니다</td></tr>
-            )}
+            <tr>
+              <td style={tableStyles.td}>1차: 신청 완료 즉시</td>
+              <td style={tableStyles.td}>"앱 가입 + 계좌 등록 시 사은품 즉시 지급"</td>
+              <td style={tableStyles.td}><span style={statusStyle('blue')}>자동</span></td>
+            </tr>
+            <tr>
+              <td style={tableStyles.td}>2차: 계약 완료 시</td>
+              <td style={tableStyles.td}>"사은품 OO만원 준비됨 → 앱 가입 → PASS 인증 → 계좌 등록 → 즉시 입금"</td>
+              <td style={tableStyles.td}><span style={statusStyle('blue')}>자동</span></td>
+            </tr>
+            <tr>
+              <td style={tableStyles.td}>3차: D+7 (미가입 시)</td>
+              <td style={tableStyles.td}>"사은품이 아직 대기 중이에요 → 계좌 등록 즉시 입금"</td>
+              <td style={tableStyles.td}><span style={statusStyle('orange')}>자동</span></td>
+            </tr>
           </tbody>
         </table>
       </div>
 
-      {/* Detail Modal */}
-      {selectedGift && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setSelectedGift(null)}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 24, width: 480, maxHeight: '80vh', overflow: 'auto', boxShadow: theme.shadowLg }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: theme.text, margin: 0 }}>사은품 상세</h3>
-              <button style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: theme.textMuted }} onClick={() => setSelectedGift(null)}>✕</button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
-              <div><span style={{ color: theme.textMuted }}>고객명</span><div style={{ fontWeight: 600, color: theme.text, marginTop: 2 }}>{selectedGift.name}</div></div>
-              <div><span style={{ color: theme.textMuted }}>연락처</span><div style={{ fontWeight: 600, color: theme.text, marginTop: 2 }}>{selectedGift.phone}</div></div>
-              <div><span style={{ color: theme.textMuted }}>신청상품</span><div style={{ fontWeight: 600, color: theme.text, marginTop: 2 }}>{selectedGift.product}</div></div>
-              <div><span style={{ color: theme.textMuted }}>사은품 금액</span><div style={{ fontWeight: 700, color: theme.blue, marginTop: 2 }}>{selectedGift.amount.toLocaleString()}원</div></div>
-              <div><span style={{ color: theme.textMuted }}>지급방식</span><div style={{ fontWeight: 600, color: theme.text, marginTop: 2 }}>{selectedGift.method}</div></div>
-              <div><span style={{ color: theme.textMuted }}>상태</span><div style={{ marginTop: 4 }}><span style={statusStyle(giftStatusColor(selectedGift.status))}>{selectedGift.status}</span></div></div>
-              <div><span style={{ color: theme.textMuted }}>지급일</span><div style={{ fontWeight: 600, color: theme.text, marginTop: 2 }}>{selectedGift.date || '-'}</div></div>
-              <div><span style={{ color: theme.textMuted }}>은행</span><div style={{ fontWeight: 600, color: theme.text, marginTop: 2 }}>{selectedGift.bank}</div></div>
-              <div style={{ gridColumn: '1 / -1' }}><span style={{ color: theme.textMuted }}>계좌번호</span><div style={{ fontWeight: 600, color: theme.text, marginTop: 2 }}>{selectedGift.account}</div></div>
-            </div>
-
-            {selectedGift.status === '지급대기' && (
-              <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
-                <button style={button.primary} onClick={() => { handlePay(selectedGift.id); }}>지급 처리</button>
-              </div>
-            )}
+      {/* Filter: 상태 */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, width: 40 }}>상태</span>
+        {statusFilters.map(f => (
+          <div
+            key={f}
+            style={{
+              ...filterBtn(statusFilter === f),
+              ...(f === '비회원 대기' && statusFilter !== f ? { borderColor: theme.orange, color: theme.orange } : {}),
+            }}
+            onClick={() => setStatusFilter(f)}
+          >
+            {f}
           </div>
-        </div>
-      )}
+        ))}
+      </div>
+
+      {/* Filter: 유형 + 검색 + 액션 */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, width: 40 }}>유형</span>
+        {typeFilters.map(f => (
+          <div key={f} style={filterBtn(typeFilter === f)} onClick={() => setTypeFilter(f)}>{f}</div>
+        ))}
+        <input
+          placeholder="이름 / 전화번호 / 티켓번호 검색"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ marginLeft: 'auto', width: 220, padding: '5px 10px', border: `1px solid ${theme.borderDark}`, borderRadius: 6, fontSize: 12, outline: 'none' }}
+        />
+        <span style={{ ...button.secondary, fontSize: 11, cursor: 'pointer' }}>📥 엑셀 다운로드</span>
+        <span style={{ ...button.primary, fontSize: 11, cursor: 'pointer' }}>일괄 지급처리</span>
+      </div>
+
+      {/* Table */}
+      <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
+        <table style={{ ...tableStyles.table, fontSize: 11, minWidth: 1100, marginBottom: 0 }}>
+          <thead>
+            <tr>
+              <th style={tableStyles.th}><input type="checkbox" /></th>
+              <th style={tableStyles.th}>이름</th>
+              <th style={tableStyles.th}>연락처</th>
+              <th style={tableStyles.th}>유형</th>
+              <th style={tableStyles.th}>유입경로</th>
+              <th style={tableStyles.th}>티켓번호</th>
+              <th style={tableStyles.th}>상품</th>
+              <th style={tableStyles.th}>사은품(현금)</th>
+              <th style={tableStyles.th}>계약완료일</th>
+              <th style={tableStyles.th}>본인인증</th>
+              <th style={tableStyles.th}>계좌</th>
+              <th style={tableStyles.th}>상태</th>
+              <th style={tableStyles.th}>관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r, i) => {
+              const [name, phone, type, channel, ticket, product, amount, contractDate, auth, account, status] = r;
+              return (
+                <tr key={i}>
+                  <td style={tableStyles.td}><input type="checkbox" /></td>
+                  <td style={{ ...tableStyles.td, fontWeight: 600, color: theme.blue, cursor: 'pointer', textDecoration: 'underline' }}>{name}</td>
+                  <td style={{ ...tableStyles.td, fontSize: 10 }}>{phone}</td>
+                  <td style={tableStyles.td}><span style={{ ...statusStyle(typeColors[type]), fontSize: 10 }}>{type}</span></td>
+                  <td style={{ ...tableStyles.td, fontSize: 10 }}>{channel}</td>
+                  <td style={tableStyles.td}>
+                    {ticket !== '-'
+                      ? <span style={{ fontFamily: 'monospace', fontWeight: 700, color: theme.blue, fontSize: 10 }}>{ticket}</span>
+                      : <span style={{ color: theme.textMuted, fontSize: 10 }}>-</span>
+                    }
+                  </td>
+                  <td style={{ ...tableStyles.td, fontSize: 10, maxWidth: 160 }}>{product}</td>
+                  <td style={{ ...tableStyles.td, fontWeight: 900, color: theme.orange }}>{amount}</td>
+                  <td style={{ ...tableStyles.td, fontSize: 10 }}>{contractDate}</td>
+                  <td style={tableStyles.td}><span style={{ ...statusStyle(authColors[auth]), fontSize: 10 }}>{auth}</span></td>
+                  <td style={{ ...tableStyles.td, fontSize: 10, color: account === '미등록' ? theme.red : theme.textSecondary }}>{account}</td>
+                  <td style={tableStyles.td}><span style={statusStyle(statusColors[status])}>{status}</span></td>
+                  <td style={{ ...tableStyles.td, whiteSpace: 'nowrap' }}>
+                    <span style={{ ...button.secondary, fontSize: 10, padding: '3px 8px', cursor: 'pointer', marginRight: 4 }}>상세</span>
+                    {status === '비회원 대기' && <span style={{ ...button.primary, fontSize: 10, padding: '3px 8px', cursor: 'pointer' }}>알림톡</span>}
+                    {status === '지급 대기' && (
+                      <>
+                        <span style={{ ...button.success, fontSize: 10, padding: '3px 8px', cursor: 'pointer' }}>지급</span>
+                        <span style={{ ...button.danger, fontSize: 10, padding: '3px 8px', cursor: 'pointer' }}>보류</span>
+                      </>
+                    )}
+                    {status === '지급 보류' && (
+                      <>
+                        <span style={{ ...button.success, fontSize: 10, padding: '3px 8px', cursor: 'pointer' }}>지급</span>
+                        <span style={{ ...button.primary, fontSize: 10, padding: '3px 8px', cursor: 'pointer' }}>알림톡</span>
+                      </>
+                    )}
+                    {status === '지급 완료' && <span style={{ color: theme.green, fontSize: 10 }}>✅</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

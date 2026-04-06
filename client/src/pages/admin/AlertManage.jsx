@@ -1,188 +1,234 @@
 import { useState } from 'react';
-import { theme, card, button, tableStyles, filterBtn, statusStyle } from '../../styles/admin-theme.js';
+import { theme, statusStyle, tableStyles, card, button, filterBtn, kpiCard, input } from '../../styles/admin-theme.js';
 
-const mockAlerts = [
-  { id: 1, recipient: '홍길동', type: '가입유도', title: 'KT 인터넷 가입 혜택 안내', channel: '알림톡', status: '성공', sentAt: '2026-04-06 10:30' },
-  { id: 2, recipient: '이영희', type: '사은품안내', title: '사은품 수령 안내드립니다', channel: '알림톡', status: '성공', sentAt: '2026-04-06 09:15' },
-  { id: 3, recipient: '박철수', type: '약정만료', title: '약정 만료 90일 전 안내', channel: 'SMS', status: '성공', sentAt: '2026-04-05 14:00' },
-  { id: 4, recipient: '김민수', type: '마케팅', title: '봄맞이 특별 프로모션', channel: '푸시알림', status: '실패', sentAt: '2026-04-05 11:20' },
-  { id: 5, recipient: '정수연', type: '가입유도', title: 'LG U+ 결합상품 안내', channel: '알림톡', status: '성공', sentAt: '2026-04-04 16:45' },
-  { id: 6, recipient: '최동혁', type: '사은품안내', title: '공기청정기 배송 안내', channel: 'SMS', status: '성공', sentAt: '2026-04-04 13:30' },
-  { id: 7, recipient: '한지민', type: '약정만료', title: '인터넷 약정 만료 안내', channel: '알림톡', status: '성공', sentAt: '2026-04-03 10:00' },
-  { id: 8, recipient: '오세훈', type: '마케팅', title: '신규 요금제 출시 안내', channel: '푸시알림', status: '성공', sentAt: '2026-04-03 09:00' },
+const HISTORY_DATA = [
+  ['2026.04.06 14:30', '카카오', '비회원 가입유도 1차', '이영희', '010-3456-7890', '앱 가입 + 계좌 등록 시 사은품 즉시 지급', '성공'],
+  ['2026.04.06 14:00', '앱 푸시', '신청 상태 변경', '홍길동', '010-1234-5678', '신청이 접수되었습니다 (KT0311)', '성공'],
+  ['2026.04.06 10:00', '앱 푸시', '포인트 적립', '강민준', '010-0123-4567', '친구초대 가입으로 5,000P 적립!', '성공'],
+  ['2026.04.05 16:00', '카카오', '사은품 지급완료', '강민준', '010-0123-4567', '사은품 45만원 입금 완료', '성공'],
+  ['2026.04.05 15:00', '앱 푸시', '돈지키미 D-7', '김철수', '010-2345-6789', '렌탈 약정 종료 7일 전입니다', '성공'],
+  ['2026.04.05 09:00', '카카오', '비회원 가입유도 2차', '박민수', '010-4567-8901', '사은품 37만원 준비됨 → 앱 가입 → 즉시 입금', '성공'],
+  ['2026.04.04 14:00', '앱 푸시', '후기 작성 유도', '홍길동', '010-1234-5678', '계약 완료! 후기 작성하고 15,000P 받으세요', '성공'],
+  ['2026.04.04 10:00', '카카오', '비회원 가입유도 3차', '한지민', '010-7890-1234', '사은품이 아직 대기 중이에요', '실패'],
 ];
 
-const templates = [
-  { id: 1, name: '가입 축하 알림', type: '가입유도' },
-  { id: 2, name: '사은품 발송 안내', type: '사은품안내' },
-  { id: 3, name: '약정 만료 D-90 안내', type: '약정만료' },
-  { id: 4, name: '약정 만료 D-30 안내', type: '약정만료' },
-  { id: 5, name: '프로모션 안내', type: '마케팅' },
+const KAKAO_TEMPLATES = [
+  {
+    title: '비회원 가입유도 1차 — 신청 완료 즉시',
+    body: '[봉이모바일] 신청이 완료됐어요!\n앱 가입 + 계좌 등록하면 사은품 즉시 지급됩니다.\n지금 가입하면 5,000P도 드려요!\n→ 지금 가입하기 [링크]',
+  },
+  {
+    title: '비회원 가입유도 2차 — 계약 완료 시',
+    body: '[봉이모바일] 계약이 완료됐어요!\n사은품 OO만원이 준비됐어요.\n앱 가입 → 계좌 등록 → 즉시 입금\n→ 지금 받으러 가기 [링크]',
+  },
+  {
+    title: '비회원 가입유도 3차 — D+7 미가입',
+    body: '[봉이모바일] 사은품 OO만원이 아직 대기 중이에요!\n계좌 등록 즉시 입금해드려요\n→ 지금 받아가세요! [링크]',
+  },
+  {
+    title: '사은품 지급 완료',
+    body: '[봉이모바일] 사은품 OO만원이 입금 완료됐어요!\n입금 계좌: OO은행 ****-****\n봉이모바일을 이용해주셔서 감사합니다',
+  },
 ];
 
-const tabs = ['알림톡', '푸시알림', 'SMS'];
-const statusFilters = ['전체', '성공', '실패', '대기'];
-const typeFilters = ['전체', '가입유도', '사은품안내', '약정만료', '마케팅'];
-
-const channelColor = { '알림톡': 'blue', '푸시알림': 'orange', 'SMS': 'green' };
-const statusColor = { '성공': 'green', '실패': 'red', '대기': 'gray' };
-const typeColor = { '가입유도': 'blue', '사은품안내': 'green', '약정만료': 'orange', '마케팅': 'navy' };
+const PUSH_TEMPLATES = [
+  '신청 상태 변경',
+  '포인트 적립',
+  '포인트 출금 완료',
+  '돈지키미 알림 (D-90/D-30/D-7/D-1)',
+  '후기 작성 유도',
+  '사은품 지급 완료',
+];
 
 export default function AlertManage() {
-  const [activeTab, setActiveTab] = useState('알림톡');
-  const [statusFilter, setStatusFilter] = useState('전체');
-  const [typeFilter, setTypeFilter] = useState('전체');
-  const [showModal, setShowModal] = useState(false);
-
-  const filtered = mockAlerts.filter(a => {
-    if (activeTab !== a.channel && activeTab !== '전체') {
-      // Tab filters by channel
-      if (a.channel !== activeTab) return false;
-    }
-    if (statusFilter !== '전체' && a.status !== statusFilter) return false;
-    if (typeFilter !== '전체' && a.type !== typeFilter) return false;
-    return true;
-  });
-
-  const kpis = [
-    { label: '총 발송', value: 15, color: theme.blue },
-    { label: '성공', value: 14, color: theme.green },
-    { label: '실패', value: 1, color: theme.red },
-    { label: '대기', value: 0, color: theme.orange },
-  ];
+  const [activeTab, setActiveTab] = useState('history');
+  const [channelFilter, setChannelFilter] = useState('전체');
 
   return (
-    <div style={{ padding: 24, fontFamily: theme.sans }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: theme.text, margin: 0 }}>알림 관리</h2>
-        <button style={button.primary} onClick={() => setShowModal(true)}>알림 발송</button>
+    <div>
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 14 }}>
+        <div style={kpiCard}><div style={{ fontSize: 24, fontWeight: 900, color: theme.navy }}>1,248</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>이번달 발송</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 24, fontWeight: 900, color: theme.green }}>98.2%</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>성공률</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 24, fontWeight: 900, color: theme.orange }}>156</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>카카오 알림톡</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 24, fontWeight: 900, color: theme.blue }}>1,092</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>앱 푸시</div></div>
       </div>
 
-      {/* KPI */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-        {kpis.map(k => (
-          <div key={k.label} style={{ ...card, textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 4 }}>{k.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
+      {/* Channel policy info */}
+      <div style={{ ...card, background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: 14, padding: '12px 16px' }}>
+        <div style={{ fontSize: 12, color: theme.navy, fontWeight: 600, marginBottom: 6 }}>📌 알림 채널 정책</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 11 }}>
+          <div>
+            <div style={{ fontWeight: 700, color: theme.orange, marginBottom: 4 }}>카카오 알림톡 (유료) — 2가지만</div>
+            <div style={{ color: theme.textSecondary, lineHeight: 1.6 }}>
+              ① 비회원 가입 유도 (3단계)<br />② 사은품 지급 완료 알림
+            </div>
           </div>
-        ))}
+          <div>
+            <div style={{ fontWeight: 700, color: theme.blue, marginBottom: 4 }}>앱 푸시 (무료) — 나머지 전부</div>
+            <div style={{ color: theme.textSecondary, lineHeight: 1.6 }}>
+              신청 상태 변경 / 포인트 적립·출금 / 돈지키미 (D-90/D-30/D-7/D-1) / 후기 작성 유도
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: `2px solid ${theme.border}` }}>
-        {tabs.map(t => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              padding: '8px 20px',
-              fontSize: 13,
-              fontWeight: activeTab === t ? 700 : 400,
-              color: activeTab === t ? theme.navy : theme.textMuted,
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === t ? `2px solid ${theme.navy}` : '2px solid transparent',
-              cursor: 'pointer',
-              fontFamily: theme.sans,
-              marginBottom: -2,
-            }}
-          >
-            {t}
-          </button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        {[['history', '발송 이력'], ['template', '템플릿 관리'], ['manual', '수동 발송']].map(([key, label]) => (
+          <div key={key} onClick={() => setActiveTab(key)} style={filterBtn(activeTab === key)}>{label}</div>
         ))}
       </div>
 
-      {/* 필터 */}
-      <div style={{ ...card, marginBottom: 16, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: theme.text }}>상태</span>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {statusFilters.map(f => (
-            <button key={f} style={filterBtn(statusFilter === f)} onClick={() => setStatusFilter(f)}>{f}</button>
-          ))}
-        </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: theme.text, marginLeft: 8 }}>유형</span>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {typeFilters.map(f => (
-            <button key={f} style={filterBtn(typeFilter === f)} onClick={() => setTypeFilter(f)}>{f}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* 테이블 */}
-      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <table style={tableStyles.table}>
-          <thead>
-            <tr>
-              {['수신자', '유형', '제목', '채널', '상태', '발송일시', '관리'].map(h => (
-                <th key={h} style={tableStyles.th}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(a => (
-              <tr key={a.id}>
-                <td style={tableStyles.td}><span style={{ fontWeight: 600, color: theme.text }}>{a.recipient}</span></td>
-                <td style={tableStyles.td}><span style={statusStyle(typeColor[a.type] || 'gray')}>{a.type}</span></td>
-                <td style={tableStyles.td}>{a.title}</td>
-                <td style={tableStyles.td}><span style={statusStyle(channelColor[a.channel] || 'gray')}>{a.channel}</span></td>
-                <td style={tableStyles.td}><span style={statusStyle(statusColor[a.status] || 'gray')}>{a.status}</span></td>
-                <td style={tableStyles.td}>{a.sentAt}</td>
-                <td style={tableStyles.td}>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button style={{ ...button.secondary, padding: '4px 8px', fontSize: 11 }}>상세</button>
-                    {a.status === '실패' && (
-                      <button style={{ ...button.danger, padding: '4px 8px', fontSize: 11 }}>재발송</button>
-                    )}
-                  </div>
-                </td>
-              </tr>
+      {/* History tab */}
+      {activeTab === 'history' && (
+        <div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14, padding: '8px 0' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, width: 40 }}>채널</span>
+            {['전체', '카카오 알림톡', '앱 푸시'].map(f => (
+              <div key={f} onClick={() => setChannelFilter(f)} style={filterBtn(channelFilter === f)}>{f}</div>
             ))}
-          </tbody>
-        </table>
-      </div>
+            <input style={{ ...input, marginLeft: 'auto', width: 200, marginBottom: 0 }} placeholder="이름 / 전화번호 검색" />
+          </div>
+          <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
+            <table style={{ ...tableStyles.table, fontSize: 11, minWidth: 900 }}>
+              <thead>
+                <tr>
+                  {['발송일시', '채널', '유형', '수신자', '연락처', '내용', '상태', '관리'].map(h => (
+                    <th key={h} style={tableStyles.th}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {HISTORY_DATA.map(([time, channel, type, name, phone, content, status], i) => (
+                  <tr key={i}>
+                    <td style={{ ...tableStyles.td, fontSize: 10 }}>{time}</td>
+                    <td style={tableStyles.td}>
+                      <span style={statusStyle(channel === '카카오' ? 'orange' : 'blue')}>{channel}</span>
+                    </td>
+                    <td style={{ ...tableStyles.td, fontSize: 10 }}>{type}</td>
+                    <td style={{ ...tableStyles.td, fontWeight: 600, color: theme.blue, cursor: 'pointer', textDecoration: 'underline' }}>{name}</td>
+                    <td style={{ ...tableStyles.td, fontSize: 10 }}>{phone}</td>
+                    <td style={{ ...tableStyles.td, fontSize: 10, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={content}>{content}</td>
+                    <td style={tableStyles.td}>
+                      <span style={statusStyle(status === '성공' ? 'green' : 'red')}>{status}</span>
+                    </td>
+                    <td style={tableStyles.td}>
+                      {status === '실패' ? (
+                        <span style={{ ...button.danger, cursor: 'pointer', fontSize: 10 }} onClick={e => { e.target.textContent = '✅ 재발송완료'; }}>재발송</span>
+                      ) : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-      {/* 템플릿 선택 모달 */}
-      {showModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: 12, padding: 24, width: 480,
-            boxShadow: theme.shadowLg,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: theme.text }}>알림 템플릿 선택</h3>
-              <button
-                onClick={() => setShowModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: theme.textMuted }}
-              >
-                &times;
-              </button>
+      {/* Template tab */}
+      {activeTab === 'template' && (
+        <div>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: theme.navy, marginBottom: 12, marginTop: 0 }}>카카오 알림톡 템플릿</h3>
+          {KAKAO_TEMPLATES.map((t, i) => (
+            <div key={i} style={{ ...card, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ fontWeight: 700, color: theme.navy }}>{t.title}</div>
+                <span style={{ ...button.secondary, cursor: 'pointer', fontSize: 10 }}>편집</span>
+              </div>
+              <div style={{ background: theme.bg, borderRadius: 8, padding: 12, fontSize: 12, color: theme.textSecondary, lineHeight: 1.8, whiteSpace: 'pre-line' }}>
+                {t.body}
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {templates.map(t => (
-                <div
-                  key={t.id}
-                  style={{
-                    ...card,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: theme.text }}>{t.name}</div>
-                    <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 2 }}>{t.type}</div>
-                  </div>
-                  <button style={{ ...button.primary, padding: '5px 12px', fontSize: 11 }}>선택</button>
+          ))}
+
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: theme.navy, marginBottom: 12, marginTop: 20 }}>앱 푸시 템플릿</h3>
+          {PUSH_TEMPLATES.map((t, i) => (
+            <div key={i} style={{ ...card, marginBottom: 8, padding: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ ...statusStyle('blue'), fontSize: 10 }}>푸시</span>
+                  <strong style={{ marginLeft: 6 }}>{t}</strong>
                 </div>
-              ))}
+                <span style={{ ...button.secondary, cursor: 'pointer', fontSize: 10 }}>편집</span>
+              </div>
             </div>
-            <div style={{ marginTop: 16, textAlign: 'right' }}>
-              <button style={button.secondary} onClick={() => setShowModal(false)}>닫기</button>
+          ))}
+        </div>
+      )}
+
+      {/* Manual send tab */}
+      {activeTab === 'manual' && (
+        <div>
+          <div style={{ ...card, marginBottom: 14 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: theme.navy, marginBottom: 12, marginTop: 0 }}>📤 수동 발송</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: theme.textSecondary, marginBottom: 4 }}>발송 채널</div>
+                <select style={{ ...input, marginBottom: 0 }}>
+                  <option>앱 푸시 (무료)</option>
+                  <option>카카오 알림톡 (유료)</option>
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: theme.textSecondary, marginBottom: 4 }}>발송 유형</div>
+                <select style={{ ...input, marginBottom: 0 }}>
+                  <option>실패 건 재발송</option>
+                  <option>마케팅/이벤트 공지</option>
+                  <option>휴대폰 시세 업데이트</option>
+                  <option>긴급 공지</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: theme.textSecondary, marginBottom: 4 }}>발송 대상</div>
+                <select style={{ ...input, marginBottom: 0 }}>
+                  <option>전체 회원</option>
+                  <option>앱회원만</option>
+                  <option>특정 조건 (아래 선택)</option>
+                  <option>개별 선택</option>
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: theme.textSecondary, marginBottom: 4 }}>타겟 조건 (선택)</div>
+                <select style={{ ...input, marginBottom: 0 }}>
+                  <option>조건 없음</option>
+                  <option>SKT 고객만</option>
+                  <option>KT 고객만</option>
+                  <option>LG U+ 고객만</option>
+                  <option>인터넷+TV 계약자</option>
+                  <option>렌탈 계약자</option>
+                  <option>중고폰 매입 고객</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: theme.textSecondary, marginBottom: 4 }}>메시지 내용</div>
+            <textarea style={{ ...input, height: 80, resize: 'vertical', marginBottom: 12 }} placeholder="발송할 메시지를 입력하세요..." />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 11, color: theme.textMuted }}>
+                예상 발송 대상: <strong style={{ color: theme.navy }}>1,248명</strong>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <span style={{ ...button.secondary, cursor: 'pointer', padding: '8px 16px' }}>미리보기</span>
+                <span style={{ ...button.primary, cursor: 'pointer', padding: '8px 20px', fontSize: 13 }} onClick={e => { e.target.textContent = '✅ 발송완료'; }}>📤 발송</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={card}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: theme.navy, marginBottom: 10, marginTop: 0 }}>📱 휴대폰 시세 알림 빠른 발송</h3>
+            <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 10 }}>매장별 시세 업데이트 후 관심 고객에게 앱 푸시 발송 (무료)</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {['📱 전체 회원', 'SKT 고객만', 'KT 고객만', 'LG U+ 고객만'].map((label, i) => (
+                <span
+                  key={label}
+                  style={{ ...(i === 0 ? button.primary : button.secondary), cursor: 'pointer', fontSize: 11 }}
+                  onClick={e => { e.target.textContent = '✅ 발송완료'; }}
+                >
+                  {label}
+                </span>
+              ))}
             </div>
           </div>
         </div>

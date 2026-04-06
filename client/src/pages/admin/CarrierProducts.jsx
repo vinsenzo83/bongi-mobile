@@ -1,313 +1,541 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { theme, card, button, tableStyles, filterBtn, statusStyle, input } from '../../styles/admin-theme.js';
+import { theme, statusStyle, tableStyles, card, button, filterBtn } from '../../styles/admin-theme.js';
 
-const carrierMap = { skt: 'SKT', kt: 'KT', lgu: 'LG U+' };
-
-const typeOptions = ['인터넷', 'TV', '인터넷+TV', '전화'];
-
-const commitmentOptions = ['12개월', '24개월', '36개월'];
-
-const mockData = {
-  SKT: [
-    { id: 1, code: 'SKT-INT-001', name: 'Bstar 500M', type: '인터넷', price: '33,000', speed: '500Mbps', commitment: '36개월', promotion: '3개월 무료', giftMin: 100000, giftMax: 200000, status: '판매중' },
-    { id: 2, code: 'SKT-INT-002', name: 'Bstar 1G', type: '인터넷', price: '38,500', speed: '1Gbps', commitment: '36개월', promotion: '설치비 면제 + 3개월 할인', giftMin: 150000, giftMax: 300000, status: '판매중' },
-    { id: 3, code: 'SKT-BND-001', name: 'Bstar 500M+BtvAll', type: '인터넷+TV', price: '44,000', speed: '500Mbps', commitment: '36개월', promotion: '셋톱박스 무료 + BTV 3개월', giftMin: 200000, giftMax: 350000, status: '판매중' },
-    { id: 4, code: 'SKT-TV-001', name: 'Btv 에센셜', type: 'TV', price: '12,100', speed: '-', commitment: '24개월', promotion: 'VOD 쿠폰 5천원', giftMin: 50000, giftMax: 100000, status: '판매중' },
-    { id: 5, code: 'SKT-BND-002', name: 'Bstar 1G+BtvAll', type: '인터넷+TV', price: '49,500', speed: '1Gbps', commitment: '36개월', promotion: '6개월 할인 + 넷플릭스 3개월', giftMin: 250000, giftMax: 400000, status: '판매중' },
-    { id: 6, code: 'SKT-TEL-001', name: 'B전화 기본', type: '전화', price: '3,300', speed: '-', commitment: '12개월', promotion: '-', giftMin: 0, giftMax: 30000, status: '중지' },
-    { id: 7, code: 'SKT-INT-003', name: 'Bstar 2.5G', type: '인터넷', price: '44,000', speed: '2.5Gbps', commitment: '36개월', promotion: '와이파이6 공유기 무료', giftMin: 200000, giftMax: 350000, status: '판매중' },
-  ],
-  KT: [
-    { id: 1, code: 'KT-INT-001', name: '슬림 500M', type: '인터넷', price: '30,800', speed: '500Mbps', commitment: '36개월', promotion: '3개월 무료', giftMin: 100000, giftMax: 200000, status: '판매중' },
-    { id: 2, code: 'KT-INT-002', name: '에센스 1G', type: '인터넷', price: '36,300', speed: '1Gbps', commitment: '36개월', promotion: '설치비 면제 + 2개월 무료', giftMin: 150000, giftMax: 280000, status: '판매중' },
-    { id: 3, code: 'KT-BND-001', name: '에센스 500M+지니TV', type: '인터넷+TV', price: '41,800', speed: '500Mbps', commitment: '36개월', promotion: '지니TV 베이직 6개월', giftMin: 180000, giftMax: 320000, status: '판매중' },
-    { id: 4, code: 'KT-TV-001', name: '지니TV 에센스', type: 'TV', price: '13,200', speed: '-', commitment: '24개월', promotion: 'VOD 1만원 쿠폰', giftMin: 50000, giftMax: 100000, status: '판매중' },
-    { id: 5, code: 'KT-BND-002', name: '프리미엄 1G+지니TV올', type: '인터넷+TV', price: '52,800', speed: '1Gbps', commitment: '36개월', promotion: '넷플릭스 6개월 + 설치비 면제', giftMin: 280000, giftMax: 450000, status: '판매중' },
-    { id: 6, code: 'KT-TEL-001', name: 'KT 집전화', type: '전화', price: '3,300', speed: '-', commitment: '12개월', promotion: '-', giftMin: 0, giftMax: 20000, status: '중지' },
-    { id: 7, code: 'KT-INT-003', name: '슬림 100M', type: '인터넷', price: '22,000', speed: '100Mbps', commitment: '24개월', promotion: '2개월 무료', giftMin: 50000, giftMax: 120000, status: '중지' },
-    { id: 8, code: 'KT-INT-004', name: '프리미엄 2.5G', type: '인터넷', price: '44,000', speed: '2.5Gbps', commitment: '36개월', promotion: 'WiFi6E 공유기 무료', giftMin: 200000, giftMax: 380000, status: '판매중' },
-  ],
-  'LG U+': [
-    { id: 1, code: 'LGU-INT-001', name: '베이직 500M', type: '인터넷', price: '30,800', speed: '500Mbps', commitment: '36개월', promotion: '3개월 무료', giftMin: 100000, giftMax: 200000, status: '판매중' },
-    { id: 2, code: 'LGU-INT-002', name: '프리미엄 1G', type: '인터넷', price: '36,300', speed: '1Gbps', commitment: '36개월', promotion: '설치비 면제 + 3개월 할인', giftMin: 150000, giftMax: 300000, status: '판매중' },
-    { id: 3, code: 'LGU-BND-001', name: '프리미엄 500M+유플러스tv', type: '인터넷+TV', price: '42,900', speed: '500Mbps', commitment: '36개월', promotion: '유플러스tv 베이직 6개월', giftMin: 200000, giftMax: 330000, status: '판매중' },
-    { id: 4, code: 'LGU-TV-001', name: '유플러스tv 에센셜', type: 'TV', price: '12,100', speed: '-', commitment: '24개월', promotion: 'VOD 쿠폰 5천원', giftMin: 50000, giftMax: 100000, status: '판매중' },
-    { id: 5, code: 'LGU-BND-002', name: '프리미엄 1G+유플러스tv올', type: '인터넷+TV', price: '51,700', speed: '1Gbps', commitment: '36개월', promotion: '넷플릭스 3개월 + 설치비 면제', giftMin: 250000, giftMax: 420000, status: '판매중' },
-    { id: 6, code: 'LGU-TEL-001', name: 'U+집전화', type: '전화', price: '3,300', speed: '-', commitment: '12개월', promotion: '-', giftMin: 0, giftMax: 25000, status: '중지' },
-    { id: 7, code: 'LGU-INT-003', name: '베이직 100M', type: '인터넷', price: '22,000', speed: '100Mbps', commitment: '24개월', promotion: '2개월 무료', giftMin: 50000, giftMax: 110000, status: '중지' },
-  ],
+/* ─── 통신사별 데이터 (wireframe 그대로) ─── */
+const carrierConfig = {
+  skt: {
+    key: 'SKT', label: 'SKT', color: 'red', statusBg: '#fee2e2',
+    internet: [
+      { name: '인터넷', m100: '22,000', m500: '33,000', g1: '38,500' },
+    ],
+    tv: [
+      { name: 'Btv 이코노미', ch: '184', alone: '12,100', bundle: '9,900' },
+      { name: 'Btv 스탠다드', ch: '236', alone: '15,400', bundle: '13,200' },
+      { name: 'Btv 올', ch: '252', alone: '18,700', bundle: '16,500' },
+      { name: 'Btv 올+', ch: '252+', alone: '24,200', bundle: '22,000' },
+      { name: 'Btv 올 넷플릭스 프리미엄', ch: '252+', alone: '33,200', bundle: '31,000' },
+    ],
+    tvHeader: { col3: 'TV 단독', col4: '인터넷 결합 시' },
+    tvSubtitle: '📺 TV 요금 (부가세 포함, 셋톱 별도)',
+    gifts: [
+      { name: '인터넷', m100: '11만', m500: '17만', g1: '17만' },
+      { name: '인터넷+Btv 이코노미', m100: '40만', m500: '43만', g1: '49만' },
+      { name: '인터넷+Btv 스탠다드', m100: '40만', m500: '43만', g1: '49만' },
+      { name: '인터넷+Btv 올', m100: '40만', m500: '43만', g1: '49만' },
+      { name: '인터넷+Btv 올 넷플릭스', m100: '40만', m500: '43만', g1: '49만' },
+    ],
+    giftTitle: '🎁 SKT 사은품 (현금)',
+    cards: {
+      title: '💳 SKT/SKB 유선 제휴카드',
+      headers: ['카드명', '발급사', '적용', '1구간', '1구간 할인', '2구간', '2구간 할인', '3구간', '3구간 할인', '연회비'],
+      rows: [
+        ['더 심플 하나카드', '하나카드', 'SKT·SKB 공통', '30만↑', '10,000', '80만↑', '15,000', '-', '-', '25,000원'],
+        ['T나는혜택 삼성카드', '삼성카드', 'SKT·SKB 공통', '30만↑', '7~10,000', '70만↑', '10~13,000', '120만↑', '13~16,000', '20,000원'],
+        ['SK브로드밴드 B롯데카드', '롯데카드', 'SKB 전용', '30만↑', '11,000', '50만↑', '13,000', '100만↑', '20,000', '5~10,000원'],
+      ],
+    },
+    settop: {
+      title: '📦 SKT 셋톱박스 + OTT 지원',
+      headers: ['셋톱박스명', '월 임대료', '특징', '유튜브', '넷플릭스', '디즈니+', '웨이브', '왓챠', '티빙', '애플TV'],
+      rows: [
+        ['스마트3 미니', '4,400원', '기본형', 'O', 'X', 'O', 'O', 'O', 'O', 'X'],
+        ['AI NUGU', '6,600원', 'AI 음성인식', 'O', 'X', 'O', 'O', 'O', 'O', 'O'],
+        ['사운드 맥스', '8,800원', '사운드바형', 'O', 'X', 'X', 'X', 'X', 'X', 'X'],
+        ['애플TV', '6,600원', '앱설치, 아이폰호환', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
+      ],
+    },
+    wifi: {
+      title: '📡 SKT 와이파이',
+      headers: ['와이파이명', '특징', '100M', '500M', '1G'],
+      rows: [
+        ['GIGA WiFi', '기본형', '기본제공', '기본제공', '기본제공'],
+        ['GIGA WiFi 6', 'WiFi-6 적용', '1,100원', '1,100원', '1,100원'],
+        ['GIGA WiFi 프리미엄', '고급형 최대 1.7Gbps', { colSpan: 3, text: '인터넷 결합 5,500원 / 인터넷+TV 3,300원' }],
+        ['윙즈', '와이파이 증폭기기', '1,650원', '1,650원', '1,650원'],
+      ],
+    },
+    install: {
+      title: '🔧 SKT 설치비',
+      headers: ['항목', '평일', '주말'],
+      rows: [
+        ['인터넷 단독', '36,000원', '45,000원'],
+        ['TV 단독', '34,100원', '42,625원'],
+        ['인터넷+TV', '56,100원', '70,125원'],
+        ['TV추가 (1대당)', '+17,600원', '+22,000원'],
+        ['인터넷전화 (동시)', '+13,200원', '+13,200원'],
+      ],
+    },
+    phone: {
+      title: '📞 SKT 집전화',
+      headers: ['요금제', '월요금', '비고'],
+      rows: [
+        ['집전화 프리 5000', '전화단독 7,700 / 인터넷결합 4,400 / 인터넷+TV 2,200', '발신자 번호표시(CID)'],
+        ['전화기본 요금제', '3년 약정 2,200원', '-'],
+        ['무료100 (정액형)', '3년 약정 6,600원', '무료통화 최대 100분'],
+      ],
+    },
+  },
+  kt: {
+    key: 'KT', label: 'KT', color: 'blue', statusBg: '#dbeafe',
+    internet: [
+      { name: '인터넷', m100: '22,000', m500: '33,000', g1: '38,500' },
+    ],
+    tv: [
+      { name: '지니TV 베이직', ch: '238', alone: '18,150', bundle: '16,500' },
+      { name: '지니TV 라이트', ch: '240', alone: '19,250', bundle: '17,600' },
+      { name: '지니TV 모든G', ch: '250', alone: '23,650', bundle: '22,000' },
+      { name: '지니TV 디즈니+모든G', ch: '250', alone: '25,950', bundle: '24,300' },
+      { name: '지니TV+넷플릭스 초이스HD', ch: '266', alone: '33,850', bundle: '32,200' },
+    ],
+    tvHeader: { col3: 'TV 단독', col4: '인터넷 결합 시' },
+    tvSubtitle: '📺 TV 요금 (부가세 포함, 셋톱 별도)',
+    gifts: [
+      { name: '인터넷', m100: '9만', m500: '14만', g1: '14만' },
+      { name: '인터넷 + 지니TV 베이직', m100: '37만', m500: '45만', g1: '45만' },
+      { name: '인터넷 + 지니TV 라이트', m100: '37만', m500: '45만', g1: '45만' },
+      { name: '인터넷 + 지니TV 모든G', m100: '37만', m500: '45만', g1: '45만' },
+      { name: '인터넷 + 지니TV 디즈니+ 모든G', m100: '37만', m500: '45만', g1: '45만' },
+      { name: '인터넷 + 지니TV+넷플릭스 초이스HD', m100: '37만', m500: '45만', g1: '45만' },
+    ],
+    giftTitle: '🎁 사은품',
+    cards: {
+      title: '💳 KT 유선 제휴카드',
+      headers: ['카드명', '발급사', '최소실적', '할인금액', '기간'],
+      rows: [
+        ['KT DC Plus 국민카드', 'KB국민', '30만↑', '7,000원', '-'],
+        ['KT-현대카드M Edition3', '현대카드', '30만↑', '13,000원', '1~24개월'],
+        ['KT-현대카드M Edition3(2.0)', '현대카드', '100만↑', '22,000원', '1~36개월'],
+        ['KT 신한 체크카드', '신한카드', '30만↑', '3,000원 캐쉬백', '-'],
+        ['KT 가족만족 DC 신한카드', '신한카드', '30만↑', '7,000원', '-'],
+        ['KT 으랏차차 신한카드', '신한카드', '50만↑', '12,000원', '-'],
+        ['olleh super DC IBK카드', 'IBK', '30만↑', '7,000원', '-'],
+        ['KT 으랏차차 IBK카드', 'IBK', '자동납부', '5% 청구할인', '-'],
+        ['KT 삼성카드', '삼성카드', '30만↑', '7,000원', '-'],
+        ['KT Plus 우리카드', '우리카드', '40만↑', '10,000원', '1~24개월'],
+        ['KT 36 Plus 우리카드', '우리카드', '40만↑', '8,000원', '1~24개월'],
+        ['더 심플 하나카드', '하나카드', '30만↑', '10,000원', '-'],
+        ['KT 할부Plus NH농협카드', 'NH농협', '40만↑', '5,000원', '할부중복불가'],
+        ['KT DC Plus 롯데카드', '롯데카드', '40만↑', '10,000원', '-'],
+        ['KT SUPER DC BC바로카드', '비씨카드', '40만↑', '5,000원', '-'],
+        ['KT DC Plus BC바로카드', '비씨카드', '30만↑', '7,000원', '-'],
+        ['KT멤버십x케이뱅크 체크카드', '케이뱅크', '20만↑', '5% 캐시백(최대5천)', '-'],
+      ],
+    },
+    settop: {
+      title: '📦 KT 셋톱박스 + OTT 지원',
+      headers: ['셋톱박스명', '월 임대료', '특징', '유튜브', '넷플릭스', '디즈니+', '웨이브', '왓챠', '티빙'],
+      rows: [
+        ['기가지니A', '3,300원', '가장 저렴한 일반형', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['기가지니3', '4,400원', 'AI 블루투스 스피커형', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['지니TV 올인원 사운드바', '8,800원', '사운드바+공유기 일체', 'O', 'O', 'O', 'O', 'O', 'O'],
+      ],
+    },
+    wifi: {
+      title: '📡 KT 와이파이',
+      headers: ['와이파이명', '특징', '100M', '500M', '1G'],
+      rows: [
+        ['KT GIGA WAVE2', '기본형', '1,100원', '1,100원', '무료'],
+        ['GIGA WIFI 홈AX', 'WiFi-6', '2,200원', '2,200원', '무료'],
+        ['GIGA WIFIBUDDY', '증폭기, 홈AX 호환', '1,650원', '1,650원', '1,650원'],
+        ['GIGA WIFI프리미엄 2.4', '고급형 최대 10Gbps', '4,400원', '4,400원', '4,400원'],
+      ],
+    },
+    install: {
+      title: '🔧 KT 설치비',
+      headers: ['항목', '평일', '주말'],
+      rows: [
+        ['인터넷 단독', '36,000원', '45,000원'],
+        ['TV 단독', '34,100원', '42,625원'],
+        ['인터넷+TV', '56,200원', '71,250원'],
+        ['TV추가 (1대당)', '+15,400원', '+19,250원'],
+        ['인터넷전화 (동시)', '—', '+33,000원'],
+        ['일반전화 (동시)', '신규 +32,000원 / 번호이동 +36,000원', '신규 +41,000원 / 번호이동 +45,000원'],
+      ],
+    },
+    phone: {
+      title: '📞 KT 집전화',
+      headers: ['요금제', '월요금', '비고'],
+      rows: [],
+    },
+  },
+  lgu: {
+    key: 'LGU', label: 'LG U+', color: 'green', statusBg: '#d1fae5',
+    internet: [
+      { name: '인터넷', m100: '22,000', m500: '33,000', g1: '38,500' },
+    ],
+    tv: [
+      { name: '실속형', ch: '217', price: '14,630' },
+      { name: '기본형', ch: '223', price: '15,730' },
+      { name: '프리미엄', ch: '257', price: '17,600' },
+      { name: '프리미엄 디즈니+ 스탠다드', ch: '257+', price: '26,950' },
+      { name: '프리미엄 넷플릭스 HD', ch: '258+', price: '30,550' },
+      { name: '프리미엄 티빙', ch: '257+', price: '30,550' },
+      { name: '프리미엄 넷플릭스 UHD', ch: '258+', price: '34,050' },
+    ],
+    tvHeader: null, // LGU+ has different TV table
+    tvSubtitle: '📺 TV 요금 (인터넷에 추가)',
+    gifts: [
+      { name: '인터넷', m100: '20만', m500: '23만', g1: '23만' },
+      { name: '인터넷 + 실속형', m100: '40만', m500: '47만', g1: '47만' },
+      { name: '인터넷 + 기본형', m100: '40만', m500: '47만', g1: '47만' },
+      { name: '인터넷 + 프리미엄', m100: '40만', m500: '47만', g1: '47만' },
+      { name: '인터넷 + 프리미엄 디즈니(스탠다드)', m100: '40만', m500: '47만', g1: '47만' },
+      { name: '인터넷 + 프리미엄 넷플릭스 HD', m100: '40만', m500: '47만', g1: '47만' },
+    ],
+    giftTitle: '🎁 사은품',
+    cards: {
+      title: '💳 LG U+ 유선 제휴카드',
+      headers: ['카드명', '발급사', '혜택', '할인금액'],
+      rows: [
+        ['LG U+ 삼성카드', '삼성카드', '30만원↑ 실적', '7,000원'],
+        ['LG U+ 현대카드M Edition3(2.0)', '현대카드', '50만원↑ (1~24개월)', '15,000원'],
+        ['더 심플 하나카드', '하나카드', '30만원↑ 실적', '10,000원'],
+        ['LG U+x LOCA 롯데카드', '롯데카드', '30만원↑ 실적', '10,000원'],
+        ['NH올원 LG U+ 카드', 'NH카드', '30만원↑ 실적', '9,000원'],
+        ['LG U+ 사장님 통할인 신한카드', '신한카드', '70만원↑ 실적', '10,000원'],
+        ['LG U+Family 하나카드', '하나카드', '30만원↑ 통신료 25% 청구할인', '25%'],
+      ],
+    },
+    settop: {
+      title: '📦 LG U+ 셋톱박스 + OTT 지원',
+      headers: ['셋톱박스명', '월 임대료', '특징', '유튜브', '넷플릭스', '디즈니+', '웨이브', '왓챠', '티빙'],
+      rows: [
+        ['U+tv 사운드바 블랙', '6,600원', '돌비비전 탑재', 'O', 'O', 'O', 'O', 'O', 'O'],
+        ['U+tv UHD4', '4,400원', 'AI음향 기술', 'O', 'O', 'O', 'O', 'O', 'O'],
+      ],
+    },
+    wifi: {
+      title: '📡 LG U+ 와이파이',
+      headers: ['와이파이명', '특징', '100M', '500M', '1G'],
+      rows: [
+        ['기가와이파이', '100M 시 1대 의무', '기본제공', '추가 2,200원', '추가 2,200원'],
+        ['기가와이파이6', '500M 시 1대 의무', '추가 2,200원', '기본제공', '기본제공'],
+        ['기가와이파이메쉬', '500M+ 선택/추가', 'X', '프리미엄안심 선택가능', '프리미엄안심 선택가능'],
+      ],
+    },
+    install: {
+      title: '🔧 LG U+ 설치비',
+      headers: ['항목', '평일', '주말'],
+      rows: [
+        ['인터넷 단독', '36,300원', '45,375원'],
+        ['TV 단독', '34,100원', '—'],
+        ['인터넷+TV', '56,100원', '70,125원'],
+        ['TV추가 (1대당)', '+22,000원', '+27,500원'],
+        ['인터넷전화 (동시)', '+11,000원', '+11,000원'],
+        ['일반전화 (동시)', '+11,000원', '+11,000원'],
+      ],
+    },
+    phone: {
+      title: '📞 LG U+ 집전화',
+      headers: ['요금제', '월요금', '비고'],
+      rows: [
+        ['표준형+', '1,100원', '국내 음성 3분당 41.8원 / 휴대폰 10초당 12.87원'],
+        ['이동할인형', '2,200원', '국내 음성 3분당 41.8원 / 휴대폰 10초당 7.98원'],
+      ],
+    },
+  },
 };
 
-const emptyForm = {
-  code: '', name: '', type: '인터넷', price: '', speed: '', commitment: '36개월',
-  promotion: '', giftMin: '', giftMax: '', memo: '',
+const tbl = {
+  width: '100%', borderCollapse: 'collapse', fontSize: 11, marginBottom: 0,
 };
+const th = {
+  ...tableStyles.th, fontSize: 11,
+};
+const td = {
+  ...tableStyles.td, fontSize: 11,
+};
+
+function OttCell({ val }) {
+  const isO = val === 'O';
+  return <td style={{ ...td, color: isO ? theme.green : theme.red }}>{val}</td>;
+}
 
 export default function CarrierProducts() {
   const { carrier: carrierParam } = useParams();
-  const carrier = carrierMap[carrierParam] || 'SKT';
-  const carrierColor = theme.carrier[carrier] || theme.navy;
+  const cfg = carrierConfig[carrierParam] || carrierConfig.skt;
+  const [giftValues, setGiftValues] = useState(() =>
+    cfg.gifts.map(g => ({ m100: g.m100, m500: g.m500, g1: g.g1 }))
+  );
 
-  const [products, setProducts] = useState(mockData[carrier] || []);
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [form, setForm] = useState({ ...emptyForm });
-  const [filters, setFilters] = useState({ type: '전체', status: '전체' });
-
-  const filtered = useMemo(() => {
-    return products.filter(p => {
-      if (filters.type !== '전체' && p.type !== filters.type) return false;
-      if (filters.status !== '전체' && p.status !== filters.status) return false;
-      return true;
+  const handleGiftChange = (idx, field, val) => {
+    setGiftValues(prev => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: val };
+      return next;
     });
-  }, [products, filters]);
-
-  const openAdd = () => {
-    setEditingProduct(null);
-    setForm({ ...emptyForm });
-    setShowModal(true);
   };
 
-  const openEdit = (product) => {
-    setEditingProduct(product);
-    setForm({
-      code: product.code, name: product.name, type: product.type,
-      price: product.price, speed: product.speed, commitment: product.commitment,
-      promotion: product.promotion, giftMin: product.giftMin, giftMax: product.giftMax, memo: '',
-    });
-    setShowModal(true);
-  };
-
-  const handleSave = () => {
-    if (editingProduct) {
-      setProducts(prev => prev.map(p =>
-        p.id === editingProduct.id
-          ? { ...p, code: form.code, name: form.name, type: form.type, price: form.price, speed: form.speed, commitment: form.commitment, promotion: form.promotion, giftMin: Number(form.giftMin), giftMax: Number(form.giftMax), status: p.status }
-          : p
-      ));
-    } else {
-      const newId = Math.max(0, ...products.map(p => p.id)) + 1;
-      setProducts(prev => [...prev, {
-        id: newId, code: form.code, name: form.name, type: form.type, price: form.price,
-        speed: form.speed, commitment: form.commitment, promotion: form.promotion,
-        giftMin: Number(form.giftMin), giftMax: Number(form.giftMax), status: '판매중',
-      }]);
-    }
-    setShowModal(false);
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm('정말 삭제하시겠습니까?')) {
-      setProducts(prev => prev.filter(p => p.id !== id));
-    }
-  };
-
-  const updateForm = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
-
-  const formatGift = (min, max) => {
-    const fmt = v => v >= 10000 ? `${(v / 10000).toLocaleString()}만` : `${v.toLocaleString()}원`;
-    if (!min && !max) return '-';
-    return `${fmt(min)} ~ ${fmt(max)}`;
-  };
-
-  // Styles
-  const overlay = {
-    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', zIndex: 1000,
-  };
-
-  const modal = {
-    background: '#fff', borderRadius: 12, padding: 24, width: 520,
-    maxHeight: '85vh', overflowY: 'auto', boxShadow: theme.shadowLg,
-  };
-
-  const formRow = { marginBottom: 12 };
-  const formLabel = { display: 'block', fontSize: 11, fontWeight: 600, color: theme.textSecondary, marginBottom: 4 };
-  const formGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 };
-
-  const selectStyle = { ...input, appearance: 'auto' };
+  const isLgu = carrierParam === 'lgu';
 
   return (
-    <div style={{ fontFamily: theme.sans }}>
-      {/* Page Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <div style={{ width: 4, height: 24, borderRadius: 2, background: carrierColor }} />
-        <h2 style={{ margin: 0, fontSize: 18, color: theme.text, fontWeight: 700 }}>
-          {carrier} 인터넷·TV 상품 관리
-        </h2>
-        <span style={{ fontSize: 12, color: theme.textMuted, marginLeft: 4 }}>
-          총 {filtered.length}건
-        </span>
-      </div>
-
-      {/* Filter Bar + Actions */}
-      <div style={{ ...card, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* 상품유형 필터 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: theme.textSecondary, marginRight: 4 }}>상품유형</span>
-            {['전체', '인터넷', 'TV', '인터넷+TV', '전화'].map(t => (
-              <button key={t} style={filterBtn(filters.type === t)}
-                onClick={() => setFilters(f => ({ ...f, type: t }))}>
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {/* 상태 필터 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: theme.textSecondary, marginRight: 4 }}>상태</span>
-            {['전체', '판매중', '중지'].map(s => (
-              <button key={s} style={filterBtn(filters.status === s)}
-                onClick={() => setFilters(f => ({ ...f, status: s }))}>
-                {s}
-              </button>
-            ))}
-          </div>
+    <div>
+      {/* 메인 카드 */}
+      <div style={{ ...card, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <span style={{ ...statusStyle(cfg.color), fontSize: 12, padding: '4px 10px' }}>{cfg.label}</span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: theme.navy, margin: 0 }}>인터넷 · TV 요금표</span>
+          <span style={{ ...button.success, fontSize: 10, marginLeft: 'auto' }}>✏️ 편집</span>
+          <span style={{ ...button.primary, fontSize: 10 }}>+ 상품 추가</span>
         </div>
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button style={button.primary} onClick={openAdd}>+ 상품 추가</button>
-          <button style={button.secondary}>엑셀 업로드</button>
-          <button style={button.secondary}>엑셀 다운로드</button>
-        </div>
-      </div>
-
-      {/* Product Table */}
-      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <table style={tableStyles.table}>
-          <thead>
-            <tr>
-              {['상품코드', '상품명', '유형', '월요금', '속도', '약정', '프로모션', '사은품범위', '상태', '관리'].map(col => (
-                <th key={col} style={tableStyles.th}>{col}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
+        {/* 인터넷 요금 */}
+        <div style={{ fontSize: 13, fontWeight: 700, color: theme.navy, marginBottom: 8 }}>📡 인터넷 요금</div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ ...tbl, marginBottom: 12 }}>
+            <thead>
               <tr>
-                <td colSpan={10} style={{ ...tableStyles.td, textAlign: 'center', padding: 32, color: theme.textMuted }}>
-                  조건에 맞는 상품이 없습니다.
-                </td>
+                <th style={th}>상품명</th>
+                <th style={th}>100M</th>
+                <th style={th}>500M</th>
+                <th style={th}>1G</th>
+                <th style={th}>상태</th>
               </tr>
-            ) : (
-              filtered.map(p => (
-                <tr key={p.id} style={{ cursor: 'default' }}
-                  onMouseEnter={e => e.currentTarget.style.background = theme.bgHover}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}>
-                  <td style={{ ...tableStyles.td, fontFamily: 'monospace', fontSize: 11, color: theme.textMuted }}>{p.code}</td>
-                  <td style={{ ...tableStyles.td, fontWeight: 600, color: theme.text }}>{p.name}</td>
-                  <td style={tableStyles.td}>
-                    <span style={{
-                      fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 600,
-                      background: p.type === '인터넷' ? theme.blueBg : p.type === 'TV' ? theme.purpleBg : p.type === '인터넷+TV' ? theme.orangeBg : theme.status.gray.bg,
-                      color: p.type === '인터넷' ? theme.blue : p.type === 'TV' ? theme.purple : p.type === '인터넷+TV' ? theme.orange : theme.status.gray.color,
-                    }}>{p.type}</span>
-                  </td>
-                  <td style={{ ...tableStyles.td, textAlign: 'right', fontWeight: 600 }}>{p.price}원</td>
-                  <td style={{ ...tableStyles.td, textAlign: 'center' }}>{p.speed}</td>
-                  <td style={{ ...tableStyles.td, textAlign: 'center' }}>{p.commitment}</td>
-                  <td style={{ ...tableStyles.td, fontSize: 11, maxWidth: 160 }}>{p.promotion}</td>
-                  <td style={{ ...tableStyles.td, fontSize: 11, textAlign: 'center' }}>{formatGift(p.giftMin, p.giftMax)}</td>
-                  <td style={{ ...tableStyles.td, textAlign: 'center' }}>
-                    <span style={statusStyle(p.status === '판매중' ? 'green' : 'gray')}>{p.status}</span>
-                  </td>
-                  <td style={{ ...tableStyles.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                    <button onClick={() => openEdit(p)}
-                      style={{ background: 'none', border: 'none', color: theme.blue, cursor: 'pointer', fontSize: 11, fontWeight: 600, padding: '2px 6px', fontFamily: theme.sans }}>
-                      수정
-                    </button>
-                    <span style={{ color: theme.border }}>|</span>
-                    <button onClick={() => handleDelete(p.id)}
-                      style={{ background: 'none', border: 'none', color: theme.red, cursor: 'pointer', fontSize: 11, fontWeight: 600, padding: '2px 6px', fontFamily: theme.sans }}>
-                      삭제
-                    </button>
-                  </td>
+            </thead>
+            <tbody>
+              {cfg.internet.map((r, i) => (
+                <tr key={i}>
+                  <td style={{ ...td, fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ ...td, fontWeight: 700, color: theme.navy }}>{r.m100}</td>
+                  <td style={{ ...td, fontWeight: 700, color: theme.navy }}>{r.m500}</td>
+                  <td style={{ ...td, fontWeight: 700, color: theme.navy }}>{r.g1}</td>
+                  <td style={td}></td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div style={overlay} onClick={() => setShowModal(false)}>
-          <div style={modal} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 18px', fontSize: 15, fontWeight: 700, color: theme.text }}>
-              {editingProduct ? '상품 수정' : '상품 추가'}
-            </h3>
-
-            <div style={formGrid}>
-              <div style={formRow}>
-                <label style={formLabel}>상품코드</label>
-                <input style={input} value={form.code} onChange={e => updateForm('code', e.target.value)} placeholder="예: SKT-INT-001" />
-              </div>
-              <div style={formRow}>
-                <label style={formLabel}>상품명</label>
-                <input style={input} value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="상품명 입력" />
-              </div>
-            </div>
-
-            <div style={formGrid}>
-              <div style={formRow}>
-                <label style={formLabel}>유형</label>
-                <select style={selectStyle} value={form.type} onChange={e => updateForm('type', e.target.value)}>
-                  {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div style={formRow}>
-                <label style={formLabel}>월요금</label>
-                <input style={input} value={form.price} onChange={e => updateForm('price', e.target.value)} placeholder="예: 33,000" />
-              </div>
-            </div>
-
-            <div style={formGrid}>
-              <div style={formRow}>
-                <label style={formLabel}>속도</label>
-                <input style={input} value={form.speed} onChange={e => updateForm('speed', e.target.value)} placeholder="예: 500Mbps" />
-              </div>
-              <div style={formRow}>
-                <label style={formLabel}>약정기간</label>
-                <select style={selectStyle} value={form.commitment} onChange={e => updateForm('commitment', e.target.value)}>
-                  {commitmentOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div style={formRow}>
-              <label style={formLabel}>프로모션</label>
-              <textarea style={{ ...input, minHeight: 56, resize: 'vertical' }} value={form.promotion}
-                onChange={e => updateForm('promotion', e.target.value)} placeholder="프로모션 내용 입력" />
-            </div>
-
-            <div style={formGrid}>
-              <div style={formRow}>
-                <label style={formLabel}>사은품 범위 (최소)</label>
-                <input style={input} type="number" value={form.giftMin} onChange={e => updateForm('giftMin', e.target.value)} placeholder="0" />
-              </div>
-              <div style={formRow}>
-                <label style={formLabel}>사은품 범위 (최대)</label>
-                <input style={input} type="number" value={form.giftMax} onChange={e => updateForm('giftMax', e.target.value)} placeholder="300000" />
-              </div>
-            </div>
-
-            <div style={formRow}>
-              <label style={formLabel}>메모</label>
-              <textarea style={{ ...input, minHeight: 48, resize: 'vertical' }} value={form.memo}
-                onChange={e => updateForm('memo', e.target.value)} placeholder="관리용 메모 (선택)" />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
-              <button style={button.secondary} onClick={() => setShowModal(false)}>취소</button>
-              <button style={button.primary} onClick={handleSave}>저장</button>
-            </div>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {/* TV 요금 */}
+        <div style={{ fontSize: 13, fontWeight: 700, color: theme.navy, marginBottom: 8 }}>{cfg.tvSubtitle}</div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={tbl}>
+            <thead>
+              <tr>
+                <th style={th}>TV 상품</th>
+                <th style={th}>채널수</th>
+                {isLgu ? (
+                  <>
+                    <th style={th}>월요금</th>
+                    <th style={th}>상태</th>
+                  </>
+                ) : (
+                  <>
+                    <th style={th}>{cfg.tvHeader.col3}</th>
+                    <th style={th}>{cfg.tvHeader.col4}</th>
+                    <th style={th}>상태</th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {cfg.tv.map((r, i) => (
+                <tr key={i}>
+                  <td style={{ ...td, fontWeight: 600 }}>{r.name}</td>
+                  <td style={td}>{r.ch}</td>
+                  {isLgu ? (
+                    <td style={{ ...td, fontWeight: 700, color: theme.navy }}>{r.price}</td>
+                  ) : (
+                    <>
+                      <td style={{ ...td, fontWeight: 700, color: theme.navy }}>{r.alone}</td>
+                      <td style={{ ...td, color: theme.blue, fontWeight: 600 }}>{r.bundle}</td>
+                    </>
+                  )}
+                  <td style={td}></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 사은품 */}
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: theme.navy, margin: 0 }}>{cfg.giftTitle}</div>
+            <span style={{ ...button.success, fontSize: 11, padding: '5px 14px' }}>💾 저장</span>
+          </div>
+          <table style={tbl}>
+            <thead>
+              <tr>
+                <th style={th}>상품명</th>
+                <th style={th}>100M</th>
+                <th style={th}>500M</th>
+                <th style={th}>1G</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cfg.gifts.map((g, i) => (
+                <tr key={i}>
+                  <td style={{ ...td, fontWeight: 600 }}>{g.name}</td>
+                  {['m100', 'm500', 'g1'].map(f => (
+                    <td key={f} style={td}>
+                      <input
+                        value={giftValues[i]?.[f] || ''}
+                        onChange={e => handleGiftChange(i, f, e.target.value)}
+                        style={{
+                          width: 70, textAlign: 'center', margin: 0, padding: 4,
+                          fontSize: 11, fontWeight: 600, color: theme.orange,
+                          border: `1.5px solid ${theme.borderDark}`, borderRadius: 4,
+                          background: '#fafafa', outline: 'none',
+                        }}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 제휴카드 */}
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: theme.navy, margin: 0 }}>{cfg.cards.title}</div>
+            <span style={{ ...button.primary, fontSize: 10 }}>+ 카드 추가</span>
+          </div>
+          <table style={tbl}>
+            <thead>
+              <tr>
+                {cfg.cards.headers.map((h, i) => <th key={i} style={th}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {cfg.cards.rows.map((row, i) => (
+                <tr key={i}>
+                  {row.map((cell, j) => {
+                    let cellStyle = { ...td };
+                    if (j === 0) cellStyle.fontWeight = 600;
+                    // SKT 3rd col "SKB 전용" highlight
+                    if (carrierParam === 'skt' && j === 2 && cell === 'SKB 전용') {
+                      cellStyle = { ...cellStyle, fontSize: 10, color: theme.orange };
+                    } else if (j === 2 && carrierParam === 'skt' && cell !== 'SKB 전용') {
+                      cellStyle = { ...cellStyle, fontSize: 10 };
+                    }
+                    // 할인금액 column
+                    const isDiscountCol = (carrierParam === 'skt' && (j === 4 || j === 6 || j === 8)) ||
+                      (carrierParam === 'kt' && j === 3) ||
+                      (carrierParam === 'lgu' && j === 3);
+                    if (isDiscountCol) {
+                      cellStyle = { ...cellStyle, color: theme.blue, fontWeight: 600 };
+                    }
+                    // 연회비/기간 cols
+                    if (carrierParam === 'skt' && j === 9) cellStyle = { ...cellStyle, fontSize: 10 };
+                    return <td key={j} style={cellStyle}>{cell}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 셋톱박스 */}
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: theme.navy, margin: 0 }}>{cfg.settop.title}</div>
+            <span style={{ ...button.primary, fontSize: 10 }}>+ 추가</span>
+          </div>
+          <table style={tbl}>
+            <thead>
+              <tr>
+                {cfg.settop.headers.map((h, i) => <th key={i} style={th}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {cfg.settop.rows.map((row, i) => (
+                <tr key={i}>
+                  <td style={{ ...td, fontWeight: 600 }}>{row[0]}</td>
+                  <td style={{ ...td, color: theme.navy, fontWeight: 600 }}>{row[1]}</td>
+                  <td style={{ ...td, fontSize: 10 }}>{row[2]}</td>
+                  {row.slice(3).map((v, j) => <OttCell key={j} val={v} />)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 와이파이 */}
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: theme.navy, margin: 0 }}>{cfg.wifi.title}</div>
+            <span style={{ ...button.primary, fontSize: 10 }}>+ 추가</span>
+          </div>
+          <table style={tbl}>
+            <thead>
+              <tr>
+                {cfg.wifi.headers.map((h, i) => <th key={i} style={th}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {cfg.wifi.rows.map((row, i) => (
+                <tr key={i}>
+                  <td style={{ ...td, fontWeight: 600 }}>{row[0]}</td>
+                  <td style={{ ...td, fontSize: 10 }}>{row[1]}</td>
+                  {typeof row[2] === 'object' && row[2].colSpan ? (
+                    <td colSpan={row[2].colSpan} style={{ ...td, fontSize: 10 }}>{row[2].text}</td>
+                  ) : (
+                    <>
+                      <td style={td}>{row[2]}</td>
+                      <td style={td}>{row[3]}</td>
+                      <td style={td}>{row[4]}</td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 설치비 */}
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: theme.navy, margin: 0 }}>{cfg.install.title}</div>
+            <span style={{ ...button.primary, fontSize: 10 }}>+ 추가</span>
+          </div>
+          <table style={tbl}>
+            <thead>
+              <tr>
+                {cfg.install.headers.map((h, i) => <th key={i} style={th}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {cfg.install.rows.map((row, i) => (
+                <tr key={i}>
+                  <td style={{ ...td, fontWeight: 600 }}>{row[0]}</td>
+                  <td style={{ ...td, color: theme.navy, fontWeight: 600 }}>{row[1]}</td>
+                  <td style={{ ...td, color: theme.navy, fontWeight: 600 }}>{row[2]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 집전화 */}
+        {cfg.phone.rows.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: theme.navy, margin: 0 }}>{cfg.phone.title}</div>
+              <span style={{ ...button.primary, fontSize: 10 }}>+ 추가</span>
+            </div>
+            <table style={tbl}>
+              <thead>
+                <tr>
+                  {cfg.phone.headers.map((h, i) => <th key={i} style={th}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {cfg.phone.rows.map((row, i) => (
+                  <tr key={i}>
+                    <td style={{ ...td, fontWeight: 600 }}>{row[0]}</td>
+                    <td style={{ ...td, color: theme.navy, fontWeight: 600 }}>{row[1]}</td>
+                    <td style={{ ...td, fontSize: 10 }}>{row[2]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

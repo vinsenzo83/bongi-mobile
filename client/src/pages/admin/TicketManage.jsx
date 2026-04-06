@@ -1,175 +1,237 @@
-import { useState } from 'react';
-import { theme, card, button, tableStyles, filterBtn, statusStyle } from '../../styles/admin-theme.js';
+import React, { useState } from 'react';
+import { theme, statusStyle, tableStyles, card, button, filterBtn } from '../../styles/admin-theme.js';
 
-const statusMap = { 신규: 'blue', 처리중: 'orange', 완료: 'green', 취소: 'gray' };
-const typeMap = { 상담요청: 'blue', 견적요청: 'navy', 불만: 'red', 기타: 'gray' };
+const tbl = { width: '100%', borderCollapse: 'collapse', fontSize: 11, marginBottom: 0 };
+const th = { ...tableStyles.th, fontSize: 11 };
+const td = { ...tableStyles.td, fontSize: 11 };
 
-const mockTickets = [
-  { id: 'TK-2026-001', customer: '김영수', type: '상담요청', title: '요금제 변경 문의', status: '신규', assignee: '박상담', created: '2026-04-06', content: '현재 34,900원 요금제인데 49,900원으로 변경하고 싶습니다. 데이터가 부족해서요.', phone: '010-1234-5678', email: 'kim@example.com', history: [] },
-  { id: 'TK-2026-002', customer: '이민지', type: '견적요청', title: '가족결합 견적 요청', status: '처리중', assignee: '최매니저', created: '2026-04-05', content: '가족 4명 결합 시 할인 금액을 알고 싶습니다.', phone: '010-2345-6789', email: 'lee@example.com', history: [{ date: '2026-04-05', author: '최매니저', text: '가족결합 견적서 작성 중입니다.' }] },
-  { id: 'TK-2026-003', customer: '박서준', type: '불만', title: '통화 품질 불량 신고', status: '처리중', assignee: '박상담', created: '2026-04-05', content: '최근 일주일간 통화 중 자주 끊깁니다. 서울 강남구 역삼동 지역입니다.', phone: '010-3456-7890', email: 'park@example.com', history: [{ date: '2026-04-05', author: '박상담', text: '네트워크팀에 품질 점검 요청했습니다.' }] },
-  { id: 'TK-2026-004', customer: '최하나', type: '상담요청', title: '번호이동 절차 안내', status: '완료', assignee: '김대리', created: '2026-04-04', content: 'KT에서 SKT로 번호이동하고 싶습니다.', phone: '010-4567-8901', email: 'choi@example.com', history: [{ date: '2026-04-04', author: '김대리', text: '번호이동 절차 안내 완료했습니다.' }, { date: '2026-04-05', author: '김대리', text: '고객 확인 후 처리 완료.' }] },
-  { id: 'TK-2026-005', customer: '정우성', type: '기타', title: '청구서 재발행 요청', status: '완료', assignee: '최매니저', created: '2026-04-03', content: '3월 청구서를 분실해서 재발행 부탁드립니다.', phone: '010-5678-9012', email: 'jung@example.com', history: [{ date: '2026-04-03', author: '최매니저', text: '청구서 재발행 완료, 이메일 발송.' }] },
-  { id: 'TK-2026-006', customer: '한지민', type: '견적요청', title: '단체 가입 견적', status: '완료', assignee: '박상담', created: '2026-04-02', content: '직원 15명 단체 가입 시 할인 가능한가요?', phone: '010-6789-0123', email: 'han@example.com', history: [{ date: '2026-04-02', author: '박상담', text: '단체 할인 견적서 발송 완료.' }] },
-  { id: 'TK-2026-007', customer: '오세훈', type: '상담요청', title: '해외 로밍 요금 문의', status: '신규', assignee: '-', created: '2026-04-06', content: '일본 출장 시 로밍 요금을 알고 싶습니다.', phone: '010-7890-1234', email: 'oh@example.com', history: [] },
-  { id: 'TK-2026-008', customer: '송혜교', type: '불만', title: '사은품 미수령 항의', status: '미처리', assignee: '-', created: '2026-04-01', content: '개통 후 2주가 지났는데 사은품을 아직 못 받았습니다.', phone: '010-8901-2345', email: 'song@example.com', history: [] },
+const kpiCard = {
+  background: '#fff',
+  border: `1px solid ${theme.border}`,
+  borderRadius: 10,
+  padding: 16,
+  textAlign: 'center',
+};
+
+/* 조합 상품 mock data (실제로는 comboConfig에서 생성) */
+const mockComboTickets = [
+  { ticket: 'SK0001', carrier: 'SKT', speed: '100M', tv: 'Btv 이코노미', settop: '스마트3 미니', wifi: 'GIGA WiFi', total: '36,300', status: '활성' },
+  { ticket: 'SK0002', carrier: 'SKT', speed: '100M', tv: 'Btv 이코노미', settop: 'AI NUGU', wifi: 'GIGA WiFi', total: '38,500', status: '활성' },
+  { ticket: 'SK0003', carrier: 'SKT', speed: '500M', tv: 'Btv 스탠다드', settop: 'AI NUGU', wifi: 'GIGA WiFi 6', total: '53,800', status: '활성' },
+  { ticket: 'SK0004', carrier: 'SKT', speed: '1G', tv: 'Btv 올', settop: '애플TV', wifi: 'GIGA WiFi 6', total: '62,700', status: '활성' },
+  { ticket: 'KT0001', carrier: 'KT', speed: '100M', tv: '지니TV 베이직', settop: '기가지니A', wifi: 'KT GIGA WAVE2', total: '42,900', status: '활성' },
+  { ticket: 'KT0002', carrier: 'KT', speed: '500M', tv: '지니TV 모든G', settop: '기가지니3', wifi: 'GIGA WIFI 홈AX', total: '61,600', status: '활성' },
+  { ticket: 'KT0003', carrier: 'KT', speed: '1G', tv: '지니TV+넷플릭스 초이스HD', settop: '지니TV 올인원 사운드바', wifi: 'GIGA WIFI 홈AX', total: '79,500', status: '활성' },
+  { ticket: 'LG0001', carrier: 'LGU', speed: '100M', tv: '실속형', settop: 'U+tv UHD4', wifi: '기가와이파이', total: '41,030', status: '활성' },
+  { ticket: 'LG0002', carrier: 'LGU', speed: '500M', tv: '프리미엄', settop: 'U+tv 사운드바 블랙', wifi: '기가와이파이6', total: '57,200', status: '활성' },
+  { ticket: 'LG0003', carrier: 'LGU', speed: '1G', tv: '프리미엄 넷플릭스 HD', settop: 'U+tv 사운드바 블랙', wifi: '기가와이파이6', total: '75,750', status: '활성' },
 ];
 
+const mockRentalTickets = [
+  { ticket: 'R001', category: '정수기', brand: '코웨이', name: '아이콘 정수기2', monthly: '35,900', afterCard: '25,900', promo: '반값할인', status: '활성' },
+  { ticket: 'R002', category: '공기청정기', brand: 'LG', name: '퓨리케어 공기청정기 28평', monthly: '49,900', afterCard: '39,900', promo: '-', status: '활성' },
+  { ticket: 'R003', category: 'TV', brand: '삼성', name: '크리스탈 UHD 65인치', monthly: '29,900', afterCard: '29,900', promo: '-', status: '활성' },
+  { ticket: 'R004', category: '안마의자', brand: '코웨이', name: '페블 안마의자', monthly: '119,900', afterCard: '119,900', promo: '-', status: '활성' },
+  { ticket: 'R005', category: '노트북', brand: 'LG', name: 'LG 그램 16', monthly: '45,000', afterCard: '45,000', promo: '-', status: '비활성' },
+];
+
+const filters = ['전체', 'SKT', 'KT', 'LGU', 'rental'];
+const filterLabels = { '전체': '전체', SKT: 'SKT', KT: 'KT', LGU: 'LG U+', rental: '렌탈' };
+
 export default function TicketManage() {
-  const [statusFilter, setStatusFilter] = useState('전체');
-  const [typeFilter, setTypeFilter] = useState('전체');
-  const [selected, setSelected] = useState(null);
-  const [reply, setReply] = useState('');
+  const [activeFilter, setActiveFilter] = useState('전체');
+  const [search, setSearch] = useState('');
 
-  const statuses = ['전체', '신규', '처리중', '완료', '취소'];
-  const types = ['전체', '상담요청', '견적요청', '불만', '기타'];
-
-  const filtered = mockTickets.filter(t => {
-    if (statusFilter !== '전체' && t.status !== statusFilter) return false;
-    if (typeFilter !== '전체' && t.type !== typeFilter) return false;
+  const filteredCombos = mockComboTickets.filter(t => {
+    if (activeFilter === 'rental') return false;
+    if (activeFilter !== '전체' && t.carrier !== activeFilter) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      return t.ticket.toLowerCase().includes(s) || t.tv.toLowerCase().includes(s) || t.settop.toLowerCase().includes(s) || t.wifi.toLowerCase().includes(s);
+    }
     return true;
   });
 
-  const kpis = [
-    { label: '오늘 신규', value: 3, color: theme.blue },
-    { label: '처리중', value: 2, color: theme.orange },
-    { label: '완료', value: 5, color: theme.green },
-    { label: '미처리', value: 1, color: theme.red },
-  ];
-
-  function handleReply() {
-    if (!reply.trim() || !selected) return;
-    const updated = { ...selected, history: [...selected.history, { date: '2026-04-06', author: '나', text: reply }] };
-    setSelected(updated);
-    setReply('');
-  }
+  const showCombo = activeFilter !== 'rental';
+  const showRental = activeFilter === '전체' || activeFilter === 'rental';
 
   return (
-    <div style={{ padding: 24, fontFamily: theme.sans, color: theme.text, background: theme.bg, minHeight: '100vh' }}>
-      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>티켓 관리</h2>
+    <div>
+      {/* 안내 배너 */}
+      <div style={{ ...card, background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: 14, padding: '12px 16px' }}>
+        <div style={{ fontSize: 12, color: theme.navy }}>
+          💡 티켓번호 = <strong>상품 식별 코드</strong>. 플랫폼에 등록된 모든 인터넷/렌탈 상품에 자동 부여. 고객이 콜센터 전화 시 티켓번호만 말하면 상품 즉시 파악.
+        </div>
+      </div>
 
-      {/* KPI */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        {kpis.map(k => (
-          <div key={k.label} style={{ ...card, textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 4 }}>{k.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: k.color }}>{k.value}</div>
+      {/* KPI 카드 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 14 }}>
+        <div style={kpiCard}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: theme.red }}>450</div>
+          <div style={{ fontSize: 11, color: theme.textMuted }}>SKT (SK0001~)</div>
+        </div>
+        <div style={kpiCard}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: theme.blue }}>360</div>
+          <div style={{ fontSize: 11, color: theme.textMuted }}>KT (KT0001~)</div>
+        </div>
+        <div style={kpiCard}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: theme.green }}>288</div>
+          <div style={{ fontSize: 11, color: theme.textMuted }}>LG U+ (LG0001~)</div>
+        </div>
+        <div style={kpiCard}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: theme.navy }}>1,149</div>
+          <div style={{ fontSize: 11, color: theme.textMuted }}>전체 (인터넷1,098+렌탈51)</div>
+        </div>
+      </div>
+
+      {/* 필터바 */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="티켓번호 / TV / 셋톱 / 와이파이 검색"
+          style={{
+            width: 220, padding: '6px 12px', border: `1.5px solid ${theme.borderDark}`,
+            borderRadius: 6, fontSize: 11, outline: 'none', background: '#fafafa',
+          }}
+        />
+        {filters.map(f => (
+          <div
+            key={f}
+            onClick={() => setActiveFilter(f)}
+            style={filterBtn(activeFilter === f)}
+          >
+            {filterLabels[f]}
           </div>
         ))}
       </div>
 
-      {/* Filters */}
-      <div style={{ ...card, marginBottom: 16, display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 600 }}>상태</span>
-          {statuses.map(s => (
-            <button key={s} style={filterBtn(statusFilter === s)} onClick={() => setStatusFilter(s)}>{s}</button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 600 }}>유형</span>
-          {types.map(t => (
-            <button key={t} style={filterBtn(typeFilter === t)} onClick={() => setTypeFilter(t)}>{t}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <table style={tableStyles.table}>
-          <thead>
-            <tr>
-              {['티켓번호', '고객명', '유형', '제목', '상태', '담당자', '생성일', '관리'].map(h => (
-                <th key={h} style={tableStyles.th}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(t => (
-              <tr key={t.id} onClick={() => setSelected(t)} style={{ cursor: 'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.background = theme.bgHover}
-                onMouseLeave={e => e.currentTarget.style.background = ''}>
-                <td style={tableStyles.td}><span style={{ fontWeight: 600, color: theme.blue }}>{t.id}</span></td>
-                <td style={tableStyles.td}>{t.customer}</td>
-                <td style={tableStyles.td}><span style={statusStyle(typeMap[t.type] || 'gray')}>{t.type}</span></td>
-                <td style={tableStyles.td}>{t.title}</td>
-                <td style={tableStyles.td}><span style={statusStyle(statusMap[t.status] || 'gray')}>{t.status}</span></td>
-                <td style={tableStyles.td}>{t.assignee}</td>
-                <td style={tableStyles.td}>{t.created}</td>
-                <td style={tableStyles.td}>
-                  <button style={button.primary} onClick={e => { e.stopPropagation(); setSelected(t); }}>상세</button>
-                </td>
-              </tr>
+      {/* 인터넷+TV 조합 상품 티켓 */}
+      {showCombo && (
+        <div style={{ ...card, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <span style={{ ...statusStyle('blue'), fontSize: 12, padding: '4px 10px' }}>인터넷+TV</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: theme.navy, margin: 0 }}>조합 상품 티켓</span>
+            <span style={{ fontSize: 11, color: theme.textMuted, marginLeft: 8 }}>{filteredCombos.length}개</span>
+          </div>
+          <div style={{ overflowX: 'auto', maxHeight: 450, overflowY: 'auto' }}>
+            <table style={{ ...tbl, minWidth: 900 }}>
+              <thead style={{ position: 'sticky', top: 0 }}>
+                <tr>
+                  <th style={th}>티켓번호</th>
+                  <th style={th}>통신사</th>
+                  <th style={th}>속도</th>
+                  <th style={th}>TV</th>
+                  <th style={th}>셋톱박스</th>
+                  <th style={th}>와이파이</th>
+                  <th style={th}>합계 월요금</th>
+                  <th style={th}>상태</th>
+                  <th style={th}>상세</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCombos.map((t, i) => {
+                  const carrierColor = t.carrier === 'SKT' ? 'red' : t.carrier === 'KT' ? 'blue' : 'green';
+                  return (
+                    <tr key={i}>
+                      <td style={td}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, color: theme.blue, fontSize: 11 }}>{t.ticket}</span>
+                      </td>
+                      <td style={td}>
+                        <span style={statusStyle(carrierColor)}>{t.carrier === 'LGU' ? 'LG U+' : t.carrier}</span>
+                      </td>
+                      <td style={td}>{t.speed}</td>
+                      <td style={{ ...td, fontWeight: 600, fontSize: 10 }}>{t.tv}</td>
+                      <td style={{ ...td, fontSize: 10 }}>{t.settop}</td>
+                      <td style={{ ...td, fontSize: 10 }}>{t.wifi}</td>
+                      <td style={{ ...td, fontWeight: 900, color: theme.navy }}>{t.total}</td>
+                      <td style={td}>
+                        <span style={{ ...statusStyle('green'), fontSize: 10 }}>{t.status}</span>
+                      </td>
+                      <td style={td}>
+                        <span style={{ ...button.secondary, fontSize: 10, padding: '3px 8px', cursor: 'pointer' }}>상세</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginTop: 10 }}>
+            {[1, 2, 3, 4, 5].map(p => (
+              <div key={p} style={{
+                width: 26, height: 26, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, cursor: 'pointer', fontWeight: 600,
+                background: p === 1 ? theme.navy : '#f8f9fc',
+                color: p === 1 ? '#fff' : theme.textSecondary,
+                border: p === 1 ? 'none' : `1px solid ${theme.border}`,
+              }}>{p}</div>
             ))}
-            {filtered.length === 0 && (
-              <tr><td colSpan={8} style={{ ...tableStyles.td, textAlign: 'center', padding: 32, color: theme.textMuted }}>데이터가 없습니다</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          </div>
+          <div style={{ textAlign: 'center', fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
+            1~{filteredCombos.length} / 전체 1,098개
+          </div>
+        </div>
+      )}
 
-      {/* Detail Modal */}
-      {selected && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-          onClick={() => { setSelected(null); setReply(''); }}>
-          <div style={{ background: '#fff', borderRadius: 12, width: 640, maxHeight: '85vh', overflow: 'auto', padding: 28, boxShadow: theme.shadowLg }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{selected.id} 상세</h3>
-              <button style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: theme.textMuted }} onClick={() => { setSelected(null); setReply(''); }}>✕</button>
-            </div>
-
-            {/* Ticket Info */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-              {[
-                ['고객명', selected.customer],
-                ['연락처', selected.phone],
-                ['이메일', selected.email],
-                ['유형', selected.type],
-                ['상태', selected.status],
-                ['담당자', selected.assignee],
-              ].map(([label, val]) => (
-                <div key={label} style={{ fontSize: 12 }}>
-                  <span style={{ color: theme.textMuted }}>{label}: </span>
-                  <span style={{ fontWeight: 600 }}>{val}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Content */}
-            <div style={{ background: theme.bgInput, borderRadius: 8, padding: 14, marginBottom: 20, fontSize: 13, lineHeight: 1.6 }}>
-              <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 6, fontWeight: 600 }}>문의 내용</div>
-              {selected.content}
-            </div>
-
-            {/* Response History */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>응대 이력 ({selected.history.length}건)</div>
-              {selected.history.length === 0 && (
-                <div style={{ fontSize: 12, color: theme.textMuted, padding: 12, background: theme.bgInput, borderRadius: 8 }}>응대 이력이 없습니다</div>
-              )}
-              {selected.history.map((h, i) => (
-                <div key={i} style={{ borderLeft: `3px solid ${theme.blue}`, paddingLeft: 12, marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, color: theme.textMuted }}>{h.date} · {h.author}</div>
-                  <div style={{ fontSize: 12, marginTop: 2 }}>{h.text}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Reply Form */}
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>답변 작성</div>
-              <textarea
-                value={reply}
-                onChange={e => setReply(e.target.value)}
-                placeholder="답변 내용을 입력하세요..."
-                style={{ width: '100%', minHeight: 80, border: `1.5px solid ${theme.borderDark}`, borderRadius: 8, padding: 12, fontSize: 12, fontFamily: theme.sans, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
-                <button style={button.secondary} onClick={() => { setSelected(null); setReply(''); }}>닫기</button>
-                <button style={button.primary} onClick={handleReply}>답변 등록</button>
-              </div>
-            </div>
+      {/* 렌탈 상품 티켓 */}
+      {showRental && (
+        <div style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <span style={{ ...statusStyle('green'), fontSize: 12, padding: '4px 10px' }}>렌탈</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: theme.navy, margin: 0 }}>렌탈 상품 티켓</span>
+            <span style={{ fontSize: 11, color: theme.textMuted, marginLeft: 'auto' }}>51개 상품</span>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={tbl}>
+              <thead>
+                <tr>
+                  <th style={th}>티켓번호</th>
+                  <th style={th}>카테고리</th>
+                  <th style={th}>브랜드</th>
+                  <th style={th}>상품명</th>
+                  <th style={th}>월요금</th>
+                  <th style={th}>카드후</th>
+                  <th style={th}>프로모션</th>
+                  <th style={th}>상태</th>
+                  <th style={th}>관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mockRentalTickets.map((t, i) => (
+                  <tr key={i}>
+                    <td style={td}>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 700, color: theme.blue, fontSize: 11 }}>{t.ticket}</span>
+                    </td>
+                    <td style={td}>{t.category}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{t.brand}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{t.name}</td>
+                    <td style={{ ...td, color: theme.navy, fontWeight: 600 }}>{t.monthly}</td>
+                    <td style={{ ...td, color: theme.blue, fontWeight: 600 }}>{t.afterCard}</td>
+                    <td style={td}>
+                      {t.promo !== '-' ? <span style={{ ...statusStyle('orange'), fontSize: 10 }}>{t.promo}</span> : '-'}
+                    </td>
+                    <td style={td}>
+                      <span style={{ ...statusStyle(t.status === '활성' ? 'green' : 'gray'), fontSize: 10 }}>{t.status}</span>
+                    </td>
+                    <td style={td}>
+                      <span style={{ ...button.secondary, fontSize: 10, padding: '3px 8px', cursor: 'pointer' }}>상세</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 12 }}>
+            {[1, 2, 3].map(p => (
+              <div key={p} style={{
+                width: 26, height: 26, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, cursor: 'pointer', fontWeight: 600,
+                background: p === 1 ? theme.navy : '#f8f9fc',
+                color: p === 1 ? '#fff' : theme.textSecondary,
+                border: p === 1 ? 'none' : `1px solid ${theme.border}`,
+              }}>{p}</div>
+            ))}
           </div>
         </div>
       )}

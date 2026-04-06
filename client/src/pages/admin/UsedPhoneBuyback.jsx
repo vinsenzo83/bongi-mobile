@@ -1,232 +1,190 @@
 import { useState } from 'react';
-import { theme, card, button, tableStyles, filterBtn, statusStyle } from '../../styles/admin-theme.js';
+import { theme, statusStyle, tableStyles, card, button, filterBtn, kpiCard, input } from '../../styles/admin-theme.js';
 
-const statusMap = { 신청: 'blue', 감정중: 'orange', 감정완료: 'green', 입금완료: 'navy', 취소: 'gray' };
+const BUYBACK_DATA = [
+  [47, '순천점', '-', '20260405-0003855200802288205179', '권홍석 (6010)', 'Galaxy S23 Ultra( SM-S918 )', '후보상', '2026-04-05 19:20:40', '접수완료', '', 'A', '', '', '0', ''],
+  [46, '상무점', '김상담', '20260405-0003842100501234567890', '홍길동 (5678)', 'Galaxy S25 Ultra( SM-S938 )', '후보상', '2026-04-05 15:10:22', '매입대기', '', 'A', 'A', 'A', '870,000', 'ORD-20260405-001'],
+  [45, '전대점', '이상담', '20260404-0003831200601234567890', '김철수 (2345)', 'iPhone 16 Pro( A3291 )', '후보상', '2026-04-04 14:33:10', '송금완료', '2026-04-05', 'A', 'B', 'B', '740,000', 'ORD-20260404-003'],
+  [44, '익산점', '-', '20260404-0003820300701234567890', '이영희 (3456)', 'Galaxy Z Flip6( SM-F741 )', '후보상', '2026-04-04 11:05:55', '동의대기', '', 'B', '', '', '0', ''],
+  [43, '신창점', '박상담', '20260403-0003815400801234567890', '박민수 (4567)', 'iPhone 15 Pro Max( A2893 )', '후보상', '2026-04-03 16:42:18', '송금완료', '2026-04-04', 'A', 'A', 'A', '910,000', 'ORD-20260403-002'],
+  [42, '상무점', '-', '20260403-0003801500901234567890', '최지은 (5678)', 'Galaxy S24( SM-S921 )', '후보상', '2026-04-03 10:15:30', '반송완료', '', 'C', '', '', '0', ''],
+  [41, '첨단점', '김상담', '20260402-0003795601001234567890', '정수민 (7890)', 'iPhone 16 Pro Max( A3295 )', '후보상', '2026-04-02 13:28:45', '송금완료', '2026-04-03', 'A', 'A', 'A', '1,110,000', 'ORD-20260402-001'],
+  [40, '남악점', '-', '20260401-0003782701101234567890', '한지민 (8901)', 'Galaxy S25+( SM-S936 )', '후보상', '2026-04-01 09:55:12', '접수완료', '', 'B', '', '', '0', ''],
+];
 
-const mockBuybacks = [
-  {
-    id: 'BUY-2026-001', customer: '김영수', phone: '010-1234-5678', model: '갤럭시 S24 울트라 256GB',
-    requestGrade: 'S', assessGrade: 'A+', assessPrice: 820000, status: '입금완료', date: '2026-04-02',
-    photos: ['전면 양호', '후면 미세 스크래치', '측면 양호'],
-    memo: '후면 미세 스크래치로 A+등급 책정',
-    bank: '신한은행', account: '110-***-****78', paidDate: '2026-04-04', paidAmount: 820000,
-    imei: '352345678901234', color: '블랙', storage: '256GB',
-  },
-  {
-    id: 'BUY-2026-002', customer: '이민지', phone: '010-2345-6789', model: '아이폰 15 Pro 128GB',
-    requestGrade: 'A', assessGrade: 'A', assessPrice: 750000, status: '입금완료', date: '2026-04-03',
-    photos: ['전면 양호', '후면 양호', '측면 양호'],
-    memo: '전체적으로 양호한 상태',
-    bank: '카카오뱅크', account: '3333-**-****56', paidDate: '2026-04-05', paidAmount: 750000,
-    imei: '356789012345678', color: '내추럴 티타늄', storage: '128GB',
-  },
-  {
-    id: 'BUY-2026-003', customer: '박서준', phone: '010-3456-7890', model: '갤럭시 Z플립5 256GB',
-    requestGrade: 'A', assessGrade: '-', assessPrice: null, status: '감정중', date: '2026-04-05',
-    photos: ['전면 양호', '후면 미확인', '힌지 점검 필요'],
-    memo: '힌지 부분 정밀 점검 진행중',
-    bank: '국민은행', account: '012-***-****90', paidDate: null, paidAmount: null,
-    imei: '359012345678901', color: '라벤더', storage: '256GB',
-  },
-  {
-    id: 'BUY-2026-004', customer: '최하나', phone: '010-4567-8901', model: '아이폰 14 256GB',
-    requestGrade: 'B', assessGrade: 'B', assessPrice: 480000, status: '감정완료', date: '2026-04-04',
-    photos: ['전면 미세 스크래치', '후면 케이스 자국', '측면 양호'],
-    memo: '전면 스크래치, 후면 케이스 자국 확인. B등급 적정.',
-    bank: '우리은행', account: '1002-***-****01', paidDate: null, paidAmount: null,
-    imei: '351234567890123', color: '미드나이트', storage: '256GB',
-  },
-  {
-    id: 'BUY-2026-005', customer: '정우성', phone: '010-5678-9012', model: '갤럭시 S23 128GB',
-    requestGrade: 'A', assessGrade: '-', assessPrice: null, status: '감정중', date: '2026-04-06',
-    photos: ['전면 확인 예정', '후면 확인 예정', '측면 확인 예정'],
-    memo: '택배 접수 완료, 감정 대기',
-    bank: '하나은행', account: '910-***-****12', paidDate: null, paidAmount: null,
-    imei: '354567890123456', color: '크림', storage: '128GB',
-  },
+function getStatusColor(status) {
+  if (status === '송금완료') return 'green';
+  if (status === '매입대기') return 'navy';
+  if (status === '접수완료') return 'blue';
+  if (status === '동의대기') return 'gray';
+  if (status === '반송완료') return 'red';
+  return 'orange';
+}
+
+function getGradeColor(grade) {
+  if (grade === 'A') return 'green';
+  if (grade === 'B') return 'blue';
+  if (grade === 'C') return 'orange';
+  return 'gray';
+}
+
+const USED_PHONE_SAMPLE = [
+  ['Apple', 'iPhone 16', 'iPhone 16 Pro Max', '256G', '1,110,000', '980,000', '920,000', '560,000', '10,000'],
+  ['Apple', 'iPhone 16', 'iPhone 16 Pro', '256G', '940,000', '810,000', '755,000', '475,000', '10,000'],
+  ['Apple', 'iPhone 17', 'iPhone 17 Pro Max', '256G', '1,670,000', '1,430,000', '1,300,000', '820,000', '10,000'],
+  ['삼성전자', '갤럭시 S', 'Galaxy S25 Ultra', '256G', '720,000', '600,000', '530,000', '300,000', '2,000'],
+  ['삼성전자', '갤럭시 S', 'Galaxy S24', '256G', '390,000', '330,000', '260,000', '210,000', '2,000'],
 ];
 
 export default function UsedPhoneBuyback() {
-  const [statusFilter, setStatusFilter] = useState('전체');
-  const [selected, setSelected] = useState(null);
-
-  const statusList = ['전체', '신청', '감정중', '감정완료', '입금완료', '취소'];
-
-  const filtered = mockBuybacks.filter(b => {
-    if (statusFilter !== '전체' && b.status !== statusFilter) return false;
-    return true;
-  });
-
-  const kpis = [
-    { label: '총 매입신청', value: 5, color: theme.blue },
-    { label: '감정중', value: 2, color: theme.orange },
-    { label: '감정완료', value: 1, color: theme.green },
-    { label: '입금완료', value: 2, color: theme.navy },
-  ];
-
-  const formatPrice = (v) => v != null ? `${v.toLocaleString()}원` : '-';
+  const [makerFilter, setMakerFilter] = useState('전체');
 
   return (
-    <div style={{ padding: 24, fontFamily: theme.sans, color: theme.text, background: theme.bg, minHeight: '100vh' }}>
-      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>중고폰 매입 현황</h2>
+    <div>
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 14 }}>
+        <div style={kpiCard}><div style={{ fontSize: 24, fontWeight: 900, color: theme.textMuted }}>8</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>동의대기</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 24, fontWeight: 900, color: theme.blue }}>23</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>접수완료</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 24, fontWeight: 900, color: theme.orange }}>15</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>매입대기</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 24, fontWeight: 900, color: theme.green }}>142</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>송금완료</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 24, fontWeight: 900, color: theme.red }}>3</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>반송완료</div></div>
+      </div>
 
-      {/* KPI */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        {kpis.map(k => (
-          <div key={k.label} style={{ ...card, textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 4 }}>{k.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: k.color }}>{k.value}</div>
+      {/* Tredit API Status */}
+      <div style={{ ...card, background: '#d1fae5', borderColor: '#6ee7b7', marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: theme.green }}>🔗 Tredit API 연동 상태</div>
+            <div style={{ fontSize: 11, color: '#065f46', marginTop: 2 }}>마지막 동기화: 2026.04.05 19:25 · 응답시간 0.3s · soprs.tredit.ai</div>
           </div>
-        ))}
+          <span style={statusStyle('green')}>정상 연결</span>
+        </div>
+      </div>
+
+      {/* Info banner */}
+      <div style={{ ...card, background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: 14, padding: '10px 16px' }}>
+        <div style={{ fontSize: 11, color: theme.navy }}>
+          📌 <strong>중고폰 매입 관리 데이터</strong>와 <strong>중고폰 매입 시세</strong>는 모두 <strong>Tredit API</strong>에서 실시간으로 수신합니다. 수동 입력 불필요.
+        </div>
       </div>
 
       {/* Filters */}
-      <div style={{ ...card, marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, marginRight: 4 }}>상태</span>
-        {statusList.map(s => (
-          <button key={s} style={filterBtn(statusFilter === s)} onClick={() => setStatusFilter(s)}>{s}</button>
-        ))}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div style={{ margin: 0, fontSize: 10, fontWeight: 700, color: theme.textMuted, width: 40 }}>매장</div>
+          <select style={{ ...input, width: 120, margin: 0, padding: '5px 8px', fontSize: 11 }}>
+            <option>ALL</option>
+            <option>상무점</option><option>익산점</option><option>전대점</option><option>신창점</option>
+            <option>첨단점</option><option>순천점</option><option>남악점</option><option>여수점</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div style={{ margin: 0, fontSize: 10, fontWeight: 700, color: theme.textMuted, width: 30 }}>상태</div>
+          <select style={{ ...input, width: 110, margin: 0, padding: '5px 8px', fontSize: 11 }}>
+            <option>ALL</option>
+            <option>동의대기</option><option>접수완료</option><option>매입대기</option><option>송금완료</option><option>반송완료</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div style={{ margin: 0, fontSize: 10, fontWeight: 700, color: theme.textMuted, width: 40 }}>기간</div>
+          <input type="date" style={{ ...input, width: 130, margin: 0, padding: '5px 8px', fontSize: 11 }} defaultValue="2026-03-26" />
+          <span style={{ fontSize: 11, color: theme.textMuted }}>~</span>
+          <input type="date" style={{ ...input, width: 130, margin: 0, padding: '5px 8px', fontSize: 11 }} defaultValue="2026-04-05" />
+        </div>
+        <input style={{ ...input, marginLeft: 'auto', width: 150, marginBottom: 0 }} placeholder="키워드 검색" />
       </div>
 
-      {/* Table */}
-      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <table style={tableStyles.table}>
+      {/* Main table */}
+      <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
+        <table style={{ ...tableStyles.table, fontSize: 11, minWidth: 1300 }}>
           <thead>
             <tr>
-              {['매입번호', '고객명', '모델명', '신청등급', '감정등급', '감정가', '상태', '신청일', '관리'].map(h => (
+              {['순번', '매장명', '접수자', '접수번호', '고객명(뒷자리)', '모델명', '구분', '접수일자', '상태', '입금일자', '셀프등급', '입고후검수', '보상등급', '보상가격', '주문번호', '관리'].map(h => (
                 <th key={h} style={tableStyles.th}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map(b => (
-              <tr key={b.id} onClick={() => setSelected(b)} style={{ cursor: 'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.background = theme.bgHover}
-                onMouseLeave={e => e.currentTarget.style.background = ''}>
-                <td style={tableStyles.td}><span style={{ fontWeight: 600, color: theme.blue }}>{b.id}</span></td>
-                <td style={tableStyles.td}>{b.customer}</td>
-                <td style={tableStyles.td}>{b.model}</td>
-                <td style={tableStyles.td}><span style={statusStyle('blue')}>{b.requestGrade}</span></td>
-                <td style={tableStyles.td}><span style={statusStyle(b.assessGrade === '-' ? 'gray' : 'green')}>{b.assessGrade}</span></td>
-                <td style={tableStyles.td}><span style={{ fontWeight: 700 }}>{formatPrice(b.assessPrice)}</span></td>
-                <td style={tableStyles.td}><span style={statusStyle(statusMap[b.status] || 'gray')}>{b.status}</span></td>
-                <td style={tableStyles.td}>{b.date}</td>
-                <td style={tableStyles.td}>
-                  <button style={button.primary} onClick={e => { e.stopPropagation(); setSelected(b); }}>상세</button>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr><td colSpan={9} style={{ ...tableStyles.td, textAlign: 'center', padding: 32, color: theme.textMuted }}>데이터가 없습니다</td></tr>
-            )}
+            {BUYBACK_DATA.map((r, i) => {
+              const status = r[8];
+              const selfGrade = r[10];
+              return (
+                <tr key={i}>
+                  <td style={{ ...tableStyles.td, fontFamily: 'monospace', color: theme.textMuted }}>{r[0]}</td>
+                  <td style={{ ...tableStyles.td, fontWeight: 600 }}>{r[1]}</td>
+                  <td style={{ ...tableStyles.td, fontSize: 10 }}>{r[2]}</td>
+                  <td style={{ ...tableStyles.td, fontFamily: 'monospace', fontSize: 10, color: theme.blue, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r[3]}>{r[3].substring(0, 16)}...</td>
+                  <td style={{ ...tableStyles.td, fontWeight: 600 }}>{r[4]}</td>
+                  <td style={{ ...tableStyles.td, fontWeight: 600, fontSize: 10 }}>{r[5]}</td>
+                  <td style={tableStyles.td}><span style={statusStyle('orange')}>{r[6]}</span></td>
+                  <td style={{ ...tableStyles.td, fontSize: 10 }}>{r[7]}</td>
+                  <td style={tableStyles.td}><span style={statusStyle(getStatusColor(status))}>{status}</span></td>
+                  <td style={{ ...tableStyles.td, fontSize: 10 }}>{r[9] || '-'}</td>
+                  <td style={tableStyles.td}><span style={statusStyle(getGradeColor(selfGrade))}>{selfGrade || '-'}</span></td>
+                  <td style={tableStyles.td}><span style={statusStyle(r[11] ? 'navy' : 'gray')}>{r[11] || '-'}</span></td>
+                  <td style={tableStyles.td}><span style={statusStyle(r[12] ? 'green' : 'gray')}>{r[12] || '-'}</span></td>
+                  <td style={{ ...tableStyles.td, fontWeight: 700, color: theme.orange }}>{r[13] && r[13] !== '0' ? r[13] : '-'}</td>
+                  <td style={{ ...tableStyles.td, fontFamily: 'monospace', fontSize: 10, color: theme.textMuted }}>{r[14] || '-'}</td>
+                  <td style={tableStyles.td}><span style={{ ...button.secondary, fontSize: 10, cursor: 'pointer' }}>상세</span></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* Detail Modal */}
-      {selected && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-          onClick={() => setSelected(null)}>
-          <div style={{ background: '#fff', borderRadius: 12, width: 680, maxHeight: '85vh', overflow: 'auto', padding: 28, boxShadow: theme.shadowLg }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{selected.id} 매입 상세</h3>
-              <button style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: theme.textMuted }} onClick={() => setSelected(null)}>✕</button>
-            </div>
-
-            {/* Phone Info */}
-            <div style={{ background: theme.bgInput, borderRadius: 8, padding: 14, marginBottom: 20 }}>
-              <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 8, fontWeight: 600 }}>단말기 정보</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {[
-                  ['모델명', selected.model],
-                  ['색상', selected.color],
-                  ['용량', selected.storage],
-                  ['IMEI', selected.imei],
-                ].map(([label, val]) => (
-                  <div key={label} style={{ fontSize: 12 }}>
-                    <span style={{ color: theme.textMuted }}>{label}: </span>
-                    <span style={{ fontWeight: 600 }}>{val}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Photos */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>사진 점검 ({selected.photos.length}장)</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                {selected.photos.map((p, i) => (
-                  <div key={i} style={{ background: '#f1f5f9', borderRadius: 8, padding: 20, textAlign: 'center', border: `1px solid ${theme.border}` }}>
-                    <div style={{ fontSize: 32, marginBottom: 6 }}>{i === 0 ? '📱' : i === 1 ? '🔙' : '📐'}</div>
-                    <div style={{ fontSize: 11, color: theme.textSecondary }}>{p}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Grade Assessment */}
-            <div style={{ background: theme.bgInput, borderRadius: 8, padding: 14, marginBottom: 20 }}>
-              <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 8, fontWeight: 600 }}>등급 감정</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, textAlign: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 4 }}>신청등급</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: theme.blue }}>{selected.requestGrade}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 4 }}>감정등급</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: selected.assessGrade === '-' ? theme.textMuted : theme.green }}>{selected.assessGrade}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 4 }}>감정가</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: theme.navy }}>{formatPrice(selected.assessPrice)}</div>
-                </div>
-              </div>
-              {selected.memo && (
-                <div style={{ marginTop: 12, fontSize: 12, color: theme.textSecondary, borderTop: `1px solid ${theme.border}`, paddingTop: 10 }}>
-                  <span style={{ fontWeight: 600 }}>감정 메모: </span>{selected.memo}
-                </div>
-              )}
-            </div>
-
-            {/* Customer Info */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-              <div style={{ fontSize: 12 }}><span style={{ color: theme.textMuted }}>고객명: </span><span style={{ fontWeight: 600 }}>{selected.customer}</span></div>
-              <div style={{ fontSize: 12 }}><span style={{ color: theme.textMuted }}>연락처: </span><span style={{ fontWeight: 600 }}>{selected.phone}</span></div>
-            </div>
-
-            {/* Payout Info */}
-            <div style={{ background: selected.paidDate ? theme.greenBg : theme.bgInput, borderRadius: 8, padding: 14, marginBottom: 20 }}>
-              <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 8, fontWeight: 600 }}>입금 정보</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {[
-                  ['은행', selected.bank],
-                  ['계좌번호', selected.account],
-                  ['입금일', selected.paidDate || '미입금'],
-                  ['입금액', selected.paidAmount ? formatPrice(selected.paidAmount) : '-'],
-                ].map(([label, val]) => (
-                  <div key={label} style={{ fontSize: 12 }}>
-                    <span style={{ color: theme.textMuted }}>{label}: </span>
-                    <span style={{ fontWeight: 600 }}>{val}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Status */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-              <span style={{ fontSize: 12, fontWeight: 600 }}>상태:</span>
-              <span style={{ ...statusStyle(statusMap[selected.status] || 'gray'), fontSize: 13, padding: '4px 12px' }}>{selected.status}</span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button style={button.secondary} onClick={() => setSelected(null)}>닫기</button>
-              {selected.status === '감정완료' && <button style={button.success} onClick={() => setSelected({ ...selected, status: '입금완료' })}>입금 처리</button>}
-              {selected.status !== '취소' && selected.status !== '입금완료' && <button style={button.danger} onClick={() => setSelected({ ...selected, status: '취소' })}>취소</button>}
-            </div>
+      {/* Used phone price table */}
+      <div style={{ ...card, marginTop: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: theme.navy }}>
+            📋 중고폰 매입 시세 (AI 채팅 참조용) — 302개 <span style={{ fontSize: 10, fontWeight: 400, color: theme.blue }}>Tredit API 자동 수신</span>
+          </h3>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          {['전체', 'Apple', '삼성', 'LG'].map(m => (
+            <div key={m} onClick={() => setMakerFilter(m)} style={filterBtn(makerFilter === m)}>{m}</div>
+          ))}
+          <input style={{ ...input, width: 160, marginLeft: 'auto', marginBottom: 0 }} placeholder="모델명 검색" />
+        </div>
+        <div style={{ ...card, background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: 8, padding: '8px 14px' }}>
+          <div style={{ fontSize: 10, color: theme.navy }}>
+            📌 <strong>A</strong>=외관깨끗 / <strong>B</strong>=미세기스 / <strong>C</strong>=눈에보이는기스 / <strong>D</strong>=파손·깨짐 / <strong>E</strong>=심각손상 &nbsp;|&nbsp; Tredit API 자동 수신
           </div>
         </div>
-      )}
+        <div style={{ overflowX: 'auto', maxHeight: 400, overflowY: 'auto' }}>
+          <table style={{ ...tableStyles.table, fontSize: 11, minWidth: 800 }}>
+            <thead style={{ position: 'sticky', top: 0 }}>
+              <tr>
+                <th style={tableStyles.th}>제조사</th>
+                <th style={tableStyles.th}>시리즈</th>
+                <th style={tableStyles.th}>모델명</th>
+                <th style={tableStyles.th}>용량</th>
+                <th style={{ ...tableStyles.th, color: theme.green }}>A등급</th>
+                <th style={{ ...tableStyles.th, color: theme.blue }}>B등급</th>
+                <th style={{ ...tableStyles.th, color: theme.orange }}>C등급</th>
+                <th style={{ ...tableStyles.th, color: theme.red }}>D등급</th>
+                <th style={{ ...tableStyles.th, color: theme.textMuted }}>E등급</th>
+              </tr>
+            </thead>
+            <tbody>
+              {USED_PHONE_SAMPLE.map((r, i) => (
+                <tr key={i}>
+                  <td style={tableStyles.td}>{r[0]}</td>
+                  <td style={tableStyles.td}>{r[1]}</td>
+                  <td style={{ ...tableStyles.td, fontWeight: 600 }}>{r[2]}</td>
+                  <td style={tableStyles.td}>{r[3]}</td>
+                  <td style={{ ...tableStyles.td, color: theme.green, fontWeight: 600 }}>{r[4]}</td>
+                  <td style={{ ...tableStyles.td, color: theme.blue, fontWeight: 600 }}>{r[5]}</td>
+                  <td style={{ ...tableStyles.td, color: theme.orange, fontWeight: 600 }}>{r[6]}</td>
+                  <td style={{ ...tableStyles.td, color: theme.red, fontWeight: 600 }}>{r[7]}</td>
+                  <td style={{ ...tableStyles.td, color: theme.textMuted }}>{r[8]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ textAlign: 'center', fontSize: 11, color: theme.textMuted, marginTop: 6 }}>전체 302개 중 5개 표시</div>
+      </div>
     </div>
   );
 }

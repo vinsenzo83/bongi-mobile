@@ -1,407 +1,717 @@
 import { useState } from 'react';
-import { theme, card, button, statusStyle, kpiCard, tableStyles } from '../../styles/admin-theme.js';
+import { theme, statusStyle, tableStyles, card, button, filterBtn, kpiCard } from '../../styles/admin-theme.js';
 
-const filterBtn = (active) => ({
-  padding: '5px 12px',
-  border: `1px solid ${active ? theme.navy : theme.borderDark}`,
-  borderRadius: 6,
-  fontSize: 11,
-  color: active ? '#fff' : theme.textSecondary,
-  background: active ? theme.navy : '#fff',
-  cursor: 'pointer',
-  fontWeight: active ? 600 : 400,
-  fontFamily: theme.sans,
-});
-
-const MEMBERS = [
-  { id: 1, name: '홍길동', phone: '010-1234-5678', type: '앱회원', source: '직접가입', social: '카카오', carrier: 'SKT', auth: '인증완료', account: '국민은행 123-456', accountBank: '국민은행', accountNum: '123-456-789012', accountHolder: '홍길동', address: '서울 강남구 테헤란로 123', joinDate: '2024-12-01', apps: 2, points: 15000, birth: '1990-05-15', gender: '남', addresses: [{ label: '자택', addr: '서울 강남구 테헤란로 123' }, { label: '직장', addr: '서울 서초구 반포대로 45' }], contracts: [{ date: '2025-01-10', type: '번호이동', product: '5G 다이렉트 49', status: '계약완료' }], gifts: [{ date: '2025-01-12', item: '스타벅스 아메리카노', status: '지급완료' }], pointHistory: [{ date: '2025-03-01', desc: '친구초대 보너스', amount: '+5,000' }, { date: '2025-02-15', desc: '출금', amount: '-10,000' }], referrals: [{ name: '김민호', date: '2025-02-20', status: '가입완료' }], donjikimi: { carrier: 'SKT', plan: '5G 다이렉트 49', remain: '23개월', penalty: '120,000원' } },
-  { id: 2, name: '김철수', phone: '010-2345-6789', type: '앱회원', source: '친구초대', social: '네이버', carrier: 'KT', auth: '인증완료', account: '신한은행 987-654', accountBank: '신한은행', accountNum: '987-654-321098', accountHolder: '김철수', address: '서울 마포구 월드컵로 200', joinDate: '2025-01-15', apps: 1, points: 8000, birth: '1985-11-22', gender: '남', addresses: [{ label: '자택', addr: '서울 마포구 월드컵로 200' }], contracts: [{ date: '2025-02-05', type: '기변', product: 'LTE 세이브 34', status: '상담중' }], gifts: [], pointHistory: [{ date: '2025-03-10', desc: '가입 축하 포인트', amount: '+3,000' }], referrals: [], donjikimi: null },
-  { id: 3, name: '이영희', phone: '010-3456-7890', type: '비회원', source: 'CRM등록', social: '-', carrier: 'LG U+', auth: '미완료', account: null, accountBank: null, accountNum: null, accountHolder: null, address: '경기 성남시 분당구 판교로 100', joinDate: '2025-02-20', apps: 1, points: 0, birth: '1992-08-03', gender: '여', addresses: [{ label: '자택', addr: '경기 성남시 분당구 판교로 100' }], contracts: [{ date: '2025-03-01', type: '신규', product: '5G 슬림 39', status: '계약완료' }], gifts: [{ date: '2025-03-03', item: 'CU 5000원 쿠폰', status: '발송완료' }], pointHistory: [], referrals: [], donjikimi: null },
-  { id: 4, name: '박민수', phone: '010-4567-8901', type: 'CRM등록', source: '티켓', social: '-', carrier: 'SKT', auth: '미완료', account: null, accountBank: null, accountNum: null, accountHolder: null, address: '부산 해운대구 해운대로 500', joinDate: '2025-03-01', apps: 0, points: 0, birth: '1988-03-20', gender: '남', addresses: [{ label: '자택', addr: '부산 해운대구 해운대로 500' }], contracts: [], gifts: [], pointHistory: [], referrals: [], donjikimi: null },
-  { id: 5, name: '최지은', phone: '010-5678-9012', type: '앱회원', source: '직접가입', social: '카카오', carrier: 'KT', auth: '인증완료', account: '우리은행 111-222', accountBank: '우리은행', accountNum: '111-222-333444', accountHolder: '최지은', address: '서울 송파구 올림픽로 300', joinDate: '2025-01-20', apps: 3, points: 22000, birth: '1995-07-10', gender: '여', addresses: [{ label: '자택', addr: '서울 송파구 올림픽로 300' }], contracts: [{ date: '2025-02-15', type: '번호이동', product: '5G 프리미엄 69', status: '신청완료' }], gifts: [{ date: '2025-02-17', item: '배달의민족 1만원 쿠폰', status: '지급완료' }], pointHistory: [{ date: '2025-03-05', desc: '리뷰 작성 보너스', amount: '+2,000' }], referrals: [{ name: '박소연', date: '2025-01-25', status: '가입완료' }, { name: '이준혁', date: '2025-02-10', status: '가입완료' }], donjikimi: { carrier: 'KT', plan: '5G 프리미엄 69', remain: '11개월', penalty: '80,000원' } },
-  { id: 6, name: '정수민', phone: '010-6789-0123', type: '비회원', source: '셀프신청', social: '-', carrier: 'SKT', auth: '미완료', account: null, accountBank: null, accountNum: null, accountHolder: null, address: '대구 수성구 범어로 88', joinDate: '2025-03-15', apps: 1, points: 0, birth: '1998-01-30', gender: '여', addresses: [{ label: '자택', addr: '대구 수성구 범어로 88' }], contracts: [{ date: '2025-03-18', type: '번호이동', product: 'LTE 다이렉트 29', status: '상담중' }], gifts: [], pointHistory: [], referrals: [], donjikimi: null },
-  { id: 7, name: '한지민', phone: '010-7890-1234', type: '앱회원', source: '직접가입', social: '구글', carrier: 'LG U+', auth: '인증완료', account: '하나은행 555-666', accountBank: '하나은행', accountNum: '555-666-777888', accountHolder: '한지민', address: '인천 연수구 송도대로 250', joinDate: '2024-11-10', apps: 2, points: 31000, birth: '1993-12-05', gender: '여', addresses: [{ label: '자택', addr: '인천 연수구 송도대로 250' }, { label: '직장', addr: '서울 영등포구 여의대로 108' }], contracts: [{ date: '2024-12-20', type: '기변', product: '5G 다이렉트 49', status: '계약완료' }, { date: '2025-03-10', type: '번호이동', product: '5G 슬림 39', status: '신청완료' }], gifts: [{ date: '2024-12-22', item: '스타벅스 아메리카노', status: '지급완료' }], pointHistory: [{ date: '2025-01-01', desc: '친구초대 보너스', amount: '+5,000' }, { date: '2025-02-01', desc: '리뷰 작성 보너스', amount: '+2,000' }, { date: '2025-03-01', desc: '출금', amount: '-5,000' }], referrals: [{ name: '조은서', date: '2025-01-05', status: '가입완료' }], donjikimi: { carrier: 'LG U+', plan: '5G 슬림 39', remain: '2개월', penalty: '45,000원' } },
-  { id: 8, name: '윤서연', phone: '010-8901-2345', type: '중고폰', source: '직접가입', social: '카카오', carrier: 'SKT', auth: '인증완료', account: '카카오뱅크 3333-01', accountBank: '카카오뱅크', accountNum: '3333-01-1234567', accountHolder: '윤서연', address: '서울 강서구 화곡로 77', joinDate: '2025-02-01', apps: 1, points: 5000, birth: '2000-04-18', gender: '여', addresses: [{ label: '자택', addr: '서울 강서구 화곡로 77' }], contracts: [], gifts: [], pointHistory: [{ date: '2025-02-05', desc: '중고폰 매입 보너스', amount: '+5,000' }], referrals: [], donjikimi: null },
-  { id: 9, name: '임도현', phone: '010-9012-3456', type: '앱회원', source: '친구초대', social: '네이버', carrier: 'KT', auth: '인증완료', account: '토스뱅크 1000-01', accountBank: '토스뱅크', accountNum: '1000-01-9876543', accountHolder: '임도현', address: '경기 용인시 수지구 성복로 50', joinDate: '2025-03-05', apps: 0, points: 3000, birth: '1997-09-25', gender: '남', addresses: [{ label: '자택', addr: '경기 용인시 수지구 성복로 50' }], contracts: [], gifts: [], pointHistory: [{ date: '2025-03-05', desc: '가입 축하 포인트', amount: '+3,000' }], referrals: [], donjikimi: null },
-  { id: 10, name: '강민준', phone: '010-0123-4567', type: 'CRM등록', source: 'CRM등록', social: '-', carrier: 'LG U+', auth: '미완료', account: null, accountBank: null, accountNum: null, accountHolder: null, address: '광주 서구 상무대로 60', joinDate: '2025-03-20', apps: 0, points: 0, birth: '1991-06-12', gender: '남', addresses: [{ label: '자택', addr: '광주 서구 상무대로 60' }], contracts: [{ date: '2025-03-22', type: '신규', product: 'LTE 세이브 34', status: '상담중' }], gifts: [], pointHistory: [], referrals: [], donjikimi: null },
-  { id: 11, name: '권홍석', phone: '010-1111-2222', type: '비회원', source: '셀프신청', social: '-', carrier: 'SKT', auth: '미완료', account: null, accountBank: null, accountNum: null, accountHolder: null, address: '제주 제주시 연동 1234', joinDate: '2025-04-01', apps: 1, points: 0, birth: '1986-02-28', gender: '남', addresses: [{ label: '자택', addr: '제주 제주시 연동 1234' }], contracts: [{ date: '2025-04-02', type: '번호이동', product: '5G 다이렉트 49', status: '신청완료' }], gifts: [], pointHistory: [], referrals: [], donjikimi: null },
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   memberData — wireframe 원본 그대로
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const memberData = [
+  { name:'홍길동', phone:'010-1234-5678', type:'앱회원', channel:'셀프신청', social:'카카오', carrier:'KT', verify:'완료', account:'등록', address:'등록', date:'2026.04.01', cnt:'3건', pt:'51,000P',
+    birth:'1990.01.01', gender:'남성', authDate:'2026.04.02',
+    bank:'국민은행', accountNum:'123-456-789012', holder:'홍길동 ✓',
+    addresses:[{alias:'집',addr:'광주시 서구 상무대로 123 아파트 101동 1001호',isDefault:true},{alias:'직장',addr:'광주시 동구 금남로 456 오피스빌딩 5층',isDefault:false}],
+    orders:[['2026.04.01','KT0311','KT 1G+지니TV모든G+기가지니3','셀프신청','어드민→CRM','계약완료','45만','김상담','2026.04.03'],['2026.03.10','R015','LG 퓨리케어 공기청정기 28평','셀프신청','어드민→CRM','계약완료','15만','이상담','2026.03.12']],
+    gifts:[['KT 인터넷+TV','370,000원','지급완료','2026.04.10','국민은행 123-456-789012'],['LG 정수기 렌탈','150,000원','지급완료','2026.03.20','국민은행 123-456-789012']],
+    points:[['2026.04.10','적립','친구초대 계약완료 — 이영희 / LG U+ 인터넷+TV (LG0079)','+20,000P','51,000P'],['2026.03.15','적립','친구초대 가입 — 김철수 (010-2345-****)','+3,000P','31,000P'],['2026.03.10','적립','친구초대 가입 — 박민수 (010-4567-****)','+3,000P','28,000P'],['2026.02.20','적립','후기 작성 — KT 인터넷+TV','+15,000P','25,000P'],['2026.02.01','적립','친구초대 가입 — 이영희 (010-3456-****)','+3,000P','10,000P'],['2026.01.20','적립','친구초대 가입 — 최지은 (010-5678-****)','+3,000P','7,000P'],['2026.01.01','적립','회원가입 포인트','+5,000P','5,000P']],
+    withdrawals:[],
+    referralBy:'김철수', referralCode:'HONG2026', friends:[['이영희','2026.04.02','완료','+5,000P','+5,000P'],['박민수','2026.03.25','미계약','-','-']],
+    guard:[['인터넷 약정','2027.04.03','D-363','ON'],['정수기 렌탈','2029.03.12','D-1071','ON']]
+  },
+  { name:'김철수', phone:'010-2345-6789', type:'앱회원', channel:'티켓', social:'구글', carrier:'-', verify:'미완료', account:'미등록', address:'미등록', date:'2026.03.15', cnt:'1건', pt:'5,000P',
+    birth:null, gender:null, authDate:null,
+    bank:null, accountNum:null, holder:null,
+    addresses:[],
+    orders:[['2026.03.15','SK0188','SKT 500M+Btv이코노미+AI NUGU+WiFi6','티켓','어드민→CRM','상담중','43만','미배정','-']],
+    gifts:[],
+    points:[['2026.03.15','적립','회원가입 포인트','+5,000P','2,000P']],
+    withdrawals:[],
+    referralBy:'홍길동', referralCode:'KIM2026', friends:[],
+    guard:[]
+  },
+  { name:'이영희', phone:'010-3456-7890', type:'비회원', channel:'셀프신청', social:'-', carrier:'-', verify:'미완료', account:'미등록', address:'미등록', date:'2026.03.10', cnt:'1건', pt:'0P',
+    birth:null, gender:null, authDate:null,
+    bank:null, accountNum:null, holder:null,
+    addresses:[],
+    orders:[['2026.03.10','LG0079','LG U+ 500M+프리미엄+UHD4+기가와이파이6','셀프신청','어드민→CRM','계약완료','47만','김상담','2026.03.15']],
+    gifts:[['LG U+ 인터넷+TV','400,000원','지급대기(앱가입필요)','-','계좌 미등록']],
+    points:[],
+    withdrawals:[],
+    referralBy:'홍길동', referralCode:null, friends:[],
+    guard:[['인터넷 약정','2029.04.04','D-1094','ON'],['공기청정기 렌탈','2029.03.18','D-1077','ON']]
+  },
+  { name:'박민수', phone:'010-4567-8901', type:'비회원', channel:'CRM등록', social:'-', carrier:'-', verify:'미완료', account:'미등록', address:'미등록', date:'2026.02.20', cnt:'2건', pt:'0P',
+    birth:null, gender:null, authDate:null,
+    bank:null, accountNum:null, holder:null,
+    addresses:[],
+    orders:[['2026.03.01','-','KT 인터넷+TV (미정)','CRM등록','CRM→어드민','계약완료','37만','김상담','2026.03.05']],
+    gifts:[['KT 인터넷','250,000원','지급대기','-','계좌 미등록']],
+    points:[],
+    withdrawals:[],
+    referralBy:'홍길동', referralCode:'PARK2026', friends:[],
+    guard:[]
+  },
+  { name:'최지은', phone:'010-5678-9012', type:'앱회원', channel:'CRM등록', social:'카카오', carrier:'LG U+', verify:'완료', account:'등록', address:'미등록', date:'2026.02.01', cnt:'0건', pt:'4,000P',
+    birth:'1998.11.22', gender:'여성', authDate:'2026.02.05',
+    bank:'카카오뱅크', accountNum:'3333-01-1234567', holder:'최지은 ✓',
+    addresses:[],
+    orders:[],
+    gifts:[],
+    points:[['2026.02.01','적립','회원가입 포인트','+5,000P','5,000P'],['2026.03.01','차감','포인트 만료','-1,000P','4,000P']],
+    withdrawals:[],
+    referralBy:null, referralCode:'CHOI2026', friends:[],
+    guard:[]
+  },
+  { name:'강민준', phone:'010-0123-4567', type:'앱회원', channel:'셀프신청', social:'카카오', carrier:'KT', verify:'완료', account:'등록', address:'등록', date:'2026.01.15', cnt:'2건', pt:'0P',
+    birth:'1995.08.20', gender:'남성', authDate:'2026.01.16',
+    bank:'우리은행', accountNum:'1002-123-456789', holder:'강민준 ✓',
+    addresses:[{alias:'집',addr:'광주시 북구 첨단연신로 261',isDefault:true}],
+    orders:[['2026.03.20','KT0146','KT 500M+지니TV베이직+기가지니A','셀프신청','어드민→CRM','계약완료','45만','김상담','2026.03.22']],
+    gifts:[['KT 500M+지니TV베이직+기가지니A','450,000원','지급완료','2026.03.25','우리 1002-123-456789']],
+    points:[['2026.04.04','출금','포인트 출금 → 우리은행 1002-123-456789','-58,000P','0P'],['2026.03.22','적립','친구 계약완료 (친구) — KT 인터넷+TV (KT0146)','+15,000P','58,000P'],['2026.03.10','적립','친구초대 가입 — 한지민 (010-7890-****)','+3,000P','43,000P'],['2026.02.15','적립','친구초대 계약완료 — 홍길동 / KT 인터넷+TV','+20,000P','40,000P'],['2026.02.10','적립','후기 작성 — KT 인터넷+TV','+15,000P','20,000P'],['2026.01.15','적립','회원가입 포인트','+5,000P','5,000P']],
+    withdrawals:[['2026.04.04','50,000P','우리은행 1002-123-456789','승인완료','2026.04.05']],
+    referralBy:null, referralCode:'KANG2026', friends:[['한지민','2026.03.10','미계약','-','-']],
+    guard:[]
+  },
+  { name:'윤서연', phone:'010-8901-2345', type:'앱회원', channel:'티켓', social:'구글', carrier:'SKT', verify:'완료', account:'등록', address:'등록', date:'2026.02.10', cnt:'0건', pt:'5,000P',
+    birth:'1993.06.10', gender:'여성', authDate:'2026.02.11',
+    bank:'카카오뱅크', accountNum:'3333-01-5678901', holder:'윤서연 ✓',
+    addresses:[{alias:'집',addr:'광주시 동구 금남로 456',isDefault:true}],
+    orders:[['2026.04.05','SK0398','SKT 1G+Btv올+애플TV+WiFi6','티켓','어드민→CRM','취소','-','-','-']],
+    gifts:[],
+    points:[['2026.02.10','적립','회원가입 포인트','+5,000P','2,000P']],
+    withdrawals:[],
+    referralBy:null, referralCode:'YOON2026', friends:[],
+    guard:[]
+  },
+  { name:'한지민', phone:'010-7890-1234', type:'비회원', channel:'CRM등록', social:'-', carrier:'-', verify:'미완료', account:'미등록', address:'미등록', date:'2026.03.10', cnt:'0건', pt:'0P',
+    birth:null, gender:null, authDate:null,
+    bank:null, accountNum:null, holder:null,
+    addresses:[],
+    orders:[['2026.03.10','-','LG U+ 인터넷+TV','CRM등록','CRM→어드민','상담중','-','이상담','-']],
+    gifts:[],
+    points:[],
+    withdrawals:[],
+    referralBy:'강민준', referralCode:null, friends:[],
+    guard:[]
+  },
+  { name:'권홍석', phone:'010-6789-6010', type:'비회원', channel:'중고폰', social:'-', carrier:'SKT', verify:'완료', account:'등록', address:'등록', date:'2026.04.05', cnt:'0건', pt:'0P',
+    birth:'1992.03.15', gender:'남성', authDate:'2026.04.05',
+    bank:'국민은행', accountNum:'123-456-789012', holder:'권홍석 ✓',
+    addresses:[{alias:'집',addr:'순천시 충효로 109',isDefault:true}],
+    orders:[],
+    gifts:[],
+    points:[],
+    withdrawals:[],
+    referralBy:null, referralCode:null, friends:[],
+    guard:[]
+  }
 ];
 
-const typeMap = { '앱회원': 'green', '비회원': 'orange', 'CRM등록': 'orange', '중고폰': 'navy' };
-const authMap = { '인증완료': 'green', '미완료': 'red' };
-const statusMap = { '신청완료': 'blue', '상담중': 'orange', '계약완료': 'green', '취소': 'red' };
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   테이블 행 데이터 (wireframe .map() 원본)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const tableRows = [
+  ['홍길동','010-1234-5678','앱회원','셀프신청','카카오','KT','완료','등록','등록','2026.04.01','3건','12,000P'],
+  ['김철수','010-2345-6789','앱회원','티켓','구글','-','미완료','미등록','미등록','2026.03.15','1건','2,000P'],
+  ['이영희','010-3456-7890','비회원','셀프신청','-','-','미완료','미등록','미등록','2026.03.10','1건','0P'],
+  ['박민수','010-4567-8901','비회원','CRM등록','-','-','미완료','미등록','미등록','2026.02.20','1건','0P'],
+  ['최지은','010-5678-9012','앱회원','CRM등록','카카오','LG U+','완료','등록','미등록','2026.02.01','0건','1,000P'],
+  ['강민준','010-0123-4567','앱회원','셀프신청','카카오','KT','완료','등록','등록','2026.01.15','2건','0P'],
+  ['윤서연','010-8901-2345','앱회원','티켓','구글','SKT','완료','등록','등록','2026.02.10','0건','2,000P'],
+  ['한지민','010-7890-1234','비회원','CRM등록','-','-','미완료','미등록','미등록','2026.03.10','0건','0P'],
+  ['권홍석','010-6789-6010','비회원','중고폰','-','SKT','완료','등록','등록','2026.04.05','0건','0P'],
+];
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   스타일 헬퍼
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const nameLink = { fontWeight: 600, color: theme.navy };
+const nameLinkBlue = { fontWeight: 600, color: theme.blue, cursor: 'pointer', textDecoration: 'underline' };
+
+const filterBarStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  flexWrap: 'wrap',
+};
+
+const filterInputStyle = {
+  padding: '5px 12px',
+  border: `1px solid ${theme.borderDark}`,
+  borderRadius: 6,
+  fontSize: 11,
+  outline: 'none',
+  marginLeft: 'auto',
+  width: 200,
+};
+
+const sectionTitle = { fontSize: 12, fontWeight: 700, color: theme.navy, marginBottom: 10 };
+
+const modalOverlay = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+  display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+  paddingTop: 30, overflowY: 'auto',
+};
+
+const modalBox = {
+  background: '#fff', borderRadius: 12, width: '90%', maxWidth: 900,
+  maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+};
+
+const modalHeader = {
+  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+  padding: '16px 20px', borderBottom: `1px solid ${theme.border}`,
+  position: 'sticky', top: 0, background: '#fff', zIndex: 1,
+};
+
+const modalBody = { padding: 20 };
+
+const missingBanner = {
+  background: '#fef2f2', border: '1px solid #fca5a5', borderLeft: '4px solid #ef4444',
+  borderRadius: 8, padding: '12px 16px', marginBottom: 10,
+};
+
+const completeBanner = {
+  background: theme.greenBg, border: '1px solid #6ee7b7', borderLeft: `4px solid ${theme.green}`,
+  borderRadius: 8, padding: '12px 16px', marginBottom: 10,
+  fontSize: 12, fontWeight: 600, color: '#065f46',
+};
+
+const emptyField = {
+  background: '#f9fafb', border: `1px dashed ${theme.border}`, borderRadius: 8,
+  padding: 16, textAlign: 'center',
+};
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Component
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 export default function Members() {
+  const [selectedIdx, setSelectedIdx] = useState(null);
   const [typeFilter, setTypeFilter] = useState('전체');
   const [authFilter, setAuthFilter] = useState('전체');
-  const [accountFilter, setAccountFilter] = useState('전체');
-  const [search, setSearch] = useState('');
-  const [selectedMember, setSelectedMember] = useState(null);
+  const [socialFilter, setSocialFilter] = useState('전체');
 
-  const typeOptions = ['전체', '앱회원', '비회원', 'CRM등록', '중고폰'];
-  const authOptions = ['전체', '인증완료', '미완료'];
-  const accountOptions = ['전체', '등록', '미등록'];
+  const openMemberDetail = (idx) => setSelectedIdx(idx);
+  const closeMemberDetail = () => setSelectedIdx(null);
 
-  const filtered = MEMBERS.filter(m => {
-    if (typeFilter !== '전체' && m.type !== typeFilter) return false;
-    if (authFilter !== '전체' && m.auth !== authFilter) return false;
-    if (accountFilter === '등록' && !m.account) return false;
-    if (accountFilter === '미등록' && m.account) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (!m.name.includes(q) && !m.phone.includes(q)) return false;
+  const findAndOpenMember = (name) => {
+    const idx = memberData.findIndex(m => m.name === name);
+    if (idx >= 0) {
+      setSelectedIdx(null);
+      setTimeout(() => setSelectedIdx(idx), 50);
     }
-    return true;
-  });
+  };
 
-  return (
-    <div style={{ padding: 24, fontFamily: theme.sans, background: theme.bg, minHeight: '100vh' }}>
-      <h1 style={{ fontSize: 20, fontWeight: 800, color: theme.text, marginBottom: 20 }}>회원 관리</h1>
+  const m = selectedIdx !== null ? memberData[selectedIdx] : null;
 
-      {/* Filters */}
-      <div style={{ ...card, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {/* Type filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, minWidth: 40 }}>유형</span>
-          {typeOptions.map(o => (
-            <button key={o} style={filterBtn(typeFilter === o)} onClick={() => setTypeFilter(o)}>{o}</button>
-          ))}
+  /* ━━ 소셜 뱃지 렌더 ━━ */
+  const renderSocial = (social) => {
+    if (social === '카카오') return <span style={{ ...statusStyle('orange'), background: '#fef3c7' }}>카카오</span>;
+    if (social === '구글') return <span style={{ ...statusStyle('blue'), background: theme.blueBg }}>구글</span>;
+    return <span style={{ color: theme.textMuted, fontSize: 10 }}>미가입</span>;
+  };
+
+  /* ━━ 출금 조건 확인 (buildPointSection) ━━ */
+  const BuildPointSection = ({ m, children }) => {
+    const ptVal = parseInt(m.pt) || 0;
+    const cntVal = parseInt(m.cnt) || 0;
+    return (
+      <>
+        <div style={{ background: theme.blueBg, borderRadius: 8, padding: 12, marginBottom: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: theme.navy, marginBottom: 6 }}>✅ 출금 조건 확인</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 11 }}>
+            <div>① 5만P 이상: <span style={{ color: ptVal >= 50000 ? theme.green : theme.red, fontWeight: 700 }}>{ptVal >= 50000 ? '충족' : '미충족'} ({m.pt})</span></div>
+            <div>② 계약 1회+: <span style={{ color: cntVal >= 1 ? theme.green : theme.red, fontWeight: 700 }}>{cntVal >= 1 ? '충족' : '미충족'} ({m.cnt})</span></div>
+            <div>③ PASS 인증: <span style={{ color: m.verify === '완료' ? theme.green : theme.red, fontWeight: 700 }}>{m.verify}</span></div>
+            <div>④ 계좌 등록: <span style={{ color: m.account === '등록' ? theme.green : theme.red, fontWeight: 700 }}>{m.account}</span></div>
+          </div>
+          {m.verify === '완료' && m.account === '등록' && cntVal >= 1 && ptVal >= 50000 ? (
+            <div style={{ marginTop: 8, display: 'flex', gap: 6 }}>
+              <span style={{ ...button.success, cursor: 'pointer', fontSize: 11 }}>출금 승인</span>
+              <span style={{ ...button.danger, cursor: 'pointer', fontSize: 11 }}>반려</span>
+            </div>
+          ) : (
+            <div style={{ marginTop: 6, fontSize: 10, color: theme.red }}>※ 조건 미충족 — 출금 불가</div>
+          )}
         </div>
-        {/* Auth filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, minWidth: 40 }}>인증</span>
-          {authOptions.map(o => (
-            <button key={o} style={filterBtn(authFilter === o)} onClick={() => setAuthFilter(o)}>{o}</button>
-          ))}
+        {children}
+      </>
+    );
+  };
+
+  /* ━━ 모달 렌더 ━━ */
+  const renderModal = () => {
+    if (!m) return null;
+    const isNonMember = m.type === '비회원';
+    const missing = [];
+    if (m.verify === '미완료') missing.push('본인인증');
+    if (m.account === '미등록') missing.push('계좌');
+    if (m.address === '미등록') missing.push('주소');
+
+    /* 유형 배너 */
+    const typeBanner = isNonMember ? (
+      <div style={{ background: '#fef3c7', border: '1px solid #fcd34d', borderLeft: `4px solid ${theme.orange}`, borderRadius: 8, padding: '12px 16px', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div><span style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>👤 비회원</span> <span style={{ fontSize: 11, color: '#a16207', marginLeft: 8 }}>유입: {m.channel || '-'} · 이름+전화번호만 보유</span></div>
+          <span style={{ fontSize: 10, fontWeight: 600, color: theme.orange }}>포인트 적립 불가 · 출금 불가 · 마이페이지 없음</span>
         </div>
-        {/* Account filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, minWidth: 40 }}>계좌</span>
-          {accountOptions.map(o => (
-            <button key={o} style={filterBtn(accountFilter === o)} onClick={() => setAccountFilter(o)}>{o}</button>
-          ))}
-        </div>
-        {/* Search */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="이름 또는 전화번호 검색"
-            style={{
-              flex: 1, padding: '8px 12px', border: `1.5px solid ${theme.borderDark}`,
-              borderRadius: 6, fontSize: 12, outline: 'none', fontFamily: theme.sans,
-              background: theme.bgInput,
-            }}
-          />
-          <button style={button.primary} onClick={() => {}}>검색</button>
-        </div>
+        <div style={{ fontSize: 11, color: '#78350f', lineHeight: 1.6 }}>📌 사은품 지급 절차: <strong>① 앱 가입</strong> (전화번호 자동 매칭) → <strong>② PASS 본인인증</strong> (생년월일/성별/통신사 확보) → <strong>③ 계좌 등록</strong> → <strong>④ 사은품 즉시 지급</strong></div>
       </div>
-
-      {/* Member Count */}
-      <div style={{ fontSize: 12, color: theme.textMuted, marginBottom: 8 }}>
-        총 <strong style={{ color: theme.text }}>{filtered.length}</strong>명
+    ) : (
+      <div style={{ background: '#d1fae5', border: '1px solid #6ee7b7', borderLeft: `4px solid ${theme.green}`, borderRadius: 8, padding: '12px 16px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#065f46' }}>👤 앱회원</span>
+        <span style={{ fontSize: 11, color: '#065f46' }}>유입: {m.channel || '-'} · 소셜: {m.social || '-'}</span>
       </div>
+    );
 
-      {/* Table */}
-      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={tableStyles.table}>
-            <thead>
-              <tr>
-                {['이름', '전화번호', '유형', '유입경로', '소셜', '통신사', '인증', '계좌', '주소', '가입일', '신청', '포인트'].map(h => (
-                  <th key={h} style={tableStyles.th}>{h}</th>
-                ))}
+    /* 미등록 배너 */
+    const missingBannerEl = missing.length > 0 ? (
+      <div style={missingBanner}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: theme.red, marginBottom: 4 }}>⚠️ 미등록 항목 <span style={{ background: theme.red, color: '#fff', padding: '2px 8px', borderRadius: 10, fontSize: 11, marginLeft: 6 }}>{missing.length}건</span></div>
+        <div style={{ display: 'flex', gap: 6 }}>{missing.map(t => <span key={t} style={{ background: '#fee2e2', color: theme.red, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{t} ✗</span>)}</div>
+      </div>
+    ) : !isNonMember ? (
+      <div style={completeBanner}>✅ 모든 정보 등록 완료 — 사은품 지급 / 포인트 출금 가능</div>
+    ) : null;
+
+    /* 기본정보 rows */
+    const basicRows = [
+      ['이름', m.name],
+      ['전화번호', m.phone],
+      ['고객 유형', { isStatus: true, type: isNonMember ? 'orange' : 'green', text: m.type || '앱회원' }],
+      ['유입 경로', m.channel || '-'],
+      ['소셜 로그인', isNonMember ? { raw: <span style={{ color: theme.textMuted }}>미가입</span> } : (m.social || '-')],
+      ['생년월일', isNonMember
+        ? { raw: <span style={{ color: theme.textMuted }}>앱 가입 후 PASS 인증 필요</span> }
+        : (m.birth || { raw: <span style={{ color: theme.red }}>미인증 <span style={{ background: '#fee2e2', padding: '2px 6px', borderRadius: 4, fontSize: 10 }}>PASS 인증 필요</span></span> })],
+      ['성별', isNonMember ? { raw: <span style={{ color: theme.textMuted }}>—</span> } : (m.gender || { raw: <span style={{ color: theme.red }}>미인증</span> })],
+      ['통신사', m.carrier !== '-'
+        ? { raw: <span style={{ fontWeight: 700, color: theme.blue }}>{m.carrier} <small style={{ color: theme.textMuted }}>(PASS 인증)</small></span> }
+        : (isNonMember ? { raw: <span style={{ color: theme.textMuted }}>—</span> } : { raw: <span style={{ color: theme.red }}>미인증 <span style={{ background: '#fee2e2', padding: '2px 6px', borderRadius: 4, fontSize: 10 }}>TM 불가</span></span> })],
+      ['가입일', m.date],
+      ['포인트', isNonMember ? { raw: <span style={{ color: theme.textMuted }}>비회원 — 적립/출금 불가</span> } : { raw: <span style={{ fontWeight: 700, color: theme.orange }}>{m.pt}</span> }],
+    ];
+
+    const renderCellValue = (v) => {
+      if (v && typeof v === 'object' && v.isStatus) return <span style={statusStyle(v.type)}>{v.text}</span>;
+      if (v && typeof v === 'object' && v.raw) return v.raw;
+      return v;
+    };
+
+    /* 계좌 */
+    const accountHtml = m.bank ? (
+      <table style={{ ...tableStyles.table, marginBottom: 16 }}>
+        <tbody>
+          <tr><td style={{ ...tableStyles.td, fontWeight: 700, width: 80 }}>은행</td><td style={tableStyles.td}>{m.bank}</td></tr>
+          <tr><td style={{ ...tableStyles.td, fontWeight: 700 }}>계좌번호</td><td style={tableStyles.td}>{m.accountNum}</td></tr>
+          <tr><td style={{ ...tableStyles.td, fontWeight: 700 }}>예금주</td><td style={tableStyles.td}>{m.holder}</td></tr>
+        </tbody>
+      </table>
+    ) : (
+      <div style={{ ...emptyField, marginBottom: 16 }}>
+        <div style={{ fontWeight: 700, color: theme.red, marginBottom: 4 }}>계좌 미등록</div>
+        <div style={{ fontSize: 11, color: theme.textMuted }}>사은품 / 포인트 출금 불가</div>
+      </div>
+    );
+
+    /* 주소 */
+    const addrHtml = m.addresses.length > 0 ? (
+      <table style={{ ...tableStyles.table, marginBottom: 0 }}>
+        <tbody>
+          {m.addresses.map((a, i) => (
+            <tr key={i}>
+              <td style={{ ...tableStyles.td, fontWeight: 700, width: 50 }}>{a.alias}</td>
+              <td style={{ ...tableStyles.td, fontSize: 11 }}>{a.addr}</td>
+              <td style={tableStyles.td}>{a.isDefault && <span style={{ ...statusStyle('blue'), fontSize: 10 }}>기본</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <div style={emptyField}>
+        <div style={{ fontWeight: 700, color: theme.red, marginBottom: 4 }}>주소 미등록</div>
+        <div style={{ fontSize: 11, color: theme.textMuted }}>설치 / 수거 배정 불가</div>
+      </div>
+    );
+
+    /* 신청이력 */
+    const ordersHtml = m.orders.length > 0 ? (
+      <table style={{ ...tableStyles.table, marginBottom: 0 }}>
+        <thead>
+          <tr>
+            <th style={tableStyles.th}>신청일</th><th style={tableStyles.th}>티켓번호</th><th style={tableStyles.th}>상품</th>
+            <th style={tableStyles.th}>유입경로</th><th style={tableStyles.th}>동기화</th><th style={tableStyles.th}>상태</th>
+            <th style={tableStyles.th}>사은품</th><th style={tableStyles.th}>담당자</th><th style={tableStyles.th}>계약일</th>
+          </tr>
+        </thead>
+        <tbody>
+          {m.orders.map((r, i) => {
+            const [d, ticket, p, ch, sync, st, gift, mg, cd] = r;
+            return (
+              <tr key={i}>
+                <td style={{ ...tableStyles.td, fontSize: 11 }}>{d}</td>
+                <td style={tableStyles.td}>{ticket !== '-' ? <span style={{ fontFamily: 'monospace', fontWeight: 700, color: theme.blue, fontSize: 10 }}>{ticket}</span> : <span style={{ color: theme.textMuted }}>-</span>}</td>
+                <td style={{ ...tableStyles.td, fontWeight: 600, fontSize: 11 }}>{p}</td>
+                <td style={tableStyles.td}><span style={{ ...statusStyle('navy'), fontSize: 10 }}>{ch}</span></td>
+                <td style={{ ...tableStyles.td, fontSize: 10, color: sync === '어드민→CRM' ? theme.blue : theme.green }}>{sync}</td>
+                <td style={tableStyles.td}><span style={statusStyle(st === '계약완료' ? 'green' : st === '취소' ? 'red' : 'orange')}>{st}</span></td>
+                <td style={{ ...tableStyles.td, color: theme.orange, fontWeight: 700 }}>{gift || '-'}</td>
+                <td style={{ ...tableStyles.td, fontSize: 11, ...(mg === '미배정' ? { color: theme.red, fontWeight: 600 } : {}) }}>{mg}</td>
+                <td style={{ ...tableStyles.td, fontSize: 11 }}>{cd}</td>
               </tr>
-            </thead>
-            <tbody>
-              {filtered.map(m => (
-                <tr
-                  key={m.id}
-                  onClick={() => setSelectedMember(m)}
-                  style={{ cursor: 'pointer', transition: 'background 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = theme.bgHover}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
-                >
-                  <td style={{ ...tableStyles.td, fontWeight: 600, color: theme.text }}>{m.name}</td>
-                  <td style={tableStyles.td}>{m.phone}</td>
-                  <td style={tableStyles.td}><span style={statusStyle(typeMap[m.type] || 'gray')}>{m.type}</span></td>
-                  <td style={tableStyles.td}>{m.source}</td>
-                  <td style={tableStyles.td}>{m.social}</td>
-                  <td style={tableStyles.td}>
-                    <span style={{ color: theme.carrier[m.carrier] || theme.text, fontWeight: 600, fontSize: 11 }}>{m.carrier}</span>
-                  </td>
-                  <td style={tableStyles.td}><span style={statusStyle(authMap[m.auth] || 'gray')}>{m.auth}</span></td>
-                  <td style={tableStyles.td}>
-                    {m.account
-                      ? <span style={statusStyle('green')}>등록</span>
-                      : <span style={statusStyle('red')}>미등록</span>
-                    }
-                  </td>
-                  <td style={{ ...tableStyles.td, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.address}</td>
-                  <td style={tableStyles.td}>{m.joinDate}</td>
-                  <td style={{ ...tableStyles.td, textAlign: 'center' }}>{m.apps}</td>
-                  <td style={{ ...tableStyles.td, textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
-                    {m.points.toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={12} style={{ ...tableStyles.td, textAlign: 'center', padding: 32, color: theme.textMuted }}>
-                    검색 결과가 없습니다
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            );
+          })}
+        </tbody>
+      </table>
+    ) : (
+      <div style={{ textAlign: 'center', padding: 16, color: theme.textMuted, fontSize: 12 }}>신청 내역 없음</div>
+    );
 
-      {/* Detail Modal */}
-      {selectedMember && (
-        <MemberDetailModal member={selectedMember} onClose={() => setSelectedMember(null)} />
-      )}
-    </div>
-  );
-}
+    /* 사은품 */
+    const giftsHtml = m.gifts.length > 0 ? (
+      <table style={{ ...tableStyles.table, marginBottom: 0 }}>
+        <thead>
+          <tr>
+            <th style={tableStyles.th}>계약 상품</th><th style={tableStyles.th}>사은품 금액</th>
+            <th style={tableStyles.th}>지급 상태</th><th style={tableStyles.th}>지급일</th><th style={tableStyles.th}>입금 계좌</th>
+          </tr>
+        </thead>
+        <tbody>
+          {m.gifts.map((r, i) => {
+            const [p, a, st, d, ac] = r;
+            return (
+              <tr key={i}>
+                <td style={tableStyles.td}>{p}</td>
+                <td style={{ ...tableStyles.td, fontWeight: 700, color: theme.orange }}>{a}</td>
+                <td style={tableStyles.td}><span style={statusStyle(st === '지급완료' ? 'green' : 'orange')}>{st}</span></td>
+                <td style={{ ...tableStyles.td, fontSize: 11 }}>{d || '-'}</td>
+                <td style={{ ...tableStyles.td, fontSize: 11, color: theme.textMuted }}>{ac}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    ) : (
+      <div style={{ textAlign: 'center', padding: 16, color: theme.textMuted, fontSize: 12 }}>사은품 내역 없음</div>
+    );
 
-function MemberDetailModal({ member, onClose }) {
-  const m = member;
+    /* 포인트 테이블 */
+    const pointsTable = (
+      <table style={{ ...tableStyles.table, marginBottom: 0 }}>
+        <thead>
+          <tr>
+            <th style={tableStyles.th}>일시</th><th style={tableStyles.th}>구분</th>
+            <th style={tableStyles.th}>내용</th><th style={tableStyles.th}>포인트</th><th style={tableStyles.th}>잔액</th>
+          </tr>
+        </thead>
+        <tbody>
+          {m.points.map((r, i) => {
+            const [d, t, desc, p, b] = r;
+            return (
+              <tr key={i}>
+                <td style={{ ...tableStyles.td, fontSize: 11 }}>{d}</td>
+                <td style={tableStyles.td}><span style={statusStyle(t === '적립' ? 'green' : 'red')}>{t}</span></td>
+                <td style={{ ...tableStyles.td, fontSize: 11 }}>{desc}</td>
+                <td style={{ ...tableStyles.td, fontWeight: 700, color: t === '적립' ? theme.green : theme.red }}>{p}</td>
+                <td style={{ ...tableStyles.td, fontSize: 11 }}>{b}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
 
-  const sectionTitle = (text) => ({
-    fontSize: 14, fontWeight: 700, color: theme.text,
-    borderBottom: `2px solid ${theme.navy}`, paddingBottom: 6, marginBottom: 12, marginTop: 20,
-  });
-
-  const infoRow = (label, value) => (
-    <div key={label} style={{ display: 'flex', padding: '6px 0', borderBottom: `1px solid ${theme.border}` }}>
-      <span style={{ width: 100, fontSize: 12, color: theme.textMuted, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 12, color: theme.text, fontWeight: 500 }}>{value || '-'}</span>
-    </div>
-  );
-
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 9999,
-      }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: '#fff', borderRadius: 14, width: 680, maxHeight: '85vh', overflowY: 'auto',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.2)', padding: 28, fontFamily: theme.sans,
-        }}
-      >
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: theme.text, margin: 0 }}>
-            {m.name} <span style={{ ...statusStyle(typeMap[m.type] || 'gray'), marginLeft: 8, fontSize: 11 }}>{m.type}</span>
-          </h2>
-          <button
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: theme.textMuted, padding: 4 }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* 기본 정보 */}
-        <div style={sectionTitle('기본 정보')}>기본 정보</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' }}>
-          {infoRow('이름', m.name)}
-          {infoRow('전화번호', m.phone)}
-          {infoRow('생년월일', m.birth)}
-          {infoRow('성별', m.gender)}
-          {infoRow('통신사', m.carrier)}
-          {infoRow('가입일', m.joinDate)}
-          {infoRow('포인트 잔액', `${m.points.toLocaleString()}P`)}
-          {infoRow('소셜 로그인', m.social)}
-        </div>
-
-        {/* 계좌 정보 */}
-        <div style={sectionTitle('계좌 정보')}>계좌 정보</div>
-        {m.accountBank ? (
-          <div>
-            {infoRow('은행', m.accountBank)}
-            {infoRow('계좌번호', m.accountNum)}
-            {infoRow('예금주', m.accountHolder)}
-          </div>
-        ) : (
-          <div style={{
-            background: theme.orangeBg, border: `1px solid ${theme.orange}`,
-            borderRadius: 8, padding: '10px 16px', fontSize: 12, color: theme.orange, fontWeight: 600,
-          }}>
-            계좌 미등록 상태입니다
-          </div>
-        )}
-
-        {/* 주소 목록 */}
-        <div style={sectionTitle('주소 목록')}>주소 목록</div>
-        <table style={tableStyles.table}>
+    /* 출금 이력 */
+    const hasReason = m.withdrawals && m.withdrawals.some(w => w.length > 5);
+    const withdrawHtml = m.withdrawals && m.withdrawals.length > 0 ? (
+      <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${theme.border}` }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: theme.orange, marginBottom: 10 }}>💸 출금 이력</div>
+        <table style={{ ...tableStyles.table, marginBottom: 0 }}>
           <thead>
             <tr>
-              <th style={tableStyles.th}>구분</th>
-              <th style={tableStyles.th}>주소</th>
+              <th style={tableStyles.th}>신청일</th><th style={tableStyles.th}>출금 금액</th>
+              <th style={tableStyles.th}>출금 계좌</th><th style={tableStyles.th}>상태</th><th style={tableStyles.th}>처리일</th>
+              {hasReason && <th style={tableStyles.th}>사유</th>}
             </tr>
           </thead>
           <tbody>
-            {m.addresses.map((a, i) => (
+            {m.withdrawals.map((w, i) => {
+              const [d, amt, acc, st, pDate, ...rest] = w;
+              const reason = rest[0] || '';
+              return (
+                <tr key={i}>
+                  <td style={{ ...tableStyles.td, fontSize: 11 }}>{d}</td>
+                  <td style={{ ...tableStyles.td, fontWeight: 700, color: theme.navy }}>{amt}</td>
+                  <td style={{ ...tableStyles.td, fontSize: 11, color: theme.textMuted }}>{acc}</td>
+                  <td style={tableStyles.td}><span style={statusStyle(st === '승인완료' ? 'green' : st === '승인대기' ? 'orange' : 'red')}>{st}</span></td>
+                  <td style={{ ...tableStyles.td, fontSize: 11 }}>{pDate}</td>
+                  {hasReason && <td style={{ ...tableStyles.td, fontSize: 11, color: theme.red }}>{reason}</td>}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${theme.border}` }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: theme.orange, marginBottom: 10 }}>💸 출금 이력</div>
+        <div style={{ textAlign: 'center', padding: 16, color: theme.textMuted, fontSize: 12 }}>출금 이력 없음</div>
+      </div>
+    );
+
+    /* 친구초대 */
+    const referralLink = m.referralBy ? (
+      <strong style={{ color: theme.blue, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => findAndOpenMember(m.referralBy)}>{m.referralBy}</strong>
+    ) : '없음';
+
+    const friendsHtml = (
+      <>
+        <div style={{ display: 'flex', gap: 20, marginBottom: 10, fontSize: 12, color: theme.textMuted }}>
+          <div>추천인: {referralLink}</div>
+          <div>내 초대 코드: <strong style={{ color: theme.blue }}>{m.referralCode}</strong></div>
+        </div>
+        {m.friends.length > 0 ? (
+          <table style={{ ...tableStyles.table, marginBottom: 0 }}>
+            <thead>
+              <tr>
+                <th style={tableStyles.th}>초대한 친구</th><th style={tableStyles.th}>가입일</th>
+                <th style={tableStyles.th}>계약</th><th style={tableStyles.th}>추천인 포인트</th><th style={tableStyles.th}>친구 포인트</th>
+              </tr>
+            </thead>
+            <tbody>
+              {m.friends.map((f, i) => {
+                const [n, d, cc, mp, fp] = f;
+                return (
+                  <tr key={i}>
+                    <td style={{ ...tableStyles.td, ...nameLinkBlue }} onClick={() => findAndOpenMember(n)}>{n}</td>
+                    <td style={{ ...tableStyles.td, fontSize: 11 }}>{d}</td>
+                    <td style={tableStyles.td}><span style={statusStyle(cc === '완료' ? 'green' : 'gray')}>{cc}</span></td>
+                    <td style={{ ...tableStyles.td, color: mp !== '-' ? theme.green : theme.textMuted }}>{mp}</td>
+                    <td style={{ ...tableStyles.td, color: fp !== '-' ? theme.green : theme.textMuted }}>{fp}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 12, color: theme.textMuted, fontSize: 12 }}>초대한 친구 없음</div>
+        )}
+      </>
+    );
+
+    /* 돈지키미 */
+    const guardHtml = m.guard.length > 0 ? (
+      <table style={{ ...tableStyles.table, marginBottom: 0 }}>
+        <thead>
+          <tr><th style={tableStyles.th}>항목</th><th style={tableStyles.th}>만료일</th><th style={tableStyles.th}>D-day</th><th style={tableStyles.th}>알림</th></tr>
+        </thead>
+        <tbody>
+          {m.guard.map(([it, d, dd, al], i) => (
+            <tr key={i}>
+              <td style={tableStyles.td}>{it}</td>
+              <td style={tableStyles.td}>{d}</td>
+              <td style={tableStyles.td}><span style={statusStyle('blue')}>{dd}</span></td>
+              <td style={tableStyles.td}><span style={statusStyle(al === 'ON' ? 'green' : 'gray')}>{al}</span></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <div style={{ textAlign: 'center', padding: 12, color: theme.textMuted, fontSize: 12 }}>등록된 항목 없음</div>
+    );
+
+    return (
+      <div style={modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) closeMemberDetail(); }}>
+        <div style={modalBox}>
+          <div style={modalHeader}>
+            <h3 style={{ margin: 0, fontSize: 16 }}>👤 {m.name} <span style={{ fontSize: 12, color: theme.textMuted, fontWeight: 400, marginLeft: 8 }}>{m.phone}</span></h3>
+            <button onClick={closeMemberDetail} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: theme.textMuted }}>✕</button>
+          </div>
+          <div style={modalBody}>
+            {typeBanner}
+            {missingBannerEl}
+
+            {/* 2열: 기본정보 + 계좌/주소 */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+              <div style={{ ...card, marginBottom: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: theme.navy, marginBottom: 10 }}>👤 기본 정보</div>
+                <table style={{ ...tableStyles.table, marginBottom: 0 }}>
+                  <tbody>
+                    {basicRows.map(([k, v], i) => (
+                      <tr key={i}>
+                        <td style={{ ...tableStyles.td, fontWeight: 700, width: 80 }}>{k}</td>
+                        <td style={tableStyles.td}>{renderCellValue(v)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ ...card, marginBottom: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: theme.navy, marginBottom: 10 }}>🏦 계좌 정보</div>
+                {accountHtml}
+                <div style={{ fontSize: 12, fontWeight: 700, color: theme.navy, marginBottom: 10 }}>📍 주소 목록</div>
+                {addrHtml}
+              </div>
+            </div>
+
+            {/* 신청/계약 이력 */}
+            <div style={{ ...card }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: theme.navy, marginBottom: 10 }}>📋 신청 / 계약 이력</div>
+              {ordersHtml}
+            </div>
+
+            {/* 사은품 */}
+            <div style={{ ...card }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: theme.navy, marginBottom: 10 }}>🎁 사은품 지급 내역</div>
+              {giftsHtml}
+            </div>
+
+            {/* 포인트 */}
+            <div style={{ ...card }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: theme.navy, marginBottom: 10 }}>💰 포인트 내역</div>
+              {isNonMember ? (
+                <div style={{ textAlign: 'center', padding: 16, color: theme.textMuted, fontSize: 12 }}>비회원 — 앱 가입 후 포인트 적립/출금 가능</div>
+              ) : (
+                <BuildPointSection m={m}>
+                  {pointsTable}
+                  {withdrawHtml}
+                </BuildPointSection>
+              )}
+            </div>
+
+            {/* 친구초대 */}
+            <div style={{ ...card }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: theme.navy, marginBottom: 10 }}>👫 친구초대 현황</div>
+              {isNonMember ? (
+                <div style={{ textAlign: 'center', padding: 16, color: theme.textMuted, fontSize: 12 }}>비회원 — 앱 가입 후 친구초대 가능</div>
+              ) : friendsHtml}
+            </div>
+
+            {/* 돈지키미 */}
+            <div style={{ ...card }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: theme.navy, marginBottom: 10 }}>🔔 돈지키미 등록 현황</div>
+              {isNonMember ? (
+                <div style={{ textAlign: 'center', padding: 16, color: theme.textMuted, fontSize: 12 }}>비회원 — 앱 가입 후 돈지키미 등록 가능</div>
+              ) : guardHtml}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     메인 렌더
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  return (
+    <div>
+      {/* 필터: 고객유형 */}
+      <div style={{ ...filterBarStyle, marginBottom: 8 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, width: 40 }}>유형</span>
+        {['전체', '앱회원', '비회원', 'CRM등록', '중고폰'].map(f => (
+          <div
+            key={f}
+            onClick={() => setTypeFilter(f)}
+            style={{
+              ...filterBtn(typeFilter === f),
+              ...(f === '비회원' && typeFilter !== f ? { borderColor: theme.orange, color: theme.orange } : {}),
+            }}
+          >
+            {f}
+          </div>
+        ))}
+      </div>
+
+      {/* 필터: 인증상태 */}
+      <div style={{ ...filterBarStyle, marginBottom: 8 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, width: 40 }}>인증</span>
+        {['전체', '인증완료', '미인증', '계좌등록', '계좌미등록'].map(f => (
+          <div
+            key={f}
+            onClick={() => setAuthFilter(f)}
+            style={{
+              ...filterBtn(authFilter === f),
+              ...(f === '인증완료' && authFilter !== f ? { borderColor: theme.green, color: theme.green } : {}),
+              ...(f === '미인증' && authFilter !== f ? { borderColor: theme.orange, color: theme.orange } : {}),
+            }}
+          >
+            {f}
+          </div>
+        ))}
+      </div>
+
+      {/* 필터: 소셜 + 검색 */}
+      <div style={{ ...filterBarStyle, marginBottom: 14 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: theme.textMuted, width: 40 }}>소셜</span>
+        {['전체', '카카오', '구글', '미가입'].map(f => (
+          <div key={f} onClick={() => setSocialFilter(f)} style={filterBtn(socialFilter === f)}>{f}</div>
+        ))}
+        <input style={filterInputStyle} placeholder="이름 / 전화번호 검색" />
+        <span style={{ ...button.primary, cursor: 'pointer', fontSize: 11 }}>+ 앱 푸시 발송</span>
+      </div>
+
+      {/* 미인증 배너 */}
+      <div style={{ ...card, background: theme.orangeBg, borderColor: '#fcd34d', marginBottom: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 12, color: theme.orange }}>⚠️ 미인증 회원 <strong>342명</strong> — 인증 유도 알림톡 발송 가능</div>
+          <span style={button.primary}>알림톡 발송</span>
+        </div>
+      </div>
+
+      {/* 비회원 배너 */}
+      <div style={{ ...card, background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 12, color: theme.navy }}>📱 비회원 <strong>128명</strong> — 앱 가입 유도 알림톡 발송 가능 (전화번호 기준 자동 매칭)</div>
+          <span style={button.primary}>가입유도 알림톡</span>
+        </div>
+      </div>
+
+      {/* 회원 테이블 */}
+      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+        <table style={{ ...tableStyles.table, marginBottom: 0 }}>
+          <thead>
+            <tr>
+              <th style={tableStyles.th}><input type="checkbox" /></th>
+              <th style={tableStyles.th}>이름</th><th style={tableStyles.th}>전화번호</th><th style={tableStyles.th}>유형</th>
+              <th style={tableStyles.th}>유입경로</th><th style={tableStyles.th}>소셜</th><th style={tableStyles.th}>통신사</th>
+              <th style={tableStyles.th}>인증</th><th style={tableStyles.th}>계좌</th><th style={tableStyles.th}>주소</th>
+              <th style={tableStyles.th}>가입일</th><th style={tableStyles.th}>신청</th><th style={tableStyles.th}>포인트</th>
+              <th style={tableStyles.th}>관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tableRows.map(([name, phone, type, channel, social, carrier, verify, account, address, date, cnt, pt], i) => (
               <tr key={i}>
-                <td style={{ ...tableStyles.td, fontWeight: 600 }}>{a.label}</td>
-                <td style={tableStyles.td}>{a.addr}</td>
+                <td style={tableStyles.td}><input type="checkbox" /></td>
+                <td style={{ ...tableStyles.td, fontWeight: 600, color: theme.navy }}>{name}</td>
+                <td style={{ ...tableStyles.td, fontSize: 11 }}>{phone}</td>
+                <td style={tableStyles.td}><span style={{ ...statusStyle(type === '앱회원' ? 'green' : 'orange'), fontSize: 10 }}>{type}</span></td>
+                <td style={tableStyles.td}><span style={{ fontSize: 10, color: theme.textMuted }}>{channel}</span></td>
+                <td style={tableStyles.td}>{renderSocial(social)}</td>
+                <td style={{ ...tableStyles.td, fontWeight: 600, color: carrier === '-' ? theme.textMuted : theme.navy }}>{carrier}</td>
+                <td style={tableStyles.td}><span style={statusStyle(verify === '완료' ? 'green' : 'orange')}>{verify}</span></td>
+                <td style={tableStyles.td}><span style={statusStyle(account === '등록' ? 'green' : 'gray')}>{account}</span></td>
+                <td style={tableStyles.td}><span style={statusStyle(address === '등록' ? 'green' : 'gray')}>{address}</span></td>
+                <td style={{ ...tableStyles.td, fontSize: 11 }}>{date}</td>
+                <td style={tableStyles.td}>{cnt}</td>
+                <td style={{ ...tableStyles.td, fontWeight: 600, color: theme.orange }}>{pt}</td>
+                <td style={tableStyles.td}>
+                  <span style={{ ...button.secondary, cursor: 'pointer', fontSize: 11, padding: '4px 10px' }} onClick={() => openMemberDetail(i)}>상세</span>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-
-        {/* 신청/계약 이력 */}
-        <div style={sectionTitle('신청/계약 이력')}>신청/계약 이력</div>
-        {m.contracts.length > 0 ? (
-          <table style={tableStyles.table}>
-            <thead>
-              <tr>
-                <th style={tableStyles.th}>일자</th>
-                <th style={tableStyles.th}>유형</th>
-                <th style={tableStyles.th}>상품</th>
-                <th style={tableStyles.th}>상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {m.contracts.map((c, i) => (
-                <tr key={i}>
-                  <td style={tableStyles.td}>{c.date}</td>
-                  <td style={tableStyles.td}>{c.type}</td>
-                  <td style={tableStyles.td}>{c.product}</td>
-                  <td style={tableStyles.td}><span style={statusStyle(statusMap[c.status] || 'gray')}>{c.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div style={{ fontSize: 12, color: theme.textMuted, padding: '8px 0' }}>이력 없음</div>
-        )}
-
-        {/* 사은품 내역 */}
-        <div style={sectionTitle('사은품 내역')}>사은품 내역</div>
-        {m.gifts.length > 0 ? (
-          <table style={tableStyles.table}>
-            <thead>
-              <tr>
-                <th style={tableStyles.th}>일자</th>
-                <th style={tableStyles.th}>사은품</th>
-                <th style={tableStyles.th}>상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {m.gifts.map((g, i) => (
-                <tr key={i}>
-                  <td style={tableStyles.td}>{g.date}</td>
-                  <td style={tableStyles.td}>{g.item}</td>
-                  <td style={tableStyles.td}><span style={statusStyle('green')}>{g.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div style={{ fontSize: 12, color: theme.textMuted, padding: '8px 0' }}>내역 없음</div>
-        )}
-
-        {/* 포인트 내역 */}
-        <div style={sectionTitle('포인트 내역')}>포인트 내역</div>
-        {m.pointHistory.length > 0 ? (
-          <table style={tableStyles.table}>
-            <thead>
-              <tr>
-                <th style={tableStyles.th}>일자</th>
-                <th style={tableStyles.th}>내용</th>
-                <th style={tableStyles.th}>금액</th>
-              </tr>
-            </thead>
-            <tbody>
-              {m.pointHistory.map((p, i) => (
-                <tr key={i}>
-                  <td style={tableStyles.td}>{p.date}</td>
-                  <td style={tableStyles.td}>{p.desc}</td>
-                  <td style={{
-                    ...tableStyles.td, fontWeight: 700, fontFamily: 'monospace',
-                    color: p.amount.startsWith('+') ? theme.green : theme.red,
-                  }}>
-                    {p.amount}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div style={{ fontSize: 12, color: theme.textMuted, padding: '8px 0' }}>내역 없음</div>
-        )}
-
-        {/* 친구초대 */}
-        <div style={sectionTitle('친구초대')}>친구초대</div>
-        {m.referrals.length > 0 ? (
-          <table style={tableStyles.table}>
-            <thead>
-              <tr>
-                <th style={tableStyles.th}>이름</th>
-                <th style={tableStyles.th}>초대일</th>
-                <th style={tableStyles.th}>상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {m.referrals.map((r, i) => (
-                <tr key={i}>
-                  <td style={{ ...tableStyles.td, fontWeight: 600 }}>{r.name}</td>
-                  <td style={tableStyles.td}>{r.date}</td>
-                  <td style={tableStyles.td}><span style={statusStyle('green')}>{r.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div style={{ fontSize: 12, color: theme.textMuted, padding: '8px 0' }}>초대 내역 없음</div>
-        )}
-
-        {/* 돈지키미 */}
-        <div style={sectionTitle('돈지키미')}>돈지키미</div>
-        {m.donjikimi ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' }}>
-            {(() => {
-              const d = m.donjikimi;
-              return (
-                <>
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: `1px solid ${theme.border}` }}>
-                    <span style={{ width: 100, fontSize: 12, color: theme.textMuted, flexShrink: 0 }}>통신사</span>
-                    <span style={{ fontSize: 12, color: theme.carrier[d.carrier] || theme.text, fontWeight: 600 }}>{d.carrier}</span>
-                  </div>
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: `1px solid ${theme.border}` }}>
-                    <span style={{ width: 100, fontSize: 12, color: theme.textMuted, flexShrink: 0 }}>요금제</span>
-                    <span style={{ fontSize: 12, color: theme.text, fontWeight: 500 }}>{d.plan}</span>
-                  </div>
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: `1px solid ${theme.border}` }}>
-                    <span style={{ width: 100, fontSize: 12, color: theme.textMuted, flexShrink: 0 }}>잔여 약정</span>
-                    <span style={statusStyle(parseInt(d.remain) <= 3 ? 'red' : 'gray')}>{d.remain}</span>
-                  </div>
-                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: `1px solid ${theme.border}` }}>
-                    <span style={{ width: 100, fontSize: 12, color: theme.textMuted, flexShrink: 0 }}>위약금</span>
-                    <span style={{ fontSize: 12, color: theme.red, fontWeight: 700, fontFamily: 'monospace' }}>{d.penalty}</span>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        ) : (
-          <div style={{ fontSize: 12, color: theme.textMuted, padding: '8px 0' }}>등록된 약정 정보 없음</div>
-        )}
-
-        {/* Close button */}
-        <div style={{ marginTop: 24, textAlign: 'right' }}>
-          <button onClick={onClose} style={button.primary}>닫기</button>
-        </div>
       </div>
+
+      {/* 하단 안내 */}
+      <div style={{ textAlign: 'center', padding: 20 }}>
+        <div style={{ fontSize: 13, color: theme.textMuted, marginBottom: 6 }}>👆 회원 목록에서 <strong style={{ color: theme.navy }}>상세</strong> 버튼을 클릭하면 팝업이 열립니다</div>
+        <div style={{ fontSize: 11, color: theme.textMuted }}>인증 완료 회원 / 미인증 회원별로 다르게 표시됩니다</div>
+      </div>
+
+      {/* 회원 상세 모달 */}
+      {renderModal()}
     </div>
   );
 }

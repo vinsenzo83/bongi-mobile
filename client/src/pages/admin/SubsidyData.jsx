@@ -1,166 +1,118 @@
 import { useState } from 'react';
-import { theme, card, button, tableStyles, filterBtn, statusStyle, input } from '../../styles/admin-theme.js';
+import { theme, statusStyle, tableStyles, card, button, filterBtn, kpiCard, input } from '../../styles/admin-theme.js';
 
-const mockSubsidies = [
-  { id: 1, model: '갤럭시 S25 울트라', carrier: 'SKT', plan: '5G 프리미엄 69', subsidy: 300000, extra: 150000, total: 450000, retail: 1650000, maker: '삼성' },
-  { id: 2, model: '갤럭시 S25', carrier: 'KT', plan: '5G 슈퍼플랜 베이직', subsidy: 270000, extra: 120000, total: 390000, retail: 1350000, maker: '삼성' },
-  { id: 3, model: '아이폰 16 Pro Max', carrier: 'LGU+', plan: '5G 프리미엄 69', subsidy: 280000, extra: 140000, total: 420000, retail: 1900000, maker: '애플' },
-  { id: 4, model: '아이폰 16 Pro', carrier: 'SKT', plan: '5G 다이렉트 49', subsidy: 250000, extra: 100000, total: 350000, retail: 1550000, maker: '애플' },
-  { id: 5, model: '갤럭시 Z 폴드6', carrier: 'KT', plan: '5G 슈퍼플랜 프리미엄', subsidy: 320000, extra: 160000, total: 480000, retail: 2100000, maker: '삼성' },
-  { id: 6, model: '갤럭시 A56', carrier: 'LGU+', plan: '5G 스탠다드 52', subsidy: 200000, extra: 80000, total: 280000, retail: 550000, maker: '삼성' },
-  { id: 7, model: '아이폰 16', carrier: 'SKT', plan: '5G 슬림 39', subsidy: 230000, extra: 110000, total: 340000, retail: 1250000, maker: '애플' },
-  { id: 8, model: '갤럭시 S25+', carrier: 'KT', plan: '5G 심플 47', subsidy: 290000, extra: 130000, total: 420000, retail: 1450000, maker: '삼성' },
+const sampleSubsidy = [
+  { product: '갤럭시 S26 256GB', carrier: 'SKT', plan: '5G 프리미어 에센셜 85', subsidy: '350,000', date: '2026.04.06' },
+  { product: '갤럭시 S26 256GB', carrier: 'KT', plan: '5G 슈퍼플랜 스페셜 80', subsidy: '320,000', date: '2026.04.06' },
+  { product: '갤럭시 S26 256GB', carrier: 'LG U+', plan: '5G 시그니처 89', subsidy: '300,000', date: '2026.04.06' },
+  { product: '아이폰 16 Pro 256GB', carrier: 'SKT', plan: '5G 프리미어 에센셜 85', subsidy: '280,000', date: '2026.04.06' },
+  { product: '아이폰 16 Pro 256GB', carrier: 'KT', plan: '5G 슈퍼플랜 스페셜 80', subsidy: '260,000', date: '2026.04.06' },
+  { product: '아이폰 16 Pro 256GB', carrier: 'LG U+', plan: '5G 시그니처 89', subsidy: '240,000', date: '2026.04.06' },
+  { product: '갤럭시 S26+ 256GB', carrier: 'SKT', plan: '5G 다이렉트 49', subsidy: '150,000', date: '2026.04.06' },
+  { product: '갤럭시 S26+ 256GB', carrier: 'KT', plan: '5G 슈퍼플랜 베이직 55', subsidy: '140,000', date: '2026.04.06' },
+  { product: '갤럭시 폴드7 512GB', carrier: 'SKT', plan: '5G 프리미어 에센셜 85', subsidy: '400,000', date: '2026.04.06' },
+  { product: '갤럭시 폴드7 512GB', carrier: 'KT', plan: '5G 슈퍼플랜 스페셜 80', subsidy: '380,000', date: '2026.04.06' },
+  { product: '아이폰 17 Pro 256GB', carrier: 'SKT', plan: '5G 프리미어 에센셜 85', subsidy: '310,000', date: '2026.04.06' },
+  { product: '아이폰 17 Pro 256GB', carrier: 'LG U+', plan: '5G 시그니처 89', subsidy: '290,000', date: '2026.04.06' },
 ];
 
-const carriers = ['전체', 'SKT', 'KT', 'LGU+'];
-const makers = ['전체', '삼성', '애플'];
-
-const overlay = {
-  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-  background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-};
-const modal = {
-  background: '#fff', borderRadius: 12, padding: 24, width: 520,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxHeight: '80vh', overflowY: 'auto',
-};
-
 export default function SubsidyData() {
-  const [data, setData] = useState(mockSubsidies);
   const [carrierFilter, setCarrierFilter] = useState('전체');
   const [makerFilter, setMakerFilter] = useState('전체');
-  const [crawling, setCrawling] = useState(false);
-  const [lastCrawl] = useState('2026-04-06 09:00:12');
-  const [showModal, setShowModal] = useState(false);
-  const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState({ model: '', carrier: 'SKT', plan: '', subsidy: '', extra: '', retail: '', maker: '삼성' });
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
 
-  const filtered = data.filter(d =>
-    (carrierFilter === '전체' || d.carrier === carrierFilter) &&
-    (makerFilter === '전체' || d.maker === makerFilter)
-  );
+  const filtered = sampleSubsidy.filter(s => {
+    if (carrierFilter !== '전체' && s.carrier !== carrierFilter) return false;
+    if (makerFilter === '삼성' && !s.product.includes('갤럭시')) return false;
+    if (makerFilter === '아이폰' && !s.product.includes('아이폰')) return false;
+    if (search && !s.product.includes(search)) return false;
+    return true;
+  });
 
-  const runCrawl = () => {
-    setCrawling(true);
-    setTimeout(() => setCrawling(false), 2000);
-  };
+  const pageSize = 20;
+  const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
+  const totalPages = Math.ceil(filtered.length / pageSize);
 
-  const openAdd = () => {
-    setEditItem(null);
-    setForm({ model: '', carrier: 'SKT', plan: '', subsidy: '', extra: '', retail: '', maker: '삼성' });
-    setShowModal(true);
-  };
-
-  const openEdit = (item) => {
-    setEditItem(item);
-    setForm({ model: item.model, carrier: item.carrier, plan: item.plan, subsidy: String(item.subsidy), extra: String(item.extra), retail: String(item.retail), maker: item.maker });
-    setShowModal(true);
-  };
-
-  const save = () => {
-    const s = Number(form.subsidy), e = Number(form.extra);
-    const entry = { ...form, subsidy: s, extra: e, total: s + e, retail: Number(form.retail) };
-    if (editItem) {
-      setData(data.map(d => d.id === editItem.id ? { ...d, ...entry } : d));
-    } else {
-      setData([...data, { ...entry, id: Date.now() }]);
-    }
-    setShowModal(false);
-  };
+  const carrierColor = (c) => c === 'SKT' ? theme.red : c === 'KT' ? theme.blue : theme.green;
 
   return (
     <div style={{ padding: 24, fontFamily: theme.sans, background: theme.bg, minHeight: '100vh' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: theme.text, margin: 0 }}>공시지원금 (AI 학습 데이터)</h1>
-        <span style={statusStyle('green')}>자동갱신 ON</span>
+
+      {/* KPI */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 14 }}>
+        <div style={kpiCard}><div style={{ fontSize: 28, fontWeight: 900, color: theme.navy }}>54</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>모델</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 28, fontWeight: 900, color: theme.blue }}>1,134</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>총 데이터</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 28, fontWeight: 900, color: theme.green }}>3사</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>SKT / KT / LG U+</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 14, fontWeight: 900, color: theme.textMuted }}>04.06 14:32</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>마지막 크롤링</div></div>
       </div>
 
-      {/* Last crawl info */}
-      <div style={{ ...card, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 12, color: theme.textSecondary }}>마지막 크롤링: <strong style={{ color: theme.text }}>{lastCrawl}</strong></span>
-        <button style={{ ...button.primary, background: crawling ? theme.textMuted : theme.navy }} onClick={runCrawl} disabled={crawling}>
-          {crawling ? '크롤링 중...' : '크롤링 실행'}
-        </button>
-        <div style={{ flex: 1 }} />
-        <button style={button.primary} onClick={openAdd}>+ 수동 추가</button>
+      {/* 안내 배너 */}
+      <div style={{ ...card, background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: 10, padding: '10px 16px' }}>
+        <div style={{ fontSize: 11, color: theme.navy }}>📌 <strong>smartchoice.or.kr</strong> (방통위 운영) 자동 크롤링 — 3사 통합 · 요금제별 공시지원금</div>
       </div>
 
-      {/* Filters */}
-      <div style={{ ...card, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: theme.text, marginRight: 4 }}>통신사</span>
-        {carriers.map(c => (
-          <button key={c} style={filterBtn(carrierFilter === c)} onClick={() => setCarrierFilter(c)}>{c}</button>
-        ))}
-        <span style={{ fontSize: 12, fontWeight: 600, color: theme.text, margin: '0 8px 0 16px' }}>제조사</span>
-        {makers.map(m => (
-          <button key={m} style={filterBtn(makerFilter === m)} onClick={() => setMakerFilter(m)}>{m}</button>
-        ))}
+      {/* 필터 바 */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+        <input
+          style={{ ...input, width: 180 }}
+          placeholder="모델명 검색"
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(0); }}
+        />
+        <span style={filterBtn(carrierFilter === '전체')} onClick={() => { setCarrierFilter('전체'); setPage(0); }}>전체</span>
+        <span style={{ ...filterBtn(carrierFilter === 'SKT'), color: carrierFilter === 'SKT' ? '#fff' : theme.red, borderColor: carrierFilter === 'SKT' ? theme.navy : theme.red }} onClick={() => { setCarrierFilter('SKT'); setPage(0); }}>SKT</span>
+        <span style={{ ...filterBtn(carrierFilter === 'KT'), color: carrierFilter === 'KT' ? '#fff' : theme.blue, borderColor: carrierFilter === 'KT' ? theme.navy : theme.blue }} onClick={() => { setCarrierFilter('KT'); setPage(0); }}>KT</span>
+        <span style={{ ...filterBtn(carrierFilter === 'LG U+'), color: carrierFilter === 'LG U+' ? '#fff' : theme.green, borderColor: carrierFilter === 'LG U+' ? theme.navy : theme.green }} onClick={() => { setCarrierFilter('LG U+'); setPage(0); }}>LG U+</span>
+        <span style={filterBtn(makerFilter === '삼성')} onClick={() => { setMakerFilter(makerFilter === '삼성' ? '전체' : '삼성'); setPage(0); }}>삼성</span>
+        <span style={filterBtn(makerFilter === '아이폰')} onClick={() => { setMakerFilter(makerFilter === '아이폰' ? '전체' : '아이폰'); setPage(0); }}>아이폰</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          <span style={{ ...button.success, fontSize: 11, cursor: 'pointer' }}>🔄 수동 크롤링</span>
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px',
+            background: theme.navy, color: '#fff', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer'
+          }}>
+            📂 엑셀 업로드
+            <input type="file" accept=".xlsx,.xls" style={{ display: 'none' }} />
+          </label>
+        </div>
       </div>
 
-      {/* Table */}
-      <div style={{ ...card, padding: 0, overflow: 'auto' }}>
-        <table style={tableStyles.table}>
-          <thead>
+      {/* 테이블 */}
+      <div style={{ ...card, padding: 0, overflowX: 'auto', maxHeight: 600, overflowY: 'auto' }}>
+        <table style={{ ...tableStyles.table, fontSize: 11, minWidth: 600, marginBottom: 0 }}>
+          <thead style={{ position: 'sticky', top: 0 }}>
             <tr>
-              {['모델명', '통신사', '요금제', '공시지원금', '추가지원금', '총지원금', '출고가', '관리'].map(h => (
-                <th key={h} style={tableStyles.th}>{h}</th>
-              ))}
+              <th style={tableStyles.th}>상품명</th>
+              <th style={tableStyles.th}>통신사</th>
+              <th style={tableStyles.th}>요금제</th>
+              <th style={tableStyles.th}>공시지원금</th>
+              <th style={tableStyles.th}>공시일</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map(d => (
-              <tr key={d.id}>
-                <td style={{ ...tableStyles.td, fontWeight: 600, color: theme.text }}>{d.model}</td>
-                <td style={tableStyles.td}>
-                  <span style={statusStyle(d.carrier === 'SKT' ? 'red' : d.carrier === 'KT' ? 'blue' : 'green')}>{d.carrier}</span>
-                </td>
-                <td style={tableStyles.td}>{d.plan}</td>
-                <td style={tableStyles.td}>{d.subsidy.toLocaleString()}원</td>
-                <td style={tableStyles.td}>{d.extra.toLocaleString()}원</td>
-                <td style={{ ...tableStyles.td, fontWeight: 700, color: theme.blue }}>{d.total.toLocaleString()}원</td>
-                <td style={tableStyles.td}>{d.retail.toLocaleString()}원</td>
-                <td style={tableStyles.td}>
-                  <button style={{ ...button.secondary, padding: '4px 10px', fontSize: 11 }} onClick={() => openEdit(d)}>수정</button>
-                </td>
+            {paged.map((row, i) => (
+              <tr key={i}>
+                <td style={{ ...tableStyles.td, fontWeight: 600 }}>{row.product}</td>
+                <td style={{ ...tableStyles.td, fontWeight: 700, color: carrierColor(row.carrier) }}>{row.carrier}</td>
+                <td style={tableStyles.td}>{row.plan}</td>
+                <td style={{ ...tableStyles.td, fontWeight: 700, color: theme.blue }}>{row.subsidy}</td>
+                <td style={tableStyles.td}>{row.date}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Modal */}
-      {showModal && (
-        <div style={overlay} onClick={() => setShowModal(false)}>
-          <div style={modal} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, color: theme.text }}>
-              {editItem ? '공시지원금 수정' : '공시지원금 수동 추가'}
-            </h3>
-            {[
-              { label: '모델명', key: 'model' },
-              { label: '제조사', key: 'maker', type: 'select', options: ['삼성', '애플'] },
-              { label: '통신사', key: 'carrier', type: 'select', options: ['SKT', 'KT', 'LGU+'] },
-              { label: '요금제', key: 'plan' },
-              { label: '공시지원금 (원)', key: 'subsidy' },
-              { label: '추가지원금 (원)', key: 'extra' },
-              { label: '출고가 (원)', key: 'retail' },
-            ].map(f => (
-              <div key={f.key} style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: theme.textSecondary, display: 'block', marginBottom: 4 }}>{f.label}</label>
-                {f.type === 'select' ? (
-                  <select style={input} value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })}>
-                    {f.options.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                ) : (
-                  <input style={input} value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })} />
-                )}
-              </div>
-            ))}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
-              <button style={button.secondary} onClick={() => setShowModal(false)}>취소</button>
-              <button style={button.primary} onClick={save}>저장</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 페이지네이션 */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10 }}>
+        {Array.from({ length: totalPages }, (_, i) => (
+          <span key={i} style={filterBtn(i === page)} onClick={() => setPage(i)}>{i + 1}</span>
+        ))}
+      </div>
+      <div style={{ textAlign: 'center', fontSize: 11, color: theme.textMuted, marginTop: 6 }}>
+        총 {filtered.length}개 중 {page * pageSize + 1}-{Math.min((page + 1) * pageSize, filtered.length)}
+      </div>
     </div>
   );
 }

@@ -1,209 +1,174 @@
-import { useState } from 'react';
-import { theme, card, button, statusStyle } from '../../styles/admin-theme.js';
+import { useState, useEffect, useCallback } from 'react';
+import { theme, statusStyle, tableStyles, card, button, filterBtn, kpiCard, input } from '../../styles/admin-theme.js';
 
-const STORAGE_KEY = 'bongi_feature_checklist';
+const BM_KEY = 'bm_cl_v1';
 
-const sections = [
+const SECTIONS = [
   {
-    title: '인증/회원',
-    items: [
-      { id: 'auth-1', label: '카카오 로그인', status: '완료' },
-      { id: 'auth-2', label: '구글 로그인', status: '완료' },
-      { id: 'auth-3', label: 'PASS 인증 (본인확인)', status: '진행중' },
-      { id: 'auth-4', label: '회원 CRUD', status: '완료' },
-      { id: 'auth-5', label: '회원 등급 관리', status: '진행중' },
-      { id: 'auth-6', label: '비회원 → 회원 전환', status: '미시작' },
-      { id: 'auth-7', label: '탈퇴 처리', status: '완료' },
-      { id: 'auth-8', label: '관리자 권한 분리', status: '진행중' },
-    ],
+    icon: '🗄️', title: 'DB / 인프라', tag: 'INFRA', id: 0,
+    items: ['Supabase 프로젝트 생성', 'users 테이블', 'applications 테이블', 'gifts 테이블', 'points 테이블', 'addresses 테이블', 'referrals 테이블', 'guard_items 테이블', 'products 테이블', 'Supabase Storage 버킷', 'Vercel 배포 연결'],
   },
   {
-    title: '상품 관리',
-    items: [
-      { id: 'prod-1', label: '인터넷 상품 CRUD', status: '완료' },
-      { id: 'prod-2', label: 'TV 상품 CRUD', status: '완료' },
-      { id: 'prod-3', label: '렌탈 상품 CRUD', status: '완료' },
-      { id: 'prod-4', label: '중고폰 CRUD', status: '진행중' },
-      { id: 'prod-5', label: '모바일 요금제 관리', status: '완료' },
-      { id: 'prod-6', label: '공시지원금 데이터', status: '완료' },
-      { id: 'prod-7', label: '가족결합 데이터', status: '완료' },
-      { id: 'prod-8', label: '결합할인 시뮬레이터', status: '진행중' },
-    ],
+    icon: '🔐', title: '인증', tag: 'AUTH', id: 1,
+    items: ['카카오 소셜 로그인', '구글 소셜 로그인', '어드민 로그인', '어드민 권한 분기', 'PASS 본인인증 연동', 'PASS 인증 후 DB 자동 업데이트'],
   },
   {
-    title: 'AI 챗봇',
-    items: [
-      { id: 'ai-1', label: '요금제 검색/추천', status: '진행중' },
-      { id: 'ai-2', label: '결합할인 안내', status: '미시작' },
-      { id: 'ai-3', label: '매장 조회', status: '미시작' },
-      { id: 'ai-4', label: '가입 상담 플로우', status: '미시작' },
-      { id: 'ai-5', label: '해지 방어 시나리오', status: '미시작' },
-      { id: 'ai-6', label: 'FAQ 자동응답', status: '진행중' },
-      { id: 'ai-7', label: '상담사 에스컬레이션', status: '미시작' },
-      { id: 'ai-8', label: 'AI 학습 데이터 관리', status: '완료' },
-    ],
+    icon: '👥', title: '회원 관리', tag: 'MEMBERS', id: 2,
+    items: ['회원 목록 조회/검색/필터', '회원 상세 기본정보', '회원 상세 계좌/주소', '회원 상세 신청/계약 이력', '회원 상세 사은품 내역', '회원 상세 포인트 내역', '회원 상세 친구초대 현황', '회원 상세 돈지키미 현황', '미인증 회원 필터', '알림톡 일괄 발송'],
   },
   {
-    title: '어드민',
-    items: [
-      { id: 'admin-1', label: '대시보드', status: '완료' },
-      { id: 'admin-2', label: '회원관리', status: '완료' },
-      { id: 'admin-3', label: '상품관리 (캐리어)', status: '완료' },
-      { id: 'admin-4', label: '렌탈 관리', status: '완료' },
-      { id: 'admin-5', label: '계약/신청 관리', status: '완료' },
-      { id: 'admin-6', label: '수수료 정산', status: '완료' },
-      { id: 'admin-7', label: '사은품 관리', status: '완료' },
-      { id: 'admin-8', label: '인센티브 관리', status: '완료' },
-      { id: 'admin-9', label: '크롤링 관리', status: '진행중' },
-      { id: 'admin-10', label: '기능 체크리스트', status: '완료' },
-    ],
+    icon: '📋', title: '신청 현황', tag: 'APPLY', id: 3,
+    items: ['신청 목록 전 채널 통합', '채널별 필터', '회원/비회원 구분 표시', 'CRM 전달 상태 표시', '신청 상세 팝업', '담당자 배정'],
   },
   {
-    title: 'CRM',
-    items: [
-      { id: 'crm-1', label: '신청 파이프라인', status: '완료' },
-      { id: 'crm-2', label: '티켓 관리', status: '진행중' },
-      { id: 'crm-3', label: '알림 발송 (카카오톡)', status: '미시작' },
-      { id: 'crm-4', label: '알림 발송 (SMS)', status: '미시작' },
-      { id: 'crm-5', label: '고객 상세 타임라인', status: '완료' },
-      { id: 'crm-6', label: 'CTI 콘솔', status: '진행중' },
-      { id: 'crm-7', label: '리뷰 관리', status: '완료' },
-      { id: 'crm-8', label: '추천인 관리', status: '완료' },
-      { id: 'crm-9', label: 'KPI 대시보드', status: '완료' },
-    ],
+    icon: '🎁', title: '사은품 관리', tag: 'GIFTS', id: 4,
+    items: ['사은품 목록', '지급 처리 승인/보류', '일괄 지급 처리', '비회원 가입 유도 알림톡 3단계', '계좌 실명 조회 연동'],
+  },
+  {
+    icon: '💰', title: '포인트 관리', tag: 'POINTS', id: 5,
+    items: ['출금 신청 목록', '조건 4가지 자동 검증', '출금 승인/반려', '계좌 자동 입금 연동', '포인트 적립 내역 조회'],
+  },
+  {
+    icon: '🛍️', title: '상품 관리', tag: 'PRODUCTS', id: 6,
+    items: ['인터넷+TV 상품 관리', '렌탈 렌트리 URL 자동 파싱', '렌탈 이미지 Supabase 저장', '중고폰 매입 관리', 'AI 노출 ON/OFF'],
+  },
+  {
+    icon: '🤖', title: 'AI 학습 데이터', tag: 'AI DATA', id: 7,
+    items: ['모바일 요금제', '유선 인터넷+TV', '가족결합', '렌탈 상품', '시세 관리', '가이드', '매장 정보'],
+  },
+  {
+    icon: '📦', title: '중고폰', tag: 'USED', id: 8,
+    items: ['위탁업체 API 연동 트레딧', '매입 신청 목록', '상태 동기화', '알림톡 자동 발송', '중고폰 시세 관리'],
+  },
+  {
+    icon: '🔔', title: '돈지키미', tag: 'GUARD', id: 9,
+    items: ['돈지키미 등록 관리', 'D-90/D-30/D-7/D-1 알람 자동 발송', 'CRM 해피콜 자동 연동'],
+  },
+  {
+    icon: '🔗', title: 'CRM 연동', tag: 'CRM', id: 10,
+    items: ['CRM 어드민 웹훅 동기화', '비회원 회원 자동 매칭', '신규 고객 CRM 자동 전달', '계약 완료 CRM 업데이트', 'CTI CRM등록 감지'],
+  },
+  {
+    icon: '🕷️', title: '크롤링', tag: 'CRAWL', id: 11,
+    items: ['모바일 요금제 크롤러', '공시지원금 크롤러', '검토 승인 AI 반영 플로우'],
+  },
+  {
+    icon: '📊', title: '통계', tag: 'STATS', id: 12,
+    items: ['대시보드 KPI', '채널별 신청 차트', '비회원 회원 전환 현황', '월별 계약 통계'],
   },
 ];
 
-function loadChecked() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
+const TOTAL_ITEMS = SECTIONS.reduce((sum, s) => sum + s.items.length, 0);
 
 export default function FeatureChecklist() {
-  const [checked, setChecked] = useState(() => loadChecked());
-  const [collapsed, setCollapsed] = useState({});
+  const [checked, setChecked] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(BM_KEY) || '{}');
+    } catch { return {}; }
+  });
 
-  const allItems = sections.flatMap(s => s.items);
-  const total = allItems.length;
-  const completedCount = allItems.filter(i => i.status === '완료').length;
-  const inProgressCount = allItems.filter(i => i.status === '진행중').length;
-  const notStartedCount = allItems.filter(i => i.status === '미시작').length;
-  const checkedCount = Object.keys(checked).filter(k => checked[k]).length;
-  const progress = Math.round((checkedCount / total) * 100);
+  useEffect(() => {
+    localStorage.setItem(BM_KEY, JSON.stringify(checked));
+  }, [checked]);
 
-  const toggleCheck = (id) => {
-    const next = { ...checked, [id]: !checked[id] };
-    setChecked(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  const toggle = useCallback((key) => {
+    setChecked(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      return next;
+    });
+  }, []);
+
+  const doneCount = Object.values(checked).filter(Boolean).length;
+  const leftCount = TOTAL_ITEMS - doneCount;
+  const pct = TOTAL_ITEMS ? Math.round(doneCount / TOTAL_ITEMS * 100) : 0;
+
+  const getSectionDone = (sectionId) => {
+    const section = SECTIONS.find(s => s.id === sectionId);
+    if (!section) return 0;
+    return section.items.filter((_, idx) => checked[`${sectionId}_${idx}`]).length;
   };
 
-  const toggleCollapse = (title) => {
-    setCollapsed({ ...collapsed, [title]: !collapsed[title] });
+  const clTotalStyle = {
+    display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 16, padding: '16px 0',
+  };
+  const clKpiStyle = { textAlign: 'center' };
+  const clKpiNStyle = (color) => ({ fontSize: 28, fontWeight: 900, color });
+  const clKpiLStyle = { fontSize: 11, color: theme.textMuted, marginTop: 4 };
+
+  const clBarWrap = {
+    background: '#e5e7eb', borderRadius: 8, height: 8, marginBottom: 20, overflow: 'hidden',
+  };
+  const clBarFill = {
+    background: `linear-gradient(90deg, ${theme.green}, ${theme.blue})`,
+    height: '100%', borderRadius: 8, transition: 'width 0.3s',
+    width: `${pct}%`,
   };
 
-  const statusColor = (s) => s === '완료' ? 'green' : s === '진행중' ? 'orange' : 'gray';
-
-  const kpiCard = {
-    background: '#fff', border: `1px solid ${theme.border}`, borderRadius: 10, padding: 16, textAlign: 'center',
+  const clSectionStyle = {
+    marginBottom: 12, background: '#fff', border: `1px solid ${theme.border}`, borderRadius: 10, padding: 12,
   };
+  const clSecTitleStyle = {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    fontWeight: 700, fontSize: 13, color: theme.navy, marginBottom: 8,
+  };
+  const clStagStyle = {
+    fontSize: 9, padding: '2px 6px', background: '#e0e7ff', color: theme.navy, borderRadius: 4, fontWeight: 700, marginLeft: 6,
+  };
+  const clSecProgStyle = { fontSize: 11, color: theme.textMuted, fontWeight: 400 };
+
+  const clItemStyle = (done) => ({
+    display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6,
+    cursor: 'pointer', transition: 'background 0.15s',
+    background: done ? '#f0fdf4' : 'transparent',
+    opacity: done ? 0.7 : 1,
+  });
+  const clCbStyle = (done) => ({
+    width: 20, height: 20, borderRadius: 4,
+    border: done ? `2px solid ${theme.green}` : `2px solid ${theme.borderDark}`,
+    background: done ? theme.green : '#fff',
+    color: done ? '#fff' : 'transparent',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 12, fontWeight: 700, flexShrink: 0, transition: 'all 0.15s',
+  });
+  const clLabelStyle = (done) => ({
+    fontSize: 12, color: done ? theme.textMuted : theme.text,
+    textDecoration: done ? 'line-through' : 'none',
+  });
 
   return (
-    <div style={{ padding: 24, fontFamily: theme.sans, background: theme.bg, minHeight: '100vh' }}>
-      <h1 style={{ fontSize: 20, fontWeight: 800, color: theme.text, marginBottom: 20 }}>기능 체크리스트</h1>
-
-      {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 16 }}>
-        <div style={kpiCard}>
-          <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 6 }}>전체</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: theme.navy, fontFamily: 'monospace' }}>{total}</div>
-        </div>
-        <div style={kpiCard}>
-          <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 6 }}>완료</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: theme.green, fontFamily: 'monospace' }}>{completedCount}</div>
-        </div>
-        <div style={kpiCard}>
-          <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 6 }}>진행중</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: theme.orange, fontFamily: 'monospace' }}>{inProgressCount}</div>
-        </div>
-        <div style={kpiCard}>
-          <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 6 }}>미시작</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: theme.textMuted, fontFamily: 'monospace' }}>{notStartedCount}</div>
-        </div>
+    <div>
+      {/* Total KPIs */}
+      <div style={clTotalStyle}>
+        <div style={clKpiStyle}><div style={clKpiNStyle(theme.green)}>{doneCount}</div><div style={clKpiLStyle}>완료</div></div>
+        <div style={clKpiStyle}><div style={clKpiNStyle(theme.orange)}>{leftCount}</div><div style={clKpiLStyle}>미완료</div></div>
+        <div style={clKpiStyle}><div style={clKpiNStyle(theme.navy)}>{TOTAL_ITEMS}</div><div style={clKpiLStyle}>전체</div></div>
+        <div style={clKpiStyle}><div style={clKpiNStyle(theme.blue)}>{pct}%</div><div style={clKpiLStyle}>진행률</div></div>
       </div>
 
       {/* Progress bar */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: theme.text }}>체크 진행률</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: theme.blue }}>{checkedCount}/{total} ({progress}%)</span>
-        </div>
-        <div style={{ background: '#e5e7eb', borderRadius: 6, height: 10, overflow: 'hidden' }}>
-          <div style={{
-            width: `${progress}%`,
-            height: '100%',
-            background: `linear-gradient(90deg, ${theme.blue}, ${theme.green})`,
-            borderRadius: 6,
-            transition: 'width 0.3s ease',
-          }} />
-        </div>
-      </div>
+      <div style={clBarWrap}><div style={clBarFill} /></div>
 
       {/* Sections */}
-      {sections.map(section => {
-        const isCollapsed = collapsed[section.title];
-        const sectionChecked = section.items.filter(i => checked[i.id]).length;
+      {SECTIONS.map(section => {
+        const secDone = getSectionDone(section.id);
         return (
-          <div key={section.title} style={{ ...card, marginBottom: 12 }}>
-            <div
-              style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
-              onClick={() => toggleCollapse(section.title)}
-            >
-              <span style={{ fontSize: 14, marginRight: 8, color: theme.textSecondary }}>
-                {isCollapsed ? '\u25B6' : '\u25BC'}
+          <div key={section.id} style={clSectionStyle}>
+            <div style={clSecTitleStyle}>
+              <span>
+                {section.icon} {section.title} <span style={clStagStyle}>{section.tag}</span>
               </span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: theme.text, flex: 1 }}>
-                {section.title}
-              </span>
-              <span style={{ fontSize: 11, color: theme.textSecondary }}>
-                {sectionChecked}/{section.items.length}
-              </span>
+              <span style={clSecProgStyle}>{secDone} / {section.items.length}</span>
             </div>
-            {!isCollapsed && (
-              <div style={{ marginTop: 12 }}>
-                {section.items.map(item => (
-                  <div
-                    key={item.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      padding: '8px 0',
-                      borderBottom: `1px solid ${theme.border}`,
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={!!checked[item.id]}
-                      onChange={() => toggleCheck(item.id)}
-                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: theme.blue }}
-                    />
-                    <span style={{
-                      fontSize: 13,
-                      color: checked[item.id] ? theme.textMuted : theme.text,
-                      textDecoration: checked[item.id] ? 'line-through' : 'none',
-                      flex: 1,
-                    }}>
-                      {item.label}
-                    </span>
-                    <span style={statusStyle(statusColor(item.status))}>{item.status}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {section.items.map((item, idx) => {
+              const key = `${section.id}_${idx}`;
+              const done = !!checked[key];
+              return (
+                <div key={key} onClick={() => toggle(key)} style={clItemStyle(done)}>
+                  <div style={clCbStyle(done)}>✓</div>
+                  <div style={clLabelStyle(done)}>{item}</div>
+                </div>
+              );
+            })}
           </div>
         );
       })}

@@ -1,116 +1,112 @@
 import { useState } from 'react';
-import { theme, card, button, tableStyles, filterBtn, statusStyle, input } from '../../styles/admin-theme.js';
+import { theme, statusStyle, tableStyles, card, button, filterBtn, kpiCard, input } from '../../styles/admin-theme.js';
 
-const mockPlans = [
-  { id: 1, carrier: 'SKT', name: '5G 다이렉트 49', monthly: 49000, data: '150GB', voice: '무제한', sms: '무제한', benefit: 'T멤버십 VIP', network: '5G' },
-  { id: 2, carrier: 'SKT', name: '5G 슬림 39', monthly: 39000, data: '12GB', voice: '무제한', sms: '무제한', benefit: 'T멤버십', network: '5G' },
-  { id: 3, carrier: 'SKT', name: 'LTE 세이브 34', monthly: 34000, data: '6GB', voice: '무제한', sms: '무제한', benefit: '-', network: 'LTE' },
-  { id: 4, carrier: 'KT', name: '5G 슈퍼플랜 베이직', monthly: 55000, data: '200GB', voice: '무제한', sms: '무제한', benefit: '슈퍼할인', network: '5G' },
-  { id: 5, carrier: 'KT', name: '5G 심플 47', monthly: 47000, data: '100GB', voice: '무제한', sms: '무제한', benefit: '-', network: '5G' },
-  { id: 6, carrier: 'KT', name: 'LTE 베이직 33', monthly: 33000, data: '5GB', voice: '무제한', sms: '무제한', benefit: '-', network: 'LTE' },
-  { id: 7, carrier: 'LGU+', name: '5G 프리미엄 69', monthly: 69000, data: '무제한', voice: '무제한', sms: '무제한', benefit: 'U+멤버십 VIP', network: '5G' },
-  { id: 8, carrier: 'LGU+', name: '5G 스탠다드 52', monthly: 52000, data: '150GB', voice: '무제한', sms: '무제한', benefit: 'U+멤버십', network: '5G' },
-  { id: 9, carrier: 'LGU+', name: 'LTE 데이터 29', monthly: 29000, data: '3GB', voice: '무제한', sms: '무제한', benefit: '-', network: 'LTE' },
-  { id: 10, carrier: 'SKT', name: '5G 프리미엄 69', monthly: 69000, data: '무제한', voice: '무제한', sms: '무제한', benefit: 'T멤버십 VVIP', network: '5G' },
+const samplePlans = [
+  { carrier: 'SKT', name: '5G 프리미어 에센셜', price: '85,000', discount: '63,750', data: '무제한', voice: '무제한', net: '5G', ott: '디즈니+', category: '프리미엄' },
+  { carrier: 'SKT', name: '5G 다이렉트 49', price: '49,000', discount: '36,750', data: '110GB', voice: '무제한', net: '5G', ott: '-', category: '중간' },
+  { carrier: 'SKT', name: 'LTE 세이브 34', price: '34,000', discount: '25,500', data: '6GB', voice: '무제한', net: 'LTE', ott: '-', category: '알뜰' },
+  { carrier: 'KT', name: '5G 슈퍼플랜 베이직', price: '55,000', discount: '41,250', data: '150GB', voice: '무제한', net: '5G', ott: '지니TV', category: '중간' },
+  { carrier: 'KT', name: '5G 슈퍼플랜 스페셜', price: '80,000', discount: '60,000', data: '무제한', voice: '무제한', net: '5G', ott: '지니TV+넷플릭스', category: '프리미엄' },
+  { carrier: 'KT', name: 'LTE 심플 29', price: '29,000', discount: '21,750', data: '3GB', voice: '무제한', net: 'LTE', ott: '-', category: '알뜰' },
+  { carrier: 'LG U+', name: '5G 시그니처', price: '89,000', discount: '66,750', data: '무제한', voice: '무제한', net: '5G', ott: '유플레이', category: '프리미엄' },
+  { carrier: 'LG U+', name: '5G 라이트+', price: '55,000', discount: '41,250', data: '120GB', voice: '무제한', net: '5G', ott: '-', category: '중간' },
+  { carrier: 'LG U+', name: 'LTE 데이터33', price: '33,000', discount: '24,750', data: '5GB', voice: '무제한', net: 'LTE', ott: '-', category: '알뜰' },
+  { carrier: 'SKT', name: '5G 슬림 39', price: '39,000', discount: '29,250', data: '10GB', voice: '무제한', net: '5G', ott: '-', category: '알뜰' },
 ];
 
-const carriers = ['전체', 'SKT', 'KT', 'LGU+'];
-const networks = ['전체', '5G', 'LTE'];
-
-const overlay = {
-  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-  background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-};
-
-const modal = {
-  background: '#fff', borderRadius: 12, padding: 24, width: 480,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.18)', maxHeight: '80vh', overflowY: 'auto',
-};
-
 export default function MobilePlans() {
-  const [plans, setPlans] = useState(mockPlans);
   const [carrierFilter, setCarrierFilter] = useState('전체');
-  const [networkFilter, setNetworkFilter] = useState('전체');
-  const [showModal, setShowModal] = useState(false);
-  const [editPlan, setEditPlan] = useState(null);
-  const [form, setForm] = useState({ carrier: 'SKT', name: '', monthly: '', data: '', voice: '무제한', sms: '무제한', benefit: '', network: '5G' });
+  const [netFilter, setNetFilter] = useState('전체');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
 
-  const filtered = plans.filter(p =>
-    (carrierFilter === '전체' || p.carrier === carrierFilter) &&
-    (networkFilter === '전체' || p.network === networkFilter)
-  );
+  const filtered = samplePlans.filter(p => {
+    if (carrierFilter !== '전체' && p.carrier !== carrierFilter) return false;
+    if (netFilter !== '전체' && p.net !== netFilter) return false;
+    if (search && !p.name.includes(search) && !p.ott.includes(search)) return false;
+    return true;
+  });
 
-  const openAdd = () => {
-    setEditPlan(null);
-    setForm({ carrier: 'SKT', name: '', monthly: '', data: '', voice: '무제한', sms: '무제한', benefit: '', network: '5G' });
-    setShowModal(true);
-  };
+  const pageSize = 10;
+  const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
+  const totalPages = Math.ceil(filtered.length / pageSize);
 
-  const openEdit = (p) => {
-    setEditPlan(p);
-    setForm({ ...p, monthly: String(p.monthly) });
-    setShowModal(true);
-  };
-
-  const save = () => {
-    if (editPlan) {
-      setPlans(plans.map(p => p.id === editPlan.id ? { ...p, ...form, monthly: Number(form.monthly) } : p));
-    } else {
-      setPlans([...plans, { ...form, id: Date.now(), monthly: Number(form.monthly) }]);
-    }
-    setShowModal(false);
-  };
-
-  const remove = (id) => setPlans(plans.filter(p => p.id !== id));
+  const carrierColor = (c) => c === 'SKT' ? theme.red : c === 'KT' ? theme.blue : theme.green;
 
   return (
     <div style={{ padding: 24, fontFamily: theme.sans, background: theme.bg, minHeight: '100vh' }}>
-      <h1 style={{ fontSize: 20, fontWeight: 800, color: theme.text, marginBottom: 20 }}>
-        모바일 요금제 (AI 학습 데이터)
-      </h1>
 
-      {/* Filters */}
-      <div style={{ ...card, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: theme.text, marginRight: 4 }}>통신사</span>
-        {carriers.map(c => (
-          <button key={c} style={filterBtn(carrierFilter === c)} onClick={() => setCarrierFilter(c)}>{c}</button>
-        ))}
-        <span style={{ fontSize: 12, fontWeight: 600, color: theme.text, margin: '0 8px 0 16px' }}>네트워크</span>
-        {networks.map(n => (
-          <button key={n} style={filterBtn(networkFilter === n)} onClick={() => setNetworkFilter(n)}>{n}</button>
-        ))}
-        <div style={{ flex: 1 }} />
-        <button style={button.primary} onClick={openAdd}>+ 요금제 추가</button>
-        <button style={button.secondary}>엑셀 업로드</button>
+      {/* KPI 카드 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 14 }}>
+        <div style={kpiCard}><div style={{ fontSize: 28, fontWeight: 900, color: theme.red }}>68</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>SKT</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 28, fontWeight: 900, color: theme.blue }}>50</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>KT</div></div>
+        <div style={kpiCard}><div style={{ fontSize: 28, fontWeight: 900, color: theme.green }}>50</div><div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>LG U+</div></div>
       </div>
 
-      {/* Table */}
-      <div style={{ ...card, padding: 0, overflow: 'auto' }}>
-        <table style={tableStyles.table}>
+      {/* 필터 바 */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+        <input
+          style={{ ...input, width: 200 }}
+          placeholder="요금제명 / OTT 검색"
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(0); }}
+        />
+        <span style={filterBtn(carrierFilter === '전체')} onClick={() => { setCarrierFilter('전체'); setPage(0); }}>전체 (168)</span>
+        <span style={filterBtn(carrierFilter === 'SKT')} onClick={() => { setCarrierFilter('SKT'); setPage(0); }}>SKT</span>
+        <span style={filterBtn(carrierFilter === 'KT')} onClick={() => { setCarrierFilter('KT'); setPage(0); }}>KT</span>
+        <span style={filterBtn(carrierFilter === 'LG U+')} onClick={() => { setCarrierFilter('LG U+'); setPage(0); }}>LG U+</span>
+        <span style={filterBtn(netFilter === '전체')} onClick={() => { setNetFilter('전체'); setPage(0); }}>전체</span>
+        <span style={filterBtn(netFilter === '5G')} onClick={() => { setNetFilter('5G'); setPage(0); }}>5G</span>
+        <span style={filterBtn(netFilter === 'LTE')} onClick={() => { setNetFilter('LTE'); setPage(0); }}>LTE</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          <span style={{ ...button.success, fontSize: 11, cursor: 'pointer' }}>✏️ 편집</span>
+          <span style={{ ...button.primary, fontSize: 11, cursor: 'pointer' }}>+ 요금제 추가</span>
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px',
+            background: theme.navy, color: '#fff', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer'
+          }}>
+            📂 엑셀 업로드
+            <input type="file" accept=".xlsx,.xls" style={{ display: 'none' }} />
+          </label>
+        </div>
+      </div>
+
+      {/* 테이블 */}
+      <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
+        <table style={{ ...tableStyles.table, fontSize: 11, minWidth: 1100, marginBottom: 0 }}>
           <thead>
             <tr>
-              {['통신사', '요금제명', '월요금', '데이터', '음성', '문자', '혜택', '관리'].map(h => (
-                <th key={h} style={tableStyles.th}>{h}</th>
-              ))}
+              <th style={tableStyles.th}>통신사</th>
+              <th style={tableStyles.th}>요금제명</th>
+              <th style={tableStyles.th}>월정액</th>
+              <th style={tableStyles.th}>약정할인가</th>
+              <th style={tableStyles.th}>데이터</th>
+              <th style={tableStyles.th}>음성</th>
+              <th style={tableStyles.th}>네트워크</th>
+              <th style={tableStyles.th}>OTT/부가혜택</th>
+              <th style={tableStyles.th}>카테고리</th>
+              <th style={tableStyles.th}>관리</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map(p => (
-              <tr key={p.id}>
-                <td style={tableStyles.td}>
-                  <span style={{ ...statusStyle(p.carrier === 'SKT' ? 'red' : p.carrier === 'KT' ? 'blue' : 'green') }}>
-                    {p.carrier}
-                  </span>
-                </td>
-                <td style={{ ...tableStyles.td, fontWeight: 600, color: theme.text }}>{p.name}</td>
-                <td style={tableStyles.td}>{p.monthly.toLocaleString()}원</td>
+            {paged.map((p, i) => (
+              <tr key={i}>
+                <td style={{ ...tableStyles.td, fontWeight: 700, color: carrierColor(p.carrier) }}>{p.carrier}</td>
+                <td style={{ ...tableStyles.td, fontWeight: 600 }}>{p.name}</td>
+                <td style={{ ...tableStyles.td, fontWeight: 600 }}>{p.price}</td>
+                <td style={{ ...tableStyles.td, color: theme.blue, fontWeight: 600 }}>{p.discount}</td>
                 <td style={tableStyles.td}>{p.data}</td>
                 <td style={tableStyles.td}>{p.voice}</td>
-                <td style={tableStyles.td}>{p.sms}</td>
-                <td style={tableStyles.td}>{p.benefit}</td>
                 <td style={tableStyles.td}>
-                  <button style={{ ...button.secondary, marginRight: 4, padding: '4px 10px', fontSize: 11 }} onClick={() => openEdit(p)}>수정</button>
-                  <button style={{ ...button.danger, padding: '4px 10px' }} onClick={() => remove(p.id)}>삭제</button>
+                  <span style={statusStyle(p.net === '5G' ? 'blue' : 'green')}>{p.net}</span>
+                </td>
+                <td style={{ ...tableStyles.td, fontSize: 10 }}>{p.ott}</td>
+                <td style={tableStyles.td}>{p.category}</td>
+                <td style={tableStyles.td}>
+                  <div style={{ display: 'flex', gap: 3 }}>
+                    <span style={{ ...button.secondary, fontSize: 10, padding: '3px 8px' }}>수정</span>
+                    <span style={{ ...button.danger, fontSize: 10, padding: '3px 8px' }}>삭제</span>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -118,41 +114,15 @@ export default function MobilePlans() {
         </table>
       </div>
 
-      {/* Modal */}
-      {showModal && (
-        <div style={overlay} onClick={() => setShowModal(false)}>
-          <div style={modal} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, color: theme.text }}>
-              {editPlan ? '요금제 수정' : '요금제 추가'}
-            </h3>
-            {[
-              { label: '통신사', key: 'carrier', type: 'select', options: ['SKT', 'KT', 'LGU+'] },
-              { label: '요금제명', key: 'name' },
-              { label: '월요금 (원)', key: 'monthly' },
-              { label: '데이터', key: 'data' },
-              { label: '음성', key: 'voice' },
-              { label: '문자', key: 'sms' },
-              { label: '혜택', key: 'benefit' },
-              { label: '네트워크', key: 'network', type: 'select', options: ['5G', 'LTE'] },
-            ].map(f => (
-              <div key={f.key} style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: theme.textSecondary, display: 'block', marginBottom: 4 }}>{f.label}</label>
-                {f.type === 'select' ? (
-                  <select style={{ ...input }} value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })}>
-                    {f.options.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                ) : (
-                  <input style={input} value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })} />
-                )}
-              </div>
-            ))}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
-              <button style={button.secondary} onClick={() => setShowModal(false)}>취소</button>
-              <button style={button.primary} onClick={save}>저장</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 페이지네이션 */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 12 }}>
+        {Array.from({ length: totalPages }, (_, i) => (
+          <span key={i} style={filterBtn(i === page)} onClick={() => setPage(i)}>{i + 1}</span>
+        ))}
+      </div>
+      <div style={{ textAlign: 'center', fontSize: 11, color: theme.textMuted, marginTop: 6 }}>
+        총 {filtered.length}개 중 {page * pageSize + 1}-{Math.min((page + 1) * pageSize, filtered.length)}
+      </div>
     </div>
   );
 }
