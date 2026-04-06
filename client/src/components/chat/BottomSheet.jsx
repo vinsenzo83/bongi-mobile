@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-export default function BottomSheet({ open, onClose, title, children }) {
+export default function BottomSheet({ open, onClose, title, children, height }) {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
 
@@ -36,7 +36,8 @@ export default function BottomSheet({ open, onClose, title, children }) {
   const sheetStyle = {
     width: '100%',
     maxWidth: 480,
-    height: '85vh',
+    height: height || 'auto',
+    maxHeight: '85vh',
     backgroundColor: '#fff',
     borderRadius: '16px 16px 0 0',
     transform: animating ? 'translateY(0)' : 'translateY(100%)',

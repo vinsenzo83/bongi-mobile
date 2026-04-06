@@ -199,7 +199,7 @@ export default function UsedPhoneIntakeSheet({ open, onClose, phone }) {
   }
 
   return (
-    <BottomSheet open={open} onClose={handleClose} title="중고폰 매입 접수">
+    <BottomSheet open={open} onClose={handleClose} title="중고폰 매입 접수" height="85vh">
       <div style={{ padding: 16, paddingBottom: 80 }}>
         <div style={fieldGroup}>
           <label style={labelStyle}>이름 *</label>

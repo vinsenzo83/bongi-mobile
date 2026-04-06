@@ -130,7 +130,7 @@ export default function RentalApplySheet({ open, onClose, product }) {
   }
 
   return (
-    <BottomSheet open={open} onClose={handleClose} title="렌탈 신청">
+    <BottomSheet open={open} onClose={handleClose} title="렌탈 신청" height="85vh">
       <div style={{ padding: 16, paddingBottom: 80 }}>
         <div style={fieldGroup}>
           <label style={labelStyle}>이름 *</label>
