@@ -6,6 +6,7 @@ import MessageList from '../components/chat/MessageList.jsx';
 import InputArea from '../components/chat/InputArea.jsx';
 import MyPageModal from '../components/chat/MyPageModal.jsx';
 import ConsultSheet from '../components/chat/ConsultSheet.jsx';
+import PhoneSelectCard from '../components/chat/PhoneSelectCard.jsx';
 
 export default function Chat() {
   const chat = useChat();
@@ -13,6 +14,7 @@ export default function Chat() {
   const [myPageOpen, setMyPageOpen] = useState(false);
   const [myPageTab, setMyPageTab] = useState('home');
   const [consultSheet, setConsultSheet] = useState({ open: false, product: null, category: null });
+  const [showPhoneSelect, setShowPhoneSelect] = useState(false);
   const isMobile = useIsMobile();
 
   return (
@@ -43,15 +45,26 @@ export default function Chat() {
 
         {/* 메시지 영역 */}
         {chat.messages.length === 0 ? (
-          <WelcomeScreen onChipClick={chat.sendMessage} isMobile={isMobile} />
+          <WelcomeScreen onChipClick={(msg) => {
+            const phoneKeywords = ['휴대폰', '핸드폰', '폰 시세', '폰 가격', '폰 사은품'];
+            if (phoneKeywords.some(k => msg.includes(k))) {
+              setShowPhoneSelect(true);
+            } else {
+              chat.sendMessage(msg);
+            }
+          }} isMobile={isMobile} />
         ) : (
           <MessageList messages={chat.messages} loading={chat.loading} onAction={(msg) => {
+            const phoneKeywords = ['휴대폰', '핸드폰', '폰 시세', '폰 가격', '폰 사은품'];
             if (msg.startsWith('__consult__')) {
               try {
                 const data = JSON.parse(msg.replace('__consult__', ''));
                 setConsultSheet({ open: true, product: data.product, category: data.category });
               } catch { setConsultSheet({ open: true, product: {}, category: 'internet' }); }
+            } else if (phoneKeywords.some(k => msg.includes(k)) && !msg.includes('시세 비교') && !msg.includes('시세 알려줘')) {
+              setShowPhoneSelect(true);
             } else {
+              setShowPhoneSelect(false);
               chat.sendMessage(msg);
             }
           }} />
@@ -60,6 +73,21 @@ export default function Chat() {
         {/* 입력창 */}
         <InputArea onSend={chat.sendMessage} loading={chat.loading} hasMessages={chat.messages.length > 0} />
       </div>
+
+      {/* 휴대폰 기종 선택 */}
+      {showPhoneSelect && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 420, marginBottom: 0, animation: 'slideUp 0.25s ease' }}>
+            <div style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '16px 16px 24px', maxHeight: '80vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#1a2744' }}>{'📱'} 휴대폰 시세 조회</span>
+                <button onClick={() => setShowPhoneSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
+              </div>
+              <PhoneSelectCard onComplete={(query) => { setShowPhoneSelect(false); chat.sendMessage(query); }} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 마이페이지 모달 */}
       <MyPageModal open={myPageOpen} onClose={() => setMyPageOpen(false)} initialTab={myPageTab} />
