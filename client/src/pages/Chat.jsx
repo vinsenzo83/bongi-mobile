@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useChat } from '../hooks/useChat.js';
 import { useIsMobile } from '../hooks/useIsMobile.js';
 import Sidebar from '../components/chat/Sidebar.jsx';
@@ -9,6 +10,7 @@ export default function Chat() {
   const chat = useChat();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   return (
     <div style={styles.container}>
@@ -32,7 +34,10 @@ export default function Chat() {
         }}>
           <button onClick={() => setSidebarOpen(true)} style={styles.menuBtn}>☰</button>
           <span style={styles.title}>🐟 리턴AI</span>
-          <button onClick={chat.startNewSession} style={styles.newBtn}>+</button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => navigate('/my')} style={styles.myBtn}>MY</button>
+            <button onClick={chat.startNewSession} style={styles.newBtn}>+</button>
+          </div>
         </div>
 
         {/* 메시지 영역 */}
@@ -156,6 +161,16 @@ const styles = {
     fontSize: 18,
     cursor: 'pointer',
     padding: '2px 10px',
+  },
+  myBtn: {
+    background: '#2563eb',
+    border: 'none',
+    borderRadius: 8,
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: '4px 12px',
   },
   welcome: {
     flex: 1,
