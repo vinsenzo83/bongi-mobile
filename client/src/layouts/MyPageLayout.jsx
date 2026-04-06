@@ -17,9 +17,11 @@ const SIDEBAR_ITEMS = [
   { icon: '\u{1F4B0}', label: '포인트 내역', path: '/my/points' },
   { icon: '\u{1F514}', label: '돈지키미', path: '/my/guard' },
   { icon: '\u{1F46B}', label: '친구초대', path: '/my/referral' },
+  { icon: '\u2B50', label: '후기', path: '/my/reviews' },
+  { icon: '\u{1F4F1}', label: '중고폰 매입', path: '/my/used-phone' },
   { icon: '\u2699\uFE0F', label: '알림 설정', path: '/my/alerts' },
-  { icon: '\u2705', label: '본인인증', path: '/my/verify' },
-  { icon: '\u{1F3E6}', label: '계좌 관리', path: '/my/bank' },
+  { icon: '\u2705', label: '본인인증', path: '/my/verification' },
+  { icon: '\u{1F3E6}', label: '계좌 관리', path: '/my/account' },
   { icon: '\u{1F4CD}', label: '주소 관리', path: '/my/address' },
 ];
 

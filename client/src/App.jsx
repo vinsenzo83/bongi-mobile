@@ -22,6 +22,8 @@ const MyAlertSettings = lazy(() => import('./pages/my/AlertSettings.jsx'));
 const MyVerification = lazy(() => import('./pages/my/Verification.jsx'));
 const MyBankAccount = lazy(() => import('./pages/my/BankAccount.jsx'));
 const MyAddress = lazy(() => import('./pages/my/Address.jsx'));
+const MyReviews = lazy(() => import('./pages/my/Reviews.jsx'));
+const MyUsedPhone = lazy(() => import('./pages/my/UsedPhone.jsx'));
 
 // 어드민 페이지 (lazy load) — wireframe 25개 화면
 const Dashboard = lazy(() => import('./pages/admin/Dashboard.jsx'));
@@ -93,6 +95,8 @@ function AppRoutes() {
         <Route path="verification" element={<W C={MyVerification} />} />
         <Route path="account" element={<W C={MyBankAccount} />} />
         <Route path="address" element={<W C={MyAddress} />} />
+        <Route path="reviews" element={<W C={MyReviews} />} />
+        <Route path="used-phone" element={<W C={MyUsedPhone} />} />
       </Route>
 
       {/* 어드민 (25개 화면) */}
