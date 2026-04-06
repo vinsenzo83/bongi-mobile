@@ -42,7 +42,8 @@ app.use(express.json({ limit: '5mb' }));
 app.use(sanitizeBody);
 app.use(apiLimiter);
 
-// 정적 서빙 (대시보드 레거시)
+// 정적 서빙 (레거시 CRM + 대시보드)
+app.use('/crm', express.static(join(__dirname, 'public', 'crm')));
 app.use('/dashboard', express.static(join(__dirname, 'public', 'dashboard')));
 app.use('/api/dashboard', dashboardRoutes);
 
@@ -81,7 +82,7 @@ import { existsSync } from 'fs';
 if (existsSync(clientDist)) {
   app.use(express.static(clientDist));
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/dashboard')) {
+    if (req.path.startsWith('/api') || req.path.startsWith('/crm') || req.path.startsWith('/dashboard')) {
       return next();
     }
     res.sendFile(join(clientDist, 'index.html'));
