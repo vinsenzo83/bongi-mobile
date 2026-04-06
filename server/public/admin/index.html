@@ -8429,6 +8429,78 @@ window.show = function(idx) {
 }
 
 show(0);
+
+// ─── 글로벌 필터: filter-btn 클릭 시 테이블 행 필터링 ───
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.filter-btn');
+  if(!btn || btn.hasAttribute('onclick') || btn.hasAttribute('id')) return;
+
+  // 같은 filter-bar 내 버튼 토글
+  var bar = btn.closest('.filter-bar');
+  if(!bar) return;
+  bar.querySelectorAll('.filter-btn').forEach(function(b) {
+    if(!b.hasAttribute('onclick') && !b.hasAttribute('id')) b.classList.remove('on');
+  });
+  btn.classList.add('on');
+
+  // 현재 화면의 모든 활성 필터 수집
+  var container = document.getElementById('screen-container');
+  if(!container) return;
+  var allBars = container.querySelectorAll('.filter-bar');
+  var filters = {};
+  allBars.forEach(function(b) {
+    var label = b.querySelector('span');
+    if(!label) return;
+    var key = label.textContent.trim();
+    var active = b.querySelector('.filter-btn.on:not([onclick]):not([id])');
+    if(active) filters[key] = active.textContent.trim();
+  });
+
+  // 테이블 행 필터링
+  var tables = container.querySelectorAll('.wf-table');
+  tables.forEach(function(table) {
+    var rows = table.querySelectorAll('tbody tr');
+    rows.forEach(function(row) {
+      var text = row.textContent;
+      var show = true;
+      Object.keys(filters).forEach(function(key) {
+        var val = filters[key];
+        if(val === '전체' || val.startsWith('전체')) return;
+        // 필터 값이 행 텍스트에 포함되는지 체크
+        if(text.indexOf(val) === -1) {
+          // 상태 뱃지의 텍스트도 체크
+          var badges = row.querySelectorAll('.wf-status');
+          var found = false;
+          badges.forEach(function(badge) {
+            if(badge.textContent.trim() === val) found = true;
+          });
+          if(!found) show = false;
+        }
+      });
+      row.style.display = show ? '' : 'none';
+    });
+  });
+});
+
+// ─── 검색 필터: filter-input 입력 시 테이블 행 검색 ───
+document.addEventListener('input', function(e) {
+  var input = e.target;
+  if(!input.classList || !input.classList.contains('filter-input')) return;
+  if(input.hasAttribute('oninput')) return; // 이미 핸들러 있는 건 스킵
+
+  var val = input.value.toLowerCase().trim();
+  var container = document.getElementById('screen-container');
+  if(!container) return;
+  var tables = container.querySelectorAll('.wf-table');
+  tables.forEach(function(table) {
+    var rows = table.querySelectorAll('tbody tr');
+    rows.forEach(function(row) {
+      if(!val) { row.style.display = ''; return; }
+      var text = row.textContent.toLowerCase();
+      row.style.display = text.indexOf(val) > -1 ? '' : 'none';
+    });
+  });
+});
 </script>
 </body>
 </html>
