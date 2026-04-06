@@ -4,7 +4,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>봉이모바일 어드민 와이어프레임</title>
+<title>봉이모바일 어드민</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -408,6 +408,46 @@ body { background: var(--bg); font-family: var(--sans); color: var(--text); min-
 .cl-item.done .cl-cb{background:var(--green);border-color:var(--green);color:#fff}
 .cl-label{font-size:12px;color:var(--text2)}
 .cl-item.done .cl-label{color:var(--text3);text-decoration:line-through}
+
+/* === STANDALONE ADMIN OVERRIDES === */
+body { background: #f8f9fc; }
+.shell { display: none; }
+.admin-shell { min-height: 100vh; display: flex; }
+.admin-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  height: 100dvh;
+  width: 200px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  z-index: 100;
+}
+.admin-main {
+  margin-left: 200px;
+  flex: 1;
+  min-height: 100vh;
+  background: #f8f9fc;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.admin-body { overflow: auto; max-height: calc(100vh - 50px); flex: 1; }
+.admin-top { position: sticky; top: 0; z-index: 10; }
+/* Mobile responsive for standalone admin */
+@media (max-width: 900px) {
+  .hamburger { display: flex; }
+  .admin-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 150;
+  }
+  .admin-sidebar.open { transform: translateX(0); }
+  .admin-main { margin-left: 0; }
+  .admin-top { padding-left: 64px; }
+}
+
 </style>
 </head>
 <body>
@@ -416,80 +456,58 @@ body { background: var(--bg); font-family: var(--sans); color: var(--text); min-
 </button>
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
-<div class="shell">
-  <nav class="screen-list" id="sidebar">
-    <div class="sl-header">
-      <div class="sl-logo">🐟 봉이모바일</div>
-      <div class="sl-title">어드민 와이어프레임</div>
-      <div class="sl-sub">플랫폼 어드민</div>
-    </div>
-    <div class="sl-group">어드민</div>
-    <div class="sl-item active" onclick="show(0)"><span class="sl-num">01</span>대시보드</div>
-    <div class="sl-item" onclick="show(1)"><span class="sl-num">02</span>회원 관리</div>
-    <div class="sl-group">상품 관리 (인터넷·TV)</div>
-    <div class="sl-item" onclick="showCarrier('SKT')"><span class="sl-num">03</span>SKT 상품</div>
-    <div class="sl-item" onclick="showCarrier('KT')"><span class="sl-num">04</span>KT 상품</div>
-    <div class="sl-item" onclick="showCarrier('LGU')"><span class="sl-num">05</span>LG U+ 상품</div>
-    <div class="sl-group">상품 관리 (기타)</div>
-    <div class="sl-item" onclick="showProd('rental')"><span class="sl-num">06</span>렌탈 상품</div>
-    <div class="sl-item" onclick="showProd('phone')"><span class="sl-num">07</span>중고폰 매입</div>
-    <div class="sl-item" onclick="show(4)"><span class="sl-num">08</span>매장 · 시세 관리</div>
-    <div class="sl-item" onclick="show(5)"><span class="sl-num">09</span>티켓 관리</div>
-    <div class="sl-item" onclick="show(6)"><span class="sl-num">10</span>신청 현황</div>
-    <div class="sl-item" onclick="show(19)"><span class="sl-num">11</span>중고폰 매입 현황</div>
-    <div class="sl-item" onclick="show(7)"><span class="sl-num">13</span>사은품 관리</div>
-    <div class="sl-item" onclick="show(8)"><span class="sl-num">14</span>포인트 관리</div>
-    <div class="sl-item" onclick="show(9)"><span class="sl-num">15</span>후기 관리</div>
-    <div class="sl-item" onclick="show(10)"><span class="sl-num">16</span>돈지키미 관리</div>
-    <div class="sl-item" onclick="show(24)"><span class="sl-num">17</span>알림 관리</div>
-    <div class="sl-item" onclick="show(11)"><span class="sl-num">18</span>통계</div>
-    <div class="sl-group">AI 학습 데이터</div>
-    <div class="sl-item" onclick="show(12)"><span class="sl-num">19</span>모바일 요금제</div>
-    <div class="sl-item" onclick="show(23)"><span class="sl-num">20</span>공시지원금</div>
-    <div class="sl-item" onclick="show(14)"><span class="sl-num">21</span>가족결합</div>
-    <div class="sl-item" onclick="show(17)"><span class="sl-num">22</span>가이드</div>
-    <div class="sl-group">시뮬레이터</div>
-    <div class="sl-item" onclick="show(21)"><span class="sl-num">23</span>결합할인 시뮬레이터</div>
-    <div class="sl-group">크롤링</div>
-    <div class="sl-item" onclick="show(20)"><span class="sl-num">24</span>크롤링 관리</div>
-    <div class="sl-group">개발 현황</div>
-    <div class="sl-item" onclick="show(22)"><span class="sl-num">25</span>기능 체크리스트</div>
-  </nav>
+<div class="admin-shell">
 
-  <div class="main-area">
-    <div class="topbar">
-      <div class="tb-left">
-        <div class="tb-screen" id="tb-title">01. 대시보드</div>
-        <div class="tb-badge" id="tb-tag">DASHBOARD</div>
-      </div>
-      <div class="tb-nav">
-        <button class="tb-btn" id="btn-prev" onclick="prev()" disabled>← 이전</button>
-        <button class="tb-btn primary" id="btn-next" onclick="next()">다음 →</button>
-      </div>
+    <div class="admin-sidebar" id="admin-sidebar">
+      <div class="admin-logo">🐟 <span>봉이모바일</span> 어드민</div>
+      <div class="admin-nav-group">어드민</div>
+      <div class="admin-nav-item on" onclick="show(0)"><span>📊</span>대시보드</div>
+      <div class="admin-nav-item" onclick="show(1)"><span>👥</span>회원 관리</div>
+      <div class="admin-nav-group">상품 관리 (인터넷·TV)</div>
+      <div class="admin-nav-item" onclick="showCarrier('SKT')"><span>📦</span>SKT 상품</div>
+      <div class="admin-nav-item" onclick="showCarrier('KT')"><span>📦</span>KT 상품</div>
+      <div class="admin-nav-item" onclick="showCarrier('LGU')"><span>📦</span>LG U+ 상품</div>
+      <div class="admin-nav-group">상품 관리 (기타)</div>
+      <div class="admin-nav-item" onclick="showProd('rental')"><span>🏠</span>렌탈 상품</div>
+      <div class="admin-nav-item" onclick="showProd('phone')"><span>📱</span>중고폰 매입</div>
+      <div class="admin-nav-item" onclick="show(4)"><span>📍</span>매장 · 시세 관리</div>
+      <div class="admin-nav-item" onclick="show(5)"><span>🎫</span>티켓 관리</div>
+      <div class="admin-nav-item" onclick="show(6)"><span>📋</span>신청 현황</div>
+      <div class="admin-nav-item" onclick="show(19)"><span>📱</span>중고폰 매입 현황</div>
+      <div class="admin-nav-item" onclick="show(7)"><span>🎁</span>사은품 관리</div>
+      <div class="admin-nav-item" onclick="show(8)"><span>💰</span>포인트 관리</div>
+      <div class="admin-nav-item" onclick="show(9)"><span>⭐</span>후기 관리</div>
+      <div class="admin-nav-item" onclick="show(10)"><span>🔔</span>돈지키미 관리</div>
+      <div class="admin-nav-item" onclick="show(24)"><span>🔔</span>알림 관리</div>
+      <div class="admin-nav-item" onclick="show(11)"><span>📈</span>통계</div>
+      <div class="admin-nav-group">AI 학습 데이터</div>
+      <div class="admin-nav-item" onclick="show(12)"><span>📱</span>모바일 요금제</div>
+      <div class="admin-nav-item" onclick="show(23)"><span>💲</span>공시지원금</div>
+      <div class="admin-nav-item" onclick="show(14)"><span>👨‍👩‍👧‍👦</span>가족결합</div>
+      <div class="admin-nav-item" onclick="show(17)"><span>📖</span>가이드</div>
+      <div class="admin-nav-group">시뮬레이터</div>
+      <div class="admin-nav-item" onclick="show(21)"><span>🧮</span>결합할인 시뮬레이터</div>
+      <div class="admin-nav-group">크롤링</div>
+      <div class="admin-nav-item" onclick="show(20)"><span>🕷️</span>크롤링 관리</div>
+      <div class="admin-nav-group">개발 현황</div>
+      <div class="admin-nav-item" onclick="show(22)"><span>✅</span>기능 체크리스트</div>
     </div>
 
-    <div class="canvas-area">
-      <div style="display:flex;flex-direction:column;gap:14px;flex:1;max-width:1200px;">
-        <div class="browser-frame">
-          <div class="browser-bar">
-            <div class="browser-dots"><span></span><span></span><span></span></div>
-            <div class="browser-url" id="browser-url">admin.bongimobile.com</div>
-          </div>
-          <div id="screen-container"></div>
-        </div>
-        <div id="annotation-area"></div>
+  <div class="admin-main">
+    <div class="admin-top">
+      <div class="admin-top-title" id="admin-top-title">대시보드</div>
+      <div class="admin-top-right">
+        <span>운영팀 관리자</span>
+        <div class="wf-block solid" style="height:28px;width:70px;font-size:11px;border-radius:6px;cursor:pointer">로그아웃</div>
       </div>
-      <div class="notes-panel">
-        <div class="notes-card">
-          <div class="notes-title">📋 화면 설명</div>
-          <div id="notes-content"></div>
-        </div>
-      </div>
+    </div>
+    <div class="admin-body" id="screen-container">
     </div>
   </div>
 </div>
 
 <script>
+var current = 0;
 function adminShell(activeMenu, title, body) {
   const menus = [
     ['📊','대시보드'],['👥','회원 관리'],
@@ -8342,18 +8360,27 @@ function closeMemberDetail() {
 function show(idx) {
   current = idx;
   const s = screens[idx];
-  document.querySelectorAll('.sl-item').forEach(el => {
-    const onclick = el.getAttribute('onclick') || '';
-    const match = onclick.match(/show\((\d+)\)/);
-    el.classList.toggle('active', match && parseInt(match[1]) === idx);
+  // Update sidebar active state
+  document.querySelectorAll('#admin-sidebar .admin-nav-item').forEach(function(el) {
+    el.classList.remove('on');
+    var oc = el.getAttribute('onclick') || '';
+    var m = oc.match(/show\((\d+)\)/);
+    if (m && parseInt(m[1]) === idx) el.classList.add('on');
   });
-  document.getElementById('tb-title').textContent = s.title;
-  document.getElementById('tb-tag').textContent = s.tag;
-  document.getElementById('browser-url').textContent = s.url;
-  document.getElementById('btn-prev').disabled = idx === 0;
-  document.getElementById('btn-next').disabled = idx === screens.length - 1;
+  // Update admin-top title
+  var topTitle = document.getElementById('admin-top-title');
+  if (topTitle) topTitle.textContent = s.title.replace(/^\d+\.\s*/, '');
+  // Render content - extract admin-body inner content
   try {
-    document.getElementById('screen-container').innerHTML = s.render();
+    var rendered = s.render();
+    var bodyContent = rendered;
+    var abIdx = rendered.indexOf('<div class="admin-body">');
+    if (abIdx >= 0) {
+      bodyContent = rendered.substring(abIdx + 24);
+      // Remove trailing closing divs of admin-shell wrapper
+      bodyContent = bodyContent.replace(/<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*$/, '');
+    }
+    document.getElementById('screen-container').innerHTML = bodyContent;
   } catch(e) {
     document.getElementById('screen-container').innerHTML = '<div style="padding:20px;color:red;font-size:14px">렌더 에러: ' + e.message + '<br>화면: ' + (s ? s.title : idx) + '</div>';
     console.error('render error screen', idx, e);
@@ -8392,27 +8419,28 @@ function show(idx) {
     if(np) np.textContent = pct + '%';
     if(bar) bar.style.width = pct + '%';
   }
-  const annArea = document.getElementById('annotation-area');
-  annArea.innerHTML = s.annotations ? s.annotations.map(a=>`<div class="annotation">${a}</div>`).join('') : '';
-  document.getElementById('notes-content').innerHTML = s.notes.map(n=>`<div class="notes-item${n.startsWith('━━') ? ' notes-header' : ''}">${n}</div>`).join('');
+  // annotations and notes removed in standalone mode
 }
 
 function prev() { if(current>0) show(current-1); }
 function next() { if(current<screens.length-1) show(current+1); }
 
 function toggleSidebar() {
-  const sb = document.getElementById('sidebar');
+  const sb = document.getElementById('admin-sidebar');
   const hb = document.getElementById('hamburger');
   const ov = document.getElementById('overlay');
-  sb.classList.toggle('open');
-  hb.classList.toggle('open');
-  ov.classList.toggle('visible');
+  if(sb) sb.classList.toggle('open');
+  if(hb) hb.classList.toggle('open');
+  if(ov) ov.classList.toggle('visible');
 }
 
 function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('hamburger').classList.remove('open');
-  document.getElementById('overlay').classList.remove('visible');
+  var sb = document.getElementById('admin-sidebar');
+  var hb = document.getElementById('hamburger');
+  var ov = document.getElementById('overlay');
+  if(sb) sb.classList.remove('open');
+  if(hb) hb.classList.remove('open');
+  if(ov) ov.classList.remove('visible');
 }
 
 document.addEventListener('keydown', e => {
@@ -8422,7 +8450,7 @@ document.addEventListener('keydown', e => {
 });
 
 // 모바일에서 섹션 이동 시 사이드바 자동 닫기
-const _origShow = show;
+var _origShow = show;
 window.show = function(idx) {
   _origShow(idx);
   if(window.innerWidth <= 900) closeSidebar();
