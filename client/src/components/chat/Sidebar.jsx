@@ -3,7 +3,7 @@ import DonJikimi from './DonJikimi.jsx';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { api } from '../../utils/api.js';
 
-export default function Sidebar({ open, onClose, sessions, currentId, onNewChat, onSelectSession, onDeleteSession }) {
+export default function Sidebar({ open, onClose, sessions, currentId, onNewChat, onSelectSession, onDeleteSession, onOpenMyPage }) {
   const { user, logout } = useAuth();
   const [cashBalance, setCashBalance] = useState(0);
 
@@ -47,11 +47,11 @@ export default function Sidebar({ open, onClose, sessions, currentId, onNewChat,
         {/* 하단 */}
         <div style={styles.footer}>
           <DonJikimi />
-          <a href="/my/referral" style={{ ...styles.mypageBtn, background: 'linear-gradient(135deg, #1a3a5c, #2a4a6c)', border: '1px solid #3a6a9c', marginBottom: 8 }}>🎁 친구초대</a>
-          <a href="/my" style={{ ...styles.mypageBtn, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button onClick={() => { onOpenMyPage?.('referral'); onClose(); }} style={{ ...styles.mypageBtn, background: 'linear-gradient(135deg, #1a3a5c, #2a4a6c)', border: '1px solid #3a6a9c', marginBottom: 8, width: '100%' }}>🎁 친구초대</button>
+          <button onClick={() => { onOpenMyPage?.('home'); onClose(); }} style={{ ...styles.mypageBtn, display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <span>📋 마이페이지</span>
             <span style={{ color: '#fbbf24', fontWeight: 700, fontSize: 13 }}>{cashBalance > 0 ? `${cashBalance.toLocaleString()}원` : ''}</span>
-          </a>
+          </button>
           {user ? (
             <button onClick={() => { logout(); onClose(); }} style={{ ...styles.mypageBtn, marginTop: 8, background: 'transparent', border: '1px solid #555', color: '#aaa', cursor: 'pointer' }}>
               🔓 로그아웃 ({user.displayName || user.email?.split('@')[0]})

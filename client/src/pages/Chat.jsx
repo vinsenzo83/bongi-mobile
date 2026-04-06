@@ -4,10 +4,13 @@ import { useIsMobile } from '../hooks/useIsMobile.js';
 import Sidebar from '../components/chat/Sidebar.jsx';
 import MessageList from '../components/chat/MessageList.jsx';
 import InputArea from '../components/chat/InputArea.jsx';
+import MyPageModal from '../components/chat/MyPageModal.jsx';
 
 export default function Chat() {
   const chat = useChat();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [myPageOpen, setMyPageOpen] = useState(false);
+  const [myPageTab, setMyPageTab] = useState('home');
   const isMobile = useIsMobile();
 
   return (
@@ -21,6 +24,7 @@ export default function Chat() {
         onNewChat={chat.startNewSession}
         onSelectSession={chat.restoreSession}
         onDeleteSession={chat.deleteSession}
+        onOpenMyPage={(tab) => { setMyPageTab(tab); setMyPageOpen(true); }}
       />
 
       {/* 메인 영역 */}
@@ -45,6 +49,9 @@ export default function Chat() {
         {/* 입력창 */}
         <InputArea onSend={chat.sendMessage} loading={chat.loading} hasMessages={chat.messages.length > 0} />
       </div>
+
+      {/* 마이페이지 모달 */}
+      <MyPageModal open={myPageOpen} onClose={() => setMyPageOpen(false)} initialTab={myPageTab} />
     </div>
   );
 }
