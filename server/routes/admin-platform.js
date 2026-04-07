@@ -479,4 +479,83 @@ router.patch('/used-phones/price', async (req, res) => {
   }
 });
 
+// ── 신청 현황 ──
+
+// GET /admin/platform/applications — 신청 목록
+router.get('/applications', async (req, res) => {
+  try {
+    const { status, channel, search } = req.query;
+    let query = supabase.from('bongi_applications').select('*').order('created_at', { ascending: false }).limit(200);
+    if (status) query = query.eq('status', status);
+    if (channel) query = query.eq('channel', channel);
+    if (search) query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,ticket_no.ilike.%${search}%`);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ applications: data || [], total: (data || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 돈지키미 ──
+
+// GET /admin/platform/don-jikimi — 돈지키미 알람 목록
+router.get('/don-jikimi', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('bongi_user_alarms').select('*').order('end_date', { ascending: true }).limit(200);
+    if (error) throw error;
+    res.json({ alarms: data || [], total: (data || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 알림 관리 ──
+
+// GET /admin/platform/notifications — 알림 발송 이력
+router.get('/notifications', async (req, res) => {
+  try {
+    const { channel } = req.query;
+    let query = supabase.from('bongi_notifications').select('*').order('created_at', { ascending: false }).limit(200);
+    if (channel) query = query.eq('channel', channel);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ notifications: data || [], total: (data || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 매장 관리 (어드민용) ──
+
+// GET /admin/platform/stores — 매장 목록
+router.get('/stores', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('bongi_stores').select('*').order('name');
+    if (error) throw error;
+    res.json({ stores: data || [], total: (data || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 티켓 관리 (어드민용) ──
+
+// GET /admin/platform/tickets — 티켓 목록
+router.get('/tickets', async (req, res) => {
+  try {
+    const { carrier, status, search } = req.query;
+    let query = supabase.from('bongi_tickets').select('*').order('ticket_no').limit(500);
+    if (carrier) query = query.eq('carrier', carrier);
+    if (status) query = query.eq('status', status);
+    if (search) query = query.or(`ticket_no.ilike.%${search}%,product_name.ilike.%${search}%`);
+    const { data, error } = await query;
+    if (error) throw error;
+    const { count } = await supabase.from('bongi_tickets').select('id', { count: 'exact', head: true });
+    res.json({ tickets: data || [], total: count || (data || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;

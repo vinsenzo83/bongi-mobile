@@ -533,29 +533,29 @@ const screens = [
     url: "admin.bongimobile.com/dashboard",
     notes: ["오늘/이번달 핵심 지표 한눈에 확인","신규 신청 실시간 알림","CRM ↔ 어드민 동기화 상태 모니터링","비회원 → 회원 전환 현황","돈지키미 임박 고객 수 확인"],
     render: () => adminShell(0, "대시보드", `
-      <div class="g5">
+      <div class="g5" id="dash-kpi-area">
         <div class="kpi-card">
-          <div class="kpi-val">5</div>
+          <div class="kpi-val" id="dash-kpi-applications">5</div>
           <div class="kpi-label">오늘 신규 신청</div>
           <div style="font-size:10px;color:var(--text3);margin-top:2px">04.06 기준</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-val">10</div>
+          <div class="kpi-val" id="dash-kpi-total-applications">10</div>
           <div class="kpi-label">총 신청</div>
           <div style="font-size:10px;color:var(--text3);margin-top:2px">계약3 / 상담3 / 대기3 / 취소1</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-val" style="color:var(--orange)">3</div>
+          <div class="kpi-val" style="color:var(--orange)" id="dash-kpi-referrals">3</div>
           <div class="kpi-label">상담중 (CRM)</div>
           <div style="font-size:10px;color:var(--orange);margin-top:2px">김철수 · 박민수 · 한지민</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-val">9</div>
+          <div class="kpi-val" id="dash-kpi-members">9</div>
           <div class="kpi-label">총 회원</div>
           <div style="font-size:10px;color:var(--text3);margin-top:2px">앱 5 / 비회원 4</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-val" style="color:var(--green)">0</div>
+          <div class="kpi-val" style="color:var(--green)" id="dash-kpi-withdrawals">0</div>
           <div class="kpi-label">돈지키미 임박</div>
           <div style="font-size:10px;color:var(--text3);margin-top:2px">D-30 이내 없음</div>
         </div>
@@ -763,7 +763,7 @@ const screens = [
           <span class="action-btn primary">가입유도 알림톡</span>
         </div>
       </div>
-      <div class="wf-card" style="padding:0;overflow:hidden">
+      <div class="wf-card" style="padding:0;overflow:hidden" id="members-table-card">
         <table class="wf-table" style="margin-bottom:0">
           <thead>
             <tr>
@@ -773,7 +773,7 @@ const screens = [
               <th>가입일</th><th>신청</th><th>포인트</th><th>관리</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="members-tbody">
             ${[
               ['홍길동','010-1234-5678','앱회원','셀프신청','카카오','KT','완료','등록','등록','2026.04.01','3건','12,000P'],
               ['김철수','010-2345-6789','앱회원','티켓','구글','-','미완료','미등록','미등록','2026.03.15','1건','2,000P'],
@@ -1709,12 +1709,12 @@ const screens = [
       "지급 조건: 본인���증 + 계좌 등록 필수"
     ],
     render: () => adminShell(12, "사은품 관리", `
-      <div class="g5" style="margin-bottom:14px">
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--orange)">47</div><div class="kpi-label">지급 대기</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--red)">23</div><div class="kpi-label">비회원 대기</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--green)">1,823</div><div class="kpi-label">지급 완료</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--text3)">8</div><div class="kpi-label">지급 보류</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--navy)">1,901</div><div class="kpi-label">전체</div></div>
+      <div class="g5" style="margin-bottom:14px" id="gifts-kpi-area">
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--orange)" id="gifts-kpi-pending">47</div><div class="kpi-label">지급 대기</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--red)" id="gifts-kpi-nonmember">23</div><div class="kpi-label">비회원 대기</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--green)" id="gifts-kpi-paid">1,823</div><div class="kpi-label">지급 완료</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--text3)" id="gifts-kpi-hold">8</div><div class="kpi-label">지급 보류</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--navy)" id="gifts-kpi-total">1,901</div><div class="kpi-label">전체</div></div>
       </div>
 
       <div class="wf-card" style="background:var(--blue2);border-color:#bfdbfe;margin-bottom:12px">
@@ -1757,7 +1757,7 @@ const screens = [
               <th>사은품(현금)</th><th>계약완료일</th><th>본인인증</th><th>계좌</th><th>상태</th><th>관리</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="gifts-tbody">
             ${(function(){
               return [
                 ['홍길동','010-1234-5678','앱회원','셀프신청','KT0311','KT 1G+지니TV모든G+기가지니3','45만','2026.04.03','인증���료','국민 123-456-789012','지급 대기'],
@@ -1824,12 +1824,12 @@ const screens = [
       "승인 시 등록 계좌로 입금 + 알림톡 발송"
     ],
     render: () => adminShell(13, "포인트 관리", `
-      <div class="g5" style="margin-bottom:14px">
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--orange)">12</div><div class="kpi-label">출금 대기</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--green)">1,250,000P</div><div class="kpi-label">이번달 출금</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--navy)">4,280,000P</div><div class="kpi-label">이번달 발행</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--red)">3</div><div class="kpi-label">반려</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--text3)">35,800,000P</div><div class="kpi-label">누적 잔여</div></div>
+      <div class="g5" style="margin-bottom:14px" id="points-kpi-area">
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--orange)" id="points-kpi-pending">12</div><div class="kpi-label">출금 대기</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--green)" id="points-kpi-monthly-out">1,250,000P</div><div class="kpi-label">이번달 출금</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--navy)" id="points-kpi-monthly-issued">4,280,000P</div><div class="kpi-label">이번달 발행</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--red)" id="points-kpi-rejected">3</div><div class="kpi-label">반려</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--text3)" id="points-kpi-remaining">35,800,000P</div><div class="kpi-label">누적 잔여</div></div>
       </div>
 
       <!-- 적립 정책 -->
@@ -8463,16 +8463,36 @@ function show(idx) {
     document.getElementById('screen-container').innerHTML = '<div style="padding:20px;color:red;font-size:14px">렌더 에러: ' + e.message + '<br>화면: ' + (s ? s.title : idx) + '</div>';
     console.error('render error screen', idx, e);
   }
+  // 대시보드 — 실시간 통계
+  if(idx === 0) { setTimeout(loadDashboardStats, 50); }
+  // 회원 관리
+  if(idx === 1) { setTimeout(loadMembers, 50); }
   // 사은품 + 렌탈 + 중고폰 + 상태토글 + 삭제버튼 로드
   if(idx === 2) { setTimeout(loadGifts, 50); setTimeout(loadRentalData, 50); setTimeout(renderUsedPhoneTable, 50); setTimeout(function(){ addProductStatusToggles(); addDeleteButtons(); }, 100); }
-  // 티켓 관리 — 조합 + 렌탈 페이지네이션
-  if(idx === 5) { setTimeout(function(){ renderTicketCombo(); renderTicketRentalPage(0); }, 50); }
+  // 매장 관리
+  if(idx === 4) { setTimeout(loadStores, 50); }
+  // 티켓 관리 — 조합 + API 로드
+  if(idx === 5) { setTimeout(function(){ renderTicketCombo(); renderTicketRentalPage(0); }, 50); setTimeout(loadTickets, 100); }
+  // 신청 현황
+  if(idx === 6) { setTimeout(loadApplications, 50); }
+  // 사은품 관리
+  if(idx === 7) { setTimeout(loadGiftsAdmin, 50); }
+  // 포인트/캐쉬 관리
+  if(idx === 8) { setTimeout(loadWithdrawals, 50); }
+  // 후기 관리
+  if(idx === 9) { setTimeout(loadReviewsAdmin, 50); }
+  // 돈지키미
+  if(idx === 10) { setTimeout(loadDonJikimi, 50); }
+  // 통계
+  if(idx === 11) { setTimeout(loadDashboardStats, 50); }
   // 모바일 요금제
   if(idx === 12) { setTimeout(function(){ filterMobilePlans(); }, 50); }
-  // 시뮬레이터 초기화
-  if(idx === 21) { setTimeout(function(){ var r=document.getElementById('sim-result'); if(r) r.style.display='none'; }, 50); }
   // 20. 중고폰 매입 현황
   if(idx === 19) { setTimeout(renderUsedPhoneTable, 50); }
+  // 시뮬레이터 초기화
+  if(idx === 21) { setTimeout(function(){ var r=document.getElementById('sim-result'); if(r) r.style.display='none'; }, 50); }
+  // 알림 관리
+  if(idx === 22) { setTimeout(loadNotifications, 50); }
   // 공시지원금
   if(idx === 23) { setTimeout(renderSubsidy, 50); }
   // 체크리스트 초기화
@@ -8586,6 +8606,206 @@ document.addEventListener('click', function(e) {
     });
   });
 });
+
+// ─── API 연동 함수들 ───
+
+// 대시보드 통계
+function loadDashboardStats() {
+  fetch('/api/admin/platform/stats')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      var vals = c.querySelectorAll('.kpi-val');
+      if(vals.length >= 5) {
+        if(d.applications !== undefined) vals[0].textContent = d.applications;
+        if(d.members !== undefined) vals[1].textContent = d.members;
+        if(d.reviews !== undefined) vals[2].textContent = d.reviews;
+        if(d.pending_withdrawals !== undefined) vals[3].textContent = d.pending_withdrawals;
+        if(d.referrals !== undefined) vals[4].textContent = d.referrals;
+      }
+    }).catch(function(e) { console.error('대시보드 통계 로드 실패:', e); });
+}
+
+// 회원 관리
+function loadMembers() {
+  fetch('/api/admin/platform/members')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.members || d.members.length === 0) return;
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      var tbody = c.querySelector('.wf-table tbody');
+      if(!tbody) return;
+      var html = d.members.map(function(m) {
+        var type = m.member_type === 'agent' ? '상담원' : (m.role || '앱회원');
+        var tClass = type === '상담원' ? 'navy' : type === '앱회원' ? 'green' : 'orange';
+        return '<tr><td style="font-weight:600">' + (m.name||'-') + '</td><td style="font-size:10px">' + (m.phone||'-') + '</td><td><span class="wf-status '+tClass+'">' + type + '</span></td><td style="font-size:10px">' + (m.email||'-') + '</td><td style="font-size:10px">' + (m.created_at ? new Date(m.created_at).toLocaleDateString('ko-KR') : '-') + '</td><td><span class="action-btn default" style="cursor:pointer;font-size:10px">상세</span></td></tr>';
+      }).join('');
+      tbody.innerHTML = html;
+      var countEl = c.querySelector('[id*="member-count"]');
+      if(countEl) countEl.textContent = '총 ' + d.total + '명';
+    }).catch(function(e) { console.error('회원 로드 실패:', e); });
+}
+
+// 신청 현황
+function loadApplications() {
+  fetch('/api/admin/platform/applications')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.applications || d.applications.length === 0) return;
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      var tbody = c.querySelector('.wf-table tbody');
+      if(!tbody) return;
+      var html = d.applications.map(function(a) {
+        var st = a.status || '신청완료';
+        var stClass = st==='계약완료'?'green':st==='상담중'?'orange':st==='취소'?'red':'blue';
+        return '<tr><td style="font-size:10px">' + (a.created_at ? new Date(a.created_at).toLocaleDateString('ko-KR') : '-') + '</td><td style="font-weight:600">' + (a.name||'-') + '</td><td style="font-size:10px">' + (a.phone||'-') + '</td><td style="font-size:10px">' + (a.product_name||a.product||'-') + '</td><td><span class="wf-status '+stClass+'">' + st + '</span></td><td><span class="action-btn default" style="cursor:pointer;font-size:10px">상세</span></td></tr>';
+      }).join('');
+      tbody.innerHTML = html;
+    }).catch(function(e) { console.error('신청 현황 로드 실패:', e); });
+}
+
+// 사은품 관리 (어드민)
+function loadGiftsAdmin() {
+  fetch('/api/admin/platform/gifts')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.gifts || d.gifts.length === 0) return;
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      var tbody = c.querySelector('.wf-table tbody');
+      if(!tbody) return;
+      var html = d.gifts.map(function(g) {
+        var st = g.status || '대기';
+        var stClass = st==='paid'||st==='지급완료'?'green':st==='pending'||st==='대기'?'orange':'gray';
+        return '<tr><td style="font-weight:600">' + (g.customer_name||g.name||'-') + '</td><td style="font-size:10px">' + (g.phone||'-') + '</td><td style="font-size:10px">' + (g.product_name||'-') + '</td><td style="color:var(--orange);font-weight:700">' + (g.amount ? g.amount.toLocaleString()+'원' : '-') + '</td><td><span class="wf-status '+stClass+'">' + st + '</span></td><td style="font-size:10px">' + (g.paid_at ? new Date(g.paid_at).toLocaleDateString('ko-KR') : '-') + '</td></tr>';
+      }).join('');
+      tbody.innerHTML = html;
+    }).catch(function(e) { console.error('사은품 로드 실패:', e); });
+}
+
+// 포인트/출금 관리
+function loadWithdrawals() {
+  fetch('/api/admin/platform/cash/withdrawals')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.withdrawals || d.withdrawals.length === 0) return;
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      var tbody = c.querySelector('.wf-table tbody');
+      if(!tbody) return;
+      var html = d.withdrawals.map(function(w) {
+        var st = w.status || 'pending';
+        var stClass = st==='approved'?'green':st==='pending'?'orange':'red';
+        return '<tr><td style="font-weight:600">' + (w.user_name||w.name||'-') + '</td><td style="font-size:10px">' + (w.bank||'-') + ' ' + (w.account||'') + '</td><td style="color:var(--blue);font-weight:700">' + (w.amount ? w.amount.toLocaleString()+'원' : '-') + '</td><td><span class="wf-status '+stClass+'">' + st + '</span></td><td style="font-size:10px">' + (w.created_at ? new Date(w.created_at).toLocaleDateString('ko-KR') : '-') + '</td></tr>';
+      }).join('');
+      tbody.innerHTML = html;
+    }).catch(function(e) { console.error('출금 로드 실패:', e); });
+}
+
+// 후기 관리 (어드민)
+function loadReviewsAdmin() {
+  fetch('/api/admin/platform/reviews')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.reviews || d.reviews.length === 0) return;
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      var tbody = c.querySelector('.wf-table tbody');
+      if(!tbody) return;
+      var html = d.reviews.map(function(rv) {
+        var stars = '⭐'.repeat(Math.min(rv.rating||5, 5));
+        var approved = rv.is_approved ? '승인' : '대기';
+        var apClass = rv.is_approved ? 'green' : 'orange';
+        return '<tr><td style="font-weight:600">' + (rv.author_name||rv.name||'-') + '</td><td style="font-size:10px">' + (rv.product_name||'-') + '</td><td>' + stars + '</td><td style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (rv.content||'-') + '</td><td><span class="wf-status '+apClass+'">' + approved + '</span></td><td style="font-size:10px">' + (rv.created_at ? new Date(rv.created_at).toLocaleDateString('ko-KR') : '-') + '</td></tr>';
+      }).join('');
+      tbody.innerHTML = html;
+    }).catch(function(e) { console.error('후기 로드 실패:', e); });
+}
+
+// 돈지키미
+function loadDonJikimi() {
+  fetch('/api/admin/platform/don-jikimi')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.alarms || d.alarms.length === 0) return;
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      var tbody = c.querySelector('.wf-table tbody');
+      if(!tbody) return;
+      var html = d.alarms.map(function(a) {
+        var endD = new Date(a.end_date||'2099-01-01');
+        var diff = Math.max(0, Math.ceil((endD - new Date())/(1000*60*60*24)));
+        var dday = 'D-' + diff;
+        var ddClass = diff<=7?'red':diff<=30?'orange':'blue';
+        return '<tr><td style="font-weight:600">' + (a.user_name||a.name||'-') + '</td><td style="font-size:10px">' + (a.alarm_type||'-') + '</td><td style="font-size:10px">' + (a.product_name||'-') + '</td><td><span class="wf-status '+ddClass+'" style="font-weight:700">' + dday + '</span></td><td style="font-size:10px">' + (a.end_date||'-') + '</td></tr>';
+      }).join('');
+      tbody.innerHTML = html;
+    }).catch(function(e) { console.error('돈지키미 로드 실패:', e); });
+}
+
+// 알림 관리
+function loadNotifications() {
+  fetch('/api/admin/platform/notifications')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.notifications || d.notifications.length === 0) return;
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      var tbody = c.querySelector('.wf-table tbody');
+      if(!tbody) return;
+      var html = d.notifications.map(function(n) {
+        var ch = n.channel||'앱 푸시';
+        var chClass = ch==='카카오'?'orange':'blue';
+        var st = n.status||'성공';
+        var stClass = st==='성공'?'green':'red';
+        return '<tr><td style="font-size:10px">' + (n.created_at ? new Date(n.created_at).toLocaleString('ko-KR') : '-') + '</td><td><span class="wf-status '+chClass+'">' + ch + '</span></td><td style="font-size:10px">' + (n.recipient_name||'-') + '</td><td style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis">' + (n.content||n.message||'-') + '</td><td><span class="wf-status '+stClass+'">' + st + '</span></td></tr>';
+      }).join('');
+      tbody.innerHTML = html;
+    }).catch(function(e) { console.error('알림 로드 실패:', e); });
+}
+
+// 매장 관리
+function loadStores() {
+  fetch('/api/admin/platform/stores')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.stores || d.stores.length === 0) return;
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      var grid = c.querySelector('.g2');
+      if(!grid) return;
+      var html = d.stores.map(function(s) {
+        return '<div class="wf-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div class="wf-h3" style="margin-bottom:0">' + (s.name||'-') + '</div><span class="wf-status '+(s.is_active!==false?'green':'red')+'">' + (s.is_active!==false?'운영중':'휴업') + '</span></div><div class="wf-p" style="font-weight:600">📍 ' + (s.address||'-') + '</div><div class="wf-p">📞 ' + (s.phone||'-') + '</div><div class="wf-p" style="font-size:10px;color:var(--text3)">영업시간: ' + (s.hours||'-') + '</div><div style="display:flex;gap:6px;margin-top:8px"><span class="action-btn primary" style="cursor:pointer;font-size:10px">📊 시세 관리</span><span class="action-btn default" style="cursor:pointer;font-size:10px">수정</span></div></div>';
+      }).join('');
+      grid.innerHTML = html;
+    }).catch(function(e) { console.error('매장 로드 실패:', e); });
+}
+
+// 티켓 관리
+var ticketApiData = null;
+function loadTickets() {
+  fetch('/api/admin/platform/tickets')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.tickets) return;
+      ticketApiData = d;
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      var vals = c.querySelectorAll('.kpi-val');
+      if(vals.length >= 4) {
+        var skt = d.tickets.filter(function(t){return (t.carrier||'').toUpperCase()==='SKT';}).length;
+        var kt = d.tickets.filter(function(t){return (t.carrier||'').toUpperCase()==='KT';}).length;
+        var lgu = d.tickets.filter(function(t){return (t.carrier||'').toUpperCase().indexOf('LG')>-1;}).length;
+        vals[0].textContent = skt.toLocaleString();
+        vals[1].textContent = kt.toLocaleString();
+        vals[2].textContent = lgu.toLocaleString();
+        vals[3].textContent = d.total.toLocaleString();
+      }
+    }).catch(function(e) { console.error('티켓 로드 실패:', e); });
+}
 
 // ─── 검색 필터: filter-input 입력 시 테이블 행 검색 ───
 document.addEventListener('input', function(e) {
