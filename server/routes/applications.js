@@ -31,7 +31,7 @@ router.post('/', async (req, res) => {
     phone,
     productTicket: productTicket || null,
     message: message || '',
-    channel: channel || 'web',
+    channel: channel || '셀프신청',
     status: '신청완료',
     createdAt: new Date().toISOString(),
   };
