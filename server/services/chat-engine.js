@@ -104,6 +104,22 @@ function detectIntent(message) {
     };
   }
 
+  // 중고폰 매입 — 모델명 있으면 서버에서 강제 도구 호출
+  const usedPhoneModels = ['s26', 's25', 's24', 's23', '폴드', '플립', '아이폰17', '아이폰16', '아이폰15', '아이폰14', '아이폰 17', '아이폰 16', '아이폰 15', '아이폰 14', 'iphone', '갤럭시', 'galaxy', '노트'];
+  const hasUsedModel = usedPhoneModels.some(m => q.includes(m));
+  const isUsedPhone = (q.includes('중고폰') || q.includes('매입') || q.includes('보상') || q.includes('팔고')) && hasUsedModel;
+  if (isUsedPhone) {
+    let model = message.replace(/중고폰|매입|보상|팔고|시세|가격|얼마|알려줘|확인|싶어|싶다|매입가/gi, '').trim();
+    return {
+      type: 'used_phone',
+      forceTool: { name: 'estimate_tradein', input: { model } },
+      formatResult: (result) => {
+        if (result.error) return result.error;
+        return `${model} 매입가를 찾았어요! 등급별로 확인해주세요 📱\n\n접수 신청하시면 수거 후 검수해드려요!`;
+      },
+    };
+  }
+
   // 알뜰폰 (인터넷과 혼동 방지 — 서버 직접 응답)
   if (/알뜰폰|알뜰|유심|mvno|저렴한.?요금/.test(q)) {
     return {
@@ -606,6 +622,20 @@ export async function processMessageStream(sessionId, userMessage, context = {},
         services: toolResult.부가서비스 || {},
         plans: toolResult.요금제 || {},
         date: toolResult.date || '',
+      });
+    }
+    if (toolResult._tool === 'estimate_tradein' && toolResult.results) {
+      ui_elements.push({
+        type: 'tradein_cards',
+        items: toolResult.results.slice(0, 8),
+        tradein_url: '',
+      });
+      ui_elements.push({
+        type: 'actions',
+        buttons: [
+          { label: '접수 신청하기', action: '__open_usedphone_select__' },
+          { label: '다른 모델 보기', action: '다른 중고폰 모델 매입가 알려줘' },
+        ],
       });
     }
 
