@@ -120,8 +120,7 @@ app.use(errorHandler);
 import cron from 'node-cron';
 import { crawlSubsidy } from './services/subsidy-crawler.js';
 
-cron.schedule('0 0 * * *', () => {
-  // UTC 00:00 = KST 09:00
+cron.schedule('0 9 * * *', () => {
   console.log('⏰ 공시지원금 크롤링 시작 (09:00 KST)');
   crawlSubsidy().catch(e => console.error('크롤링 에러:', e.message));
 }, { timezone: 'Asia/Seoul' });

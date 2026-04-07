@@ -86,7 +86,11 @@ export async function crawlSubsidy() {
 
   let browser;
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({
+      headless: true,
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    });
     const page = await browser.newPage();
     await page.goto('https://www.smartchoice.or.kr/smc/mobile/dantongList.do?type=pc', { timeout: 30000 });
     await page.waitForTimeout(5000);

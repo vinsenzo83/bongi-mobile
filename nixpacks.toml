@@ -3,7 +3,10 @@ nixPkgs = ["nodejs_22", "chromium"]
 aptPkgs = ["libnss3", "libatk-bridge2.0-0", "libdrm2", "libxkbcommon0", "libgbm1", "libasound2"]
 
 [phases.build]
-cmds = ["npm run build", "npx playwright install chromium"]
+cmds = ["npm run build", "npx playwright install --with-deps chromium"]
+
+[variables]
+PLAYWRIGHT_BROWSERS_PATH = "/app/.playwright"
 
 [start]
-cmd = "NODE_PATH=/app/node_modules node server/index.js"
+cmd = "NODE_PATH=/app/node_modules PLAYWRIGHT_BROWSERS_PATH=/app/.playwright node server/index.js"
