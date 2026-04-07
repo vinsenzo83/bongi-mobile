@@ -183,13 +183,13 @@ router.get('/members/:id', async (req, res) => {
     // 8탭 데이터 병렬 조회
     const [applications, gifts, cashBalance, cashHistory, withdrawals, referrals, rewards, alarms, addresses] = await Promise.all([
       phone ? supabase.from('bongi_applications').select('*').eq('phone', phone).order('created_at', { ascending: false }) : { data: [] },
-      phone ? supabase.from('bongi_gifts').select('*').eq('phone', phone).order('created_at', { ascending: false }) : { data: [] },
-      supabase.from('bongi_cash_balance').select('*').eq('user_id', userId).single(),
+      supabase.from('bongi_gifts').select('*').eq('customer_id', userId).order('created_at', { ascending: false }),
+      supabase.from('bongi_cash_balance').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('bongi_cash_history').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
       supabase.from('bongi_withdrawals').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
       supabase.from('bongi_referrals').select('*').eq('referrer_user_id', userId).order('created_at', { ascending: false }),
       supabase.from('bongi_rewards').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-      supabase.from('bongi_user_alarms').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('bongi_user_alarms').select('*').eq('user_id', userId).order('target_date', { ascending: true }),
       supabase.from('bongi_addresses').select('*').eq('user_id', userId),
     ]);
 
@@ -197,7 +197,7 @@ router.get('/members/:id', async (req, res) => {
       profile,
       applications: applications.data || [],
       gifts: gifts.data || [],
-      cash_balance: cashBalance.data || null,
+      cash_balance: cashBalance.data || { balance: 0 },
       cash_history: cashHistory.data || [],
       withdrawals: withdrawals.data || [],
       referrals: referrals.data || [],
