@@ -137,9 +137,9 @@ function RichElement({ element, onAction }) {
         </ScrollableCards>
       );
     case 'phone_select':
-      return <PhoneSelectCard onComplete={onAction} />;
+      return null; // 프론트 모달에서 처리
     case 'usedphone_select':
-      return <UsedPhoneSelectCard onComplete={onAction} />;
+      return null; // 프론트 모달에서 처리
     case 'form':
       return (
         <InlineForm

@@ -25,11 +25,10 @@ const SYSTEM_PROMPT = `당신은 봉이모바일 리턴AI입니다. 광주/전�
 
 ## 카테고리 1: 휴대폰 시세 (정보제공 → 매장 연결)
 
-**기종 미지정:** 도구 호출 안 함. "어떤 제조사가 궁금하세요?" + 버튼("삼성 갤럭시"/"애플 아이폰")
-**제조사 선택 후:** 모델 버튼 표시 (삼성: S26U/S26+/S26/폴드7/플립7/S25U/S25+/S25, 애플: 17PM/17P/17/17Air/16PM/16P/16)
-**기종 확정:** search_mobile_prices 호출 (provider 비워서 3사 비교) → 시세 카드
+**기종 미지정:** 프론트에서 모달로 기종 선택을 처리함. "어떤 제조사" 같은 텍스트를 출력하지 마. 기종 선택 버튼도 출력하지 마.
+**기종 확정 (유저가 모델명을 말한 경우):** search_mobile_prices 호출 (provider 비워서 3사 비교) → 시세 카드
 **시세 카드 후:** 반드시 check_store도 호출 → 매장 카드 → "매장에서 구매하세요!" 마무리
-**금지:** 온라인 신청서 없음. 매장 전화/카톡/지도만.
+**금지:** 온라인 신청서 없음. 매장 전화/카톡/지도만. "어떤 제조사" 텍스트 출력 금지.
 
 ---
 
@@ -43,9 +42,8 @@ const SYSTEM_PROMPT = `당신은 봉이모바일 리턴AI입니다. 광주/전�
 
 ## 카테고리 3: 중고폰 매입 (접수 신청)
 
-**모델 미지정:** "어떤 제조사예요?" + 버튼("삼성"/"애플"/"LG")
-**제조사 선택 후:** 시리즈 버튼
-**모델 확정:** estimate_tradein 호출 → A~E 등급별 매입가 카드
+**모델 미지정:** 프론트에서 모달로 모델 선택을 처리함. "어떤 제조사" 같은 텍스트를 출력하지 마.
+**모델 확정 (유저가 모델명을 말한 경우):** estimate_tradein 호출 → A~E 등급별 매입가 카드
 **결과 후:** 버튼("접수 신청하기"/"다른 모델 보기")
 **금지:** 매장 안내 하지 마! 중고폰은 온라인 접수 → 수거 → 검수 → 입금.
 
@@ -295,17 +293,7 @@ export async function processMessage(sessionId, userMessage, context = {}) {
 
   let ui_elements = extractUIElements(session.messages);
 
-  // 휴대폰 기종 선택 UI 삽입
-  const phoneSelectKw = ['어떤 제조사', '어떤 기종', '어떤 모델', '제조사를 선택', '기종을 선택', '제조사가 궁금'];
-  if (phoneSelectKw.some(k => reply.includes(k)) && !reply.includes('중고폰') && !reply.includes('매입')) {
-    ui_elements = [{ type: 'phone_select' }, ...ui_elements];
-  }
-
-  // 중고폰 매입 선택 UI 삽입
-  const usedPhoneKw = ['어떤 기종을 팔', '어떤 폰을 매입', '제조사를 선택.*매입', '매입.*제조사', '중고폰.*모델', '어떤 폰.*매입'];
-  if (usedPhoneKw.some(k => reply.match(new RegExp(k))) || (reply.includes('제조사') && reply.includes('매입'))) {
-    ui_elements = [{ type: 'usedphone_select' }, ...ui_elements];
-  }
+  // phone_select / usedphone_select는 프론트 모달에서 처리 (서버 삽입 안 함)
 
   // 첫 메시지 응답을 캐시에 저장 (다음 동일 질문에서 API 호출 절약)
   if (isFirstMessage && reply) {
