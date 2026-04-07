@@ -109,10 +109,10 @@ function detectIntent(message) {
   const hasUsedModel = usedPhoneModels.some(m => q.includes(m));
   const isUsedPhone = (q.includes('중고폰') || q.includes('매입') || q.includes('보상') || q.includes('팔고')) && hasUsedModel;
   if (isUsedPhone) {
-    let model = message.replace(/중고폰|매입|보상|팔고|시세|가격|얼마|알려줘|확인|싶어|싶다|매입가/gi, '').trim();
+    let model = message.replace(/중고폰|매입|보상|팔고|시세|가격|얼마|알려줘|확인|싶어|싶다|매입가|\d+G\b|[A-E]등급/gi, '').trim();
     return {
       type: 'used_phone',
-      forceTool: { name: 'estimate_tradein', input: { model } },
+      forceTool: { name: 'estimate_tradein', input: { model, storage: (message.match(/(\d+G)\b/i)||[])[1] || '', condition: (message.match(/([A-E])등급/)||[])[1] || '' } },
       formatResult: (result) => {
         if (result.error) return result.error;
         return `${model} 매입가를 찾았어요! 등급별로 확인해주세요 📱\n\n접수 신청하시면 수거 후 검수해드려요!`;
