@@ -307,6 +307,27 @@ router.get('/subsidy', async (req, res) => {
   }
 });
 
+// POST /admin/platform/subsidy/bulk — 공시지원금 벌크 삽입
+router.post('/subsidy/bulk', async (req, res) => {
+  try {
+    const { data } = req.body;
+    if (!data || !Array.isArray(data)) return res.status(400).json({ error: 'data 배열 필수' });
+    // 기존 데이터 삭제
+    await supabase.from('bongi_subsidy_data').delete().neq('id', 0);
+    // 500건씩 배치 삽입
+    let inserted = 0;
+    for (let i = 0; i < data.length; i += 500) {
+      const batch = data.slice(i, i + 500);
+      const { error } = await supabase.from('bongi_subsidy_data').insert(batch);
+      if (error) console.error('벌크 삽입 에러:', error.message);
+      else inserted += batch.length;
+    }
+    res.json({ inserted, total: data.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // POST /admin/platform/subsidy/crawl — 수동 크롤링 트리거
 router.post('/subsidy/crawl', async (req, res) => {
   try {
