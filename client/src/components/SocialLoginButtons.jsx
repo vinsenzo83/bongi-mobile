@@ -14,17 +14,6 @@ const PROVIDERS = [
     ),
   },
   {
-    id: 'naver',
-    label: '네이버로 시작하기',
-    bg: '#03C75A',
-    color: '#FFFFFF',
-    logo: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M13.36 10.53L6.4 3H3V17H6.64V9.47L13.6 17H17V3H13.36V10.53Z" fill="#FFFFFF"/>
-      </svg>
-    ),
-  },
-  {
     id: 'google',
     label: 'Google로 시작하기',
     bg: '#FFFFFF',
