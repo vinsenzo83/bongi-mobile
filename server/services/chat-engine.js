@@ -79,6 +79,31 @@ const SYSTEM_PROMPT = `당신은 봉이모바일 리턴AI입니다. 광주/전�
 function detectIntent(message) {
   const q = message.toLowerCase();
 
+  // 휴대폰 시세 — 모델명 있으면 서버에서 강제 도구 호출
+  const phoneModels = ['s26', 's25', '폴드7', '폴드', '플립7', '플립', '아이폰17', '아이폰16', '아이폰 17', '아이폰 16', 'iphone'];
+  const hasModel = phoneModels.some(m => q.includes(m));
+  const isPhonePrice = hasModel && (q.includes('시세') || q.includes('가격') || q.includes('얼마') || q.includes('번이') || q.includes('기변') || q.includes('번호이동') || q.includes('기기변경'));
+  if (isPhonePrice) {
+    // 모델명 추출
+    let model = message.replace(/skt|kt|lgu\+?|lg|번호이동|기기변경|번이|기변|시세|가격|얼마|알려줘|확인/gi, '').trim();
+    // provider 추출
+    let provider = '';
+    if (/skt|sk/i.test(message)) provider = 'skt';
+    else if (/kt/i.test(message)) provider = 'kt';
+    else if (/lg|lgu/i.test(message)) provider = 'lg';
+
+    return {
+      type: 'phone_price',
+      forceTool: { name: 'search_mobile_prices', input: { model, provider } },
+      formatResult: (result) => {
+        if (result.error) return result.error;
+        const count = result.count || 0;
+        return `${model} 시세를 찾았어요! (${count}건)\n\n가까운 매장에서 구매하세요! 😊`;
+      },
+      postTool: { name: 'check_store', input: {} },
+    };
+  }
+
   // 알뜰폰 (인터넷과 혼동 방지 — 서버 직접 응답)
   if (/알뜰폰|알뜰|유심|mvno|저렴한.?요금/.test(q)) {
     return {
@@ -568,12 +593,37 @@ export async function processMessageStream(sessionId, userMessage, context = {},
   // 확정 인텐트 중 도구 호출 필요한 경우
   if (intent?.forceTool) {
     const toolResult = await executeTool(intent.forceTool.name, intent.forceTool.input, context);
+    toolResult._tool = intent.forceTool.name;
     const toolReply = intent.formatResult(toolResult);
     onChunk({ type: 'text', text: toolReply });
+
+    // 도구 결과에서 UI 카드 추출
+    const ui_elements = [];
+    if (toolResult._tool === 'search_mobile_prices' && toolResult.results) {
+      ui_elements.push({
+        type: 'mobile_price_cards',
+        items: toolResult.results.slice(0, 15),
+        services: toolResult.부가서비스 || {},
+        plans: toolResult.요금제 || {},
+        date: toolResult.date || '',
+      });
+    }
+
+    // 매장 카드도 추가 (postTool)
+    if (intent.postTool) {
+      const storeResult = await executeTool(intent.postTool.name, intent.postTool.input, context);
+      if (storeResult.stores) {
+        ui_elements.push({
+          type: 'store_cards',
+          stores: storeResult.stores,
+        });
+      }
+    }
+
     session.messages.push({ role: 'assistant', content: toolReply });
     await saveSession(session);
     persistMessage(sessionId, 'assistant', toolReply);
-    return { ui_elements: [] };
+    return { ui_elements };
   }
 
   const systemPrompt = intent
