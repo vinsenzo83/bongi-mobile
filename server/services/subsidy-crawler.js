@@ -15,7 +15,7 @@ import { supabase } from '../db/supabase.js';
  */
 async function loadPlaywright() {
   // 환경변수를 import 전에 확실히 설정
-  process.env.PLAYWRIGHT_BROWSERS_PATH = process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/.cache/ms-playwright';
+  process.env.PLAYWRIGHT_BROWSERS_PATH = process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/pw-browsers';
   const pw = await import('playwright');
   return pw.chromium;
 }
