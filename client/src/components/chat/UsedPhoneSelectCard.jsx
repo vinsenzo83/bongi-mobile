@@ -1,18 +1,4 @@
-import { useState } from 'react';
-
-const MAKERS = ['Apple', '삼성전자', 'LG'];
-
-const SERIES = {
-  'Apple': ['iPhone 17', 'iPhone 16', 'iPhone 15', 'iPhone 14', 'iPhone 13', 'iPhone 12', 'iPhone 11', 'iPhone SE'],
-  '삼성전자': ['갤럭시 S26', '갤럭시 S25', '갤럭시 S24', '갤럭시 S23', '갤럭시 S22', '갤럭시 S21', '갤럭시 Z폴드', '갤럭시 Z플립', '갤럭시 A', '갤럭시 노트'],
-  'LG': ['V 시리즈', 'G 시리즈', 'Velvet', 'Wing'],
-};
-
-const STORAGES = {
-  'Apple': ['64G', '128G', '256G', '512G', '1T'],
-  '삼성전자': ['128G', '256G', '512G', '1T'],
-  'LG': ['64G', '128G', '256G'],
-};
+import { useState, useEffect } from 'react';
 
 const GRADES = [
   { key: 'A', label: 'A등급', desc: '외관 깨끗', color: '#10b981' },
@@ -22,17 +8,33 @@ const GRADES = [
   { key: 'E', label: 'E등급', desc: '심각 손상', color: '#999' },
 ];
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
+
 export default function UsedPhoneSelectCard({ onComplete }) {
   const [step, setStep] = useState(1);
   const [maker, setMaker] = useState('');
   const [series, setSeries] = useState('');
   const [storage, setStorage] = useState('');
   const [grade, setGrade] = useState('');
+  const [catalog, setCatalog] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/products/used-phone-catalog`)
+      .then(r => r.json())
+      .then(setCatalog)
+      .catch(() => {});
+  }, []);
 
   const handleComplete = () => {
     const query = `${series} ${storage} ${grade}등급 중고폰 매입가 알려줘`;
     onComplete(query);
   };
+
+  if (!catalog) return <div style={{ padding: 16, color: '#999', fontSize: 13 }}>중고폰 목록 불러오는 중...</div>;
+
+  const makers = catalog.makers || [];
+  const seriesList = (catalog.series || {})[maker] || [];
+  const storageList = (catalog.storages || {})[series] || [];
 
   return (
     <div style={st.card}>
@@ -51,7 +53,7 @@ export default function UsedPhoneSelectCard({ onComplete }) {
         <div>
           <div style={st.stepTitle}>제조사를 선택하세요</div>
           <div style={st.options}>
-            {MAKERS.map(m => (
+            {makers.map(m => (
               <button key={m} onClick={() => { setMaker(m); setStep(2); }} style={st.optionBtn}>
                 <span style={{ fontSize: 20, marginRight: 8 }}>{m === 'Apple' ? '🍎' : '📱'}</span>
                 <div>
@@ -72,7 +74,7 @@ export default function UsedPhoneSelectCard({ onComplete }) {
           <div style={st.stepTitle}>모델을 선택하세요</div>
           <div style={st.selectedInfo}>{'📱'} {maker}</div>
           <div style={st.modelGrid}>
-            {(SERIES[maker] || []).map(sr => (
+            {seriesList.map(sr => (
               <button key={sr} onClick={() => { setSeries(sr); setStep(3); }} style={st.modelBtn}>{sr}</button>
             ))}
           </div>
@@ -86,7 +88,7 @@ export default function UsedPhoneSelectCard({ onComplete }) {
           <div style={st.stepTitle}>용량을 선택하세요</div>
           <div style={st.selectedInfo}>{'📱'} {maker} · {series}</div>
           <div style={st.modelGrid}>
-            {(STORAGES[maker] || ['128G', '256G', '512G']).map(s => (
+            {storageList.map(s => (
               <button key={s} onClick={() => { setStorage(s); setStep(4); }} style={st.modelBtn}>{s}</button>
             ))}
           </div>

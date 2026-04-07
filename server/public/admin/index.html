@@ -4269,9 +4269,20 @@ document.addEventListener('change', function(e) {
   }
 });
 
-// ─── 중고폰 시세 데이터 (엑셀 302개) ───
-// [제조사, 시리즈, 모델명, 용량, A등급, B등급, C등급, D등급, E등급]
-var usedPhoneData = [
+// ─── 중고폰 시세 데이터 (API에서 로드) ───
+var usedPhoneData = [];
+(function loadUsedPhoneData() {
+  fetch('/api/admin/platform/used-phones')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      usedPhoneData = (data.phones || []).map(function(p) {
+        return [p['제조사'], p['시리즈'], p['모델명'], p['용량'], p['A등급']||0, p['B등급']||0, p['C등급']||0, p['D등급']||0, p['E등급']||0];
+      });
+      renderUsedPhoneTable();
+    })
+    .catch(function(e) { console.error('중고폰 시세 로드 실패:', e); });
+})();
+var _usedPhoneDataLegacy = [
 ['Apple','iPhone 11','iPhone 11','128G',190000,130000,100000,59000,10000],
 ['Apple','iPhone 11','iPhone 11','256G',200000,140000,110000,64000,10000],
 ['Apple','iPhone 11','iPhone 11','64G',160000,110000,66000,47000,10000],

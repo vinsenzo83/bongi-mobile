@@ -287,4 +287,71 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// ── 중고폰 매입 시세 관리 ──
+
+import { readFileSync, writeFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __adm_dirname = dirname(fileURLToPath(import.meta.url));
+const usedPhonePath = join(__adm_dirname, '..', 'data', 'providers', 'used_phone_prices.json');
+
+function loadUsedPhones() {
+  const raw = JSON.parse(readFileSync(usedPhonePath, 'utf8'));
+  return raw.filter(x => ['Apple', '삼성전자', 'LG'].includes(x['제조사']));
+}
+
+// GET /admin/platform/used-phones — 중고폰 매입 시세 전체 (302개)
+router.get('/used-phones', (req, res) => {
+  try {
+    const phones = loadUsedPhones();
+    const { maker, search } = req.query;
+    let filtered = phones;
+    if (maker && maker !== '전체') filtered = filtered.filter(p => p['제조사'] === maker);
+    if (search) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(p => p['모델명'].toLowerCase().includes(q) || p['시리즈'].toLowerCase().includes(q));
+    }
+    res.json({ phones: filtered, total: phones.length, filtered: filtered.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT /admin/platform/used-phones — 중고폰 시세 일괄 업데이트
+router.put('/used-phones', (req, res) => {
+  try {
+    const { phones } = req.body;
+    if (!Array.isArray(phones)) return res.status(400).json({ error: 'phones 배열 필수' });
+    // 기존 헤더/푸터 행 유지 + 폰 데이터 교체
+    const raw = JSON.parse(readFileSync(usedPhonePath, 'utf8'));
+    const nonPhones = raw.filter(x => !['Apple', '삼성전자', 'LG'].includes(x['제조사']));
+    const updated = [...nonPhones, ...phones];
+    writeFileSync(usedPhonePath, JSON.stringify(updated, null, 2), 'utf8');
+    res.json({ success: true, count: phones.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /admin/platform/used-phones/price — 개별 시세 수정
+router.patch('/used-phones/price', (req, res) => {
+  try {
+    const { 제조사, 모델명, 용량, A등급, B등급, C등급, D등급, E등급 } = req.body;
+    if (!제조사 || !모델명 || !용량) return res.status(400).json({ error: '제조사, 모델명, 용량 필수' });
+    const raw = JSON.parse(readFileSync(usedPhonePath, 'utf8'));
+    const idx = raw.findIndex(x => x['제조사'] === 제조사 && x['모델명'] === 모델명 && x['용량'] === 용량);
+    if (idx === -1) return res.status(404).json({ error: '해당 모델을 찾을 수 없습니다' });
+    if (A등급 !== undefined) raw[idx]['A등급'] = A등급;
+    if (B등급 !== undefined) raw[idx]['B등급'] = B등급;
+    if (C등급 !== undefined) raw[idx]['C등급'] = C등급;
+    if (D등급 !== undefined) raw[idx]['D등급'] = D등급;
+    if (E등급 !== undefined) raw[idx]['E등급'] = E등급;
+    writeFileSync(usedPhonePath, JSON.stringify(raw, null, 2), 'utf8');
+    res.json({ success: true, updated: raw[idx] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;

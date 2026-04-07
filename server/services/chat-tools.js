@@ -29,15 +29,18 @@ try {
   phonePriceAdmin = JSON.parse(readFileSync(join(providerDir, 'phone_price_admin.json'), 'utf8'));
 } catch { /* 파일 없으면 빈 객체 */ }
 
-// 중고폰 매입 시세 데이터
+// 중고폰 매입 시세 데이터 (매 요청 시 최신 파일 로드)
 let tradeinPhones = [];
-let usedPhonePrices = [];
 try {
   tradeinPhones = JSON.parse(readFileSync(join(providerDir, 'tradein_phones.json'), 'utf8'));
 } catch { /* 파일 없으면 빈 배열 */ }
-try {
-  usedPhonePrices = JSON.parse(readFileSync(join(providerDir, 'used_phone_prices.json'), 'utf8'));
-} catch { /* 파일 없으면 빈 배열 */ }
+
+function getUsedPhonePrices() {
+  try {
+    return JSON.parse(readFileSync(join(providerDir, 'used_phone_prices.json'), 'utf8'));
+  } catch { return []; }
+}
+let usedPhonePrices = getUsedPhonePrices();
 
 // 렌탈 티켓 데이터
 let rentalTickets = [];
@@ -1066,7 +1069,8 @@ function estimateTradein({ brand, model, condition, storage }) {
     .replace(/플립/g, 'flip').replace(/폴드/g, 'fold')
     .replace(/미니/g, 'mini').replace(/에어/g, 'air').trim();
 
-  // 어드민 데이터(used_phone_prices.json) 우선 검색
+  // 어드민 데이터(used_phone_prices.json) 우선 검색 — 항상 최신 파일 로드
+  usedPhonePrices = getUsedPhonePrices();
   let matches = usedPhonePrices.filter(p => {
     const name = (p['모델명'] || '').toLowerCase();
     return name.includes(query) || query.includes(name.replace(/\s/g, ''));
