@@ -8858,9 +8858,10 @@ function loadGiftsAdmin() {
       var tbody = c.querySelector('.wf-table tbody');
       if(!tbody) return;
       var html = d.gifts.map(function(g) {
-        var st = g.status || '대기';
-        var stClass = st==='paid'||st==='지급완료'?'green':st==='pending'||st==='대기'?'orange':'gray';
-        return '<tr><td style="font-weight:600">' + (g.customer_name||g.name||'-') + '</td><td style="font-size:10px">' + (g.phone||'-') + '</td><td style="font-size:10px">' + (g.product_name||'-') + '</td><td style="color:var(--orange);font-weight:700">' + (g.amount ? g.amount.toLocaleString()+'원' : '-') + '</td><td><span class="wf-status '+stClass+'">' + st + '</span></td><td style="font-size:10px">' + (g.paid_at ? new Date(g.paid_at).toLocaleDateString('ko-KR') : '-') + '</td></tr>';
+        var st = g.status || 'pending';
+        var stLabel = st==='paid'?'지급완료':st==='pending'?'지급대기':st==='hold'?'보류':st;
+        var stClass = st==='paid'?'green':st==='pending'?'orange':st==='hold'?'gray':'red';
+        return '<tr><td style="font-weight:600">' + (g.account_holder||'-') + '</td><td style="font-size:10px">' + (g.bank||'-') + ' ' + (g.account_number||'') + '</td><td style="color:var(--orange);font-weight:700">' + (g.amount ? g.amount.toLocaleString()+'원' : '-') + '</td><td><span class="wf-status '+stClass+'">' + stLabel + '</span></td><td style="font-size:10px">' + (g.paid_at ? new Date(g.paid_at).toLocaleDateString('ko-KR') : '-') + '</td><td style="font-size:10px">' + (g.created_at ? new Date(g.created_at).toLocaleDateString('ko-KR') : '-') + '</td></tr>';
       }).join('');
       tbody.innerHTML = html;
     }).catch(function(e) { console.error('사은품 로드 실패:', e); });
@@ -8878,8 +8879,9 @@ function loadWithdrawals() {
       if(!tbody) return;
       var html = d.withdrawals.map(function(w) {
         var st = w.status || 'pending';
+        var stLabel = st==='approved'?'승인':st==='pending'?'대기':st==='rejected'?'반려':st;
         var stClass = st==='approved'?'green':st==='pending'?'orange':'red';
-        return '<tr><td style="font-weight:600">' + (w.user_name||w.name||'-') + '</td><td style="font-size:10px">' + (w.bank||'-') + ' ' + (w.account||'') + '</td><td style="color:var(--blue);font-weight:700">' + (w.amount ? w.amount.toLocaleString()+'원' : '-') + '</td><td><span class="wf-status '+stClass+'">' + st + '</span></td><td style="font-size:10px">' + (w.created_at ? new Date(w.created_at).toLocaleDateString('ko-KR') : '-') + '</td></tr>';
+        return '<tr><td style="font-weight:600">' + (w.account_holder||'-') + '</td><td style="font-size:10px">' + (w.bank_name||'-') + ' ' + (w.account_number||'') + '</td><td style="color:var(--blue);font-weight:700">' + (w.amount ? w.amount.toLocaleString()+'원' : '-') + '</td><td><span class="wf-status '+stClass+'">' + stLabel + '</span></td><td style="font-size:10px">' + (w.created_at ? new Date(w.created_at).toLocaleDateString('ko-KR') : '-') + '</td></tr>';
       }).join('');
       tbody.innerHTML = html;
     }).catch(function(e) { console.error('출금 로드 실패:', e); });
@@ -8934,11 +8936,12 @@ function loadDonJikimi() {
       var tbody = c.querySelector('.wf-table tbody');
       if(!tbody) return;
       var html = d.alarms.map(function(a) {
-        var endD = new Date(a.end_date||'2099-01-01');
+        var endD = new Date(a.target_date||'2099-01-01');
         var diff = Math.max(0, Math.ceil((endD - new Date())/(1000*60*60*24)));
         var dday = 'D-' + diff;
         var ddClass = diff<=7?'red':diff<=30?'orange':'blue';
-        return '<tr><td style="font-weight:600">' + (a.user_name||a.name||'-') + '</td><td style="font-size:10px">' + (a.alarm_type||'-') + '</td><td style="font-size:10px">' + (a.product_name||'-') + '</td><td><span class="wf-status '+ddClass+'" style="font-weight:700">' + dday + '</span></td><td style="font-size:10px">' + (a.end_date||'-') + '</td></tr>';
+        var typeLabel = {plan_change:'요금제변경',addon_cancel:'부가서비스해지',internet_expire:'인터넷약정',rental_expire:'렌탈약정'}[a.alarm_type] || a.alarm_type;
+        return '<tr><td style="font-weight:600">' + (a.title||'-') + '</td><td style="font-size:10px"><span class="wf-status blue" style="font-size:10px">' + typeLabel + '</span></td><td style="font-size:10px">' + (a.item_name||a.carrier||'-') + '</td><td><span class="wf-status '+ddClass+'" style="font-weight:700">' + dday + '</span></td><td style="font-size:10px">' + (a.target_date||'-') + '</td></tr>';
       }).join('');
       tbody.innerHTML = html;
     }).catch(function(e) { console.error('돈지키미 로드 실패:', e); });
