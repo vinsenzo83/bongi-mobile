@@ -655,6 +655,56 @@ router.get('/carrier-products', async (req, res) => {
   }
 });
 
+// ── 티켓 동기화 ──
+
+// POST /admin/platform/tickets/sync — 상품 변경사항 → 티켓 일괄 동기화
+router.post('/tickets/sync', async (req, res) => {
+  try {
+    const results = { updated: 0, deactivated: 0, errors: [] };
+
+    // 1. 렌탈 상품 → 렌탈 티켓 동기화
+    const { data: rentals } = await supabase.from('bongi_rental_products').select('product_name,monthly_fee,ticket_number,is_active');
+    for (const r of (rentals || [])) {
+      if (!r.ticket_number) continue;
+      const update = {
+        rental_name: r.product_name,
+        rental_monthly_fee: String(r.monthly_fee),
+        is_active: r.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.from('bongi_tickets').update(update).eq('ticket_number', r.ticket_number);
+      if (error) results.errors.push(`${r.ticket_number}: ${error.message}`);
+      else results.updated++;
+      if (!r.is_active) results.deactivated++;
+    }
+
+    // 2. 인터넷 구성요소 비활성 → 해당 조합 티켓 연쇄 비활성
+    // 셋톱박스
+    const { data: settops } = await supabase.from('bongi_settop_boxes').select('id,is_active').eq('is_active', false);
+    for (const s of (settops || [])) {
+      const { data: affected } = await supabase.from('bongi_tickets').update({ is_active: false, updated_at: new Date().toISOString() }).eq('settop_id', s.id).eq('is_active', true).select('ticket_number');
+      results.deactivated += (affected || []).length;
+    }
+    // TV
+    const { data: tvs } = await supabase.from('bongi_tv_products').select('id,is_active').eq('is_active', false);
+    for (const t of (tvs || [])) {
+      const { data: affected } = await supabase.from('bongi_tickets').update({ is_active: false, updated_at: new Date().toISOString() }).eq('tv_id', t.id).eq('is_active', true).select('ticket_number');
+      results.deactivated += (affected || []).length;
+    }
+    // WiFi
+    const { data: wifis } = await supabase.from('bongi_wifi_products').select('id,is_active').eq('is_active', false);
+    for (const w of (wifis || [])) {
+      const { data: affected } = await supabase.from('bongi_tickets').update({ is_active: false, updated_at: new Date().toISOString() }).eq('wifi_id', w.id).eq('is_active', true).select('ticket_number');
+      results.deactivated += (affected || []).length;
+    }
+
+    // 캐시 무효화
+    res.json({ success: true, ...results });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── 티켓 관리 (어드민용) ──
 
 // GET /admin/platform/tickets — 티켓 목록

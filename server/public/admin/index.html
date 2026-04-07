@@ -6076,7 +6076,7 @@ function toggleProductEdit(sectionId) {
       var notice = document.createElement('div');
       notice.style.cssText = 'background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 16px;margin-top:12px;font-size:12px;color:#92400e;display:flex;justify-content:space-between;align-items:center';
       notice.innerHTML = '<span>⚠️ 상품 정보가 변경되었습니다. <strong>조합상품(티켓)에 반영하려면 티켓 동기화가 필요합니다.</strong></span>'
-        +'<span class="action-btn primary" onclick="this.closest(\'div\').innerHTML=\'✅ 티켓 동기화 완료 — 변경된 이름/요금이 조합상품에 반영되었습니다.\';this.closest(\'div\').style.background=\'#d1fae5\';this.closest(\'div\').style.borderColor=\'#6ee7b7\';this.closest(\'div\').style.color=\'#065f46\';carrierComboData={}" style="cursor:pointer;font-size:11px;white-space:nowrap">티켓 동기화</span>';
+        +'<span class="action-btn primary" onclick="syncTickets(this)" style="cursor:pointer;font-size:11px;white-space:nowrap">티켓 동기화</span>';
       sec.querySelector('.wf-card').appendChild(notice);
     }
   }
@@ -8642,6 +8642,34 @@ document.addEventListener('click', function(e) {
     });
   });
 });
+
+// ─── 티켓 동기화 (DB 반영) ───
+function syncTickets(el) {
+  var wrap = el.closest('div');
+  el.textContent = '동기화 중...';
+  el.style.pointerEvents = 'none';
+  fetch('/api/admin/platform/tickets/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(d.success) {
+        wrap.innerHTML = '✅ 티켓 동기화 완료 — 업데이트 ' + d.updated + '건, 비활성화 ' + d.deactivated + '건';
+        wrap.style.background = '#d1fae5';
+        wrap.style.borderColor = '#6ee7b7';
+        wrap.style.color = '#065f46';
+        carrierComboData = {};
+        _ticketStatusCache = {};
+      } else {
+        wrap.innerHTML = '❌ 동기화 실패: ' + (d.error || '알 수 없는 오류');
+        wrap.style.background = '#fee2e2';
+        wrap.style.borderColor = '#fca5a5';
+        wrap.style.color = '#991b1b';
+      }
+    })
+    .catch(function(e) {
+      wrap.innerHTML = '❌ 동기화 실패: ' + e.message;
+      wrap.style.background = '#fee2e2';
+    });
+}
 
 // ─── API 연동 함수들 ───
 
