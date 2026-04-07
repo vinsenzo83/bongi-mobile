@@ -1201,6 +1201,8 @@ async function searchRental({ category, brand, max_price }) {
     카드할인후: t.card_fee !== '0' ? t.card_fee : '',
     프로모션: t.promotion,
     상태: t.status,
+    썸네일: t.image || '',
+    이미지: t.image || '',
   }));
 
   return {
