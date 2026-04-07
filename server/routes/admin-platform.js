@@ -278,7 +278,11 @@ router.patch('/cash/withdrawals/:id', async (req, res) => {
   try {
     const { status, admin_memo } = req.body;
     const update = { status };
-    if (status === 'approved') update.approved_at = new Date().toISOString();
+    if (status === '승인' || status === 'approved') {
+      update.status = '승인';
+      update.approved_at = new Date().toISOString();
+    }
+    if (status === '반려' || status === 'rejected') update.status = '반려';
     if (admin_memo !== undefined) update.admin_memo = admin_memo;
     const { data, error } = await supabase.from('bongi_withdrawals').update(update).eq('id', req.params.id).select();
     if (error) throw error;
@@ -298,9 +302,9 @@ router.post('/cash/manual-credit', async (req, res) => {
     const { error: histError } = await supabase.from('bongi_cash_history').insert({
       user_id,
       amount,
-      type: 'earn',
+      type: '적립',
       description: reason || '관리자 수동 적립',
-      status: 'completed',
+      status: '완료',
     });
     if (histError) console.warn('포인트 이력 저장 실패:', histError.message);
 
