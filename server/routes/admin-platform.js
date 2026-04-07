@@ -722,15 +722,13 @@ router.post('/tickets/sync', async (req, res) => {
 // GET /admin/platform/tickets — 티켓 목록
 router.get('/tickets', async (req, res) => {
   try {
-    const { carrier, status, search } = req.query;
-    let query = supabase.from('bongi_tickets').select('*').order('ticket_no').limit(500);
+    const { carrier, search } = req.query;
+    let query = supabase.from('bongi_tickets').select('*').order('ticket_number');
     if (carrier) query = query.eq('carrier', carrier);
-    if (status) query = query.eq('status', status);
-    if (search) query = query.or(`ticket_no.ilike.%${search}%,product_name.ilike.%${search}%`);
+    if (search) query = query.or(`ticket_number.ilike.%${search}%,rental_name.ilike.%${search}%`);
     const { data, error } = await query;
     if (error) throw error;
-    const { count } = await supabase.from('bongi_tickets').select('id', { count: 'exact', head: true });
-    res.json({ tickets: data || [], total: count || (data || []).length });
+    res.json({ tickets: data || [], total: (data || []).length });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
