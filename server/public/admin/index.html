@@ -4959,18 +4959,64 @@ function renderRentalRow(r, idx) {
     +'</tr>';
 }
 
-function loadRentalData() {
-  var tbody = document.getElementById('rental-tbody');
-  if(!tbody) return;
+var rentalPage = 0;
+var RENTAL_PER_PAGE = 10;
+var rentalFilterCat = '전체';
+var rentalFilterBrand = '전체';
+var rentalSearchVal = '';
+
+function getFilteredRentalData() {
   var saved = localStorage.getItem(RENTAL_KEY);
   var data = saved ? JSON.parse(saved) : null;
   if(!data || data.length === 0) data = rentalDefaultData;
-  tbody.innerHTML = data.map(function(r, i) { return renderRentalRow(r, i); }).join('');
+  return data.filter(function(r) {
+    var cat = r[0]||'', brand = r[1]||'', name = r[2]||'';
+    var matchCat = rentalFilterCat === '전체' || cat === rentalFilterCat;
+    var matchBrand = rentalFilterBrand === '전체' || brand.toLowerCase().includes(rentalFilterBrand.toLowerCase());
+    var matchSearch = !rentalSearchVal || name.includes(rentalSearchVal) || brand.includes(rentalSearchVal) || cat.includes(rentalSearchVal);
+    return matchCat && matchBrand && matchSearch;
+  });
 }
 
-// ─── 렌탈 상품 필터링 ───
-var rentalFilterCat = '전체';
-var rentalFilterBrand = '전체';
+function loadRentalData() { renderRentalPage(0); }
+
+function renderRentalPage(page) {
+  rentalPage = page;
+  var tbody = document.getElementById('rental-tbody');
+  if(!tbody) return;
+  var filtered = getFilteredRentalData();
+  var total = filtered.length;
+  var totalPages = Math.ceil(total / RENTAL_PER_PAGE) || 1;
+  if(page >= totalPages) page = totalPages - 1;
+  if(page < 0) page = 0;
+  var start = page * RENTAL_PER_PAGE;
+  var end = Math.min(start + RENTAL_PER_PAGE, total);
+  var allData = rentalDefaultData;
+  tbody.innerHTML = filtered.slice(start, end).map(function(r) {
+    var idx = allData.indexOf(r);
+    if(idx === -1) idx = allData.findIndex(function(d){ return d[2] === r[2]; });
+    return renderRentalRow(r, idx >= 0 ? idx : 0);
+  }).join('');
+  // 페이저
+  var pager = document.getElementById('rental-pager');
+  if(!pager) {
+    var wrap = document.getElementById('rental-table');
+    if(wrap && wrap.parentElement) {
+      pager = document.createElement('div');
+      pager.id = 'rental-pager';
+      wrap.parentElement.parentElement.appendChild(pager);
+    }
+  }
+  if(pager) {
+    var h = '<div style="display:flex;justify-content:center;align-items:center;gap:6px;padding:12px 0">';
+    h += '<span style="font-size:11px;color:var(--text3);margin-right:8px">'+(start+1)+'~'+end+' / '+total+'개</span>';
+    for(var p=0;p<totalPages;p++) {
+      h += '<div onclick="renderRentalPage('+p+')" style="width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;font-weight:'+(p===page?'700':'400')+';background:'+(p===page?'var(--navy)':'var(--wf3)')+';color:'+(p===page?'#fff':'var(--text2)')+';border:1px solid '+(p===page?'var(--navy)':'var(--border)')+';">'+(p+1)+'</div>';
+    }
+    h += '</div>';
+    pager.innerHTML = h;
+  }
+}
 
 function filterRental(val, type) {
   if(type === 'cat') {
@@ -4980,31 +5026,19 @@ function filterRental(val, type) {
     event.target.classList.add('on');
   } else {
     rentalFilterBrand = val;
-    var btns = document.querySelectorAll('#rental-brand-filter .filter-btn');
+    var btns = document.querySelectorAll('#rental-brand-filter .filter-btn:not(.filter-input)');
     btns.forEach(function(b){ b.classList.remove('on'); });
     event.target.classList.add('on');
   }
-  applyRentalFilter();
+  renderRentalPage(0);
 }
 
 function filterRentalSearch(val) {
-  var rows = document.querySelectorAll('#rental-table tbody tr');
-  rows.forEach(function(tr) {
-    var name = tr.getAttribute('data-name') || '';
-    var cat = tr.getAttribute('data-cat') || '';
-    var brand = tr.getAttribute('data-brand') || '';
-    var matchCat = rentalFilterCat === '전체' || cat === rentalFilterCat;
-    var matchBrand = rentalFilterBrand === '전체' || brand === rentalFilterBrand;
-    var matchSearch = !val || name.includes(val) || brand.includes(val) || cat.includes(val);
-    tr.style.display = (matchCat && matchBrand && matchSearch) ? '' : 'none';
-  });
+  rentalSearchVal = val;
+  renderRentalPage(0);
 }
 
-function applyRentalFilter() {
-  var searchInput = document.querySelector('#rental-brand-filter .filter-input');
-  var searchVal = searchInput ? searchInput.value : '';
-  filterRentalSearch(searchVal);
-}
+function applyRentalFilter() { renderRentalPage(0); }
 
 // ─── 상품관리 분리 진입 ───
 // ─── 통신사별 조합 상품 자동 생성 ───
