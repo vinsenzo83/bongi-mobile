@@ -5,31 +5,36 @@
  */
 
 import { execSync } from 'child_process';
+import { existsSync } from 'fs';
 import { supabase } from '../db/supabase.js';
 
 /**
- * Playwright를 동적으로 로드한다.
- * ES module의 static import는 모듈 코드보다 먼저 평가되므로
- * PLAYWRIGHT_BROWSERS_PATH 환경변수가 적용되지 않는다.
- * dynamic import()를 사용해 환경변수 설정 후 로드한다.
+ * Playwright 브라우저가 설치되어 있는지 확인하고, 없으면 설치한다.
+ * 그 후 chromium을 동적으로 로드하여 반환한다.
  */
-async function loadPlaywright() {
-  // 환경변수를 import 전에 확실히 설정
-  process.env.PLAYWRIGHT_BROWSERS_PATH = process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/pw-browsers';
+async function ensureBrowserAndLoad() {
+  // Railway 환경에서 브라우저 설치 경로
+  const browserPath = process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/pw-browsers';
+  process.env.PLAYWRIGHT_BROWSERS_PATH = browserPath;
+
+  // 브라우저가 없으면 설치
+  if (!existsSync(browserPath) || !existsSync(`${browserPath}/chromium_headless_shell-1217`)) {
+    console.log(`Playwright 브라우저 설치 중... (${browserPath})`);
+    try {
+      execSync(`npx playwright install chromium chromium-headless-shell`, {
+        env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: browserPath },
+        stdio: 'inherit',
+        timeout: 120000,
+      });
+      console.log('Playwright 브라우저 설치 완료');
+    } catch (e) {
+      console.error('Playwright 브라우저 설치 실패:', e.message);
+    }
+  }
+
+  // dynamic import로 playwright 로드 (환경변수 설정 후)
   const pw = await import('playwright');
   return pw.chromium;
-}
-
-function findChromium() {
-  // 1. 환경변수
-  if (process.env.PLAYWRIGHT_CHROMIUM_PATH) return process.env.PLAYWRIGHT_CHROMIUM_PATH;
-  // 2. 시스템 chromium (nix)
-  try {
-    const p = execSync('which chromium 2>/dev/null || which chromium-browser 2>/dev/null || which google-chrome 2>/dev/null').toString().trim();
-    if (p) return p;
-  } catch {}
-  // 3. playwright 기본 경로
-  return undefined;
 }
 
 const TARGET_KEYWORDS = ['S26', 'S25', '플립7', '폴드7', '아이폰 17', '아이폰 16'];
@@ -111,13 +116,10 @@ export async function crawlSubsidy() {
 
   let browser;
   try {
-    const chromium = await loadPlaywright();
-    const execPath = findChromium();
-    console.log('Chromium 경로:', execPath || 'playwright 기본');
+    const chromium = await ensureBrowserAndLoad();
     console.log('PLAYWRIGHT_BROWSERS_PATH:', process.env.PLAYWRIGHT_BROWSERS_PATH);
     browser = await chromium.launch({
       headless: true,
-      executablePath: execPath,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     });
     const page = await browser.newPage();

@@ -6,4 +6,4 @@ aptPkgs = ["libnss3", "libatk-bridge2.0-0", "libdrm2", "libxkbcommon0", "libgbm1
 cmds = ["npm run build"]
 
 [start]
-cmd = "npx playwright install chromium chromium-headless-shell 2>&1; echo '=== PLAYWRIGHT_BROWSERS_PATH:' $PLAYWRIGHT_BROWSERS_PATH; ls -la $HOME/.cache/ms-playwright/ 2>/dev/null || echo 'HOME cache not found'; ls -la /app/pw-browsers/ 2>/dev/null || echo '/app/pw-browsers not found'; NODE_PATH=/app/node_modules node server/index.js"
+cmd = "NODE_PATH=/app/node_modules node server/index.js"
