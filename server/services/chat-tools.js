@@ -39,6 +39,12 @@ try {
   usedPhonePrices = JSON.parse(readFileSync(join(providerDir, 'used_phone_prices.json'), 'utf8'));
 } catch { /* 파일 없으면 빈 배열 */ }
 
+// 렌탈 티켓 데이터
+let rentalTickets = [];
+try {
+  rentalTickets = JSON.parse(readFileSync(join(providerDir, 'rental_tickets.json'), 'utf8'));
+} catch { /* 파일 없으면 빈 배열 */ }
+
 // 가전렌탈 상품 데이터 (rentre.kr)
 let rentalProducts = {};
 try {
@@ -1200,8 +1206,13 @@ async function searchRental({ category, brand, max_price }) {
       const rating = i.rating || {};
       const pricing = i.pricing || {};
       const colors = (i.colorOptions || []).map(c => c.name).filter(Boolean);
+      // 렌탈 티켓번호 매칭
+      const ticket = rentalTickets.find(t =>
+        i.name.includes(t.name) || t.name.includes(i.name?.split(' ').slice(-2).join(' ') || '')
+      );
       return {
         상품ID: i.id,
+        티켓번호: ticket?.ticket || '',
         상품명: i.name,
         브랜드: i.brand,
         모델번호: i.model,
