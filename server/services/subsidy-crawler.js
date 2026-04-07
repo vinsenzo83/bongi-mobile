@@ -21,14 +21,23 @@ async function ensureBrowserAndLoad() {
   if (!existsSync(browserPath) || !existsSync(`${browserPath}/chromium_headless_shell-1217`)) {
     console.log(`Playwright 브라우저 설치 중... (${browserPath})`);
     try {
-      execSync(`npx playwright install chromium chromium-headless-shell`, {
+      execSync(`npx playwright install --with-deps chromium chromium-headless-shell`, {
         env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: browserPath },
         stdio: 'inherit',
-        timeout: 120000,
+        timeout: 180000,
       });
       console.log('Playwright 브라우저 설치 완료');
     } catch (e) {
-      console.error('Playwright 브라우저 설치 실패:', e.message);
+      console.error('Playwright --with-deps 설치 실패, 브라우저만 설치 시도:', e.message);
+      try {
+        execSync(`npx playwright install chromium chromium-headless-shell`, {
+          env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: browserPath },
+          stdio: 'inherit',
+          timeout: 120000,
+        });
+      } catch (e2) {
+        console.error('Playwright 브라우저 설치 실패:', e2.message);
+      }
     }
   }
 
