@@ -4595,7 +4595,7 @@ var rentalDefaultData = [];
     .then(function(r) { return r.json(); })
     .then(function(res) {
       rentalDefaultData = (res.products || []).map(function(p) {
-        return [p.category,p.brand,p.product_name,p.monthly_fee,p.normal_fee,p.card_name,p.card_spend,p.card_fee,p.contract_period,p.management,p.benefit_amount,p.promotion,p.model_name,p.card_discount,p.card_note,p.promo_period,p.features,p.product_type,p.size,p.release_date,p.filter_type,p.tags,p.image1,p.image2,p.image3,p.product_url];
+        return [p.category,p.brand,p.product_name,p.monthly_fee,p.normal_fee,p.card_name,p.card_spend,p.card_fee,p.contract_period,p.management,p.benefit_amount,p.promotion,p.model_name,p.card_discount,p.card_note,p.promo_period,p.features,p.product_type,p.size,p.release_date,p.filter_type,p.tags,p.image1,p.image2,p.image3,p.product_url,p.id];
       });
       if(typeof renderRentalTable === 'function') renderRentalTable();
     })
@@ -4979,8 +4979,8 @@ function renderRentalRow(r, idx) {
     +'<td style="font-size:9px;color:var(--text3)">'+tag+'</td>'
     +'<td>'+imgHtml+'</td>'
     +'<td>'+urlHtml+'</td>'
-    +'<td><span class="wf-status green" style="font-size:10px">활성</span></td>'
-    +'<td style="white-space:nowrap"><span class="action-btn default" onclick="editRentalRow(this)" style="cursor:pointer;font-size:10px">수정</span> <span class="action-btn danger" onclick="deleteRentalRow(this)" style="cursor:pointer;font-size:10px">삭제</span></td>'
+    +'<td style="text-align:center"><div class="prod-status-toggle" data-ticket="'+ticketNum+'" data-id="'+(r[26]||idx)+'" data-type="rental" onclick="toggleProductStatus(this)" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700;background:#d1fae5;color:var(--green);border:1px solid #6ee7b7">활성</div></td>'
+    +'<td style="white-space:nowrap"><span class="action-btn default" onclick="editRentalRow(this)" style="cursor:pointer;font-size:10px">수정</span> <span class="action-btn danger" onclick="deleteRentalRow(this,\''+(r[26]||idx)+'\')" style="cursor:pointer;font-size:10px">삭제</span></td>'
     +'</tr>';
 }
 
@@ -6143,9 +6143,13 @@ function addProductStatusToggles() {
 
 function toggleProductStatus(el) {
   var ticketId = el.getAttribute('data-ticket');
+  var productId = el.getAttribute('data-id');
+  var productType = el.getAttribute('data-type') || 'rental';
   var isActive = el.textContent === '활성';
+  var newActive = !isActive;
   var statuses = getProductStatuses();
 
+  // UI 즉시 업데이트
   if(isActive) {
     el.textContent = '비활성';
     el.style.background = '#f3f4f6';
@@ -6162,6 +6166,27 @@ function toggleProductStatus(el) {
     delete statuses[ticketId];
   }
   localStorage.setItem(PROD_STATUS_KEY, JSON.stringify(statuses));
+
+  // DB + 티켓 연동 API 호출
+  var apiPath = '';
+  if(productType === 'rental') apiPath = '/api/admin/platform/rental/' + productId;
+  else if(productType === 'internet') apiPath = '/api/admin/platform/internet-speed/' + productId;
+  else if(productType === 'tv') apiPath = '/api/admin/platform/tv-product/' + productId;
+  else if(productType === 'wifi') apiPath = '/api/admin/platform/wifi-product/' + productId;
+  else if(productType === 'settop') apiPath = '/api/admin/platform/settop-box/' + productId;
+
+  if(apiPath) {
+    fetch(apiPath, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_active: newActive })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      console.log('상품 상태 변경 + 티켓 연동:', ticketId, newActive ? '활성' : '비활성');
+    })
+    .catch(function(e) { console.error('상태 변경 API 실패:', e); });
+  }
 }
 
 // ─── 티켓 상세보기 모달 ───
