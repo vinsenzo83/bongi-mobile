@@ -1203,7 +1203,7 @@ const screens = [
         <div class="wf-card" style="padding:0;overflow-x:auto;margin-bottom:14px">
           <table class="wf-table" id="rental-table" style="margin-bottom:0;font-size:11px;min-width:1100px">
             <thead>
-              <tr><th>티켓번호</th><th>카테고리</th><th>브랜드</th><th>상품명</th><th>월요금</th><th>정상월요금</th><th>제휴카드</th><th>전월실적</th><th>카드후 월요금</th><th>약정</th><th>관리방식</th><th>혜택/사은품</th><th>프로모션</th><th>상태</th><th>관리</th></tr>
+              <tr><th>티켓</th><th>카테고리</th><th>브랜드</th><th>상품명</th><th>모델명</th><th>월요금</th><th>정상월요금</th><th>할인율</th><th>제휴카드</th><th>전월실적</th><th>카드후월요금</th><th>카드할인액</th><th>카드비고</th><th>프로모션기간</th><th>약정</th><th>혜택금액</th><th>프로모션</th><th>주요기능</th><th>제품타입</th><th>관리방식</th><th>크기</th><th>출시시기</th><th>필터종류</th><th>태그</th><th>이미지</th><th>URL</th><th>상태</th><th>관리</th></tr>
             </thead>
             <tbody id="rental-tbody">
               <!-- 동적 렌더링 -->
@@ -4926,20 +4926,37 @@ function renderRentalRow(r, idx) {
   var priceStr = typeof price === 'number' ? price.toLocaleString() : price;
   var normalStr = normal ? (typeof normal === 'number' ? normal.toLocaleString() : normal) : '-';
   var cpStr = (cardPrice !== undefined && cardPrice !== null && cardPrice !== '') ? (typeof cardPrice === 'number' ? cardPrice.toLocaleString() : cardPrice) : '-';
+  // 추가 필드 (rentalDefaultData에서 가져올 수 없으므로 빈값)
+  var modelNum = r[12]||'';
+  var discRate = normal && price ? Math.round((1-price/normal)*100)+'%' : '-';
+  var cardDiscount = (normal && cardPrice) ? (typeof normal==='number'&&typeof cardPrice==='number' ? (price-cardPrice).toLocaleString() : '-') : '-';
   return '<tr data-cat="'+cat+'" data-brand="'+brand+'" data-name="'+name+'" data-ticket="'+ticketNum+'">'
     +'<td><span style="font-family:monospace;font-weight:700;color:var(--blue);font-size:11px">'+ticketNum+'</span></td>'
     +'<td><span class="wf-status blue" style="font-size:10px">'+cat+'</span></td>'
     +'<td style="font-weight:700;font-size:11px">'+brand+'</td>'
-    +'<td style="font-size:11px;max-width:180px">'+name+'</td>'
+    +'<td style="font-size:10px;max-width:140px">'+name+'</td>'
+    +'<td style="font-size:10px;color:var(--text3)">'+modelNum+'</td>'
     +'<td style="font-weight:700;color:var(--navy)">'+priceStr+'</td>'
-    +'<td style="font-size:11px;color:var(--text3);text-decoration:line-through">'+normalStr+'</td>'
+    +'<td style="font-size:10px;color:var(--text3);text-decoration:line-through">'+normalStr+'</td>'
+    +'<td style="font-size:10px;color:var(--green);font-weight:600">'+discRate+'</td>'
     +'<td style="font-size:10px">'+card+'</td>'
     +'<td style="font-size:10px;color:var(--text3)">'+cardReq+'</td>'
-    +'<td style="font-weight:700;color:var(--blue)">'+cpStr+'</td>'
+    +'<td style="font-weight:600;color:var(--blue);font-size:10px">'+cpStr+'</td>'
+    +'<td style="font-size:10px;color:var(--green)">'+cardDiscount+'</td>'
+    +'<td style="font-size:9px;color:var(--text3)">-</td>'
+    +'<td style="font-size:9px;color:var(--text3)">-</td>'
     +'<td style="font-size:10px">'+term+'</td>'
-    +'<td style="font-size:10px">'+mgmt+'</td>'
     +'<td style="font-size:10px;color:var(--orange);font-weight:600">'+gift+'</td>'
-    +'<td style="font-size:10px;max-width:160px">'+promo+'</td>'
+    +'<td style="font-size:9px;max-width:120px">'+promo+'</td>'
+    +'<td style="font-size:9px;max-width:100px;color:var(--text3)">-</td>'
+    +'<td style="font-size:9px;color:var(--text3)">-</td>'
+    +'<td style="font-size:10px">'+mgmt+'</td>'
+    +'<td style="font-size:9px;color:var(--text3)">-</td>'
+    +'<td style="font-size:9px;color:var(--text3)">-</td>'
+    +'<td style="font-size:9px;color:var(--text3)">-</td>'
+    +'<td style="font-size:9px;color:var(--text3)">-</td>'
+    +'<td style="font-size:9px"><div class="wf-block" style="width:30px;height:30px;border-radius:4px;font-size:8px">IMG</div></td>'
+    +'<td style="font-size:9px;color:var(--blue);cursor:pointer">링크</td>'
     +'<td><span class="wf-status green" style="font-size:10px">활성</span></td>'
     +'<td style="white-space:nowrap"><span class="action-btn default" onclick="editRentalRow(this)" style="cursor:pointer;font-size:10px">수정</span> <span class="action-btn danger" onclick="deleteRentalRow(this)" style="cursor:pointer;font-size:10px">삭제</span></td>'
     +'</tr>';
