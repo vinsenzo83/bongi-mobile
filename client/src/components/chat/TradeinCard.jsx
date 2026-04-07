@@ -49,10 +49,17 @@ export default function TradeinCard({ item, tradeinUrl, onAction }) {
       {/* 하단 버튼 */}
       {onAction && (
         <div style={s.actions}>
-          <button style={s.actionPrimary} onClick={() => onAction('__open_usedphone_select__')}>
+          <button style={s.actionPrimary} onClick={() => {
+            const name = item.full_name || item.model || item['모델명'] || '';
+            const storage = item.storage || item['용량'] || '';
+            localStorage.setItem('apply_model', name);
+            localStorage.setItem('apply_storage', storage);
+            localStorage.setItem('apply_price', item['A등급'] || '');
+            window.location.href = '/apply/used-phone?model=' + encodeURIComponent(name) + '&storage=' + encodeURIComponent(storage);
+          }}>
             {'📦'} 접수하기
           </button>
-          <button style={s.actionSecondary} onClick={() => onAction('다른 중고폰 모델 매입가 알려줘')}>
+          <button style={s.actionSecondary} onClick={() => onAction('__open_usedphone_select__')}>
             다른 모델
           </button>
         </div>
