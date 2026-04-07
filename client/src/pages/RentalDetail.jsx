@@ -125,13 +125,13 @@ export default function RentalDetail() {
 
       {/* 고정 하단 CTA */}
       <div style={s.fixedBottom}>
-        <button onClick={() => navigate('/')} style={s.ctaSecondary}>{'💬'} 채팅 상담</button>
+        <a href="tel:010-9442-8528" style={s.ctaSecondary}>{'📞'} 바로 상담</a>
         <button onClick={() => {
           localStorage.setItem('apply_product', product.name);
           localStorage.setItem('apply_ticket', product.ticket);
           localStorage.setItem('apply_gift', product.benefit || '');
           navigate('/apply/rental');
-        }} style={s.ctaPrimary}>{'📝'} 가입 신청</button>
+        }} style={s.ctaPrimary}>{'📝'} 셀프 신청</button>
       </div>
     </div>
   );
