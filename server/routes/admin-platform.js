@@ -168,6 +168,48 @@ router.get('/members', async (req, res) => {
   }
 });
 
+// GET /admin/platform/members/:id — 회원 상세 (8탭 통합)
+router.get('/members/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 기본 프로필 조회
+    const { data: profile, error: profileError } = await supabase.from('bongi_user_profiles').select('*').eq('id', id).single();
+    if (profileError) throw profileError;
+
+    const phone = profile.phone || null;
+    const userId = profile.user_id || profile.id;
+
+    // 8탭 데이터 병렬 조회
+    const [applications, gifts, cashBalance, cashHistory, withdrawals, referrals, rewards, alarms, addresses] = await Promise.all([
+      phone ? supabase.from('bongi_applications').select('*').eq('phone', phone).order('created_at', { ascending: false }) : { data: [] },
+      phone ? supabase.from('bongi_gifts').select('*').eq('phone', phone).order('created_at', { ascending: false }) : { data: [] },
+      supabase.from('bongi_cash_balance').select('*').eq('user_id', userId).single(),
+      supabase.from('bongi_cash_history').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('bongi_withdrawals').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('bongi_referrals').select('*').eq('referrer_user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('bongi_rewards').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('bongi_user_alarms').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('bongi_addresses').select('*').eq('user_id', userId),
+    ]);
+
+    res.json({
+      profile,
+      applications: applications.data || [],
+      gifts: gifts.data || [],
+      cash_balance: cashBalance.data || null,
+      cash_history: cashHistory.data || [],
+      withdrawals: withdrawals.data || [],
+      referrals: referrals.data || [],
+      rewards: rewards.data || [],
+      alarms: alarms.data || [],
+      addresses: addresses.data || [],
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // PATCH /admin/platform/members/:id/role — 역할 변경
 router.patch('/members/:id/role', async (req, res) => {
   try {
@@ -474,6 +516,47 @@ router.patch('/settop-box/:id', async (req, res) => {
   }
 });
 
+// POST /admin/platform/tv-product — TV 상품 추가
+router.post('/tv-product', async (req, res) => {
+  try {
+    const { carrier, name, monthly_fee, channels, is_active } = req.body;
+    if (!carrier || !name || monthly_fee === undefined) return res.status(400).json({ error: 'carrier, name, monthly_fee는 필수입니다' });
+    const insert = { carrier, name, monthly_fee, is_active: is_active !== undefined ? is_active : true };
+    if (channels !== undefined) insert.channels = channels;
+    const { data, error } = await supabase.from('bongi_tv_products').insert(insert).select();
+    if (error) throw error;
+    res.json({ product: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /admin/platform/settop-box — 셋톱박스 추가
+router.post('/settop-box', async (req, res) => {
+  try {
+    const { carrier, name, monthly_fee, is_active } = req.body;
+    if (!carrier || !name || monthly_fee === undefined) return res.status(400).json({ error: 'carrier, name, monthly_fee는 필수입니다' });
+    const { data, error } = await supabase.from('bongi_settop_boxes').insert({ carrier, name, monthly_fee, is_active: is_active !== undefined ? is_active : true }).select();
+    if (error) throw error;
+    res.json({ product: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /admin/platform/wifi-product — WiFi 상품 추가
+router.post('/wifi-product', async (req, res) => {
+  try {
+    const { carrier, name, monthly_fee, is_active } = req.body;
+    if (!carrier || !name || monthly_fee === undefined) return res.status(400).json({ error: 'carrier, name, monthly_fee는 필수입니다' });
+    const { data, error } = await supabase.from('bongi_wifi_products').insert({ carrier, name, monthly_fee, is_active: is_active !== undefined ? is_active : true }).select();
+    if (error) throw error;
+    res.json({ product: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── 휴대폰 요금제 관리 ──
 
 // GET /admin/platform/mobile-plans — 요금제 목록
@@ -594,6 +677,37 @@ router.patch('/used-phones/price', async (req, res) => {
   }
 });
 
+// ── 중고폰 매입 현황 ──
+
+// GET /admin/platform/used-phone-buyback — 중고폰 매입 현황
+router.get('/used-phone-buyback', async (req, res) => {
+  try {
+    const { status, store } = req.query;
+
+    // bongi_used_phone_buyback 테이블 우선 조회
+    let query = supabase.from('bongi_used_phone_buyback').select('*').order('created_at', { ascending: false });
+    if (status) query = query.eq('status', status);
+    if (store) query = query.eq('store', store);
+    const { data, error } = await query;
+
+    if (!error && data && data.length > 0) {
+      return res.json({ buybacks: data, total: data.length });
+    }
+
+    // 테이블이 없거나 데이터가 없으면 bongi_applications에서 중고폰 타입 필터
+    let fallbackQuery = supabase.from('bongi_applications').select('*')
+      .eq('type', '중고폰')
+      .order('created_at', { ascending: false });
+    if (status) fallbackQuery = fallbackQuery.eq('status', status);
+    if (store) fallbackQuery = fallbackQuery.eq('store', store);
+    const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+    if (fallbackError) throw fallbackError;
+    res.json({ buybacks: fallbackData || [], total: (fallbackData || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── 신청 현황 ──
 
 // GET /admin/platform/applications — 신청 목록
@@ -612,6 +726,40 @@ router.get('/applications', async (req, res) => {
   }
 });
 
+// PATCH /admin/platform/applications/:id — 신청 상태 변경
+router.patch('/applications/:id', async (req, res) => {
+  try {
+    const { status, gift_amount } = req.body;
+    const allowed = ['new', '신청완료', '상담중', '계약완료', '취소'];
+    if (!status || !allowed.includes(status)) {
+      return res.status(400).json({ error: `status는 ${allowed.join(', ')} 중 하나여야 합니다` });
+    }
+
+    const { data, error } = await supabase.from('bongi_applications').update({ status }).eq('id', req.params.id).select();
+    if (error) throw error;
+    if (!data || data.length === 0) return res.status(404).json({ error: '신청을 찾을 수 없습니다' });
+
+    const application = data[0];
+
+    // 계약완료 시 → bongi_gifts에 지급대기 자동 생성
+    if (status === '계약완료') {
+      await supabase.from('bongi_gifts').insert({
+        application_id: application.id,
+        user_id: application.user_id || null,
+        name: application.name || null,
+        phone: application.phone || null,
+        amount: gift_amount || 0,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    res.json({ application });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── 돈지키미 ──
 
 // GET /admin/platform/don-jikimi — 돈지키미 알람 목록
@@ -620,6 +768,30 @@ router.get('/don-jikimi', async (req, res) => {
     const { data, error } = await supabase.from('bongi_user_alarms').select('*').order('end_date', { ascending: true }).limit(200);
     if (error) throw error;
     res.json({ alarms: data || [], total: (data || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /admin/platform/don-jikimi/:id — 돈지키미 상태 변경
+router.patch('/don-jikimi/:id', async (req, res) => {
+  try {
+    const { crm_status, manager, memo } = req.body;
+    const allowedStatus = ['pending', 'sent', 'completed'];
+    if (crm_status && !allowedStatus.includes(crm_status)) {
+      return res.status(400).json({ error: `crm_status는 ${allowedStatus.join(', ')} 중 하나여야 합니다` });
+    }
+
+    const update = {};
+    if (crm_status) update.crm_status = crm_status;
+    if (manager !== undefined) update.manager = manager;
+    if (memo !== undefined) update.memo = memo;
+    update.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase.from('bongi_user_alarms').update(update).eq('id', req.params.id).select();
+    if (error) throw error;
+    if (!data || data.length === 0) return res.status(404).json({ error: '알람을 찾을 수 없습니다' });
+    res.json({ alarm: data[0] });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -636,6 +808,48 @@ router.get('/notifications', async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
     res.json({ notifications: data || [], total: (data || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /admin/platform/notifications — 알림 수동 발송
+router.post('/notifications', async (req, res) => {
+  try {
+    const { user_id, channel, type, title, content } = req.body;
+    if (!user_id || !channel || !title || !content) {
+      return res.status(400).json({ error: 'user_id, channel, title, content는 필수입니다' });
+    }
+    const allowedChannels = ['push', 'kakao'];
+    if (!allowedChannels.includes(channel)) {
+      return res.status(400).json({ error: `channel은 ${allowedChannels.join(', ')} 중 하나여야 합니다` });
+    }
+
+    const { data, error } = await supabase.from('bongi_notifications').insert({
+      user_id,
+      channel,
+      type: type || 'manual',
+      title,
+      content,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    }).select();
+    if (error) throw error;
+    res.json({ notification: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /admin/platform/notifications/:id — 알림 재발송 (status를 pending으로 변경)
+router.patch('/notifications/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('bongi_notifications')
+      .update({ status: 'pending', updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select();
+    if (error) throw error;
+    if (!data || data.length === 0) return res.status(404).json({ error: '알림을 찾을 수 없습니다' });
+    res.json({ notification: data[0] });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -661,6 +875,30 @@ router.patch('/stores/:id', async (req, res) => {
     const { data, error } = await supabase.from('bongi_stores').update(req.body).eq('id', id).select().single();
     if (error) throw error;
     res.json({ store: data });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /admin/platform/stores — 매장 추가
+router.post('/stores', async (req, res) => {
+  try {
+    const { name, address, phone } = req.body;
+    if (!name || !address || !phone) return res.status(400).json({ error: 'name, address, phone은 필수입니다' });
+    const { data, error } = await supabase.from('bongi_stores').insert(req.body).select();
+    if (error) throw error;
+    res.json({ store: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /admin/platform/stores/:id — 매장 삭제
+router.delete('/stores/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('bongi_stores').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

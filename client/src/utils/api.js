@@ -27,6 +27,12 @@ export const api = {
   getProducts: (category) => request(`/products/${category}`),
   getProductByTicket: (ticket) => request(`/products/ticket/${ticket}`),
   getStores: () => request('/stores'),
+  getStore: (id) => request(`/stores/${id}`),
+  getUsedPhoneCatalog: () => request('/products/used-phone-catalog'),
+  getApplications: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/applications${q ? '?' + q : ''}`);
+  },
   submitApplication: (data) => request('/applications', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -151,6 +157,7 @@ export const api = {
     deleteReview: (id) => request(`/admin/platform/reviews/${id}`, { method: 'DELETE' }),
     // 회원
     getMembers: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/members${q ? '?' + q : ''}`); },
+    getMember: (id) => request(`/admin/platform/members/${id}`),
     updateMemberRole: (id, data) => request(`/admin/platform/members/${id}/role`, { method: 'PATCH', body: JSON.stringify(data) }),
     // 친구초대
     getReferrals: () => request('/admin/platform/referrals'),
@@ -158,6 +165,36 @@ export const api = {
     getWithdrawals: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/cash/withdrawals${q ? '?' + q : ''}`); },
     updateWithdrawal: (id, data) => request(`/admin/platform/cash/withdrawals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     manualCredit: (data) => request('/admin/platform/cash/manual-credit', { method: 'POST', body: JSON.stringify(data) }),
+    // 신청
+    getApplications: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/applications${q ? '?' + q : ''}`); },
+    updateApplication: (id, data) => request(`/admin/platform/applications/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    // 렌탈
+    getRental: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/rental${q ? '?' + q : ''}`); },
+    // 인터넷+TV
+    getCarrierProducts: () => request('/admin/platform/carrier-products'),
+    // 티켓
+    getTickets: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/tickets${q ? '?' + q : ''}`); },
+    syncTickets: () => request('/admin/platform/tickets/sync', { method: 'POST' }),
+    // 시세
+    getPhonePrices: () => request('/admin/platform/phone-prices'),
+    getUsedPhones: () => request('/admin/platform/used-phones'),
+    getMobilePlans: () => request('/admin/platform/mobile-plans'),
+    // 매장
+    getStores: () => request('/admin/platform/stores'),
+    createStore: (data) => request('/admin/platform/stores', { method: 'POST', body: JSON.stringify(data) }),
+    updateStore: (id, data) => request(`/admin/platform/stores/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteStore: (id) => request(`/admin/platform/stores/${id}`, { method: 'DELETE' }),
+    // 돈지키미
+    getDonJikimi: () => request('/admin/platform/don-jikimi'),
+    updateDonJikimi: (id, data) => request(`/admin/platform/don-jikimi/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    // 알림
+    getNotifications: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/notifications${q ? '?' + q : ''}`); },
+    sendNotification: (data) => request('/admin/platform/notifications', { method: 'POST', body: JSON.stringify(data) }),
+    // 공시지원금
+    getSubsidy: (params = {}) => { const q = new URLSearchParams(params).toString(); return request(`/admin/platform/subsidy${q ? '?' + q : ''}`); },
+    crawlSubsidy: () => request('/admin/platform/subsidy/crawl', { method: 'POST' }),
+    // 중고폰 매입현황
+    getUsedPhoneBuyback: () => request('/admin/platform/used-phone-buyback'),
   },
 
   // AI
