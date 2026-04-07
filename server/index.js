@@ -77,6 +77,26 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: '리턴AI API' });
 });
 
+// 렌탈 상품 상세 API
+import { readFileSync } from 'fs';
+const rentalTicketsPath = join(__dirname, 'data', 'providers', 'rental_tickets.json');
+let rentalTicketsData = [];
+try { rentalTicketsData = JSON.parse(readFileSync(rentalTicketsPath, 'utf8')); } catch {}
+
+app.get('/api/rental/:ticket', (req, res) => {
+  const item = rentalTicketsData.find(t => t.ticket === req.params.ticket.toUpperCase());
+  if (!item) return res.status(404).json({ error: '상품을 찾을 수 없습니다' });
+  res.json(item);
+});
+
+app.get('/api/rental', (req, res) => {
+  const { category, brand } = req.query;
+  let items = rentalTicketsData;
+  if (category) items = items.filter(t => t.category === category);
+  if (brand) items = items.filter(t => t.brand.toLowerCase().includes(brand.toLowerCase()));
+  res.json({ count: items.length, items });
+});
+
 // 프로덕션: 클라이언트 정적 파일 서빙
 const clientDist = join(__dirname, '..', 'client', 'dist');
 import { existsSync } from 'fs';

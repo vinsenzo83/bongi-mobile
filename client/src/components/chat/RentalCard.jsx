@@ -116,9 +116,18 @@ export default function RentalCard({ product, onAction }) {
           </button>
           <button
             style={styles.detailBtn}
-            onClick={() => onAction(`${product.상품명} 다른 옵션도 보여줘`)}
+            onClick={() => {
+              const t = product.티켓번호 || product.ticket || '';
+              if (t) window.location.href = '/product/rental/' + t;
+            }}
           >
-            다른 상품
+            상세보기
+          </button>
+          <button
+            style={styles.detailBtn}
+            onClick={() => onAction(`${product.카테고리 || product.category || '렌탈'} 다른 상품도 보여줘`)}
+          >
+            다른상품
           </button>
         </div>
       )}
