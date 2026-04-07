@@ -7,6 +7,7 @@ import RentalCard from './RentalCard.jsx';
 import StoreCard from './StoreCard.jsx';
 import TradeinCard from './TradeinCard.jsx';
 import PhoneSelectCard from './PhoneSelectCard.jsx';
+import UsedPhoneSelectCard from './UsedPhoneSelectCard.jsx';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 export default function MessageBubble({ message, onAction }) {
@@ -137,6 +138,8 @@ function RichElement({ element, onAction }) {
       );
     case 'phone_select':
       return <PhoneSelectCard onComplete={onAction} />;
+    case 'usedphone_select':
+      return <UsedPhoneSelectCard onComplete={onAction} />;
     case 'form':
       return (
         <InlineForm

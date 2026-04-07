@@ -87,10 +87,10 @@ export default function Chat() {
                 const data = JSON.parse(msg.replace('__consult__', ''));
                 setConsultSheet({ open: true, product: data.product, category: data.category });
               } catch { setConsultSheet({ open: true, product: {}, category: 'internet' }); }
-            } else if (isUsedPhoneQuery(msg)) {
-              setShowUsedPhoneSelect(true);
-            } else if (isPhoneQuery(msg)) {
+            } else if (msg === '__open_phone_select__') {
               setShowPhoneSelect(true);
+            } else if (msg === '__open_usedphone_select__') {
+              setShowUsedPhoneSelect(true);
             } else {
               chat.sendMessage(msg);
             }
@@ -99,13 +99,7 @@ export default function Chat() {
 
         {/* 입력창 */}
         <InputArea onSend={(msg) => {
-          if (isUsedPhoneQuery(msg)) {
-            setShowUsedPhoneSelect(true);
-          } else if (isPhoneQuery(msg)) {
-            setShowPhoneSelect(true);
-          } else {
-            chat.sendMessage(msg);
-          }
+          chat.sendMessage(msg);
         }} loading={chat.loading} hasMessages={chat.messages.length > 0} />
       </div>
 

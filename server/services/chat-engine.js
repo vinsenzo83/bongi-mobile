@@ -589,10 +589,16 @@ export async function processMessage(sessionId, userMessage, context = {}) {
 
   let ui_elements = extractUIElements(session.messages);
 
-  // 휴대폰 기종 선택 UI 삽입: AI가 제조사/기종 선택을 유도하는 응답을 했을 때
-  const phoneSelectKeywords = ['어떤 제조사', '어떤 기종', '어떤 모델', '제조사를 선택', '기종을 선택', '모델을 선택', '제조사가 궁금'];
-  if (phoneSelectKeywords.some(k => reply.includes(k))) {
+  // 휴대폰 기종 선택 UI 삽입
+  const phoneSelectKw = ['어떤 제조사', '어떤 기종', '어떤 모델', '제조사를 선택', '기종을 선택', '제조사가 궁금'];
+  if (phoneSelectKw.some(k => reply.includes(k)) && !reply.includes('중고폰') && !reply.includes('매입')) {
     ui_elements = [{ type: 'phone_select' }, ...ui_elements];
+  }
+
+  // 중고폰 매입 선택 UI 삽입
+  const usedPhoneKw = ['어떤 기종을 팔', '어떤 폰을 매입', '제조사를 선택.*매입', '매입.*제조사', '중고폰.*모델', '어떤 폰.*매입'];
+  if (usedPhoneKw.some(k => reply.match(new RegExp(k))) || (reply.includes('제조사') && reply.includes('매입'))) {
+    ui_elements = [{ type: 'usedphone_select' }, ...ui_elements];
   }
 
   // 첫 메시지 응답을 캐시에 저장 (다음 동일 질문에서 API 호출 절약)
