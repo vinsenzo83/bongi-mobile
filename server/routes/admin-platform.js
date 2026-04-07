@@ -720,7 +720,7 @@ router.get('/applications', async (req, res) => {
     let query = supabase.from('bongi_applications').select('*').order('created_at', { ascending: false }).limit(200);
     if (status) query = query.eq('status', status);
     if (channel) query = query.eq('channel', channel);
-    if (search) query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,ticket_no.ilike.%${search}%`);
+    if (search) query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,product_ticket.ilike.%${search}%`);
     const { data, error } = await query;
     if (error) throw error;
     res.json({ applications: data || [], total: (data || []).length });
@@ -733,7 +733,7 @@ router.get('/applications', async (req, res) => {
 router.patch('/applications/:id', async (req, res) => {
   try {
     const { status, gift_amount } = req.body;
-    const allowed = ['new', '신청완료', '상담중', '계약완료', '취소'];
+    const allowed = ['신청완료', '상담중', '계약완료', '취소'];
     if (!status || !allowed.includes(status)) {
       return res.status(400).json({ error: `status는 ${allowed.join(', ')} 중 하나여야 합니다` });
     }
@@ -743,21 +743,19 @@ router.patch('/applications/:id', async (req, res) => {
     if (!data || data.length === 0) return res.status(404).json({ error: '신청을 찾을 수 없습니다' });
 
     const application = data[0];
+    let gift_created = false;
 
     // 계약완료 시 → bongi_gifts에 지급대기 자동 생성
-    if (status === '계약완료') {
-      await supabase.from('bongi_gifts').insert({
-        application_id: application.id,
-        user_id: application.user_id || null,
-        name: application.name || null,
-        phone: application.phone || null,
-        amount: gift_amount || 0,
+    if (status === '계약완료' && (gift_amount || application.gift_amount)) {
+      const { error: giftErr } = await supabase.from('bongi_gifts').insert({
+        amount: gift_amount || application.gift_amount || 0,
         status: 'pending',
-        created_at: new Date().toISOString(),
       });
+      if (giftErr) console.warn('사은품 자동 생성 실패:', giftErr.message);
+      else gift_created = true;
     }
 
-    res.json({ application });
+    res.json({ application, gift_created });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
