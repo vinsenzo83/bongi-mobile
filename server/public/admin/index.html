@@ -8372,10 +8372,9 @@ function buildPointSection(m, pointsHtml) {
 }
 
 function findAndOpenMember(name) {
-  // memberData에서 이름으로 검색
+  // 1. 먼저 memberData에서 검색
   for(var i=0; i<memberData.length; i++) {
     if(memberData[i].name === name) {
-      // 기존 모달 닫기
       var overlays = document.querySelectorAll('.modal-overlay');
       overlays.forEach(function(ov){ ov.remove(); });
       document.body.style.overflow = '';
@@ -8383,7 +8382,44 @@ function findAndOpenMember(name) {
       return;
     }
   }
-  alert('회원 정보를 찾을 수 없습니다: ' + name);
+  // 2. memberData에 없으면 API에서 로드 후 추가
+  fetch('/api/admin/platform/members')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var customers = (d.members||[]).filter(function(m) { return m.member_type !== 'agent'; });
+      memberData.length = 0;
+      customers.forEach(function(m) {
+        memberData.push({
+          name: m.display_name || m.name || '-',
+          phone: m.phone || '-',
+          type: m.user_type || '앱회원',
+          channel: m.channel || '-',
+          social: m.social_provider || '-',
+          carrier: m.carrier || '-',
+          verify: m.verified_at ? '완료' : '미완료',
+          account: m.bank_name ? '등록' : '미등록',
+          address: '미등록',
+          date: m.created_at ? new Date(m.created_at).toLocaleDateString('ko-KR') : '-',
+          cnt: (m.total_conversions || 0) + '건',
+          point: (m.point_balance || 0).toLocaleString() + 'P',
+          id: m.id || '',
+          bank: m.bank_name || '',
+          accountNum: m.account_number || '',
+          accountHolder: m.account_holder || '',
+        });
+      });
+      // 다시 검색
+      for(var i=0; i<memberData.length; i++) {
+        if(memberData[i].name === name) {
+          var overlays = document.querySelectorAll('.modal-overlay');
+          overlays.forEach(function(ov){ ov.remove(); });
+          document.body.style.overflow = '';
+          setTimeout(function(){ openMemberDetail(i); }, 100);
+          return;
+        }
+      }
+      alert('회원 정보를 찾을 수 없습니다: ' + name);
+    }).catch(function() { alert('회원 정보를 불러올 수 없습니다'); });
 }
 
 function openMemberDetail(idx) {
