@@ -4589,7 +4589,19 @@ var _usedPhoneDataLegacy = [
 ];
 // [카테고리, 브랜드, 상품명, 월요금, 정상월요금, 제휴카드, 전월실적, 카드후월요금, 약정, 관리방식, 혜택금액, 프로모션, 모델명, 카드할인액, 카드비고, 프로모션기간, 주요기능, 제품타입, 크기, 출시시기, 필터종류, 태그, 이미지1, 이미지2, 이미지3, 상품URL]
 // [카테고리,브랜드,상품명,월요금,정상월요금,제휴카드,전월실적,카드후월요금,약정,관리방식,혜택금액,프로모션,모델명,카드할인액,카드비고,프로모션기간,주요기능,제품타입,크기,출시시기,필터종류,태그,이미지1,이미지2,이미지3,상품URL]
-var rentalDefaultData = [
+var rentalDefaultData = [];
+(function loadRentalData() {
+  fetch('/api/admin/platform/rental')
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      rentalDefaultData = (res.products || []).map(function(p) {
+        return [p.category,p.brand,p.product_name,p.monthly_fee,p.normal_fee,p.card_name,p.card_spend,p.card_fee,p.contract_period,p.management,p.benefit_amount,p.promotion,p.model_name,p.card_discount,p.card_note,p.promo_period,p.features,p.product_type,p.size,p.release_date,p.filter_type,p.tags,p.image1,p.image2,p.image3,p.product_url];
+      });
+      if(typeof renderRentalTable === 'function') renderRentalTable();
+    })
+    .catch(function(e) { console.error('렌탈 로드 실패:', e); });
+})();
+var _rentalDefaultDataLegacy = [
   ['정수기','코웨이','아이콘3 냉온정 정수기',14450,28900,'KB카드','전월실적 40만원',0,'3~7년','방문관리/셀프관리','카드할인+반값프로모션','반값할인(3,5년:6개월 / 6,7년:12개월), 타사보상혜택','CHP-7220N',14450,'KB카드 전월실적 40만원 이상 시 월 0원','12개월','스마트 무빙 파우셋, 가로 16cm 초소형, 실시간 UV살균, 고온수, IoT기능, 에너지절약','데스크탑형','160x365x385','2026년 02월','나노필터','','https://cdn.rentre.kr/product-thumbnail/b1473fce305c4decb2ce2847c9c42fa9.png','https://cdn.rentre.kr/product-thumbnail/af0a6e3471d048c9bca783817451be33.png','https://cdn.rentre.kr/product-thumbnail/62d0fc928f29431695ce0c2534152c38.png','https://rentre.kr/product/1600006842'],
   ['정수기','쿠쿠','제로100 슬림 얼음정수기',20950,41900,'우리카드','전월실적 30만원',10950,'3~6년','방문관리/셀프관리','카드할인+반값프로모션','반값할인(약정기간별), 타사보상혜택(15%)','CP-AHS100HEW(S)',10000,'','','얼음, 냉수, 온수, 정수, 고온수(90°C), UV살균, 자동배수, 전기수살균, 분리형구조, 맞춤출수','','230x480x460','2024년 04월','','','https://cdn.rentre.kr/product-thumbnail/c38d8a3e78d04fe6a8025f8a7aee1732.png','https://cdn.rentre.kr/product-thumbnail/ce3e31f03dc8440a850ed510cc258b45.png','https://cdn.rentre.kr/product-thumbnail/3db90f1ad23f42a2b7b60bfee2bf04a6.png','https://rentre.kr/product/1522013399'],
   ['정수기','코웨이','아이콘 프로 정수기',14450,28900,'KB카드','전월실적 40만원',0,'3~7년','방문관리/셀프관리','카드할인+반값프로모션','반값할인, 타사보상혜택','CHP-7400N',14450,'KB카드 전월실적 40만원 이상 시 월 0원','12개월','풀터치 스크린, 온수 온도 조절기능, 파우셋 원터치 교체','데스크탑형','169x365x385','2025년','나노필터','','https://cdn.rentre.kr/product-thumbnail/71a71249e5374d10867e693e016998b9.png','https://cdn.rentre.kr/product-thumbnail/621c4016b00245df96e323cdfe8102f3.png','https://cdn.rentre.kr/product-thumbnail/685c28a56d6b4c4a8d029df4524cf03f.png','https://rentre.kr/product/1600004299'],
@@ -5571,7 +5583,19 @@ function runSimulator() {
 }
 
 // ─── 모바일 요금제 데이터 (168개) ───
-var mobilePlanData = [
+var mobilePlanData = [];
+(function loadMobilePlanData() {
+  fetch('/api/admin/platform/mobile-plans')
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      mobilePlanData = (res.plans || []).map(function(p) {
+        return [p.carrier,p.plan_name,p.monthly_fee,p.discount_fee,p.data_amount,p.data_daily,p.call_amount,p.message,p.network,p.conditions,p.benefits];
+      });
+      if(typeof renderMobilePlanTable === 'function') renderMobilePlanTable();
+    })
+    .catch(function(e) { console.error('요금제 로드 실패:', e); });
+})();
+var _mobilePlanDataLegacy = [
   ['SKT','5GX 프리미엄(유튜브 프리미엄)',109000,81750,'무제한','-','무제한','기본 제공','5G','5G, 8GB~, 나이 제한 없음','OTT무료: 유튜브 프리미엄 / T우주 / T멤버십'],
   ['SKT','0 청년 109(유튜브 프리미엄)',109000,81750,'무제한','-','무제한','기본 제공','5G/LTE','5G, 8GB~, 만 34세 이하','OTT무료: 유튜브 프리미엄 / 로밍혜택 / T우주 / T멤버십'],
   ['SKT','5GX 플래티넘(넷플릭스)',125000,93750,'무제한','-','무제한','기본 제공','5G','5G, 8GB~, 나이 제한 없음','OTT무료: 넷플릭스, 디즈니+, 유튜브 프리미엄, 티빙 / T우주 / T멤버십'],
