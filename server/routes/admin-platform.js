@@ -740,30 +740,50 @@ router.get('/applications', async (req, res) => {
   }
 });
 
-// PATCH /admin/platform/applications/:id — 신청 상태 변경
+// PATCH /admin/platform/applications/:id — 신청 상태/상품/티켓/사은품 변경
 router.patch('/applications/:id', async (req, res) => {
   try {
-    const { status, gift_amount } = req.body;
-    const allowed = ['신청완료', '상담중', '계약완료', '취소'];
-    if (!status || !allowed.includes(status)) {
-      return res.status(400).json({ error: `status는 ${allowed.join(', ')} 중 하나여야 합니다` });
+    const { status, product_ticket, product_name, gift_amount, carrier } = req.body;
+
+    // status 검증 (있을 경우만)
+    if (status) {
+      const allowed = ['신청완료', '상담중', '계약완료', '취소'];
+      if (!allowed.includes(status)) {
+        return res.status(400).json({ error: `status는 ${allowed.join(', ')} 중 하나여야 합니다` });
+      }
     }
 
-    const { data, error } = await supabase.from('bongi_applications').update({ status }).eq('id', req.params.id).select();
+    // 업데이트 필드 구성 (보낸 것만 업데이트)
+    const update = {};
+    if (status) update.status = status;
+    if (product_ticket !== undefined) update.product_ticket = product_ticket;
+    if (product_name !== undefined) update.product_name = product_name;
+    if (gift_amount !== undefined) update.gift_amount = gift_amount;
+    if (carrier !== undefined) update.carrier = carrier;
+
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ error: '변경할 필드가 없습니다' });
+    }
+
+    const { data, error } = await supabase.from('bongi_applications').update(update).eq('id', req.params.id).select();
     if (error) throw error;
     if (!data || data.length === 0) return res.status(404).json({ error: '신청을 찾을 수 없습니다' });
 
     const application = data[0];
     let gift_created = false;
 
-    // 계약완료 시 → bongi_gifts에 지급대기 자동 생성
-    if (status === '계약완료' && (gift_amount || application.gift_amount)) {
-      const { error: giftErr } = await supabase.from('bongi_gifts').insert({
-        amount: gift_amount || application.gift_amount || 0,
-        status: 'pending',
-      });
-      if (giftErr) console.warn('사은품 자동 생성 실패:', giftErr.message);
-      else gift_created = true;
+    // 계약완료 시 → bongi_gifts에 지급대기 자동 생성 (최종 확정 금액 기준)
+    if (status === '계약완료') {
+      const finalGift = gift_amount || application.gift_amount || 0;
+      if (finalGift > 0) {
+        const { error: giftErr } = await supabase.from('bongi_gifts').insert({
+          amount: finalGift,
+          status: 'pending',
+          memo: `${application.product_name || ''} (${application.product_ticket || ''})`,
+        });
+        if (giftErr) console.warn('사은품 자동 생성 실패:', giftErr.message);
+        else gift_created = true;
+      }
     }
 
     res.json({ application, gift_created });
