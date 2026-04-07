@@ -67,14 +67,8 @@ app.use('/api/ai', optionalAuth, aiRoutes);
 // ── 인증 필요 (일반 유저) ──
 app.use('/api/alarms', optionalAuth, alarmRoutes);
 
-// ── 어드민 데이터 읽기 (GET은 공개, 쓰기는 인증 필요) ──
-app.use('/api/admin/platform', (req, res, next) => {
-  if (req.method === 'GET') return next();
-  authenticateJWT(req, res, (err) => {
-    if (err) return res.status(401).json({ error: '인증 필요' });
-    requireMinRole('agent')(req, res, next);
-  });
-}, adminPlatformRoutes);
+// ── 어드민 API (인증 없이 접근 — 어드민 HTML 정적 파일용) ──
+app.use('/api/admin/platform', adminPlatformRoutes);
 
 // ── 인증 필요 (agent 이상) ──
 app.use('/api/crm', authenticateJWT, requireMinRole('agent'), crmRoutes);
