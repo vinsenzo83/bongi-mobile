@@ -9,4 +9,4 @@ cmds = ["npm run build", "npx playwright install --with-deps chromium"]
 PLAYWRIGHT_BROWSERS_PATH = "/app/.playwright"
 
 [start]
-cmd = "NODE_PATH=/app/node_modules PLAYWRIGHT_BROWSERS_PATH=/app/.playwright node server/index.js"
+cmd = "PLAYWRIGHT_CHROMIUM_PATH=$(find /nix -name 'chromium' -type f 2>/dev/null | head -1) NODE_PATH=/app/node_modules node server/index.js"
