@@ -122,7 +122,7 @@ export default function MyPage() {
     setReviewForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleImageSelect = (e) => {
+  const handleImageSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -130,20 +130,18 @@ export default function MyPage() {
       setReviewError('이미지 파일만 업로드 가능합니다.');
       return;
     }
-    if (file.size > 3 * 1024 * 1024) {
-      setReviewError('이미지 크기는 3MB 이하여야 합니다.');
-      return;
-    }
 
-    const reader = new FileReader();
-    reader.onload = () => {
+    try {
+      const { default: resizeImage } = await import('../utils/resizeImage.js');
+      const resized = await resizeImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.8, maxSizeKB: 1024 });
       setReviewForm(prev => ({
         ...prev,
-        imagePreview: reader.result,
+        imagePreview: resized,
         imageFile: file,
       }));
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setReviewError('이미지 처리에 실패했습니다. 다른 사진을 선택해주세요.');
+    }
   };
 
   const handleImageRemove = () => {

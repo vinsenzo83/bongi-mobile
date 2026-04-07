@@ -50,9 +50,14 @@ export default function UsedPhoneIntakeSheet({ open, onClose, phone }) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = e.target.files?.[0];
-      if (file) {
+      if (!file) return;
+      try {
+        const { default: resizeImage } = await import('../../utils/resizeImage.js');
+        const resized = await resizeImage(file, { maxWidth: 800, maxHeight: 800, quality: 0.7, maxSizeKB: 512 });
+        setPhotos((prev) => ({ ...prev, [position]: { name: file.name, data: resized } }));
+      } catch {
         setPhotos((prev) => ({ ...prev, [position]: file.name }));
       }
     };
