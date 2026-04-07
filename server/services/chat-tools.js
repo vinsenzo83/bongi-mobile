@@ -1154,89 +1154,60 @@ const RENTAL_CATEGORY_NAMES = {
 };
 
 async function searchRental({ category, brand, max_price }) {
-  if (!category) {
-    const summary = Object.entries(rentalProducts).map(([cat, items]) => ({
-      카테고리: RENTAL_CATEGORY_NAMES[cat] || cat,
-      상품수: items.length,
-      가격범위: `${Math.min(...items.map(i => i.monthlyRental)).toLocaleString()}원 ~ ${Math.max(...items.map(i => i.monthlyRental)).toLocaleString()}원`,
+  // 어드민 데이터(rental_tickets.json) 기반
+  let items = [...rentalTickets];
+
+  // 카테고리 필터
+  if (category) {
+    const catName = RENTAL_CATEGORY_NAMES[category] || category;
+    items = items.filter(t => t.category === catName || t.category === category);
+  }
+
+  // 브랜드 필터
+  if (brand) {
+    const b = brand.toLowerCase();
+    items = items.filter(t => t.brand.toLowerCase().includes(b) || t.name.toLowerCase().includes(b));
+  }
+
+  // 카테고리/브랜드 없으면 카테고리 요약
+  if (!category && !brand) {
+    const cats = {};
+    rentalTickets.forEach(t => {
+      if (!cats[t.category]) cats[t.category] = [];
+      cats[t.category].push(t);
+    });
+    const summary = Object.entries(cats).map(([cat, list]) => ({
+      카테고리: cat,
+      상품수: list.length,
+      브랜드: [...new Set(list.map(l => l.brand))].join(', '),
     }));
     return {
       message: '어떤 가전을 찾으세요? 카테고리를 선택해주세요.',
       categories: summary,
+      _tool: 'search_rental',
     };
   }
 
-  let items = rentalProducts[category] || [];
   if (items.length === 0) {
-    return { error: `${RENTAL_CATEGORY_NAMES[category] || category} 카테고리에 상품이 없습니다.` };
+    return { error: `해당 조건의 렌탈 상품이 없습니다.`, _tool: 'search_rental' };
   }
 
-  if (brand) {
-    const brandLower = brand.toLowerCase();
-    items = items.filter(i =>
-      i.brand.toLowerCase().includes(brandLower) ||
-      i.name.toLowerCase().includes(brandLower)
-    );
-  }
-
-  if (max_price) {
-    items = items.filter(i => i.monthlyRental <= max_price);
-  }
-
-  // 브랜드별 최고 카드할인 매핑
-  const brandCardMap = {};
-  for (const card of rentalCards) {
-    const brand = card.rentalBrand;
-    const maxDiscount = card.maxMonthlyDiscount || 0;
-    if (!brandCardMap[brand] || maxDiscount > brandCardMap[brand].maxDiscount) {
-      brandCardMap[brand] = { name: card.cardName, maxDiscount, condition: card.discountCondition || '' };
-    }
-  }
-
-  const results = items
-    .sort((a, b) => a.monthlyRental - b.monthlyRental)
-    .map(i => {
-      // 카드할인 매칭 (브랜드명 유연 매칭)
-      const cardInfo = brandCardMap[i.brand]
-        || brandCardMap[i.brand + '전자']
-        || Object.entries(brandCardMap).find(([k]) => k.includes(i.brand))?.[1]
-        || null;
-      // 부가기능 (additionalFunctions 또는 mainFunctions)
-      const funcs = (i.specs?.additionalFunctions || []).map(f => typeof f === 'object' ? (f.funcName || f.name || JSON.stringify(f)) : String(f)).filter(Boolean).slice(0, 4);
-      const rating = i.rating || {};
-      const pricing = i.pricing || {};
-      const colors = (i.colorOptions || []).map(c => c.name).filter(Boolean);
-      // 렌탈 티켓번호 매칭
-      const ticket = rentalTickets.find(t =>
-        i.name.includes(t.name) || t.name.includes(i.name?.split(' ').slice(-2).join(' ') || '')
-      );
-      return {
-        상품ID: i.id,
-        티켓번호: ticket?.ticket || '',
-        상품명: i.name,
-        브랜드: i.brand,
-        모델번호: i.model,
-        월렌탈료: `${i.monthlyRental.toLocaleString()}원`,
-        사은품: i.gift ? `${i.gift.toLocaleString()}원` : '-',
-        ...(pricing.halfPricePromotion ? { 반값프로모션: true } : {}),
-        ...(cardInfo ? { 카드할인: `최대 -${cardInfo.maxDiscount.toLocaleString()}원 (${cardInfo.name})` } : {}),
-        ...(funcs.length > 0 ? { 주요기능: funcs.join(', ') } : {}),
-        ...(rating.value ? { 평점: `${rating.value}점 (${rating.reviewCount || 0}건)` } : {}),
-        ...(colors.length > 0 ? { 색상: `${colors.length}가지` } : {}),
-        상품URL: i.url,
-        썸네일: i.thumbnail || '',
-        이미지: i.images?.[0] || '',
-      };
-    });
-
-  // 해당 카테고리 후기 2개 자동 포함
-  const reviews = await searchReviews({ category, limit: 2 });
+  const results = items.map(t => ({
+    티켓번호: t.ticket,
+    상품명: t.name,
+    브랜드: t.brand,
+    카테고리: t.category,
+    월렌탈료: t.monthly_fee,
+    카드할인후: t.card_fee !== '0' ? t.card_fee : '',
+    프로모션: t.promotion,
+    상태: t.status,
+  }));
 
   return {
-    카테고리: RENTAL_CATEGORY_NAMES[category],
+    카테고리: category ? (RENTAL_CATEGORY_NAMES[category] || category) : (brand || '전체'),
     count: results.length,
     results,
-    관련후기: reviews.reviews,
+    _tool: 'search_rental',
   };
 }
 
