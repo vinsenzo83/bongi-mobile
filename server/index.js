@@ -67,11 +67,19 @@ app.use('/api/ai', optionalAuth, aiRoutes);
 // ── 인증 필요 (일반 유저) ──
 app.use('/api/alarms', optionalAuth, alarmRoutes);
 
+// ── 어드민 데이터 읽기 (GET은 공개, 쓰기는 인증 필요) ──
+app.use('/api/admin/platform', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  authenticateJWT(req, res, (err) => {
+    if (err) return res.status(401).json({ error: '인증 필요' });
+    requireMinRole('agent')(req, res, next);
+  });
+}, adminPlatformRoutes);
+
 // ── 인증 필요 (agent 이상) ──
 app.use('/api/crm', authenticateJWT, requireMinRole('agent'), crmRoutes);
 app.use('/api/cti', authenticateJWT, requireMinRole('agent'), ctiRoutes);
 app.use('/api/cache', authenticateJWT, requireMinRole('agent'), cacheRoutes);
-app.use('/api/admin/platform', authenticateJWT, requireMinRole('agent'), adminPlatformRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: '리턴AI API' });
