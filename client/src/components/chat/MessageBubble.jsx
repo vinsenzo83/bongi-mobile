@@ -131,7 +131,7 @@ function RichElement({ element, onAction }) {
         <ScrollableCards count={element.items?.length || 0}>
           {element.items?.map((item, i) => (
             <div key={i} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
-              <TradeinCard item={item} tradeinUrl={element.tradein_url} />
+              <TradeinCard item={item} tradeinUrl={element.tradein_url} onAction={onAction} />
             </div>
           ))}
         </ScrollableCards>
