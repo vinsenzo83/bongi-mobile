@@ -265,9 +265,10 @@ router.get('/cash/withdrawals', async (req, res) => {
 // PATCH /admin/platform/cash/withdrawals/:id — 출금 승인/거절
 router.patch('/cash/withdrawals/:id', async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, admin_memo } = req.body;
     const update = { status };
     if (status === 'approved') update.approved_at = new Date().toISOString();
+    if (admin_memo !== undefined) update.admin_memo = admin_memo;
     const { data, error } = await supabase.from('bongi_withdrawals').update(update).eq('id', req.params.id).select();
     if (error) throw error;
     res.json({ withdrawal: data[0] });
@@ -283,12 +284,14 @@ router.post('/cash/manual-credit', async (req, res) => {
     if (!user_id || !amount) return res.status(400).json({ error: 'user_id와 amount는 필수입니다' });
 
     // 캐쉬 이력 추가
-    await supabase.from('bongi_cash_history').insert({
+    const { error: histError } = await supabase.from('bongi_cash_history').insert({
       user_id,
       amount,
-      type: 'manual_credit',
+      type: 'earn',
       description: reason || '관리자 수동 적립',
+      status: 'completed',
     });
+    if (histError) console.warn('포인트 이력 저장 실패:', histError.message);
 
     // 잔액 업데이트
     const { data: balance } = await supabase.from('bongi_cash_balance').select('*').eq('user_id', user_id).single();

@@ -46,7 +46,7 @@ router.post('/', optionalAuth, async (req, res) => {
     const { data, error } = await supabase
       .from('bongi_reviews')
       .insert({
-        user_id: req.user?.id || null,
+        user_id: req.user?.id || req.body.user_id || null,
         category: category || 'general',
         product_name,
         rating: +rating,
