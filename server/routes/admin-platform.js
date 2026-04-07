@@ -287,68 +287,193 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// ── 중고폰 매입 시세 관리 ──
+// ── 공시지원금 관리 ──
 
-import { readFileSync, writeFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __adm_dirname = dirname(fileURLToPath(import.meta.url));
-const usedPhonePath = join(__adm_dirname, '..', 'data', 'providers', 'used_phone_prices.json');
-
-function loadUsedPhones() {
-  const raw = JSON.parse(readFileSync(usedPhonePath, 'utf8'));
-  return raw.filter(x => ['Apple', '삼성전자', 'LG'].includes(x['제조사']));
-}
-
-// GET /admin/platform/used-phones — 중고폰 매입 시세 전체 (302개)
-router.get('/used-phones', (req, res) => {
+// GET /admin/platform/subsidy — 공시지원금 데이터 + 마지막 업데이트 시간
+router.get('/subsidy', async (req, res) => {
   try {
-    const phones = loadUsedPhones();
+    const { model, carrier } = req.query;
+    let query = supabase.from('bongi_subsidy_data').select('*').order('model').order('carrier');
+    if (model) query = query.ilike('model', `%${model}%`);
+    if (carrier) query = query.eq('carrier', carrier);
+    const { data, error } = await query;
+    if (error) throw error;
+    // 마지막 업데이트 시간
+    const { data: latest } = await supabase.from('bongi_subsidy_data').select('updated_date').order('created_at', { ascending: false }).limit(1);
+    const lastUpdated = latest?.[0]?.updated_date || null;
+    res.json({ data: data || [], total: (data || []).length, lastUpdated });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /admin/platform/subsidy/crawl — 수동 크롤링 트리거
+router.post('/subsidy/crawl', async (req, res) => {
+  try {
+    const { crawlSubsidy } = await import('../services/subsidy-crawler.js');
+    res.json({ message: '크롤링 시작됨', status: 'started' });
+    crawlSubsidy().catch(e => console.error('수동 크롤링 에러:', e.message));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 렌탈 상품 관리 ──
+
+// GET /admin/platform/rental — 렌탈 상품 목록
+router.get('/rental', async (req, res) => {
+  try {
+    const { category, brand } = req.query;
+    let query = supabase.from('bongi_rental_products').select('*').order('category').order('brand');
+    if (category) query = query.eq('category', category);
+    if (brand) query = query.ilike('brand', `%${brand}%`);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ products: data || [], total: (data || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT /admin/platform/rental — 렌탈 상품 일괄 업데이트
+router.put('/rental', async (req, res) => {
+  try {
+    const { products } = req.body;
+    if (!Array.isArray(products)) return res.status(400).json({ error: 'products 배열 필수' });
+    const { error } = await supabase.from('bongi_rental_products').upsert(products.map(p => ({ ...p, updated_at: new Date().toISOString() })));
+    if (error) throw error;
+    res.json({ success: true, count: products.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /admin/platform/rental/:id — 개별 수정
+router.patch('/rental/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('bongi_rental_products').update({ ...req.body, updated_at: new Date().toISOString() }).eq('id', req.params.id).select();
+    if (error) throw error;
+    res.json({ product: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 휴대폰 요금제 관리 ──
+
+// GET /admin/platform/mobile-plans — 요금제 목록
+router.get('/mobile-plans', async (req, res) => {
+  try {
+    const { carrier } = req.query;
+    let query = supabase.from('bongi_mobile_plans').select('*').eq('is_active', true).order('carrier').order('monthly_fee', { ascending: false });
+    if (carrier) query = query.eq('carrier', carrier);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ plans: data || [], total: (data || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT /admin/platform/mobile-plans — 요금제 일괄 업데이트
+router.put('/mobile-plans', async (req, res) => {
+  try {
+    const { plans } = req.body;
+    if (!Array.isArray(plans)) return res.status(400).json({ error: 'plans 배열 필수' });
+    const { error } = await supabase.from('bongi_mobile_plans').upsert(plans.map(p => ({ ...p, updated_at: new Date().toISOString() })));
+    if (error) throw error;
+    res.json({ success: true, count: plans.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 휴대폰 신규 시세 관리 ──
+
+// GET /admin/platform/phone-prices — 신규폰 시세
+router.get('/phone-prices', async (req, res) => {
+  try {
+    const { category } = req.query;
+    let query = supabase.from('bongi_phone_prices').select('*').eq('is_active', true).order('model');
+    if (category) query = query.eq('category', category);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ prices: data || [], total: (data || []).length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT /admin/platform/phone-prices — 시세 일괄 업데이트
+router.put('/phone-prices', async (req, res) => {
+  try {
+    const { prices } = req.body;
+    if (!Array.isArray(prices)) return res.status(400).json({ error: 'prices 배열 필수' });
+    const { error } = await supabase.from('bongi_phone_prices').upsert(prices.map(p => ({ ...p, updated_at: new Date().toISOString() })), { onConflict: 'model,category' });
+    if (error) throw error;
+    res.json({ success: true, count: prices.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 중고폰 매입 시세 관리 (Supabase) ──
+
+// GET /admin/platform/used-phones — 중고폰 매입 시세 전체
+router.get('/used-phones', async (req, res) => {
+  try {
     const { maker, search } = req.query;
-    let filtered = phones;
-    if (maker && maker !== '전체') filtered = filtered.filter(p => p['제조사'] === maker);
-    if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(p => p['모델명'].toLowerCase().includes(q) || p['시리즈'].toLowerCase().includes(q));
-    }
-    res.json({ phones: filtered, total: phones.length, filtered: filtered.length });
+    let query = supabase.from('bongi_used_phone_prices').select('*').order('manufacturer').order('series').order('model');
+    if (maker && maker !== '전체') query = query.eq('manufacturer', maker);
+    if (search) query = query.or(`model.ilike.%${search}%,series.ilike.%${search}%`);
+    const { data, error } = await query;
+    if (error) throw error;
+    // 어드민 HTML 호환 형식으로 변환
+    const phones = (data || []).map(p => ({
+      '제조사': p.manufacturer, '시리즈': p.series, '모델명': p.model, '용량': p.storage,
+      'A등급': p.grade_a, 'B등급': p.grade_b, 'C등급': p.grade_c, 'D등급': p.grade_d, 'E등급': p.grade_e,
+    }));
+    const { count } = await supabase.from('bongi_used_phone_prices').select('id', { count: 'exact', head: true });
+    res.json({ phones, total: count || phones.length, filtered: phones.length });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
 // PUT /admin/platform/used-phones — 중고폰 시세 일괄 업데이트
-router.put('/used-phones', (req, res) => {
+router.put('/used-phones', async (req, res) => {
   try {
     const { phones } = req.body;
     if (!Array.isArray(phones)) return res.status(400).json({ error: 'phones 배열 필수' });
-    // 기존 헤더/푸터 행 유지 + 폰 데이터 교체
-    const raw = JSON.parse(readFileSync(usedPhonePath, 'utf8'));
-    const nonPhones = raw.filter(x => !['Apple', '삼성전자', 'LG'].includes(x['제조사']));
-    const updated = [...nonPhones, ...phones];
-    writeFileSync(usedPhonePath, JSON.stringify(updated, null, 2), 'utf8');
-    res.json({ success: true, count: phones.length });
+    const rows = phones.map(p => ({
+      manufacturer: p['제조사'], series: p['시리즈'], model: p['모델명'], storage: p['용량'],
+      grade_a: p['A등급'] || 0, grade_b: p['B등급'] || 0, grade_c: p['C등급'] || 0, grade_d: p['D등급'] || 0, grade_e: p['E등급'] || 0,
+      updated_at: new Date().toISOString(),
+    }));
+    const { error } = await supabase.from('bongi_used_phone_prices').upsert(rows, { onConflict: 'manufacturer,model,storage' });
+    if (error) throw error;
+    res.json({ success: true, count: rows.length });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
 // PATCH /admin/platform/used-phones/price — 개별 시세 수정
-router.patch('/used-phones/price', (req, res) => {
+router.patch('/used-phones/price', async (req, res) => {
   try {
     const { 제조사, 모델명, 용량, A등급, B등급, C등급, D등급, E등급 } = req.body;
     if (!제조사 || !모델명 || !용량) return res.status(400).json({ error: '제조사, 모델명, 용량 필수' });
-    const raw = JSON.parse(readFileSync(usedPhonePath, 'utf8'));
-    const idx = raw.findIndex(x => x['제조사'] === 제조사 && x['모델명'] === 모델명 && x['용량'] === 용량);
-    if (idx === -1) return res.status(404).json({ error: '해당 모델을 찾을 수 없습니다' });
-    if (A등급 !== undefined) raw[idx]['A등급'] = A등급;
-    if (B등급 !== undefined) raw[idx]['B등급'] = B등급;
-    if (C등급 !== undefined) raw[idx]['C등급'] = C등급;
-    if (D등급 !== undefined) raw[idx]['D등급'] = D등급;
-    if (E등급 !== undefined) raw[idx]['E등급'] = E등급;
-    writeFileSync(usedPhonePath, JSON.stringify(raw, null, 2), 'utf8');
-    res.json({ success: true, updated: raw[idx] });
+    const update = { updated_at: new Date().toISOString() };
+    if (A등급 !== undefined) update.grade_a = A등급;
+    if (B등급 !== undefined) update.grade_b = B등급;
+    if (C등급 !== undefined) update.grade_c = C등급;
+    if (D등급 !== undefined) update.grade_d = D등급;
+    if (E등급 !== undefined) update.grade_e = E등급;
+    const { data, error } = await supabase.from('bongi_used_phone_prices')
+      .update(update).eq('manufacturer', 제조사).eq('model', 모델명).eq('storage', 용량).select();
+    if (error) throw error;
+    if (!data || data.length === 0) return res.status(404).json({ error: '해당 모델을 찾을 수 없습니다' });
+    res.json({ success: true, updated: data[0] });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
