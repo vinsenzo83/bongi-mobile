@@ -8906,23 +8906,29 @@ function loadGiftsAdmin() {
         var st = g.status || '지급대기';
         var stClass = st==='지급완료'?'green':st==='지급대기'?'orange':st==='보류'?'gray':'red';
         var holder = g.account_holder || '-';
+        var phone = g.phone || '-';
+        var utype = g.user_type || '-';
+        var utClass = utype==='앱회원'?'green':utype==='비회원'?'orange':'gray';
+        var channel = g.channel || '-';
+        var ticket = g.product_ticket || '-';
+        var product = g.product_name || g.memo || '-';
         var bank = g.bank ? g.bank + ' ' + (g.account_number||'') : '미등록';
         var bankStyle = g.bank ? 'var(--text2)' : 'var(--red)';
         var amount = g.amount ? (g.amount >= 10000 ? Math.round(g.amount/10000)+'만' : g.amount+'원') : '-';
-        var memo = g.memo || '-';
-        var paidDate = g.paid_at ? new Date(g.paid_at).toLocaleDateString('ko-KR') : '-';
         var createDate = g.created_at ? new Date(g.created_at).toLocaleDateString('ko-KR') : '-';
+        var verified = g.verified || '-';
+        var vClass = verified==='완료'?'green':'red';
         return '<tr>'
           +'<td><input type="checkbox"></td>'
           +'<td style="font-weight:600;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\''+holder+'\')">'+holder+'</td>'
-          +'<td style="font-size:10px">-</td>'
-          +'<td><span class="wf-status orange" style="font-size:10px">-</span></td>'
-          +'<td style="font-size:10px">-</td>'
-          +'<td style="font-size:10px">-</td>'
-          +'<td style="font-size:10px;max-width:160px">'+memo+'</td>'
+          +'<td style="font-size:10px">'+phone+'</td>'
+          +'<td><span class="wf-status '+utClass+'" style="font-size:10px">'+utype+'</span></td>'
+          +'<td style="font-size:10px">'+channel+'</td>'
+          +'<td>'+(ticket!=='-'?'<span style="font-family:monospace;font-weight:700;color:var(--blue);font-size:10px">'+ticket+'</span>':'-')+'</td>'
+          +'<td style="font-size:10px;max-width:160px">'+product+'</td>'
           +'<td style="font-weight:900;color:var(--orange)">'+amount+'</td>'
           +'<td style="font-size:10px">'+createDate+'</td>'
-          +'<td><span class="wf-status gray" style="font-size:10px">-</span></td>'
+          +'<td><span class="wf-status '+vClass+'" style="font-size:10px">'+verified+'</span></td>'
           +'<td style="font-size:10px;color:'+bankStyle+'">'+bank+'</td>'
           +'<td><span class="wf-status '+stClass+'">'+st+'</span></td>'
           +'<td style="white-space:nowrap"><span class="action-btn default" style="cursor:pointer;font-size:10px">상세</span></td>'

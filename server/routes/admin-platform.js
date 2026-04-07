@@ -58,15 +58,45 @@ router.delete('/products/:id', async (req, res) => {
 
 // ── 사은품 관리 ──
 
-// GET /admin/platform/gifts — 사은품 목록
+// GET /admin/platform/gifts — 사은품 목록 (회원+신청 정보 매칭)
 router.get('/gifts', async (req, res) => {
   try {
     const { status } = req.query;
     let query = supabase.from('bongi_gifts').select('*').order('created_at', { ascending: false }).limit(100);
     if (status) query = query.eq('status', status);
-    const { data, error } = await query;
+    const { data: gifts, error } = await query;
     if (error) throw error;
-    res.json({ gifts: data || [] });
+
+    // 이름 기반으로 회원+신청 정보 매칭
+    const enriched = [];
+    for (const g of (gifts || [])) {
+      const name = g.account_holder || '';
+      let profile = null;
+      let app = null;
+
+      if (name) {
+        const { data: p } = await supabase.from('bongi_user_profiles').select('phone,user_type,channel,carrier,verified_at').ilike('display_name', `%${name}%`).limit(1);
+        if (p && p[0]) profile = p[0];
+
+        const phone = profile?.phone;
+        if (phone) {
+          const { data: a } = await supabase.from('bongi_applications').select('product_ticket,product_name,type,status').eq('phone', phone).order('created_at', { ascending: false }).limit(1);
+          if (a && a[0]) app = a[0];
+        }
+      }
+
+      enriched.push({
+        ...g,
+        phone: profile?.phone || null,
+        user_type: profile?.user_type || null,
+        channel: app?.type || profile?.channel || null,
+        product_ticket: app?.product_ticket || null,
+        product_name: app?.product_name || g.memo || null,
+        verified: profile?.verified_at ? '완료' : '미완료',
+      });
+    }
+
+    res.json({ gifts: enriched });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
