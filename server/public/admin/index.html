@@ -4980,7 +4980,7 @@ function renderRentalRow(r, idx) {
     +'<td>'+imgHtml+'</td>'
     +'<td>'+urlHtml+'</td>'
     +'<td style="text-align:center"><div class="prod-status-toggle" data-ticket="'+ticketNum+'" data-id="'+(r[26]||idx)+'" data-type="rental" onclick="toggleProductStatus(this)" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700;background:#d1fae5;color:var(--green);border:1px solid #6ee7b7">활성</div></td>'
-    +'<td style="white-space:nowrap"><span class="action-btn default" onclick="editRentalRow(this)" style="cursor:pointer;font-size:10px">수정</span> <span class="action-btn danger" onclick="deleteRentalRow(this,\''+(r[26]||idx)+'\')" style="cursor:pointer;font-size:10px">삭제</span></td>'
+    +'<td style="white-space:nowrap"><span class="action-btn default" onclick="editRentalRow(this)" style="cursor:pointer;font-size:10px">수정</span></td>'
     +'</tr>';
 }
 
@@ -5288,10 +5288,31 @@ function setTicketFilter(f) {
   }
 }
 
+// DB 티켓 상태 캐시
+var _ticketStatusCache = {};
+function loadTicketStatuses(cb) {
+  if(Object.keys(_ticketStatusCache).length > 0) { if(cb) cb(); return; }
+  fetch('/api/admin/platform/tickets')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      (d.tickets || []).forEach(function(t) {
+        _ticketStatusCache[t.ticket_number] = t.is_active;
+      });
+      if(cb) cb();
+    })
+    .catch(function(e) { console.error('티켓 상태 로드 실패:', e); if(cb) cb(); });
+}
+
 function renderTicketCombo() {
   var filter = ticketComboFilter;
   var search = (document.getElementById('ticket-all-search')||{}).value || '';
   search = search.toLowerCase();
+
+  // DB 티켓 상태 먼저 로드
+  if(Object.keys(_ticketStatusCache).length === 0) {
+    loadTicketStatuses(function() { renderTicketCombo(); });
+    return;
+  }
 
   // 모든 통신사 조합 생성
   var allCombos = [];
@@ -5300,7 +5321,8 @@ function renderTicketCombo() {
     var combos = generateCombos(k);
     var cName = k==='SKT'?'SKT':k==='KT'?'KT':'LG U+';
     combos.forEach(function(c){
-      allCombos.push({ticket:c.ticket, carrier:cName, carrierKey:k, speed:c.speed, tv:c.tv, settop:c.settop, wifi:c.wifi, total:c.total});
+      var isActive = _ticketStatusCache[c.ticket] !== false;
+      allCombos.push({ticket:c.ticket, carrier:cName, carrierKey:k, speed:c.speed, tv:c.tv, settop:c.settop, wifi:c.wifi, total:c.total, isActive:isActive});
     });
   });
 
@@ -5330,7 +5352,7 @@ function renderTicketCombo() {
         +'<td style="font-size:10px">'+c.settop+'</td>'
         +'<td style="font-size:10px">'+c.wifi+'</td>'
         +'<td style="font-weight:900;color:var(--navy)">'+c.total.toLocaleString()+'원</td>'
-        +'<td><span class="wf-status green" style="font-size:10px">활성</span></td>'
+        +'<td><span class="wf-status '+(c.isActive?'green':'gray')+'" style="font-size:10px">'+(c.isActive?'활성':'비활성')+'</span></td>'
         +'<td><span class="action-btn default" onclick="openTicketDetail(\''+c.ticket+'\',\'combo\',\''+c.carrierKey+'\')" style="cursor:pointer;font-size:10px">상세</span></td>'
         +'</tr>';
     }).join('');
@@ -6184,6 +6206,7 @@ function toggleProductStatus(el) {
     .then(function(r) { return r.json(); })
     .then(function(d) {
       console.log('상품 상태 변경 + 티켓 연동:', ticketId, newActive ? '활성' : '비활성');
+      _ticketStatusCache[ticketId] = newActive;
     })
     .catch(function(e) { console.error('상태 변경 API 실패:', e); });
   }
@@ -7401,10 +7424,9 @@ function renderTicketRentalPage(page) {
   var end = Math.min(start + TICKET_PER_PAGE, total);
   var slice = ticketRentalData.slice(start, end);
 
-  var ps = getProductStatuses();
   tbody.innerHTML = slice.map(function(r){
     var ticket=r[0],cat=r[1],brand=r[2],name=r[3],price=r[4],cardP=r[5],promo=r[6];
-    var status = ps[ticket]==='비활성' ? '비활성' : '활성';
+    var status = _ticketStatusCache[ticket] === false ? '비활성' : '활성';
     return '<tr style="opacity:'+(status==='비활성'?'0.5':'1')+'">'
       +'<td><span style="font-family:monospace;font-weight:700;color:var(--green);font-size:12px">'+ticket+'</span></td>'
       +'<td><span class="wf-status blue" style="font-size:10px">'+cat+'</span></td>'
