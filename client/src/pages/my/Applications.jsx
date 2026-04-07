@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { api } from '../../utils/api';
 
 const card = {
   background: '#fff',
@@ -9,61 +10,64 @@ const card = {
 
 const FILTERS = ['전체', '진행중', '완료', '취소'];
 
-const APPLICATIONS = [
-  {
-    title: 'KT 인터넷+TV 500Mbps',
-    date: '2026.04.01',
-    type: '셀프 신청',
-    status: '상담중',
-    statusColor: '#2563eb',
-    statusBg: '#eff6ff',
-    filter: '진행중',
-    extra: '담당: 김상담',
-    gift: '사은품 37만원',
-  },
-  {
-    title: 'LG 정수기 렌탈',
-    date: '2026.02.15',
-    type: 'AI 채팅',
-    status: '계약완료',
-    statusColor: '#10b981',
-    statusBg: '#ecfdf5',
-    filter: '완료',
-    gift: '사은품 15만원 지급완료',
-  },
-  {
-    title: 'LG 정수기 렌탈 신청',
-    date: '2026.01.10',
-    type: '티켓 K227',
-    status: '취소',
-    statusColor: '#999',
-    statusBg: '#f3f4f6',
-    filter: '취소',
-    opacity: 0.6,
-  },
-  {
-    title: '중고폰 매입 \u2014 갤럭시 S24 256GB',
-    titleIcon: '\u{1F4E6}',
-    date: '2026.04.02',
-    type: 'AI 채팅',
-    status: '검수중',
-    statusColor: '#2563eb',
-    statusBg: '#eff6ff',
-    filter: '진행중',
-    buyback: true,
-    buybackPrice: '420,000원',
-    buybackStatus: '매입가 확정 대기',
-    step: 1,
-    steps: ['신청완료', '검수중', '매입확정', '완료'],
-  },
-];
+const STATUS_MAP = {
+  '상담중': { color: '#2563eb', bg: '#eff6ff', filter: '진행중' },
+  '검수중': { color: '#2563eb', bg: '#eff6ff', filter: '진행중' },
+  '진행중': { color: '#2563eb', bg: '#eff6ff', filter: '진행중' },
+  'pending': { color: '#2563eb', bg: '#eff6ff', filter: '진행중' },
+  'in_progress': { color: '#2563eb', bg: '#eff6ff', filter: '진행중' },
+  '계약완료': { color: '#10b981', bg: '#ecfdf5', filter: '완료' },
+  '완료': { color: '#10b981', bg: '#ecfdf5', filter: '완료' },
+  'completed': { color: '#10b981', bg: '#ecfdf5', filter: '완료' },
+  '취소': { color: '#999', bg: '#f3f4f6', filter: '취소' },
+  'cancelled': { color: '#999', bg: '#f3f4f6', filter: '취소' },
+};
+
+function getStatusStyle(status) {
+  return STATUS_MAP[status] || { color: '#2563eb', bg: '#eff6ff', filter: '진행중' };
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+}
 
 export default function Applications() {
   const [activeFilter, setActiveFilter] = useState('전체');
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await api.getApplications();
+        const list = res.data || res.applications || res || [];
+        setApplications(Array.isArray(list) ? list : []);
+      } catch (e) {
+        console.error('Applications load error:', e);
+        setApplications([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
 
   const filtered = activeFilter === '전체'
-    ? APPLICATIONS
-    : APPLICATIONS.filter((a) => a.filter === activeFilter);
+    ? applications
+    : applications.filter((a) => {
+        const style = getStatusStyle(a.status);
+        return style.filter === activeFilter;
+      });
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
+        불러오는 중...
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -92,99 +96,132 @@ export default function Applications() {
         </div>
       </div>
 
-      {filtered.map((app, i) => (
-        <div
-          key={i}
-          style={{
-            ...card,
-            marginBottom: 10,
-            opacity: app.opacity || 1,
-            borderColor: app.buyback ? '#bfdbfe' : '#e5e7eb',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: app.extra || app.gift || app.buyback ? 8 : 0 }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1a2744' }}>
-                {app.titleIcon && <span role="img" aria-label="icon">{app.titleIcon}</span>}
-                {app.titleIcon ? ' ' : ''}{app.title}
-              </div>
-              <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
-                {`신청일 ${app.date} \u00B7 ${app.type}`}
-              </div>
-            </div>
-            <span style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: app.statusColor,
-              background: app.statusBg,
-              padding: '4px 10px',
-              borderRadius: 20,
-              whiteSpace: 'nowrap',
-            }}>
-              {app.status}
-            </span>
-          </div>
+      {filtered.length === 0 && (
+        <div style={{ textAlign: 'center', padding: 40, color: '#999', fontSize: 14 }}>
+          신청 내역이 없습니다
+        </div>
+      )}
 
-          {(app.extra || app.gift) && !app.buyback && (
-            <>
-              <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '10px 0' }} />
-              <div style={{ display: 'flex', gap: 16 }}>
-                {app.extra && <div style={{ fontSize: 12, color: '#999' }}>{app.extra}</div>}
-                {app.gift && (
-                  <div style={{ fontSize: 12, color: '#999' }}>
-                    <span role="img" aria-label="gift">{'\u{1F381}'}</span> {app.gift}
+      {filtered.map((app, i) => {
+        const st = getStatusStyle(app.status);
+        const isCancelled = st.filter === '취소';
+        const title = app.product_name || app.productName || app.title || '신청 건';
+        const date = formatDate(app.created_at || app.createdAt || app.date);
+        const type = app.channel || app.type || '신청';
+        const agent = app.agent_name || app.agentName;
+        const giftAmt = app.gift_amount || app.giftAmount;
+        const giftStatus = app.gift_status || app.giftStatus;
+        const isBuyback = app.category === 'used_phone' || app.is_buyback || app.isBuyback;
+        const buybackPrice = app.buyback_price || app.buybackPrice;
+        const buybackStatus = app.buyback_status || app.buybackStatus;
+        const step = app.step || 0;
+        const steps = app.steps || [];
+
+        return (
+          <div
+            key={app.id || i}
+            style={{
+              ...card,
+              marginBottom: 10,
+              opacity: isCancelled ? 0.6 : 1,
+              borderColor: isBuyback ? '#bfdbfe' : '#e5e7eb',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: (agent || giftAmt || isBuyback) ? 8 : 0 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#1a2744' }}>
+                  {isBuyback && <span role="img" aria-label="icon">{'\u{1F4E6}'}</span>}
+                  {isBuyback ? ' ' : ''}{title}
+                </div>
+                <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+                  {`신청일 ${date} \u00B7 ${type}`}
+                </div>
+              </div>
+              <span style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: st.color,
+                background: st.bg,
+                padding: '4px 10px',
+                borderRadius: 20,
+                whiteSpace: 'nowrap',
+              }}>
+                {app.status}
+              </span>
+            </div>
+
+            {(agent || giftAmt) && !isBuyback && (
+              <>
+                <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '10px 0' }} />
+                <div style={{ display: 'flex', gap: 16 }}>
+                  {agent && <div style={{ fontSize: 12, color: '#999' }}>{'담당: '}{agent}</div>}
+                  {giftAmt && (
+                    <div style={{ fontSize: 12, color: '#999' }}>
+                      <span role="img" aria-label="gift">{'\u{1F381}'}</span>
+                      {' 사은품 '}
+                      {typeof giftAmt === 'number' ? `${giftAmt.toLocaleString()}원` : giftAmt}
+                      {giftStatus ? ` ${giftStatus}` : ''}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {isBuyback && (
+              <>
+                <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '10px 0' }} />
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                  {buybackPrice && (
+                    <div style={{ fontSize: 12, color: '#999' }}>
+                      {'매입 예정가: '}<strong style={{ color: '#1a2744' }}>
+                        {typeof buybackPrice === 'number' ? `${buybackPrice.toLocaleString()}원` : buybackPrice}
+                      </strong>
+                    </div>
+                  )}
+                  {buybackStatus && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#d97706', background: '#fffbeb', padding: '4px 10px', borderRadius: 20 }}>
+                      {buybackStatus}
+                    </span>
+                  )}
+                </div>
+                {steps.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {steps.map((_, si) => (
+                        <div
+                          key={si}
+                          style={{
+                            width: 60,
+                            height: 4,
+                            background: si < step ? '#2563eb' : '#bfdbfe',
+                            borderRadius: 2,
+                          }}
+                        />
+                      ))}
+                      <div style={{ fontSize: 10, color: '#999' }}>{`${step}/${steps.length} 단계`}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 10, color: '#999' }}>
+                      {steps.map((s, si) => (
+                        <span
+                          key={si}
+                          style={{
+                            width: 60,
+                            textAlign: 'center',
+                            color: si < step ? '#2563eb' : '#999',
+                            fontWeight: si < step ? 700 : 400,
+                          }}
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </div>
-            </>
-          )}
-
-          {app.buyback && (
-            <>
-              <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '10px 0' }} />
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                <div style={{ fontSize: 12, color: '#999' }}>
-                  {'매입 예정가: '}<strong style={{ color: '#1a2744' }}>{app.buybackPrice}</strong>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#d97706', background: '#fffbeb', padding: '4px 10px', borderRadius: 20 }}>
-                  {app.buybackStatus}
-                </span>
-              </div>
-              <div style={{ marginTop: 8 }}>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  {app.steps.map((_, si) => (
-                    <div
-                      key={si}
-                      style={{
-                        width: 60,
-                        height: 4,
-                        background: si < app.step ? '#2563eb' : '#bfdbfe',
-                        borderRadius: 2,
-                      }}
-                    />
-                  ))}
-                  <div style={{ fontSize: 10, color: '#999' }}>{`${app.step}/${app.steps.length} 단계`}</div>
-                </div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 10, color: '#999' }}>
-                  {app.steps.map((s, si) => (
-                    <span
-                      key={si}
-                      style={{
-                        width: 60,
-                        textAlign: 'center',
-                        color: si < app.step ? '#2563eb' : '#999',
-                        fontWeight: si < app.step ? 700 : 400,
-                      }}
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      ))}
+              </>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
