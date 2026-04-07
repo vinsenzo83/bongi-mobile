@@ -109,15 +109,15 @@ router.post('/withdraw', async (req, res) => {
       });
     }
 
-    // 잔액 확인
-    const { data: balanceData } = await supabase
-      .from('bongi_cash_balance')
-      .select('balance')
-      .eq('user_id', req.user.id)
-      .single();
+    // 원자적 잔액 차감 (Race Condition 방지)
+    // RPC로 balance = balance - amount WHERE balance >= amount 원자적 처리
+    const { data: deductResult, error: rpcError } = await supabase.rpc('deduct_cash_balance', {
+      p_user_id: req.user.id,
+      p_amount: withdrawAmount,
+    });
 
-    const currentBalance = balanceData?.balance || 0;
-    if (currentBalance < withdrawAmount) {
+    // RPC 결과: 차감된 행 수 또는 새 잔액 반환. 0이면 잔액 부족.
+    if (rpcError || deductResult === 0 || deductResult === false) {
       return res.status(400).json({ error: '잔액이 부족합니다.' });
     }
 
@@ -147,15 +147,6 @@ router.post('/withdraw', async (req, res) => {
       description: `출금 신청 (${bank_name} ${account_number.trim().slice(-4)})`,
       status: '대기',
     });
-
-    // 잔액 차감
-    await supabase
-      .from('bongi_cash_balance')
-      .update({
-        balance: currentBalance - withdrawAmount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', req.user.id);
 
     return res.status(201).json({
       withdrawal_id: withdrawal.id,

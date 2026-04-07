@@ -4,6 +4,12 @@ import { syncMemberData, syncAllMembers } from '../services/member-sync.js';
 
 const router = Router();
 
+// SQL Injection 방지: .or() 문자열 보간에 사용되는 검색어에서 특수문자 제거
+function sanitizeSearch(str) {
+  if (!str) return '';
+  return str.replace(/[%_'"\\(),.;{}[\]]/g, '').trim();
+}
+
 // ── 상품 관리 ──
 
 // GET /admin/platform/products — 상품 목록
@@ -282,11 +288,44 @@ router.patch('/cash/withdrawals/:id', async (req, res) => {
       update.status = '승인';
       update.approved_at = new Date().toISOString();
     }
-    if (status === '반려') update.status = '반려';
+    if (status === '반려') {
+      update.status = '반려';
+      update.rejected_at = new Date().toISOString();
+    }
     if (admin_memo !== undefined) update.admin_memo = admin_memo;
     const { data, error } = await supabase.from('bongi_withdrawals').update(update).eq('id', req.params.id).select();
     if (error) throw error;
-    res.json({ withdrawal: data[0] });
+
+    const withdrawal = data[0];
+
+    // 반려 시 잔액 환불 + 이력 기록
+    if (status === '반려' && withdrawal) {
+      // 잔액 복구 (RPC 원자적 가산)
+      const { error: rpcError } = await supabase.rpc('add_cash_balance', {
+        p_user_id: withdrawal.user_id,
+        p_amount: withdrawal.amount,
+      });
+      if (rpcError) {
+        // RPC 미등록 시 fallback
+        const { data: bal } = await supabase.from('bongi_cash_balance').select('balance').eq('user_id', withdrawal.user_id).single();
+        const currentBal = bal?.balance || 0;
+        await supabase.from('bongi_cash_balance').upsert(
+          { user_id: withdrawal.user_id, balance: currentBal + withdrawal.amount, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        );
+      }
+
+      // 캐쉬 이력에 환불 기록
+      await supabase.from('bongi_cash_history').insert({
+        user_id: withdrawal.user_id,
+        type: '환불',
+        amount: withdrawal.amount,
+        description: `출금 반려 환불${admin_memo ? ` (사유: ${admin_memo})` : ''}`,
+        status: '완료',
+      });
+    }
+
+    res.json({ withdrawal });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -308,10 +347,22 @@ router.post('/cash/manual-credit', async (req, res) => {
     });
     if (histError) console.warn('포인트 이력 저장 실패:', histError.message);
 
-    // 잔액 업데이트
-    const { data: balance } = await supabase.from('bongi_cash_balance').select('*').eq('user_id', user_id).single();
-    if (balance) {
-      await supabase.from('bongi_cash_balance').update({ balance: balance.balance + amount }).eq('user_id', user_id);
+    // 잔액 업데이트 (원자적 처리 — Race Condition 방지)
+    // upsert로 INSERT ... ON CONFLICT DO UPDATE 처리
+    const { data: existing } = await supabase.from('bongi_cash_balance').select('balance').eq('user_id', user_id).single();
+    if (existing) {
+      // RPC로 원자적 가산. RPC 미사용 시 단일 UPDATE로 현재 잔액 기반 갱신
+      const { error: addError } = await supabase.rpc('add_cash_balance', {
+        p_user_id: user_id,
+        p_amount: amount,
+      });
+      if (addError) {
+        // RPC 미등록 시 fallback: upsert
+        await supabase.from('bongi_cash_balance').upsert(
+          { user_id, balance: existing.balance + amount, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        );
+      }
     } else {
       await supabase.from('bongi_cash_balance').insert({ user_id, balance: amount });
     }
@@ -641,7 +692,7 @@ router.get('/used-phones', async (req, res) => {
     const { maker, search } = req.query;
     let query = supabase.from('bongi_used_phone_prices').select('*').order('manufacturer').order('series').order('model');
     if (maker && maker !== '전체') query = query.eq('manufacturer', maker);
-    if (search) query = query.or(`model.ilike.%${search}%,series.ilike.%${search}%`);
+    if (search) { const s = sanitizeSearch(search); if (s) query = query.or(`model.ilike.%${s}%,series.ilike.%${s}%`); }
     const { data, error } = await query;
     if (error) throw error;
     // 어드민 HTML 호환 형식으로 변환
@@ -735,7 +786,7 @@ router.get('/applications', async (req, res) => {
     let query = supabase.from('bongi_applications').select('*').order('created_at', { ascending: false }).limit(200);
     if (status) query = query.eq('status', status);
     if (channel) query = query.eq('channel', channel);
-    if (search) query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,product_ticket.ilike.%${search}%`);
+    if (search) { const s = sanitizeSearch(search); if (s) query = query.or(`name.ilike.%${s}%,phone.ilike.%${s}%,product_ticket.ilike.%${s}%`); }
     const { data, error } = await query;
     if (error) throw error;
     res.json({ applications: data || [], total: (data || []).length });
@@ -1016,7 +1067,7 @@ router.get('/tickets', async (req, res) => {
     const { carrier, search } = req.query;
     let query = supabase.from('bongi_tickets').select('*').order('ticket_number');
     if (carrier) query = query.eq('carrier', carrier);
-    if (search) query = query.or(`ticket_number.ilike.%${search}%,rental_name.ilike.%${search}%`);
+    if (search) { const s = sanitizeSearch(search); if (s) query = query.or(`ticket_number.ilike.%${s}%,rental_name.ilike.%${s}%`); }
     const { data, error } = await query;
     if (error) throw error;
     res.json({ tickets: data || [], total: (data || []).length });

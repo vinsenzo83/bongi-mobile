@@ -4,6 +4,12 @@ import { calculateIncentive, GRADE_INFO, ITEM_INFO } from '../services/incentive
 
 const router = Router();
 
+// SQL Injection 방지: .or() 문자열 보간에 사용되는 검색어에서 특수문자 제거
+function sanitizeSearch(str) {
+  if (!str) return '';
+  return str.replace(/[%_'"\\(),.;{}[\]]/g, '').trim();
+}
+
 // Supabase 미연결 시 가드
 router.use((req, res, next) => {
   if (!supabase) return res.status(503).json({ error: 'Supabase 미연결. .env에 SUPABASE_URL과 SUPABASE_ANON_KEY를 설정해주세요.' });
@@ -19,7 +25,7 @@ router.get('/customers', async (req, res) => {
 
   if (status) query = query.eq('status', status);
   if (db_type) query = query.eq('db_type', db_type);
-  if (search) query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
+  if (search) { const s = sanitizeSearch(search); if (s) query = query.or(`name.ilike.%${s}%,phone.ilike.%${s}%`); }
 
   const { data, error, count } = await query
     .order('created_at', { ascending: false })
