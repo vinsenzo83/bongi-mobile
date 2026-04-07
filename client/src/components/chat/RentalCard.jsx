@@ -99,7 +99,7 @@ export default function RentalCard({ product, onAction }) {
         <div style={styles.actions}>
           <button
             style={styles.actionBtn}
-            onClick={() => onAction(`${product.상품명} 렌탈 상담 받고 싶어요`)}
+            onClick={() => onAction(`__consult__{"product":{"name":"${product.상품명 || product.name || '렌탈 상품'}","gift":"${product.사은품 || ''}"},"category":"rental"}`)}
           >
             렌탈 상담
           </button>

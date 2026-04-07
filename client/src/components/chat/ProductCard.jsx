@@ -46,7 +46,7 @@ export default function ProductCard({ product, onAction }) {
         <div style={styles.actions}>
           <button
             style={{ ...styles.actionBtn, background: colors.bg }}
-            onClick={() => onAction(`${product.상품번호} 가입 상담 받고 싶어요`)}
+            onClick={() => onAction(`__consult__{"product":{"name":"${product.상품명 || ''}","gift":"${product.사은품 || ''}","ticket":"${product.상품번호 || ''}"},"category":"internet"}`)}
           >
             가입 상담
           </button>
