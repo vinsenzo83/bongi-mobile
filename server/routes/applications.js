@@ -47,19 +47,35 @@ router.post('/', async (req, res) => {
       const { data: profile } = await supabase.from('bongi_user_profiles').select('user_type').eq('phone', phone).maybeSingle();
       if (profile) userType = profile.user_type || userType;
 
-      await supabase.from('bongi_applications').insert({
-        type: resolvedType,
-        channel: application.channel,
-        name: application.name,
-        phone: application.phone,
-        product_ticket: application.productTicket,
-        product_name: req.body.product_name || null,
-        gift_amount: req.body.gift_amount || null,
-        form_data: application.message ? { message: application.message } : null,
-        status: '신청완료',
-        user_type: userType,
-        sync_direction: '어드민→CRM',
-      });
+      // 중고폰 매입 → bongi_used_phone_buyback에 저장 (신청현황 아님)
+      if (resolvedType === '중고폰') {
+        await supabase.from('bongi_used_phone_buyback').insert({
+          customer_name: application.name,
+          customer_phone: application.phone,
+          model_name: req.body.model || req.body.product_name || '',
+          storage: req.body.storage || '',
+          self_grade: req.body.grade || '',
+          estimated_price: req.body.estimated_price || 0,
+          pickup_address: req.body.address || '',
+          pickup_address_detail: req.body.address_detail || '',
+          status: '접수완료',
+        });
+      } else {
+        // 인터넷/렌탈 → bongi_applications에 저장
+        await supabase.from('bongi_applications').insert({
+          type: resolvedType,
+          channel: application.channel,
+          name: application.name,
+          phone: application.phone,
+          product_ticket: application.productTicket,
+          product_name: req.body.product_name || null,
+          gift_amount: req.body.gift_amount || null,
+          form_data: application.message ? { message: application.message } : null,
+          status: '신청완료',
+          user_type: userType,
+          sync_direction: '어드민→CRM',
+        });
+      }
 
       // 비회원이면 user_profiles에 자동 등록
       if (!profile) {

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { supabase } from '../db/supabase.js';
+import { syncMemberData, syncAllMembers } from '../services/member-sync.js';
 
 const router = Router();
 
@@ -218,6 +219,16 @@ router.patch('/members/:id/role', async (req, res) => {
     const { data, error } = await supabase.from(table).update({ role }).eq('id', req.params.id).select();
     if (error) throw error;
     res.json({ member: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /admin/platform/members/sync — 전체 회원 데이터 일괄 동기화
+router.post('/members/sync', async (req, res) => {
+  try {
+    const result = await syncAllMembers();
+    res.json(result);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
