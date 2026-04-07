@@ -8627,7 +8627,7 @@ function loadDashboardStats() {
     }).catch(function(e) { console.error('대시보드 통계 로드 실패:', e); });
 }
 
-// 회원 관리
+// 회원 관리 (상담원 제외, 고객만 표시)
 function loadMembers() {
   fetch('/api/admin/platform/members')
     .then(function(r) { return r.json(); })
@@ -8635,20 +8635,22 @@ function loadMembers() {
       if(!d.members || d.members.length === 0) return;
       var tbody = document.getElementById('members-tbody');
       if(!tbody) return;
-      var html = d.members.map(function(m) {
+      // 상담원 제외, 고객만 표시
+      var customers = d.members.filter(function(m) { return m.member_type !== 'agent'; });
+      var html = customers.map(function(m) {
         var name = m.display_name || m.name || '-';
         var phone = m.phone || '-';
-        var type = m.user_type || (m.member_type === 'agent' ? '상담원' : '앱회원');
+        var type = m.user_type || '앱회원';
         var channel = m.channel || '-';
-        var social = m.provider || '-';
+        var social = m.social_provider || '-';
         var carrier = m.carrier || '-';
         var verify = m.verified_at ? '완료' : '미완료';
         var account = m.bank_name ? '등록' : '미등록';
-        var address = m.address ? '등록' : '미등록';
+        var address = (m.address && m.address !== '') ? '등록' : '미등록';
         var date = m.created_at ? new Date(m.created_at).toLocaleDateString('ko-KR') : '-';
         var cnt = (m.total_conversions || 0) + '건';
         var pt = (m.point_balance || 0).toLocaleString() + 'P';
-        var tClass = type === '앱회원' ? 'green' : type === '상담원' ? 'navy' : 'orange';
+        var tClass = type === '앱회원' ? 'green' : 'orange';
         var vClass = verify === '완료' ? 'green' : 'orange';
         var aClass = account === '등록' ? 'green' : 'gray';
         var adClass = address === '등록' ? 'green' : 'gray';
@@ -8656,7 +8658,7 @@ function loadMembers() {
           : social === '구글' ? '<span class="wf-status blue">구글</span>'
           : '<span style="color:var(--text3);font-size:10px">미가입</span>';
         return '<tr><td><input type="checkbox"></td>'
-          + '<td style="font-weight:600;color:var(--navy)">' + name + '</td>'
+          + '<td style="font-weight:600;color:var(--navy);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\'' + name + '\')">' + name + '</td>'
           + '<td style="font-size:11px">' + phone + '</td>'
           + '<td><span class="wf-status ' + tClass + '" style="font-size:10px">' + type + '</span></td>'
           + '<td><span style="font-size:10px;color:var(--text3)">' + channel + '</span></td>'
@@ -8668,7 +8670,7 @@ function loadMembers() {
           + '<td style="font-size:10px">' + date + '</td>'
           + '<td style="font-size:10px">' + cnt + '</td>'
           + '<td style="font-size:10px;color:var(--blue);font-weight:600">' + pt + '</td>'
-          + '<td><span class="action-btn default" style="cursor:pointer;font-size:10px" onclick="show(3)">상세</span></td></tr>';
+          + '<td><span class="action-btn default" style="cursor:pointer;font-size:10px" onclick="findAndOpenMember(\'' + name + '\')">상세</span></td></tr>';
       }).join('');
       tbody.innerHTML = html;
     }).catch(function(e) { console.error('회원 로드 실패:', e); });
