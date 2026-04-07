@@ -5,7 +5,20 @@
  */
 
 import { chromium } from 'playwright';
+import { execSync } from 'child_process';
 import { supabase } from '../db/supabase.js';
+
+function findChromium() {
+  // 1. 환경변수
+  if (process.env.PLAYWRIGHT_CHROMIUM_PATH) return process.env.PLAYWRIGHT_CHROMIUM_PATH;
+  // 2. 시스템 chromium (nix)
+  try {
+    const p = execSync('which chromium 2>/dev/null || which chromium-browser 2>/dev/null || which google-chrome 2>/dev/null').toString().trim();
+    if (p) return p;
+  } catch {}
+  // 3. playwright 기본 경로
+  return undefined;
+}
 
 const TARGET_KEYWORDS = ['S26', 'S25', '플립7', '폴드7', '아이폰 17', '아이폰 16'];
 const EXCLUDE_KEYWORDS = ['S7', 'S6', 'S20', 'S23', '노트', '올림픽', '크록스', 'S24'];
@@ -86,9 +99,11 @@ export async function crawlSubsidy() {
 
   let browser;
   try {
+    const execPath = findChromium();
+    console.log('Chromium 경로:', execPath || 'playwright 기본');
     browser = await chromium.launch({
       headless: true,
-      executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
+      executablePath: execPath,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     });
     const page = await browser.newPage();
