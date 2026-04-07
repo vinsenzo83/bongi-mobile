@@ -4,14 +4,21 @@
  * Playwright headless chromium 사용
  */
 
-// Playwright 브라우저 경로 설정 (import 전에 설정해야 함)
-if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
-  process.env.PLAYWRIGHT_BROWSERS_PATH = '/app/.cache/ms-playwright';
-}
-
-import { chromium } from 'playwright';
 import { execSync } from 'child_process';
 import { supabase } from '../db/supabase.js';
+
+/**
+ * Playwright를 동적으로 로드한다.
+ * ES module의 static import는 모듈 코드보다 먼저 평가되므로
+ * PLAYWRIGHT_BROWSERS_PATH 환경변수가 적용되지 않는다.
+ * dynamic import()를 사용해 환경변수 설정 후 로드한다.
+ */
+async function loadPlaywright() {
+  // 환경변수를 import 전에 확실히 설정
+  process.env.PLAYWRIGHT_BROWSERS_PATH = process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/.cache/ms-playwright';
+  const pw = await import('playwright');
+  return pw.chromium;
+}
 
 function findChromium() {
   // 1. 환경변수
@@ -104,8 +111,10 @@ export async function crawlSubsidy() {
 
   let browser;
   try {
+    const chromium = await loadPlaywright();
     const execPath = findChromium();
     console.log('Chromium 경로:', execPath || 'playwright 기본');
+    console.log('PLAYWRIGHT_BROWSERS_PATH:', process.env.PLAYWRIGHT_BROWSERS_PATH);
     browser = await chromium.launch({
       headless: true,
       executablePath: execPath,
