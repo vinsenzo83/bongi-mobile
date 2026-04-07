@@ -1203,7 +1203,7 @@ const screens = [
         <div class="wf-card" style="padding:0;overflow-x:auto;margin-bottom:14px">
           <table class="wf-table" id="rental-table" style="margin-bottom:0;font-size:11px;min-width:1100px">
             <thead>
-              <tr><th>카테고리</th><th>브랜드</th><th>상품명</th><th>월요금</th><th>정상월요금</th><th>제휴카드</th><th>전월실적</th><th>카드후 월요금</th><th>약정</th><th>관리방식</th><th>혜택/사은품</th><th>프로모션</th><th>관리</th></tr>
+              <tr><th>티켓번호</th><th>카테고리</th><th>브랜드</th><th>상품명</th><th>월요금</th><th>정상월요금</th><th>제휴카드</th><th>전월실적</th><th>카드후 월요금</th><th>약정</th><th>관리방식</th><th>혜택/사은품</th><th>프로모션</th><th>상태</th><th>관리</th></tr>
             </thead>
             <tbody id="rental-tbody">
               <!-- 동적 렌더링 -->
@@ -4919,13 +4919,15 @@ function submitRentalForm() {
   saveRentalData();
 }
 
-function renderRentalRow(r) {
+function renderRentalRow(r, idx) {
   // r = [cat, brand, name, price, normalPrice, card, cardReq, cardPrice, term, mgmt, gift, promo]
   var cat=r[0]||'',brand=r[1]||'',name=r[2]||'',price=r[3]||0,normal=r[4]||0,card=r[5]||'',cardReq=r[6]||'',cardPrice=r[7],term=r[8]||'',mgmt=r[9]||'',gift=r[10]||'',promo=r[11]||'';
+  var ticketNum = 'R' + String(idx+1).padStart(3,'0');
   var priceStr = typeof price === 'number' ? price.toLocaleString() : price;
   var normalStr = normal ? (typeof normal === 'number' ? normal.toLocaleString() : normal) : '-';
   var cpStr = (cardPrice !== undefined && cardPrice !== null && cardPrice !== '') ? (typeof cardPrice === 'number' ? cardPrice.toLocaleString() : cardPrice) : '-';
-  return '<tr data-cat="'+cat+'" data-brand="'+brand+'" data-name="'+name+'">'
+  return '<tr data-cat="'+cat+'" data-brand="'+brand+'" data-name="'+name+'" data-ticket="'+ticketNum+'">'
+    +'<td><span style="font-family:monospace;font-weight:700;color:var(--blue);font-size:11px">'+ticketNum+'</span></td>'
     +'<td><span class="wf-status blue" style="font-size:10px">'+cat+'</span></td>'
     +'<td style="font-weight:700;font-size:11px">'+brand+'</td>'
     +'<td style="font-size:11px;max-width:180px">'+name+'</td>'
@@ -4938,6 +4940,7 @@ function renderRentalRow(r) {
     +'<td style="font-size:10px">'+mgmt+'</td>'
     +'<td style="font-size:10px;color:var(--orange);font-weight:600">'+gift+'</td>'
     +'<td style="font-size:10px;max-width:160px">'+promo+'</td>'
+    +'<td><span class="wf-status green" style="font-size:10px">활성</span></td>'
     +'<td style="white-space:nowrap"><span class="action-btn default" onclick="editRentalRow(this)" style="cursor:pointer;font-size:10px">수정</span> <span class="action-btn danger" onclick="deleteRentalRow(this)" style="cursor:pointer;font-size:10px">삭제</span></td>'
     +'</tr>';
 }
@@ -4948,7 +4951,7 @@ function loadRentalData() {
   var saved = localStorage.getItem(RENTAL_KEY);
   var data = saved ? JSON.parse(saved) : null;
   if(!data || data.length === 0) data = rentalDefaultData;
-  tbody.innerHTML = data.map(renderRentalRow).join('');
+  tbody.innerHTML = data.map(function(r, i) { return renderRentalRow(r, i); }).join('');
 }
 
 // ─── 렌탈 상품 필터링 ───
