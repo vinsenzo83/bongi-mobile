@@ -71,7 +71,7 @@ router.patch('/gifts/:id', async (req, res) => {
   try {
     const { status, paid_at } = req.body;
     const update = { status };
-    if (status === 'paid') update.paid_at = paid_at || new Date().toISOString();
+    if (status === '지급완료') update.paid_at = paid_at || new Date().toISOString();
     const { data, error } = await supabase.from('bongi_gifts').update(update).eq('id', req.params.id).select();
     if (error) throw error;
     res.json({ gift: data[0] });
@@ -249,7 +249,7 @@ router.get('/referrals', async (req, res) => {
       rewards: rewards || [],
       stats: {
         total: (data || []).length,
-        converted: (data || []).filter(r => r.status === 'converted').length,
+        converted: (data || []).filter(r => r.status === '계약완료').length,
       },
     });
   } catch (e) {
@@ -278,11 +278,11 @@ router.patch('/cash/withdrawals/:id', async (req, res) => {
   try {
     const { status, admin_memo } = req.body;
     const update = { status };
-    if (status === '승인' || status === 'approved') {
+    if (status === '승인') {
       update.status = '승인';
       update.approved_at = new Date().toISOString();
     }
-    if (status === '반려' || status === 'rejected') update.status = '반려';
+    if (status === '반려') update.status = '반려';
     if (admin_memo !== undefined) update.admin_memo = admin_memo;
     const { data, error } = await supabase.from('bongi_withdrawals').update(update).eq('id', req.params.id).select();
     if (error) throw error;
@@ -331,7 +331,7 @@ router.get('/stats', async (req, res) => {
       supabase.from('bongi_user_profiles').select('id', { count: 'exact', head: true }),
       supabase.from('bongi_reviews').select('id', { count: 'exact', head: true }),
       supabase.from('bongi_referrals').select('id', { count: 'exact', head: true }),
-      supabase.from('bongi_withdrawals').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase.from('bongi_withdrawals').select('id', { count: 'exact', head: true }).eq('status', '대기'),
       supabase.from('bongi_applications').select('id', { count: 'exact', head: true }),
     ]);
 
@@ -782,7 +782,7 @@ router.patch('/applications/:id', async (req, res) => {
       if (finalGift > 0) {
         const { error: giftErr } = await supabase.from('bongi_gifts').insert({
           amount: finalGift,
-          status: 'pending',
+          status: '지급대기',
           memo: `${application.product_name || ''} (${application.product_ticket || ''})`,
         });
         if (giftErr) console.warn('사은품 자동 생성 실패:', giftErr.message);

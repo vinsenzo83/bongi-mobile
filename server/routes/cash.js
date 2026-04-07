@@ -130,7 +130,7 @@ router.post('/withdraw', async (req, res) => {
         bank_name,
         account_number: account_number.trim(),
         account_holder: account_holder.trim(),
-        status: 'pending',
+        status: '대기',
       })
       .select()
       .single();
@@ -142,10 +142,10 @@ router.post('/withdraw', async (req, res) => {
     // 캐쉬 내역에 출금 기록 추가
     await supabase.from('bongi_cash_history').insert({
       user_id: req.user.id,
-      type: 'withdraw',
+      type: '출금',
       amount: withdrawAmount,
       description: `출금 신청 (${bank_name} ${account_number.trim().slice(-4)})`,
-      status: 'pending',
+      status: '대기',
     });
 
     // 잔액 차감
@@ -160,7 +160,7 @@ router.post('/withdraw', async (req, res) => {
     return res.status(201).json({
       withdrawal_id: withdrawal.id,
       amount: withdrawAmount,
-      status: 'pending',
+      status: '대기',
       message: `${withdrawAmount.toLocaleString()}원 출금 신청이 접수되었습니다. 영업일 기준 ${WITHDRAWAL_POLICY.processingDays}일 내 처리됩니다.`,
     });
   } catch (err) {
@@ -178,7 +178,7 @@ router.get('/policy', (_req, res) => {
   res.json(WITHDRAWAL_POLICY);
 });
 
-// 출금 자격 확인: referral contracted/rewarded 또는 contracts completed
+// 출금 자격 확인: referral 계약완료/보상완료 또는 contracts completed
 async function checkWithdrawalEligibility(userId) {
   // 1) bongi_referrals에서 계약 완료 건 확인 (referrer_code 기반)
   const { data: profile } = await supabase
@@ -194,7 +194,7 @@ async function checkWithdrawalEligibility(userId) {
     .from('bongi_referrals')
     .select('id')
     .eq('referrer_user_id', userId)
-    .in('status', ['contracted', 'rewarded'])
+    .in('status', ['계약완료', '보상완료'])
     .limit(1);
 
   if (referrals && referrals.length > 0) return true;

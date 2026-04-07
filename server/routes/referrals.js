@@ -117,13 +117,13 @@ router.get('/stats', optionalAuth, async (req, res) => {
     }
 
     const total_invited = list.length;
-    const registered = list.filter(r => r.status === 'registered').length;
+    const registered = list.filter(r => r.status === '가입완료').length;
     const contracted = list.filter(r =>
-      r.status === 'contracted' || r.status === 'rewarded'
+      r.status === '계약완료' || r.status === '보상완료'
     ).length;
 
-    const paidRewards = rewards.filter(r => r.status === 'paid' && r.recipient_type === 'referrer');
-    const pendingRewards = rewards.filter(r => r.status === 'pending' && r.recipient_type === 'referrer');
+    const paidRewards = rewards.filter(r => r.status === '지급완료' && r.recipient_type === 'referrer');
+    const pendingRewards = rewards.filter(r => r.status === '대기' && r.recipient_type === 'referrer');
 
     const total_earned = paidRewards.reduce((s, r) => s + r.amount, 0);
     const pending = pendingRewards.reduce((s, r) => s + r.amount, 0);
@@ -195,7 +195,7 @@ router.post('/register', optionalAuth, async (req, res) => {
         referrer_code,
         referred_name,
         referred_phone,
-        status: 'registered',
+        status: '가입완료',
       })
       .select()
       .single();
@@ -211,7 +211,7 @@ router.post('/register', optionalAuth, async (req, res) => {
         recipient_type: 'referrer',
         reward_type: 'signup',
         amount: signupAmount,
-        status: 'pending',
+        status: '대기',
       });
 
     if (rewardErr) {
@@ -253,7 +253,7 @@ router.post('/convert', optionalAuth, async (req, res) => {
       return res.status(404).json({ error: '추천 기록을 찾을 수 없습니다.' });
     }
 
-    if (referral.status === 'contracted' || referral.status === 'rewarded') {
+    if (referral.status === '계약완료' || referral.status === '보상완료') {
       return res.status(409).json({ error: '이미 계약 완료 처리된 건입니다.' });
     }
 
@@ -263,7 +263,7 @@ router.post('/convert', optionalAuth, async (req, res) => {
     // 상태 변경
     await supabase
       .from('bongi_referrals')
-      .update({ status: 'contracted' })
+      .update({ status: '계약완료' })
       .eq('id', referral_id);
 
     // 계약 보상: 추천인 + 피추천인
@@ -275,14 +275,14 @@ router.post('/convert', optionalAuth, async (req, res) => {
           recipient_type: 'referrer',
           reward_type: 'contract',
           amount: policy.contract.referrer,
-          status: 'pending',
+          status: '대기',
         },
         {
           referral_id,
           recipient_type: 'referred',
           reward_type: 'contract',
           amount: policy.contract.referred,
-          status: 'pending',
+          status: '대기',
         },
       ]);
 
@@ -305,7 +305,7 @@ router.post('/convert', optionalAuth, async (req, res) => {
 
     res.json({
       referral_id,
-      status: 'contracted',
+      status: '계약완료',
       tier,
       rewards: {
         referrer_contract_bonus: policy.contract.referrer,
