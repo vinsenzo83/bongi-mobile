@@ -8736,7 +8736,7 @@ function loadApplications() {
           +'<td style="font-size:10px;max-width:180px">'+product+'</td>'
           +'<td style="color:var(--orange);font-weight:700;font-size:11px">'+(gift||'-')+'</td>'
           +'<td><span class="wf-status '+stClass+'">'+status+'</span></td>'
-          +'<td><span class="action-btn default" onclick="openAppDetail('+JSON.stringify([time,name,phone,type,channel,sync,ticket,product,gift,status]).replace(/"/g,'&amp;quot;')+')" style="cursor:pointer;font-size:10px">상세</span></td>'
+          +'<td><span class="action-btn default" onclick=\'openAppDetail('+JSON.stringify([time,name,phone,type,channel,sync,ticket,product,gift,status])+')\' style="cursor:pointer;font-size:10px">상세</span></td>'
           +'</tr>';
       }).join('');
       tbody.innerHTML = html;
