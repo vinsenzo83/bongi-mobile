@@ -51,6 +51,7 @@ export default function Chat() {
   const [showUsedPhoneSelect, setShowUsedPhoneSelect] = useState(false);
   const [rentalDetail, setRentalDetail] = useState({ open: false, ticket: '' });
   const [showInternetSelect, setShowInternetSelect] = useState(false);
+  const [usedPhoneApply, setUsedPhoneApply] = useState({ open: false, model: '', storage: '', price: '' });
   const isMobile = useIsMobile();
 
   return (
@@ -105,6 +106,11 @@ export default function Chat() {
               setShowUsedPhoneSelect(true);
             } else if (msg.startsWith('__detail__rental__')) {
               setRentalDetail({ open: true, ticket: msg.replace('__detail__rental__', '') });
+            } else if (msg.startsWith('__apply_usedphone__')) {
+              try {
+                const d = JSON.parse(msg.replace('__apply_usedphone__', ''));
+                setUsedPhoneApply({ open: true, model: d.model, storage: d.storage, price: d.price });
+              } catch { setUsedPhoneApply({ open: true, model: '', storage: '', price: '' }); }
             } else {
               chat.sendMessage(msg);
             }
@@ -150,6 +156,19 @@ export default function Chat() {
               </div>
               <UsedPhoneSelectCard onComplete={(query) => { setShowUsedPhoneSelect(false); chat.sendMessage(query); }} />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 중고폰 접수 신청 모달 */}
+      {usedPhoneApply.open && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 480, height: '90vh', background: '#f5f6fa', borderRadius: '16px 16px 0 0', display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: 'slideUp 0.25s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#1a2744', flexShrink: 0 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{'📦'} 중고폰 매입 접수</span>
+              <button onClick={() => setUsedPhoneApply({ open: false, model: '', storage: '', price: '' })} style={{ background: 'none', border: 'none', fontSize: 20, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>{'✕'}</button>
+            </div>
+            <iframe src={'/apply/used-phone?model=' + encodeURIComponent(usedPhoneApply.model) + '&storage=' + encodeURIComponent(usedPhoneApply.storage) + '&price=' + encodeURIComponent(usedPhoneApply.price)} style={{ flex: 1, border: 'none', width: '100%' }} />
           </div>
         </div>
       )}
