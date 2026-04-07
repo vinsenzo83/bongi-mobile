@@ -8469,21 +8469,21 @@ function show(idx) {
   if(idx === 1) { setTimeout(loadMembers, 50); }
   // 사은품 + 렌탈 + 중고폰 + 상태토글 + 삭제버튼 로드
   if(idx === 2) { setTimeout(loadGifts, 50); setTimeout(loadRentalData, 50); setTimeout(renderUsedPhoneTable, 50); setTimeout(function(){ addProductStatusToggles(); addDeleteButtons(); }, 100); }
-  // 매장 관리
+  // 매장 관리 (show(4))
   if(idx === 4) { setTimeout(loadStores, 50); }
-  // 티켓 관리 — 조합 + API 로드
+  // 티켓 관리 (show(5)) — 조합 + API 로드
   if(idx === 5) { setTimeout(function(){ renderTicketCombo(); renderTicketRentalPage(0); }, 50); setTimeout(loadTickets, 100); }
-  // 신청 현황
+  // 신청 현황 (show(6))
   if(idx === 6) { setTimeout(loadApplications, 50); }
-  // 사은품 관리
+  // 사은품 관리 (show(7))
   if(idx === 7) { setTimeout(loadGiftsAdmin, 50); }
-  // 포인트/캐쉬 관리
+  // 포인트/캐쉬 관리 (show(8))
   if(idx === 8) { setTimeout(loadWithdrawals, 50); }
-  // 후기 관리
+  // 후기 관리 (show(9))
   if(idx === 9) { setTimeout(loadReviewsAdmin, 50); }
-  // 돈지키미
+  // 돈지키미 (show(10))
   if(idx === 10) { setTimeout(loadDonJikimi, 50); }
-  // 통계
+  // 통계 (show(11))
   if(idx === 11) { setTimeout(loadDashboardStats, 50); }
   // 모바일 요금제
   if(idx === 12) { setTimeout(function(){ filterMobilePlans(); }, 50); }
@@ -8492,7 +8492,7 @@ function show(idx) {
   // 시뮬레이터 초기화
   if(idx === 21) { setTimeout(function(){ var r=document.getElementById('sim-result'); if(r) r.style.display='none'; }, 50); }
   // 알림 관리
-  if(idx === 22) { setTimeout(loadNotifications, 50); }
+  if(idx === 24) { setTimeout(loadNotifications, 50); }
   // 공시지원금
   if(idx === 23) { setTimeout(renderSubsidy, 50); }
   // 체크리스트 초기화

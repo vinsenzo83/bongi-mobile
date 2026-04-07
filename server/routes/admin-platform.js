@@ -539,6 +539,28 @@ router.get('/stores', async (req, res) => {
   }
 });
 
+// ── 인터넷+TV 상품 (통신사별) ──
+
+// GET /admin/platform/carrier-products — 인터넷 속도, TV, WiFi, 셋톱 전체
+router.get('/carrier-products', async (req, res) => {
+  try {
+    const [speeds, tv, wifi, settop] = await Promise.all([
+      supabase.from('bongi_internet_speeds').select('*').order('carrier').order('speed'),
+      supabase.from('bongi_tv_products').select('*').order('carrier').order('name'),
+      supabase.from('bongi_wifi_products').select('*').order('carrier').order('name'),
+      supabase.from('bongi_settop_boxes').select('*').order('carrier').order('name'),
+    ]);
+    res.json({
+      internet_speeds: speeds.data || [],
+      tv_products: tv.data || [],
+      wifi_products: wifi.data || [],
+      settop_boxes: settop.data || [],
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── 티켓 관리 (어드민용) ──
 
 // GET /admin/platform/tickets — 티켓 목록
