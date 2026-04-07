@@ -335,10 +335,10 @@ router.get('/stats', async (req, res) => {
 router.get('/subsidy', async (req, res) => {
   try {
     const { model, carrier } = req.query;
-    let query = supabase.from('bongi_subsidy_data').select('*').order('model').order('carrier');
+    let query = supabase.from('bongi_subsidy_data').select('*', { count: 'exact' }).order('model').order('carrier').range(0, 1999);
     if (model) query = query.ilike('model', `%${model}%`);
     if (carrier) query = query.eq('carrier', carrier);
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     if (error) throw error;
     // 마지막 업데이트 시간
     const { data: latest } = await supabase.from('bongi_subsidy_data').select('updated_date').order('created_at', { ascending: false }).limit(1);
@@ -765,7 +765,7 @@ router.patch('/applications/:id', async (req, res) => {
 // GET /admin/platform/don-jikimi — 돈지키미 알람 목록
 router.get('/don-jikimi', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('bongi_user_alarms').select('*').order('end_date', { ascending: true }).limit(200);
+    const { data, error } = await supabase.from('bongi_user_alarms').select('*').order('target_date', { ascending: true }).limit(200);
     if (error) throw error;
     res.json({ alarms: data || [], total: (data || []).length });
   } catch (e) {
