@@ -8747,6 +8747,25 @@ function loadMembers() {
       if(!tbody) return;
       // 상담원 제외, 고객만 표시
       var customers = d.members.filter(function(m) { return m.member_type !== 'agent'; });
+      // memberData를 API 데이터로 업데이트 (상세 팝업 연동)
+      memberData.length = 0;
+      customers.forEach(function(m) {
+        memberData.push({
+          name: m.display_name || m.name || '-',
+          phone: m.phone || '-',
+          type: m.user_type || '앱회원',
+          channel: m.channel || '-',
+          social: m.social_provider || '-',
+          carrier: m.carrier || '-',
+          verify: m.verified_at ? '완료' : '미완료',
+          account: m.bank_name ? '등록' : '미등록',
+          address: '미등록',
+          date: m.created_at ? new Date(m.created_at).toLocaleDateString('ko-KR') : '-',
+          cnt: (m.total_conversions || 0) + '건',
+          point: (m.point_balance || 0).toLocaleString() + 'P',
+          id: m.id || '',
+        });
+      });
       var html = customers.map(function(m) {
         var name = m.display_name || m.name || '-';
         var phone = m.phone || '-';
