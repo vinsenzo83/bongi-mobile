@@ -8844,10 +8844,28 @@ function loadReviewsAdmin() {
       var tbody = c.querySelector('.wf-table tbody');
       if(!tbody) return;
       var html = d.reviews.map(function(rv) {
-        var stars = '⭐'.repeat(Math.min(rv.rating||5, 5));
-        var approved = rv.is_approved ? '승인' : '대기';
-        var apClass = rv.is_approved ? 'green' : 'orange';
-        return '<tr><td style="font-weight:600">' + (rv.author_name||rv.name||'-') + '</td><td style="font-size:10px">' + (rv.product_name||'-') + '</td><td>' + stars + '</td><td style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (rv.content||'-') + '</td><td><span class="wf-status '+apClass+'">' + approved + '</span></td><td style="font-size:10px">' + (rv.created_at ? new Date(rv.created_at).toLocaleDateString('ko-KR') : '-') + '</td></tr>';
+        var stars = '';
+        for(var i=0;i<5;i++) stars += (i < (rv.rating||5) ? '⭐' : '☆');
+        var name = rv.author_name||rv.name||'-';
+        var product = rv.product_name||'-';
+        var content = rv.content||'-';
+        var photo = rv.image_url ? '📷 1장' : '-';
+        var aiOn = rv.is_approved !== false;
+        var aiText = aiOn ? 'ON' : 'OFF';
+        var aiClass = aiOn ? 'green' : 'gray';
+        var date = rv.created_at ? new Date(rv.created_at).toLocaleDateString('ko-KR') : '-';
+        var ticket = rv.ticket_number || '-';
+        return '<tr>'
+          +'<td style="font-size:10px">'+date+'</td>'
+          +'<td style="font-weight:600;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\''+name+'\')">'+name+'</td>'
+          +'<td>'+(ticket!=='-'?'<span style="font-family:monospace;font-weight:700;color:var(--blue);font-size:10px">'+ticket+'</span>':'-')+'</td>'
+          +'<td style="font-size:10px;max-width:160px">'+product+'</td>'
+          +'<td>'+stars+'</td>'
+          +'<td style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+content+'">'+content+'</td>'
+          +'<td>'+photo+'</td>'
+          +'<td><span class="wf-status '+aiClass+'" style="cursor:pointer" onclick="var el=this;if(el.textContent===\'ON\'){el.textContent=\'OFF\';el.className=\'wf-status gray\';}else{el.textContent=\'ON\';el.className=\'wf-status green\';}">'+aiText+'</span></td>'
+          +'<td><span class="action-btn default" style="cursor:pointer;font-size:10px">상세</span></td>'
+          +'</tr>';
       }).join('');
       tbody.innerHTML = html;
     }).catch(function(e) { console.error('후기 로드 실패:', e); });
