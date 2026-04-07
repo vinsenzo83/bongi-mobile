@@ -348,11 +348,105 @@ router.put('/rental', async (req, res) => {
   }
 });
 
-// PATCH /admin/platform/rental/:id — 개별 수정
+// PATCH /admin/platform/rental/:id — 개별 수정 (티켓 연동)
 router.patch('/rental/:id', async (req, res) => {
   try {
     const { data, error } = await supabase.from('bongi_rental_products').update({ ...req.body, updated_at: new Date().toISOString() }).eq('id', req.params.id).select();
     if (error) throw error;
+    const product = data[0];
+    // 활성/비활성 변경 시 → 티켓도 연동
+    if (req.body.is_active !== undefined && product.ticket_number) {
+      await supabase.from('bongi_tickets')
+        .update({ is_active: req.body.is_active, updated_at: new Date().toISOString() })
+        .eq('ticket_number', product.ticket_number);
+    }
+    res.json({ product });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /admin/platform/rental/:id — 렌탈 삭제 (티켓 비활성화)
+router.delete('/rental/:id', async (req, res) => {
+  try {
+    // 먼저 상품 정보 가져오기 (티켓번호)
+    const { data: product } = await supabase.from('bongi_rental_products').select('ticket_number').eq('id', req.params.id).single();
+    // 상품 삭제
+    const { error } = await supabase.from('bongi_rental_products').delete().eq('id', req.params.id);
+    if (error) throw error;
+    // 관련 티켓 비활성화
+    if (product?.ticket_number) {
+      await supabase.from('bongi_tickets')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('ticket_number', product.ticket_number);
+    }
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 인터넷+TV 상품 활성/비활성 → 티켓 연동 ──
+
+// PATCH /admin/platform/internet-speed/:id — 인터넷 속도 상품 수정
+router.patch('/internet-speed/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('bongi_internet_speeds').update({ ...req.body }).eq('id', req.params.id).select();
+    if (error) throw error;
+    // 비활성화 시 → 해당 속도를 참조하는 티켓도 비활성화
+    if (req.body.is_active === false) {
+      await supabase.from('bongi_tickets')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('speed_id', req.params.id);
+    }
+    res.json({ product: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /admin/platform/tv-product/:id — TV 상품 수정
+router.patch('/tv-product/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('bongi_tv_products').update({ ...req.body }).eq('id', req.params.id).select();
+    if (error) throw error;
+    if (req.body.is_active === false) {
+      await supabase.from('bongi_tickets')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('tv_id', req.params.id);
+    }
+    res.json({ product: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /admin/platform/wifi-product/:id — WiFi 상품 수정
+router.patch('/wifi-product/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('bongi_wifi_products').update({ ...req.body }).eq('id', req.params.id).select();
+    if (error) throw error;
+    if (req.body.is_active === false) {
+      await supabase.from('bongi_tickets')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('wifi_id', req.params.id);
+    }
+    res.json({ product: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /admin/platform/settop-box/:id — 셋톱박스 수정
+router.patch('/settop-box/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('bongi_settop_boxes').update({ ...req.body }).eq('id', req.params.id).select();
+    if (error) throw error;
+    if (req.body.is_active === false) {
+      await supabase.from('bongi_tickets')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('settop_id', req.params.id);
+    }
     res.json({ product: data[0] });
   } catch (e) {
     res.status(500).json({ error: e.message });
