@@ -817,22 +817,18 @@ router.get('/notifications', async (req, res) => {
 router.post('/notifications', async (req, res) => {
   try {
     const { user_id, channel, type, title, content } = req.body;
-    if (!user_id || !channel || !title || !content) {
-      return res.status(400).json({ error: 'user_id, channel, title, content는 필수입니다' });
-    }
-    const allowedChannels = ['push', 'kakao'];
-    if (!allowedChannels.includes(channel)) {
-      return res.status(400).json({ error: `channel은 ${allowedChannels.join(', ')} 중 하나여야 합니다` });
+    if (!user_id || !title) {
+      return res.status(400).json({ error: 'user_id, title은 필수입니다' });
     }
 
     const { data, error } = await supabase.from('bongi_notifications').insert({
-      user_id,
-      channel,
+      recipient_id: user_id,
+      recipient_type: 'user',
+      channel: channel || 'push',
       type: type || 'manual',
       title,
-      content,
-      status: 'pending',
-      created_at: new Date().toISOString(),
+      body: content || '',
+      status: 'sent',
     }).select();
     if (error) throw error;
     res.json({ notification: data[0] });
