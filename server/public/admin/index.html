@@ -6899,6 +6899,39 @@ function filterSubsidy() {
   renderSubsidy();
 }
 
+function loadSubsidyFromDB() {
+  fetch('/api/admin/platform/subsidy')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.data || d.data.length === 0) return;
+      // DB 데이터를 subsidyData 형식으로 변환 [모델, 통신사, 요금제, 지원금, 공시일]
+      subsidyData = d.data.map(function(r) {
+        return [r.model||'', r.carrier||'', r.plan_name||'', r.subsidy_amount||'', r.updated_date||''];
+      });
+      // 마지막 업데이트 시간 표시
+      var lastEl = document.getElementById('subsidy-last-updated');
+      if(lastEl && d.data.length > 0) {
+        var lastDate = d.data[0].updated_date || '';
+        lastEl.textContent = '마지막 업데이트: ' + lastDate;
+        lastEl.style.fontWeight = '600';
+      }
+      // KPI 업데이트
+      var c = document.getElementById('screen-container');
+      if(c) {
+        var vals = c.querySelectorAll('.kpi-val');
+        if(vals.length >= 4) {
+          var models = {};
+          d.data.forEach(function(r) { models[r.model] = true; });
+          vals[0].textContent = Object.keys(models).length;
+          vals[1].textContent = d.data.length.toLocaleString();
+          vals[3].textContent = d.data[0].updated_date || '-';
+          vals[3].style.fontSize = '14px';
+        }
+      }
+      renderSubsidy();
+    }).catch(function(e) { console.error('공시지원금 DB 로드 실패:', e); });
+}
+
 function renderSubsidy() {
   var tbody = document.getElementById('subsidy-tbody');
   var pager = document.getElementById('subsidy-pager');
@@ -8543,7 +8576,7 @@ function show(idx) {
   // 알림 관리
   if(idx === 24) { setTimeout(loadNotifications, 50); }
   // 공시지원금
-  if(idx === 23) { setTimeout(renderSubsidy, 50); }
+  if(idx === 23) { setTimeout(function(){ loadSubsidyFromDB(); renderSubsidy(); }, 50); }
   // 체크리스트 초기화
   if(idx === 21) {
     const BM_KEY = 'bm_cl_v1';
