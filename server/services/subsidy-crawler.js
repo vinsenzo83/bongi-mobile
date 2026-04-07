@@ -4,6 +4,11 @@
  * Playwright headless chromium 사용
  */
 
+// Playwright 브라우저 경로 설정 (import 전에 설정해야 함)
+if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = '/app/.cache/ms-playwright';
+}
+
 import { chromium } from 'playwright';
 import { execSync } from 'child_process';
 import { supabase } from '../db/supabase.js';
