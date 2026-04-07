@@ -1,32 +1,33 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import SocialLoginButtons from '../components/SocialLoginButtons.jsx';
 
 export default function Signup() {
-  const [form, setForm] = useState({ email: '', password: '', passwordConfirm: '', name: '', phone: '' });
+  const [step, setStep] = useState(1); // 1: 소셜로그인, 2: 추가정보 입력
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [agreements, setAgreements] = useState({ terms: false, privacy: false, marketing: false });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
 
-  const u = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const allAgreed = agreements.terms && agreements.privacy && agreements.marketing;
+  const canSubmit = name.trim().length >= 2 && phone.trim().length >= 10 && allAgreed;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  const toggleAll = () => {
+    const newVal = !allAgreed;
+    setAgreements({ terms: newVal, privacy: newVal, marketing: newVal });
+  };
 
-    if (form.password !== form.passwordConfirm) {
-      return setError('비밀번호가 일치하지 않습니다');
-    }
-    if (form.password.length < 8) {
-      return setError('비밀번호는 8자 이상이어야 합니다');
-    }
-
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
     setLoading(true);
+    setError('');
     try {
-      await signup({ email: form.email, password: form.password, name: form.name, phone: form.phone, role: 'customer' });
-      navigate('/mypage');
+      await signup({ name, phone, role: 'customer' });
+      navigate('/');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -35,61 +36,136 @@ export default function Signup() {
   };
 
   return (
-    <section className="section">
-      <div className="container" style={{ maxWidth: 420, position: 'relative' }}>
-        <button onClick={() => navigate('/')} style={{ position: 'fixed', top: 16, right: 16, background: '#333', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', padding: '4px 10px', borderRadius: '50%', zIndex: 1000, lineHeight: 1 }}>✕</button>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>🐟</div>
-          <h2 style={{ fontSize: 24, marginBottom: 4 }}>회원가입</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>리턴AI에 가입하고 혜택을 받으세요</p>
+    <div style={s.page}>
+      <div style={s.container}>
+        <button onClick={() => navigate('/')} style={s.closeBtn}>{'✕'}</button>
+
+        <div style={s.header}>
+          <div style={{ fontSize: 36, marginBottom: 8 }}>{'🐟'}</div>
+          <h1 style={s.title}>회원가입</h1>
+          <p style={s.sub}>가입하시면 포인트와 다양한 혜택을 받으실 수 있어요 {'🎁'}</p>
         </div>
 
-        {error && (
-          <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: 14, marginBottom: 16 }}>
-            {error}
-          </div>
-        )}
+        {error && <div style={s.error}>{error}</div>}
 
-        <div className="card" style={{ marginBottom: 16 }}>
+        {/* 소셜 로그인 버튼 */}
+        <div style={s.card}>
           <SocialLoginButtons />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <div style={{ flex: 1, height: 1, background: 'var(--border-color, #e5e7eb)' }} />
-          <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>또는 이메일로 가입</span>
-          <div style={{ flex: 1, height: 1, background: 'var(--border-color, #e5e7eb)' }} />
+        {/* 소셜 로그인 후 추가 입력 */}
+        <div style={s.dividerWrap}>
+          <hr style={s.hr} />
+          <span style={s.dividerText}>소셜 로그인 후 추가 입력</span>
+          <hr style={s.hr} />
         </div>
 
-        <form onSubmit={handleSubmit} className="card">
-          <div style={{ marginBottom: 16 }}>
-            <label>이름 *</label>
-            <input value={form.name} onChange={e => u('name', e.target.value)} placeholder="홍길동" required />
+        <div style={s.card}>
+          {/* 이름 */}
+          <div style={s.fieldGroup}>
+            <label style={s.label}>이름 <span style={{ color: '#ef4444' }}>*</span></label>
+            <input
+              style={s.input}
+              placeholder="이름을 입력하세요"
+              value={name}
+              onChange={e => setName(e.target.value)}
+            />
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>이메일 *</label>
-            <input type="email" value={form.email} onChange={e => u('email', e.target.value)} placeholder="example@email.com" required />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>비밀번호 *</label>
-            <input type="password" value={form.password} onChange={e => u('password', e.target.value)} placeholder="8자 이상" required />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>비밀번호 확인 *</label>
-            <input type="password" value={form.passwordConfirm} onChange={e => u('passwordConfirm', e.target.value)} placeholder="비밀번호 다시 입력" required />
-          </div>
-          <div style={{ marginBottom: 20 }}>
-            <label>전화번호</label>
-            <input value={form.phone} onChange={e => u('phone', e.target.value)} placeholder="010-1234-5678" />
-          </div>
-          <button type="submit" disabled={loading} className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: loading ? 0.6 : 1 }}>
-            {loading ? '가입 중...' : '회원가입'}
-          </button>
-        </form>
 
-        <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14 }}>
-          이미 계정이 있으신가요? <Link to="/login" style={{ fontWeight: 600 }}>로그인</Link>
+          {/* 전화번호 */}
+          <div style={s.fieldGroup}>
+            <label style={s.label}>전화번호 <span style={{ color: '#ef4444' }}>*</span></label>
+            <input
+              style={s.input}
+              type="tel"
+              placeholder="010-0000-0000"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+            />
+          </div>
+
+          {/* 동의 항목 */}
+          <div style={s.agreeBox}>
+            <div style={s.agreeTitle}>{'✅'} 동의 항목</div>
+
+            {/* 전체 동의 */}
+            <div style={s.agreeRow} onClick={toggleAll}>
+              <div style={{ ...s.checkbox, ...(allAgreed ? s.checkboxOn : {}) }}>
+                {allAgreed ? '✓' : ''}
+              </div>
+              <span style={{ fontWeight: 700 }}>전체 동의</span>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid #fcd34d', margin: '8px 0' }} />
+
+            {/* 이용약관 */}
+            <div style={s.agreeRow} onClick={() => setAgreements(a => ({ ...a, terms: !a.terms }))}>
+              <div style={{ ...s.checkbox, ...(agreements.terms ? s.checkboxOn : {}) }}>
+                {agreements.terms ? '✓' : ''}
+              </div>
+              <span>이용약관 동의 <span style={{ color: '#ef4444' }}>(필수)</span></span>
+            </div>
+
+            {/* 개인정보처리방침 */}
+            <div style={s.agreeRow} onClick={() => setAgreements(a => ({ ...a, privacy: !a.privacy }))}>
+              <div style={{ ...s.checkbox, ...(agreements.privacy ? s.checkboxOn : {}) }}>
+                {agreements.privacy ? '✓' : ''}
+              </div>
+              <span>개인정보처리방침 동의 <span style={{ color: '#ef4444' }}>(필수)</span></span>
+            </div>
+
+            {/* 마케팅 수신 */}
+            <div style={s.agreeRow} onClick={() => setAgreements(a => ({ ...a, marketing: !a.marketing }))}>
+              <div style={{ ...s.checkbox, ...(agreements.marketing ? s.checkboxActive : {}) }}>
+                {agreements.marketing ? '✓' : ''}
+              </div>
+              <span>마케팅 수신 동의 <span style={{ color: '#ef4444' }}>(필수)</span> — 동의하시면 가입 포인트 드려요!</span>
+            </div>
+          </div>
+
+          {/* 가입 버튼 */}
+          <button
+            onClick={handleSubmit}
+            disabled={!canSubmit || loading}
+            style={{ ...s.submitBtn, opacity: canSubmit && !loading ? 1 : 0.4 }}
+          >
+            {loading ? '가입 중...' : '가입 완료하기'}
+          </button>
+
+          <div style={s.pointBanner}>
+            {'🎉'} 가입 완료 즉시 <strong style={{ color: '#2563eb' }}>5,000P</strong> 적립!
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13 }}>
+          이미 계정이 있으신가요? <Link to="/login" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>로그인</Link>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
+
+const s = {
+  page: { minHeight: '100vh', background: '#f5f6fa', display: 'flex', justifyContent: 'center', padding: '40px 20px', fontFamily: "'Noto Sans KR', -apple-system, sans-serif" },
+  container: { width: '100%', maxWidth: 400, position: 'relative' },
+  closeBtn: { position: 'absolute', top: -10, right: 0, background: 'none', border: 'none', fontSize: 24, color: '#999', cursor: 'pointer' },
+  header: { textAlign: 'center', marginBottom: 24 },
+  title: { fontSize: 22, fontWeight: 700, color: '#1a2744', marginBottom: 6 },
+  sub: { fontSize: 13, color: '#999' },
+  error: { background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16 },
+  card: { background: '#fff', border: '1px solid #e8e8e8', borderRadius: 12, padding: 24, marginBottom: 16 },
+  dividerWrap: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 },
+  hr: { flex: 1, border: 'none', borderTop: '1px solid #e8e8e8' },
+  dividerText: { fontSize: 12, color: '#999', whiteSpace: 'nowrap' },
+  fieldGroup: { marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: 600, color: '#444', marginBottom: 6, display: 'block' },
+  input: { width: '100%', height: 48, border: '1.5px solid #d0d0d0', borderRadius: 10, padding: '0 14px', fontSize: 14, color: '#1a1a1a', background: '#fafafa', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' },
+  agreeBox: { background: '#fff9c4', border: '1px solid #fcd34d', borderRadius: 10, padding: 16, marginBottom: 20 },
+  agreeTitle: { fontSize: 13, fontWeight: 700, color: '#78350f', marginBottom: 10 },
+  agreeRow: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', cursor: 'pointer', fontSize: 13, color: '#78350f' },
+  checkbox: { width: 20, height: 20, borderRadius: 4, border: '2px solid #d0d0d0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'transparent', flexShrink: 0, background: '#fff' },
+  checkboxOn: { background: '#d0d0d0', borderColor: '#d0d0d0', color: '#fff' },
+  checkboxActive: { background: '#2563eb', borderColor: '#2563eb', color: '#fff' },
+  submitBtn: { width: '100%', height: 52, borderRadius: 12, border: 'none', background: '#2563eb', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  pointBanner: { textAlign: 'center', fontSize: 13, color: '#555', marginTop: 12, padding: '10px', background: '#dbeafe', borderRadius: 8 },
+};

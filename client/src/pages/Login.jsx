@@ -1,79 +1,61 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import SocialLoginButtons from '../components/SocialLoginButtons.jsx';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const user = await login(email, password);
-      // 역할에 따라 리다이렉트
-      if (['agent', 'manager', 'super', 'ops'].includes(user.role)) {
-        navigate('/admin');
-      } else {
-        navigate('/mypage');
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (user) {
+    navigate('/');
+    return null;
+  }
 
   return (
-    <section className="section">
-      <div className="container" style={{ maxWidth: 420, position: 'relative' }}>
-        <button onClick={() => navigate('/')} style={{ position: 'fixed', top: 16, right: 16, background: '#333', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', padding: '4px 10px', borderRadius: '50%', zIndex: 1000, lineHeight: 1 }}>✕</button>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>🐟</div>
-          <h2 style={{ fontSize: 24, marginBottom: 4 }}>로그인</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>리턴AI 계정으로 로그인하세요</p>
+    <div style={s.page}>
+      <div style={s.container}>
+        <button onClick={() => navigate('/')} style={s.closeBtn}>{'✕'}</button>
+
+        <div style={s.header}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>{'🐟'}</div>
+          <h1 style={s.title}>봉이모바일 로그인</h1>
+          <p style={s.sub}>소셜 계정으로 간편하게 로그인하세요</p>
         </div>
 
-        {error && (
-          <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: 14, marginBottom: 16 }}>
-            {error}
-          </div>
-        )}
-
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div style={s.card}>
           <SocialLoginButtons />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <div style={{ flex: 1, height: 1, background: 'var(--border-color, #e5e7eb)' }} />
-          <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>또는 이메일로 로그인</span>
-          <div style={{ flex: 1, height: 1, background: 'var(--border-color, #e5e7eb)' }} />
+        <div style={s.divider}>
+          <hr style={s.hr} />
         </div>
 
-        <form onSubmit={handleSubmit} className="card">
-          <div style={{ marginBottom: 16 }}>
-            <label>이메일</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="example@email.com" required />
-          </div>
-          <div style={{ marginBottom: 20 }}>
-            <label>비밀번호</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="8자 이상" required />
-          </div>
-          <button type="submit" disabled={loading} className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: loading ? 0.6 : 1 }}>
-            {loading ? '로그인 중...' : '로그인'}
-          </button>
-        </form>
+        <div style={s.links}>
+          <Link to="/signup" style={s.link}>회원가입하고 신청 내역 확인하기</Link>
+          <span style={{ color: '#d0d0d0' }}>|</span>
+          <Link to="/signup" style={s.link}>회원가입</Link>
+        </div>
 
-        <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14 }}>
-          계정이 없으신가요? <Link to="/signup" style={{ fontWeight: 600 }}>회원가입</Link>
+        <div style={s.notice}>
+          <p>{'💡'} 비회원도 AI 채팅으로 상품 조회, 신청이 가능해요!</p>
+          <p>회원가입하면 신청 내역 조회, 사은품 확인, 포인트 적립이 가능합니다.</p>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
+
+const s = {
+  page: { minHeight: '100vh', background: '#f5f6fa', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 20, fontFamily: "'Noto Sans KR', -apple-system, sans-serif" },
+  container: { width: '100%', maxWidth: 400, position: 'relative' },
+  closeBtn: { position: 'absolute', top: -10, right: 0, background: 'none', border: 'none', fontSize: 24, color: '#999', cursor: 'pointer' },
+  header: { textAlign: 'center', marginBottom: 28 },
+  title: { fontSize: 22, fontWeight: 700, color: '#1a2744', marginBottom: 6 },
+  sub: { fontSize: 14, color: '#999' },
+  card: { background: '#fff', border: '1px solid #e8e8e8', borderRadius: 12, padding: 24, marginBottom: 20 },
+  divider: { marginBottom: 20 },
+  hr: { border: 'none', borderTop: '1px solid #e8e8e8' },
+  links: { display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 24, fontSize: 13 },
+  link: { color: '#2563eb', textDecoration: 'none', fontWeight: 500 },
+  notice: { background: '#fff', border: '1px solid #e8e8e8', borderRadius: 12, padding: 16, fontSize: 12, color: '#999', lineHeight: 1.6, textAlign: 'center' },
+};
