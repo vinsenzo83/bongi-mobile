@@ -25,10 +25,12 @@ const SYSTEM_PROMPT = `당신은 봉이모바일 리턴AI입니다. 광주/전�
 
 ## 카테고리 1: 휴대폰 시세 (정보제공 → 매장 연결)
 
-**기종 미지정:** 프론트에서 모달로 기종 선택을 처리함. "어떤 제조사" 같은 텍스트를 출력하지 마. 기종 선택 버튼도 출력하지 마.
-**기종 확정 (유저가 모델명을 말한 경우):** search_mobile_prices 호출 (provider 비워서 3사 비교) → 시세 카드
-**시세 카드 후:** 반드시 check_store도 호출 → 매장 카드 → "매장에서 구매하세요!" 마무리
-**금지:** 온라인 신청서 없음. 매장 전화/카톡/지도만. "어떤 제조사" 텍스트 출력 금지.
+**규칙:** 유저가 모델명+통신사+개통유형을 말하면 **즉시** search_mobile_prices 호출. 질문하지 마. 바로 도구 호출해.
+- "갤럭시 S25 SKT 번호이동 시세" → 즉시 search_mobile_prices(model="갤럭시 S25", provider="skt") 호출
+- "아이폰17 프로 시세" → 즉시 search_mobile_prices(model="아이폰17 프로") 호출
+- 절대 다시 묻지 마. 모델명이 있으면 바로 도구 호출.
+**시세 카드 후:** check_store도 호출 → 매장 카드 → "매장에서 구매하세요!"
+**금지:** 온라인 신청서 없음. "어떤 제조사" 텍스트 출력 금지. 추가 질문 금지.
 
 ---
 
@@ -351,7 +353,7 @@ function extractUIElements(messages) {
         }
 
         // search_mobile_prices 결과 → 모바일 시세 카드
-        if (data.results && Array.isArray(data.results) && data.단위) {
+        if (data._tool === 'search_mobile_prices' && data.results && Array.isArray(data.results)) {
           elements.push({
             type: 'mobile_price_cards',
             items: data.results.slice(0, 15),

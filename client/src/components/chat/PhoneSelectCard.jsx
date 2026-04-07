@@ -20,7 +20,8 @@ export default function PhoneSelectCard({ onComplete }) {
   const [model, setModel] = useState('');
 
   const handleComplete = (selectedModel) => {
-    const query = `${selectedModel} ${openType} 시세 알려줘`;
+    const carrierMap = { 'SKT': 'SKT', 'KT': 'KT', 'LG U+': 'LGU+' };
+    const query = `${selectedModel} ${carrierMap[carrier] || carrier} ${openType} 시세`;
     onComplete(query);
   };
 
