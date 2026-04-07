@@ -6024,19 +6024,8 @@ function deleteMobilePlan(idx) {
 // addBundleInfo 제거됨 — 결합할인은 별도 관리 (AI학습데이터 > 가족결합)
 
 function addDeleteButtons() {
-  // 인터넷 요금표 + 제휴카드 테이블 모든 행에 삭제 버튼 추가
-  document.querySelectorAll('#prod-section-wired .wf-table').forEach(function(table) {
-    // 사은품 테이블(input 있는)은 스킵
-    if(table.querySelector('input')) return;
-    // 이미 삭제 버튼 있으면 스킵
-    if(table.querySelector('.row-delete-btn')) return;
-    table.querySelectorAll('tbody tr').forEach(function(tr) {
-      var td = document.createElement('td');
-      td.style.textAlign = 'center';
-      td.innerHTML = '<span class="action-btn danger row-delete-btn" onclick="this.closest(\'tr\').remove()" style="cursor:pointer;font-size:9px;padding:2px 6px">삭제</span>';
-      tr.appendChild(td);
-    });
-  });
+  // 삭제 불가 — 명세서 준수: "삭제 없다, 비활성만 있다"
+  // 기존 삭제 버튼 대신 아무것도 추가하지 않음
 }
 
 // ─── 상품 편집 모드 토글 ───
