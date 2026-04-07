@@ -109,7 +109,7 @@ function detectIntent(message) {
   const hasUsedModel = usedPhoneModels.some(m => q.includes(m));
   const isUsedPhone = (q.includes('중고폰') || q.includes('매입') || q.includes('보상') || q.includes('팔고')) && hasUsedModel;
   if (isUsedPhone) {
-    let model = message.replace(/중고폰|매입|보상|팔고|시세|가격|얼마|알려줘|확인|싶어|싶다|매입가|\d+G\b|[A-E]등급/gi, '').trim();
+    let model = message.replace(/중고폰|매입가|매입|보상판매|보상|팔고\s*싶|팔고|시세|가격|얼마|알려줘|알려줄래|확인|싶어|싶다|\d+G\b|[A-E]등급/gi, '').replace(/\s+/g, ' ').trim();
     return {
       type: 'used_phone',
       forceTool: { name: 'estimate_tradein', input: { model, storage: (message.match(/(\d+G)\b/i)||[])[1] || '', condition: (message.match(/([A-E])등급/)||[])[1] || '' } },
