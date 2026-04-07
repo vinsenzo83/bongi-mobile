@@ -4595,7 +4595,7 @@ var rentalDefaultData = [];
     .then(function(r) { return r.json(); })
     .then(function(res) {
       rentalDefaultData = (res.products || []).map(function(p) {
-        return [p.category,p.brand,p.product_name,p.monthly_fee,p.normal_fee,p.card_name,p.card_spend,p.card_fee,p.contract_period,p.management,p.benefit_amount,p.promotion,p.model_name,p.card_discount,p.card_note,p.promo_period,p.features,p.product_type,p.size,p.release_date,p.filter_type,p.tags,p.image1,p.image2,p.image3,p.product_url,p.id];
+        return [p.category,p.brand,p.product_name,p.monthly_fee,p.normal_fee,p.card_name,p.card_spend,p.card_fee,p.contract_period,p.management,p.benefit_amount,p.promotion,p.model_name,p.card_discount,p.card_note,p.promo_period,p.features,p.product_type,p.size,p.release_date,p.filter_type,p.tags,p.image1,p.image2,p.image3,p.product_url,p.id,p.ticket_number];
       });
       if(typeof renderRentalTable === 'function') renderRentalTable();
     })
@@ -4944,7 +4944,7 @@ function renderRentalRow(r, idx) {
   // r = [cat,brand,name,price,normal,card,cardReq,cardPrice,term,mgmt,gift,promo,model,cardDisc,cardNote,promoPeriod,features,prodType,size,release,filter,tag,img1,img2,img3,url]
   var cat=r[0]||'',brand=r[1]||'',name=r[2]||'',price=r[3]||0,normal=r[4]||0,card=r[5]||'',cardReq=r[6]||'',cardPrice=r[7],term=r[8]||'',mgmt=r[9]||'',gift=r[10]||'',promo=r[11]||'';
   var model=r[12]||'',cardDisc=r[13]||'',cardNote=r[14]||'',promoPeriod=r[15]||'',features=r[16]||'',prodType=r[17]||'',size=r[18]||'',release=r[19]||'',filterType=r[20]||'',tag=r[21]||'',img1=r[22]||'',img2=r[23]||'',img3=r[24]||'',prodUrl=r[25]||'';
-  var ticketNum = 'R' + String(idx+1).padStart(3,'0');
+  var ticketNum = r[27] || ('R' + String(idx+1).padStart(3,'0'));
   var priceStr = typeof price === 'number' ? price.toLocaleString() : price;
   var normalStr = normal ? (typeof normal === 'number' ? normal.toLocaleString() : normal) : '-';
   var cpStr = (cardPrice !== undefined && cardPrice !== null && cardPrice !== '') ? (typeof cardPrice === 'number' ? cardPrice.toLocaleString() : cardPrice) : '-';
