@@ -97,9 +97,16 @@ export default function Chat() {
           }} />
         )}
 
-        {/* 입력창 — 직접 타이핑은 AI로 전송 (모달 가로채기 안 함) */}
+        {/* 입력창 */}
         <InputArea onSend={(msg) => {
-          chat.sendMessage(msg);
+          const m = msg.trim();
+          if (isUsedPhoneQuery(m)) {
+            setShowUsedPhoneSelect(true);
+          } else if (isPhoneQuery(m)) {
+            setShowPhoneSelect(true);
+          } else {
+            chat.sendMessage(m);
+          }
         }} loading={chat.loading} hasMessages={chat.messages.length > 0} />
       </div>
 
