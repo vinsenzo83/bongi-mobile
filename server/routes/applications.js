@@ -20,15 +20,19 @@ router.post('/', async (req, res) => {
   if (name && name.length > 50) return res.status(400).json({ error: '이름은 50자 이내로 입력해주세요' });
   if (message && message.length > 2000) return res.status(400).json({ error: '메시지는 2000자 이내로 입력해주세요' });
 
+  // 유입경로 한글 매핑
+  const typeMap = { 'self': '셀프신청', 'call': '바로상담', 'ai_chat': '셀프신청', 'crm': 'CRM등록', 'used_phone': '중고폰' };
+  const resolvedType = typeMap[type] || type || '셀프신청';
+
   const application = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    type: type || 'call',
+    type: resolvedType,
     name: name || '',
     phone,
     productTicket: productTicket || null,
     message: message || '',
     channel: channel || 'web',
-    status: 'new',
+    status: '신청완료',
     createdAt: new Date().toISOString(),
   };
 
@@ -39,13 +43,16 @@ router.post('/', async (req, res) => {
   if (supabase) {
     try {
       await supabase.from('bongi_applications').insert({
-        type: application.type,
+        type: resolvedType,
         channel: application.channel,
         name: application.name,
         phone: application.phone,
         product_ticket: application.productTicket,
+        product_name: req.body.product_name || null,
+        gift_amount: req.body.gift_amount || null,
         form_data: application.message ? { message: application.message } : null,
-        status: 'new',
+        status: '신청완료',
+        user_type: req.body.user_type || '비회원',
       });
     } catch (e) {
       console.warn('Supabase 신청 저장 실패:', e.message);
