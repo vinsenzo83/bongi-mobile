@@ -7500,6 +7500,19 @@ function previewStoreImg(input) {
   reader.readAsDataURL(input.files[0]);
 }
 
+function toggleStoreActive(badge, storeId, currentActive) {
+  var newActive = !currentActive;
+  fetch('/api/admin/platform/stores/' + storeId, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active: newActive })
+  }).then(function(r) { return r.json(); }).then(function() {
+    badge.className = 'wf-status ' + (newActive ? 'green' : 'red');
+    badge.textContent = newActive ? '운영중' : '휴업';
+    badge.setAttribute('onclick', 'toggleStoreActive(this,' + storeId + ',' + newActive + ')');
+  }).catch(function(e) { alert('상태 변경 실패: ' + e.message); });
+}
+
 function storeAction(btn, type) {
   var card = btn.closest('.wf-card');
   if(!card) return;
@@ -8893,18 +8906,20 @@ function loadStores() {
       var grid = c.querySelector('.g2');
       if(!grid) return;
       var html = d.stores.map(function(s) {
-        var stClass = s.is_active !== false ? 'green' : 'red';
-        var stText = s.is_active !== false ? '운영중' : '휴업';
+        var isActive = s.is_active !== false;
+        var stClass = isActive ? 'green' : 'red';
+        var stText = isActive ? '운영중' : '휴업';
         var naverLink = s.naver_map || '';
         var kakaoLink = s.kakao || '';
-        var imgUrl = s.image || '';
+        var imgUrl = s.image ? encodeURI(s.image) : '';
         var landmark = s.landmark || '';
         var phone2 = s.phone2 ? ' / ' + s.phone2 : '';
         var phone3 = s.phone3 ? ' / ' + s.phone3 : '';
-        return '<div class="wf-card">'
+        var storeId = s.id || '';
+        return '<div class="wf-card" data-store-id="'+storeId+'">'
           +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
           +'<div class="wf-h3" style="margin-bottom:0">' + (s.name||'-') + '</div>'
-          +'<span class="wf-status '+stClass+'">'+stText+'</span></div>'
+          +'<span class="wf-status '+stClass+'" style="cursor:pointer" onclick="toggleStoreActive(this,'+storeId+','+isActive+')">'+stText+'</span></div>'
           +'<div class="wf-p" style="font-weight:600">📍 ' + (s.address||'-') + '</div>'
           +(landmark?'<div class="wf-p" style="font-size:11px;color:var(--text3);margin-top:-2px">'+landmark+'</div>':'')
           +'<div class="wf-p">📞 ' + (s.phone||'-') + phone2 + phone3 + '</div>'
@@ -8913,7 +8928,7 @@ function loadStores() {
           +(naverLink?'<a href="'+naverLink+'" target="_blank" class="wf-status blue" style="font-size:10px;cursor:pointer;text-decoration:none">📍 네이버지도</a>':'<span class="wf-status gray" style="font-size:10px">네이버 미등록</span>')
           +(kakaoLink?'<a href="'+kakaoLink+'" target="_blank" class="wf-status green" style="font-size:10px;cursor:pointer;text-decoration:none">💬 카카오 채널</a>':'<span class="wf-status gray" style="font-size:10px">카카오 미등록</span>')
           +'</div>'
-          +(imgUrl?'<div style="margin-bottom:10px;border-radius:8px;overflow:hidden;height:120px"><img src="'+imgUrl+'" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'<div class=wf-block style=height:120px;border-radius:6px;font-size:9px;border-style:dashed>매장 이미지</div>\'"></div>':'<div style="display:flex;gap:6px;margin-bottom:10px"><div class="wf-block" style="flex:1;height:60px;border-radius:6px;font-size:9px;border-style:dashed;cursor:pointer">+ 매장 사진 추가</div></div>')
+          +(imgUrl?'<div style="margin-bottom:10px;border-radius:8px;overflow:hidden;height:120px"><img src="'+imgUrl+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'"></div>':'<div style="display:flex;gap:6px;margin-bottom:10px"><div class="wf-block" style="flex:1;height:60px;border-radius:6px;font-size:9px;border-style:dashed;cursor:pointer">+ 매장 사진 추가</div></div>')
           +'<div style="display:flex;gap:6px">'
           +'<span class="action-btn primary" style="flex:2;justify-content:center;cursor:pointer" onclick="storeAction(this,1)">📊 시세 관리</span>'
           +'<span class="action-btn default" style="flex:1;justify-content:center;cursor:pointer" onclick="storeAction(this,2)">수정</span>'

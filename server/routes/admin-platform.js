@@ -633,6 +633,18 @@ router.get('/stores', async (req, res) => {
   }
 });
 
+// PATCH /admin/platform/stores/:id — 매장 정보 수정
+router.patch('/stores/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase.from('bongi_stores').update(req.body).eq('id', id).select().single();
+    if (error) throw error;
+    res.json({ store: data });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── 인터넷+TV 상품 (통신사별) ──
 
 // GET /admin/platform/carrier-products — 인터넷 속도, TV, WiFi, 셋톱 전체
