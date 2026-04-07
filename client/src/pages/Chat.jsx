@@ -8,6 +8,7 @@ import MyPageModal from '../components/chat/MyPageModal.jsx';
 import ConsultSheet from '../components/chat/ConsultSheet.jsx';
 import PhoneSelectCard from '../components/chat/PhoneSelectCard.jsx';
 import UsedPhoneSelectCard from '../components/chat/UsedPhoneSelectCard.jsx';
+import InternetSelectCard from '../components/chat/InternetSelectCard.jsx';
 
 // 휴대폰 관련 질문 감지 (모달로 전환)
 function isPhoneQuery(msg) {
@@ -33,6 +34,13 @@ function isUsedPhoneQuery(msg) {
   return kw.some(k => msg.includes(k));
 }
 
+function isInternetQuery(msg) {
+  const kw = ['인터넷', 'TV', '와이파이', 'wifi', '인터넷+TV', '인터넷 사은품', '인터넷 가입'];
+  // 렌탈 TV는 제외
+  if (msg.includes('렌탈') || msg.includes('정수기') || msg.includes('공기청정기')) return false;
+  return kw.some(k => msg.includes(k));
+}
+
 export default function Chat() {
   const chat = useChat();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -42,6 +50,7 @@ export default function Chat() {
   const [showPhoneSelect, setShowPhoneSelect] = useState(false);
   const [showUsedPhoneSelect, setShowUsedPhoneSelect] = useState(false);
   const [rentalDetail, setRentalDetail] = useState({ open: false, ticket: '' });
+  const [showInternetSelect, setShowInternetSelect] = useState(false);
   const isMobile = useIsMobile();
 
   return (
@@ -77,6 +86,8 @@ export default function Chat() {
               setShowUsedPhoneSelect(true);
             } else if (isPhoneQuery(msg)) {
               setShowPhoneSelect(true);
+            } else if (isInternetQuery(msg)) {
+              setShowInternetSelect(true);
             } else {
               chat.sendMessage(msg);
             }
@@ -138,6 +149,21 @@ export default function Chat() {
                 <button onClick={() => setShowUsedPhoneSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
               </div>
               <UsedPhoneSelectCard onComplete={(query) => { setShowUsedPhoneSelect(false); chat.sendMessage(query); }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 인터넷 선택 모달 */}
+      {showInternetSelect && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 420, animation: 'slideUp 0.25s ease' }}>
+            <div style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '16px 16px 24px', maxHeight: '80vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#1a2744' }}>{'📡'} 인터넷+TV 상품 조회</span>
+                <button onClick={() => setShowInternetSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
+              </div>
+              <InternetSelectCard onComplete={(query) => { setShowInternetSelect(false); chat.sendMessage(query); }} />
             </div>
           </div>
         </div>
