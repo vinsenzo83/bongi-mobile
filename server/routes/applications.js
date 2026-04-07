@@ -42,6 +42,11 @@ router.post('/', async (req, res) => {
   // 2. Supabase에도 저장 (연결된 경우)
   if (supabase) {
     try {
+      // 전화번호로 회원 유형 자동 판별
+      let userType = req.body.user_type || '비회원';
+      const { data: profile } = await supabase.from('bongi_user_profiles').select('user_type').eq('phone', phone).maybeSingle();
+      if (profile) userType = profile.user_type || userType;
+
       await supabase.from('bongi_applications').insert({
         type: resolvedType,
         channel: application.channel,
@@ -52,8 +57,20 @@ router.post('/', async (req, res) => {
         gift_amount: req.body.gift_amount || null,
         form_data: application.message ? { message: application.message } : null,
         status: '신청완료',
-        user_type: req.body.user_type || '비회원',
+        user_type: userType,
+        sync_direction: '어드민→CRM',
       });
+
+      // 비회원이면 user_profiles에 자동 등록
+      if (!profile) {
+        await supabase.from('bongi_user_profiles').insert({
+          display_name: application.name || '비회원',
+          phone: application.phone,
+          user_type: '비회원',
+          channel: resolvedType,
+          member_tier: 'normal',
+        }).then(() => {}).catch(() => {});
+      }
     } catch (e) {
       console.warn('Supabase 신청 저장 실패:', e.message);
     }
