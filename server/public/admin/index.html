@@ -8940,7 +8940,8 @@ function loadWithdrawals() {
       if(!d.withdrawals || d.withdrawals.length === 0) return;
       var c = document.getElementById('screen-container');
       if(!c) return;
-      var tbody = c.querySelector('.wf-table tbody');
+      var tables = c.querySelectorAll('.wf-table tbody');
+      var tbody = tables[tables.length - 1];
       if(!tbody) return;
       var html = d.withdrawals.map(function(w) {
         var st = w.status || '대기';
@@ -8999,7 +9000,8 @@ function loadDonJikimi() {
       if(!d.alarms || d.alarms.length === 0) return;
       var c = document.getElementById('screen-container');
       if(!c) return;
-      var tbody = c.querySelector('.wf-table tbody');
+      var tables = c.querySelectorAll('.wf-table tbody');
+      var tbody = tables[tables.length - 1];
       if(!tbody) return;
       var html = d.alarms.map(function(a) {
         var endD = new Date(a.target_date||'2099-01-01');
@@ -9021,14 +9023,16 @@ function loadNotifications() {
       if(!d.notifications || d.notifications.length === 0) return;
       var c = document.getElementById('screen-container');
       if(!c) return;
-      var tbody = c.querySelector('.wf-table tbody');
+      var tables = c.querySelectorAll('.wf-table tbody');
+      var tbody = tables[tables.length - 1];
       if(!tbody) return;
       var html = d.notifications.map(function(n) {
-        var ch = n.channel||'앱 푸시';
+        var ch = n.channel === 'kakao' ? '카카오' : n.channel === 'push' ? '앱 푸시' : (n.channel||'앱 푸시');
         var chClass = ch==='카카오'?'orange':'blue';
-        var st = n.status||'성공';
-        var stClass = st==='성공'?'green':'red';
-        return '<tr><td style="font-size:10px">' + (n.created_at ? new Date(n.created_at).toLocaleString('ko-KR') : '-') + '</td><td><span class="wf-status '+chClass+'">' + ch + '</span></td><td style="font-size:10px">' + (n.recipient_name||'-') + '</td><td style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis">' + (n.content||n.message||'-') + '</td><td><span class="wf-status '+stClass+'">' + st + '</span></td></tr>';
+        var st = n.status||'sent';
+        var stLabel = st==='sent'?'발송완료':st==='failed'?'실패':st==='pending'?'대기':st;
+        var stClass = st==='sent'?'green':st==='failed'?'red':'orange';
+        return '<tr><td style="font-size:10px">' + (n.created_at ? new Date(n.created_at).toLocaleString('ko-KR') : '-') + '</td><td><span class="wf-status '+chClass+'">' + ch + '</span></td><td style="font-size:10px">' + (n.type||'-') + '</td><td style="font-weight:600;font-size:10px">' + (n.title||'-') + '</td><td style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis">' + (n.body||'-') + '</td><td><span class="wf-status '+stClass+'">' + stLabel + '</span></td></tr>';
       }).join('');
       tbody.innerHTML = html;
     }).catch(function(e) { console.error('알림 로드 실패:', e); });
