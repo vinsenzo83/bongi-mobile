@@ -118,7 +118,7 @@ export default function RentalCard({ product, onAction }) {
             style={styles.detailBtn}
             onClick={() => {
               const t = product.티켓번호 || product.ticket || '';
-              if (t) window.location.href = '/product/rental/' + t;
+              onAction('__detail__rental__' + t);
             }}
           >
             상세보기
