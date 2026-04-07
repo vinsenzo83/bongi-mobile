@@ -84,8 +84,12 @@ export default function ConsultSheet({ open, onClose, product, category, onNavig
             <div style={s.productBanner}>
               <div style={{ fontSize: 11, color: '#2563eb', fontWeight: 600 }}>{'📦'} 선택 상품</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#1a2744', marginTop: 4 }}>{product.name}</div>
+              {product.brand && <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{product.brand}</div>}
+              {product.provider && <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{product.provider} {product.speed}</div>}
+              {product.monthlyFee && <div style={{ fontSize: 13, color: '#1a2744', marginTop: 4, fontWeight: 600 }}>월 {product.monthlyFee}</div>}
               {product.gift && <div style={{ fontSize: 13, color: '#d97706', marginTop: 4 }}>{'🎁'} 사은품 {product.gift}</div>}
-              {product.ticket && <div style={{ fontSize: 12, color: '#2563eb', marginTop: 4, fontFamily: 'monospace' }}>{'🎫'} {product.ticket}</div>}
+              {product.card && <div style={{ fontSize: 12, color: '#10b981', marginTop: 2 }}>{'💳'} 카드할인 {product.card}</div>}
+              {product.ticket && <div style={{ fontSize: 13, color: '#2563eb', marginTop: 6, fontFamily: 'monospace', fontWeight: 700 }}>{'🎫'} 티켓번호: {product.ticket}</div>}
             </div>
           )}
 

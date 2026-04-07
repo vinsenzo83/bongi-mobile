@@ -99,7 +99,18 @@ export default function RentalCard({ product, onAction }) {
         <div style={styles.actions}>
           <button
             style={styles.actionBtn}
-            onClick={() => onAction(`__consult__{"product":{"name":"${product.상품명 || product.name || '렌탈 상품'}","gift":"${product.사은품 || ''}"},"category":"rental"}`)}
+            onClick={() => {
+              const p = {
+                name: product.상품명 || product.name || '렌탈 상품',
+                brand: product.브랜드 || product.brand || '',
+                monthlyFee: product.월렌탈료 || product.monthly_fee || '',
+                gift: product.사은품 || product.gift || '',
+                card: product.카드할인 || product.card_discount || '',
+                ticket: product.티켓번호 || product.ticket || product.모델번호 || '',
+                category: product.카테고리 || product.category || '',
+              };
+              onAction('__consult__' + JSON.stringify({ product: p, category: 'rental' }));
+            }}
           >
             렌탈 상담
           </button>

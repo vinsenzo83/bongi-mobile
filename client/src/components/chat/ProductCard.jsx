@@ -46,7 +46,18 @@ export default function ProductCard({ product, onAction }) {
         <div style={styles.actions}>
           <button
             style={{ ...styles.actionBtn, background: colors.bg }}
-            onClick={() => onAction(`__consult__{"product":{"name":"${product.상품명 || ''}","gift":"${product.사은품 || ''}","ticket":"${product.상품번호 || ''}"},"category":"internet"}`)}
+            onClick={() => {
+              const p = {
+                name: product.상품명 || '',
+                provider: product.통신사 || '',
+                speed: product.속도 || '',
+                tv: product.TV || '',
+                monthlyFee: product.최종월요금 || product.월요금 || '',
+                gift: product.사은품 || '',
+                ticket: product.상품번호 || '',
+              };
+              onAction('__consult__' + JSON.stringify({ product: p, category: 'internet' }));
+            }}
           >
             가입 상담
           </button>
