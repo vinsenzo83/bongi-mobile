@@ -67,10 +67,17 @@ router.get('/gifts', async (req, res) => {
     const { data: gifts, error } = await query;
     if (error) throw error;
 
-    // 이름 기반으로 회원+신청 정보 매칭
+    // DB에 직접 있는 필드 우선, 없으면 이름 기반 매칭
     const enriched = [];
     for (const g of (gifts || [])) {
-      const name = g.account_holder || '';
+      // DB에 이미 있으면 그대로 사용
+      if (g.phone && g.user_type) {
+        enriched.push(g);
+        continue;
+      }
+
+      // 없으면 이름 기반 매칭
+      const name = g.name || g.account_holder || '';
       let profile = null;
       let app = null;
 
@@ -78,7 +85,7 @@ router.get('/gifts', async (req, res) => {
         const { data: p } = await supabase.from('bongi_user_profiles').select('phone,user_type,channel,carrier,verified_at').ilike('display_name', `%${name}%`).limit(1);
         if (p && p[0]) profile = p[0];
 
-        const phone = profile?.phone;
+        const phone = profile?.phone || g.phone;
         if (phone) {
           const { data: a } = await supabase.from('bongi_applications').select('product_ticket,product_name,type,status').eq('phone', phone).order('created_at', { ascending: false }).limit(1);
           if (a && a[0]) app = a[0];
@@ -87,12 +94,12 @@ router.get('/gifts', async (req, res) => {
 
       enriched.push({
         ...g,
-        phone: profile?.phone || null,
-        user_type: profile?.user_type || null,
-        channel: app?.type || profile?.channel || null,
-        product_ticket: app?.product_ticket || null,
-        product_name: app?.product_name || g.memo || null,
-        verified: profile?.verified_at ? '완료' : '미완료',
+        phone: g.phone || profile?.phone || null,
+        user_type: g.user_type || profile?.user_type || null,
+        channel: g.channel || app?.type || profile?.channel || null,
+        product_ticket: g.ticket_no || g.product_ticket || app?.product_ticket || null,
+        product_name: g.product_name || app?.product_name || g.memo || null,
+        verified: g.auth_status || (profile?.verified_at ? '인증완료' : '미인증'),
       });
     }
 

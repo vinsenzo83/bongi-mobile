@@ -8905,19 +8905,19 @@ function loadGiftsAdmin() {
       var html = d.gifts.map(function(g) {
         var st = g.status || '지급대기';
         var stClass = st==='지급완료'?'green':st==='지급대기'?'orange':st==='보류'?'gray':'red';
-        var holder = g.account_holder || '-';
+        var holder = g.name || g.account_holder || '-';
         var phone = g.phone || '-';
         var utype = g.user_type || '-';
         var utClass = utype==='앱회원'?'green':utype==='비회원'?'orange':'gray';
         var channel = g.channel || '-';
-        var ticket = g.product_ticket || '-';
+        var ticket = g.ticket_no || g.product_ticket || '-';
         var product = g.product_name || g.memo || '-';
         var bank = g.bank ? g.bank + ' ' + (g.account_number||'') : '미등록';
         var bankStyle = g.bank ? 'var(--text2)' : 'var(--red)';
         var amount = g.amount ? (g.amount >= 10000 ? Math.round(g.amount/10000)+'만' : g.amount+'원') : '-';
         var createDate = g.created_at ? new Date(g.created_at).toLocaleDateString('ko-KR') : '-';
-        var verified = g.verified || '-';
-        var vClass = verified==='완료'?'green':'red';
+        var verified = g.auth_status || g.verified || '-';
+        var vClass = (verified==='인증완료'||verified==='완료')?'green':'red';
         return '<tr>'
           +'<td><input type="checkbox"></td>'
           +'<td style="font-weight:600;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\''+holder+'\')">'+holder+'</td>'
