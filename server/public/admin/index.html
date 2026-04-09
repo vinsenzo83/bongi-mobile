@@ -9118,8 +9118,29 @@ function loadDonJikimi() {
         var diff = Math.max(0, Math.ceil((endD - new Date())/(1000*60*60*24)));
         var dday = 'D-' + diff;
         var ddClass = diff<=7?'red':diff<=30?'orange':'blue';
-        var typeLabel = {plan_change:'요금제변경',addon_cancel:'부가서비스해지',internet_expire:'인터넷약정',rental_expire:'렌탈약정'}[a.alarm_type] || a.alarm_type;
-        return '<tr><td style="font-weight:600">' + (a.title||'-') + '</td><td style="font-size:10px"><span class="wf-status blue" style="font-size:10px">' + typeLabel + '</span></td><td style="font-size:10px">' + (a.item_name||a.carrier||'-') + '</td><td><span class="wf-status '+ddClass+'" style="font-weight:700">' + dday + '</span></td><td style="font-size:10px">' + (a.target_date||'-') + '</td></tr>';
+        var typeLabel = {plan_change:'요금제 변경',addon_cancel:'부가서비스 해지',internet_expire:'인터넷 약정',rental_expire:'렌탈 약정'}[a.alarm_type] || a.alarm_type;
+        var typeClass = a.alarm_type==='internet_expire'?'blue':a.alarm_type==='rental_expire'?'green':a.alarm_type==='plan_change'?'navy':'orange';
+        var name = a.name || '-';
+        var phone = a.phone || '-';
+        var product = a.item_name || '-';
+        var date = a.target_date || '-';
+        var appAlarm = diff<=30?'발송완료':'예정';
+        var crm = a.crm_registered_at?'전달완료':'대기';
+        var manager = a.memo || 'CRM 대기';
+        var status = manager.indexOf('상담중')>-1?'상담중':manager.indexOf('재계약')>-1?'재계약완료':diff>30?'-':'대기';
+        return '<tr>'
+          +'<td style="font-weight:600;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\''+name+'\')">'+name+'</td>'
+          +'<td style="font-size:10px">'+phone+'</td>'
+          +'<td><span class="wf-status '+typeClass+'">'+typeLabel+'</span></td>'
+          +'<td style="font-size:10px">'+product+'</td>'
+          +'<td style="font-size:10px">'+date+'</td>'
+          +'<td><span class="wf-status '+ddClass+'" style="font-weight:700">'+dday+'</span></td>'
+          +'<td><span class="wf-status '+(appAlarm==='발송완료'?'green':'gray')+'">'+appAlarm+'</span></td>'
+          +'<td><span class="wf-status '+(crm==='전달완료'?'green':'orange')+'">'+crm+'</span></td>'
+          +'<td style="font-size:10px;color:'+(manager==='CRM 대기'?'var(--red)':'var(--text2)')+'">'+manager+'</td>'
+          +'<td>'+(status!=='-'?'<span class="wf-status '+(status==='상담중'?'orange':status==='재계약완료'?'green':'gray')+'">'+status+'</span>':'-')+'</td>'
+          +'<td><span class="action-btn default" style="cursor:pointer;font-size:10px">상세</span></td>'
+          +'</tr>';
       }).join('');
       tbody.innerHTML = html;
     }).catch(function(e) { console.error('돈지키미 로드 실패:', e); });

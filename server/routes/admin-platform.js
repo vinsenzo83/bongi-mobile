@@ -953,12 +953,27 @@ router.patch('/applications/:id', async (req, res) => {
 
 // ── 돈지키미 ──
 
-// GET /admin/platform/don-jikimi — 돈지키미 알람 목록
+// GET /admin/platform/don-jikimi — 돈지키미 알람 목록 (회원 정보 매칭)
 router.get('/don-jikimi', async (req, res) => {
   try {
     const { data, error } = await supabase.from('bongi_user_alarms').select('*').order('target_date', { ascending: true }).limit(200);
     if (error) throw error;
-    res.json({ alarms: data || [], total: (data || []).length });
+
+    const enriched = [];
+    for (const a of (data || [])) {
+      let profile = null;
+      if (a.user_id) {
+        const { data: p } = await supabase.from('bongi_user_profiles').select('display_name,phone').eq('id', a.user_id).maybeSingle();
+        if (p) profile = p;
+      }
+      enriched.push({
+        ...a,
+        name: profile?.display_name || '-',
+        phone: profile?.phone || '-',
+      });
+    }
+
+    res.json({ alarms: enriched, total: enriched.length });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
