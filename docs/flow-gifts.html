@@ -36,6 +36,20 @@ h1 { font-size:28px; font-weight:900; color:var(--navy); margin-bottom:4px; }
 table { width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }
 th { background:var(--navy); color:#fff; padding:6px 10px; text-align:left; font-size:10px; }
 td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+/* Step Memo Feature */
+.step-memo-container{margin:8px 0 12px 0;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:14px;font-size:11px}
+.step-memo-input{width:100%;border:1px solid #e2ddd6;border-radius:6px;padding:8px;font-size:11px;font-family:'Noto Sans KR',sans-serif;resize:vertical;min-height:60px;margin-top:6px}
+.step-memo-title-input{width:100%;border:1px solid #e2ddd6;border-radius:6px;padding:6px 8px;font-size:11px;font-family:'Noto Sans KR',sans-serif;margin-top:6px}
+.step-memo-btn{padding:4px 12px;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;margin-top:6px}
+.step-memo-save{background:#059669;color:#fff}.step-memo-save:hover{background:#047857}
+.step-memo-cancel{background:#e5e7eb;color:#374151;margin-left:4px}.step-memo-cancel:hover{background:#d1d5db}
+.step-memo-list{margin-top:8px}
+.step-memo-item{background:#fff;border:1px solid #e2ddd6;border-radius:8px;padding:10px 12px;margin-top:6px;position:relative}
+.step-memo-meta{font-size:9px;color:#8a8a8a;margin-bottom:4px;font-weight:600}
+.step-memo-content{font-size:11px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap}
+.step-memo-delete{position:absolute;top:8px;right:8px;background:none;border:none;color:#dc2626;font-size:10px;cursor:pointer;opacity:0.5}
+.step-memo-delete:hover{opacity:1}
+.step-memo-badge{margin-left:6px;padding:1px 6px;background:#f59e0b;color:#fff;border-radius:8px;font-size:9px;font-weight:700}
 </style>
 </head>
 <body>
@@ -633,6 +647,126 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   봉이모바일 · 사은품 관리 플로우 · 2026-04-09<br>
   관련: 인터넷+TV 플로우 · 렌탈 플로우 · 티켓 관리 플로우
 </div>
+
+<script>
+(function(){
+  var API='https://bongi-mobile-production.up.railway.app/api/admin/platform/dev-notes';
+  var docName=document.title;
+  var memoCache={};
+
+  function getAuthor(){
+    var a=localStorage.getItem('stepMemoAuthor');
+    if(!a){a=prompt('메모 작성자 이름을 입력하세요:');if(a)localStorage.setItem('stepMemoAuthor',a);}
+    return a||'익명';
+  }
+
+  function fmtDate(d){
+    var dt=new Date(d);
+    var y=dt.getFullYear(),m=String(dt.getMonth()+1).padStart(2,'0'),dd=String(dt.getDate()).padStart(2,'0');
+    var hh=String(dt.getHours()).padStart(2,'0'),mm=String(dt.getMinutes()).padStart(2,'0');
+    return y+'-'+m+'-'+dd+' '+hh+':'+mm;
+  }
+
+  function renderMemos(stepText,container){
+    var list=container.querySelector('.step-memo-list');
+    if(!list){list=document.createElement('div');list.className='step-memo-list';container.appendChild(list);}
+    list.innerHTML='';
+    var notes=(memoCache[stepText]||[]);
+    notes.forEach(function(n){
+      var item=document.createElement('div');item.className='step-memo-item';
+      var meta=document.createElement('div');meta.className='step-memo-meta';
+      meta.textContent=(n.author||'익명')+' \u00b7 '+fmtDate(n.created_at||n.createdAt||new Date());
+      var content=document.createElement('div');content.className='step-memo-content';
+      content.textContent=n.content||'';
+      var del=document.createElement('button');del.className='step-memo-delete';del.textContent='\u2716 삭제';
+      del.onclick=function(){deleteMemo(n.id,stepText,container);};
+      item.appendChild(meta);item.appendChild(content);item.appendChild(del);
+      if(n.title){var tt=document.createElement('div');tt.style.cssText='font-size:11px;font-weight:700;color:#1a2744;margin-bottom:2px';tt.textContent=n.title;item.insertBefore(tt,content);}
+      list.appendChild(item);
+    });
+  }
+
+  function updateBadge(stepEl,stepText){
+    var old=stepEl.querySelector('.step-memo-badge');if(old)old.remove();
+    var count=(memoCache[stepText]||[]).length;
+    if(count>0){
+      var badge=document.createElement('span');badge.className='step-memo-badge';badge.textContent=count;
+      var btn=stepEl.querySelector('.step-memo-btn-trigger');
+      if(btn)stepEl.insertBefore(badge,btn.nextSibling);else stepEl.appendChild(badge);
+    }
+  }
+
+  function loadStepMemos(stepText,stepEl,memoContainer){
+    fetch(API+'?page='+encodeURIComponent(docName))
+    .then(function(r){return r.json()})
+    .then(function(data){
+      var all=data.data||data.notes||data||[];
+      memoCache[stepText]=all.filter(function(n){return n.title&&n.title.indexOf('['+stepText+']')===0;});
+      renderMemos(stepText,memoContainer);
+      updateBadge(stepEl,stepText);
+    }).catch(function(){});
+  }
+
+  function saveMemo(stepText,title,content,stepEl,memoContainer){
+    var author=getAuthor();
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({page:docName,type:'\uba54\ubaa8',title:'['+stepText+'] '+title,content:content,author:author})
+    }).then(function(r){return r.json()}).then(function(){
+      loadStepMemos(stepText,stepEl,memoContainer);
+    }).catch(function(e){alert('저장 실패: '+e.message);});
+  }
+
+  function deleteMemo(id,stepText,memoContainer){
+    if(!confirm('이 메모를 삭제하시겠습니까?'))return;
+    fetch(API+'/'+id,{method:'DELETE'})
+    .then(function(){
+      var stepEl=memoContainer.previousElementSibling;
+      if(!stepEl)stepEl=memoContainer.parentElement.querySelector('.step-label');
+      loadStepMemos(stepText,stepEl,memoContainer);
+    }).catch(function(e){alert('삭제 실패: '+e.message);});
+  }
+
+  function toggleStepMemo(stepText,stepEl){
+    var existing=stepEl.nextElementSibling;
+    if(existing&&existing.classList.contains('step-memo-container')){
+      existing.style.display=existing.style.display==='none'?'block':'none';return;
+    }
+    var box=document.createElement('div');box.className='step-memo-container';
+    box.innerHTML='<div style="font-weight:700;color:#92400e">\ud83d\udcdd '+stepText+' \uba54\ubaa8</div>'+
+      '<input class="step-memo-title-input" placeholder="\uba54\ubaa8 \uc81c\ubaa9 (\uc120\ud0dd)" />'+
+      '<textarea class="step-memo-input" placeholder="\uba54\ubaa8 \ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694..."></textarea>'+
+      '<div><button class="step-memo-btn step-memo-save">\uc800\uc7a5</button>'+
+      '<button class="step-memo-btn step-memo-cancel">\ub2eb\uae30</button></div>'+
+      '<div class="step-memo-list"></div>';
+    stepEl.parentNode.insertBefore(box,stepEl.nextSibling);
+    box.querySelector('.step-memo-save').onclick=function(){
+      var t=box.querySelector('.step-memo-title-input').value.trim();
+      var c=box.querySelector('.step-memo-input').value.trim();
+      if(!c){alert('\ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694');return;}
+      saveMemo(stepText,t||'\uba54\ubaa8',c,stepEl,box);
+      box.querySelector('.step-memo-title-input').value='';
+      box.querySelector('.step-memo-input').value='';
+    };
+    box.querySelector('.step-memo-cancel').onclick=function(){box.style.display='none';};
+    loadStepMemos(stepText,stepEl,box);
+  }
+
+  document.addEventListener('DOMContentLoaded',function(){
+    var steps=document.querySelectorAll('.step-label');
+    steps.forEach(function(step){
+      var stepText=step.textContent.trim();
+      var btn=document.createElement('span');
+      btn.className='step-memo-btn-trigger';
+      btn.style.cssText='margin-left:8px;padding:2px 8px;background:#d97706;color:#fff;border-radius:6px;font-size:10px;cursor:pointer;font-weight:600';
+      btn.textContent='\ud83d\udcdd \uba54\ubaa8';
+      btn.title='\uc774 \uc2a4\ud15d\uc5d0 \uba54\ubaa8 \ucd94\uac00';
+      btn.onclick=function(e){e.stopPropagation();toggleStepMemo(stepText,step);};
+      step.appendChild(btn);
+      loadStepMemos(stepText,step,step);
+    });
+  });
+})();
+</script>
 
 </body>
 </html>
