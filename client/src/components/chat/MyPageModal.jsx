@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
 
 const TABS = [
   { key: 'home', label: '홈', icon: '🏠' },
@@ -185,30 +187,91 @@ function PointsTab() {
 
 // ─── 돈지키미 ───
 function GuardTab() {
+  const [alarms, setAlarms] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fallbackAlarms = [
+    { id: 'f1', alarm_type: 'internet_expire', title: '인터넷 약정 종료', target_date: '2026-05-01' },
+    { id: 'f2', alarm_type: 'plan_change', title: '요금제 변경 가능일', target_date: '2026-08-15' },
+    { id: 'f3', alarm_type: 'rental_expire', title: '렌탈 약정 종료', target_date: '2027-02-01' },
+  ];
+
+  useEffect(() => {
+    fetch(`${API_BASE}/alarms`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => setAlarms(data.alarms || []))
+      .catch(() => setAlarms(fallbackAlarms))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const calcDday = (dateStr) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+  };
+
+  const formatDate = (dateStr) => {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const toggleAlarm = async (alarmId, field) => {
+    try {
+      const alarm = alarms.find(a => a.id === alarmId);
+      if (!alarm) return;
+      const updates = { [field]: !alarm[field] };
+      const res = await fetch(`${API_BASE}/alarms/${alarmId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAlarms(prev => prev.map(a => a.id === alarmId ? { ...a, ...data.alarm } : a));
+      }
+    } catch { /* ignore */ }
+  };
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>로딩중...</div>;
+
+  const list = alarms && alarms.length > 0 ? alarms : fallbackAlarms;
+
   return (
     <div>
-      <div style={{ ...s.card, background: '#fee2e2', borderColor: '#fca5a5' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#dc2626' }}>인터넷 약정 종료</div>
-        <div style={{ fontSize: 12, color: '#dc2626', marginTop: 2 }}>2026.05.01 (D-26)</div>
-      </div>
-      <div style={s.card}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <div><div style={{ fontSize: 13, fontWeight: 600 }}>요금제 변경 가능일</div><div style={{ fontSize: 11, color: '#999' }}>2026.08.15 (D-132)</div></div>
-          <span style={{ ...s.badge, background: '#f3f4f6', color: '#6b7280' }}>여유</span>
-        </div>
-      </div>
-      <div style={s.card}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <div><div style={{ fontSize: 13, fontWeight: 600 }}>렌탈 약정 종료</div><div style={{ fontSize: 11, color: '#999' }}>2027.02.01 (D-302)</div></div>
-          <span style={{ ...s.badge, background: '#f3f4f6', color: '#6b7280' }}>여유</span>
-        </div>
-      </div>
+      {list.map(alarm => {
+        const dday = calcDday(alarm.target_date);
+        const isUrgent = dday <= 30;
+        return (
+          <div key={alarm.id} style={{ ...s.card, ...(isUrgent ? { background: '#fee2e2', borderColor: '#fca5a5' } : {}) }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: isUrgent ? 700 : 600, color: isUrgent ? '#dc2626' : '#1a2744' }}>{alarm.title}</div>
+                <div style={{ fontSize: 12, color: isUrgent ? '#dc2626' : '#999', marginTop: 2 }}>{formatDate(alarm.target_date)} (D-{dday})</div>
+              </div>
+              {!isUrgent && <span style={{ ...s.badge, background: '#f3f4f6', color: '#6b7280' }}>여유</span>}
+            </div>
+          </div>
+        );
+      })}
       <div style={s.card}>
         <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>알람 설정</div>
-        {[['D-30 알람', true], ['D-7 알람', true], ['D-1 알람', false]].map(([label, on]) => (
-          <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
-            <span>{label}</span>
-            <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: on ? '#2563eb' : '#e8e8e8', color: on ? '#fff' : '#999' }}>{on ? 'ON' : 'OFF'}</span>
+        {list.map(alarm => (
+          <div key={alarm.id} style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4, color: '#1a2744' }}>{alarm.title}</div>
+            {[['alarm_d30', 'D-30 알람'], ['alarm_d7', 'D-7 알람'], ['alarm_d1', 'D-1 알람']].map(([field, label]) => {
+              const on = alarm[field] ?? (field !== 'alarm_d1');
+              return (
+                <div key={field} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13, paddingLeft: 8 }}>
+                  <span>{label}</span>
+                  <button
+                    onClick={() => toggleAlarm(alarm.id, field)}
+                    style={{ padding: '2px 10px', borderRadius: 12, border: 'none', fontSize: 11, fontWeight: 700, background: on ? '#2563eb' : '#e8e8e8', color: on ? '#fff' : '#999', cursor: 'pointer' }}
+                  >{on ? 'ON' : 'OFF'}</button>
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
@@ -218,16 +281,79 @@ function GuardTab() {
 
 // ─── 친구초대 ───
 function ReferralTab() {
+  const [code, setCode] = useState('');
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const fallbackCode = 'HONG2026';
+  const fallbackFriends = [
+    { referred_name: '이영희', created_at: '2026-04-02', status: '계약완료', points: '+5,000P' },
+    { referred_name: '박민수', created_at: '2026-03-25', status: '미계약', points: '-' },
+  ];
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const codeRes = await fetch(`${API_BASE}/referrals/my-code`);
+        if (codeRes.ok) {
+          const codeData = await codeRes.json();
+          setCode(codeData.code || fallbackCode);
+
+          const statsRes = await fetch(`${API_BASE}/referrals/stats?code=${codeData.code || fallbackCode}`);
+          if (statsRes.ok) {
+            const statsData = await statsRes.json();
+            setStats(statsData);
+          }
+        } else {
+          setCode(fallbackCode);
+        }
+      } catch {
+        setCode(fallbackCode);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>로딩중...</div>;
+
+  const friends = stats?.referrals || fallbackFriends;
+  const totalInvited = stats?.total_invited ?? friends.length;
+
   return (
     <div>
       <div style={s.darkCard}>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>내 초대 코드</div>
-        <div style={{ fontSize: 24, fontWeight: 900, color: '#fbbf24', letterSpacing: 4, marginBottom: 10 }}>HONG2026</div>
+        <div style={{ fontSize: 24, fontWeight: 900, color: '#fbbf24', letterSpacing: 4, marginBottom: 10 }}>{code}</div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button style={{ ...s.btnSm, background: '#2563eb', color: '#fff' }}>링크 복사</button>
+          <button onClick={handleCopy} style={{ ...s.btnSm, background: '#2563eb', color: '#fff' }}>{copied ? '복사됨!' : '링크 복사'}</button>
           <button style={{ ...s.btnSm, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>카카오 공유</button>
         </div>
       </div>
+      {stats && (
+        <div style={{ ...s.card, background: '#f0fdf4', borderColor: '#bbf7d0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+            <div><div style={{ fontSize: 18, fontWeight: 700, color: '#2563eb' }}>{stats.total_invited}</div><div style={{ fontSize: 10, color: '#999' }}>초대</div></div>
+            <div><div style={{ fontSize: 18, fontWeight: 700, color: '#10b981' }}>{stats.contracted}</div><div style={{ fontSize: 10, color: '#999' }}>계약</div></div>
+            <div><div style={{ fontSize: 18, fontWeight: 700, color: '#fbbf24' }}>{(stats.total_earned || 0).toLocaleString()}P</div><div style={{ fontSize: 10, color: '#999' }}>적립</div></div>
+          </div>
+        </div>
+      )}
       <div style={{ ...s.card, background: '#dbeafe', borderColor: '#bfdbfe' }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: '#1a2744', marginBottom: 6 }}>포인트 적립 조건</div>
         <div style={{ fontSize: 11, color: '#1a2744', lineHeight: 2 }}>
@@ -236,15 +362,23 @@ function ReferralTab() {
         </div>
       </div>
       <div style={s.card}>
-        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>내가 초대한 친구 (2명)</div>
-        {[['이영희', '04.02', '완료', '+5,000P'], ['박민수', '03.25', '미계약', '-']].map(([name, date, st, pt]) => (
-          <div key={name} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f0f0f0', fontSize: 12 }}>
-            <span style={{ fontWeight: 600 }}>{name}</span>
-            <span style={{ color: '#999' }}>{date}</span>
-            <span>{st}</span>
-            <span style={{ fontWeight: 700, color: pt !== '-' ? '#10b981' : '#999' }}>{pt}</span>
-          </div>
-        ))}
+        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>내가 초대한 친구 ({totalInvited}명)</div>
+        {friends.map((f, i) => {
+          const name = f.referred_name || f[0];
+          const date = formatDate(f.created_at || f[1]);
+          const status = f.status || f[2];
+          const isContracted = status === '계약완료' || status === '보상완료' || status === '완료';
+          const pt = f.points || (isContracted ? '+5,000P' : '-');
+          return (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f0f0f0', fontSize: 12 }}>
+              <span style={{ fontWeight: 600 }}>{name}</span>
+              <span style={{ color: '#999' }}>{date}</span>
+              <span>{status}</span>
+              <span style={{ fontWeight: 700, color: pt !== '-' ? '#10b981' : '#999' }}>{pt}</span>
+            </div>
+          );
+        })}
+        {friends.length === 0 && <div style={{ fontSize: 12, color: '#999', textAlign: 'center', padding: 12 }}>아직 초대한 친구가 없습니다</div>}
       </div>
     </div>
   );
@@ -294,13 +428,41 @@ function UsedPhoneTab() {
 
 // ─── 내 정보 ───
 function ProfileTab() {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fallbackProfile = {
+    name: '홍길동',
+    phone: '010-1234-5678',
+    social_provider: '카카오',
+    created_at: '2026-01-01',
+    is_verified: true,
+  };
+
+  useEffect(() => {
+    fetch(`${API_BASE}/user/profile`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => setProfile(data))
+      .catch(() => setProfile(fallbackProfile))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>로딩중...</div>;
+
+  const p = profile || fallbackProfile;
+  const socialLabel = p.social_provider ? `${p.social_provider} 연동` : '미연동';
+  const createdAt = p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '') : '';
+
   return (
     <div>
       <div style={s.card}>
-        <div style={s.fieldLabel}>이름</div><div style={s.fieldValue}>홍길동</div>
-        <div style={s.fieldLabel}>전화번호</div><div style={s.fieldValue}>010-1234-5678</div>
-        <div style={s.fieldLabel}>소셜 로그인</div><div style={s.fieldValue}>카카오 연동</div>
-        <div style={s.fieldLabel}>가입일</div><div style={s.fieldValue}>2026.01.01</div>
+        <div style={s.fieldLabel}>이름</div><div style={s.fieldValue}>{p.name}</div>
+        <div style={s.fieldLabel}>전화번호</div><div style={s.fieldValue}>{p.phone}</div>
+        {p.email && <><div style={s.fieldLabel}>이메일</div><div style={s.fieldValue}>{p.email}</div></>}
+        <div style={s.fieldLabel}>소셜 로그인</div><div style={s.fieldValue}>{socialLabel}</div>
+        <div style={s.fieldLabel}>가입일</div><div style={s.fieldValue}>{createdAt}</div>
+        <div style={s.fieldLabel}>본인인증</div><div style={s.fieldValue}>{p.is_verified ? '인증 완료' : '미인증'}</div>
+        <button style={{ ...s.btnFull, background: '#2563eb', color: '#fff', marginTop: 14 }}>정보 수정</button>
       </div>
     </div>
   );
@@ -326,14 +488,49 @@ function VerificationTab() {
 
 // ─── 계좌 관리 ───
 function AccountTab() {
+  const [account, setAccount] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hasAccount, setHasAccount] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/user/bank-account`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        if (data && data.bank_name) {
+          setAccount(data);
+          setHasAccount(true);
+        } else {
+          setHasAccount(false);
+        }
+      })
+      .catch(() => {
+        setAccount({ bank_name: '국민은행', account_number: '123-456-789012', holder_name: '홍길동', is_verified: true });
+        setHasAccount(true);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>로딩중...</div>;
+
+  if (!hasAccount || !account) {
+    return (
+      <div>
+        <div style={{ ...s.card, background: '#fef3c7', borderColor: '#fcd34d' }}>
+          <div style={{ fontSize: 12, color: '#92400e' }}>등록된 계좌가 없습니다</div>
+        </div>
+        <button style={{ ...s.btnFull, background: '#2563eb', color: '#fff' }}>계좌 등록하기</button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div style={{ ...s.card, background: '#d1fae5', borderColor: '#6ee7b7', marginBottom: 10 }}>
-        <div style={{ fontSize: 12, color: '#065f46' }}>본인인증 완료 — 계좌 등록 가능</div>
+        <div style={{ fontSize: 12, color: '#065f46' }}>{account.is_verified ? '본인인증 완료 — 계좌 등록 가능' : '본인인증이 필요합니다'}</div>
       </div>
       <div style={s.card}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2744', marginBottom: 4 }}>국민은행 123-456-789012</div>
-        <div style={{ fontSize: 12, color: '#999' }}>예금주: 홍길동 · 실명확인 완료</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2744', marginBottom: 4 }}>{account.bank_name} {account.account_number}</div>
+        <div style={{ fontSize: 12, color: '#999' }}>예금주: {account.holder_name} · {account.is_verified ? '실명확인 완료' : '실명확인 미완료'}</div>
       </div>
     </div>
   );
