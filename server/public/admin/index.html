@@ -8789,9 +8789,14 @@ function loadMembers() {
           ci: m.ci || '-',
           referralCode: m.referral_code || '-',
           referralBy: m.referred_by || '',
+          holder: m.account_holder || '',
           friends: [],
           guard: [],
           orders: [],
+          addresses: [],
+          gifts: [],
+          points: [],
+          withdrawals: [],
         });
       });
       var html = customers.map(function(m) {
