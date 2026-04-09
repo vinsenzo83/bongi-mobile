@@ -8346,54 +8346,99 @@ function buildPointSection(m, pointsHtml) {
 }
 
 function findAndOpenMember(name) {
-  // 1. 먼저 memberData에서 검색
+  // 기존 모달 닫기
+  document.querySelectorAll('.modal-overlay').forEach(function(ov){ ov.remove(); });
+  document.body.style.overflow = '';
+
+  // memberData에서 ID 찾기
+  var memberId = null;
   for(var i=0; i<memberData.length; i++) {
-    if(memberData[i].name === name) {
-      var overlays = document.querySelectorAll('.modal-overlay');
-      overlays.forEach(function(ov){ ov.remove(); });
-      document.body.style.overflow = '';
-      setTimeout(function(){ openMemberDetail(i); }, 100);
-      return;
-    }
+    if(memberData[i].name === name) { memberId = memberData[i].id; break; }
   }
-  // 2. memberData에 없으면 API에서 로드 후 추가
-  fetch('/api/admin/platform/members')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      var customers = (d.members||[]).filter(function(m) { return m.member_type !== 'agent'; });
-      memberData.length = 0;
-      customers.forEach(function(m) {
-        memberData.push({
-          name: m.display_name || m.name || '-',
-          phone: m.phone || '-',
-          type: m.user_type || '앱회원',
-          channel: m.channel || '-',
-          social: m.social_provider || '-',
-          carrier: m.carrier || '-',
-          verify: m.verified_at ? '완료' : '미완료',
-          account: m.bank_name ? '등록' : '미등록',
-          address: '미등록',
-          date: m.created_at ? new Date(m.created_at).toLocaleDateString('ko-KR') : '-',
-          cnt: (m.total_conversions || 0) + '건',
-          point: (m.point_balance || 0).toLocaleString() + 'P',
-          id: m.id || '',
-          bank: m.bank_name || '',
-          accountNum: m.account_number || '',
-          accountHolder: m.account_holder || '',
-        });
+
+  // ID가 없으면 먼저 members 목록에서 찾기
+  var p = memberId
+    ? Promise.resolve(memberId)
+    : fetch('/api/admin/platform/members').then(function(r){return r.json();}).then(function(d){
+        var found = (d.members||[]).find(function(m){ return (m.display_name||m.name) === name; });
+        return found ? found.id : null;
       });
-      // 다시 검색
+
+  p.then(function(id) {
+    if(!id) { alert('회원 정보를 찾을 수 없습니다: ' + name); return; }
+
+    // 회원 상세 API 호출 (8탭 데이터)
+    return fetch('/api/admin/platform/members/' + id).then(function(r){return r.json();}).then(function(d) {
+      if(d.error) { alert('회원 상세 로드 실패: ' + d.error); return; }
+
+      var pr = d.profile || {};
+      var apps = d.applications || [];
+      var gifts = d.gifts || [];
+      var cb = d.cash_balance || {};
+      var ch = d.cash_history || [];
+      var ws = d.withdrawals || [];
+      var refs = d.referrals || [];
+      var alarms = d.alarms || [];
+      var addrs = d.addresses || [];
+
+      // memberData에서 해당 회원 찾아서 상세 데이터로 업데이트
+      var idx = -1;
       for(var i=0; i<memberData.length; i++) {
-        if(memberData[i].name === name) {
-          var overlays = document.querySelectorAll('.modal-overlay');
-          overlays.forEach(function(ov){ ov.remove(); });
-          document.body.style.overflow = '';
-          setTimeout(function(){ openMemberDetail(i); }, 100);
-          return;
-        }
+        if(memberData[i].name === name || memberData[i].id === id) { idx = i; break; }
       }
-      alert('회원 정보를 찾을 수 없습니다: ' + name);
-    }).catch(function() { alert('회원 정보를 불러올 수 없습니다'); });
+      if(idx === -1) { idx = memberData.length; memberData.push({}); }
+
+      memberData[idx] = {
+        name: pr.display_name || name,
+        phone: pr.phone || '-',
+        type: pr.user_type || '앱회원',
+        channel: pr.channel || '-',
+        social: pr.social_provider || '-',
+        carrier: pr.carrier || '-',
+        verify: pr.verified_at ? '완료' : '미완료',
+        account: pr.bank_name ? '등록' : '미등록',
+        address: addrs.length > 0 ? '등록' : '미등록',
+        date: pr.created_at ? new Date(pr.created_at).toLocaleDateString('ko-KR') : '-',
+        cnt: (pr.total_conversions || 0) + '건',
+        point: (pr.point_balance || 0).toLocaleString() + 'P',
+        pt: (cb.balance || pr.point_balance || 0).toLocaleString() + 'P',
+        id: pr.id || id,
+        bank: pr.bank_name || '',
+        accountNum: pr.account_number || '',
+        accountHolder: pr.account_holder || '',
+        holder: pr.account_holder || '',
+        birth: pr.birth_date || '-',
+        gender: pr.gender || '-',
+        ci: pr.ci || '-',
+        referralCode: pr.referral_code || '-',
+        referralBy: pr.referred_by || '',
+        friends: refs.map(function(r) {
+          return [r.referred_name||'-', r.created_at ? new Date(r.created_at).toLocaleDateString('ko-KR') : '-', r.status==='계약완료'||r.status==='보상완료'?'완료':'미완료', '-', '-'];
+        }),
+        guard: alarms.map(function(a) {
+          var typeLabel = {plan_change:'요금제 변경',addon_cancel:'부가서비스 해지',internet_expire:'인터넷 약정',rental_expire:'렌탈 약정'}[a.alarm_type] || a.alarm_type;
+          return [typeLabel, a.target_date||'-', 'D-'+Math.max(0,Math.ceil((new Date(a.target_date)-new Date())/(86400000))), 'ON'];
+        }),
+        orders: apps.map(function(a) {
+          return [a.created_at ? new Date(a.created_at).toLocaleDateString('ko-KR') : '-', a.product_ticket||'-', a.product_name||'-', a.type||'-', '어드민→CRM', a.status||'-', (a.gift_amount ? Math.round(a.gift_amount/10000)+'만' : '-'), '-'];
+        }),
+        gifts: gifts.map(function(g) {
+          return [(g.amount||0).toLocaleString()+'원', g.status||'-', g.paid_at ? new Date(g.paid_at).toLocaleDateString('ko-KR') : '-'];
+        }),
+        points: ch.map(function(h) {
+          return [h.type||'-', (h.amount||0).toLocaleString()+'P', h.description||'-', h.created_at ? new Date(h.created_at).toLocaleDateString('ko-KR') : '-'];
+        }),
+        withdrawals: ws.map(function(w) {
+          return [(w.amount||0).toLocaleString()+'원', w.status||'-', w.bank_name||'-', w.created_at ? new Date(w.created_at).toLocaleDateString('ko-KR') : '-'];
+        }),
+        addresses: addrs.map(function(a) {
+          return [a.alias||'집', a.address||'-', a.address_detail||'', a.is_default?'기본':''];
+        }),
+      };
+
+      setTimeout(function(){ openMemberDetail(idx); }, 50);
+    });
+  }).catch(function(e) { alert('회원 정보를 불러올 수 없습니다: ' + e.message); });
 }
 
 function openMemberDetail(idx) {
