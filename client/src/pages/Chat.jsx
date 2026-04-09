@@ -9,6 +9,13 @@ import ConsultSheet from '../components/chat/ConsultSheet.jsx';
 import PhoneSelectCard from '../components/chat/PhoneSelectCard.jsx';
 import UsedPhoneSelectCard from '../components/chat/UsedPhoneSelectCard.jsx';
 import InternetSelectCard from '../components/chat/InternetSelectCard.jsx';
+import RentalSelectCard from '../components/chat/RentalSelectCard.jsx';
+
+// 렌탈 관련 질문 감지
+function isRentalQuery(msg) {
+  const keywords = ['렌탈', '정수기', '공기청정기', '안마의자', '비데', '건조기', '세탁기', '로봇청소기', '매트리스', '가전'];
+  return keywords.some(k => msg.includes(k));
+}
 
 // 휴대폰 관련 질문 감지 (모달로 전환)
 function isPhoneQuery(msg) {
@@ -51,6 +58,7 @@ export default function Chat() {
   const [showUsedPhoneSelect, setShowUsedPhoneSelect] = useState(false);
   const [rentalDetail, setRentalDetail] = useState({ open: false, ticket: '' });
   const [showInternetSelect, setShowInternetSelect] = useState(false);
+  const [showRentalSelect, setShowRentalSelect] = useState(false);
   const [usedPhoneApply, setUsedPhoneApply] = useState({ open: false, model: '', storage: '', price: '' });
   const isMobile = useIsMobile();
 
@@ -89,6 +97,8 @@ export default function Chat() {
               setShowPhoneSelect(true);
             } else if (isInternetQuery(msg)) {
               setShowInternetSelect(true);
+            } else if (isRentalQuery(msg)) {
+              setShowRentalSelect(true);
             } else {
               chat.sendMessage(msg);
             }
@@ -124,6 +134,8 @@ export default function Chat() {
             setShowUsedPhoneSelect(true);
           } else if (isPhoneQuery(m)) {
             setShowPhoneSelect(true);
+          } else if (isRentalQuery(m)) {
+            setShowRentalSelect(true);
           } else {
             chat.sendMessage(m);
           }
@@ -183,6 +195,21 @@ export default function Chat() {
                 <button onClick={() => setShowInternetSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
               </div>
               <InternetSelectCard onComplete={(query) => { setShowInternetSelect(false); chat.sendMessage(query); }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 렌탈 카테고리 선택 */}
+      {showRentalSelect && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 420, animation: 'slideUp 0.25s ease' }}>
+            <div style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '16px 16px 24px', maxHeight: '80vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#1a2744' }}>{'🏠'} 렌탈 상품 조회</span>
+                <button onClick={() => setShowRentalSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
+              </div>
+              <RentalSelectCard onComplete={(query) => { setShowRentalSelect(false); chat.sendMessage(query); }} />
             </div>
           </div>
         </div>
