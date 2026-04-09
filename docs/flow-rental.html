@@ -77,7 +77,9 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   <div class="flow">
     <div class="fb fb-user" style="font-size:10px">경로 A<br><strong>AI 채팅</strong></div>
     <div class="fa">→</div>
-    <div class="fb fb-neutral" style="font-size:9px">"정수기 알아보고 싶어요"<br>AI가 카테고리별 추천</div>
+    <div class="fb fb-neutral" style="font-size:9px">"정수기 알아보고 싶어요"<br>AI가 바텀시트 오픈</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:9px">RentalSelectCard<br>카테고리→브랜드 선택</div>
     <div class="fa">→</div>
     <div class="fb fb-neutral" style="font-size:10px">렌탈 카드 추천</div>
     <div class="fa">→</div>
@@ -107,7 +109,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <div class="fb fb-neutral" style="font-size:9px">렌탈 크로스셀링<br>유도</div>
   </div>
   <div class="note">
-    <strong>경로 A:</strong> AI 채팅 → 렌탈 카드 → 셀프신청 or 티켓전화<br>
+    <strong>경로 A:</strong> AI 채팅 → RentalSelectCard(카테고리→브랜드) → 렌탈 카드 → 셀프신청 or 티켓전화<br>
     <strong>경로 B:</strong> 직접 전화 → 상담사 안내 → CRM 등록 → 어드민 동기화<br>
     <strong>경로 C:</strong> 매장에서 휴대폰 개통한 고객 → CRM 등록 → 어드민 동기화 → 렌탈 크로스셀링 유도
   </div>
@@ -261,8 +263,54 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
 </div>
 <div class="arrow-down">↓</div>
 
-<!-- ===== STEP 5: 고객 카드 ===== -->
-<div class="step-label">STEP 5 — 고객에게 보이는 렌탈 카드 (실제 웹 UI)</div>
+<!-- ===== STEP 5: 정보 수집 바텀시트 (RentalSelectCard) ===== -->
+<div class="step-label">STEP 5 — 정보 수집 바텀시트 (RentalSelectCard)</div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">AI 채팅에서 렌탈 문의 시 → 바텀시트로 조건 수집 (2단계)</div>
+  <div class="grid2">
+    <!-- RentalSelectCard 목업 -->
+    <div style="background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:16px;max-width:340px">
+      <!-- 프로그래스 -->
+      <div style="display:flex;gap:4px;margin-bottom:14px">
+        <div style="flex:1;text-align:center"><div style="width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin:0 auto">1</div><div style="font-size:10px;color:var(--green);margin-top:2px">카테고리</div></div>
+        <div style="flex:1;text-align:center"><div style="width:22px;height:22px;border-radius:50%;background:#e8e8e8;color:#999;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin:0 auto">2</div><div style="font-size:10px;color:#999;margin-top:2px">브랜드</div></div>
+      </div>
+      <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px">어떤 가전을 찾으시나요?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="padding:12px 8px;border-radius:10px;border:1.5px solid #e8e8e8;text-align:center;font-size:12px"><div style="font-size:24px;margin-bottom:4px">💧</div><strong>정수기</strong><div style="font-size:9px;color:#999">냉온정/냉정</div></div>
+        <div style="padding:12px 8px;border-radius:10px;border:1.5px solid #e8e8e8;text-align:center;font-size:12px"><div style="font-size:24px;margin-bottom:4px">🌬️</div><strong>공기청정기</strong><div style="font-size:9px;color:#999">가정용/대형</div></div>
+        <div style="padding:12px 8px;border-radius:10px;border:1.5px solid #e8e8e8;text-align:center;font-size:12px"><div style="font-size:24px;margin-bottom:4px">📺</div><strong>TV</strong><div style="font-size:9px;color:#999">OLED/QLED</div></div>
+        <div style="padding:12px 8px;border-radius:10px;border:1.5px solid #e8e8e8;text-align:center;font-size:12px"><div style="font-size:24px;margin-bottom:4px">🧺</div><strong>세탁기</strong><div style="font-size:9px;color:#999">드럼/통돌이</div></div>
+        <div style="padding:12px 8px;border-radius:10px;border:1.5px solid #e8e8e8;text-align:center;font-size:12px"><div style="font-size:24px;margin-bottom:4px">☀️</div><strong>건조기</strong><div style="font-size:9px;color:#999">히트펌프</div></div>
+        <div style="padding:12px 8px;border-radius:10px;border:1.5px solid #e8e8e8;text-align:center;font-size:12px"><div style="font-size:24px;margin-bottom:4px">💻</div><strong>노트북</strong><div style="font-size:9px;color:#999">사무/게이밍</div></div>
+        <div style="padding:12px 8px;border-radius:10px;border:1.5px solid #e8e8e8;text-align:center;font-size:12px"><div style="font-size:24px;margin-bottom:4px">🪑</div><strong>안마의자</strong><div style="font-size:9px;color:#999">안마의자</div></div>
+        <div style="padding:12px 8px;border-radius:10px;border:1.5px solid #e8e8e8;text-align:center;font-size:12px"><div style="font-size:24px;margin-bottom:4px">🚽</div><strong>비데</strong><div style="font-size:9px;color:#999">방수/건조</div></div>
+        <div style="padding:12px 8px;border-radius:10px;border:1.5px solid #e8e8e8;text-align:center;font-size:12px"><div style="font-size:24px;margin-bottom:4px">🤖</div><strong>로봇청소기</strong><div style="font-size:9px;color:#999">물걸레/흡입</div></div>
+      </div>
+    </div>
+
+    <!-- 2단계 흐름 설명 -->
+    <div style="font-size:10px;line-height:1.7">
+      <div style="font-weight:700;color:var(--navy);font-size:12px;margin-bottom:8px">RentalSelectCard — 2단계 조건 수집</div>
+      <table>
+        <thead><tr><th>단계</th><th>선택 항목</th><th>옵션</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:700">1. 카테고리</td><td>정수기/공기청정기/TV/세탁기/건조기/노트북/안마의자/비데/매트리스/로봇청소기</td><td>11개 (3×3 그리드)</td></tr>
+          <tr><td style="font-weight:700">2. 브랜드</td><td>전체 브랜드 + 카테고리별 브랜드</td><td>코웨이/LG/삼성/쿠쿠 등</td></tr>
+        </tbody>
+      </table>
+      <div class="note" style="margin-top:10px">
+        <strong>완료 시:</strong> AI에게 자동 질의 → "{카테고리} {브랜드} 렌탈 상품 추천해줘"<br>
+        <strong>예:</strong> "정수기 코웨이 렌탈 상품 추천해줘"<br>
+        → AI가 조건에 맞는 렌탈 카드(RentalCard) 표시
+      </div>
+    </div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 6: 고객 카드 ===== -->
+<div class="step-label">STEP 6 — 고객에게 보이는 렌탈 카드 (실제 웹 UI)</div>
 <div class="step-card">
   <div class="grid2">
     <!-- 실제 RentalCard.jsx 기반 다크 테마 카드 -->
