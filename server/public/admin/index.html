@@ -8623,8 +8623,8 @@ function show(idx) {
   if(idx === 11) { setTimeout(loadDashboardStats, 50); }
   // 모바일 요금제
   if(idx === 12) { setTimeout(function(){ filterMobilePlans(); }, 50); }
-  // 20. 중고폰 매입 현황
-  if(idx === 19) { setTimeout(loadUsedPhoneBuyback, 50); }
+  // 20. 중고폰 매입 현황 + 시세 테이블
+  if(idx === 19) { setTimeout(loadUsedPhoneBuyback, 50); setTimeout(renderUsedPhoneTable, 100); }
   // 시뮬레이터 초기화
   if(idx === 21) { setTimeout(function(){ var r=document.getElementById('sim-result'); if(r) r.style.display='none'; }, 50); }
   // 알림 관리
