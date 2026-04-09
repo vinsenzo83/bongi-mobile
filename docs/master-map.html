@@ -164,6 +164,15 @@ a:hover { text-decoration:underline; }
   </div>
   <div class="flow-arrow-down">↓</div>
 
+  <!-- 정보 수집 바텀시트 (SelectCard) -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <div class="flow-node" style="background:#fff;color:var(--blue);border:2px solid var(--blue);font-size:10px">InternetSelectCard<br><span style="font-size:9px">통신사→속도→TV (3단계)</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--orange);border:2px solid var(--orange);font-size:10px">PhoneSelectCard<br><span style="font-size:9px">통신사→유형→제조사→기종 (4단계)</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--green);border:2px solid var(--green);font-size:10px">RentalSelectCard<br><span style="font-size:9px">카테고리→브랜드 (2단계)</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--purple);border:2px solid var(--purple);font-size:10px">UsedPhoneSelectCard<br><span style="font-size:9px">제조사→모델→용량→상태 (4단계)</span></div>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
   <!-- 상품 카드 -->
   <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
     <div class="flow-node" style="background:#1e1e1e;color:#fff;border:1px solid #333;font-size:10px">ProductCard<br><span style="color:#60a5fa">다크테마</span></div>
@@ -222,25 +231,25 @@ a:hover { text-decoration:underline; }
       <tr>
         <td><strong>인터넷+TV 상품</strong><br><span style="font-size:9px;color:var(--text3)">03~05번</span></td>
         <td class="mono">speeds / tv / settop / wifi</td>
-        <td>고객 상품 카드 · AI 채팅 · 티켓 자동 생성 · 사은품 금액 · CRM</td>
+        <td>InternetSelectCard(바텀시트) · 고객 상품 카드 · AI 채팅 · 티켓 자동 생성 · 사은품 금액 · CRM</td>
         <td><a href="flow-internet-tv.html">인터넷+TV</a> · <a href="flow-ticket.html">티켓</a></td>
       </tr>
       <tr>
         <td><strong>렌탈 상품</strong><br><span style="font-size:9px;color:var(--text3)">06번</span></td>
         <td class="mono">rental_products</td>
-        <td>렌탈 카드 · AI 채팅 · 티켓(R001~) · 신청현황 · CRM</td>
+        <td>RentalSelectCard(바텀시트) · 렌탈 카드 · AI 채팅 · 티켓(R001~) · 신청현황 · CRM</td>
         <td><a href="flow-rental.html">렌탈</a> · <a href="flow-ticket.html">티켓</a></td>
       </tr>
       <tr>
         <td><strong>중고폰 시세</strong><br><span style="font-size:9px;color:var(--text3)">07번</span></td>
         <td class="mono">used_phone_prices</td>
-        <td>TradeinCard · AI 채팅 · 매입 접수 · 중고폰 현황</td>
+        <td>UsedPhoneSelectCard(바텀시트) · TradeinCard · AI 채팅 · 매입 접수 · 중고폰 현황</td>
         <td><a href="flow-used-phone.html">중고폰</a></td>
       </tr>
       <tr>
         <td><strong>휴대폰 시세</strong><br><span style="font-size:9px;color:var(--text3)">08번</span></td>
         <td class="mono">phone_prices</td>
-        <td>MobilePriceCard · AI 채팅 · 매장별 시세</td>
+        <td>PhoneSelectCard(바텀시트) · MobilePriceCard · AI 채팅 · 매장별 시세</td>
         <td><a href="flow-store-price.html">매장·시세</a></td>
       </tr>
       <tr>

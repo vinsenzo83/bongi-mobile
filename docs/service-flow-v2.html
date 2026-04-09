@@ -258,7 +258,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <div class="fb fb-user" style="font-size:9px;line-height:1.4">플랫폼 크로스셀링<br>(온라인 인터넷/렌탈)</div>
   </div>
   <div class="note">
-    <strong>경로 A:</strong> AI 채팅 → 상품 탐색 → 카드 확인 → 셀프신청/바로상담/티켓전화 (STEP 4~5로 이동)<br>
+    <strong>경로 A:</strong> AI 채팅 → 카테고리 선택 → SelectCard 바텀시트(정보 수집) → 상품 카드 확인 → 셀프신청/바로상담/티켓전화 (STEP 4~5로 이동)<br>
     <strong>경로 B:</strong> 티켓번호 없이 직접 전화 → 상담사가 처음부터 안내 → CRM 등록 → 어드민 동기화 (STEP 5 바로상담과 합류)<br>
     <strong>경로 C:</strong> 매장 방문 → 휴대폰 개통(카카오급 데이터 확보) or 매장 인터넷(별도 상품) → CRM 등록 → 앱 유도 → 플랫폼 크로스셀링<br>
     <strong>주의:</strong> 매장 인터넷 ≠ 플랫폼 인터넷 (상품/사은품 체계 다름)
@@ -273,9 +273,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   <div class="flow">
     <div class="fb fb-user" style="min-width:100px">① 인터넷+TV</div>
     <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px">통신사 선택<br>(SKT/KT/LG U+)</div>
-    <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px">속도+TV+셋톱<br>+WiFi 조합</div>
+    <div class="fb fb-user" style="font-size:10px;border-color:var(--blue)"><strong>InternetSelectCard</strong><br>통신사→속도→TV<br>(3단계 바텀시트)</div>
     <div class="fa">→</div>
     <div class="card-mock" style="border:2px solid var(--blue);min-width:140px">
       <strong style="color:var(--blue)">상품 카드</strong><br>
@@ -291,11 +289,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   <div class="flow">
     <div class="fb fb-user" style="min-width:100px">② 휴대폰 시세</div>
     <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px">통신사</div>
-    <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px">유형<br>(번이/기변)</div>
-    <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px">기종 선택</div>
+    <div class="fb fb-user" style="font-size:10px;border-color:var(--orange)"><strong>PhoneSelectCard</strong><br>통신사→개통유형<br>→제조사→기종<br>(4단계 바텀시트)</div>
     <div class="fa">→</div>
     <div class="card-mock" style="border:2px solid var(--orange);min-width:140px">
       <strong style="color:var(--orange)">시세 카드</strong><br>
@@ -313,7 +307,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   <div class="flow">
     <div class="fb fb-user" style="min-width:100px">③ 렌탈</div>
     <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px">카테고리 필터<br>(정수기/TV/세탁기...)</div>
+    <div class="fb fb-user" style="font-size:10px;border-color:var(--green)"><strong>RentalSelectCard</strong><br>카테고리→브랜드<br>(2단계 바텀시트)</div>
     <div class="fa">→</div>
     <div class="card-mock" style="border:2px solid var(--green);min-width:140px">
       <strong style="color:var(--green)">렌탈 카드</strong><br>
@@ -329,7 +323,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   <div class="flow">
     <div class="fb fb-user" style="min-width:100px">④ 중고폰 매입</div>
     <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px">제조사→시리즈<br>→용량→등급</div>
+    <div class="fb fb-user" style="font-size:10px;border-color:var(--purple)"><strong>UsedPhoneSelectCard</strong><br>제조사→모델<br>→용량→상태<br>(4단계 바텀시트)</div>
     <div class="fa">→</div>
     <div class="card-mock" style="border:2px solid var(--purple);min-width:140px">
       <strong style="color:var(--purple)">매입가 카드</strong><br>
