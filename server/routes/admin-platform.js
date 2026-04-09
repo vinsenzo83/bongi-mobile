@@ -330,7 +330,7 @@ router.get('/cash/history', async (req, res) => {
   }
 });
 
-// GET /admin/platform/cash/withdrawals — 출금 신청 목록
+// GET /admin/platform/cash/withdrawals — 출금 신청 목록 (회원 정보 매칭)
 router.get('/cash/withdrawals', async (req, res) => {
   try {
     const { status } = req.query;
@@ -338,7 +338,27 @@ router.get('/cash/withdrawals', async (req, res) => {
     if (status) query = query.eq('status', status);
     const { data, error } = await query;
     if (error) throw error;
-    res.json({ withdrawals: data || [] });
+
+    const enriched = [];
+    for (const w of (data || [])) {
+      let profile = null;
+      if (w.user_id) {
+        const { data: p } = await supabase.from('bongi_user_profiles').select('display_name,phone,channel,verified_at,point_balance,total_conversions').eq('id', w.user_id).maybeSingle();
+        if (p) profile = p;
+      }
+      enriched.push({
+        ...w,
+        name: profile?.display_name || w.account_holder || '-',
+        phone: profile?.phone || '-',
+        channel: profile?.channel || '-',
+        hold_balance: profile?.point_balance || 0,
+        verified: profile?.verified_at ? '인증완료' : '미인증',
+        contract_count: (profile?.total_conversions || 0) + '회',
+        condition: (profile?.point_balance >= 50000 && profile?.verified_at && w.bank_name) ? '충족' : '미충족',
+      });
+    }
+
+    res.json({ withdrawals: enriched });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -8950,20 +8950,28 @@ function loadWithdrawals() {
         var st = w.status || '대기';
         var stClass = st==='승인'?'green':st==='대기'?'orange':'red';
         var date = w.created_at ? new Date(w.created_at).toLocaleDateString('ko-KR') : '-';
-        var holder = w.account_holder || '-';
-        var bank = (w.bank_name||'') + ' ' + (w.account_number||'');
-        var amt = w.amount ? w.amount.toLocaleString()+'P' : '-';
+        var name = w.name || w.account_holder || '-';
+        var phone = w.phone || '-';
+        var channel = w.channel || '-';
+        var reqPt = w.amount ? w.amount.toLocaleString()+'P' : '-';
+        var holdPt = w.hold_balance ? w.hold_balance.toLocaleString()+'P' : '-';
+        var auth = w.verified || '-';
+        var authClass = auth==='인증완료'?'green':'red';
+        var bank = ((w.bank_name||'') + ' ' + (w.account_number||'')).trim() || '미등록';
+        var contract = w.contract_count || '-';
+        var cond = w.condition || '-';
+        var condClass = cond==='충족'?'green':'red';
         return '<tr>'
           +'<td style="font-size:10px">'+date+'</td>'
-          +'<td style="font-weight:600;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\''+holder+'\')">'+holder+'</td>'
-          +'<td style="font-size:10px">-</td>'
-          +'<td style="font-size:10px">-</td>'
-          +'<td style="color:var(--blue);font-weight:700">'+amt+'</td>'
-          +'<td style="font-size:10px">-</td>'
-          +'<td style="font-size:10px">-</td>'
-          +'<td style="font-size:10px">'+bank.trim()+'</td>'
-          +'<td style="font-size:10px">-</td>'
-          +'<td style="font-size:10px">-</td>'
+          +'<td style="font-weight:600;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\''+name+'\')">'+name+'</td>'
+          +'<td style="font-size:10px">'+phone+'</td>'
+          +'<td style="font-size:10px">'+channel+'</td>'
+          +'<td style="color:var(--blue);font-weight:700">'+reqPt+'</td>'
+          +'<td style="font-size:10px">'+holdPt+'</td>'
+          +'<td><span class="wf-status '+authClass+'" style="font-size:10px">'+auth+'</span></td>'
+          +'<td style="font-size:10px">'+bank+'</td>'
+          +'<td style="font-size:10px">'+contract+'</td>'
+          +'<td><span class="wf-status '+condClass+'" style="font-size:10px">'+cond+'</span></td>'
           +'<td><span class="wf-status '+stClass+'">'+st+'</span></td>'
           +'<td><span class="action-btn default" style="cursor:pointer;font-size:10px">상세</span></td>'
           +'</tr>';
