@@ -42,11 +42,12 @@ app.use(express.json({ limit: '5mb' }));
 app.use(sanitizeBody);
 app.use(apiLimiter);
 
-// 정적 서빙 (어드민 + CRM + 대시보드 + 매장이미지)
+// 정적 서빙 (어드민 + CRM + 대시보드 + 매장이미지 + 플로우 문서)
 app.use('/admin', express.static(join(__dirname, 'public', 'admin')));
 app.use('/crm', express.static(join(__dirname, 'public', 'crm')));
 app.use('/dashboard', express.static(join(__dirname, 'public', 'dashboard')));
 app.use('/stores', express.static(join(__dirname, 'public', 'stores')));
+app.use('/docs', express.static(join(__dirname, '..', 'docs')));
 app.use('/api/dashboard', dashboardRoutes);
 
 // ── 공개 API (인증 불필요) ──

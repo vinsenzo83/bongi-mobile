@@ -490,6 +490,33 @@ body { background: var(--bg); font-family: var(--sans); color: var(--text); min-
 </div>
 
 <script>
+// 어드민 메뉴 → 플로우 문서 1:1 매핑
+var docMap = {
+  '대시보드': 'master-map.html',
+  '회원 관리': 'service-flow-v2.html',
+  'SKT 상품': 'flow-internet-tv.html',
+  'KT 상품': 'flow-internet-tv.html',
+  'LG U+ 상품': 'flow-internet-tv.html',
+  '렌탈 상품': 'flow-rental.html',
+  '중고폰 매입': 'flow-used-phone.html',
+  '휴대폰 시세': 'flow-store-price.html',
+  '매장 · 시세': 'flow-store-price.html',
+  '매장 · 시세 관리': 'flow-store-price.html',
+  '티켓 관리': 'flow-ticket.html',
+  '신청 현황': 'flow-applications.html',
+  '중고폰 매입 현황': 'flow-used-phone.html',
+  '사은품 관리': 'flow-gifts.html',
+  '포인트 관리': 'flow-points-referral-guard.html',
+  '후기 관리': 'flow-reviews.html',
+  '돈지키미 관리': 'flow-points-referral-guard.html',
+  '알림 관리': 'flow-points-referral-guard.html',
+  '통계': 'data-flow-diagram.html',
+  '모바일 요금제': 'data-flow-diagram.html',
+  '공시지원금': 'data-flow-diagram.html',
+  '가족결합': 'flow-internet-tv.html',
+  '결합할인 시뮬레이터': 'flow-internet-tv.html',
+};
+
 function adminShell(activeMenu, title, body) {
   const menus = [
     ['📊','대시보드'],['👥','회원 관리'],
@@ -501,6 +528,8 @@ function adminShell(activeMenu, title, body) {
     ['⭐','후기 관리'],['🔔','돈지키미 관리'],
     ['🔔','알림 관리'],['📈','통계'],
   ];
+  // 현재 화면에 맞는 문서 링크
+  var docFile = docMap[title.replace(/^\d+\.\s*/, '')] || 'master-map.html';
   return `
     <div class="wf-screen">
       <div class="admin-shell">
@@ -515,9 +544,11 @@ function adminShell(activeMenu, title, body) {
         <div class="admin-main">
           <div class="admin-top">
             <div class="admin-top-title">${title}</div>
-            <div class="admin-top-right">
-              <span>운영팀 관리자</span>
-              <div class="wf-block solid" style="height:28px;width:70px;font-size:11px;border-radius:6px">로그아웃</div>
+            <div class="admin-top-right" style="display:flex;align-items:center;gap:8px">
+              <a href="/docs/${docFile}" target="_blank" style="display:flex;align-items:center;gap:4px;padding:4px 12px;background:var(--blue);color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;cursor:pointer" title="이 페이지의 플로우 문서 열기">📄 플로우 문서</a>
+              <a href="/docs/master-map.html" target="_blank" style="display:flex;align-items:center;gap:4px;padding:4px 12px;background:var(--navy);color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;cursor:pointer" title="전체 연결 맵">🗺️ 전체 맵</a>
+              <span onclick="openMemoPanel()" style="display:flex;align-items:center;gap:4px;padding:4px 12px;background:var(--orange);color:#fff;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer" title="메모">📝 메모</span>
+              <span style="font-size:11px;color:var(--text3)">운영팀 관리자</span>
             </div>
           </div>
           <div class="admin-body">${body}</div>
@@ -8573,6 +8604,70 @@ function openMemberDetail(idx) {
 </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
   document.body.style.overflow = 'hidden';
+}
+
+// ─── 메모 패널 ───
+function openMemoPanel() {
+  var existing = document.getElementById('memo-panel');
+  if(existing) { existing.remove(); return; }
+
+  var screenTitle = document.getElementById('tb-title') ? document.getElementById('tb-title').textContent : '메모';
+  var memoKey = 'bm_memo_' + screenTitle.replace(/[^가-힣a-zA-Z0-9]/g, '_');
+  var saved = localStorage.getItem(memoKey) || '';
+
+  var panel = document.createElement('div');
+  panel.id = 'memo-panel';
+  panel.style.cssText = 'position:fixed;right:20px;top:60px;width:360px;background:#fff;border:2px solid var(--navy);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:9999;overflow:hidden';
+  panel.innerHTML = '<div style="background:var(--navy);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">'
+    +'<div style="font-size:13px;font-weight:700">📝 메모 — '+screenTitle+'</div>'
+    +'<span onclick="document.getElementById(\'memo-panel\').remove()" style="cursor:pointer;font-size:16px">✕</span>'
+    +'</div>'
+    +'<div style="padding:12px">'
+    +'<textarea id="memo-textarea" style="width:100%;height:200px;border:1.5px solid #e2ddd6;border-radius:8px;padding:10px;font-size:12px;font-family:inherit;resize:vertical;outline:none" placeholder="이 페이지에 대한 메모를 작성하세요...">'+saved.replace(/</g,'&lt;')+'</textarea>'
+    +'<div style="display:flex;gap:6px;margin-top:8px">'
+    +'<button onclick="saveMemo(\''+memoKey+'\')" style="flex:1;padding:8px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">💾 저장</button>'
+    +'<button onclick="clearMemo(\''+memoKey+'\')" style="padding:8px 16px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">삭제</button>'
+    +'</div>'
+    +'<div id="memo-status" style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center"></div>'
+    +'<div style="margin-top:10px;border-top:1px solid #e2ddd6;padding-top:8px">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--navy);margin-bottom:4px">전체 메모 목록</div>'
+    +'<div id="memo-list" style="font-size:10px;max-height:120px;overflow-y:auto"></div>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(panel);
+  loadMemoList();
+}
+
+function saveMemo(key) {
+  var val = document.getElementById('memo-textarea').value;
+  localStorage.setItem(key, val);
+  var st = document.getElementById('memo-status');
+  if(st) st.textContent = '✅ 저장됨 (' + new Date().toLocaleTimeString('ko-KR') + ')';
+  loadMemoList();
+}
+
+function clearMemo(key) {
+  localStorage.removeItem(key);
+  var ta = document.getElementById('memo-textarea');
+  if(ta) ta.value = '';
+  var st = document.getElementById('memo-status');
+  if(st) st.textContent = '🗑️ 삭제됨';
+  loadMemoList();
+}
+
+function loadMemoList() {
+  var list = document.getElementById('memo-list');
+  if(!list) return;
+  var html = '';
+  for(var i=0; i<localStorage.length; i++) {
+    var k = localStorage.key(i);
+    if(k.startsWith('bm_memo_')) {
+      var title = k.replace('bm_memo_','').replace(/_/g,' ');
+      var val = localStorage.getItem(k);
+      if(val) html += '<div style="padding:3px 0;border-bottom:1px solid #f0f0f0"><strong>'+title+'</strong>: '+val.substring(0,50)+(val.length>50?'...':'')+'</div>';
+    }
+  }
+  list.innerHTML = html || '<div style="color:var(--text3)">저장된 메모 없음</div>';
 }
 
 function closeMemberDetail() {
