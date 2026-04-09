@@ -368,6 +368,25 @@ router.get('/cash/withdrawals', async (req, res) => {
 router.patch('/cash/withdrawals/:id', async (req, res) => {
   try {
     const { status, admin_memo } = req.body;
+
+    // 승인 시 조건 4가지 검증
+    if (status === '승인') {
+      const { data: w } = await supabase.from('bongi_withdrawals').select('user_id,amount').eq('id', req.params.id).maybeSingle();
+      if (w && w.user_id) {
+        const { data: p } = await supabase.from('bongi_user_profiles').select('point_balance,verified_at,bank_name,total_conversions').eq('id', w.user_id).maybeSingle();
+        const { data: b } = await supabase.from('bongi_cash_balance').select('balance').eq('user_id', w.user_id).maybeSingle();
+        const balance = b?.balance || p?.point_balance || 0;
+        const errors = [];
+        if (balance < 50000) errors.push('보유 포인트 5만P 미만 (' + balance + 'P)');
+        if (!p?.verified_at) errors.push('PASS 본인인증 미완료');
+        if (!p?.bank_name) errors.push('계좌 미등록');
+        if ((p?.total_conversions || 0) < 1) errors.push('계약 0회');
+        if (errors.length > 0) {
+          return res.status(400).json({ error: '출금 조건 미충족: ' + errors.join(', ') });
+        }
+      }
+    }
+
     const update = { status };
     if (status === '승인') {
       update.status = '승인';
