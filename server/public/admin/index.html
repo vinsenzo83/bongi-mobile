@@ -1879,7 +1879,7 @@ const screens = [
           <thead>
             <tr><th>신청일</th><th>이름</th><th>연락처</th><th>유입경로</th><th>신청 포인트</th><th>보유 포인트</th><th>본인인증</th><th>계좌</th><th>계약횟수</th><th>조건</th><th>상태</th><th>관리</th></tr>
           </thead>
-          <tbody>
+          <tbody id="withdrawals-tbody">
             ${(function(){
               return [
                 ['2026.04.06','홍길동','010-1234-5678','셀프신청','52,000P','52,000P','인증완료','국민 123-456-789012','3회','충족','출금 대기'],
@@ -1919,7 +1919,7 @@ const screens = [
       <div class="wf-card" style="padding:0;overflow-x:auto">
         <table class="wf-table" style="margin-bottom:0;font-size:11px">
           <thead><tr><th>일시</th><th>이름</th><th>연락처</th><th>유입경로</th><th>구분</th><th>내용</th><th>포인트</th><th>잔액</th></tr></thead>
-          <tbody>
+          <tbody id="cash-history-tbody">
             ${(function(){
               return [
                 ['2026.04.06 14:23','홍길동','010-1234-5678','셀프신청','적립','친구초대 계약완료 — <strong style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\'이영희\')">이영희</strong> / LG U+ 500M+프리미엄+UHD4 (LG0079)','+5,000P','52,000P'],
@@ -8944,15 +8944,29 @@ function loadWithdrawals() {
     .then(function(r) { return r.json(); })
     .then(function(d) {
       if(!d.withdrawals || d.withdrawals.length === 0) return;
-      var c = document.getElementById('screen-container');
-      if(!c) return;
-      var tables = c.querySelectorAll('.wf-table tbody');
-      var tbody = tables[tables.length - 1];
+      var tbody = document.getElementById('withdrawals-tbody');
       if(!tbody) return;
       var html = d.withdrawals.map(function(w) {
         var st = w.status || '대기';
         var stClass = st==='승인'?'green':st==='대기'?'orange':'red';
-        return '<tr><td style="font-weight:600">' + (w.account_holder||'-') + '</td><td style="font-size:10px">' + (w.bank_name||'-') + ' ' + (w.account_number||'') + '</td><td style="color:var(--blue);font-weight:700">' + (w.amount ? w.amount.toLocaleString()+'원' : '-') + '</td><td><span class="wf-status '+stClass+'">' + st + '</span></td><td style="font-size:10px">' + (w.created_at ? new Date(w.created_at).toLocaleDateString('ko-KR') : '-') + '</td></tr>';
+        var date = w.created_at ? new Date(w.created_at).toLocaleDateString('ko-KR') : '-';
+        var holder = w.account_holder || '-';
+        var bank = (w.bank_name||'') + ' ' + (w.account_number||'');
+        var amt = w.amount ? w.amount.toLocaleString()+'P' : '-';
+        return '<tr>'
+          +'<td style="font-size:10px">'+date+'</td>'
+          +'<td style="font-weight:600;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\''+holder+'\')">'+holder+'</td>'
+          +'<td style="font-size:10px">-</td>'
+          +'<td style="font-size:10px">-</td>'
+          +'<td style="color:var(--blue);font-weight:700">'+amt+'</td>'
+          +'<td style="font-size:10px">-</td>'
+          +'<td style="font-size:10px">-</td>'
+          +'<td style="font-size:10px">'+bank.trim()+'</td>'
+          +'<td style="font-size:10px">-</td>'
+          +'<td style="font-size:10px">-</td>'
+          +'<td><span class="wf-status '+stClass+'">'+st+'</span></td>'
+          +'<td><span class="action-btn default" style="cursor:pointer;font-size:10px">상세</span></td>'
+          +'</tr>';
       }).join('');
       tbody.innerHTML = html;
     }).catch(function(e) { console.error('출금 로드 실패:', e); });
@@ -9054,12 +9068,8 @@ function loadCashHistory() {
     .then(function(r) { return r.json(); })
     .then(function(d) {
       if(!d.history || d.history.length === 0) return;
-      var c = document.getElementById('screen-container');
-      if(!c) return;
-      // 적립 내역 테이블 = 두번째 wf-table
-      var tables = c.querySelectorAll('.wf-table tbody');
-      if(tables.length < 2) return;
-      var tbody = tables[1];
+      var tbody = document.getElementById('cash-history-tbody');
+      if(!tbody) return;
       var html = d.history.map(function(h) {
         var time = h.created_at ? h.created_at.replace('T',' ').slice(0,16) : '-';
         var name = h.name || '-';
