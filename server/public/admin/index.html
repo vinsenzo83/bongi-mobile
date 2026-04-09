@@ -8692,7 +8692,7 @@ function loadDevSpec(page) {
         +'<ul style="list-style:none;padding:0;margin:0;font-size:11px;color:var(--text2);line-height:1.8">'+notesHtml+'</ul>'
         +'<div style="display:flex;gap:6px;margin-top:10px">'
         +'<button onclick="editDevSpec(\''+page+'\')" style="padding:5px 12px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:10px;cursor:pointer">✏️ 수정</button>'
-        +'<button onclick="addSpecNote(\''+page+'\')" style="padding:5px 12px;border:1px solid var(--blue);color:var(--blue);background:#fff;border-radius:6px;font-size:10px;cursor:pointer">+ 포인트 추가</button>'
+        +'<button onclick="addSpecNote(\''+page+'\')" style="padding:5px 12px;border:1px solid var(--blue);color:var(--blue);background:#fff;border-radius:6px;font-size:10px;cursor:pointer">+ 항목 추가</button>'
         +'</div>'
         +(spec.updated_by?'<div style="font-size:9px;color:var(--text3);margin-top:6px">최종 수정: '+spec.updated_by+' ('+new Date(spec.updated_at).toLocaleString('ko-KR')+')</div>':'');
     });
@@ -8707,7 +8707,7 @@ function editDevSpec(page) {
 }
 
 function addSpecNote(page) {
-  var note = prompt('추가할 핵심 포인트:');
+  var note = prompt('추가할 항목:');
   if(!note) return;
   fetch('/api/admin/platform/dev-specs/' + encodeURIComponent(page))
     .then(function(r){return r.json();})
