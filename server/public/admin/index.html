@@ -8981,7 +8981,7 @@ function loadReviewsAdmin() {
         var aiText = aiOn ? 'ON' : 'OFF';
         var aiClass = aiOn ? 'green' : 'gray';
         var date = rv.created_at ? new Date(rv.created_at).toLocaleDateString('ko-KR') : '-';
-        var ticket = rv.ticket_number || '-';
+        var ticket = rv.ticket_no || rv.ticket_number || '-';
         return '<tr>'
           +'<td style="font-size:10px">'+date+'</td>'
           +'<td style="font-weight:600;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\''+name+'\')">'+name+'</td>'
