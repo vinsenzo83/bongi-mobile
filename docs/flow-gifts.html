@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이모바일 — 사은품 관리 플로우</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#f8f7f4; --bg2:#fff; --border:#e2ddd6; --navy:#1a2744; --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5; --orange:#d97706; --orange2:#fef3c7; --red:#dc2626; --red2:#fee2e2; --purple:#7c3aed; --purple2:#f3e8ff; --text:#1a1a1a; --text2:#4a4a4a; --text3:#8a8a8a; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; padding:40px; max-width:1200px; margin:0 auto; }
+h1 { font-size:28px; font-weight:900; color:var(--navy); margin-bottom:4px; }
+.subtitle { font-size:12px; color:var(--text3); margin-bottom:40px; font-family:'JetBrains Mono',monospace; }
+.step-label { background:var(--navy); color:#fff; padding:6px 16px; border-radius:8px; font-size:12px; font-weight:700; display:inline-block; margin-bottom:12px; }
+.step-card { background:var(--bg2); border:1.5px solid var(--border); border-radius:14px; padding:20px; margin-bottom:8px; }
+.arrow-down { text-align:center; color:var(--text3); font-size:22px; margin:4px 0; }
+.flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:8px 0; }
+.fb { padding:8px 14px; border-radius:10px; font-size:11px; font-weight:600; text-align:center; min-width:90px; }
+.fa { color:var(--text3); font-size:16px; font-weight:700; flex-shrink:0; }
+.fb-user { background:#eff6ff; border:2px solid var(--blue); color:var(--blue); }
+.fb-api { background:var(--orange2); border:2px solid var(--orange); color:var(--orange); }
+.fb-db { background:var(--green2); border:2px solid var(--green); color:var(--green); }
+.fb-admin { background:var(--red2); border:2px solid var(--red); color:var(--red); }
+.fb-crm { background:var(--purple2); border:2px solid var(--purple); color:var(--purple); }
+.fb-neutral { background:#f8f7f4; border:2px solid var(--navy); color:var(--navy); }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700; }
+.b-blue { background:var(--blue2); color:var(--blue); } .b-green { background:var(--green2); color:var(--green); }
+.b-orange { background:var(--orange2); color:var(--orange); } .b-red { background:var(--red2); color:var(--red); }
+.b-purple { background:var(--purple2); color:var(--purple); } .b-gray { background:#f3f4f6; color:#6b7280; }
+.note { background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:8px 14px; font-size:10px; color:var(--navy); line-height:1.6; margin-top:8px; }
+.warn { background:var(--red2); border:1.5px solid #fca5a5; border-radius:8px; padding:8px 14px; font-size:10px; color:var(--red); line-height:1.6; margin-top:8px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.mono { font-family:'JetBrains Mono',monospace; font-size:10px; }
+table { width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }
+th { background:var(--navy); color:#fff; padding:6px 10px; text-align:left; font-size:10px; }
+td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+</style>
+</head>
+<body>
+
+<h1>사은품 관리 플로우</h1>
+<div class="subtitle">어드민 13번 메뉴 · 계약완료 → 지급대기 자동 생성 → 조건 충족 시 현금 지급 · bongi_gifts</div>
+
+<!-- ===== 핵심 ===== -->
+<div class="step-label" style="background:var(--blue)">핵심 — 사은품이란?</div>
+<div class="step-card" style="border:2px solid var(--blue)">
+  <div style="background:var(--blue2);border:1px solid #bfdbfe;border-radius:10px;padding:14px;margin-bottom:14px;font-size:12px;color:var(--navy)">
+    <strong>사은품 = 전액 현금 지급.</strong> 계약 완료 시 bongi_gifts에 "지급 대기" 레코드 자동 생성.<br>
+    고객이 앱회원 가입 + PASS 본인인증 + 계좌 등록을 모두 완료하면 등록 계좌로 현금 입금.
+  </div>
+  <div class="flow">
+    <div class="fb fb-admin" style="font-size:10px">계약 완료<br>(어드민/CRM)</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db" style="font-size:10px">bongi_gifts<br>지급대기 자동 생성</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:10px">조건 체크<br>앱회원+PASS+계좌</div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--green2);border:2px solid var(--green);color:var(--green);font-size:10px">조건 충족 시<br>현금 지급</div>
+  </div>
+  <div class="grid2" style="margin-top:14px">
+    <div style="border:2px solid var(--orange);border-radius:10px;padding:12px">
+      <div style="font-weight:900;color:var(--orange);font-size:11px;margin-bottom:6px">인터넷+TV (현금)</div>
+      <div style="font-size:10px;line-height:1.7">
+        속도 + TV결합 여부로 금액 결정<br>
+        예: SKT 500M + TV결합 = <strong>43만원</strong><br>
+        어드민에서 통신사별 수기 입력
+      </div>
+    </div>
+    <div style="border:2px solid var(--blue);border-radius:10px;padding:12px">
+      <div style="font-weight:900;color:var(--blue);font-size:11px;margin-bottom:6px">렌탈 (현금 or 반값할인)</div>
+      <div style="font-size:10px;line-height:1.7">
+        현금: 고정 금액 계좌 입금 (예: 15만원)<br>
+        반값할인: 약정 초반 월요금 50% 할인<br>
+        상품별 어드민에서 종류/금액 설정
+      </div>
+    </div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 1: 사은품 지급 조건 ===== -->
+<div class="step-label">STEP 1 — 사은품 지급 조건 (3가지 모두 충족 필수)</div>
+<div class="step-card">
+  <div class="grid3">
+    <div style="border:2px solid var(--green);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:24px;margin-bottom:4px">1</div>
+      <div style="font-weight:900;color:var(--green);font-size:13px;margin-bottom:6px">앱회원 가입</div>
+      <div style="font-size:10px;line-height:1.6;color:var(--text2)">
+        봉이모바일 앱에서 회원가입<br>
+        비회원은 지급 불가<br>
+        <span class="badge b-green">필수</span>
+      </div>
+    </div>
+    <div style="border:2px solid var(--blue);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:24px;margin-bottom:4px">2</div>
+      <div style="font-weight:900;color:var(--blue);font-size:13px;margin-bottom:6px">PASS 본인인증</div>
+      <div style="font-size:10px;line-height:1.6;color:var(--text2)">
+        PASS 인증 완료<br>
+        CI 값으로 본인 확인<br>
+        <span class="badge b-blue">필수</span>
+      </div>
+    </div>
+    <div style="border:2px solid var(--orange);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:24px;margin-bottom:4px">3</div>
+      <div style="font-weight:900;color:var(--orange);font-size:13px;margin-bottom:6px">계좌 등록</div>
+      <div style="font-size:10px;line-height:1.6;color:var(--text2)">
+        은행명 + 계좌번호 + 예금주<br>
+        bongi_user_profiles에 저장<br>
+        <span class="badge b-orange">필수</span>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:14px">
+    <div class="flow">
+      <div class="fb fb-user" style="font-size:9px">비회원 상태<br>(신청만 완료)</div>
+      <div class="fa">→</div>
+      <div class="fb fb-neutral" style="font-size:9px">앱 회원가입<br>(알림톡 유도)</div>
+      <div class="fa">→</div>
+      <div class="fb fb-api" style="font-size:9px">PASS 인증<br>(본인확인)</div>
+      <div class="fa">→</div>
+      <div class="fb fb-db" style="font-size:9px">계좌 등록<br>(은행/계좌/예금주)</div>
+      <div class="fa">→</div>
+      <div class="fb" style="background:var(--green2);border:2px solid var(--green);color:var(--green);font-size:9px">3가지 충족<br>→ 지급 가능</div>
+    </div>
+  </div>
+  <div class="warn">
+    <strong>비회원 = 사은품 지급 불가.</strong> 비회원은 "비회원 대기" 상태로 표시. 앱 가입 → PASS 인증 → 계좌 등록 완료 시 "지급 대기"로 전환.
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 2: 사은품 금액 기준 ===== -->
+<div class="step-label">STEP 2 — 사은품 금액 기준</div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">인터넷+TV — 속도 + TV결합별 금액 (어드민 수기 입력)</div>
+  <div class="grid3">
+    <div>
+      <div style="font-weight:700;color:var(--red);font-size:11px;margin-bottom:4px"><span class="badge b-red">SKT</span></div>
+      <table>
+        <thead><tr><th>구성</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+        <tbody>
+          <tr><td><strong>인터넷 단독</strong></td><td>11만</td><td>17만</td><td>17만</td></tr>
+          <tr style="background:var(--orange2)"><td><strong>인터넷+TV</strong></td><td>40만</td><td>43만</td><td>49만</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="font-weight:700;color:var(--blue);font-size:11px;margin-bottom:4px"><span class="badge b-blue">KT</span></div>
+      <table>
+        <thead><tr><th>구성</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+        <tbody>
+          <tr><td><strong>인터넷 단독</strong></td><td>9만</td><td>14만</td><td>14만</td></tr>
+          <tr style="background:var(--orange2)"><td><strong>인터넷+TV</strong></td><td>37만</td><td>45만</td><td>45만</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="font-weight:700;color:var(--green);font-size:11px;margin-bottom:4px"><span class="badge b-green">LG U+</span></div>
+      <table>
+        <thead><tr><th>구성</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+        <tbody>
+          <tr><td><strong>인터넷 단독</strong></td><td>20만</td><td>23만</td><td>23만</td></tr>
+          <tr style="background:var(--orange2)"><td><strong>인터넷+TV</strong></td><td>40만</td><td>47만</td><td>47만</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">렌탈 — 현금 or 반값할인 (상품별 설정)</div>
+  <div class="grid2">
+    <div style="border:2px solid var(--orange);border-radius:10px;padding:12px">
+      <div style="font-weight:900;color:var(--orange);font-size:12px;margin-bottom:6px">현금 지급</div>
+      <div style="font-size:10px;line-height:1.7">
+        고정 금액을 계좌로 직접 입금<br>
+        예: LG 퓨리케어 28평 → <strong>현금 15만원</strong><br>
+        상품별 어드민에서 금액 설정
+      </div>
+    </div>
+    <div style="border:2px solid var(--blue);border-radius:10px;padding:12px">
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">반값할인</div>
+      <div style="font-size:10px;line-height:1.7">
+        약정 초반 월요금 50% 할인 적용<br>
+        <table style="margin-top:4px">
+          <thead><tr><th>약정</th><th>반값 기간</th></tr></thead>
+          <tbody>
+            <tr><td>3년</td><td>3개월</td></tr>
+            <tr><td>5년</td><td>6개월</td></tr>
+            <tr><td>6년</td><td>9개월</td></tr>
+            <tr><td>7년</td><td>12개월</td></tr>
+            <tr><td>8년</td><td>15개월</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">사은품 금액 데이터 파생 경로 (한 곳 입력 → 6곳 사용)</div>
+  <div class="flow">
+    <div class="fb fb-admin" style="font-size:9px">어드민에서<br>사은품 금액 입력<br>(속도+TV결합별)</div>
+    <div class="fa">→</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="fb fb-user" style="font-size:9px;padding:4px 8px">고객 상품 카드 "현금 사은품 43만"</div>
+      <div class="fb fb-api" style="font-size:9px;padding:4px 8px">AI 채팅 응답 "사은품 43만원"</div>
+      <div class="fb fb-db" style="font-size:9px;padding:4px 8px">신청 접수 시 bongi_applications.gift_amount</div>
+      <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">사은품관리(13번) bongi_gifts 지급대기</div>
+      <div class="fb fb-crm" style="font-size:9px;padding:4px 8px">CRM 상담사 화면 사은품 금액 표시</div>
+      <div class="fb fb-user" style="font-size:9px;padding:4px 8px">마이페이지 사은품 지급 현황</div>
+    </div>
+  </div>
+  <div class="note">
+    <strong>변경 시 신규 신청부터 적용.</strong> 기존 계약 건은 계약 시점 금액 유지. 통신사별 각각 다르게 설정 가능.
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 3: 비회원 가입 유도 알림톡 ===== -->
+<div class="step-label" style="background:var(--purple)">STEP 3 — 비회원 가입 유도 알림톡 (3단계 자동 발송)</div>
+<div class="step-card" style="border:2px solid var(--purple)">
+  <div style="background:var(--blue2);border:1px solid #bfdbfe;border-radius:10px;padding:14px;margin-bottom:14px;font-size:11px;color:var(--navy)">
+    <strong>비회원이 신청한 경우</strong> — 사은품 지급을 위해 앱 가입을 유도하는 알림톡 3단계 자동 발송
+  </div>
+  <table>
+    <thead><tr><th>단계</th><th>발송 시점</th><th>내용</th><th>목적</th><th>발송</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge b-blue" style="font-size:11px;padding:4px 10px">1차</span></td>
+        <td style="font-weight:700">신청 완료 즉시</td>
+        <td>"앱 가입 + 계좌 등록 시 사은품 즉시 지급"</td>
+        <td style="font-size:10px">최초 가입 유도</td>
+        <td><span class="badge b-blue">자동</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge b-green" style="font-size:11px;padding:4px 10px">2차</span></td>
+        <td style="font-weight:700">계약 완료 시</td>
+        <td>"사은품 OO만원 준비됨 → 앱 가입 → PASS 인증 → 계좌 등록 → 즉시 입금"</td>
+        <td style="font-size:10px">구체적 금액 안내 + 절차 안내</td>
+        <td><span class="badge b-blue">자동</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge b-orange" style="font-size:11px;padding:4px 10px">3차</span></td>
+        <td style="font-weight:700">D+7 (미가입 시)</td>
+        <td>"사은품이 아직 대기 중이에요 → 계좌 등록 즉시 입금"</td>
+        <td style="font-size:10px">리마인더 (긴급감 조성)</td>
+        <td><span class="badge b-orange">자동</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="flow" style="margin-top:14px">
+    <div class="fb fb-neutral" style="font-size:9px">비회원 신청</div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue);font-size:9px">1차 알림톡<br>(즉시)</div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--green2);border:2px solid var(--green);color:var(--green);font-size:9px">2차 알림톡<br>(계약완료)</div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange);font-size:9px">3차 알림톡<br>(D+7 리마인더)</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:9px">앱 가입 유도<br>→ 조건 충족</div>
+  </div>
+  <div class="note">
+    <strong>어드민에서 수동 알림톡 발송도 가능:</strong> 사은품관리 테이블에서 비회원 대기 건의 "알림톡" 버튼 클릭.<br>
+    <strong>지급 보류 건도 알림톡 발송 가능</strong> — 보류 사유 해소 유도 목적.
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 4: 사은품 상태 전이 ===== -->
+<div class="step-label">STEP 4 — 사은품 상태 전이 (bongi_gifts.status)</div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:12px">상태 전이 다이어그램</div>
+
+  <div class="flow" style="margin-bottom:16px">
+    <div class="fb" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange)"><strong>지급대기</strong></div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--green2);border:2px solid var(--green);color:var(--green)"><strong>지급완료</strong></div>
+  </div>
+  <div class="flow" style="margin-bottom:8px">
+    <div class="fb" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange)"><strong>지급대기</strong></div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:#f3f4f6;border:2px solid #6b7280;color:#6b7280"><strong>보류</strong></div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--green2);border:2px solid var(--green);color:var(--green)"><strong>지급완료</strong></div>
+  </div>
+
+  <table style="margin-top:14px">
+    <thead><tr><th>상태</th><th>DB 값</th><th>의미</th><th>어드민 액션</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge b-orange" style="padding:4px 10px">지급대기</span></td>
+        <td class="mono">지급대기</td>
+        <td>계약완료 → 자동 생성. 3가지 조건 충족 상태.</td>
+        <td><span class="badge b-green">지급</span> <span class="badge b-red">보류</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge b-red" style="padding:4px 10px">비회원대기</span></td>
+        <td class="mono">비회원대기</td>
+        <td>비회원이라 조건 미충족. 앱 가입 유도 중.</td>
+        <td><span class="badge b-blue">알림톡</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge b-green" style="padding:4px 10px">지급완료</span></td>
+        <td class="mono">지급완료</td>
+        <td>현금 입금 완료. paid_at 기록.</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-gray" style="padding:4px 10px">보류</span></td>
+        <td class="mono">보류</td>
+        <td>사유 발생으로 보류 (확인 필요).</td>
+        <td><span class="badge b-green">지급</span> <span class="badge b-blue">알림톡</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:14px;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">API 호출</div>
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Body</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge b-green">GET</span></td>
+        <td class="mono">/admin/platform/gifts</td>
+        <td class="mono">?status=지급대기</td>
+        <td>사은품 목록 (status 필터 가능). limit 100.</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-orange">PATCH</span></td>
+        <td class="mono">/admin/platform/gifts/:id</td>
+        <td class="mono">{ status: '지급완료' }</td>
+        <td>지급 처리. paid_at 자동 기록 (현재 시간).</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-orange">PATCH</span></td>
+        <td class="mono">/admin/platform/gifts/:id</td>
+        <td class="mono">{ status: '보류' }</td>
+        <td>보류 처리.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 5: 어드민 사은품관리 화면 ===== -->
+<div class="step-label" style="background:var(--red)">STEP 5 — 어드민 사은품관리 화면 (13번)</div>
+<div class="step-card" style="border:2px solid var(--red)">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">KPI (5개)</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px">
+    <div style="background:var(--orange2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--orange)">47</div><div style="font-size:10px;color:var(--text3)">지급 대기</div></div>
+    <div style="background:var(--red2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--red)">23</div><div style="font-size:10px;color:var(--text3)">비회원 대기</div></div>
+    <div style="background:var(--green2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--green)">1,823</div><div style="font-size:10px;color:var(--text3)">지급 완료</div></div>
+    <div style="background:#f3f4f6;border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--text3)">8</div><div style="font-size:10px;color:var(--text3)">지급 보류</div></div>
+    <div style="background:var(--blue2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--navy)">1,901</div><div style="font-size:10px;color:var(--text3)">전체</div></div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">필터</div>
+  <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+    <span style="font-size:10px;font-weight:700;color:var(--text3);width:40px;display:flex;align-items:center">상태</span>
+    <span class="badge" style="padding:4px 10px;border:1.5px solid var(--navy);background:var(--navy);color:#fff">전체</span>
+    <span class="badge b-orange" style="padding:4px 10px">지급 대기</span>
+    <span class="badge b-red" style="padding:4px 10px">비회원 대기</span>
+    <span class="badge b-green" style="padding:4px 10px">지급 완료</span>
+    <span class="badge b-gray" style="padding:4px 10px">지급 보류</span>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+    <span style="font-size:10px;font-weight:700;color:var(--text3);width:40px">유형</span>
+    <span class="badge" style="padding:4px 10px;border:1.5px solid var(--navy);background:var(--navy);color:#fff">전체</span>
+    <span class="badge b-green" style="padding:4px 10px">앱회원</span>
+    <span class="badge b-orange" style="padding:4px 10px">비회원</span>
+    <span style="margin-left:auto;font-size:10px;color:var(--text3)">이름 / 전화번호 / 티켓번호 검색</span>
+    <span class="badge b-blue" style="padding:4px 10px">엑셀 다운로드</span>
+    <span class="badge" style="padding:4px 10px;background:var(--blue);color:#fff">일괄 지급처리</span>
+  </div>
+
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">사은품 목록 테이블</div>
+  <div style="overflow-x:auto">
+  <table style="min-width:1100px">
+    <thead>
+      <tr>
+        <th><input type="checkbox" disabled></th>
+        <th>이름</th><th>연락처</th><th>유형</th><th>유입경로</th><th>티켓번호</th><th>상품</th>
+        <th>사은품(현금)</th><th>계약완료일</th><th>본인인증</th><th>계좌</th><th>상태</th><th>관리</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="checkbox" disabled></td>
+        <td style="font-weight:600;color:var(--blue)">홍길동</td>
+        <td style="font-size:10px">010-1234-5678</td>
+        <td><span class="badge b-green">앱회원</span></td>
+        <td style="font-size:10px">셀프신청</td>
+        <td><span class="mono" style="font-weight:700;color:var(--blue);font-size:10px">KT0311</span></td>
+        <td style="font-size:10px;max-width:160px">KT 1G+지니TV모든G+기가지니3</td>
+        <td style="font-weight:900;color:var(--orange)">45만</td>
+        <td style="font-size:10px">2026.04.03</td>
+        <td><span class="badge b-green">인증완료</span></td>
+        <td style="font-size:10px">국민 123-456-789012</td>
+        <td><span class="badge b-orange">지급 대기</span></td>
+        <td><span class="badge b-green">지급</span> <span class="badge b-red">보류</span></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" disabled></td>
+        <td style="font-weight:600;color:var(--blue)">이영희</td>
+        <td style="font-size:10px">010-3456-7890</td>
+        <td><span class="badge b-orange">비회원</span></td>
+        <td style="font-size:10px">셀프신청</td>
+        <td><span class="mono" style="font-weight:700;color:var(--blue);font-size:10px">LG0079</span></td>
+        <td style="font-size:10px;max-width:160px">LG U+ 500M+프리미엄+UHD4</td>
+        <td style="font-weight:900;color:var(--orange)">47만</td>
+        <td style="font-size:10px">2026.03.15</td>
+        <td><span class="badge b-red">미인증</span></td>
+        <td style="font-size:10px;color:var(--red)">미등록</td>
+        <td><span class="badge b-red">비회원 대기</span></td>
+        <td><span class="badge b-blue">알림톡</span></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" disabled></td>
+        <td style="font-weight:600;color:var(--blue)">정수민</td>
+        <td style="font-size:10px">010-6789-0123</td>
+        <td><span class="badge b-green">앱회원</span></td>
+        <td style="font-size:10px">셀프신청</td>
+        <td><span class="mono" style="font-weight:700;color:var(--blue);font-size:10px">R015</span></td>
+        <td style="font-size:10px;max-width:160px">LG 퓨리케어 공기청정기 28평</td>
+        <td style="font-weight:900;color:var(--orange)">15만</td>
+        <td style="font-size:10px">2026.04.06</td>
+        <td><span class="badge b-green">인증완료</span></td>
+        <td style="font-size:10px">카카오뱅크 3333-01-1234567</td>
+        <td><span class="badge b-orange">지급 대기</span></td>
+        <td><span class="badge b-green">지급</span> <span class="badge b-red">보류</span></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" disabled></td>
+        <td style="font-weight:600;color:var(--blue)">강민준</td>
+        <td style="font-size:10px">010-0123-4567</td>
+        <td><span class="badge b-green">앱회원</span></td>
+        <td style="font-size:10px">셀프신청</td>
+        <td><span class="mono" style="font-weight:700;color:var(--blue);font-size:10px">KT0146</span></td>
+        <td style="font-size:10px;max-width:160px">KT 500M+지니TV베이직+기가지니A</td>
+        <td style="font-weight:900;color:var(--orange)">45만</td>
+        <td style="font-size:10px">2026.03.20</td>
+        <td><span class="badge b-green">인증완료</span></td>
+        <td style="font-size:10px">우리 1002-123-456789</td>
+        <td><span class="badge b-green">지급 완료</span></td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" disabled></td>
+        <td style="font-weight:600;color:var(--blue)">한지민</td>
+        <td style="font-size:10px">010-7890-1234</td>
+        <td><span class="badge b-orange">비회원</span></td>
+        <td style="font-size:10px">CRM등록</td>
+        <td><span style="color:var(--text3);font-size:10px">-</span></td>
+        <td style="font-size:10px;max-width:160px">LG U+ 인터넷+TV</td>
+        <td style="font-weight:900;color:var(--orange)">40만</td>
+        <td style="font-size:10px">2026.03.25</td>
+        <td><span class="badge b-red">미인증</span></td>
+        <td style="font-size:10px;color:var(--red)">미등록</td>
+        <td><span class="badge b-gray">지급 보류</span></td>
+        <td><span class="badge b-green">지급</span> <span class="badge b-blue">알림톡</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <div style="font-size:9px;color:var(--text3);text-align:center;margin-top:4px">100건씩 로드 · 상태/유형/검색어 필터 · 체크박스 일괄 지급처리</div>
+
+  <div style="margin-top:14px;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">관리 버튼별 동작</div>
+  <table>
+    <thead><tr><th>버튼</th><th>조건</th><th>동작</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge b-green">지급</span></td><td>지급대기 / 보류 상태</td><td>PATCH /gifts/:id { status: '지급완료' } → paid_at 기록</td></tr>
+      <tr><td><span class="badge b-red">보류</span></td><td>지급대기 상태</td><td>PATCH /gifts/:id { status: '보류' }</td></tr>
+      <tr><td><span class="badge b-blue">알림톡</span></td><td>비회원대기 / 보류 상태</td><td>수동 알림톡 발송 (앱 가입 유도)</td></tr>
+      <tr><td><span class="badge" style="background:var(--blue);color:#fff">일괄 지급처리</span></td><td>체크박스 선택 건</td><td>선택된 건 일괄 지급완료 처리</td></tr>
+      <tr><td><span class="badge b-blue">엑셀 다운로드</span></td><td>전체</td><td>현재 필터 기준 엑셀 파일 다운로드</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>이름 클릭:</strong> 회원 상세 팝업 열림 (findAndOpenMember) → 기본정보, 계좌, 신청이력, 사은품탭 등 확인 가능<br>
+    <strong>티켓번호:</strong> 셀프신청/티켓 접수 시 자동 기록. CRM 등록 건은 티켓번호 없음 (-)
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 6: 마이페이지 사은품 현황 ===== -->
+<div class="step-label" style="background:var(--blue)">STEP 6 — 마이페이지 사은품 현황 (고객 UI)</div>
+<div class="step-card" style="border:2px solid var(--blue)">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">Gifts.jsx — 고객이 마이페이지에서 보는 화면</div>
+
+  <div class="grid2">
+    <!-- 지급 대기 카드 -->
+    <div style="background:var(--orange2);border:2px solid #fcd34d;border-radius:10px;padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--navy)">KT 인터넷+TV 500Mbps</div>
+          <div style="font-size:12px;color:#999;margin-top:4px">지급 예정일 2026.05.01</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:var(--orange);background:#fffbeb;padding:4px 10px;border-radius:20px">지급 대기</span>
+      </div>
+      <div style="font-size:18px;font-weight:700;color:var(--orange)">370,000원</div>
+    </div>
+
+    <!-- 지급 완료 카드 -->
+    <div style="background:#fff;border:2px solid #e5e7eb;border-radius:10px;padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--navy)">LG 정수기 렌탈</div>
+          <div style="font-size:12px;color:#999;margin-top:4px">지급 완료 2026.03.10</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:var(--green);background:#ecfdf5;padding:4px 10px;border-radius:20px">지급 완료</span>
+      </div>
+      <div style="font-size:18px;font-weight:700;color:var(--green)">150,000원</div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">UI 컴포넌트 구조</div>
+  <table>
+    <thead><tr><th>요소</th><th>표시 내용</th><th>스타일</th></tr></thead>
+    <tbody>
+      <tr><td><strong>제목</strong></td><td>"사은품 현황"</td><td>18px / 700 / #1a2744</td></tr>
+      <tr><td><strong>부제</strong></td><td>"설치 완료 후 현금으로 지급됩니다"</td><td>13px / #999</td></tr>
+      <tr><td><strong>카드 - 대기</strong></td><td>상품명 + 지급 예정일 + 금액</td><td>배경 #fef3c7 / 테두리 #fcd34d / 금액 orange</td></tr>
+      <tr><td><strong>카드 - 완료</strong></td><td>상품명 + 지급 완료일 + 금액</td><td>배경 #fff / 테두리 #e5e7eb / 금액 green</td></tr>
+      <tr><td><strong>상태 배지</strong></td><td>"지급 대기" / "지급 완료"</td><td>pill 스타일 (11px/700)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>앱회원만 확인 가능.</strong> 비회원은 마이페이지 접근 불가.<br>
+    <strong>파일:</strong> <span class="mono">client/src/pages/my/Gifts.jsx</span>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== 예외 케이스 ===== -->
+<div class="step-label" style="background:var(--red)">예외 케이스</div>
+<div class="step-card" style="border:2px solid var(--red)">
+  <table>
+    <thead><tr><th>케이스</th><th>상황</th><th>처리</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>비회원 장기 미가입</strong></td>
+        <td>3차 알림톡(D+7) 이후에도 미가입</td>
+        <td>비회원 대기 유지. 어드민에서 수동 알림톡 추가 발송 가능.</td>
+      </tr>
+      <tr>
+        <td><strong>PASS 인증만 미완료</strong></td>
+        <td>앱 가입 + 계좌 등록했으나 PASS 미인증</td>
+        <td>지급 불가. 본인인증 "미인증" 표시. 지급 대기 유지.</td>
+      </tr>
+      <tr>
+        <td><strong>계좌 미등록</strong></td>
+        <td>앱 가입 + PASS 인증했으나 계좌 미등록</td>
+        <td>지급 불가. 계좌 "미등록" 표시. bongi_user_profiles 계좌 필드 비어있음.</td>
+      </tr>
+      <tr>
+        <td><strong>CRM 등록 건</strong></td>
+        <td>콜센터에서 직접 접수한 건 (티켓번호 없음)</td>
+        <td>티켓번호 "-" 표시. 상품명은 텍스트로 기록. 사은품 금액 수기 입력.</td>
+      </tr>
+      <tr>
+        <td><strong>렌탈 반값할인</strong></td>
+        <td>현금 지급이 아닌 반값할인 프로모션</td>
+        <td>사은품 금액에 "반값할인" 표시. 계좌 입금 아닌 월요금 할인 적용.</td>
+      </tr>
+      <tr>
+        <td><strong>지급 보류</strong></td>
+        <td>확인이 필요한 건 (예: 계약 취소 우려, 정보 불일치)</td>
+        <td>어드민에서 "보류" 클릭 → hold 상태. 확인 후 "지급" 가능.</td>
+      </tr>
+      <tr>
+        <td><strong>사은품 금액 변경</strong></td>
+        <td>어드민에서 사은품 금액 수정</td>
+        <td>신규 신청부터 적용. 기존 계약 건은 계약 시점 금액 유지.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== DB: bongi_gifts ===== -->
+<div class="step-label" style="background:var(--green)">DB — bongi_gifts 테이블</div>
+<div class="step-card" style="border:2px solid var(--green)">
+  <table>
+    <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">id</td><td>integer PK</td><td>자동 증가</td></tr>
+      <tr><td class="mono">status</td><td>text</td><td>'지급대기' / '지급완료' / '보류' / '실패' / '취소' / '비회원대기'</td></tr>
+      <tr><td class="mono">paid_at</td><td>timestamptz</td><td>지급 완료 시각 (paid 시 자동 기록)</td></tr>
+      <tr><td class="mono">created_at</td><td>timestamptz</td><td>생성 시각 (계약완료 시 자동)</td></tr>
+    </tbody>
+  </table>
+  <div class="note" style="margin-top:12px">
+    <strong>연관 테이블:</strong><br>
+    <span class="mono">bongi_applications</span> — 신청 건 (gift_amount 필드에 사은품 금액 기록)<br>
+    <span class="mono">bongi_user_profiles</span> — 회원 정보 (bank_name, account_number, account_holder 계좌 필드)<br>
+    <span class="mono">bongi_user_profiles</span> — PASS 인증 (ci, verified_at 필드)
+  </div>
+
+  <div style="margin-top:14px;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">회원관리 팝업 연동</div>
+  <div class="flow">
+    <div class="fb fb-admin" style="font-size:9px">사은품관리에서<br>이름 클릭</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px">회원 상세 팝업<br>(findAndOpenMember)</div>
+    <div class="fa">→</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="fb fb-user" style="font-size:9px;padding:4px 8px">기본정보 (이름/전화/생년월일)</div>
+      <div class="fb fb-db" style="font-size:9px;padding:4px 8px">계좌정보 (은행/계좌/예금주)</div>
+      <div class="fb fb-api" style="font-size:9px;padding:4px 8px">신청/계약이력</div>
+      <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">사은품내역 (대기/완료/보류)</div>
+      <div class="fb fb-crm" style="font-size:9px;padding:4px 8px">포인트내역</div>
+    </div>
+  </div>
+</div>
+
+<!-- URL -->
+<div style="margin-top:24px;background:var(--bg2);border:2px solid var(--navy);border-radius:12px;padding:16px 20px">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">관련 URL + 파일</div>
+  <table>
+    <tbody>
+      <tr><td><strong>어드민</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/admin/" target="_blank" class="mono" style="color:var(--blue)">https://bongi-mobile-production.up.railway.app/admin/</a></td><td>13 사은품관리</td></tr>
+      <tr><td><strong>GitHub</strong></td><td><a href="https://github.com/vinsenzo83/bongi-mobile" target="_blank" class="mono" style="color:var(--blue)">https://github.com/vinsenzo83/bongi-mobile</a></td><td>소스코드</td></tr>
+      <tr><td><strong>어드민 UI</strong></td><td class="mono" style="color:var(--text3)">server/public/admin/index.html</td><td>1700줄~ 사은품관리 섹션</td></tr>
+      <tr><td><strong>API 라우트</strong></td><td class="mono" style="color:var(--text3)">server/routes/admin-platform.js</td><td>GET /gifts, PATCH /gifts/:id</td></tr>
+      <tr><td><strong>고객 UI</strong></td><td class="mono" style="color:var(--text3)">client/src/pages/my/Gifts.jsx</td><td>마이페이지 사은품 현황</td></tr>
+      <tr><td><strong>사은품 금액 데이터</strong></td><td class="mono" style="color:var(--text3)">server/data/providers/all_providers.json</td><td>gift_100m / gift_500m / gift_1g</td></tr>
+      <tr><td><strong>인터넷+TV 플로우</strong></td><td class="mono" style="color:var(--text3)">docs/flow-internet-tv.html</td><td>사은품 금액 편집 상세</td></tr>
+      <tr><td><strong>렌탈 플로우</strong></td><td class="mono" style="color:var(--text3)">docs/flow-rental.html</td><td>렌탈 사은품 종류 (현금/반값)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:11px">
+  봉이모바일 · 사은품 관리 플로우 · 2026-04-09<br>
+  관련: 인터넷+TV 플로우 · 렌탈 플로우 · 티켓 관리 플로우
+</div>
+
+</body>
+</html>

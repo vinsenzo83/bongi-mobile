@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이모바일 전체 데이터 흐름도</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#f8f7f4; --bg2:#fff; --border:#e2ddd6; --navy:#1a2744; --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5; --orange:#d97706; --orange2:#fef3c7; --red:#dc2626; --red2:#fee2e2; --text:#1a1a1a; --text2:#4a4a4a; --text3:#8a8a8a; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; padding:40px; max-width:1400px; margin:0 auto; }
+h1 { font-size:28px; font-weight:900; color:var(--navy); margin-bottom:8px; }
+.subtitle { font-size:13px; color:var(--text3); margin-bottom:40px; }
+.section { margin-bottom:48px; }
+.section-title { font-size:20px; font-weight:900; color:var(--navy); margin-bottom:4px; display:flex; align-items:center; gap:10px; }
+.section-num { background:var(--navy); color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+.section-desc { font-size:12px; color:var(--text3); margin-bottom:20px; }
+.card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; }
+.card-title { font-size:14px; font-weight:700; color:var(--navy); margin-bottom:12px; }
+table { width:100%; border-collapse:collapse; font-size:11px; }
+th { background:var(--navy); color:#fff; padding:8px 10px; text-align:left; font-weight:600; font-size:10px; letter-spacing:0.5px; }
+td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+tr:hover td { background:#f5f3ef; }
+.mono { font-family:'JetBrains Mono',monospace; font-size:10px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700; }
+.badge-blue { background:var(--blue2); color:var(--blue); }
+.badge-green { background:var(--green2); color:var(--green); }
+.badge-orange { background:var(--orange2); color:var(--orange); }
+.badge-red { background:var(--red2); color:var(--red); }
+.badge-gray { background:#f3f4f6; color:#6b7280; }
+/* Flow diagram */
+.flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:16px 0; }
+.flow-box { padding:10px 16px; border-radius:10px; font-size:11px; font-weight:600; text-align:center; min-width:100px; }
+.flow-arrow { color:var(--text3); font-size:18px; font-weight:700; }
+.flow-user { background:#eff6ff; border:2px solid var(--blue); color:var(--blue); }
+.flow-api { background:#fef3c7; border:2px solid var(--orange); color:var(--orange); }
+.flow-server { background:#f3e8ff; border:2px solid #7c3aed; color:#7c3aed; }
+.flow-db { background:var(--green2); border:2px solid var(--green); color:var(--green); }
+.flow-admin { background:var(--red2); border:2px solid var(--red); color:var(--red); }
+/* ERD */
+.erd-table { background:var(--bg2); border:2px solid var(--navy); border-radius:8px; overflow:hidden; display:inline-block; vertical-align:top; margin:6px; min-width:200px; }
+.erd-header { background:var(--navy); color:#fff; padding:6px 12px; font-size:11px; font-weight:700; }
+.erd-row { padding:3px 12px; font-size:10px; font-family:'JetBrains Mono',monospace; border-bottom:1px solid #eee; }
+.erd-row.pk { color:var(--blue); font-weight:600; }
+.erd-row.fk { color:var(--orange); }
+.erd-grid { display:flex; flex-wrap:wrap; gap:12px; }
+/* State */
+.state-flow { display:flex; align-items:center; gap:6px; margin:4px 0; }
+.state-node { padding:4px 10px; border-radius:6px; font-size:10px; font-weight:700; }
+.state-arrow { font-size:14px; color:var(--text3); }
+.overflow-x { overflow-x:auto; }
+</style>
+</head>
+<body>
+
+<h1>봉이모바일 전체 데이터 흐름도</h1>
+<div class="subtitle">실제 구현 기준 · 2026-04-09 · ~/bongi-mobile</div>
+
+<!-- ==================== 1. 유저 기준 전체 서비스 플로우 ==================== -->
+<div class="section">
+<div class="section-title"><div class="section-num">1</div>유저 기준 전체 서비스 플로우</div>
+<div class="section-desc">고객이 서비스를 이용하는 전체 여정</div>
+
+<div class="card" style="padding:28px">
+<div class="card-title" style="font-size:16px;margin-bottom:4px">🏠 전체 서비스 플로우 (원스톱)</div>
+<div style="font-size:10px;color:var(--text3);margin-bottom:24px">위에서 아래로 전체 흐름이 이어집니다</div>
+
+<!-- ===== STEP 1: 접속 ===== -->
+<div style="background:var(--navy);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:10px">STEP 1 — 고객 접속</div>
+<div class="flow">
+  <div class="flow-box" style="background:#f8f7f4;border:2px solid var(--navy);color:var(--navy);padding:10px 14px;font-size:11px;line-height:1.6">
+    <strong>고객 접속</strong> <span class="mono">/</span><br>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <span class="badge badge-green">회원 (로그인)</span>
+      <span class="badge badge-orange">비회원 (미가입)</span>
+    </div>
+  </div>
+</div>
+<div style="text-align:center;color:var(--text3);font-size:18px;margin:4px 0">↓</div>
+
+<!-- ===== STEP 2: 로그인 분기 ===== -->
+<div style="background:var(--navy);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:10px">STEP 2 — 회원가입/로그인 (회원인 경우)</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px">
+  <div style="border:2px solid #FEE500;border-radius:10px;padding:12px;font-size:10px;line-height:1.6">
+    <div style="font-weight:900;font-size:12px;margin-bottom:6px">🟡 카카오 로그인</div>
+    <strong>기본 제공:</strong> 닉네임, 프로필사진<br>
+    <strong>동의항목 설정 시:</strong> 이름, 이메일, 전화번호, 성별, 생일, 출생연도, CI, 배송지, 연령대<br>
+    <span style="color:var(--green);font-weight:700">→ 동의항목 설정 완료 시 추가 입력 거의 없음</span>
+  </div>
+  <div style="border:2px solid #dadce0;border-radius:10px;padding:12px;font-size:10px;line-height:1.6">
+    <div style="font-weight:900;font-size:12px;margin-bottom:6px">⚪ 구글 로그인</div>
+    <strong>기본 제공:</strong> 이름(full_name), 이메일, 프로필사진<br>
+    <strong>제공 불가:</strong> <span class="badge badge-red">전화번호</span> <span class="badge badge-red">생년월일</span> <span class="badge badge-red">성별</span><br>
+    <span style="color:var(--orange);font-weight:700">→ 전화번호 필수 입력 (자동매칭 키)</span>
+  </div>
+</div>
+<div class="flow">
+  <div class="flow-box flow-api" style="font-size:10px">Supabase OAuth</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">/auth/callback<br>user_metadata 확인</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:#f8f7f4;border:2px solid var(--navy);color:var(--navy);padding:6px 10px;font-size:9px">이름+전화 있음 → 바로 프로필 생성<br>없음 → 추가 입력 화면</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db" style="font-size:10px">bongi_user_profiles<br>생성/업데이트</div>
+</div>
+<div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:8px;padding:6px 12px;font-size:9px;color:var(--navy);margin-top:6px">
+  <strong>전화번호 = 핵심 키:</strong> 비회원 데이터(신청이력/사은품/중고폰)와 자동 매칭. 소셜 로그인 시 반드시 전화번호 확보.
+</div>
+<div style="text-align:center;color:var(--text3);font-size:18px;margin:8px 0">↓</div>
+
+<!-- ===== STEP 3: AI 채팅 ===== -->
+<div style="background:var(--navy);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:10px">STEP 3 — AI 채팅 상담</div>
+<div class="flow">
+  <div class="flow-box flow-user">AI 채팅<br><span class="mono">/chat</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:#f8f7f4;border:2px solid var(--navy);color:var(--navy);padding:8px 12px;font-size:10px;line-height:1.5">자연어로 상품 상담<br>요금 비교 · 추천 · 시세 조회<br>중고폰 매입가 확인</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:#f8f7f4;border:2px solid var(--navy);color:var(--navy);padding:6px 10px;font-size:10px;line-height:1.6">
+    <strong>상품 카테고리 선택</strong><br>
+    ① 인터넷+TV<br>
+    ② 휴대폰 매장+시세<br>
+    ③ 렌탈<br>
+    ④ 중고폰 매입
+  </div>
+</div>
+<div style="text-align:center;color:var(--text3);font-size:18px;margin:8px 0">↓</div>
+
+<!-- ===== STEP 4: 카테고리별 상세 + 카드 ===== -->
+<div style="background:var(--navy);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:10px">STEP 4 — 카테고리별 상품 탐색 → 카드 표시</div>
+
+<!-- 카테고리별 플로우 -->
+<div class="flow">
+  <div class="flow-box flow-user" style="min-width:110px">① 인터넷+TV</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">통신사 선택<br>(SKT/KT/LG U+)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">속도+TV+셋톱<br>+WiFi 조합</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue);font-size:9px;line-height:1.4;padding:6px 10px"><strong>카드</strong>: 월요금/결합할인<br>카드할인/실납부/사은품/티켓</div>
+</div>
+<div class="flow">
+  <div class="flow-box flow-user" style="min-width:110px">② 휴대폰 시세</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">통신사 선택</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">유형(번이/기변)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">기종 선택</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange);font-size:9px;line-height:1.4;padding:6px 10px"><strong>카드</strong>: 통신사별<br>번이·기변 가격/부가서비스</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">매장 선택<br>(8개 직영점)</div>
+</div>
+<div class="flow">
+  <div class="flow-box flow-user" style="min-width:110px">③ 렌탈</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">카테고리 필터<br>(정수기/TV/세탁기...)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:var(--green2);border:2px solid var(--green);color:var(--green);font-size:9px;line-height:1.4;padding:6px 10px"><strong>카드</strong>: 브랜드/월요금<br>제휴카드/프로모션/혜택</div>
+</div>
+<div class="flow">
+  <div class="flow-box flow-user" style="min-width:110px">④ 중고폰 매입</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">제조사→시리즈<br>→용량→등급</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:#f3e8ff;border:2px solid #7c3aed;color:#7c3aed;font-size:9px;line-height:1.4;padding:6px 10px"><strong>카드</strong>: 모델/용량<br>A~E등급별 매입가</div>
+</div>
+<div style="text-align:center;color:var(--text3);font-size:18px;margin:8px 0">↓</div>
+
+<!-- ===== STEP 5: 신청 분기 ===== -->
+<div style="background:var(--navy);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:10px">STEP 5 — 신청 방식 분기</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+  <!-- 셀프신청 -->
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div class="flow-box" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue);padding:8px 14px;font-size:11px"><strong>셀프신청</strong></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box flow-db" style="font-size:10px">DB 저장<br><span class="mono">bongi_applications</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box flow-admin" style="font-size:10px">어드민 신청현황</div>
+    <div class="flow-arrow">↔</div>
+    <div class="flow-box flow-server" style="font-size:10px">CRM 동기화</div>
+  </div>
+  <!-- 바로상담 -->
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div class="flow-box" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange);padding:8px 14px;font-size:11px"><strong>바로상담</strong></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box flow-server" style="font-size:10px">TM센터(CRM)<br>상담사 배정</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:#f8f7f4;border:2px solid var(--navy);color:var(--navy);padding:6px 10px;font-size:9px">상담 진행<br>상품 확정/설치일</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box flow-db" style="font-size:10px">DB 저장</div>
+    <div class="flow-arrow">↔</div>
+    <div class="flow-box flow-admin" style="font-size:10px">어드민 동기화</div>
+  </div>
+  <!-- 티켓 플로우 -->
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div class="flow-box" style="background:#f3e8ff;border:2px solid #7c3aed;color:#7c3aed;padding:8px 14px;font-size:11px"><strong>티켓전화</strong></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box flow-user" style="font-size:10px">티켓번호 확인<br><span class="mono">SK0188</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box flow-server" style="font-size:10px">콜센터 전화<br>상담사 티켓 조회</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box flow-server" style="font-size:10px">CRM 등록</div>
+    <div class="flow-arrow">↔</div>
+    <div class="flow-box flow-admin" style="font-size:10px">어드민 동기화</div>
+  </div>
+</div>
+<div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:8px;padding:6px 12px;font-size:9px;color:var(--navy);margin-top:8px">
+  <strong>어드민 ↔ CRM 양방향 실시간 동기화:</strong> 고객정보 · 신청상품 · 진행상태(상담중→계약완료→취소) · 설치완료→사은품 자동 생성
+</div>
+<div style="text-align:center;color:var(--text3);font-size:18px;margin:8px 0">↓</div>
+
+<!-- ===== STEP 6: 신청 후 처리 ===== -->
+<div style="background:var(--navy);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:10px">STEP 6 — 신청 후 처리 (회원/비회원 분기)</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+  <div style="border:2px solid var(--green);border-radius:10px;padding:12px;font-size:10px;line-height:1.6">
+    <div style="font-weight:900;color:var(--green);font-size:12px;margin-bottom:6px">✅ 회원인 경우</div>
+    상담중 → 계약완료<br>
+    → 사은품 자동 생성 (bongi_gifts)<br>
+    → 포인트 적립 (bongi_cash_balance)<br>
+    → 마이페이지에서 확인 가능<br>
+    → 친구초대 보상 지급
+  </div>
+  <div style="border:2px solid var(--orange);border-radius:10px;padding:12px;font-size:10px;line-height:1.6">
+    <div style="font-weight:900;color:var(--orange);font-size:12px;margin-bottom:6px">⚠️ 비회원인 경우</div>
+    상담중 → 계약완료<br>
+    → 사은품 대기 (앱 가입 후 지급)<br>
+    → <strong>앱 가입 유도 알림톡 발송</strong><br>
+    → 비회원 유형 분류:<br>
+    <span class="badge badge-orange">셀프신청</span> <span class="badge badge-blue">CRM등록</span> <span class="badge" style="background:#f3e8ff;color:#7c3aed">중고폰</span>
+  </div>
+</div>
+<div style="text-align:center;color:var(--text3);font-size:18px;margin:8px 0">↓</div>
+
+<!-- ===== STEP 7: 비회원 전환 ===== -->
+<div style="background:var(--navy);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:10px">STEP 7 — 비회원 → 앱회원 전환</div>
+<div class="flow">
+  <div class="flow-box" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange);font-size:10px">비회원<br>(전화번호만)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-admin" style="font-size:10px">알림톡 발송<br>"앱 가입 유도"</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">앱 가입<br>(카카오/구글)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db" style="font-size:10px">전화번호<br>자동 매칭</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:var(--green2);border:2px solid var(--green);color:var(--green);font-size:10px">앱회원 전환<br>기존 데이터 연결</div>
+</div>
+<div class="flow" style="margin-top:8px">
+  <div class="flow-box" style="background:#f3e8ff;border:2px solid #7c3aed;color:#7c3aed;font-size:10px">중고폰 고객<br>(PASS 인증됨)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-admin" style="font-size:10px">알림톡 발송</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user" style="font-size:10px">앱 가입</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db" style="font-size:10px">전화번호 매칭<br>+PASS 연결<br><strong>재인증 불필요</strong></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:var(--green2);border:2px solid var(--green);color:var(--green);font-size:10px">앱회원 전환<br>인증 완료 상태</div>
+</div>
+
+<!-- ===== STEP 8: 마이페이지 ===== -->
+<div style="text-align:center;color:var(--text3);font-size:18px;margin:8px 0">↓</div>
+<div style="background:var(--navy);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:10px">STEP 8 — 앱회원 마이페이지</div>
+<div class="flow">
+  <div class="flow-box flow-user">마이페이지<br><span class="mono">/my</span></div>
+  <div class="flow-arrow">→</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+    <div style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);padding:6px 10px;border-radius:8px;font-size:9px;font-weight:700;text-align:center">신청이력<br>상태 확인</div>
+    <div style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);padding:6px 10px;border-radius:8px;font-size:9px;font-weight:700;text-align:center">포인트 잔액<br>출금 신청</div>
+    <div style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);padding:6px 10px;border-radius:8px;font-size:9px;font-weight:700;text-align:center">사은품<br>지급 현황</div>
+    <div style="background:#f3e8ff;border:1.5px solid #7c3aed;color:#7c3aed;padding:6px 10px;border-radius:8px;font-size:9px;font-weight:700;text-align:center">돈지키미<br>약정 알람</div>
+  </div>
+</div>
+
+<!-- 회원 유형 4가지 + 상세 8탭 (통합) -->
+<div style="margin-top:16px;background:#f8f7f4;border:1.5px solid var(--border);border-radius:10px;padding:14px">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">👤 고객 유형 4가지</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">
+    <div style="background:var(--green2);border-radius:6px;padding:6px;font-size:9px;text-align:center;font-weight:700;color:var(--green)">앱회원<br><span style="font-weight:400">카카오/구글</span></div>
+    <div style="background:var(--orange2);border-radius:6px;padding:6px;font-size:9px;text-align:center;font-weight:700;color:var(--orange)">비회원<br><span style="font-weight:400">전화번호만</span></div>
+    <div style="background:var(--blue2);border-radius:6px;padding:6px;font-size:9px;text-align:center;font-weight:700;color:var(--blue)">CRM등록<br><span style="font-weight:400">외부유입</span></div>
+    <div style="background:#f3e8ff;border-radius:6px;padding:6px;font-size:9px;text-align:center;font-weight:700;color:#7c3aed">중고폰<br><span style="font-weight:400">PASS인증</span></div>
+  </div>
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">📋 어드민 회원 상세 8개 탭</div>
+  <div style="display:flex;flex-wrap:wrap;gap:4px">
+    <span class="badge badge-blue">기본정보</span>
+    <span class="badge badge-blue">계좌</span>
+    <span class="badge badge-blue">주소</span>
+    <span class="badge badge-blue">신청이력</span>
+    <span class="badge badge-green">사은품</span>
+    <span class="badge badge-green">포인트</span>
+    <span class="badge badge-orange">친구초대</span>
+    <span class="badge badge-orange">돈지키미</span>
+  </div>
+</div>
+<div class="flow">
+  <div class="flow-box" style="background:#f8f7f4;border:2px solid var(--navy);color:var(--navy);padding:8px 12px;font-size:10px;line-height:1.6">
+    <strong>고객 접속</strong><br><span class="mono">/</span><br>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <span class="badge badge-green">회원 (로그인)</span>
+      <span class="badge badge-orange">비회원</span>
+    </div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">AI 채팅 상담<br><span class="mono">/chat</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:#f8f7f4;border:2px solid var(--navy);color:var(--navy);padding:6px 10px;font-size:10px;line-height:1.6">
+    <strong>상품 카테고리 선택</strong><br>
+    ① 인터넷+TV<br>
+    ② 휴대폰 매장+시세<br>
+    ③ 렌탈<br>
+    ④ 중고폰 매입
+  </div>
+  <div class="flow-arrow">→</div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <!-- 셀프신청 루트 -->
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="flow-box" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue);padding:8px 12px;font-size:10px"><strong>셀프신청</strong></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box flow-db" style="font-size:10px">DB 저장<br><span class="mono">bongi_applications</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box flow-admin" style="font-size:10px">어드민 신청현황<br><span class="mono">show(6)</span></div>
+      <div class="flow-arrow">↔</div>
+      <div class="flow-box flow-server" style="font-size:10px">CRM 동기화</div>
+      <div class="flow-arrow">→</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);padding:4px 10px;border-radius:8px;font-size:9px;font-weight:700">회원 → 사은품 지급 + 포인트 적립</div>
+        <div style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);padding:4px 10px;border-radius:8px;font-size:9px;font-weight:700">비회원 → 앱 가입 유도 알림톡 발송</div>
+      </div>
+    </div>
+    <!-- 바로상담 루트 -->
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="flow-box" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange);padding:8px 12px;font-size:10px"><strong>바로상담</strong></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box flow-server" style="font-size:10px">TM센터(CRM)<br>상담사 배정</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="background:#f8f7f4;border:2px solid var(--navy);color:var(--navy);padding:6px 10px;font-size:9px;line-height:1.5">상담 진행<br>상품 확정/설치일 조율</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box flow-db" style="font-size:10px">DB 저장<br><span class="mono">bongi_applications</span></div>
+      <div class="flow-arrow">↔</div>
+      <div class="flow-box flow-admin" style="font-size:10px">어드민 동기화</div>
+      <div class="flow-arrow">→</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);padding:4px 10px;border-radius:8px;font-size:9px;font-weight:700">상담중 → 계약완료 → 사은품 자동 생성</div>
+        <div style="background:var(--red2);border:1.5px solid var(--red);color:var(--red);padding:4px 10px;border-radius:8px;font-size:9px;font-weight:700">상담중 → 취소</div>
+      </div>
+    </div>
+    <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:8px;padding:8px 12px;font-size:9px;color:var(--navy);line-height:1.6">
+      <strong>어드민 ↔ CRM 양방향 실시간 동기화:</strong> 고객정보(이름/전화) · 신청상품 · 진행상태(상담중→계약완료→취소) · 설치완료→사은품 자동 생성 · 상담사 배정은 CRM 내부 처리
+    </div>
+  </div>
+</div>
+
+<div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--navy)">카테고리별 상세 플로우</div>
+<div class="flow">
+  <div class="flow-box flow-user" style="min-width:110px">① 인터넷+TV<br><span class="mono">/products</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">통신사 선택<br>(SKT/KT/LG U+)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">속도+TV+셋톱<br>+WiFi 조합</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue);font-size:10px;line-height:1.5;padding:8px 12px"><strong>상품 카드 표시</strong><br>월요금/결합할인/카드할인<br>실납부/사은품/티켓번호</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-api">바로상담(전화)<br>or 셀프가입</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">bongi_applications</div>
+</div>
+<div class="flow">
+  <div class="flow-box flow-user" style="min-width:110px">② 휴대폰 시세<br><span class="mono">/stores</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">통신사 선택<br>(SKT/KT/LG U+)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">유형 선택<br>(번이/기변)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">기종 선택<br>(S26/아이폰17...)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange);font-size:10px;line-height:1.5;padding:8px 12px"><strong>시세 카드 표시</strong><br>모델/용량/통신사별<br>번이·기변 가격/부가서비스</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">매장 선택<br>(8개 직영점)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-api">매장 방문<br>or 전화 상담</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">bongi_applications</div>
+</div>
+<div class="flow">
+  <div class="flow-box flow-user" style="min-width:110px">③ 렌탈<br><span class="mono">/rental</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">카테고리 필터<br>(정수기/TV/세탁기...)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:var(--green2);border:2px solid var(--green);color:var(--green);font-size:10px;line-height:1.5;padding:8px 12px"><strong>렌탈 카드 표시</strong><br>브랜드/월요금/약정<br>제휴카드/프로모션/혜택</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-api">바로상담(전화)<br>or 셀프가입</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">bongi_applications</div>
+</div>
+<div class="flow">
+  <div class="flow-box flow-user" style="min-width:110px">④ 중고폰 매입<br><span class="mono">/chat</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">제조사→시리즈<br>→용량→등급 선택</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:#f3e8ff;border:2px solid #7c3aed;color:#7c3aed;font-size:10px;line-height:1.5;padding:8px 12px"><strong>매입가 카드 표시</strong><br>모델/용량<br>A~E등급별 매입가</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-api">매입 접수(모달)<br><span class="mono">/apply-used-phone</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">bongi_applications</div>
+</div>
+
+<!-- 카카오/구글 상세는 STEP 2에 통합됨 — 아래는 레거시 (숨김) -->
+<div style="display:none">
+<div class="card-title">🔐 회원가입/로그인 플로우 — 카카오 vs 구글</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th></th><th>카카오 로그인</th><th>구글 로그인</th></tr></thead>
+<tbody>
+<tr><td><strong>인증 방식</strong></td><td>Supabase OAuth (kakao)</td><td>Supabase OAuth (google)</td></tr>
+<tr><td><strong>기본 제공</strong></td><td><span class="badge badge-green">닉네임</span> <span class="badge badge-green">프로필사진</span><br>(동의 없이 자동 제공)</td><td><span class="badge badge-green">이름</span> <span class="badge badge-green">이메일</span> <span class="badge badge-green">프로필사진</span></td></tr>
+<tr><td><strong>동의항목 설정 시<br>추가로 받는 값</strong></td><td>
+  <span class="badge badge-blue">이름(실명)</span>
+  <span class="badge badge-blue">이메일</span>
+  <span class="badge badge-blue">전화번호</span><br>
+  <span class="badge badge-blue">성별</span>
+  <span class="badge badge-blue">생일</span>
+  <span class="badge badge-blue">출생연도</span><br>
+  <span class="badge badge-blue">CI(연계정보)</span>
+  <span class="badge badge-blue">배송지</span>
+  <span class="badge badge-blue">연령대</span><br>
+  <span style="font-size:9px;color:var(--text3)">※ 권한 신청 또는 비즈앱 필요</span>
+</td><td><span class="badge badge-gray">전화번호 제공 불가</span><br><span class="badge badge-gray">생년월일 제공 불가</span><br><span class="badge badge-gray">성별 제공 불가</span></td></tr>
+<tr><td><strong>추가 입력 필요</strong></td><td>동의항목 설정 완료 시<br><strong>추가 입력 거의 없음</strong></td><td><strong>전화번호 필수 입력</strong><br>(구글에서 제공 안 함)</td></tr>
+<tr><td><strong>콜백 처리</strong></td><td colspan="2">/auth/callback → user_metadata에서 값 확인 → 이름/전화 없으면 추가 입력 화면 → POST /auth/social-profile</td></tr>
+</tbody>
+</table>
+</div>
+<div class="flow" style="margin-top:12px">
+  <div class="flow-box flow-user">소셜 로그인<br>(카카오/구글)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-api">Supabase OAuth<br><span class="mono">signInWithOAuth</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">/auth/callback<br><span class="mono">user_metadata 확인</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:#f8f7f4;border:2px solid var(--navy);color:var(--navy);padding:6px 10px;font-size:10px;line-height:1.5">
+    이름+전화 있으면<br>→ 바로 프로필 생성<br><br>
+    없으면<br>→ <strong>추가 입력 화면</strong><br>(이름/전화번호)
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-api">POST /auth/social-profile<br><span class="mono">bongi_user_profiles 생성</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">마이페이지<br><span class="mono">/mypage</span></div>
+</div>
+<div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:8px;padding:8px 12px;font-size:9px;color:var(--navy);line-height:1.6;margin-top:10px">
+  <strong>전화번호 = 핵심 키:</strong> 비회원 데이터(신청이력/사은품/중고폰)와 자동 매칭되는 기준값. 소셜 로그인 시 반드시 전화번호 입력받아야 함.
+</div>
+</div>
+
+<div style="margin-top:16px">
+<div class="flow">
+  <div class="flow-box flow-user">로그인<br><span class="mono">/login</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">마이페이지<br><span class="mono">/my</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">포인트 확인<br><span class="mono">/my/points</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-api">출금 신청<br><span class="mono">POST /cash/withdraw</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-admin">어드민 출금관리<br><span class="mono">show(8)</span></div>
+</div>
+</div>
+</div>
+
+<!-- 레거시 카드 UI (숨김 - STEP 4에 통합) -->
+<div style="display:none">
+<div class="card-title">🃏 고객에게 최종 보여지는 상품 카드 UI 레거시</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+
+<div style="border:2px solid var(--blue);border-radius:12px;padding:14px;font-size:10px;line-height:1.6">
+  <div style="font-weight:900;font-size:12px;color:var(--blue);margin-bottom:8px">① 인터넷+TV 카드</div>
+  <div><span class="badge badge-blue">통신사</span> <span class="mono" style="color:var(--text3)">SK0188</span></div>
+  <div style="font-weight:700;font-size:13px;margin:6px 0">상품명</div>
+  <div style="color:var(--text3)">속도 / TV / 약정</div>
+  <div style="background:#f8fafc;border-radius:6px;padding:8px;margin:8px 0">
+    <div>월 요금: <strong>48,400원</strong></div>
+    <div style="color:var(--green)">결합할인: -11,000원</div>
+    <div style="color:var(--green)">카드할인: -15,000원</div>
+    <div style="border-top:1px solid #ddd;padding-top:4px;font-weight:700;color:var(--blue)">실납부: 22,400원</div>
+  </div>
+  <div style="font-weight:700;color:var(--orange)">현금 사은품 43만원</div>
+  <div style="display:flex;gap:4px;margin-top:8px">
+    <div style="flex:1;background:var(--blue);color:#fff;text-align:center;border-radius:6px;padding:4px;font-weight:700">바로상담</div>
+    <div style="flex:1;border:1px solid var(--blue);color:var(--blue);text-align:center;border-radius:6px;padding:4px;font-weight:700">셀프가입</div>
+  </div>
+</div>
+
+<div style="border:2px solid var(--orange);border-radius:12px;padding:14px;font-size:10px;line-height:1.6">
+  <div style="font-weight:900;font-size:12px;color:var(--orange);margin-bottom:8px">② 휴대폰 시세 카드</div>
+  <div><span class="badge badge-blue">통신사별</span></div>
+  <div style="font-weight:700;font-size:13px;margin:6px 0">모델명 (용량)</div>
+  <div style="background:#f8fafc;border-radius:6px;padding:8px;margin:8px 0">
+    <div>SKT 번이: <strong style="color:var(--blue)">9만</strong></div>
+    <div>SKT 기변: <strong>19만</strong></div>
+    <div>KT 번이: <strong style="color:var(--green)">-10만(공짜+10)</strong></div>
+    <div>LG 번이: <strong style="color:var(--green)">-15만(공짜+15)</strong></div>
+  </div>
+  <div style="color:var(--text3)">부가서비스: 우주패스/필수팩</div>
+  <div style="display:flex;gap:4px;margin-top:8px">
+    <div style="flex:1;background:var(--orange);color:#fff;text-align:center;border-radius:6px;padding:4px;font-weight:700">매장 방문</div>
+    <div style="flex:1;border:1px solid var(--orange);color:var(--orange);text-align:center;border-radius:6px;padding:4px;font-weight:700">전화 상담</div>
+  </div>
+</div>
+
+<div style="border:2px solid var(--green);border-radius:12px;padding:14px;font-size:10px;line-height:1.6">
+  <div style="font-weight:900;font-size:12px;color:var(--green);margin-bottom:8px">③ 렌탈 카드</div>
+  <div><span class="badge badge-green">브랜드</span> <span class="badge badge-blue">카테고리</span></div>
+  <div style="font-weight:700;font-size:13px;margin:6px 0">상품명</div>
+  <div style="color:var(--text3)">약정기간</div>
+  <div style="font-size:18px;font-weight:900;color:var(--blue);margin:6px 0">월 14,450원</div>
+  <div style="font-weight:700;color:var(--orange)">현금 혜택금액</div>
+  <div style="color:var(--text3);margin:4px 0">• 제휴카드: KB카드 (40만↑)</div>
+  <div style="color:var(--text3)">• 프로모션: 반값할인</div>
+  <div style="display:flex;gap:4px;margin-top:8px">
+    <div style="flex:1;background:var(--green);color:#fff;text-align:center;border-radius:6px;padding:4px;font-weight:700">바로상담</div>
+    <div style="flex:1;border:1px solid var(--green);color:var(--green);text-align:center;border-radius:6px;padding:4px;font-weight:700">셀프가입</div>
+  </div>
+</div>
+
+<div style="border:2px solid #7c3aed;border-radius:12px;padding:14px;font-size:10px;line-height:1.6">
+  <div style="font-weight:900;font-size:12px;color:#7c3aed;margin-bottom:8px">④ 중고폰 매입 카드</div>
+  <div style="font-weight:700;font-size:13px;margin:6px 0">iPhone 16 Pro Max</div>
+  <div style="color:var(--text3)">256G · A등급</div>
+  <div style="background:#f8fafc;border-radius:6px;padding:8px;margin:8px 0">
+    <div>A등급: <strong style="color:var(--green)">1,110,000원</strong></div>
+    <div>B등급: <strong style="color:var(--blue)">980,000원</strong></div>
+    <div>C등급: <strong style="color:var(--orange)">920,000원</strong></div>
+    <div>D등급: <strong style="color:var(--red)">560,000원</strong></div>
+  </div>
+  <div style="color:var(--text3)">출처: Tredit API (bonge.tredit.ai)</div>
+  <div style="display:flex;gap:4px;margin-top:8px">
+    <div style="flex:1;background:#7c3aed;color:#fff;text-align:center;border-radius:6px;padding:4px;font-weight:700">매입 접수</div>
+    <div style="flex:1;border:1px solid #7c3aed;color:#7c3aed;text-align:center;border-radius:6px;padding:4px;font-weight:700">다른 모델</div>
+  </div>
+</div>
+
+</div>
+
+<div class="overflow-x">
+<table>
+<thead><tr><th>카드 UI</th><th>표시 필드</th><th>데이터 소스</th><th>DB 테이블</th></tr></thead>
+<tbody>
+<tr><td><strong>인터넷+TV</strong></td><td>통신사, 티켓번호, 상품명, 속도/TV/약정, 월요금, 결합할인, 카드할인, 실납부, 사은품</td><td>API: GET /products/internet</td><td>bongi_tickets + speeds + tv + settop + wifi</td></tr>
+<tr><td><strong>휴대폰 시세</strong></td><td>모델명, 용량, 통신사별 번이/기변 가격, 부가서비스</td><td>API: GET /admin/platform/phone-prices</td><td>bongi_phone_prices</td></tr>
+<tr><td><strong>렌탈</strong></td><td>브랜드, 카테고리, 상품명, 약정, 월요금, 혜택금액, 제휴카드, 프로모션</td><td>API: GET /rental</td><td>bongi_rental_products</td></tr>
+<tr><td><strong>중고폰 매입</strong></td><td>제조사, 모델명, 용량, A~E등급별 매입가</td><td>API: GET /products/used-phone-catalog</td><td>bongi_used_phone_prices</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- 레거시 서비스별 플로우 (숨김) -->
+<div style="display:none">
+<div class="card-title">📱 서비스별 플로우 레거시</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th>서비스</th><th>고객 행동</th><th>프론트 페이지</th><th>API 호출</th><th>DB 테이블</th><th>어드민 페이지</th></tr></thead>
+<tbody>
+<tr><td><strong>인터넷+TV</strong></td><td>상품 탐색 → 셀프신청/전화</td><td>Home, Products, Chat</td><td>GET /products/internet<br>POST /applications</td><td>bongi_applications<br>bongi_tickets</td><td>SKT/KT/LG 상품(03~05)<br>신청현황(10)<br>티켓관리(09)</td></tr>
+<tr><td><strong>렌탈</strong></td><td>카탈로그 → 상세 → 신청</td><td>RentalCatalog, RentalDetail</td><td>GET /rental<br>POST /applications</td><td>bongi_rental_products<br>bongi_applications</td><td>렌탈상품(06)<br>신청현황(10)</td></tr>
+<tr><td><strong>중고폰 매입</strong></td><td>기종선택 → 시세확인 → 접수</td><td>Chat(UsedPhoneSelectCard)<br>ApplyUsedPhone</td><td>GET /products/used-phone-catalog<br>POST /used-phone/buyback</td><td>bongi_used_phone_prices<br>bongi_used_phone_buyback</td><td>중고폰매입(07)<br>중고폰매입현황(11)</td></tr>
+<tr><td><strong>AI 채팅</strong></td><td>자연어로 상품 상담</td><td>Chat</td><td>POST /chat/message</td><td>bongi_chat_sessions<br>bongi_chat_messages</td><td>—</td></tr>
+<tr><td><strong>포인트</strong></td><td>적립확인 → 출금신청</td><td>MyPage, Points</td><td>GET /cash/balance<br>POST /cash/withdraw</td><td>bongi_cash_balance<br>bongi_withdrawals</td><td>포인트관리(14)</td></tr>
+<tr><td><strong>친구초대</strong></td><td>추천코드 공유 → 보상</td><td>MyPage</td><td>POST /referrals/register</td><td>bongi_referrals<br>bongi_rewards</td><td>—</td></tr>
+<tr><td><strong>후기</strong></td><td>별점 + 텍스트 작성</td><td>Home(후기섹션)</td><td>POST /reviews</td><td>bongi_reviews</td><td>후기관리(15)</td></tr>
+<tr><td><strong>돈지키미</strong></td><td>약정 알람 설정</td><td>Chat(set_alarm)</td><td>POST /alarms</td><td>bongi_user_alarms</td><td>돈지키미(16)</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- 레거시 회원유형 (숨김) -->
+<div style="display:none">
+<div class="card-title">👤 회원 유형 분류 레거시</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+  <div style="border:2px solid var(--green);border-radius:10px;padding:12px;font-size:10px;text-align:center">
+    <div style="font-weight:900;color:var(--green);font-size:12px;margin-bottom:6px">앱회원</div>
+    카카오/구글 소셜 로그인<br>마이페이지 이용 가능<br>포인트 적립/출금
+  </div>
+  <div style="border:2px solid var(--orange);border-radius:10px;padding:12px;font-size:10px;text-align:center">
+    <div style="font-weight:900;color:var(--orange);font-size:12px;margin-bottom:6px">비회원</div>
+    앱 미가입 상태<br>셀프신청/CRM등록 가능<br>전화번호만 보유
+  </div>
+  <div style="border:2px solid var(--blue);border-radius:10px;padding:12px;font-size:10px;text-align:center">
+    <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">CRM등록</div>
+    외부 유입 (전화/매장)<br>CRM→어드민 동기화<br>앱 가입 유도 대상
+  </div>
+  <div style="border:2px solid #7c3aed;border-radius:10px;padding:12px;font-size:10px;text-align:center">
+    <div style="font-weight:900;color:#7c3aed;font-size:12px;margin-bottom:6px">중고폰 고객</div>
+    PASS 인증 완료<br>이름/생년월일/성별/통신사 확보<br>앱 가입 시 재인증 불필요
+  </div>
+</div>
+
+<div class="card-title">비회원 → 앱회원 전환 흐름</div>
+<div class="flow">
+  <div class="flow-box" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange)">비회원<br>(전화번호만)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-admin">알림톡 발송<br>"앱 가입 유도"</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">앱 가입<br>(카카오/구글)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">전화번호<br>자동 매칭</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:var(--green2);border:2px solid var(--green);color:var(--green)">앱회원 전환<br>기존 데이터 연결</div>
+</div>
+
+<div class="card-title" style="margin-top:12px">중고폰 고객 → 앱회원 전환 흐름</div>
+<div class="flow">
+  <div class="flow-box" style="background:#f3e8ff;border:2px solid #7c3aed;color:#7c3aed">중고폰 고객<br>(PASS 인증 완료)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-admin">알림톡 발송<br>"앱 가입 유도"</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">앱 가입<br>(카카오/구글)</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">전화번호 매칭<br>PASS 데이터 연결<br><strong>재인증 불필요</strong></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box" style="background:var(--green2);border:2px solid var(--green);color:var(--green)">앱회원 전환<br>인증 완료 상태</div>
+</div>
+
+<div class="card-title" style="margin-top:12px">알림톡 발송 대상</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th>대상</th><th>조건</th><th>발송 내용</th><th>목적</th></tr></thead>
+<tbody>
+<tr><td><span class="badge badge-orange">미인증 회원 342명</span></td><td>앱회원 but verified_at = null</td><td>PASS 본인인증 유도</td><td>계좌등록 → 사은품 지급 가능</td></tr>
+<tr><td><span class="badge badge-blue">비회원 128명</span></td><td>전화번호만 보유, 앱 미가입</td><td>앱 가입 유도 (전화번호 자동 매칭)</td><td>앱회원 전환 → 포인트/사은품</td></tr>
+<tr><td><span class="badge" style="background:#f3e8ff;color:#7c3aed">중고폰 고객</span></td><td>PASS 인증 완료, 앱 미가입</td><td>앱 가입 유도 (재인증 불필요 안내)</td><td>앱회원 전환</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- 레거시 회원상세 (숨김) -->
+<div style="display:none">
+<div class="card-title">📋 회원 상세 팝업 레거시</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th>탭</th><th>표시 필드</th><th>DB 테이블</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td><strong>① 기본정보</strong></td><td>이름, 전화번호, 생년월일, 성별, 통신사, CI, 인증일, 가입일, 포인트잔액</td><td>bongi_user_profiles</td><td>PASS 인증 시 자동 입력</td></tr>
+<tr><td><strong>② 계좌정보</strong></td><td>은행명, 계좌번호, 예금주</td><td>bongi_user_profiles (bank_name, account_number, account_holder)</td><td>미등록 시 사은품 지급 보류</td></tr>
+<tr><td><strong>③ 주소목록</strong></td><td>별칭, 도로명주소, 상세, 수령인, 연락처, 기본주소 여부</td><td>bongi_addresses (user_id FK)</td><td>1:N 관계</td></tr>
+<tr><td><strong>④ 신청/계약이력</strong></td><td>날짜, 티켓번호, 상품, 채널, 동기화방향, 상태, 사은품, 계약일</td><td>bongi_applications (phone 매칭)</td><td>전화번호 기준 매칭</td></tr>
+<tr><td><strong>⑤ 사은품내역</strong></td><td>금액, 상태(대기/지급완료), 지급일, 지급계좌</td><td>bongi_gifts</td><td>계약완료 시 자동 생성</td></tr>
+<tr><td><strong>⑥ 포인트내역</strong></td><td>유형(적립/차감), 금액, 설명, 잔액, 발생일</td><td>bongi_cash_history + bongi_cash_balance</td><td>출금 시 잔액 차감</td></tr>
+<tr><td><strong>⑦ 친구초대</strong></td><td>내 초대코드, 초대한 친구 목록, 상태(가입/계약), 보상금액</td><td>bongi_referrals + bongi_rewards</td><td>등급별 보상 차등</td></tr>
+<tr><td><strong>⑧ 돈지키미</strong></td><td>항목명(약정), 만료일, D-day, 알림 발송 여부</td><td>bongi_user_alarms</td><td>D-30 임박 시 자동 알림</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- 레거시 티켓플로우 (숨김) -->
+<div style="display:none">
+<div class="card-title">📞 티켓 플로우 레거시</div>
+<div class="flow">
+  <div class="flow-box flow-user">AI 채팅에서<br>티켓번호 확인<br><span class="mono">SK0188</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">콜센터 전화<br><span class="mono">1588-XXXX</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-server">상담사 티켓조회<br><span class="mono">CRM</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">CRM 등록<br><span class="mono">bongi_applications</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-admin">어드민 동기화<br><span class="mono">CRM→어드민</span></div>
+</div>
+</div>
+</div>
+
+<!-- ==================== 2. 데이터 흐름도 ==================== -->
+<div class="section">
+<div class="section-title"><div class="section-num">2</div>프론트 → API → 백엔드 → DB → 어드민 데이터 흐름도</div>
+<div class="section-desc">계층별 데이터 이동 경로</div>
+
+<div class="card">
+<div class="card-title">전체 아키텍처</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th>계층</th><th>기술</th><th>위치</th><th>역할</th></tr></thead>
+<tbody>
+<tr><td><span class="badge badge-blue">프론트</span></td><td>React 19 + Vite</td><td>client/src/</td><td>고객 UI, API 호출</td></tr>
+<tr><td><span class="badge badge-orange">API 레이어</span></td><td>Express Router</td><td>server/routes/</td><td>REST API, 인증, 검증</td></tr>
+<tr><td><span class="badge" style="background:#f3e8ff;color:#7c3aed">서비스</span></td><td>Claude AI, Playwright</td><td>server/services/</td><td>AI 채팅, 크롤링, 인센티브</td></tr>
+<tr><td><span class="badge badge-green">DB</span></td><td>Supabase (PostgreSQL)</td><td>dugaqvvnhsgenhmhuyju</td><td>23개 테이블, RLS</td></tr>
+<tr><td><span class="badge badge-red">어드민</span></td><td>HTML 단일파일 (정적)</td><td>server/public/admin/</td><td>관리자 UI, API fetch</td></tr>
+</tbody>
+</table>
+</div>
+
+<div style="margin-top:20px">
+<div class="card-title">상품 데이터 흐름</div>
+<div class="flow">
+  <div class="flow-box flow-admin">어드민에서<br>상품 수정</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-api">PATCH API<br><span class="mono">/admin/platform/*</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">Supabase<br>테이블 업데이트</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-user">프론트 자동 반영<br>(API → 최신 데이터)</div>
+  <div class="flow-arrow">+</div>
+  <div class="flow-box flow-server">AI 채팅 반영<br>(chat-tools.js)</div>
+</div>
+
+<div class="card-title" style="margin-top:16px">티켓 연동 흐름</div>
+<div class="flow">
+  <div class="flow-box flow-admin">상품 비활성화</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-api">PATCH rental/:id<br><span class="mono">{is_active:false}</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">bongi_rental_products<br>is_active=false</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">bongi_tickets<br>연쇄 비활성</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-admin">티켓관리 반영</div>
+</div>
+
+<div class="card-title" style="margin-top:16px">공시지원금 크롤링 흐름</div>
+<div class="flow">
+  <div class="flow-box flow-server">node-cron<br>매일 09:00 KST</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-server">Playwright<br>smartchoice.or.kr</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-db">bongi_subsidy_data<br>일괄 교체</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box flow-admin">어드민 자동 표시</div>
+  <div class="flow-arrow">+</div>
+  <div class="flow-box flow-server">AI 채팅 참조</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ==================== 3. ERD ==================== -->
+<div class="section">
+<div class="section-title"><div class="section-num">3</div>주요 DB 테이블 구조 (ERD)</div>
+<div class="section-desc">Supabase 23개 테이블 — 실제 데이터 건수 포함</div>
+
+<div class="card">
+<div class="card-title">핵심 테이블 관계</div>
+<div class="erd-grid">
+
+<div class="erd-table">
+<div class="erd-header">bongi_tickets (1,053건)</div>
+<div class="erd-row pk">id: integer PK</div>
+<div class="erd-row">ticket_number: text (SK0001, R001...)</div>
+<div class="erd-row">ticket_type: text (carrier/rental)</div>
+<div class="erd-row">carrier: text</div>
+<div class="erd-row fk">speed_id → bongi_internet_speeds.id</div>
+<div class="erd-row fk">tv_id → bongi_tv_products.id</div>
+<div class="erd-row fk">settop_id → bongi_settop_boxes.id</div>
+<div class="erd-row fk">wifi_id → bongi_wifi_products.id</div>
+<div class="erd-row">rental_name, rental_monthly_fee</div>
+<div class="erd-row">is_active: boolean</div>
+<div class="erd-row">total_monthly_fee: integer</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_rental_products (51건)</div>
+<div class="erd-row pk">id: serial PK</div>
+<div class="erd-row">ticket_number: text (R001~R051)</div>
+<div class="erd-row">category, brand, product_name</div>
+<div class="erd-row">monthly_fee, normal_fee</div>
+<div class="erd-row">card_name, card_spend, card_fee</div>
+<div class="erd-row">contract_period, management</div>
+<div class="erd-row">image1, image2, image3, product_url</div>
+<div class="erd-row">is_active: boolean</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_used_phone_prices (302건)</div>
+<div class="erd-row pk">id: serial PK</div>
+<div class="erd-row">manufacturer, series, model, storage</div>
+<div class="erd-row">grade_a~grade_e: integer</div>
+<div class="erd-row">UNIQUE(manufacturer, model, storage)</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_applications (12건)</div>
+<div class="erd-row pk">id: uuid PK</div>
+<div class="erd-row">type: 셀프신청/티켓/CRM등록</div>
+<div class="erd-row">name, phone</div>
+<div class="erd-row">user_type: 앱회원/비회원</div>
+<div class="erd-row">channel, sync_direction</div>
+<div class="erd-row">product_ticket, product_name</div>
+<div class="erd-row">gift_amount: integer</div>
+<div class="erd-row">status: 신청완료/상담중/계약완료/취소</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_user_profiles (9건)</div>
+<div class="erd-row pk">id: uuid PK</div>
+<div class="erd-row">display_name, phone</div>
+<div class="erd-row">user_type: 앱회원/비회원</div>
+<div class="erd-row">channel, social_provider</div>
+<div class="erd-row">carrier, verified_at</div>
+<div class="erd-row">bank_name, account_number</div>
+<div class="erd-row">point_balance, referral_code</div>
+<div class="erd-row">member_tier: normal/bronze/silver/gold</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_mobile_plans (168건)</div>
+<div class="erd-row pk">id: serial PK</div>
+<div class="erd-row">carrier: SKT/KT/LG U+</div>
+<div class="erd-row">plan_name, monthly_fee</div>
+<div class="erd-row">discount_fee, data_amount</div>
+<div class="erd-row">network, conditions, benefits</div>
+<div class="erd-row">is_active: boolean</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_phone_prices (18건)</div>
+<div class="erd-row pk">id: serial PK</div>
+<div class="erd-row">model, short_name</div>
+<div class="erd-row">skt_bunyi, skt_gibyun</div>
+<div class="erd-row">kt_bunyi, kt_gibyun</div>
+<div class="erd-row">lg_bunyi, lg_gibyun</div>
+<div class="erd-row">category: 5G/openbox</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_internet_speeds (9건)</div>
+<div class="erd-row pk">id: integer PK</div>
+<div class="erd-row">carrier, speed, monthly_fee</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_tv_products (20건)</div>
+<div class="erd-row pk">id: integer PK</div>
+<div class="erd-row">carrier, name, channels</div>
+<div class="erd-row">monthly_fee, is_active</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_settop_boxes (12건)</div>
+<div class="erd-row pk">id: integer PK</div>
+<div class="erd-row">carrier, name, monthly_fee</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_wifi_products (15건)</div>
+<div class="erd-row pk">id: integer PK</div>
+<div class="erd-row">carrier, name, monthly_fee</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_stores (8건)</div>
+<div class="erd-row pk">id: integer PK</div>
+<div class="erd-row">name, address, phone, hours</div>
+<div class="erd-row">lat, lng, region</div>
+<div class="erd-row">is_active: boolean</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_reviews (99건)</div>
+<div class="erd-row pk">id: uuid PK</div>
+<div class="erd-row">category, product_name</div>
+<div class="erd-row">rating: integer, content: text</div>
+<div class="erd-row">author_name, image_url</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_subsidy_data (크롤링)</div>
+<div class="erd-row pk">id: serial PK</div>
+<div class="erd-row">model, carrier, plan_name</div>
+<div class="erd-row">subsidy_amount, updated_date</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_chat_sessions (242건)</div>
+<div class="erd-row pk">id: uuid PK</div>
+<div class="erd-row">user_id, session_type</div>
+</div>
+
+<div class="erd-table">
+<div class="erd-header">bongi_chat_messages (704건)</div>
+<div class="erd-row pk">id: uuid PK</div>
+<div class="erd-row fk">session_id → bongi_chat_sessions.id</div>
+<div class="erd-row">role, content</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ==================== 4. API 목록 ==================== -->
+<div class="section">
+<div class="section-title"><div class="section-num">4</div>주요 API 목록과 request/response 예시</div>
+<div class="section-desc">공개 API + 어드민 API — 총 50+ 엔드포인트</div>
+
+<div class="card">
+<div class="card-title">🔓 공개 API (인증 불필요)</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th>Method</th><th>Path</th><th>설명</th><th>Request</th><th>Response</th></tr></thead>
+<tbody>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/products/categories</td><td>상품 카테고리</td><td>—</td><td class="mono">[{id, name, icon, desc}]</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/products/:category</td><td>카테고리별 상품</td><td>—</td><td class="mono">[{ticket, name, price}]</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/products/used-phone-catalog</td><td>중고폰 기종/용량</td><td>—</td><td class="mono">{makers, series, storages, total:302}</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/stores</td><td>매장 목록</td><td>—</td><td class="mono">[{name, address, phone, lat, lng}]</td></tr>
+<tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/applications</td><td>셀프 신청</td><td class="mono">{name, phone, product_ticket}</td><td class="mono">{id, status:'신청완료'}</td></tr>
+<tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/chat/message</td><td>AI 채팅</td><td class="mono">{sessionId, message}</td><td class="mono">{reply, tools_used}</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/reviews</td><td>후기 목록</td><td>—</td><td class="mono">[{author, rating, content}]</td></tr>
+<tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/reviews</td><td>후기 작성</td><td class="mono">{category, rating, content}</td><td class="mono">{id, created_at}</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/rental/:ticket</td><td>렌탈 상세</td><td>—</td><td class="mono">{ticket, category, brand, ...}</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/cash/balance</td><td>포인트 잔액</td><td>—</td><td class="mono">{balance, user_id}</td></tr>
+<tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/cash/withdraw</td><td>출금 신청</td><td class="mono">{amount, bank_name, account_number}</td><td class="mono">{id, status:'대기'}</td></tr>
+<tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/referrals/register</td><td>친구초대 등록</td><td class="mono">{referrer_code, phone}</td><td class="mono">{referral_id}</td></tr>
+<tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/alarms</td><td>돈지키미 알람 등록</td><td class="mono">{type, product, end_date}</td><td class="mono">{id, alarm_id}</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">🔧 어드민 API (인증 없이 접근)</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th>Method</th><th>Path</th><th>설명</th><th>DB 테이블</th><th>데이터 수</th></tr></thead>
+<tbody>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/stats</td><td>대시보드 통계</td><td>여러 테이블 집계</td><td>—</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/members</td><td>회원 목록</td><td>user_profiles + agents</td><td>13명</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/used-phones</td><td>중고폰 매입 시세</td><td>bongi_used_phone_prices</td><td>302개</td></tr>
+<tr><td><span class="badge badge-orange">PATCH</span></td><td class="mono">/api/admin/platform/used-phones/price</td><td>개별 시세 수정</td><td>bongi_used_phone_prices</td><td>—</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/rental</td><td>렌탈 상품</td><td>bongi_rental_products</td><td>51개</td></tr>
+<tr><td><span class="badge badge-orange">PATCH</span></td><td class="mono">/api/admin/platform/rental/:id</td><td>렌탈 수정 (→티켓연동)</td><td>rental + tickets</td><td>—</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/mobile-plans</td><td>요금제</td><td>bongi_mobile_plans</td><td>168개</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/phone-prices</td><td>신규폰 시세</td><td>bongi_phone_prices</td><td>18개</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/carrier-products</td><td>인터넷+TV 전체</td><td>speeds+tv+wifi+settop</td><td>56개</td></tr>
+<tr><td><span class="badge badge-orange">PATCH</span></td><td class="mono">/api/admin/platform/internet-speed/:id</td><td>속도 수정 (→티켓)</td><td>speeds + tickets</td><td>—</td></tr>
+<tr><td><span class="badge badge-orange">PATCH</span></td><td class="mono">/api/admin/platform/tv-product/:id</td><td>TV 수정 (→티켓)</td><td>tv + tickets</td><td>—</td></tr>
+<tr><td><span class="badge badge-orange">PATCH</span></td><td class="mono">/api/admin/platform/wifi-product/:id</td><td>WiFi 수정 (→티켓)</td><td>wifi + tickets</td><td>—</td></tr>
+<tr><td><span class="badge badge-orange">PATCH</span></td><td class="mono">/api/admin/platform/settop-box/:id</td><td>셋톱 수정 (→티켓)</td><td>settop + tickets</td><td>—</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/tickets</td><td>티켓 목록</td><td>bongi_tickets</td><td>1,053개</td></tr>
+<tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/admin/platform/tickets/sync</td><td>티켓 동기화</td><td>전체 연쇄 비활성</td><td>—</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/applications</td><td>신청 현황</td><td>bongi_applications</td><td>12건</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/stores</td><td>매장 관리</td><td>bongi_stores</td><td>8개</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/gifts</td><td>사은품</td><td>bongi_gifts</td><td>0건</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/reviews</td><td>후기 관리</td><td>bongi_reviews</td><td>99건</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/cash/withdrawals</td><td>출금 관리</td><td>bongi_withdrawals</td><td>0건</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/don-jikimi</td><td>돈지키미</td><td>bongi_user_alarms</td><td>0건</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/notifications</td><td>알림 관리</td><td>bongi_notifications</td><td>0건</td></tr>
+<tr><td><span class="badge badge-green">GET</span></td><td class="mono">/api/admin/platform/subsidy</td><td>공시지원금</td><td>bongi_subsidy_data</td><td>크롤링</td></tr>
+<tr><td><span class="badge badge-blue">POST</span></td><td class="mono">/api/admin/platform/subsidy/crawl</td><td>수동 크롤링</td><td>smartchoice.or.kr</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<!-- ==================== 5. 상태값 및 상태 전이도 ==================== -->
+<div class="section">
+<div class="section-title"><div class="section-num">5</div>카테고리별 상태값 및 상태 전이도</div>
+<div class="section-desc">각 테이블의 status 필드와 허용되는 전이</div>
+
+<div class="card">
+<div class="card-title">📋 신청 (bongi_applications.status)</div>
+<div class="state-flow">
+  <div class="state-node" style="background:var(--blue2);color:var(--blue)">신청완료</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--orange2);color:var(--orange)">상담중</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--green2);color:var(--green)">계약완료</div>
+</div>
+<div class="state-flow">
+  <div class="state-node" style="background:var(--blue2);color:var(--blue)">신청완료</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--orange2);color:var(--orange)">상담중</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--red2);color:var(--red)">취소</div>
+</div>
+<div style="font-size:10px;color:var(--text3);margin-top:4px">DB 허용값: 신청완료, 상담중, 계약완료, 취소 (전부 한글)</div>
+</div>
+
+<div class="card">
+<div class="card-title">💰 출금 (bongi_withdrawals.status)</div>
+<div class="state-flow">
+  <div class="state-node" style="background:var(--orange2);color:var(--orange)">대기</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--green2);color:var(--green)">승인</div>
+</div>
+<div class="state-flow">
+  <div class="state-node" style="background:var(--orange2);color:var(--orange)">대기</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--red2);color:var(--red)">반려</div>
+</div>
+<div style="font-size:10px;color:var(--text3);margin-top:4px">반려 시 잔액 자동 환불 + 환불 기록 (add_cash_balance RPC)</div>
+</div>
+
+<div class="card">
+<div class="card-title">🎁 사은품 (bongi_gifts.status)</div>
+<div class="state-flow">
+  <div class="state-node" style="background:#f3f4f6;color:#6b7280">지급대기</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--green2);color:var(--green)">지급완료</div>
+</div>
+<div class="state-flow">
+  <div class="state-node" style="background:#f3f4f6;color:#6b7280">지급대기</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--orange2);color:var(--orange)">보류</div>
+</div>
+<div style="font-size:10px;color:var(--text3);margin-top:4px">DB 허용값: 지급대기 / 지급완료 / 보류 / 실패 / 취소 / 비회원대기</div>
+</div>
+
+<div class="card">
+<div class="card-title">👥 친구초대 (bongi_referrals.status)</div>
+<div class="state-flow">
+  <div class="state-node" style="background:#f3f4f6;color:#6b7280">가입완료</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--orange2);color:var(--orange)">계약완료</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--green2);color:var(--green)">보상완료</div>
+</div>
+<div class="state-flow">
+  <div class="state-node" style="background:#f3f4f6;color:#6b7280">가입완료</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--red2);color:var(--red)">취소</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">🏷️ 포인트 (bongi_cash_history.status)</div>
+<div class="state-flow">
+  <div class="state-node" style="background:var(--blue2);color:var(--blue)">적립</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--orange2);color:var(--orange)">출금</div>
+  <div class="state-arrow">→</div>
+  <div class="state-node" style="background:var(--green2);color:var(--green)">완료</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">📦 상품/티켓 (is_active)</div>
+<div class="state-flow">
+  <div class="state-node" style="background:var(--green2);color:var(--green)">활성 (true)</div>
+  <div class="state-arrow">↔</div>
+  <div class="state-node" style="background:#f3f4f6;color:#6b7280">비활성 (false)</div>
+</div>
+<div style="font-size:10px;color:var(--text3);margin-top:4px">삭제 없음 — 비활성 처리만. 비활성 티켓 → 신규 신청 불가, 기존 주문 보존.</div>
+</div>
+</div>
+
+<!-- ==================== 6. 필드 매핑표 ==================== -->
+<div class="section">
+<div class="section-title"><div class="section-num">6</div>유저 입력값과 어드민 화면 간 필드 매핑표</div>
+<div class="section-desc">고객이 입력한 값이 어드민에서 어떻게 보이는지</div>
+
+<div class="card">
+<div class="card-title">📝 신청 접수 → 어드민 신청현황</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th>고객 입력 (프론트)</th><th>API 필드</th><th>DB 컬럼</th><th>어드민 표시 (show(6))</th></tr></thead>
+<tbody>
+<tr><td>이름</td><td class="mono">name</td><td class="mono">bongi_applications.name</td><td>고객명</td></tr>
+<tr><td>전화번호</td><td class="mono">phone</td><td class="mono">bongi_applications.phone</td><td>연락처</td></tr>
+<tr><td>선택한 상품 티켓</td><td class="mono">product_ticket</td><td class="mono">bongi_applications.product_ticket</td><td>티켓번호 (SK0188)</td></tr>
+<tr><td>상품명 (자동)</td><td class="mono">product_name</td><td class="mono">bongi_applications.product_name</td><td>상품</td></tr>
+<tr><td>—</td><td class="mono">channel: '셀프신청'</td><td class="mono">bongi_applications.channel</td><td>유입경로 <span class="badge badge-blue">셀프신청</span></td></tr>
+<tr><td>—</td><td class="mono">type: 'self'</td><td class="mono">bongi_applications.type</td><td>—</td></tr>
+<tr><td>—</td><td class="mono">status: '신청완료'</td><td class="mono">bongi_applications.status</td><td>상태 <span class="badge badge-blue">신청완료</span></td></tr>
+<tr><td>—</td><td class="mono">sync_direction: '어드민→CRM'</td><td class="mono">bongi_applications.sync_direction</td><td>동기화 방향</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">👤 회원가입 → 어드민 회원관리</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th>고객 입력</th><th>API 필드</th><th>DB 컬럼</th><th>어드민 표시 (show(1))</th></tr></thead>
+<tbody>
+<tr><td>카카오/구글 로그인</td><td class="mono">provider</td><td class="mono">bongi_user_profiles.social_provider</td><td>소셜 <span class="badge badge-orange">카카오</span></td></tr>
+<tr><td>이름 (소셜에서)</td><td class="mono">display_name</td><td class="mono">bongi_user_profiles.display_name</td><td>이름</td></tr>
+<tr><td>전화번호</td><td class="mono">phone</td><td class="mono">bongi_user_profiles.phone</td><td>전화번호</td></tr>
+<tr><td>PASS 본인인증</td><td class="mono">verified_at</td><td class="mono">bongi_user_profiles.verified_at</td><td>인증 <span class="badge badge-green">완료</span></td></tr>
+<tr><td>계좌 등록</td><td class="mono">bank_name</td><td class="mono">bongi_user_profiles.bank_name</td><td>계좌 <span class="badge badge-green">등록</span></td></tr>
+<tr><td>—</td><td class="mono">user_type: '앱회원'</td><td class="mono">bongi_user_profiles.user_type</td><td>유형 <span class="badge badge-green">앱회원</span></td></tr>
+<tr><td>—</td><td class="mono">point_balance</td><td class="mono">bongi_user_profiles.point_balance</td><td>포인트 12,000P</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">📱 중고폰 매입 시세 → 어드민 + AI 채팅</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th>고객 선택 (채팅 UI)</th><th>API 필드</th><th>DB 컬럼</th><th>어드민 표시</th><th>AI 채팅 응답</th></tr></thead>
+<tbody>
+<tr><td>제조사 (Apple)</td><td class="mono">manufacturer</td><td class="mono">bongi_used_phone_prices.manufacturer</td><td>제조사</td><td>"아이폰 시세입니다"</td></tr>
+<tr><td>시리즈 (iPhone 16)</td><td class="mono">series</td><td class="mono">bongi_used_phone_prices.series</td><td>시리즈</td><td>—</td></tr>
+<tr><td>모델 (Pro Max)</td><td class="mono">model</td><td class="mono">bongi_used_phone_prices.model</td><td>모델명</td><td>"iPhone 16 Pro Max"</td></tr>
+<tr><td>용량 (256G)</td><td class="mono">storage</td><td class="mono">bongi_used_phone_prices.storage</td><td>용량</td><td>"256G 기준"</td></tr>
+<tr><td>등급 (A)</td><td class="mono">—</td><td class="mono">bongi_used_phone_prices.grade_a</td><td>A등급 가격</td><td>"A등급: 1,110,000원"</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">🖥️ 화면-데이터 매핑표 (어드민 25개 메뉴)</div>
+<div class="overflow-x">
+<table>
+<thead><tr><th>#</th><th>메뉴</th><th>show()</th><th>API 엔드포인트</th><th>DB 테이블</th><th>fetch 함수</th></tr></thead>
+<tbody>
+<tr><td>01</td><td>대시보드</td><td>show(0)</td><td class="mono">GET /stats</td><td>여러 테이블 집계</td><td class="mono">loadDashboardStats()</td></tr>
+<tr><td>02</td><td>회원 관리</td><td>show(1)</td><td class="mono">GET /members</td><td>user_profiles + agents</td><td class="mono">loadMembers()</td></tr>
+<tr><td>03</td><td>SKT 상품</td><td>showCarrier('SKT')</td><td class="mono">GET /carrier-products</td><td>speeds+tv+wifi+settop</td><td>하드코딩 + generateCombos()</td></tr>
+<tr><td>04</td><td>KT 상품</td><td>showCarrier('KT')</td><td class="mono">GET /carrier-products</td><td>speeds+tv+wifi+settop</td><td>하드코딩 + generateCombos()</td></tr>
+<tr><td>05</td><td>LG U+ 상품</td><td>showCarrier('LGU')</td><td class="mono">GET /carrier-products</td><td>speeds+tv+wifi+settop</td><td>하드코딩 + generateCombos()</td></tr>
+<tr><td>06</td><td>렌탈 상품</td><td>showProd('rental')</td><td class="mono">GET /rental</td><td>bongi_rental_products</td><td class="mono">loadRentalData()</td></tr>
+<tr><td>07</td><td>중고폰 매입</td><td>showProd('phone')</td><td class="mono">GET /used-phones</td><td>bongi_used_phone_prices</td><td class="mono">loadUsedPhoneData()</td></tr>
+<tr><td>08</td><td>매장 관리</td><td>show(4)</td><td class="mono">GET /stores</td><td>bongi_stores</td><td class="mono">loadStores()</td></tr>
+<tr><td>09</td><td>티켓 관리</td><td>show(5)</td><td class="mono">GET /tickets</td><td>bongi_tickets</td><td class="mono">loadTickets() + renderTicketCombo()</td></tr>
+<tr><td>10</td><td>신청 현황</td><td>show(6)</td><td class="mono">GET /applications</td><td>bongi_applications</td><td class="mono">loadApplications()</td></tr>
+<tr><td>11</td><td>중고폰 현황</td><td>show(19)</td><td class="mono">GET /used-phones</td><td>bongi_used_phone_prices</td><td class="mono">renderUsedPhoneTable()</td></tr>
+<tr><td>13</td><td>사은품 관리</td><td>show(7)</td><td class="mono">GET /gifts</td><td>bongi_gifts</td><td class="mono">loadGiftsAdmin()</td></tr>
+<tr><td>14</td><td>포인트 관리</td><td>show(8)</td><td class="mono">GET /cash/withdrawals</td><td>bongi_withdrawals</td><td class="mono">loadWithdrawals()</td></tr>
+<tr><td>15</td><td>후기 관리</td><td>show(9)</td><td class="mono">GET /reviews</td><td>bongi_reviews</td><td class="mono">loadReviewsAdmin()</td></tr>
+<tr><td>16</td><td>돈지키미</td><td>show(10)</td><td class="mono">GET /don-jikimi</td><td>bongi_user_alarms</td><td class="mono">loadDonJikimi()</td></tr>
+<tr><td>17</td><td>알림 관리</td><td>show(24)</td><td class="mono">GET /notifications</td><td>bongi_notifications</td><td class="mono">loadNotifications()</td></tr>
+<tr><td>18</td><td>통계</td><td>show(11)</td><td class="mono">GET /stats</td><td>여러 테이블 집계</td><td class="mono">loadDashboardStats()</td></tr>
+<tr><td>19</td><td>모바일 요금제</td><td>show(12)</td><td class="mono">GET /mobile-plans</td><td>bongi_mobile_plans</td><td class="mono">loadMobilePlanData()</td></tr>
+<tr><td>20</td><td>공시지원금</td><td>show(23)</td><td class="mono">GET /subsidy</td><td>bongi_subsidy_data</td><td class="mono">loadSubsidyData()</td></tr>
+<tr><td>21</td><td>가족결합</td><td>show(14)</td><td>—</td><td>—</td><td>하드코딩 (simBundles)</td></tr>
+<tr><td>22</td><td>가이드</td><td>show(17)</td><td>—</td><td>—</td><td>하드코딩</td></tr>
+<tr><td>23</td><td>시뮬레이터</td><td>show(21)</td><td>—</td><td>—</td><td>하드코딩 (simInet/simTV)</td></tr>
+<tr><td>24</td><td>크롤링 관리</td><td>show(20)</td><td class="mono">POST /subsidy/crawl</td><td>bongi_subsidy_data</td><td class="mono">syncTickets()</td></tr>
+<tr><td>25</td><td>체크리스트</td><td>show(22)</td><td>—</td><td>—</td><td>localStorage</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:11px">
+  봉이모바일 플랫폼 · 전체 데이터 흐름도 · 생성일 2026-04-09<br>
+  React + Express + Supabase + Claude AI · Railway 배포
+</div>
+
+</body>
+</html>
