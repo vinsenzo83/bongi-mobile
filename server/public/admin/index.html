@@ -8784,6 +8784,14 @@ function loadMembers() {
           bank: m.bank_name || '',
           accountNum: m.account_number || '',
           accountHolder: m.account_holder || '',
+          birth: m.birth_date || '-',
+          gender: m.gender || '-',
+          ci: m.ci || '-',
+          referralCode: m.referral_code || '-',
+          referralBy: m.referred_by || '',
+          friends: [],
+          guard: [],
+          orders: [],
         });
       });
       var html = customers.map(function(m) {
