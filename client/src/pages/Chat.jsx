@@ -146,30 +146,18 @@ export default function Chat() {
 
       {/* 휴대폰 기종 선택 */}
       {showPhoneSelect && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-          <div style={{ width: '100%', maxWidth: 420, marginBottom: 0, animation: 'slideUp 0.25s ease' }}>
-            <div style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '16px 16px 24px', maxHeight: '80vh', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#1a2744' }}>{'📱'} 휴대폰 시세 조회</span>
-                <button onClick={() => setShowPhoneSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
-              </div>
-              <PhoneSelectCard onComplete={(query) => { setShowPhoneSelect(false); chat.sendMessage(query); }} />
-            </div>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 420, animation: 'slideUp 0.25s ease' }}>
+            <PhoneSelectCard onComplete={(query) => { setShowPhoneSelect(false); chat.sendMessage(query); }} onClose={() => setShowPhoneSelect(false)} />
           </div>
         </div>
       )}
 
       {/* 중고폰 매입 선택 */}
       {showUsedPhoneSelect && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
           <div style={{ width: '100%', maxWidth: 420, animation: 'slideUp 0.25s ease' }}>
-            <div style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '16px 16px 24px', maxHeight: '80vh', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#1a2744' }}>{'📦'} 중고폰 매입 시세</span>
-                <button onClick={() => setShowUsedPhoneSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
-              </div>
-              <UsedPhoneSelectCard onComplete={(query) => { setShowUsedPhoneSelect(false); chat.sendMessage(query); }} />
-            </div>
+            <UsedPhoneSelectCard onComplete={(query) => { setShowUsedPhoneSelect(false); chat.sendMessage(query); }} onClose={() => setShowUsedPhoneSelect(false)} />
           </div>
         </div>
       )}
@@ -189,30 +177,18 @@ export default function Chat() {
 
       {/* 인터넷 선택 모달 */}
       {showInternetSelect && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
           <div style={{ width: '100%', maxWidth: 420, animation: 'slideUp 0.25s ease' }}>
-            <div style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '16px 16px 24px', maxHeight: '80vh', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#1a2744' }}>{'📡'} 인터넷+TV 상품 조회</span>
-                <button onClick={() => setShowInternetSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
-              </div>
-              <InternetSelectCard onComplete={(query) => { setShowInternetSelect(false); chat.sendMessage(query); }} />
-            </div>
+            <InternetSelectCard onComplete={(query) => { setShowInternetSelect(false); chat.sendMessage(query); }} onClose={() => setShowInternetSelect(false)} />
           </div>
         </div>
       )}
 
       {/* 렌탈 카테고리 선택 */}
       {showRentalSelect && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
           <div style={{ width: '100%', maxWidth: 420, animation: 'slideUp 0.25s ease' }}>
-            <div style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '16px 16px 24px', maxHeight: '80vh', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#1a2744' }}>{'🏠'} 렌탈 상품 조회</span>
-                <button onClick={() => setShowRentalSelect(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>{'✕'}</button>
-              </div>
-              <RentalSelectCard onComplete={(query) => { setShowRentalSelect(false); chat.sendMessage(query); }} />
-            </div>
+            <RentalSelectCard onComplete={(query) => { setShowRentalSelect(false); chat.sendMessage(query); }} onClose={() => setShowRentalSelect(false)} />
           </div>
         </div>
       )}

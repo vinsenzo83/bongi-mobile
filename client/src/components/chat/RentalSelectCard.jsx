@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { colors, fonts, sheetStyles } from './designTokens';
 
 const CATEGORIES = [
   { key: '정수기', icon: '💧', desc: '냉온정/냉정/온정' },
   { key: '공기청정기', icon: '🌬️', desc: '가정용/대형' },
-  { key: 'TV', icon: '📺', desc: 'OLED/QLED/스탠바이미' },
+  { key: 'TV', icon: '📺', desc: 'OLED/QLED' },
   { key: '세탁기', icon: '🧺', desc: '드럼/통돌이' },
   { key: '건조기', icon: '☀️', desc: '히트펌프/전기식' },
   { key: '세탁기+건조기', icon: '🧺☀️', desc: '세트 할인' },
@@ -30,10 +31,9 @@ const BRANDS = {
   '식기세척기': ['LG', '삼성', '쿠쿠'],
 };
 
-export default function RentalSelectCard({ onComplete }) {
+export default function RentalSelectCard({ onComplete, onClose }) {
   const [step, setStep] = useState(1);
   const [category, setCategory] = useState('');
-  const [brand, setBrand] = useState('');
 
   const handleComplete = (selectedBrand) => {
     const query = `${category} ${selectedBrand} 렌탈 상품 추천해줘`;
@@ -41,56 +41,91 @@ export default function RentalSelectCard({ onComplete }) {
   };
 
   return (
-    <div style={s.card}>
-      {/* 프로그래스 */}
-      <div style={s.progress}>
-        {['카테고리', '브랜드'].map((label, i) => (
-          <div key={label} style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ ...s.dot, background: i + 1 <= step ? '#10b981' : '#e8e8e8', color: i + 1 <= step ? '#fff' : '#999' }}>{i + 1}</div>
-            <div style={{ fontSize: 10, color: i + 1 === step ? '#10b981' : '#999', marginTop: 2 }}>{label}</div>
-          </div>
-        ))}
+    <div style={s.sheet}>
+      {/* Handle bar */}
+      <div style={sheetStyles.handle} />
+
+      {/* Header: title + close */}
+      <div style={s.header}>
+        <div style={sheetStyles.title}>렌탈 상품 조회</div>
+        {onClose && (
+          <button style={sheetStyles.closeBtn} onClick={onClose}>X</button>
+        )}
       </div>
 
-      {/* 스텝 1: 카테고리 */}
+      {/* Progress steps */}
+      <div style={sheetStyles.progressWrap}>
+        <div style={sheetStyles.stepLabel(step === 1)}>
+          <span style={sheetStyles.stepNumber(step === 1)}>01</span> STEP
+        </div>
+        <div style={sheetStyles.stepDivider} />
+        <div style={sheetStyles.stepLabel(step === 2)}>
+          <span style={sheetStyles.stepNumber(step === 2)}>02</span> STEP
+        </div>
+      </div>
+
+      {/* Step 1: Category selection */}
       {step === 1 && (
         <div>
-          <div style={s.stepTitle}>어떤 가전을 찾으시나요?</div>
+          <div style={sheetStyles.sectionTitle}>어떤 가전을 찾으시나요?</div>
           <div style={s.grid}>
             {CATEGORIES.map(c => (
-              <button key={c.key} onClick={() => { setCategory(c.key); setStep(2); }} style={s.catBtn}>
-                <div style={{ fontSize: 24, marginBottom: 4 }}>{c.icon}</div>
-                <div style={{ fontWeight: 700, fontSize: 12 }}>{c.key}</div>
-                <div style={{ fontSize: 9, color: '#999' }}>{c.desc}</div>
+              <button
+                key={c.key}
+                onClick={() => { setCategory(c.key); setStep(2); }}
+                style={s.catBtn}
+              >
+                <div style={s.catIcon}>{c.icon}</div>
+                <div style={s.catName}>{c.key}</div>
+                <div style={s.catDesc}>{c.desc}</div>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* 스텝 2: 브랜드 */}
+      {/* Step 2: Brand selection */}
       {step === 2 && (
         <div>
-          <div style={s.stepTitle}>브랜드를 선택하세요</div>
-          <div style={s.selectedInfo}>{category}</div>
-          <div style={s.options}>
-            <button onClick={() => handleComplete('전체')} style={{ ...s.optionBtn, borderColor: '#10b981' }}>
-              <span style={{ fontSize: 14 }}>🔍</span>
+          <div style={sheetStyles.sectionTitle}>브랜드를 선택하세요</div>
+          <div style={sheetStyles.selectedBadge}>
+            {CATEGORIES.find(c => c.key === category)?.icon} {category}
+          </div>
+          <div style={s.brandList}>
+            {/* All brands option */}
+            <button
+              onClick={() => handleComplete('전체')}
+              style={{ ...sheetStyles.optionCard, ...sheetStyles.optionCardActive }}
+            >
+              <div style={sheetStyles.logoCircle(colors.primaryLight)}>
+                <span style={{ fontSize: 18 }}>🔍</span>
+              </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>전체 브랜드</div>
-                <div style={{ fontSize: 11, color: '#999' }}>{category} 전체 보기</div>
+                <div style={s.brandName}>전체 브랜드</div>
+                <div style={s.brandSub}>{category} 전체 보기</div>
               </div>
             </button>
+
+            {/* Individual brands */}
             {(BRANDS[category] || []).map(b => (
-              <button key={b} onClick={() => handleComplete(b)} style={s.optionBtn}>
-                <span style={{ fontSize: 14 }}>🏷️</span>
+              <button
+                key={b}
+                onClick={() => handleComplete(b)}
+                style={sheetStyles.optionCard}
+              >
+                <div style={sheetStyles.logoCircle(colors.surface)}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{b[0]}</span>
+                </div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{b}</div>
+                  <div style={s.brandName}>{b}</div>
                 </div>
               </button>
             ))}
           </div>
-          <button onClick={() => setStep(1)} style={{ ...s.backBtn, width: '100%' }}>{'←'} 이전</button>
+
+          <button onClick={() => setStep(1)} style={sheetStyles.backBtn}>
+            ← 이전
+          </button>
         </div>
       )}
     </div>
@@ -98,14 +133,72 @@ export default function RentalSelectCard({ onComplete }) {
 }
 
 const s = {
-  card: { background: '#fff', border: '1px solid #e8e8e8', borderRadius: 12, padding: 16, maxWidth: 340 },
-  progress: { display: 'flex', gap: 4, marginBottom: 14 },
-  dot: { width: 22, height: 22, borderRadius: '50%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 },
-  stepTitle: { fontSize: 14, fontWeight: 700, color: '#1a2744', marginBottom: 12 },
-  selectedInfo: { fontSize: 11, color: '#10b981', background: '#d1fae5', borderRadius: 6, padding: '4px 10px', marginBottom: 10, display: 'inline-block' },
-  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 },
-  catBtn: { padding: '12px 8px', borderRadius: 10, border: '1.5px solid #e8e8e8', background: '#fff', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center' },
-  options: { display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 },
-  optionBtn: { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 10, border: '1.5px solid #e8e8e8', background: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, color: '#1a1a1a', textAlign: 'left', width: '100%' },
-  backBtn: { height: 40, borderRadius: 8, border: '1px solid #d0d0d0', background: '#fff', color: '#555', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', padding: '0 16px' },
+  sheet: {
+    background: colors.white,
+    borderRadius: '16px 16px 0 0',
+    padding: '16px 20px 24px',
+    maxHeight: '85vh',
+    overflowY: 'auto',
+    fontFamily: fonts.family,
+    position: 'relative',
+  },
+  header: {
+    position: 'relative',
+    marginBottom: 4,
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 10,
+    marginBottom: 12,
+  },
+  catBtn: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '14px 4px 10px',
+    borderRadius: 12,
+    border: `1.5px solid ${colors.border}`,
+    background: colors.white,
+    cursor: 'pointer',
+    fontFamily: fonts.family,
+    textAlign: 'center',
+    aspectRatio: '1 / 1',
+    minHeight: 0,
+  },
+  catIcon: {
+    fontSize: 26,
+    marginBottom: 6,
+    lineHeight: 1,
+  },
+  catName: {
+    fontWeight: 700,
+    fontSize: 11,
+    color: colors.text,
+    lineHeight: 1.3,
+    wordBreak: 'keep-all',
+  },
+  catDesc: {
+    fontSize: 9,
+    color: colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 1.2,
+  },
+  brandList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 0,
+    marginBottom: 8,
+  },
+  brandName: {
+    fontWeight: 700,
+    fontSize: 14,
+    color: colors.text,
+  },
+  brandSub: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
 };
