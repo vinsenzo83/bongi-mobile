@@ -3184,7 +3184,7 @@ const screens = [
               <th>셀프등급</th><th>입고후검수</th><th>보상등급</th><th>보상가격</th><th>주문번호</th><th>관리</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="buyback-tbody">
             ${(function(){
               return [
                 [47,'순천점','-','20260405-0003855200802288205179','권홍석 (6010)','Galaxy S23 Ultra( SM-S918 )','후보상','2026-04-05 19:20:40','접수완료','','A','','','0',''],
@@ -9005,10 +9005,14 @@ function loadUsedPhoneBuyback() {
     .then(function(d) {
       var items = d.buybacks || d.data || [];
       if(!items.length) return;
-      var c = document.getElementById('screen-container');
-      if(!c) return;
-      var tbody = c.querySelector('.wf-table tbody');
-      if(!tbody) return;
+      var tbody = document.getElementById('buyback-tbody');
+      if(!tbody) {
+        var c = document.getElementById('screen-container');
+        if(!c) return;
+        var tables = c.querySelectorAll('.wf-table tbody');
+        tbody = tables[tables.length - 1];
+        if(!tbody) return;
+      }
       var html = items.map(function(r, i) {
         var status = r.status || '-';
         var stClass = status==='송금완료'?'green':status==='매입대기'?'navy':status==='접수완료'?'blue':status==='동의대기'?'gray':status==='반송완료'?'red':'orange';
