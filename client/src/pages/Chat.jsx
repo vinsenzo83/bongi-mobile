@@ -13,7 +13,7 @@ import RentalSelectCard from '../components/chat/RentalSelectCard.jsx';
 
 // 렌탈 관련 질문 감지
 function isRentalQuery(msg) {
-  const keywords = ['렌탈', '정수기', '공기청정기', '안마의자', '비데', '건조기', '세탁기', '로봇청소기', '매트리스', '가전'];
+  const keywords = ['렌탈', '정수기', '공기청정기', '안마의자', '비데', '건조기', '세탁기', '로봇청소기', '매트리스', '가전', '식기세척기', '노트북', '안마기'];
   return keywords.some(k => msg.includes(k));
 }
 
@@ -134,6 +134,8 @@ export default function Chat() {
             setShowUsedPhoneSelect(true);
           } else if (isPhoneQuery(m)) {
             setShowPhoneSelect(true);
+          } else if (isInternetQuery(m)) {
+            setShowInternetSelect(true);
           } else if (isRentalQuery(m)) {
             setShowRentalSelect(true);
           } else {

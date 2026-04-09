@@ -12,6 +12,7 @@ const CATEGORIES = [
   { key: '비데', icon: '🚽', desc: '방수/건조' },
   { key: '매트리스', icon: '🛏️', desc: '라텍스/메모리폼' },
   { key: '로봇청소기', icon: '🤖', desc: '물걸레/흡입' },
+  { key: '식기세척기', icon: '🍽️', desc: '빌트인/프리스탠딩' },
 ];
 
 const BRANDS = {
@@ -26,6 +27,7 @@ const BRANDS = {
   '비데': ['코웨이', '노비타'],
   '매트리스': ['코웨이', '시몬스'],
   '로봇청소기': ['LG', '삼성', '로보락'],
+  '식기세척기': ['LG', '삼성', '쿠쿠'],
 };
 
 export default function RentalSelectCard({ onComplete }) {
