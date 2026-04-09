@@ -774,33 +774,7 @@ const screens = [
             </tr>
           </thead>
           <tbody id="members-tbody">
-            ${[
-              ['홍길동','010-1234-5678','앱회원','셀프신청','카카오','KT','완료','등록','등록','2026.04.01','3건','12,000P'],
-              ['김철수','010-2345-6789','앱회원','티켓','구글','-','미완료','미등록','미등록','2026.03.15','1건','2,000P'],
-              ['이영희','010-3456-7890','비회원','셀프신청','-','-','미완료','미등록','미등록','2026.03.10','1건','0P'],
-              ['박민수','010-4567-8901','비회원','CRM등록','-','-','미완료','미등록','미등록','2026.02.20','1건','0P'],
-              ['최지은','010-5678-9012','앱회원','CRM등록','카카오','LG U+','완료','등록','미등록','2026.02.01','0건','1,000P'],
-              ['강민준','010-0123-4567','앱회원','셀프신청','카카오','KT','완료','등록','등록','2026.01.15','2건','0P'],
-              ['윤서연','010-8901-2345','앱회원','티켓','구글','SKT','완료','등록','등록','2026.02.10','0건','2,000P'],
-              ['한지민','010-7890-1234','비회원','CRM등록','-','-','미완료','미등록','미등록','2026.03.10','0건','0P'],
-              ['권홍석','010-6789-6010','비회원','중고폰','-','SKT','완료','등록','등록','2026.04.05','0건','0P'],
-            ].map(([name,phone,type,channel,social,carrier,verify,account,address,date,cnt,pt],i) => `
-              <tr>
-                <td><input type="checkbox"></td>
-                <td style="font-weight:600;color:var(--navy)">${name}</td>
-                <td style="font-size:11px">${phone}</td>
-                <td><span class="wf-status ${type==='앱회원'?'green':'orange'}" style="font-size:10px">${type}</span></td>
-                <td><span style="font-size:10px;color:var(--text3)">${channel}</span></td>
-                <td>${social!=='-'?'<span class="wf-status '+(social==='카카오'?'yellow':'blue')+'" style="background:'+(social==='카카오'?'#fef3c7':'var(--blue2)')+';">'+social+'</span>':'<span style="color:var(--text3);font-size:10px">미가입</span>'}</td>
-                <td style="font-weight:600;color:${carrier==='-'?'var(--text3)':'var(--navy)'}">${carrier}</td>
-                <td><span class="wf-status ${verify==='완료'?'green':'orange'}">${verify}</span></td>
-                <td><span class="wf-status ${account==='등록'?'green':'gray'}">${account}</span></td>
-                <td><span class="wf-status ${address==='등록'?'green':'gray'}">${address}</span></td>
-                <td style="font-size:11px">${date}</td>
-                <td>${cnt}</td>
-                <td style="font-weight:600;color:var(--orange)">${pt}</td>
-                <td><span class="action-btn default" onclick="openMemberDetail(${i})" style="cursor:pointer">상세</span></td>
-              </tr>`).join('')}
+            <tr><td colspan="14" style="text-align:center;padding:20px;color:var(--text3)">회원 데이터 불러오는 중...</td></tr>
           </tbody>
         </table>
       </div>
@@ -8557,8 +8531,7 @@ function openMemberDetail(idx) {
 }
 
 function closeMemberDetail() {
-  const overlay = document.querySelector('.modal-overlay');
-  if(overlay) overlay.remove();
+  document.querySelectorAll('.modal-overlay').forEach(function(ov) { ov.remove(); });
   document.body.style.overflow = '';
 }
 
