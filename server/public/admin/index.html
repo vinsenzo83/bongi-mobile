@@ -9163,7 +9163,18 @@ function loadNotifications() {
         var st = n.status||'sent';
         var stLabel = st==='sent'?'발송완료':st==='failed'?'실패':st==='pending'?'대기':st;
         var stClass = st==='sent'?'green':st==='failed'?'red':'orange';
-        return '<tr><td style="font-size:10px">' + (n.created_at ? new Date(n.created_at).toLocaleString('ko-KR') : '-') + '</td><td><span class="wf-status '+chClass+'">' + ch + '</span></td><td style="font-size:10px">' + (n.type||'-') + '</td><td style="font-weight:600;font-size:10px">' + (n.title||'-') + '</td><td style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis">' + (n.body||'-') + '</td><td><span class="wf-status '+stClass+'">' + stLabel + '</span></td></tr>';
+        var name = n.recipient_name || '-';
+        var phone = n.recipient_phone || '-';
+        return '<tr>'
+          +'<td style="font-size:10px">' + (n.created_at ? new Date(n.created_at).toLocaleString('ko-KR') : '-') + '</td>'
+          +'<td><span class="wf-status '+chClass+'">' + ch + '</span></td>'
+          +'<td style="font-size:10px">' + (n.type||'-') + '</td>'
+          +'<td style="font-weight:600;font-size:10px;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\''+name+'\')">' + name + '</td>'
+          +'<td style="font-size:10px">' + phone + '</td>'
+          +'<td style="font-size:10px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(n.title||'')+' — '+(n.body||'')+'">' + (n.title||'-') + '</td>'
+          +'<td><span class="wf-status '+stClass+'">' + stLabel + '</span></td>'
+          +'<td><span class="action-btn default" style="cursor:pointer;font-size:10px">재발송</span></td>'
+          +'</tr>';
       }).join('');
       tbody.innerHTML = html;
     }).catch(function(e) { console.error('알림 로드 실패:', e); });

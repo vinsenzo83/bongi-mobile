@@ -1005,7 +1005,7 @@ router.patch('/don-jikimi/:id', async (req, res) => {
 
 // ── 알림 관리 ──
 
-// GET /admin/platform/notifications — 알림 발송 이력
+// GET /admin/platform/notifications — 알림 발송 이력 (회원 정보 매칭)
 router.get('/notifications', async (req, res) => {
   try {
     const { channel } = req.query;
@@ -1013,7 +1013,22 @@ router.get('/notifications', async (req, res) => {
     if (channel) query = query.eq('channel', channel);
     const { data, error } = await query;
     if (error) throw error;
-    res.json({ notifications: data || [], total: (data || []).length });
+
+    const enriched = [];
+    for (const n of (data || [])) {
+      let profile = null;
+      if (n.recipient_id) {
+        const { data: p } = await supabase.from('bongi_user_profiles').select('display_name,phone').eq('id', n.recipient_id).maybeSingle();
+        if (p) profile = p;
+      }
+      enriched.push({
+        ...n,
+        recipient_name: profile?.display_name || '-',
+        recipient_phone: profile?.phone || '-',
+      });
+    }
+
+    res.json({ notifications: enriched, total: enriched.length });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
