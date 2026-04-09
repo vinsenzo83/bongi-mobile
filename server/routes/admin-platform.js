@@ -227,7 +227,7 @@ router.get('/members/:id', async (req, res) => {
     // 8탭 데이터 병렬 조회
     const [applications, gifts, cashBalance, cashHistory, withdrawals, referrals, rewards, alarms, addresses] = await Promise.all([
       phone ? supabase.from('bongi_applications').select('*').eq('phone', phone).order('created_at', { ascending: false }) : { data: [] },
-      supabase.from('bongi_gifts').select('*').eq('customer_id', userId).order('created_at', { ascending: false }),
+      supabase.from('bongi_gifts').select('*').or(`customer_id.eq.${userId},name.eq.${profile.display_name}`).order('created_at', { ascending: false }),
       supabase.from('bongi_cash_balance').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('bongi_cash_history').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
       supabase.from('bongi_withdrawals').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
