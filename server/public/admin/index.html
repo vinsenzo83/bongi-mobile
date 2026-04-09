@@ -8596,7 +8596,7 @@ function show(idx) {
   // 사은품 관리 (show(7))
   if(idx === 7) { setTimeout(loadGiftsAdmin, 50); }
   // 포인트/캐쉬 관리 (show(8))
-  if(idx === 8) { setTimeout(loadWithdrawals, 50); }
+  if(idx === 8) { setTimeout(loadWithdrawals, 50); setTimeout(loadCashHistory, 100); }
   // 후기 관리 (show(9))
   if(idx === 9) { setTimeout(loadReviewsAdmin, 50); }
   // 돈지키미 (show(10))
@@ -9047,6 +9047,42 @@ function loadUsedPhoneBuyback() {
       }).join('');
       tbody.innerHTML = html;
     }).catch(function(e) { console.error('중고폰 매입 로드 실패:', e); });
+}
+
+function loadCashHistory() {
+  fetch('/api/admin/platform/cash/history')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if(!d.history || d.history.length === 0) return;
+      var c = document.getElementById('screen-container');
+      if(!c) return;
+      // 적립 내역 테이블 = 두번째 wf-table
+      var tables = c.querySelectorAll('.wf-table tbody');
+      if(tables.length < 2) return;
+      var tbody = tables[1];
+      var html = d.history.map(function(h) {
+        var time = h.created_at ? h.created_at.replace('T',' ').slice(0,16) : '-';
+        var name = h.name || '-';
+        var phone = h.phone || '-';
+        var channel = h.channel || '-';
+        var type = h.type || '적립';
+        var desc = h.description || '-';
+        var amt = h.amount || 0;
+        var amtStr = (amt >= 0 ? '+' : '') + amt.toLocaleString() + 'P';
+        var amtColor = amt >= 0 ? 'var(--green)' : 'var(--red)';
+        return '<tr>'
+          +'<td style="font-size:10px">'+time+'</td>'
+          +'<td style="font-weight:600;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="findAndOpenMember(\''+name+'\')">'+name+'</td>'
+          +'<td style="font-size:10px">'+phone+'</td>'
+          +'<td style="font-size:10px">'+channel+'</td>'
+          +'<td><span class="wf-status '+(type==='적립'?'green':'red')+'">'+type+'</span></td>'
+          +'<td style="font-size:10px">'+desc+'</td>'
+          +'<td style="font-weight:700;color:'+amtColor+'">'+amtStr+'</td>'
+          +'<td style="font-size:10px;color:var(--text3)">-</td>'
+          +'</tr>';
+      }).join('');
+      tbody.innerHTML = html;
+    }).catch(function(e) { console.error('적립 내역 로드 실패:', e); });
 }
 
 function loadDonJikimi() {

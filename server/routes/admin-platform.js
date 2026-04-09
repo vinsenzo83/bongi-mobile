@@ -302,6 +302,34 @@ router.get('/referrals', async (req, res) => {
 
 // ── 리턴캐쉬 관리 ──
 
+// GET /admin/platform/cash/history — 포인트 적립/출금 내역 (어드민 전체)
+router.get('/cash/history', async (req, res) => {
+  try {
+    const { data: history, error } = await supabase.from('bongi_cash_history').select('*').order('created_at', { ascending: false }).limit(200);
+    if (error) throw error;
+
+    // user_id → 회원 정보 매칭
+    const enriched = [];
+    for (const h of (history || [])) {
+      let profile = null;
+      if (h.user_id) {
+        const { data: p } = await supabase.from('bongi_user_profiles').select('display_name,phone,channel').eq('id', h.user_id).maybeSingle();
+        if (p) profile = p;
+      }
+      enriched.push({
+        ...h,
+        name: profile?.display_name || '-',
+        phone: profile?.phone || '-',
+        channel: profile?.channel || '-',
+      });
+    }
+
+    res.json({ history: enriched });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /admin/platform/cash/withdrawals — 출금 신청 목록
 router.get('/cash/withdrawals', async (req, res) => {
   try {
