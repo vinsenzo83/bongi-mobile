@@ -547,7 +547,7 @@ function adminShell(activeMenu, title, body) {
             <div class="admin-top-right" style="display:flex;align-items:center;gap:8px">
               <a href="/docs/${docFile}" target="_blank" style="display:flex;align-items:center;gap:4px;padding:4px 12px;background:var(--blue);color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;cursor:pointer" title="이 페이지의 플로우 문서 열기">📄 플로우 문서</a>
               <a href="/docs/master-map.html" target="_blank" style="display:flex;align-items:center;gap:4px;padding:4px 12px;background:var(--navy);color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;cursor:pointer" title="전체 연결 맵">🗺️ 전체 맵</a>
-              <span onclick="openMemoPanel()" style="display:flex;align-items:center;gap:4px;padding:4px 12px;background:var(--orange);color:#fff;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer" title="메모">📝 메모</span>
+              <span onclick="openDevPanel()" style="display:flex;align-items:center;gap:4px;padding:4px 12px;background:var(--orange);color:#fff;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer" title="개발 관리">📋 개발 관리</span>
               <span style="font-size:11px;color:var(--text3)">운영팀 관리자</span>
             </div>
           </div>
@@ -8606,8 +8606,155 @@ function openMemberDetail(idx) {
   document.body.style.overflow = 'hidden';
 }
 
-// ─── 개발 이슈 관리 패널 (DB 공유) ───
-function openMemoPanel() {
+// ─── 통합 개발 관리 패널 (화면 설명 + 이슈) ───
+function openDevPanel() {
+  var existing = document.getElementById('memo-panel');
+  if(existing) { existing.remove(); return; }
+
+  var screenTitle = document.getElementById('tb-title') ? document.getElementById('tb-title').textContent.replace(/^\d+\.\s*/, '') : '전체';
+
+  var panel = document.createElement('div');
+  panel.id = 'memo-panel';
+  panel.style.cssText = 'position:fixed;right:20px;top:60px;width:440px;max-height:calc(100vh - 80px);background:#fff;border:2px solid var(--navy);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:9999;overflow:hidden;display:flex;flex-direction:column';
+  panel.innerHTML = '<div style="background:var(--navy);color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">'
+    +'<div style="font-size:13px;font-weight:700">📋 '+screenTitle+' — 개발 관리</div>'
+    +'<span onclick="document.getElementById(\'memo-panel\').remove()" style="cursor:pointer;font-size:16px">✕</span>'
+    +'</div>'
+    // 탭
+    +'<div style="display:flex;border-bottom:1px solid #e2ddd6;flex-shrink:0">'
+    +'<div id="dev-tab-spec" onclick="switchDevTab(\'spec\')" style="flex:1;padding:8px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;border-bottom:2px solid var(--blue);color:var(--blue)">📖 화면 설명</div>'
+    +'<div id="dev-tab-issues" onclick="switchDevTab(\'issues\')" style="flex:1;padding:8px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;color:var(--text3)">🐛 이슈 <span id="dev-issue-badge" style="background:var(--red);color:#fff;padding:1px 6px;border-radius:10px;font-size:9px;margin-left:4px"></span></div>'
+    +'</div>'
+    // 화면 설명 탭
+    +'<div id="dev-panel-spec" style="flex:1;overflow-y:auto;padding:12px 14px">'
+    +'<div id="spec-content" style="font-size:11px;color:var(--text3)">로딩 중...</div>'
+    +'</div>'
+    // 이슈 탭
+    +'<div id="dev-panel-issues" style="flex:1;overflow-y:auto;display:none"></div>';
+  document.body.appendChild(panel);
+
+  // 화면 설명 로드
+  loadDevSpec(screenTitle);
+  // 이슈 패널은 탭 전환 시 로드
+  _devPanelPage = screenTitle;
+}
+
+var _devPanelPage = '';
+function switchDevTab(tab) {
+  var specTab = document.getElementById('dev-tab-spec');
+  var issueTab = document.getElementById('dev-tab-issues');
+  var specPanel = document.getElementById('dev-panel-spec');
+  var issuePanel = document.getElementById('dev-panel-issues');
+  if(tab === 'spec') {
+    specTab.style.borderBottom = '2px solid var(--blue)'; specTab.style.color = 'var(--blue)';
+    issueTab.style.borderBottom = 'none'; issueTab.style.color = 'var(--text3)';
+    specPanel.style.display = ''; issuePanel.style.display = 'none';
+  } else {
+    specTab.style.borderBottom = 'none'; specTab.style.color = 'var(--text3)';
+    issueTab.style.borderBottom = '2px solid var(--blue)'; issueTab.style.color = 'var(--blue)';
+    specPanel.style.display = 'none'; issuePanel.style.display = '';
+    if(!issuePanel.innerHTML) buildIssuePanel(issuePanel);
+    loadDevNotes('전체');
+  }
+}
+
+function loadDevSpec(page) {
+  fetch('/api/admin/platform/dev-specs/' + encodeURIComponent(page))
+    .then(function(r){return r.json();})
+    .then(function(d) {
+      var el = document.getElementById('spec-content');
+      if(!el) return;
+      var spec = d.spec;
+      if(!spec) { el.innerHTML = '<div style="color:var(--text3)">이 페이지의 설명이 아직 등록되지 않았습니다.</div><button onclick="createDevSpec(\''+page+'\')" style="margin-top:8px;padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer">+ 설명 등록</button>'; return; }
+
+      var notesHtml = (spec.notes||[]).map(function(n,i){
+        return '<li style="margin-bottom:4px;display:flex;align-items:flex-start;gap:6px"><span style="color:var(--blue);flex-shrink:0">▸</span><span id="spec-note-'+i+'">'+n+'</span></li>';
+      }).join('');
+
+      el.innerHTML = ''
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--navy)">'+page+'</div>'
+        +(spec.doc_file?'<a href="/docs/'+spec.doc_file+'" target="_blank" style="font-size:10px;color:var(--blue);text-decoration:none">📄 플로우 문서 열기 →</a>':'')
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--text2);margin-bottom:10px;padding:8px;background:#f8f7f4;border-radius:8px" id="spec-desc">'+( spec.description||'-')+'</div>'
+        +'<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">핵심 포인트</div>'
+        +'<ul style="list-style:none;padding:0;margin:0;font-size:11px;color:var(--text2);line-height:1.8">'+notesHtml+'</ul>'
+        +'<div style="display:flex;gap:6px;margin-top:10px">'
+        +'<button onclick="editDevSpec(\''+page+'\')" style="padding:5px 12px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:10px;cursor:pointer">✏️ 수정</button>'
+        +'<button onclick="addSpecNote(\''+page+'\')" style="padding:5px 12px;border:1px solid var(--blue);color:var(--blue);background:#fff;border-radius:6px;font-size:10px;cursor:pointer">+ 포인트 추가</button>'
+        +'</div>'
+        +(spec.updated_by?'<div style="font-size:9px;color:var(--text3);margin-top:6px">최종 수정: '+spec.updated_by+' ('+new Date(spec.updated_at).toLocaleString('ko-KR')+')</div>':'');
+    });
+}
+
+function editDevSpec(page) {
+  var descEl = document.getElementById('spec-desc');
+  if(!descEl) return;
+  var current = descEl.textContent;
+  descEl.innerHTML = '<textarea id="spec-desc-edit" style="width:100%;height:60px;border:1px solid var(--blue);border-radius:6px;padding:6px;font-size:11px;resize:none;box-sizing:border-box">'+current+'</textarea>'
+    +'<div style="display:flex;gap:4px;margin-top:4px"><button onclick="saveDevSpec(\''+page+'\',\'desc\')" style="padding:3px 10px;background:var(--blue);color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">저장</button><button onclick="loadDevSpec(\''+page+'\')" style="padding:3px 10px;border:1px solid #d0d0d0;background:#fff;border-radius:4px;font-size:10px;cursor:pointer">취소</button></div>';
+}
+
+function addSpecNote(page) {
+  var note = prompt('추가할 핵심 포인트:');
+  if(!note) return;
+  fetch('/api/admin/platform/dev-specs/' + encodeURIComponent(page))
+    .then(function(r){return r.json();})
+    .then(function(d) {
+      var notes = (d.spec && d.spec.notes) || [];
+      notes.push(note);
+      return fetch('/api/admin/platform/dev-specs/' + encodeURIComponent(page), {
+        method:'PATCH', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({notes:notes, updated_by:localStorage.getItem('dev_author')||'관리자'})
+      });
+    }).then(function(){loadDevSpec(page);});
+}
+
+function saveDevSpec(page, field) {
+  var val = document.getElementById('spec-desc-edit').value;
+  fetch('/api/admin/platform/dev-specs/' + encodeURIComponent(page), {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({description:val, updated_by:localStorage.getItem('dev_author')||'관리자'})
+  }).then(function(){loadDevSpec(page);});
+}
+
+function createDevSpec(page) {
+  fetch('/api/admin/platform/dev-specs/' + encodeURIComponent(page), {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({description:'', notes:[], updated_by:localStorage.getItem('dev_author')||'관리자'})
+  }).then(function(){loadDevSpec(page);});
+}
+
+function buildIssuePanel(container) {
+  var screenTitle = _devPanelPage;
+  container.innerHTML = ''
+    // 새 이슈 등록
+    +'<div style="padding:10px 14px;border-bottom:1px solid #e2ddd6">'
+    +'<div style="display:flex;gap:6px;margin-bottom:4px">'
+    +'<select id="dev-type" style="flex:1;padding:3px 6px;border:1px solid #d0d0d0;border-radius:4px;font-size:10px"><option>버그</option><option>수정</option><option>추가</option><option>메모</option></select>'
+    +'<select id="dev-priority" style="flex:1;padding:3px 6px;border:1px solid #d0d0d0;border-radius:4px;font-size:10px"><option>높음</option><option>보통</option><option>낮음</option></select>'
+    +'<select id="dev-page" style="flex:2;padding:3px 6px;border:1px solid #d0d0d0;border-radius:4px;font-size:10px"><option>'+screenTitle+'</option><option>전체</option><option>회원관리</option><option>신청현황</option><option>사은품</option><option>포인트</option><option>후기</option><option>돈지키미</option><option>알림</option><option>중고폰매입</option><option>매장시세</option><option>티켓</option><option>렌탈</option><option>인터넷TV</option></select>'
+    +'</div>'
+    +'<select id="dev-section" style="width:100%;padding:3px 6px;border:1px solid #d0d0d0;border-radius:4px;font-size:10px;margin-bottom:4px;color:var(--text3)"><option value="">문서 섹션 (선택)</option></select>'
+    +'<input id="dev-title" placeholder="이슈 제목" style="width:100%;padding:5px 8px;border:1px solid #d0d0d0;border-radius:4px;font-size:11px;margin-bottom:4px;box-sizing:border-box">'
+    +'<div style="display:flex;gap:4px">'
+    +'<input id="dev-author" placeholder="작성자" value="'+(localStorage.getItem('dev_author')||'')+'" style="flex:1;padding:3px 6px;border:1px solid #d0d0d0;border-radius:4px;font-size:10px">'
+    +'<input id="dev-assignee" placeholder="담당자" style="flex:1;padding:3px 6px;border:1px solid #d0d0d0;border-radius:4px;font-size:10px">'
+    +'<button onclick="submitDevNote()" style="padding:3px 12px;background:var(--blue);color:#fff;border:none;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer">등록</button>'
+    +'</div>'
+    +'</div>'
+    // 필터
+    +'<div style="padding:6px 14px;border-bottom:1px solid #e2ddd6;display:flex;gap:4px">'
+    +'<span class="dev-filter active" onclick="filterDevNotes(\'전체\',this)" style="padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;background:var(--navy);color:#fff">전체</span>'
+    +'<span class="dev-filter" onclick="filterDevNotes(\'열림\',this)" style="padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid #d0d0d0">열림</span>'
+    +'<span class="dev-filter" onclick="filterDevNotes(\'완료\',this)" style="padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid #d0d0d0">완료</span>'
+    +'<span class="dev-filter" onclick="filterDevNotes(\'이 페이지\',this)" style="padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid #d0d0d0">이 페이지</span>'
+    +'</div>'
+    +'<div id="dev-notes-list" style="flex:1;overflow-y:auto;padding:6px 14px"></div>';
+}
+
+// 레거시 호환
+function openMemoPanel() { openDevPanel(); }
   var existing = document.getElementById('memo-panel');
   if(existing) { existing.remove(); return; }
 

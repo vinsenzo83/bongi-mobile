@@ -1276,6 +1276,35 @@ router.delete('/dev-notes/:id', async (req, res) => {
   }
 });
 
+// GET /admin/platform/dev-specs/:page — 화면 설명/가이드
+router.get('/dev-specs/:page', async (req, res) => {
+  try {
+    const { data } = await supabase.from('bongi_dev_specs').select('*').eq('page', req.params.page).maybeSingle();
+    res.json({ spec: data || null });
+  } catch (e) {
+    res.json({ spec: null });
+  }
+});
+
+// PATCH /admin/platform/dev-specs/:page — 화면 설명 수정
+router.patch('/dev-specs/:page', async (req, res) => {
+  try {
+    const { description, notes, updated_by } = req.body;
+    const update = { updated_at: new Date().toISOString() };
+    if (description !== undefined) update.description = description;
+    if (notes !== undefined) update.notes = notes;
+    if (updated_by) update.updated_by = updated_by;
+
+    const { data, error } = await supabase.from('bongi_dev_specs')
+      .upsert({ page: req.params.page, ...update }, { onConflict: 'page' })
+      .select();
+    if (error) throw error;
+    res.json({ spec: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /admin/platform/doc-headers/:page — 플로우 문서 섹션 헤더 목록
 router.get('/doc-headers/:page', async (req, res) => {
   try {
