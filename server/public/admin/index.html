@@ -8606,68 +8606,163 @@ function openMemberDetail(idx) {
   document.body.style.overflow = 'hidden';
 }
 
-// ─── 메모 패널 ───
+// ─── 개발 이슈 관리 패널 (DB 공유) ───
 function openMemoPanel() {
   var existing = document.getElementById('memo-panel');
   if(existing) { existing.remove(); return; }
 
-  var screenTitle = document.getElementById('tb-title') ? document.getElementById('tb-title').textContent : '메모';
-  var memoKey = 'bm_memo_' + screenTitle.replace(/[^가-힣a-zA-Z0-9]/g, '_');
-  var saved = localStorage.getItem(memoKey) || '';
+  var screenTitle = document.getElementById('tb-title') ? document.getElementById('tb-title').textContent : '전체';
 
   var panel = document.createElement('div');
   panel.id = 'memo-panel';
-  panel.style.cssText = 'position:fixed;right:20px;top:60px;width:360px;background:#fff;border:2px solid var(--navy);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:9999;overflow:hidden';
-  panel.innerHTML = '<div style="background:var(--navy);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">'
-    +'<div style="font-size:13px;font-weight:700">📝 메모 — '+screenTitle+'</div>'
+  panel.style.cssText = 'position:fixed;right:20px;top:60px;width:420px;max-height:calc(100vh - 80px);background:#fff;border:2px solid var(--navy);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:9999;overflow:hidden;display:flex;flex-direction:column';
+  panel.innerHTML = '<div style="background:var(--navy);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">'
+    +'<div style="font-size:13px;font-weight:700">📋 개발 이슈 관리 <span style="font-size:10px;opacity:0.7;margin-left:6px" id="dev-note-count"></span></div>'
     +'<span onclick="document.getElementById(\'memo-panel\').remove()" style="cursor:pointer;font-size:16px">✕</span>'
     +'</div>'
-    +'<div style="padding:12px">'
-    +'<textarea id="memo-textarea" style="width:100%;height:200px;border:1.5px solid #e2ddd6;border-radius:8px;padding:10px;font-size:12px;font-family:inherit;resize:vertical;outline:none" placeholder="이 페이지에 대한 메모를 작성하세요...">'+saved.replace(/</g,'&lt;')+'</textarea>'
-    +'<div style="display:flex;gap:6px;margin-top:8px">'
-    +'<button onclick="saveMemo(\''+memoKey+'\')" style="flex:1;padding:8px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">💾 저장</button>'
-    +'<button onclick="clearMemo(\''+memoKey+'\')" style="padding:8px 16px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">삭제</button>'
+    // 새 이슈 등록
+    +'<div style="padding:10px 14px;border-bottom:1px solid #e2ddd6;flex-shrink:0">'
+    +'<div style="display:flex;gap:6px;margin-bottom:6px">'
+    +'<select id="dev-type" style="flex:1;padding:4px 8px;border:1px solid #d0d0d0;border-radius:6px;font-size:11px"><option>버그</option><option>수정</option><option>추가</option><option>메모</option></select>'
+    +'<select id="dev-priority" style="flex:1;padding:4px 8px;border:1px solid #d0d0d0;border-radius:6px;font-size:11px"><option>높음</option><option>보통</option><option>낮음</option></select>'
+    +'<select id="dev-page" style="flex:2;padding:4px 8px;border:1px solid #d0d0d0;border-radius:6px;font-size:11px"><option>'+screenTitle+'</option><option>전체</option><option>회원관리</option><option>신청현황</option><option>사은품</option><option>포인트</option><option>후기</option><option>돈지키미</option><option>알림</option><option>중고폰매입</option><option>매장시세</option><option>티켓</option><option>렌탈</option><option>인터넷TV</option></select>'
     +'</div>'
-    +'<div id="memo-status" style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center"></div>'
-    +'<div style="margin-top:10px;border-top:1px solid #e2ddd6;padding-top:8px">'
-    +'<div style="font-size:10px;font-weight:700;color:var(--navy);margin-bottom:4px">전체 메모 목록</div>'
-    +'<div id="memo-list" style="font-size:10px;max-height:120px;overflow-y:auto"></div>'
+    +'<select id="dev-section" style="width:100%;padding:4px 8px;border:1px solid #d0d0d0;border-radius:6px;font-size:11px;margin-bottom:4px;color:var(--text3)"><option value="">문서 섹션 선택 (선택)</option></select>'
+    +'<input id="dev-title" placeholder="이슈 제목" style="width:100%;padding:6px 10px;border:1px solid #d0d0d0;border-radius:6px;font-size:12px;margin-bottom:4px;box-sizing:border-box">'
+    +'<textarea id="dev-content" placeholder="상세 내용 (선택)" style="width:100%;height:50px;padding:6px 10px;border:1px solid #d0d0d0;border-radius:6px;font-size:11px;resize:none;box-sizing:border-box"></textarea>'
+    +'<div style="display:flex;gap:6px;margin-top:4px">'
+    +'<input id="dev-author" placeholder="작성자" value="'+localStorage.getItem('dev_author')||''+'" style="flex:1;padding:4px 8px;border:1px solid #d0d0d0;border-radius:6px;font-size:11px">'
+    +'<input id="dev-assignee" placeholder="담당자" style="flex:1;padding:4px 8px;border:1px solid #d0d0d0;border-radius:6px;font-size:11px">'
+    +'<button onclick="submitDevNote()" style="padding:4px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">등록</button>'
     +'</div>'
-    +'</div>';
+    +'</div>'
+    // 필터
+    +'<div style="padding:6px 14px;border-bottom:1px solid #e2ddd6;display:flex;gap:4px;flex-shrink:0">'
+    +'<span class="dev-filter active" onclick="filterDevNotes(\'전체\',this)" style="padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer;background:var(--navy);color:#fff">전체</span>'
+    +'<span class="dev-filter" onclick="filterDevNotes(\'열림\',this)" style="padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid #d0d0d0">열림</span>'
+    +'<span class="dev-filter" onclick="filterDevNotes(\'완료\',this)" style="padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid #d0d0d0">완료</span>'
+    +'<span class="dev-filter" onclick="filterDevNotes(\'이 페이지\',this)" style="padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid #d0d0d0">이 페이지</span>'
+    +'</div>'
+    // 이슈 목록
+    +'<div id="dev-notes-list" style="flex:1;overflow-y:auto;padding:8px 14px"></div>';
   document.body.appendChild(panel);
-  loadMemoList();
+  loadDevNotes('전체');
 }
 
-function saveMemo(key) {
-  var val = document.getElementById('memo-textarea').value;
-  localStorage.setItem(key, val);
-  var st = document.getElementById('memo-status');
-  if(st) st.textContent = '✅ 저장됨 (' + new Date().toLocaleTimeString('ko-KR') + ')';
-  loadMemoList();
+var devNotesCache = [];
+function loadDevNotes(filter) {
+  var url = '/api/admin/platform/dev-notes';
+  var screenTitle = document.getElementById('tb-title') ? document.getElementById('tb-title').textContent : '';
+  if(filter === '이 페이지') url += '?page=' + encodeURIComponent(screenTitle);
+  else if(filter === '열림') url += '?status=열림';
+  else if(filter === '완료') url += '?status=완료';
+
+  fetch(url).then(function(r){return r.json();}).then(function(d) {
+    devNotesCache = d.notes || [];
+    var countEl = document.getElementById('dev-note-count');
+    if(countEl) countEl.textContent = (d.counts?d.counts.open:0) + '건 열림 / ' + (d.counts?d.counts.total:0) + '건 전체';
+    renderDevNotes();
+  });
 }
 
-function clearMemo(key) {
-  localStorage.removeItem(key);
-  var ta = document.getElementById('memo-textarea');
-  if(ta) ta.value = '';
-  var st = document.getElementById('memo-status');
-  if(st) st.textContent = '🗑️ 삭제됨';
-  loadMemoList();
-}
-
-function loadMemoList() {
-  var list = document.getElementById('memo-list');
+function renderDevNotes() {
+  var list = document.getElementById('dev-notes-list');
   if(!list) return;
-  var html = '';
-  for(var i=0; i<localStorage.length; i++) {
-    var k = localStorage.key(i);
-    if(k.startsWith('bm_memo_')) {
-      var title = k.replace('bm_memo_','').replace(/_/g,' ');
-      var val = localStorage.getItem(k);
-      if(val) html += '<div style="padding:3px 0;border-bottom:1px solid #f0f0f0"><strong>'+title+'</strong>: '+val.substring(0,50)+(val.length>50?'...':'')+'</div>';
-    }
+  if(devNotesCache.length === 0) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">등록된 이슈가 없습니다</div>'; return; }
+
+  var typeColors = {버그:'#dc2626',수정:'#d97706',추가:'#2563eb',메모:'#6b7280'};
+  var prioColors = {높음:'#dc2626',보통:'#d97706',낮음:'#059669'};
+
+  list.innerHTML = devNotesCache.map(function(n) {
+    var resolved = n.status === '완료';
+    var typeColor = typeColors[n.type] || '#6b7280';
+    var prioColor = prioColors[n.priority] || '#d97706';
+    var date = n.created_at ? new Date(n.created_at).toLocaleDateString('ko-KR') : '';
+    return '<div style="padding:8px 0;border-bottom:1px solid #f0f0f0;opacity:'+(resolved?'0.5':'1')+'">'
+      +'<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">'
+      +'<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:'+typeColor+';color:#fff;font-weight:600">'+n.type+'</span>'
+      +'<span style="font-size:9px;padding:1px 6px;border-radius:4px;border:1px solid '+prioColor+';color:'+prioColor+'">'+n.priority+'</span>'
+      +'<span style="font-size:9px;color:var(--text3);margin-left:auto">'+n.page+'</span>'
+      +'</div>'
+      +'<div style="font-size:12px;font-weight:600;color:var(--navy);'+(resolved?'text-decoration:line-through':'')+'">'+n.title+'</div>'
+      +(n.content?'<div style="font-size:10px;color:var(--text2);margin-top:2px">'+n.content+'</div>':'')
+      +'<div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:9px;color:var(--text3)">'
+      +'<span>'+date+'</span>'
+      +(n.author?'<span>작성: '+n.author+'</span>':'')
+      +(n.assignee?'<span style="color:var(--blue)">담당: '+n.assignee+'</span>':'')
+      +'<span style="margin-left:auto;display:flex;gap:4px">'
+      +(!resolved?'<span onclick="resolveDevNote(\''+n.id+'\')" style="cursor:pointer;color:var(--green);font-weight:700">✅완료</span>':'<span onclick="reopenDevNote(\''+n.id+'\')" style="cursor:pointer;color:var(--orange);font-weight:700">↩️재열기</span>')
+      +'<span onclick="deleteDevNote(\''+n.id+'\')" style="cursor:pointer;color:var(--red)">🗑️</span>'
+      +'</span>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function filterDevNotes(filter, el) {
+  document.querySelectorAll('.dev-filter').forEach(function(b){b.style.background='#fff';b.style.color='var(--text2)';b.style.border='1px solid #d0d0d0';});
+  if(el){el.style.background='var(--navy)';el.style.color='#fff';el.style.border='none';}
+  loadDevNotes(filter);
+}
+
+// 페이지 변경 시 문서 섹션 로드
+document.addEventListener('change', function(e) {
+  if(e.target.id === 'dev-page') {
+    var page = e.target.value;
+    var sel = document.getElementById('dev-section');
+    if(!sel) return;
+    fetch('/api/admin/platform/doc-headers/' + encodeURIComponent(page))
+      .then(function(r){return r.json();})
+      .then(function(d) {
+        sel.innerHTML = '<option value="">문서 섹션 선택 (선택)</option>' + (d.headers||[]).map(function(h){return '<option value="'+h+'">'+h+'</option>';}).join('');
+      });
   }
-  list.innerHTML = html || '<div style="color:var(--text3)">저장된 메모 없음</div>';
+});
+// 패널 열릴 때 자동 로드
+setTimeout(function() {
+  var pageEl = document.getElementById('dev-page');
+  if(pageEl) pageEl.dispatchEvent(new Event('change'));
+}, 200);
+
+function submitDevNote() {
+  var title = document.getElementById('dev-title').value;
+  if(!title) { alert('제목을 입력하세요'); return; }
+  var author = document.getElementById('dev-author').value;
+  if(author) localStorage.setItem('dev_author', author);
+
+  fetch('/api/admin/platform/dev-notes', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      page: document.getElementById('dev-page').value,
+      type: document.getElementById('dev-type').value,
+      title: (document.getElementById('dev-section').value ? '['+document.getElementById('dev-section').value+'] ' : '') + title,
+      content: document.getElementById('dev-content').value,
+      priority: document.getElementById('dev-priority').value,
+      author: author,
+      assignee: document.getElementById('dev-assignee').value,
+    })
+  }).then(function(r){return r.json();}).then(function() {
+    document.getElementById('dev-title').value = '';
+    document.getElementById('dev-content').value = '';
+    loadDevNotes('전체');
+  });
+}
+
+function resolveDevNote(id) {
+  fetch('/api/admin/platform/dev-notes/' + id, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'완료'}) })
+    .then(function(){loadDevNotes('전체');});
+}
+
+function reopenDevNote(id) {
+  fetch('/api/admin/platform/dev-notes/' + id, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'열림',resolved_at:null}) })
+    .then(function(){loadDevNotes('전체');});
+}
+
+function deleteDevNote(id) {
+  if(!confirm('삭제하시겠습니까?')) return;
+  fetch('/api/admin/platform/dev-notes/' + id, { method:'DELETE' })
+    .then(function(){loadDevNotes('전체');});
 }
 
 function closeMemberDetail() {

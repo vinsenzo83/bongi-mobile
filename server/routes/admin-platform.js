@@ -1210,4 +1210,101 @@ router.get('/tickets', async (req, res) => {
   }
 });
 
+// ── 개발 이슈/메모 관리 ──
+
+// GET /admin/platform/dev-notes — 이슈 목록 (페이지별 필터)
+router.get('/dev-notes', async (req, res) => {
+  try {
+    const { page, status, type } = req.query;
+    let query = supabase.from('bongi_dev_notes').select('*').order('created_at', { ascending: false }).limit(200);
+    if (page) query = query.eq('page', page);
+    if (status) query = query.eq('status', status);
+    if (type) query = query.eq('type', type);
+    const { data, error } = await query;
+    if (error) throw error;
+    const counts = { total: 0, open: 0, resolved: 0 };
+    (data || []).forEach(n => { counts.total++; if (n.status === '열림') counts.open++; else counts.resolved++; });
+    res.json({ notes: data || [], counts });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /admin/platform/dev-notes — 이슈 등록
+router.post('/dev-notes', async (req, res) => {
+  try {
+    const { page, type, title, content, priority, author, assignee } = req.body;
+    if (!title) return res.status(400).json({ error: 'title 필수' });
+    const { data, error } = await supabase.from('bongi_dev_notes').insert({
+      page: page || '전체',
+      type: type || '메모',
+      title,
+      content: content || '',
+      priority: priority || '보통',
+      author: author || '',
+      assignee: assignee || '',
+      status: '열림',
+    }).select();
+    if (error) throw error;
+    res.json({ note: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /admin/platform/dev-notes/:id — 이슈 상태 변경
+router.patch('/dev-notes/:id', async (req, res) => {
+  try {
+    const update = { ...req.body, updated_at: new Date().toISOString() };
+    if (req.body.status === '완료') update.resolved_at = new Date().toISOString();
+    const { data, error } = await supabase.from('bongi_dev_notes').update(update).eq('id', req.params.id).select();
+    if (error) throw error;
+    res.json({ note: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /admin/platform/dev-notes/:id — 이슈 삭제
+router.delete('/dev-notes/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('bongi_dev_notes').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /admin/platform/doc-headers/:page — 플로우 문서 섹션 헤더 목록
+router.get('/doc-headers/:page', async (req, res) => {
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const docMap = {
+      '회원관리': 'service-flow-v2.html', '신청현황': 'flow-applications.html',
+      '사은품': 'flow-gifts.html', '포인트': 'flow-points-referral-guard.html',
+      '후기': 'flow-reviews.html', '돈지키미': 'flow-points-referral-guard.html',
+      '알림': 'flow-points-referral-guard.html', '중고폰매입': 'flow-used-phone.html',
+      '매장시세': 'flow-store-price.html', '티켓': 'flow-ticket.html',
+      '렌탈': 'flow-rental.html', '인터넷TV': 'flow-internet-tv.html',
+      '전체': 'master-map.html',
+    };
+    const file = docMap[req.params.page] || 'master-map.html';
+    const filePath = path.join(process.cwd(), 'docs', file);
+    const html = fs.readFileSync(filePath, 'utf8');
+    // step-label과 section-title 추출
+    const headers = [];
+    const regex = /(?:step-label|section-title)[^>]*>(?:<[^>]*>)*([^<]+)/gi;
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      const text = match[1].trim();
+      if (text && text.length > 2) headers.push(text);
+    }
+    res.json({ headers, file });
+  } catch (e) {
+    res.json({ headers: [], error: e.message });
+  }
+});
+
 export default router;
