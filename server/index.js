@@ -105,6 +105,8 @@ app.get('/api/rental', (req, res) => {
 const clientDist = join(__dirname, '..', 'client', 'dist');
 import { existsSync } from 'fs';
 if (existsSync(clientDist)) {
+  // /docs, /stores 등은 서버 정적 파일 우선
+  app.use('/docs', express.static(join(__dirname, '..', 'docs')));
   app.use(express.static(clientDist));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/crm') || req.path.startsWith('/dashboard') || req.path.startsWith('/docs') || req.path.startsWith('/stores')) {
