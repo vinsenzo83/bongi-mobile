@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync } from 'fs';
 import productRoutes from './routes/products.js';
 import applicationRoutes from './routes/applications.js';
 import storeRoutes from './routes/stores.js';
@@ -49,6 +50,22 @@ app.use('/dashboard', express.static(join(__dirname, 'public', 'dashboard')));
 app.use('/stores', express.static(join(__dirname, 'public', 'stores')));
 app.use('/docs', express.static(join(__dirname, '..', 'docs')));
 app.use('/api/dashboard', dashboardRoutes);
+
+// 문서 직접 서빙 (SPA 우회)
+app.get('/view/:file', (req, res) => {
+  const file = req.params.file;
+  if (!file.endsWith('.html')) return res.status(400).send('html only');
+  const paths = [
+    join(__dirname, 'public', 'docs', file),
+    join(__dirname, 'public', 'reports', file),
+    join(__dirname, 'public', 'admin', file),
+    join(__dirname, '..', 'docs', file),
+  ];
+  for (const p of paths) {
+    if (existsSync(p)) return res.sendFile(p);
+  }
+  res.status(404).send('not found');
+});
 
 // 보고서 직접 서빙
 import { resolve } from 'path';
@@ -107,7 +124,6 @@ app.get('/api/rental', (req, res) => {
 
 // 프로덕션: 클라이언트 정적 파일 서빙
 const clientDist = join(__dirname, '..', 'client', 'dist');
-import { existsSync } from 'fs';
 if (existsSync(clientDist)) {
   // /docs, /reports 등은 서버 정적 파일 우선 (SPA보다 먼저)
   app.use('/docs', express.static(join(__dirname, 'public', 'docs')));
