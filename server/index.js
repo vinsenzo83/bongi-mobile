@@ -52,7 +52,7 @@ app.use('/api/dashboard', dashboardRoutes);
 
 // 보고서 직접 서빙
 app.get('/api/report/:file', (req, res) => {
-  const filePath = join(__dirname, '..', 'docs', req.params.file);
+  const filePath = join(__dirname, 'public', 'reports', req.params.file);
   res.sendFile(filePath, (err) => { if (err) res.status(404).json({ error: 'not found' }); });
 });
 
