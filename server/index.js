@@ -113,7 +113,7 @@ if (existsSync(clientDist)) {
   app.use('/docs', express.static(join(__dirname, '..', 'docs')));
   app.use(express.static(clientDist));
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/crm') || req.path.startsWith('/dashboard') || req.path.startsWith('/docs') || req.path.startsWith('/stores')) {
+    if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/crm') || req.path.startsWith('/dashboard') || req.path.startsWith('/docs') || req.path.startsWith('/stores') || req.path.startsWith('/reports')) {
       return next();
     }
     res.sendFile(join(clientDist, 'index.html'));
