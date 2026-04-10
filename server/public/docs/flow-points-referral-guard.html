@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이모바일 — 포인트 + 친구초대 + 돈지키미 통합 플로우</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#f8f7f4; --bg2:#fff; --border:#e2ddd6; --navy:#1a2744; --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5; --orange:#d97706; --orange2:#fef3c7; --red:#dc2626; --red2:#fee2e2; --purple:#7c3aed; --purple2:#f3e8ff; --text:#1a1a1a; --text2:#4a4a4a; --text3:#8a8a8a; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; padding:40px; max-width:1200px; margin:0 auto; }
+h1 { font-size:28px; font-weight:900; color:var(--navy); margin-bottom:4px; }
+.subtitle { font-size:12px; color:var(--text3); margin-bottom:40px; font-family:'JetBrains Mono',monospace; }
+.step-label { background:var(--navy); color:#fff; padding:6px 16px; border-radius:8px; font-size:12px; font-weight:700; display:inline-block; margin-bottom:12px; }
+.step-card { background:var(--bg2); border:1.5px solid var(--border); border-radius:14px; padding:20px; margin-bottom:8px; }
+.arrow-down { text-align:center; color:var(--text3); font-size:22px; margin:4px 0; }
+.flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:8px 0; }
+.fb { padding:8px 14px; border-radius:10px; font-size:11px; font-weight:600; text-align:center; min-width:90px; }
+.fa { color:var(--text3); font-size:16px; font-weight:700; flex-shrink:0; }
+.fb-user { background:#eff6ff; border:2px solid var(--blue); color:var(--blue); }
+.fb-api { background:var(--orange2); border:2px solid var(--orange); color:var(--orange); }
+.fb-db { background:var(--green2); border:2px solid var(--green); color:var(--green); }
+.fb-admin { background:var(--red2); border:2px solid var(--red); color:var(--red); }
+.fb-crm { background:var(--purple2); border:2px solid var(--purple); color:var(--purple); }
+.fb-neutral { background:#f8f7f4; border:2px solid var(--navy); color:var(--navy); }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700; }
+.b-blue { background:var(--blue2); color:var(--blue); } .b-green { background:var(--green2); color:var(--green); }
+.b-orange { background:var(--orange2); color:var(--orange); } .b-red { background:var(--red2); color:var(--red); }
+.b-purple { background:var(--purple2); color:var(--purple); } .b-gray { background:#f3f4f6; color:#6b7280; }
+.note { background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:8px 14px; font-size:10px; color:var(--navy); line-height:1.6; margin-top:8px; }
+.warn { background:var(--red2); border:1.5px solid #fca5a5; border-radius:8px; padding:8px 14px; font-size:10px; color:var(--red); line-height:1.6; margin-top:8px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.mono { font-family:'JetBrains Mono',monospace; font-size:10px; }
+table { width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }
+th { background:var(--navy); color:#fff; padding:6px 10px; text-align:left; font-size:10px; }
+td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+.section-divider { margin:40px 0 20px; border-top:3px solid var(--navy); padding-top:20px; }
+/* Step Memo Popup Feature */
+.memo-btn-wrap{display:flex;justify-content:flex-end;margin:-4px 0 12px 0}
+.memo-open-btn{background:none;border:1.5px solid #d97706;color:#d97706;border-radius:8px;padding:3px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s}
+.memo-open-btn:hover{background:#d97706;color:#fff}
+.memo-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;justify-content:center;align-items:center}
+.memo-overlay.active{display:flex}
+.memo-popup{background:#fff;border-radius:16px;width:460px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;font-family:'Noto Sans KR',sans-serif}
+.memo-popup-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--navy,#1a2744);color:#fff;font-size:13px;font-weight:700}
+.memo-popup-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;opacity:.7}
+.memo-popup-close:hover{opacity:1}
+.memo-popup-body{flex:1;overflow-y:auto;padding:16px 20px}
+.memo-popup-list{margin-bottom:12px}
+.memo-popup-item{background:#f8f8f6;border:1px solid #e8e4de;border-radius:10px;padding:12px 14px;margin-bottom:8px;position:relative}
+.memo-popup-item-title{font-size:12px;font-weight:700;color:#1a2744;margin-bottom:2px}
+.memo-popup-item-meta{font-size:10px;color:#8a8a8a;font-weight:600;margin-bottom:4px}
+.memo-popup-item-content{font-size:12px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap}
+.memo-popup-item-del{position:absolute;top:10px;right:12px;background:none;border:1px solid #fca5a5;color:#dc2626;font-size:10px;cursor:pointer;padding:2px 8px;border-radius:4px;opacity:.6;font-family:'Noto Sans KR',sans-serif}
+.memo-popup-item-del:hover{opacity:1;background:#fef2f2}
+.memo-popup-empty{text-align:center;color:#aaa;font-size:12px;padding:24px 0}
+.memo-popup-footer{padding:14px 20px;border-top:1.5px solid #e8e4de;background:#fafaf8}
+.memo-popup-footer input,.memo-popup-footer textarea{width:100%;border:1.5px solid #e2ddd6;border-radius:8px;padding:8px 10px;font-size:12px;font-family:'Noto Sans KR',sans-serif;box-sizing:border-box;margin-bottom:8px;outline:none;transition:border .15s}
+.memo-popup-footer input:focus,.memo-popup-footer textarea:focus{border-color:#d97706}
+.memo-popup-footer textarea{resize:vertical;min-height:56px}
+.memo-popup-footer-row{display:flex;gap:8px;align-items:center}
+.memo-popup-footer-row input{flex:1;margin-bottom:0}
+.memo-popup-submit{padding:8px 20px;border:none;border-radius:8px;background:#059669;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap}
+.memo-popup-submit:hover{background:#047857}
+</style>
+</head>
+<body>
+
+<h1>포인트 + 친구초대 + 돈지키미 통합 플로우</h1>
+<div class="subtitle">어드민 14/15/16/17번 메뉴 &middot; 포인트 적립/출금 + 친구초대 + 돈지키미 알림 + 알림 채널 정책</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 1: 포인트 관리 (어드민 14번)                            -->
+<!-- ============================================================ -->
+<div class="step-label" style="background:var(--blue);font-size:14px;padding:8px 20px">SECTION 1 &mdash; 포인트 관리 (어드민 14번)</div>
+
+<!-- 적립 조건 -->
+<div class="step-label">STEP 1 &mdash; 포인트 적립 조건</div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">적립 대상: 앱회원만 (비회원 불가)</div>
+  <div class="warn" style="margin-bottom:12px"><strong>모든 보상은 PASS 본인인증 완료가 필수.</strong> 가입만으로는 포인트 지급 안 됨. PASS 인증 = CI(고유값) 확보 → 어뷰징 원천 차단.</div>
+  <table>
+    <thead><tr><th>적립 조건</th><th>대상</th><th>포인트</th><th>필수 조건</th></tr></thead>
+    <tbody>
+      <tr><td style="font-weight:600">회원가입</td><td>본인</td><td style="color:var(--green);font-weight:700">5,000P</td><td style="font-size:10px"><span class="badge b-red">PASS 인증 완료</span> + 마케팅 수신 동의</td></tr>
+      <tr><td style="font-weight:600">친구초대 가입</td><td>추천인</td><td style="color:var(--green);font-weight:700">3,000P</td><td style="font-size:10px">친구의 <span class="badge b-red">PASS 인증 완료</span> 시 추천인에게 적립</td></tr>
+      <tr><td style="font-weight:600">친구 계약 완료 (추천인)</td><td>추천인</td><td style="color:var(--green);font-weight:700">인터넷 15,000 / 인터넷+TV 20,000 / 렌탈 10,000P</td><td style="font-size:10px"><span class="badge b-red">양쪽 PASS 인증 완료</span> 필수</td></tr>
+      <tr><td style="font-weight:600">친구 계약 완료 (친구)</td><td>친구</td><td style="color:var(--green);font-weight:700">인터넷 10,000 / 인터넷+TV 15,000 / 렌탈 5,000P</td><td style="font-size:10px"><span class="badge b-red">양쪽 PASS 인증 완료</span> 필수</td></tr>
+      <tr><td style="font-weight:600">후기 작성</td><td>본인</td><td style="color:var(--green);font-weight:700">15,000P</td><td style="font-size:10px"><span class="badge b-red">PASS 인증 완료</span> + 사진 필수</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><strong>금액 기준:</strong> 마진의 10% 기준으로 확정. 고정 금액이며 등급제 없음.</div>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 출금 조건 -->
+<div class="step-label">STEP 2 &mdash; 출금 조건 (4가지 모두 충족 필수)</div>
+<div class="step-card" style="border:2px solid var(--orange)">
+  <div class="grid4" style="margin-bottom:14px">
+    <div style="background:var(--orange2);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:20px;font-weight:900;color:var(--orange)">50,000P</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">1. 5만 포인트 이상 보유</div>
+    </div>
+    <div style="background:var(--green2);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:20px;font-weight:900;color:var(--green)">1회+</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">2. 계약 1회 이상 완료</div>
+    </div>
+    <div style="background:var(--blue2);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:20px;font-weight:900;color:var(--blue)">PASS</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">3. PASS 본인인증 완료</div>
+    </div>
+    <div style="background:var(--purple2);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:20px;font-weight:900;color:var(--purple)">계좌</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">4. 계좌 등록 완료</div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">출금 정책 (cash.js)</div>
+  <table>
+    <thead><tr><th>항목</th><th>값</th></tr></thead>
+    <tbody>
+      <tr><td>최소 출금 금액</td><td style="font-weight:700">30,000원</td></tr>
+      <tr><td>수수료</td><td style="font-weight:700">0원 (무료)</td></tr>
+      <tr><td>처리 기간</td><td style="font-weight:700">영업일 기준 1~2일</td></tr>
+      <tr><td>지원 은행</td><td style="font-size:10px">신한/국민/NH농협/우리/하나/IBK기업/SC제일/카카오뱅크/토스뱅크/케이뱅크/광주/전북/새마을금고/신협/우체국 (15개)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <strong>계약 확인 로직 (checkWithdrawalEligibility):</strong><br>
+    1) bongi_referrals 테이블에서 추천인으로서 계약완료/보상완료 건 확인<br>
+    2) bongi_applications 테이블에서 본인 계약완료 건 확인<br>
+    둘 중 하나라도 있으면 출금 자격 충족
+  </div>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 출금 프로세스 -->
+<div class="step-label">STEP 3 &mdash; 출금 프로세스</div>
+<div class="step-card">
+  <div class="flow">
+    <div class="fb fb-user">고객<br>출금 신청</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-api">POST /api/cash/withdraw<br>4가지 조건 검증</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-db">bongi_withdrawals<br>status: 대기<br>잔액 즉시 차감</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-admin">어드민 14번<br>"출금 대기" 목록</div>
+    <div class="fa">&rarr;</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="fb fb-db" style="padding:6px 10px;background:var(--green2);border-color:var(--green);color:var(--green)">승인 &rarr; 계좌 입금 + 알림톡</div>
+      <div class="fb fb-admin" style="padding:6px 10px">반려 &rarr; 잔액 복원 + 사유 표시</div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">API 엔드포인트 (server/routes/cash.js)</div>
+  <table>
+    <thead><tr><th>API</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">GET /api/cash/balance</td><td>내 리턴캐쉬 잔액 조회</td></tr>
+      <tr><td class="mono">GET /api/cash/history</td><td>적립/출금 내역 (페이징, 최대 50건)</td></tr>
+      <tr><td class="mono">POST /api/cash/withdraw</td><td>출금 신청 (bank_name, account_number, account_holder, amount)</td></tr>
+      <tr><td class="mono">GET /api/cash/banks</td><td>은행 목록 (15개)</td></tr>
+      <tr><td class="mono">GET /api/cash/policy</td><td>출금 정책 (최소금액/수수료/처리일)</td></tr>
+    </tbody>
+  </table>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">DB 테이블</div>
+  <table>
+    <thead><tr><th>테이블</th><th>역할</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">bongi_cash_balance</td><td>유저별 포인트 잔액 (user_id, balance, updated_at)</td></tr>
+      <tr><td class="mono">bongi_cash_history</td><td>적립/출금 내역 (type: earn/withdraw, amount, description, status)</td></tr>
+      <tr><td class="mono">bongi_withdrawals</td><td>출금 신청 (amount, bank_name, account_number, account_holder, status: 대기/승인/반려)</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 마이페이지 UI -->
+<div class="step-label" style="background:var(--blue)">STEP 4 &mdash; 마이페이지 포인트 UI (Points.jsx)</div>
+<div class="step-card" style="border:2px solid var(--blue)">
+  <div class="grid3">
+    <div style="background:var(--navy);border-radius:10px;padding:14px;text-align:center;color:#fff">
+      <div style="font-size:10px;color:rgba(255,255,255,0.5)">보유 포인트</div>
+      <div style="font-size:24px;font-weight:900;color:#fbbf24;margin:4px 0">30,000 P</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.4)">현금 출금까지 38,000P 더 필요해요</div>
+    </div>
+    <div style="background:var(--orange2);border-radius:10px;padding:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">현금 출금 조건</div>
+      <div style="font-size:10px;color:#78350f;line-height:1.8">
+        &square; 5만 포인트 이상 보유 (현재 30,000P)<br>
+        &check; 1회 이상 계약 완료<br>
+        &check; 본인인증 완료<br>
+        &check; 계좌 등록 완료
+      </div>
+      <div style="font-size:10px;color:#92400e;margin-top:6px;padding-top:6px;border-top:1px solid #fcd34d">5만P 달성 시 출금 신청 버튼 활성화</div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">포인트 내역</div>
+      <div style="font-size:10px;line-height:1.8;color:var(--text2)">
+        <span style="color:var(--green);font-weight:700">+20,000P</span> 친구 계약 완료 (추천인)<br>
+        <span style="color:var(--green);font-weight:700">+5,000P</span> 계약 완료 포인트<br>
+        <span style="color:var(--green);font-weight:700">+5,000P</span> 회원가입 포인트<br>
+        <span style="color:var(--red);font-weight:700">-5,000P</span> 출금 처리
+      </div>
+    </div>
+  </div>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 어드민 화면 -->
+<div class="step-label" style="background:var(--red)">STEP 5 &mdash; 어드민 포인트 관리 화면 (14번)</div>
+<div class="step-card" style="border:2px solid var(--red)">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">KPI</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px">
+    <div style="background:var(--orange2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--orange)">12</div><div style="font-size:10px;color:var(--text3)">출금 대기</div></div>
+    <div style="background:var(--green2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--green)">1,250,000P</div><div style="font-size:10px;color:var(--text3)">이번달 출금</div></div>
+    <div style="background:var(--blue2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--navy)">4,280,000P</div><div style="font-size:10px;color:var(--text3)">이번달 발행</div></div>
+    <div style="background:var(--red2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--red)">3</div><div style="font-size:10px;color:var(--text3)">반려</div></div>
+    <div style="background:#f3f4f6;border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--text3)">35,800,000P</div><div style="font-size:10px;color:var(--text3)">누적 잔여</div></div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">출금 신청 목록</div>
+  <table>
+    <thead><tr><th>신청일</th><th>이름</th><th>신청 포인트</th><th>본인인증</th><th>계좌</th><th>계약횟수</th><th>조건</th><th>상태</th><th>관리</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>2026.04.06</td><td style="font-weight:600">홍길동</td><td style="font-weight:700;color:var(--orange)">52,000P</td>
+        <td><span class="badge b-green">인증완료</span></td><td style="font-size:10px">국민 123-456-****</td><td>3회</td>
+        <td><span class="badge b-green">충족</span></td><td><span class="badge b-orange">출금 대기</span></td>
+        <td><span class="badge b-green" style="cursor:pointer">승인</span> <span class="badge b-red" style="cursor:pointer">반려</span></td>
+      </tr>
+      <tr style="opacity:0.6">
+        <td>2026.04.03</td><td>윤서연</td><td style="color:var(--orange)">45,000P</td>
+        <td><span class="badge b-green">인증완료</span></td><td style="font-size:10px">카카오뱅크 3333-****</td><td>0회</td>
+        <td><span class="badge b-red">미충족</span></td><td><span class="badge b-red">반려</span></td>
+        <td style="font-size:10px;color:var(--red)">조건미충족</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:14px;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">포인트 적립 내역</div>
+  <table>
+    <thead><tr><th>일시</th><th>이름</th><th>구분</th><th>내용</th><th>포인트</th><th>잔액</th></tr></thead>
+    <tbody>
+      <tr><td style="font-size:10px">2026.04.06 14:23</td><td style="font-weight:600">홍길동</td><td><span class="badge b-green">적립</span></td><td style="font-size:10px">친구초대 계약완료 &mdash; 이영희 / LG U+ 500M+프리미엄+UHD4 (LG0079)</td><td style="color:var(--green);font-weight:700">+5,000P</td><td style="font-size:10px">52,000P</td></tr>
+      <tr><td style="font-size:10px">2026.04.04 10:00</td><td style="font-weight:600">강민준</td><td><span class="badge b-red">출금</span></td><td style="font-size:10px">포인트 출금 &rarr; 우리은행 1002-123-456789</td><td style="color:var(--red);font-weight:700">-50,000P</td><td style="font-size:10px">0P</td></tr>
+      <tr><td style="font-size:10px">2026.04.01 09:00</td><td style="font-weight:600">홍길동</td><td><span class="badge b-green">적립</span></td><td style="font-size:10px">회원가입 포인트</td><td style="color:var(--green);font-weight:700">+5,000P</td><td style="font-size:10px">47,000P</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>조건 충족/미충족 자동 검증.</strong> 승인 &rarr; 등록 계좌로 입금 + 알림톡 발송. 반려 &rarr; 사유 표시. 엑셀 다운로드 지원.<br>
+    이름 클릭 &rarr; 회원 상세 모달 (포인트/친구초대/돈지키미/출금이력 통합 확인).
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 2: 친구초대 (포인트 14번에 통합)                       -->
+<!-- ============================================================ -->
+<div class="section-divider"></div>
+<div class="step-label" style="background:var(--green);font-size:14px;padding:8px 20px">SECTION 2 &mdash; 친구초대 시스템 (포인트 14번에 통합)</div>
+
+<!-- 추천코드 생성 -->
+<div class="step-label">STEP 1 &mdash; 추천 코드 생성</div>
+<div class="step-card">
+  <div class="grid2">
+    <div style="border:2px solid var(--blue);border-radius:10px;padding:14px">
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">코드 형식</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:900;color:var(--navy);margin-bottom:6px">RETURN_XXXXXX</div>
+      <div style="font-size:10px;color:var(--text3);line-height:1.6">
+        &bull; 접두어: <strong>RETURN_</strong> (고정)<br>
+        &bull; 뒤 6자리: A-Z (I,O 제외) + 2-9 숫자 = 31개 문자에서 랜덤<br>
+        &bull; 중복 검사: 최대 10회 재생성 시도<br>
+        &bull; 생성 시점: 회원 최초 추천 코드 요청 시
+      </div>
+    </div>
+    <div style="border:2px solid var(--green);border-radius:10px;padding:14px">
+      <div style="font-weight:900;color:var(--green);font-size:12px;margin-bottom:6px">사기 방지 로직</div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.8">
+        &check; 동일 전화번호 중복 등록 방지 (bongi_referrals 테이블)<br>
+        &check; 자가추천 방지 (referrer_phone === referred_phone 검증)<br>
+        &check; 추천 코드 유효성 검증 (존재하는 코드인지 확인)
+      </div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">API 엔드포인트 (server/routes/referrals.js)</div>
+  <table>
+    <thead><tr><th>API</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">GET /api/referrals/my-code</td><td>내 추천 코드 생성/조회 (RETURN_XXXXXX)</td></tr>
+      <tr><td class="mono">GET /api/referrals/stats</td><td>추천 실적 (초대수/가입수/계약수/총 수익/대기금액/등급)</td></tr>
+      <tr><td class="mono">POST /api/referrals/register</td><td>추천 코드로 친구 등록 &rarr; 가입 보상 즉시 지급</td></tr>
+      <tr><td class="mono">POST /api/referrals/convert</td><td>계약 완료 처리 &rarr; 계약 보상 지급</td></tr>
+      <tr><td class="mono">GET /api/referrals/reward-policy</td><td>전체 등급별 보상 정책 조회</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 친구초대 흐름 -->
+<div class="step-label">STEP 2 &mdash; 친구초대 전체 흐름</div>
+<div class="step-card">
+  <div class="flow">
+    <div class="fb fb-user">추천인<br>코드 공유<br><span class="mono" style="font-size:9px">RETURN_XXXXXX</span></div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-user">친구가<br>코드로 가입</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-api">POST /register<br>사기방지 검증</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-db">bongi_referrals<br>status: 가입완료</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-db" style="background:var(--green2);border-color:var(--green);color:var(--green)">bongi_rewards<br>가입 보상 (추천인)<br>3,000P 적립</div>
+  </div>
+  <div class="arrow-down">&darr;</div>
+  <div class="flow">
+    <div class="fb fb-user">친구가<br>계약 완료</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-api">POST /convert<br>계약 보상 처리</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-db">bongi_referrals<br>status: 계약완료</div>
+    <div class="fa">&rarr;</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="fb fb-db" style="padding:6px 10px;background:var(--green2);border-color:var(--green);color:var(--green)">추천인 계약 보상 (최대 20,000P)</div>
+      <div class="fb fb-db" style="padding:6px 10px;background:var(--blue2);border-color:var(--blue);color:var(--blue)">친구 계약 보상 (최대 15,000P)</div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">DB 테이블</div>
+  <table>
+    <thead><tr><th>테이블</th><th>역할</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">bongi_referrals</td><td>추천 관계 (referrer_code, referrer_user_id, referred_name, referred_phone, status: 가입완료/계약완료/보상완료/취소)</td></tr>
+      <tr><td class="mono">bongi_rewards</td><td>보상 내역 (referral_id, recipient_type: referrer/referred, reward_type: signup/contract, amount, status: 적립/출금/완료)</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 보상 정책 (고정) -->
+<div class="step-label" style="background:var(--purple)">STEP 3 &mdash; 포인트 보상 정책 (고정)</div>
+<div class="step-card" style="border:2px solid var(--purple)">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">친구초대 보상 &mdash; 고정 금액</div>
+  <table>
+    <thead><tr><th>시점</th><th>대상</th><th>포인트</th></tr></thead>
+    <tbody>
+      <tr><td><strong>친구 앱 가입 + PASS 인증 완료</strong></td><td>추천인</td><td style="color:var(--green);font-weight:700">3,000P</td></tr>
+      <tr><td><strong>친구 계약완료 (인터넷)</strong></td><td>추천인 / 친구</td><td style="color:var(--green);font-weight:700">15,000P / 10,000P</td></tr>
+      <tr><td><strong>친구 계약완료 (인터넷+TV)</strong></td><td>추천인 / 친구</td><td style="color:var(--green);font-weight:700">20,000P / 15,000P</td></tr>
+      <tr><td><strong>친구 계약완료 (렌탈)</strong></td><td>추천인 / 친구</td><td style="color:var(--green);font-weight:700">10,000P / 5,000P</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>양쪽 PASS 본인인증 필수.</strong> 추천인+친구 모두 PASS 인증 완료 상태여야 포인트 적립. 가입만으로는 지급 안 됨.<br>
+    <strong>어뷰징 방지:</strong> PASS 인증 = CI(고유 식별값) 확보 → 동일인 중복가입 원천 차단. 가입만으로 포인트 지급 시 허위가입 어뷰징 발생.<br>
+    <strong>친구초대 최대:</strong> 추천인 20,000P + 친구 15,000P = 35,000P (인터넷+TV 기준)
+  </div>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 마이페이지 UI -->
+<div class="step-label" style="background:var(--blue)">STEP 4 &mdash; 마이페이지 친구초대 UI (Referral.jsx)</div>
+<div class="step-card" style="border:2px solid var(--blue)">
+  <div class="grid2">
+    <div style="background:var(--navy);border-radius:10px;padding:14px;text-align:center;color:#fff">
+      <div style="font-size:10px;color:rgba(255,255,255,0.5)">내 초대 코드</div>
+      <div style="font-size:22px;font-weight:900;color:#fbbf24;letter-spacing:3px;margin:8px 0">HONG2026</div>
+      <div style="display:flex;gap:6px;justify-content:center">
+        <span class="badge" style="background:var(--blue);color:#fff;padding:4px 12px;font-size:10px">링크 복사</span>
+        <span class="badge" style="background:rgba(255,255,255,0.1);color:#fff;padding:4px 12px;font-size:10px">카카오 공유</span>
+      </div>
+    </div>
+    <div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">포인트 적립 조건</div>
+        <div style="font-size:10px;color:var(--text2);line-height:1.8">
+          친구 앱 가입 시 &rarr; 추천인 <strong>3,000P</strong><br>
+          친구 계약 완료 시 &rarr; 추천인 최대 <strong>20,000P</strong> + 친구 최대 <strong>15,000P</strong>
+        </div>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px">인터넷 15K/인터넷+TV 20K/렌탈 10K (추천인) &middot; 인터넷 10K/인터넷+TV 15K/렌탈 5K (친구)</div>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:4px">나를 초대한 사람</div>
+        <div style="font-size:10px;color:var(--text2)">김철수 님의 초대로 가입했어요</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--navy)">내가 초대한 친구</div>
+      <span class="badge b-blue" style="padding:4px 10px">2명</span>
+    </div>
+    <table>
+      <thead><tr><th>이름</th><th>가입일</th><th>계약</th><th>내 포인트</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:600">이영희</td><td>2026.04.02</td><td><span class="badge b-green">완료</span></td><td style="color:var(--green);font-weight:700">+5,000P</td></tr>
+        <tr><td style="font-weight:600">박민수</td><td>2026.03.25</td><td><span class="badge b-gray">미계약</span></td><td style="color:var(--text3)">-</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 3: 돈지키미 (어드민 16번)                              -->
+<!-- ============================================================ -->
+<div class="section-divider"></div>
+<div class="step-label" style="background:var(--orange);font-size:14px;padding:8px 20px">SECTION 3 &mdash; 돈지키미 관리 (어드민 16번)</div>
+
+<!-- 등록 항목 -->
+<div class="step-label">STEP 1 &mdash; 등록 항목 4종</div>
+<div class="step-card">
+  <div class="grid4">
+    <div style="background:var(--blue2);border:2px solid var(--blue);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:14px;font-weight:900;color:var(--blue)">요금제 변경</div>
+      <div class="mono" style="margin-top:4px;color:var(--text3)">plan_change</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:6px">요금제 변경 가능일 알림</div>
+    </div>
+    <div style="background:var(--orange2);border:2px solid var(--orange);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:14px;font-weight:900;color:var(--orange)">부가서비스 해지</div>
+      <div class="mono" style="margin-top:4px;color:var(--text3)">addon_cancel</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:6px">부가서비스 해지일 알림</div>
+    </div>
+    <div style="background:var(--green2);border:2px solid var(--green);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:14px;font-weight:900;color:var(--green)">인터넷 약정</div>
+      <div class="mono" style="margin-top:4px;color:var(--text3)">internet_expire</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:6px">인터넷 약정 종료일 알림</div>
+    </div>
+    <div style="background:var(--red2);border:2px solid var(--red);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:14px;font-weight:900;color:var(--red)">렌탈 약정</div>
+      <div class="mono" style="margin-top:4px;color:var(--text3)">rental_expire</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:6px">렌탈 약정 종료일 알림</div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">API 엔드포인트 (server/routes/alarms.js)</div>
+  <table>
+    <thead><tr><th>API</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">GET /api/alarms</td><td>내 알람 목록 (target_date 오름차순)</td></tr>
+      <tr><td class="mono">POST /api/alarms</td><td>알람 추가 (alarm_type, title, target_date(YYYY-MM-DD), memo)</td></tr>
+      <tr><td class="mono">PATCH /api/alarms/:id</td><td>알람 수정 (title, target_date, memo)</td></tr>
+      <tr><td class="mono">DELETE /api/alarms/:id</td><td>알람 삭제</td></tr>
+    </tbody>
+  </table>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">DB 테이블</div>
+  <table>
+    <thead><tr><th>테이블</th><th>컬럼</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td class="mono" rowspan="5">bongi_user_alarms</td><td class="mono">user_id</td><td>유저 ID</td></tr>
+      <tr><td class="mono">alarm_type</td><td>plan_change / addon_cancel / internet_expire / rental_expire</td></tr>
+      <tr><td class="mono">title</td><td>알람 제목 (최대 100자)</td></tr>
+      <tr><td class="mono">target_date</td><td>만료/변경 예정일 (YYYY-MM-DD)</td></tr>
+      <tr><td class="mono">memo</td><td>메모 (최대 500자)</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 알림 타이밍 + CRM 연동 -->
+<div class="step-label">STEP 2 &mdash; 알림 타이밍 + CRM 자동 연동</div>
+<div class="step-card" style="border:2px solid var(--orange)">
+  <div style="display:flex;align-items:center;gap:0;margin-bottom:14px">
+    <div style="flex:1;background:#f3f4f6;border-radius:10px 0 0 10px;padding:12px;text-align:center;border:2px solid var(--border)">
+      <div style="font-size:18px;font-weight:900;color:var(--text3)">D-90</div>
+      <div style="font-size:10px;color:var(--text3)">앱 푸시 알림<br>사전 안내</div>
+    </div>
+    <div style="flex:1;background:var(--orange2);padding:12px;text-align:center;border:2px solid var(--orange)">
+      <div style="font-size:18px;font-weight:900;color:var(--orange)">D-30</div>
+      <div style="font-size:10px;color:var(--orange)">앱 푸시 알림<br><strong>+ CRM 해피콜 자동 추가</strong></div>
+    </div>
+    <div style="flex:1;background:var(--red2);padding:12px;text-align:center;border:2px solid var(--red)">
+      <div style="font-size:18px;font-weight:900;color:var(--red)">D-7</div>
+      <div style="font-size:10px;color:var(--red)">앱 푸시 알림<br>긴급 안내</div>
+    </div>
+    <div style="flex:1;background:var(--red);border-radius:0 10px 10px 0;padding:12px;text-align:center;color:#fff">
+      <div style="font-size:18px;font-weight:900">D-1</div>
+      <div style="font-size:10px">앱 푸시 알림<br>최종 알림</div>
+    </div>
+  </div>
+
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">CRM 자동 연동 흐름 (D-30 트리거)</div>
+  <div class="flow">
+    <div class="fb fb-db">target_date<br>D-30 도래</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-api">돈지키미<br>배치 스캔</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-crm">CRM 해피콜<br>자동 추가</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-admin">상담사 배정</div>
+    <div class="fa">&rarr;</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="fb fb-db" style="padding:6px 10px;background:var(--green2);border-color:var(--green);color:var(--green)">재계약 완료</div>
+      <div class="fb fb-neutral" style="padding:6px 10px">업셀링 제안</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>비즈니스 목적:</strong> 앱 락인 효과 &mdash; 고객이 알림을 위해 앱을 유지하고, D-30에 자동으로 CRM 해피콜이 추가되어 재계약/업셀링 기회를 만든다.
+  </div>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 마이페이지 UI -->
+<div class="step-label" style="background:var(--blue)">STEP 3 &mdash; 마이페이지 돈지키미 UI (MoneyGuard.jsx)</div>
+<div class="step-card" style="border:2px solid var(--blue)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div>
+      <div style="font-size:14px;font-weight:700;color:var(--navy)">돈지키미</div>
+      <div style="font-size:11px;color:var(--text3)">약정 만료일을 등록하고 알람을 받으세요</div>
+    </div>
+    <span class="badge b-blue" style="padding:5px 14px;font-size:11px">+ 항목 추가</span>
+  </div>
+
+  <!-- 등록 항목 예시 -->
+  <div style="background:var(--red2);border:1.5px solid #fca5a5;border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--red)">&#9888;&#65039; 인터넷 약정 종료</div>
+        <div style="font-size:10px;color:var(--red);margin-top:2px">2026.05.01 (D-26)</div>
+      </div>
+      <span class="badge b-blue" style="padding:4px 10px;font-size:10px">재계약 상담</span>
+    </div>
+  </div>
+  <div style="border:1.5px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--navy)">요금제 변경 가능일</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">2026.08.15 (D-132)</div>
+      </div>
+      <span class="badge b-gray" style="padding:4px 10px">여유</span>
+    </div>
+  </div>
+  <div style="border:1.5px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--navy)">부가서비스 해지일</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">2026.10.20 (D-198)</div>
+      </div>
+      <span class="badge b-gray" style="padding:4px 10px">여유</span>
+    </div>
+  </div>
+  <div style="border:1.5px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--navy)">렌탈 약정 종료</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">2027.02.01 (D-302)</div>
+      </div>
+      <span class="badge b-gray" style="padding:4px 10px">여유</span>
+    </div>
+  </div>
+
+  <!-- 알람 설정 -->
+  <div style="border:1.5px solid var(--border);border-radius:10px;padding:12px">
+    <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">알람 설정</div>
+    <div style="display:flex;gap:20px;font-size:11px;color:var(--text2)">
+      <span>D-30 알람 <span class="badge b-blue">ON</span></span>
+      <span>D-7 알람 <span class="badge b-blue">ON</span></span>
+      <span>D-1 알람 <span class="badge b-gray">OFF</span></span>
+    </div>
+  </div>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 어드민 화면 -->
+<div class="step-label" style="background:var(--red)">STEP 4 &mdash; 어드민 돈지키미 관리 화면 (16번)</div>
+<div class="step-card" style="border:2px solid var(--red)">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">KPI</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px">
+    <div style="background:var(--red2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--red)">8</div><div style="font-size:10px;color:var(--text3)">D-7 이내</div></div>
+    <div style="background:var(--orange2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--orange)">30</div><div style="font-size:10px;color:var(--text3)">D-30 이내</div></div>
+    <div style="background:var(--blue2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--blue)">142</div><div style="font-size:10px;color:var(--text3)">CRM 전달</div></div>
+    <div style="background:var(--green2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--green)">38</div><div style="font-size:10px;color:var(--text3)">재계약 완료</div></div>
+    <div style="background:#f3f4f6;border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--navy)">856</div><div style="font-size:10px;color:var(--text3)">전체 등록</div></div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">필터: 기간 (D-7이내/D-30이내/D-30초과) + 항목 (요금제변경/부가서비스해지/인터넷약정/렌탈약정)</div>
+  <table>
+    <thead><tr><th>이름</th><th>항목</th><th>상품</th><th>종료일</th><th>D-day</th><th>앱알림</th><th>CRM 전달</th><th>담당</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr>
+        <td style="font-weight:600">홍길동</td>
+        <td><span class="badge b-blue">인터넷 약정</span></td>
+        <td style="font-size:10px">KT 1G+지니TV모든G</td>
+        <td>2026.04.08</td>
+        <td><span class="badge b-red" style="font-weight:900">D-3</span></td>
+        <td><span class="badge b-green">발송완료</span></td>
+        <td><span class="badge b-green">전달완료</span></td>
+        <td style="font-size:10px">김상담</td>
+        <td><span class="badge b-orange">상담중</span></td>
+      </tr>
+      <tr>
+        <td style="font-weight:600">강민준</td>
+        <td><span class="badge b-blue">요금제 변경</span></td>
+        <td style="font-size:10px">SKT 5GX 프리미엄</td>
+        <td>2026.04.20</td>
+        <td><span class="badge b-orange">D-15</span></td>
+        <td><span class="badge b-green">발송완료</span></td>
+        <td><span class="badge b-green">전달완료</span></td>
+        <td style="font-size:10px;color:var(--red);font-weight:600">CRM 대기</td>
+        <td><span class="badge b-gray">대기</span></td>
+      </tr>
+      <tr>
+        <td style="font-weight:600">이영희</td>
+        <td><span class="badge b-orange">부가서비스 해지</span></td>
+        <td style="font-size:10px">KT 우주패스 mini</td>
+        <td>2026.05.10</td>
+        <td><span class="badge b-orange">D-35</span></td>
+        <td><span class="badge b-gray">예정</span></td>
+        <td><span class="badge b-orange">대기</span></td>
+        <td style="font-size:10px">-</td>
+        <td><span class="badge b-gray">대기</span></td>
+      </tr>
+      <tr>
+        <td style="font-weight:600">최지은</td>
+        <td><span class="badge b-green">렌탈 약정</span></td>
+        <td style="font-size:10px">LG 퓨리케어 공기청정기</td>
+        <td>2026.06.15</td>
+        <td><span class="badge b-blue">D-71</span></td>
+        <td><span class="badge b-gray">예정</span></td>
+        <td><span class="badge b-orange">대기</span></td>
+        <td style="font-size:10px;color:var(--red);font-weight:600">CRM 대기</td>
+        <td>-</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note">D-7 이내 빨간색 강조. CRM 대기 상담사 빨간색 표시. 이름 클릭 &rarr; 회원 상세. 상담중 건에 "재계약완료" 버튼.</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION 4: 알림 관리 (어드민 17번)                             -->
+<!-- ============================================================ -->
+<div class="section-divider"></div>
+<div class="step-label" style="background:var(--purple);font-size:14px;padding:8px 20px">SECTION 4 &mdash; 알림 관리 (어드민 17번)</div>
+
+<!-- 채널 정책 -->
+<div class="step-label">STEP 1 &mdash; 알림 채널 정책</div>
+<div class="step-card" style="border:2px solid var(--purple)">
+  <div class="grid2" style="gap:16px">
+    <div style="border:2px solid var(--orange);border-radius:10px;padding:16px">
+      <div style="font-size:14px;font-weight:900;color:var(--orange);margin-bottom:8px">카카오 알림톡 (유료) &mdash; 2가지만</div>
+      <div style="font-size:11px;color:var(--text2);line-height:2">
+        <strong>1. 비회원 가입 유도 (3단계)</strong><br>
+        <span style="font-size:10px;color:var(--text3);margin-left:12px">1차: 신청 완료 즉시 &mdash; "앱 가입 + 계좌 등록하면 사은품 즉시 지급"</span><br>
+        <span style="font-size:10px;color:var(--text3);margin-left:12px">2차: 계약 완료 시 &mdash; "사은품 OO만원 준비됨 &rarr; 앱 가입 &rarr; 즉시 입금"</span><br>
+        <span style="font-size:10px;color:var(--text3);margin-left:12px">3차: D+7 미가입 &mdash; "사은품이 아직 대기 중이에요!"</span><br>
+        <strong>2. 사은품 지급 완료</strong><br>
+        <span style="font-size:10px;color:var(--text3);margin-left:12px">"사은품 OO만원 입금 완료" + 계좌 정보</span>
+      </div>
+    </div>
+    <div style="border:2px solid var(--blue);border-radius:10px;padding:16px">
+      <div style="font-size:14px;font-weight:900;color:var(--blue);margin-bottom:8px">앱 푸시 (무료) &mdash; 나머지 전부</div>
+      <div style="font-size:11px;color:var(--text2);line-height:2">
+        <strong>1. 신청 상태 변경</strong> &mdash; "신청이 접수되었습니다 (KT0311)"<br>
+        <strong>2. 포인트 적립</strong> &mdash; "친구초대 가입으로 5,000P 적립!"<br>
+        <strong>3. 포인트 출금 완료</strong> &mdash; 출금 승인 시<br>
+        <strong>4. 돈지키미 알림</strong> &mdash; D-90 / D-30 / D-7 / D-1<br>
+        <strong>5. 후기 작성 유도</strong> &mdash; "계약 완료! 후기 작성하고 15,000P 받으세요"<br>
+        <strong>6. 사은품 지급 완료</strong> &mdash; 앱회원 대상
+      </div>
+    </div>
+  </div>
+
+  <div class="warn" style="margin-top:12px">
+    <strong>비용 절감 정책:</strong> 카카오 알림톡은 건당 유료이므로 비회원 전환(가입 유도)과 사은품 입금 알림 2가지만 사용. 나머지 모든 알림은 앱 푸시(무료)로 처리.
+  </div>
+</div>
+<div class="arrow-down">&darr;</div>
+
+<!-- 어드민 기능 -->
+<div class="step-label">STEP 2 &mdash; 어드민 알림 관리 기능</div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">KPI</div>
+  <div class="grid4" style="margin-bottom:14px">
+    <div style="background:#f3f4f6;border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--navy)">1,248</div><div style="font-size:10px;color:var(--text3)">이번달 발송</div></div>
+    <div style="background:var(--green2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--green)">98.2%</div><div style="font-size:10px;color:var(--text3)">성공률</div></div>
+    <div style="background:var(--orange2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--orange)">156</div><div style="font-size:10px;color:var(--text3)">카카오 알림톡</div></div>
+    <div style="background:var(--blue2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--blue)">1,092</div><div style="font-size:10px;color:var(--text3)">앱 푸시</div></div>
+  </div>
+
+  <div class="grid3">
+    <div style="border:1.5px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px">1. 발송 이력</div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.6">
+        &bull; 채널 필터 (카카오/앱 푸시)<br>
+        &bull; 발송일시, 유형, 수신자, 내용, 상태<br>
+        &bull; 실패 건 재발송 기능<br>
+        &bull; 이름 클릭 &rarr; 회원 상세
+      </div>
+    </div>
+    <div style="border:1.5px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px">2. 템플릿 관리</div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.6">
+        &bull; 카카오 알림톡 템플릿 4개<br>
+        <span style="margin-left:8px">&mdash; 비회원 가입유도 1/2/3차</span><br>
+        <span style="margin-left:8px">&mdash; 사은품 지급 완료</span><br>
+        &bull; 앱 푸시 템플릿 6개<br>
+        <span style="margin-left:8px">&mdash; 신청상태/포인트적립/포인트출금/돈지키미/후기유도/사은품</span><br>
+        &bull; 각 템플릿 편집 가능
+      </div>
+    </div>
+    <div style="border:1.5px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px">3. 수동 발송</div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.6">
+        &bull; 채널 선택 (앱 푸시/카카오)<br>
+        &bull; 유형: 실패 재발송/마케팅/시세 업데이트/긴급 공지<br>
+        &bull; 대상: 전체/앱회원/조건별/개별<br>
+        &bull; 타겟 조건: 통신사별/상품별<br>
+        &bull; 휴대폰 시세 빠른 발송 기능
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- 전체 연결 맵                                                    -->
+<!-- ============================================================ -->
+<div class="section-divider"></div>
+<div class="step-label" style="background:var(--navy);font-size:14px;padding:8px 20px">전체 연결 맵 &mdash; 포인트 / 친구초대 / 돈지키미 / 알림</div>
+<div class="step-card" style="border:2px solid var(--navy)">
+  <div class="flow" style="justify-content:center;gap:12px">
+    <div class="fb fb-user" style="min-width:120px">고객 앱<br>회원가입</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-db" style="min-width:120px;background:var(--green2);border-color:var(--green);color:var(--green)">+5,000P<br>회원가입 적립</div>
+  </div>
+  <div class="arrow-down">&darr;</div>
+  <div class="flow" style="justify-content:center;gap:12px">
+    <div class="fb fb-user" style="min-width:120px">추천 코드 공유<br><span class="mono">RETURN_XXXXXX</span></div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-user" style="min-width:100px">친구 가입</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-db" style="min-width:120px;background:var(--green2);border-color:var(--green);color:var(--green)">+3,000P<br>추천인 적립</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-user" style="min-width:100px">친구 계약</div>
+    <div class="fa">&rarr;</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="fb fb-db" style="padding:6px 10px;background:var(--green2);border-color:var(--green);color:var(--green);font-size:10px">추천인 최대 +20,000P</div>
+      <div class="fb fb-db" style="padding:6px 10px;background:var(--blue2);border-color:var(--blue);color:var(--blue);font-size:10px">친구 최대 +15,000P</div>
+    </div>
+  </div>
+  <div class="arrow-down">&darr;</div>
+  <div class="flow" style="justify-content:center;gap:12px">
+    <div class="fb fb-user" style="min-width:120px">후기 작성</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-db" style="min-width:120px;background:var(--green2);border-color:var(--green);color:var(--green)">+15,000P</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-neutral" style="min-width:120px">5만P 달성?</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-api" style="min-width:120px">출금 신청<br>(4조건 충족)</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-admin" style="min-width:120px">어드민 승인<br>&rarr; 계좌 입금</div>
+  </div>
+  <div class="arrow-down">&darr;</div>
+  <div class="flow" style="justify-content:center;gap:12px">
+    <div class="fb fb-user" style="min-width:120px">돈지키미 등록<br>(4종)</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-api" style="min-width:100px;background:var(--orange2);border-color:var(--orange);color:var(--orange)">D-90<br>앱 푸시</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-crm" style="min-width:120px">D-30<br>CRM 해피콜</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-admin" style="min-width:100px;background:var(--red2);border-color:var(--red);color:var(--red)">D-7 / D-1<br>긴급 알림</div>
+    <div class="fa">&rarr;</div>
+    <div class="fb fb-db" style="min-width:100px;background:var(--green2);border-color:var(--green);color:var(--green)">재계약 완료</div>
+  </div>
+</div>
+
+
+<!-- ===== 예외 케이스 ===== -->
+<div style="margin-top:24px"></div>
+<div class="step-label" style="background:#6b7280">예외 케이스 — 포인트</div>
+<div class="step-card" style="border:2px solid #6b7280">
+  <table>
+    <thead><tr><th>상황</th><th>처리 방법</th></tr></thead>
+    <tbody>
+      <tr><td><strong>PASS 미인증 상태에서 포인트 적립 요청</strong></td><td>적립 보류. PASS 인증 완료 후 적립 처리. "인증하면 포인트 적립" 안내.</td></tr>
+      <tr><td><strong>출금 조건 미충족</strong></td><td>미충족 조건별 안내 표시 (5만P 부족 / 계약 없음 / PASS 미인증 / 계좌 미등록). 출금 버튼 비활성화.</td></tr>
+      <tr><td><strong>출금 신청 후 반려</strong></td><td>잔액 복구. 마이페이지에서 반려 사유 확인 가능.</td></tr>
+      <tr><td><strong>비회원이 가입 후 포인트 요청</strong></td><td>가입 시 5,000P 자동 적립. PASS 인증 완료 필수.</td></tr>
+      <tr><td><strong>포인트 부정 적립 시도</strong></td><td>CI 기반 중복 체크. 동일 CI로 재가입 불가.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="margin-top:16px"></div>
+<div class="step-label" style="background:#6b7280">예외 케이스 — 친구초대</div>
+<div class="step-card" style="border:2px solid #6b7280">
+  <table>
+    <thead><tr><th>상황</th><th>처리 방법</th></tr></thead>
+    <tbody>
+      <tr><td><strong>자기 자신 추천 코드 입력</strong></td><td>서버에서 자가추천 차단. "본인 코드는 사용할 수 없습니다" 에러.</td></tr>
+      <tr><td><strong>동일 전화번호 중복 등록</strong></td><td>이미 추천 등록된 번호 차단. "이미 추천 등록된 번호입니다".</td></tr>
+      <tr><td><strong>친구가 PASS 인증 안 함</strong></td><td>추천인 가입 보상 3,000P 보류. 친구가 PASS 인증 완료 시 적립.</td></tr>
+      <tr><td><strong>추천인이 PASS 인증 안 함</strong></td><td>계약 보상 보류. 양쪽 모두 PASS 인증 완료 시 적립.</td></tr>
+      <tr><td><strong>친구가 계약 후 취소</strong></td><td>계약 보상 미지급 (계약완료 상태만 보상 대상).</td></tr>
+      <tr><td><strong>추천 코드 존재하지 않음</strong></td><td>"유효하지 않은 추천 코드입니다" 에러.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="margin-top:16px"></div>
+<div class="step-label" style="background:#6b7280">예외 케이스 — 돈지키미</div>
+<div class="step-card" style="border:2px solid #6b7280">
+  <table>
+    <thead><tr><th>상황</th><th>처리 방법</th></tr></thead>
+    <tbody>
+      <tr><td><strong>이미 지난 날짜 등록</strong></td><td>등록은 가능하지만 D-day가 음수로 표시. 알림 미발송.</td></tr>
+      <tr><td><strong>동일 항목 중복 등록</strong></td><td>허용. 고객이 여러 약정을 각각 등록 가능 (인터넷 2개 등).</td></tr>
+      <tr><td><strong>알림 발송 실패</strong></td><td>어드민 알림관리에서 실패 건 재발송 가능.</td></tr>
+      <tr><td><strong>D-30 도래 시 CRM 연동 실패</strong></td><td>어드민에서 "CRM 대기" 상태로 표시. 수동 전달 가능.</td></tr>
+      <tr><td><strong>재계약 완료 후</strong></td><td>해당 돈지키미 항목 자동 완료 처리. 새 약정일로 재등록 유도.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="margin-top:16px"></div>
+<div class="step-label" style="background:#6b7280">예외 케이스 — 알림</div>
+<div class="step-card" style="border:2px solid #6b7280">
+  <table>
+    <thead><tr><th>상황</th><th>처리 방법</th></tr></thead>
+    <tbody>
+      <tr><td><strong>카카오 알림톡 발송 실패</strong></td><td>어드민 알림관리에서 실패 건 확인. 재발송 버튼으로 재시도.</td></tr>
+      <tr><td><strong>앱 푸시 수신 거부</strong></td><td>마이페이지 알림 설정에서 ON/OFF 토글. OFF 시 푸시 미발송.</td></tr>
+      <tr><td><strong>마케팅 수신 거부</strong></td><td>마케팅 알림만 차단. 서비스 알림(신청/계약/사은품)은 계속 발송.</td></tr>
+      <tr><td><strong>비회원에게 알림 발송</strong></td><td>카카오 알림톡으로만 발송 (앱 푸시 불가). 비회원 가입유도 3단계.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- URL -->
+<div style="margin-top:24px;background:var(--bg2);border:2px solid var(--navy);border-radius:12px;padding:16px 20px">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">관련 파일 / URL</div>
+  <table>
+    <tbody>
+      <tr><td><strong>어드민</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/admin/" target="_blank" class="mono" style="color:var(--blue)">https://bongi-mobile-production.up.railway.app/admin/</a></td><td>14 포인트 / 16 돈지키미 / 17 알림</td></tr>
+      <tr><td><strong>포인트 API</strong></td><td class="mono">server/routes/cash.js</td><td>잔액/내역/출금/은행/정책</td></tr>
+      <tr><td><strong>친구초대 API</strong></td><td class="mono">server/routes/referrals.js</td><td>코드/실적/등록/계약/보상정책</td></tr>
+      <tr><td><strong>돈지키미 API</strong></td><td class="mono">server/routes/alarms.js</td><td>알람 CRUD</td></tr>
+      <tr><td><strong>마이페이지</strong></td><td class="mono">client/src/pages/my/Points.jsx<br>client/src/pages/my/Referral.jsx<br>client/src/pages/my/MoneyGuard.jsx</td><td>고객용 UI</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:11px">
+  봉이모바일 &middot; 포인트 + 친구초대 + 돈지키미 통합 플로우 &middot; 2026-04-09
+</div>
+
+<script>
+(function(){
+  var API='https://bongi-mobile-production.up.railway.app/api/admin/platform/dev-notes';
+  var docName=document.title;
+  var memoCache={};
+
+  /* ---- overlay (singleton) ---- */
+  var overlay=document.createElement('div');
+  overlay.className='memo-overlay';
+  overlay.innerHTML='<div class="memo-popup">'+
+    '<div class="memo-popup-header"><span class="memo-popup-title"></span><button class="memo-popup-close">&times;</button></div>'+
+    '<div class="memo-popup-body"><div class="memo-popup-list"></div></div>'+
+    '<div class="memo-popup-footer">'+
+      '<input class="memo-title-input" placeholder="\uba54\ubaa8 \uc81c\ubaa9 (\uc120\ud0dd)" />'+
+      '<textarea class="memo-content-input" placeholder="\uba54\ubaa8 \ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694..."></textarea>'+
+      '<div class="memo-popup-footer-row"><input class="memo-author-input" placeholder="\uc791\uc131\uc790" /><button class="memo-popup-submit">\ub4f1\ub85d</button></div>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+
+  var popupTitle=overlay.querySelector('.memo-popup-title');
+  var popupList=overlay.querySelector('.memo-popup-list');
+  var inputTitle=overlay.querySelector('.memo-title-input');
+  var inputContent=overlay.querySelector('.memo-content-input');
+  var inputAuthor=overlay.querySelector('.memo-author-input');
+  var currentStep=null;
+  var currentBtn=null;
+
+  overlay.querySelector('.memo-popup-close').onclick=closePopup;
+  overlay.addEventListener('click',function(e){if(e.target===overlay)closePopup();});
+
+  function closePopup(){overlay.classList.remove('active');currentStep=null;currentBtn=null;}
+
+  function getAuthor(){
+    var a=inputAuthor.value.trim();
+    if(a)localStorage.setItem('stepMemoAuthor',a);
+    return a||localStorage.getItem('stepMemoAuthor')||'\uc775\uba85';
+  }
+
+  function fmtDate(d){
+    var dt=new Date(d);
+    var m=String(dt.getMonth()+1).padStart(2,'0'),dd=String(dt.getDate()).padStart(2,'0');
+    var hh=String(dt.getHours()).padStart(2,'0'),mm=String(dt.getMinutes()).padStart(2,'0');
+    return m+'-'+dd+' '+hh+':'+mm;
+  }
+
+  function renderPopup(stepText){
+    popupList.innerHTML='';
+    var notes=(memoCache[stepText]||[]);
+    if(!notes.length){popupList.innerHTML='<div class="memo-popup-empty">\ub4f1\ub85d\ub41c \uba54\ubaa8\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.</div>';return;}
+    notes.forEach(function(n){
+      var item=document.createElement('div');item.className='memo-popup-item';
+      var meta=document.createElement('div');meta.className='memo-popup-item-meta';
+      meta.textContent=(n.author||'\uc775\uba85')+' \u00b7 '+fmtDate(n.created_at||n.createdAt||new Date());
+      var content=document.createElement('div');content.className='memo-popup-item-content';
+      content.textContent=n.content||'';
+      var del=document.createElement('button');del.className='memo-popup-item-del';del.textContent='\uc0ad\uc81c';
+      del.onclick=function(){deleteMemo(n.id,stepText);};
+      item.appendChild(meta);item.appendChild(content);item.appendChild(del);
+      if(n.title){
+        var raw=n.title.replace(/^\[[^\]]*\]\s*/,'');
+        if(raw){var tt=document.createElement('div');tt.className='memo-popup-item-title';tt.textContent=raw;item.insertBefore(tt,meta);}
+      }
+      popupList.appendChild(item);
+    });
+  }
+
+  function updateBtnCount(btn,stepText){
+    var count=(memoCache[stepText]||[]).length;
+    var label=btn.getAttribute('data-label');
+    btn.textContent='\ud83d\udcdd '+label+(count?' ('+count+')':'');
+  }
+
+  function loadMemos(stepText,btn){
+    fetch(API+'?page='+encodeURIComponent(docName))
+    .then(function(r){return r.json()})
+    .then(function(data){
+      var all=data.data||data.notes||data||[];
+      memoCache[stepText]=all.filter(function(n){return n.title&&n.title.indexOf('['+stepText+']')===0;});
+      if(btn)updateBtnCount(btn,stepText);
+      if(currentStep===stepText)renderPopup(stepText);
+    }).catch(function(){});
+  }
+
+  function saveMemo(stepText){
+    var author=getAuthor();
+    var t=inputTitle.value.trim();
+    var c=inputContent.value.trim();
+    if(!c){alert('\ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694');return;}
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({page:docName,type:'\uba54\ubaa8',title:'['+stepText+'] '+(t||'\uba54\ubaa8'),content:c,author:author})
+    }).then(function(r){return r.json()}).then(function(){
+      inputTitle.value='';inputContent.value='';
+      loadMemos(stepText,currentBtn);
+    }).catch(function(e){alert('\uc800\uc7a5 \uc2e4\ud328: '+e.message);});
+  }
+
+  function deleteMemo(id,stepText){
+    if(!confirm('\uc774 \uba54\ubaa8\ub97c \uc0ad\uc81c\ud558\uc2dc\uaca0\uc2b5\ub2c8\uae4c?'))return;
+    fetch(API+'/'+id,{method:'DELETE'})
+    .then(function(){loadMemos(stepText,currentBtn);})
+    .catch(function(e){alert('\uc0ad\uc81c \uc2e4\ud328: '+e.message);});
+  }
+
+  function openPopup(stepText,btn){
+    currentStep=stepText;currentBtn=btn;
+    popupTitle.textContent='\ud83d\udcdd '+stepText;
+    inputAuthor.value=localStorage.getItem('stepMemoAuthor')||'';
+    inputTitle.value='';inputContent.value='';
+    renderPopup(stepText);
+    overlay.classList.add('active');
+  }
+
+  overlay.querySelector('.memo-popup-submit').onclick=function(){
+    if(currentStep)saveMemo(currentStep);
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    var cards=document.querySelectorAll('.step-card');
+    cards.forEach(function(card){
+      var prev=card.previousElementSibling;
+      var stepText=(prev&&prev.classList.contains('step-label'))?prev.textContent.trim():'';
+      if(!stepText)stepText=card.textContent.trim().substring(0,40);
+
+      var wrap=document.createElement('div');wrap.className='memo-btn-wrap';
+      var btn=document.createElement('button');btn.className='memo-open-btn';
+      btn.setAttribute('data-label','\uba54\ubaa8');
+      btn.textContent='\ud83d\udcdd \uba54\ubaa8';
+      btn.onclick=function(){openPopup(stepText,btn);};
+      wrap.appendChild(btn);
+      card.parentNode.insertBefore(wrap,card.nextSibling);
+
+      loadMemos(stepText,btn);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

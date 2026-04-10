@@ -109,11 +109,13 @@ app.get('/api/rental', (req, res) => {
 const clientDist = join(__dirname, '..', 'client', 'dist');
 import { existsSync } from 'fs';
 if (existsSync(clientDist)) {
-  // /docs, /stores 등은 서버 정적 파일 우선
-  app.use('/docs', express.static(join(__dirname, '..', 'docs')));
+  // /docs, /reports 등은 서버 정적 파일 우선 (SPA보다 먼저)
+  app.use('/docs', express.static(join(__dirname, 'public', 'docs')));
+  app.use('/reports', express.static(join(__dirname, 'public', 'reports')));
   app.use(express.static(clientDist));
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/crm') || req.path.startsWith('/dashboard') || req.path.startsWith('/docs') || req.path.startsWith('/stores') || req.path.startsWith('/reports')) {
+    // API, 어드민, 정적 경로, .html 파일은 SPA가 처리하지 않음
+    if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/crm') || req.path.startsWith('/dashboard') || req.path.startsWith('/docs') || req.path.startsWith('/stores') || req.path.startsWith('/reports') || req.path.endsWith('.html')) {
       return next();
     }
     res.sendFile(join(clientDist, 'index.html'));

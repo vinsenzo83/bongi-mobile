@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이모바일 — 전체 연결 맵</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#f8f7f4; --bg2:#fff; --border:#e2ddd6; --navy:#1a2744; --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5; --orange:#d97706; --orange2:#fef3c7; --red:#dc2626; --red2:#fee2e2; --purple:#7c3aed; --purple2:#f3e8ff; --text:#1a1a1a; --text2:#4a4a4a; --text3:#8a8a8a; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; padding:40px; max-width:1400px; margin:0 auto; }
+h1 { font-size:28px; font-weight:900; color:var(--navy); margin-bottom:4px; }
+.subtitle { font-size:12px; color:var(--text3); margin-bottom:40px; font-family:'JetBrains Mono',monospace; }
+.section-title { font-size:20px; font-weight:900; color:var(--navy); margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+.section-num { background:var(--navy); color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+.card { background:var(--bg2); border:1.5px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; }
+.mono { font-family:'JetBrains Mono',monospace; font-size:10px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700; }
+.b-blue { background:var(--blue2); color:var(--blue); } .b-green { background:var(--green2); color:var(--green); }
+.b-orange { background:var(--orange2); color:var(--orange); } .b-red { background:var(--red2); color:var(--red); }
+.b-purple { background:var(--purple2); color:var(--purple); } .b-gray { background:#f3f4f6; color:#6b7280; }
+table { width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }
+th { background:var(--navy); color:#fff; padding:8px 10px; text-align:left; font-size:10px; }
+td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+a { color:var(--blue); text-decoration:none; }
+a:hover { text-decoration:underline; }
+.note { background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:8px 14px; font-size:10px; color:var(--navy); line-height:1.6; margin-top:8px; }
+.flow-map { display:flex; flex-direction:column; gap:0; }
+.flow-row { display:flex; align-items:center; gap:0; }
+.flow-node { padding:10px 14px; border-radius:10px; font-size:11px; font-weight:600; text-align:center; min-width:110px; cursor:pointer; transition:all 0.15s; }
+.flow-node:hover { transform:scale(1.05); box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+.flow-arrow { color:var(--text3); font-size:18px; font-weight:700; padding:0 4px; }
+.flow-arrow-down { text-align:center; color:var(--text3); font-size:18px; margin:2px 0; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.doc-card { background:var(--bg2); border:2px solid var(--border); border-radius:12px; padding:16px; transition:all 0.15s; cursor:pointer; text-decoration:none; display:block; color:var(--text); }
+.doc-card:hover { border-color:var(--blue); box-shadow:0 4px 12px rgba(37,99,235,0.15); transform:translateY(-2px); text-decoration:none; }
+.doc-card .doc-num { font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:var(--border); }
+.doc-card .doc-title { font-size:15px; font-weight:700; color:var(--navy); margin-top:4px; }
+.doc-card .doc-desc { font-size:11px; color:var(--text3); margin-top:4px; line-height:1.5; }
+/* Step Memo Popup Feature */
+.memo-btn-wrap{display:flex;justify-content:flex-end;margin:-4px 0 12px 0}
+.memo-open-btn{background:none;border:1.5px solid #d97706;color:#d97706;border-radius:8px;padding:3px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s}
+.memo-open-btn:hover{background:#d97706;color:#fff}
+.memo-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;justify-content:center;align-items:center}
+.memo-overlay.active{display:flex}
+.memo-popup{background:#fff;border-radius:16px;width:460px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;font-family:'Noto Sans KR',sans-serif}
+.memo-popup-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--navy,#1a2744);color:#fff;font-size:13px;font-weight:700}
+.memo-popup-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;opacity:.7}
+.memo-popup-close:hover{opacity:1}
+.memo-popup-body{flex:1;overflow-y:auto;padding:16px 20px}
+.memo-popup-list{margin-bottom:12px}
+.memo-popup-item{background:#f8f8f6;border:1px solid #e8e4de;border-radius:10px;padding:12px 14px;margin-bottom:8px;position:relative}
+.memo-popup-item-title{font-size:12px;font-weight:700;color:#1a2744;margin-bottom:2px}
+.memo-popup-item-meta{font-size:10px;color:#8a8a8a;font-weight:600;margin-bottom:4px}
+.memo-popup-item-content{font-size:12px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap}
+.memo-popup-item-del{position:absolute;top:10px;right:12px;background:none;border:1px solid #fca5a5;color:#dc2626;font-size:10px;cursor:pointer;padding:2px 8px;border-radius:4px;opacity:.6;font-family:'Noto Sans KR',sans-serif}
+.memo-popup-item-del:hover{opacity:1;background:#fef2f2}
+.memo-popup-empty{text-align:center;color:#aaa;font-size:12px;padding:24px 0}
+.memo-popup-footer{padding:14px 20px;border-top:1.5px solid #e8e4de;background:#fafaf8}
+.memo-popup-footer input,.memo-popup-footer textarea{width:100%;border:1.5px solid #e2ddd6;border-radius:8px;padding:8px 10px;font-size:12px;font-family:'Noto Sans KR',sans-serif;box-sizing:border-box;margin-bottom:8px;outline:none;transition:border .15s}
+.memo-popup-footer input:focus,.memo-popup-footer textarea:focus{border-color:#d97706}
+.memo-popup-footer textarea{resize:vertical;min-height:56px}
+.memo-popup-footer-row{display:flex;gap:8px;align-items:center}
+.memo-popup-footer-row input{flex:1;margin-bottom:0}
+.memo-popup-submit{padding:8px 20px;border:none;border-radius:8px;background:#059669;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap}
+.memo-popup-submit:hover{background:#047857}
+</style>
+</head>
+<body>
+
+<h1>봉이모바일 전체 연결 맵</h1>
+<div class="subtitle">11개 플로우 문서 · 전체 시스템 연결 관계 · 2026-04-08</div>
+
+<!-- ==================== 1. 문서 인덱스 ==================== -->
+<div class="section-title"><div class="section-num">1</div>플로우 문서 인덱스</div>
+<div class="grid3" style="margin-bottom:32px">
+  <a class="doc-card" href="service-flow-v2.html">
+    <div class="doc-num">00</div>
+    <div class="doc-title">전체 서비스 플로우</div>
+    <div class="doc-desc">고객 접속 → 회원가입 → AI 채팅 → 상품 탐색 → 신청 → 계약 → 사은품 → 마이페이지</div>
+  </a>
+  <a class="doc-card" href="flow-internet-tv.html" style="border-color:#dbeafe">
+    <div class="doc-num" style="color:var(--blue)">01</div>
+    <div class="doc-title">인터넷+TV 상품관리</div>
+    <div class="doc-desc">SKT/KT/LG U+ · 속도×TV×셋톱×WiFi 조합 · 사은품 · 요금 계산</div>
+  </a>
+  <a class="doc-card" href="flow-rental.html" style="border-color:#d1fae5">
+    <div class="doc-num" style="color:var(--green)">02</div>
+    <div class="doc-title">렌탈 상품관리</div>
+    <div class="doc-desc">51개 상품 · 렌트리 URL 자동 파싱 · 카테고리 11개 · 1:1 티켓 매핑</div>
+  </a>
+  <a class="doc-card" href="flow-used-phone.html" style="border-color:#f3e8ff">
+    <div class="doc-num" style="color:var(--purple)">03</div>
+    <div class="doc-title">중고폰 매입</div>
+    <div class="doc-desc">302개 모델 · Tredit API 연동 · A~E 등급 · 셀프 접수 → 검수 → 입금</div>
+  </a>
+  <a class="doc-card" href="flow-store-price.html" style="border-color:#fef3c7">
+    <div class="doc-num" style="color:var(--orange)">04</div>
+    <div class="doc-title">매장 · 휴대폰 시세</div>
+    <div class="doc-desc">8개 직영점 · 5G 18개 모델 · 매장 방문 유도 · 시세 매일 업데이트</div>
+  </a>
+  <a class="doc-card" href="flow-ticket.html" style="border-color:#dbeafe">
+    <div class="doc-num" style="color:var(--blue)">05</div>
+    <div class="doc-title">티켓 관리</div>
+    <div class="doc-desc">인터넷 1,002개 + 렌탈 51개 = 1,053개 · 조합 자동 생성 · 연쇄 비활성</div>
+  </a>
+  <a class="doc-card" href="flow-applications.html" style="border-color:#fef3c7">
+    <div class="doc-num" style="color:var(--orange)">06</div>
+    <div class="doc-title">신청 현황</div>
+    <div class="doc-desc">모든 유입 경로 통합 · CRM 양방향 동기화 · 상태 전이</div>
+  </a>
+  <a class="doc-card" href="flow-gifts.html" style="border-color:#d1fae5">
+    <div class="doc-num" style="color:var(--green)">07</div>
+    <div class="doc-title">사은품 관리</div>
+    <div class="doc-desc">계약완료 → 지급대기 자동 생성 · PASS+계좌 필수 · 비회원 알림톡 3단계</div>
+  </a>
+  <a class="doc-card" href="flow-points-referral-guard.html" style="border-color:#f3e8ff">
+    <div class="doc-num" style="color:var(--purple)">08</div>
+    <div class="doc-title">포인트 + 친구초대 + 돈지키미 + 알림</div>
+    <div class="doc-desc">적립/출금 · 추천코드 · 약정 알람 · 앱푸시/카카오톡</div>
+  </a>
+  <a class="doc-card" href="flow-reviews.html" style="border-color:#fef3c7">
+    <div class="doc-num" style="color:var(--orange)">09</div>
+    <div class="doc-title">후기 관리</div>
+    <div class="doc-desc">자체 후기 · 사진 필수 · 15,000P 적립 · AI 채팅 자동 노출</div>
+  </a>
+  <a class="doc-card" href="data-flow-diagram.html">
+    <div class="doc-num">10</div>
+    <div class="doc-title">전체 데이터 흐름도</div>
+    <div class="doc-desc">ERD · API 목록 · 상태 전이도 · 아키텍처</div>
+  </a>
+</div>
+
+<!-- ==================== 2. 고객 여정 전체 맵 ==================== -->
+<div class="section-title"><div class="section-num">2</div>고객 여정 — 전체 연결 맵</div>
+<div class="card" style="padding:28px">
+  <div style="font-size:11px;color:var(--text3);margin-bottom:20px">위에서 아래로 전체 흐름이 이어집니다. 각 단계를 클릭하면 해당 플로우 문서로 이동합니다.</div>
+
+  <!-- 접속 -->
+  <div style="text-align:center;margin-bottom:4px">
+    <a href="service-flow-v2.html" class="flow-node" style="background:var(--navy);color:#fff;display:inline-block">고객 접속<br><span style="font-size:9px;opacity:0.7">회원 / 비회원</span></a>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 회원가입/로그인 -->
+  <div style="text-align:center;margin-bottom:4px">
+    <a href="service-flow-v2.html" class="flow-node" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue);display:inline-block">회원가입 / 로그인<br><span style="font-size:9px">카카오 · 구글 · PASS 인증</span></a>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- AI 채팅 -->
+  <div style="text-align:center;margin-bottom:4px">
+    <a href="service-flow-v2.html" class="flow-node" style="background:var(--navy);color:#fff;display:inline-block;min-width:200px">AI 채팅 상담<br><span style="font-size:9px;opacity:0.7">모든 상품 탐색의 시작점</span></a>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 4가지 카테고리 분기 -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <a href="flow-internet-tv.html" class="flow-node" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue)">① 인터넷+TV<br><span style="font-size:9px">SKT/KT/LG U+</span></a>
+    <a href="flow-store-price.html" class="flow-node" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange)">② 휴대폰 시세<br><span style="font-size:9px">매장 방문 유도</span></a>
+    <a href="flow-rental.html" class="flow-node" style="background:var(--green2);border:2px solid var(--green);color:var(--green)">③ 렌탈<br><span style="font-size:9px">51개 상품</span></a>
+    <a href="flow-used-phone.html" class="flow-node" style="background:var(--purple2);border:2px solid var(--purple);color:var(--purple)">④ 중고폰 매입<br><span style="font-size:9px">302개 모델</span></a>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 정보 수집 바텀시트 (SelectCard) -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <div class="flow-node" style="background:#fff;color:var(--blue);border:2px solid var(--blue);font-size:10px">InternetSelectCard<br><span style="font-size:9px">통신사→속도→TV (3단계)</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--orange);border:2px solid var(--orange);font-size:10px">PhoneSelectCard<br><span style="font-size:9px">통신사→유형→제조사→기종 (4단계)</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--green);border:2px solid var(--green);font-size:10px">RentalSelectCard<br><span style="font-size:9px">카테고리→브랜드 (2단계)</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--purple);border:2px solid var(--purple);font-size:10px">UsedPhoneSelectCard<br><span style="font-size:9px">제조사→모델→용량→상태 (4단계)</span></div>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 상품 카드 -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <div class="flow-node" style="background:#1e1e1e;color:#fff;border:1px solid #333;font-size:10px">ProductCard<br><span style="color:#60a5fa">다크테마</span></div>
+    <div class="flow-node" style="background:#1e1e1e;color:#fff;border:1px solid #333;font-size:10px">MobilePriceCard<br><span style="color:#60a5fa">다크테마</span></div>
+    <div class="flow-node" style="background:#1e1e1e;color:#fff;border:1px solid #333;font-size:10px">RentalCard<br><span style="color:#4ade80">다크테마</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--navy);border:1px solid #e8e8e8;font-size:10px">TradeinCard<br><span style="color:var(--blue)">라이트테마</span></div>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 티켓 + 신청 분기 -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <a href="flow-ticket.html" class="flow-node" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue)">티켓번호 부여<br><span style="font-size:9px">SK0188 / R001</span></a>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <a href="flow-applications.html" class="flow-node" style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);font-size:10px;padding:6px 10px">셀프신청</a>
+      <div class="flow-node" style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);font-size:10px;padding:6px 10px">바로상담 (전화)</div>
+      <div class="flow-node" style="background:var(--purple2);border:1.5px solid var(--purple);color:var(--purple);font-size:10px;padding:6px 10px">티켓전화</div>
+    </div>
+    <div class="flow-node" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange);font-size:10px">매장 방문<br><span style="font-size:9px">(휴대폰만)</span></div>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 신청 → CRM -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <a href="flow-applications.html" class="flow-node" style="background:var(--navy);color:#fff">신청현황<br><span style="font-size:9px;opacity:0.7">어드민 ↔ CRM 동기화</span></a>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 계약완료 후 -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <div class="flow-node" style="background:var(--green2);border:2px solid var(--green);color:var(--green)">계약완료</div>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 후속 처리 -->
+  <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+    <a href="flow-gifts.html" class="flow-node" style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);font-size:10px">사은품<br>자동 생성</a>
+    <a href="flow-points-referral-guard.html" class="flow-node" style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);font-size:10px">포인트<br>자동 적립</a>
+    <a href="flow-reviews.html" class="flow-node" style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);font-size:10px">후기 작성<br>15,000P</a>
+    <a href="flow-points-referral-guard.html" class="flow-node" style="background:var(--purple2);border:1.5px solid var(--purple);color:var(--purple);font-size:10px">친구초대<br>보상</a>
+    <a href="flow-points-referral-guard.html" class="flow-node" style="background:var(--red2);border:1.5px solid var(--red);color:var(--red);font-size:10px">돈지키미<br>약정 알람</a>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 마이페이지 -->
+  <div style="text-align:center">
+    <a href="service-flow-v2.html" class="flow-node" style="background:var(--navy);color:#fff;display:inline-block;min-width:200px">마이페이지<br><span style="font-size:9px;opacity:0.7">신청이력 · 사은품 · 포인트 · 돈지키미</span></a>
+  </div>
+</div>
+
+<!-- ==================== 3. 데이터 연결 맵 ==================== -->
+<div class="section-title"><div class="section-num">3</div>데이터 연결 맵 — 어디서 입력하면 어디에 반영되나</div>
+<div class="card">
+  <table>
+    <thead><tr><th>어드민 입력</th><th>DB 테이블</th><th>반영되는 곳</th><th>관련 문서</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>인터넷+TV 상품</strong><br><span style="font-size:9px;color:var(--text3)">03~05번</span></td>
+        <td class="mono">speeds / tv / settop / wifi</td>
+        <td>InternetSelectCard(바텀시트) · 고객 상품 카드 · AI 채팅 · 티켓 자동 생성 · 사은품 금액 · CRM</td>
+        <td><a href="flow-internet-tv.html">인터넷+TV</a> · <a href="flow-ticket.html">티켓</a></td>
+      </tr>
+      <tr>
+        <td><strong>렌탈 상품</strong><br><span style="font-size:9px;color:var(--text3)">06번</span></td>
+        <td class="mono">rental_products</td>
+        <td>RentalSelectCard(바텀시트) · 렌탈 카드 · AI 채팅 · 티켓(R001~) · 신청현황 · CRM</td>
+        <td><a href="flow-rental.html">렌탈</a> · <a href="flow-ticket.html">티켓</a></td>
+      </tr>
+      <tr>
+        <td><strong>중고폰 시세</strong><br><span style="font-size:9px;color:var(--text3)">07번</span></td>
+        <td class="mono">used_phone_prices</td>
+        <td>UsedPhoneSelectCard(바텀시트) · TradeinCard · AI 채팅 · 매입 접수 · 중고폰 현황</td>
+        <td><a href="flow-used-phone.html">중고폰</a></td>
+      </tr>
+      <tr>
+        <td><strong>휴대폰 시세</strong><br><span style="font-size:9px;color:var(--text3)">08번</span></td>
+        <td class="mono">phone_prices</td>
+        <td>PhoneSelectCard(바텀시트) · MobilePriceCard · AI 채팅 · 매장별 시세</td>
+        <td><a href="flow-store-price.html">매장·시세</a></td>
+      </tr>
+      <tr>
+        <td><strong>매장 정보</strong><br><span style="font-size:9px;color:var(--text3)">09번</span></td>
+        <td class="mono">stores</td>
+        <td>StoreCard · 고객 매장 페이지 · AI 채팅 매장 추천</td>
+        <td><a href="flow-store-price.html">매장·시세</a></td>
+      </tr>
+      <tr>
+        <td><strong>사은품 금액</strong><br><span style="font-size:9px;color:var(--text3)">상품관리 하단</span></td>
+        <td class="mono">어드민 수기 입력</td>
+        <td>고객 카드 · AI 채팅 · 신청서 · 사은품관리 · CRM · 마이페이지</td>
+        <td><a href="flow-internet-tv.html">인터넷+TV</a> · <a href="flow-gifts.html">사은품</a></td>
+      </tr>
+      <tr>
+        <td><strong>공시지원금</strong><br><span style="font-size:9px;color:var(--text3)">20번</span></td>
+        <td class="mono">subsidy_data</td>
+        <td>AI 채팅 공시/선택약정 비교 · 어드민 크롤링 관리</td>
+        <td><a href="data-flow-diagram.html">데이터 흐름도</a></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== 4. 신청 → 계약 → 후속 처리 연결 ==================== -->
+<div class="section-title"><div class="section-num">4</div>신청 → 계약완료 후 자동 트리거 맵</div>
+<div class="card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">계약완료 시 자동으로 발생하는 7가지</div>
+  <table>
+    <thead><tr><th>#</th><th>트리거</th><th>대상</th><th>조건</th><th>관련 문서</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>사은품 지급대기 자동 생성</strong></td><td>bongi_gifts (지급대기)</td><td>계약완료 확인 (CRM)</td><td><a href="flow-gifts.html">사은품</a></td></tr>
+      <tr><td>2</td><td><strong>포인트 자동 적립</strong> (본인 계약)</td><td>bongi_cash_balance</td><td>앱회원 + PASS 인증</td><td><a href="flow-points-referral-guard.html">포인트</a></td></tr>
+      <tr><td>3</td><td><strong>친구초대 보상</strong> (추천인+친구)</td><td>bongi_rewards</td><td>양쪽 PASS 인증 완료</td><td><a href="flow-points-referral-guard.html">친구초대</a></td></tr>
+      <tr><td>4</td><td><strong>비회원 → 앱 가입 유도 알림톡</strong></td><td>카카오 알림톡</td><td>비회원인 경우</td><td><a href="flow-gifts.html">사은품</a></td></tr>
+      <tr><td>5</td><td><strong>회원관리 신청 건수 +1</strong></td><td>bongi_user_profiles</td><td>전화번호 매칭</td><td><a href="service-flow-v2.html">서비스 플로우</a></td></tr>
+      <tr><td>6</td><td><strong>마이페이지 신청이력 반영</strong></td><td>bongi_applications</td><td>앱회원만</td><td><a href="flow-applications.html">신청현황</a></td></tr>
+      <tr><td>7</td><td><strong>후기 작성 유도 앱 푸시</strong></td><td>앱 푸시</td><td>설치완료 후</td><td><a href="flow-reviews.html">후기</a></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== 5. 회원 유형별 데이터 흐름 ==================== -->
+<div class="section-title"><div class="section-num">5</div>회원 유형별 데이터 연결</div>
+<div class="card">
+  <div class="grid2">
+    <div>
+      <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">고객 유형 4가지</div>
+      <table>
+        <thead><tr><th>유형</th><th>유입 경로</th><th>데이터 보유</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge b-green">앱회원</span></td><td>카카오/구글 로그인</td><td>이름·전화·소셜·PASS(선택)·마이페이지</td></tr>
+          <tr><td><span class="badge b-orange">비회원(셀프)</span></td><td>셀프신청</td><td>이름·전화·주소·계좌</td></tr>
+          <tr><td><span class="badge b-blue">비회원(CRM)</span></td><td>전화/매장</td><td>이름·전화 (CRM에서 수집)</td></tr>
+          <tr><td><span class="badge b-purple">비회원(중고폰)</span></td><td>매입 접수</td><td>이름·전화·생년월일·성별·통신사 (PASS 완료)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">전화번호 = 핵심 키</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.8">
+        · 어떤 경로로 유입돼도 전화번호 기준 한 고객으로 통합<br>
+        · 비회원 → 앱 가입 시 전화번호로 자동 매칭<br>
+        · 셀프신청/CRM/중고폰 데이터 모두 연결<br>
+        · 중고폰 고객은 PASS 인증 완료 상태 → 앱 가입 시 재인증 불필요
+      </div>
+      <div class="note" style="margin-top:8px">
+        <strong>이름 자동 수정 우선순위:</strong><br>
+        PASS 실명 > 카카오 실명 > 구글 입력 > 셀프신청 입력 > CRM 입력
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 6. PASS 인증 의존성 맵 ==================== -->
+<div class="section-title"><div class="section-num">6</div>PASS 본인인증 — 의존성 맵</div>
+<div class="card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">PASS 인증이 필요한 기능 (돈이 오가는 순간)</div>
+  <table>
+    <thead><tr><th>기능</th><th>PASS 필수</th><th>이유</th><th>관련 문서</th></tr></thead>
+    <tbody>
+      <tr><td><strong>사은품 지급</strong></td><td><span class="badge b-red">필수</span></td><td>현금 지급 → 본인 확인</td><td><a href="flow-gifts.html">사은품</a></td></tr>
+      <tr><td><strong>포인트 출금</strong></td><td><span class="badge b-red">필수</span></td><td>현금 출금 → 본인 확인</td><td><a href="flow-points-referral-guard.html">포인트</a></td></tr>
+      <tr><td><strong>포인트 적립 (전체)</strong></td><td><span class="badge b-red">필수</span></td><td>어뷰징 방지 (CI 중복 체크)</td><td><a href="flow-points-referral-guard.html">포인트</a></td></tr>
+      <tr><td><strong>친구초대 보상</strong></td><td><span class="badge b-red">양쪽 필수</span></td><td>허위가입 방지</td><td><a href="flow-points-referral-guard.html">친구초대</a></td></tr>
+      <tr><td><strong>중고폰 매입 접수</strong></td><td><span class="badge b-red">필수</span></td><td>매입금 지급 → 본인 확인</td><td><a href="flow-used-phone.html">중고폰</a></td></tr>
+      <tr><td><strong>후기 작성 (15,000P)</strong></td><td><span class="badge b-red">필수</span></td><td>포인트 적립 전제 조건</td><td><a href="flow-reviews.html">후기</a></td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>PASS 인증으로 확보:</strong> 실명 · 생년월일 · 성별 · 통신사 · CI(고유값)<br>
+    <strong>카카오/구글로는 못 받는 값:</strong> 통신사, CI → PASS만 가능
+  </div>
+</div>
+
+<!-- ==================== 7. 어드민 메뉴 ↔ 문서 매핑 ==================== -->
+<div class="section-title"><div class="section-num">7</div>어드민 메뉴 ↔ 플로우 문서 매핑</div>
+<div class="card">
+  <table>
+    <thead><tr><th>어드민 #</th><th>메뉴</th><th>플로우 문서</th><th>DB 테이블</th></tr></thead>
+    <tbody>
+      <tr><td>01</td><td>대시보드</td><td><a href="data-flow-diagram.html">데이터 흐름도</a></td><td>전체 집계</td></tr>
+      <tr><td>02</td><td>회원 관리</td><td><a href="service-flow-v2.html">서비스 플로우</a></td><td class="mono">user_profiles</td></tr>
+      <tr><td>03~05</td><td>SKT / KT / LG U+ 상품</td><td><a href="flow-internet-tv.html">인터넷+TV</a></td><td class="mono">speeds / tv / settop / wifi</td></tr>
+      <tr><td>06</td><td>렌탈 상품</td><td><a href="flow-rental.html">렌탈</a></td><td class="mono">rental_products</td></tr>
+      <tr><td>07</td><td>중고폰 매입 시세</td><td><a href="flow-used-phone.html">중고폰</a></td><td class="mono">used_phone_prices</td></tr>
+      <tr><td>08</td><td>휴대폰 시세</td><td><a href="flow-store-price.html">매장·시세</a></td><td class="mono">phone_prices</td></tr>
+      <tr><td>09</td><td>매장 관리</td><td><a href="flow-store-price.html">매장·시세</a></td><td class="mono">stores</td></tr>
+      <tr><td>10</td><td>티켓 관리</td><td><a href="flow-ticket.html">티켓</a></td><td class="mono">tickets (1,053)</td></tr>
+      <tr><td>11</td><td>신청 현황</td><td><a href="flow-applications.html">신청현황</a></td><td class="mono">applications</td></tr>
+      <tr><td>12</td><td>중고폰 매입 현황</td><td><a href="flow-used-phone.html">중고폰</a></td><td class="mono">used_phone_buyback</td></tr>
+      <tr><td>13</td><td>사은품 관리</td><td><a href="flow-gifts.html">사은품</a></td><td class="mono">gifts</td></tr>
+      <tr><td>14</td><td>포인트 관리</td><td><a href="flow-points-referral-guard.html">포인트</a></td><td class="mono">cash_balance / withdrawals</td></tr>
+      <tr><td>15</td><td>후기 관리</td><td><a href="flow-reviews.html">후기</a></td><td class="mono">reviews (99)</td></tr>
+      <tr><td>16</td><td>돈지키미</td><td><a href="flow-points-referral-guard.html">돈지키미</a></td><td class="mono">user_alarms</td></tr>
+      <tr><td>17</td><td>알림 관리</td><td><a href="flow-points-referral-guard.html">알림</a></td><td class="mono">notifications</td></tr>
+      <tr><td>20</td><td>공시지원금</td><td><a href="data-flow-diagram.html">데이터 흐름도</a></td><td class="mono">subsidy_data (1,134)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== 8. 기술 스택 ==================== -->
+<div class="section-title"><div class="section-num">8</div>기술 스택 + 인프라</div>
+<div class="card">
+  <div class="grid2">
+    <div>
+      <table>
+        <thead><tr><th>계층</th><th>기술</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge b-blue">프론트</span></td><td>React 19 + Vite + react-router-dom</td></tr>
+          <tr><td><span class="badge b-orange">API</span></td><td>Express (ES modules) · REST API</td></tr>
+          <tr><td><span class="badge b-purple">AI</span></td><td>Claude API (@anthropic-ai/sdk)</td></tr>
+          <tr><td><span class="badge b-green">DB</span></td><td>Supabase (PostgreSQL) · 23개 테이블</td></tr>
+          <tr><td><span class="badge b-red">어드민</span></td><td>HTML 단일파일 (정적) · API fetch</td></tr>
+          <tr><td><span class="badge b-gray">배포</span></td><td>Railway · GitHub 자동 배포</td></tr>
+          <tr><td><span class="badge b-gray">크롤링</span></td><td>Playwright (공시지원금) · 매일 09:00 KST</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th>URL</th><th>용도</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://bongi-mobile-production.up.railway.app/" class="mono">고객 웹</a></td><td>React 프론트</td></tr>
+          <tr><td><a href="https://bongi-mobile-production.up.railway.app/admin/" class="mono">어드민</a></td><td>관리자 CRM</td></tr>
+          <tr><td><a href="https://bongi-mobile-production.up.railway.app/api/health" class="mono">API 헬스체크</a></td><td>서버 상태</td></tr>
+          <tr><td><a href="https://supabase.com/dashboard/project/dugaqvvnhsgenhmhuyju" class="mono">Supabase</a></td><td>DB 대시보드</td></tr>
+          <tr><td><a href="https://railway.com/project/9f6d9d05-3f97-4254-86e6-ee30d75c0be4" class="mono">Railway</a></td><td>배포 관리</td></tr>
+          <tr><td><a href="https://github.com/vinsenzo83/bongi-mobile" class="mono">GitHub</a></td><td>소스코드</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 9. API 현황 ==================== -->
+<div class="section-title"><div class="section-num">9</div>API 현황 (50+ 엔드포인트)</div>
+<div class="card">
+  <div class="grid2">
+    <div>
+      <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">공개 API (인증 불필요)</div>
+      <table>
+        <thead><tr><th>경로</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">/api/products/*</td><td>상품/카테고리/티켓/중고폰 카탈로그</td></tr>
+          <tr><td class="mono">/api/stores</td><td>매장 목록/상세</td></tr>
+          <tr><td class="mono">/api/applications</td><td>셀프신청 접수/조회</td></tr>
+          <tr><td class="mono">/api/reviews</td><td>후기 목록/작성/이미지 업로드</td></tr>
+          <tr><td class="mono">/api/cash/*</td><td>포인트 잔액/내역/출금/은행/정책</td></tr>
+          <tr><td class="mono">/api/referrals/*</td><td>추천코드/실적/등록/계약/보상정책</td></tr>
+          <tr><td class="mono">/api/alarms</td><td>돈지키미 CRUD</td></tr>
+          <tr><td class="mono">/api/chat/*</td><td>AI 채팅 세션/메시지/스트리밍</td></tr>
+          <tr><td class="mono">/api/auth/*</td><td>회원가입/로그인/소셜프로필</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">어드민 API (50+ 엔드포인트)</div>
+      <table>
+        <thead><tr><th>경로</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">/api/admin/platform/members</td><td>회원 목록/상세(8탭)/동기화</td></tr>
+          <tr><td class="mono">/api/admin/platform/applications</td><td>신청 목록/상태·상품 변경</td></tr>
+          <tr><td class="mono">/api/admin/platform/gifts</td><td>사은품 목록(회원 매칭)/상태 변경</td></tr>
+          <tr><td class="mono">/api/admin/platform/cash/*</td><td>출금 목록(회원 매칭)/승인(조건검증)/적립내역/수동적립</td></tr>
+          <tr><td class="mono">/api/admin/platform/don-jikimi</td><td>돈지키미 목록(회원 매칭)/상태 변경</td></tr>
+          <tr><td class="mono">/api/admin/platform/notifications</td><td>알림 목록(회원 매칭)/수동발송/재발송</td></tr>
+          <tr><td class="mono">/api/admin/platform/used-phone-buyback</td><td>중고폰 매입현황</td></tr>
+          <tr><td class="mono">/api/admin/platform/subsidy</td><td>공시지원금/벌크삽입/크롤링</td></tr>
+          <tr><td class="mono">/api/admin/platform/tickets</td><td>티켓 목록/동기화</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 10. 최신 시스템 현황 ==================== -->
+<div class="section-title"><div class="section-num">10</div>최신 시스템 현황 (2026-04-09)</div>
+<div class="card">
+  <table>
+    <thead><tr><th>항목</th><th>상태</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td><strong>DB 상태값</strong></td><td><span class="badge b-green">전부 한글</span></td><td>신청완료/상담중/계약완료/지급대기/지급완료/승인/대기/반려/적립/출금 등</td></tr>
+      <tr><td><strong>회원 동기화</strong></td><td><span class="badge b-green">구현 완료</span></td><td>member-sync.js — 전화번호 기준 전체 테이블 동기화</td></tr>
+      <tr><td><strong>중고폰 매입</strong></td><td><span class="badge b-green">분리 완료</span></td><td>신청현황에서 분리 → bongi_used_phone_buyback 별도 관리</td></tr>
+      <tr><td><strong>출금 조건 검증</strong></td><td><span class="badge b-green">구현 완료</span></td><td>승인 시 5만P+PASS+계좌+계약1회 자동 검증</td></tr>
+      <tr><td><strong>Race Condition</strong></td><td><span class="badge b-green">수정 완료</span></td><td>deduct_cash_balance/add_cash_balance RPC 원자적 처리</td></tr>
+      <tr><td><strong>출금 반려 환불</strong></td><td><span class="badge b-green">구현 완료</span></td><td>반려 시 잔액 복구 + cash_history 환불 기록</td></tr>
+      <tr><td><strong>SQL Injection</strong></td><td><span class="badge b-green">방지 완료</span></td><td>sanitizeSearch() 적용</td></tr>
+      <tr><td><strong>공시지원금 크롤링</strong></td><td><span class="badge b-green">정상 작동</span></td><td>Playwright dynamic import + 매일 09:00 KST</td></tr>
+      <tr><td><strong>이미지 자동 리사이즈</strong></td><td><span class="badge b-green">구현 완료</span></td><td>후기/중고폰 사진 자동 압축</td></tr>
+      <tr><td><strong>마이페이지 API 연동</strong></td><td><span class="badge b-orange">4/8 완료</span></td><td>Home/Applications/Points/Gifts 완료. Referral/MoneyGuard/Profile/BankAccount 미완</td></tr>
+      <tr><td><strong>어드민 API 인증</strong></td><td><span class="badge b-orange">미적용</span></td><td>MVP 단계 — 출시 직전 authenticateJWT 적용 예정</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:11px">
+  봉이모바일 · 전체 연결 맵 · 2026-04-09<br>
+  11개 플로우 문서 + 1개 마스터 맵
+</div>
+
+<script>
+(function(){
+  var API='https://bongi-mobile-production.up.railway.app/api/admin/platform/dev-notes';
+  var docName=document.title;
+  var memoCache={};
+
+  /* ---- overlay (singleton) ---- */
+  var overlay=document.createElement('div');
+  overlay.className='memo-overlay';
+  overlay.innerHTML='<div class="memo-popup">'+
+    '<div class="memo-popup-header"><span class="memo-popup-title"></span><button class="memo-popup-close">&times;</button></div>'+
+    '<div class="memo-popup-body"><div class="memo-popup-list"></div></div>'+
+    '<div class="memo-popup-footer">'+
+      '<input class="memo-title-input" placeholder="\uba54\ubaa8 \uc81c\ubaa9 (\uc120\ud0dd)" />'+
+      '<textarea class="memo-content-input" placeholder="\uba54\ubaa8 \ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694..."></textarea>'+
+      '<div class="memo-popup-footer-row"><input class="memo-author-input" placeholder="\uc791\uc131\uc790" /><button class="memo-popup-submit">\ub4f1\ub85d</button></div>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+
+  var popupTitle=overlay.querySelector('.memo-popup-title');
+  var popupList=overlay.querySelector('.memo-popup-list');
+  var inputTitle=overlay.querySelector('.memo-title-input');
+  var inputContent=overlay.querySelector('.memo-content-input');
+  var inputAuthor=overlay.querySelector('.memo-author-input');
+  var currentStep=null;
+  var currentBtn=null;
+
+  overlay.querySelector('.memo-popup-close').onclick=closePopup;
+  overlay.addEventListener('click',function(e){if(e.target===overlay)closePopup();});
+
+  function closePopup(){overlay.classList.remove('active');currentStep=null;currentBtn=null;}
+
+  function getAuthor(){
+    var a=inputAuthor.value.trim();
+    if(a)localStorage.setItem('stepMemoAuthor',a);
+    return a||localStorage.getItem('stepMemoAuthor')||'\uc775\uba85';
+  }
+
+  function fmtDate(d){
+    var dt=new Date(d);
+    var m=String(dt.getMonth()+1).padStart(2,'0'),dd=String(dt.getDate()).padStart(2,'0');
+    var hh=String(dt.getHours()).padStart(2,'0'),mm=String(dt.getMinutes()).padStart(2,'0');
+    return m+'-'+dd+' '+hh+':'+mm;
+  }
+
+  function renderPopup(stepText){
+    popupList.innerHTML='';
+    var notes=(memoCache[stepText]||[]);
+    if(!notes.length){popupList.innerHTML='<div class="memo-popup-empty">\ub4f1\ub85d\ub41c \uba54\ubaa8\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.</div>';return;}
+    notes.forEach(function(n){
+      var item=document.createElement('div');item.className='memo-popup-item';
+      var meta=document.createElement('div');meta.className='memo-popup-item-meta';
+      meta.textContent=(n.author||'\uc775\uba85')+' \u00b7 '+fmtDate(n.created_at||n.createdAt||new Date());
+      var content=document.createElement('div');content.className='memo-popup-item-content';
+      content.textContent=n.content||'';
+      var del=document.createElement('button');del.className='memo-popup-item-del';del.textContent='\uc0ad\uc81c';
+      del.onclick=function(){deleteMemo(n.id,stepText);};
+      item.appendChild(meta);item.appendChild(content);item.appendChild(del);
+      if(n.title){
+        var raw=n.title.replace(/^\[[^\]]*\]\s*/,'');
+        if(raw){var tt=document.createElement('div');tt.className='memo-popup-item-title';tt.textContent=raw;item.insertBefore(tt,meta);}
+      }
+      popupList.appendChild(item);
+    });
+  }
+
+  function updateBtnCount(btn,stepText){
+    var count=(memoCache[stepText]||[]).length;
+    var label=btn.getAttribute('data-label');
+    btn.textContent='\ud83d\udcdd '+label+(count?' ('+count+')':'');
+  }
+
+  function loadMemos(stepText,btn){
+    fetch(API+'?page='+encodeURIComponent(docName))
+    .then(function(r){return r.json()})
+    .then(function(data){
+      var all=data.data||data.notes||data||[];
+      memoCache[stepText]=all.filter(function(n){return n.title&&n.title.indexOf('['+stepText+']')===0;});
+      if(btn)updateBtnCount(btn,stepText);
+      if(currentStep===stepText)renderPopup(stepText);
+    }).catch(function(){});
+  }
+
+  function saveMemo(stepText){
+    var author=getAuthor();
+    var t=inputTitle.value.trim();
+    var c=inputContent.value.trim();
+    if(!c){alert('\ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694');return;}
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({page:docName,type:'\uba54\ubaa8',title:'['+stepText+'] '+(t||'\uba54\ubaa8'),content:c,author:author})
+    }).then(function(r){return r.json()}).then(function(){
+      inputTitle.value='';inputContent.value='';
+      loadMemos(stepText,currentBtn);
+    }).catch(function(e){alert('\uc800\uc7a5 \uc2e4\ud328: '+e.message);});
+  }
+
+  function deleteMemo(id,stepText){
+    if(!confirm('\uc774 \uba54\ubaa8\ub97c \uc0ad\uc81c\ud558\uc2dc\uaca0\uc2b5\ub2c8\uae4c?'))return;
+    fetch(API+'/'+id,{method:'DELETE'})
+    .then(function(){loadMemos(stepText,currentBtn);})
+    .catch(function(e){alert('\uc0ad\uc81c \uc2e4\ud328: '+e.message);});
+  }
+
+  function openPopup(stepText,btn){
+    currentStep=stepText;currentBtn=btn;
+    popupTitle.textContent='\ud83d\udcdd '+stepText;
+    inputAuthor.value=localStorage.getItem('stepMemoAuthor')||'';
+    inputTitle.value='';inputContent.value='';
+    renderPopup(stepText);
+    overlay.classList.add('active');
+  }
+
+  overlay.querySelector('.memo-popup-submit').onclick=function(){
+    if(currentStep)saveMemo(currentStep);
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    var cards=document.querySelectorAll('.step-card');
+    cards.forEach(function(card){
+      var prev=card.previousElementSibling;
+      var stepText=(prev&&prev.classList.contains('step-label'))?prev.textContent.trim():'';
+      if(!stepText)stepText=card.textContent.trim().substring(0,40);
+
+      var wrap=document.createElement('div');wrap.className='memo-btn-wrap';
+      var btn=document.createElement('button');btn.className='memo-open-btn';
+      btn.setAttribute('data-label','\uba54\ubaa8');
+      btn.textContent='\ud83d\udcdd \uba54\ubaa8';
+      btn.onclick=function(){openPopup(stepText,btn);};
+      wrap.appendChild(btn);
+      card.parentNode.insertBefore(wrap,card.nextSibling);
+
+      loadMemos(stepText,btn);
+    });
+  });
+})();
+</script>
+
+<!-- ==================== 11. 개발자 참고 URL ==================== -->
+<div class="section-title"><div class="section-num">11</div>🔗 개발자 참고 URL</div>
+<div class="card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">주요 서비스 URL</div>
+  <table>
+    <thead><tr><th>항목</th><th>URL</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td><strong>고객 웹</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/</a></td><td>고객용 프론트</td></tr>
+      <tr><td><strong>어드민 CRM</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/admin/" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/admin/</a></td><td>02번 메뉴 클릭</td></tr>
+      <tr><td><strong>API 헬스체크</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/api/health" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/api/health</a></td><td>서버 상태 확인</td></tr>
+      <tr><td><strong>API 베이스</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/api" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/api</a></td><td>모든 API 엔드포인트</td></tr>
+      <tr><td><strong>MVP 기능명세서</strong></td><td class="mono">~/봉이프로젝트/mvp-spec.html</td><td>로컬 파일</td></tr>
+      <tr><td><strong>플로우 문서</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/docs/" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/docs/</a></td><td>12개 플로우 문서</td></tr>
+      <tr><td><strong>GitHub</strong></td><td><a href="https://github.com/vinsenzo83/bongi-mobile" target="_blank" class="mono">https://github.com/vinsenzo83/bongi-mobile</a></td><td>소스코드</td></tr>
+      <tr><td><strong>Supabase</strong></td><td class="mono">dugaqvvnhsgenhmhuyju (프로젝트 ID)</td><td>DB 대시보드</td></tr>
+      <tr><td><strong>Railway</strong></td><td class="mono">bongi-mobile 프로젝트</td><td>배포 관리</td></tr>
+      <tr><td><strong>피그마</strong></td><td><a href="https://www.figma.com/design/p23XZoRIXZGFo5OiWCdU5s/" target="_blank" class="mono">https://www.figma.com/design/p23XZoRIXZGFo5OiWCdU5s/</a></td><td>상품별 카드 UI/UX</td></tr>
+    </tbody>
+  </table>
+
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin:20px 0 8px 0">주요 API 엔드포인트</div>
+  <table>
+    <thead><tr><th>API</th><th>Method</th><th>URL</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><strong>상품 조회</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/products</td><td>전체 상품</td></tr>
+      <tr><td><strong>신청 접수</strong></td><td><span class="badge b-blue">POST</span></td><td class="mono">/api/applications</td><td>신청서 제출</td></tr>
+      <tr><td><strong>채팅 AI</strong></td><td><span class="badge b-blue">POST</span></td><td class="mono">/api/ai/chat</td><td>Claude AI 채팅</td></tr>
+      <tr><td><strong>사은품</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/admin/platform/gifts</td><td>사은품 관리</td></tr>
+      <tr><td><strong>출금 요청</strong></td><td><span class="badge b-blue">POST</span></td><td class="mono">/api/cash/withdraw</td><td>캐시 출금</td></tr>
+      <tr><td><strong>친구초대</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/referrals/my-code</td><td>추천코드 조회</td></tr>
+      <tr><td><strong>돈지키미</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/alarms</td><td>알람 목록</td></tr>
+      <tr><td><strong>후기</strong></td><td><span class="badge b-gray">GET/POST</span></td><td class="mono">/api/reviews</td><td>후기 CRUD</td></tr>
+      <tr><td><strong>회원 프로필</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/user/profile</td><td>내 정보</td></tr>
+      <tr><td><strong>계좌 관리</strong></td><td><span class="badge b-gray">GET/POST</span></td><td class="mono">/api/user/bank-account</td><td>계좌 CRUD</td></tr>
+      <tr><td><strong>주소 관리</strong></td><td><span class="badge b-gray">GET/POST</span></td><td class="mono">/api/user/addresses</td><td>주소 CRUD</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>
