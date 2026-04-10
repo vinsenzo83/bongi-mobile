@@ -50,6 +50,12 @@ app.use('/stores', express.static(join(__dirname, 'public', 'stores')));
 app.use('/docs', express.static(join(__dirname, '..', 'docs')));
 app.use('/api/dashboard', dashboardRoutes);
 
+// 보고서 직접 서빙
+app.get('/api/report/:file', (req, res) => {
+  const filePath = join(__dirname, '..', 'docs', req.params.file);
+  res.sendFile(filePath, (err) => { if (err) res.status(404).json({ error: 'not found' }); });
+});
+
 // ── 공개 API (인증 불필요) ──
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
