@@ -145,7 +145,15 @@ export default function PhoneSelectCard({ onComplete, onClose }) {
   );
 
   return (
-    <div style={{ position: 'relative', fontFamily: fonts.family }}>
+    <div style={{
+      background: colors.white,
+      borderRadius: '16px 16px 0 0',
+      padding: '16px 20px 24px',
+      maxHeight: '85vh',
+      overflowY: 'auto',
+      fontFamily: fonts.family,
+      position: 'relative',
+    }}>
       {/* Handle */}
       <div style={sheetStyles.handle} />
 

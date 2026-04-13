@@ -251,11 +251,12 @@ export default function UsedPhoneSelectCard({ onComplete }) {
 const st = {
   card: {
     background: colors.white,
-    border: `1px solid ${colors.border}`,
-    borderRadius: 16,
-    padding: '16px 18px 14px',
-    maxWidth: 360,
+    borderRadius: '16px 16px 0 0',
+    padding: '16px 20px 24px',
+    maxHeight: '85vh',
+    overflowY: 'auto',
     fontFamily: fonts.family,
+    position: 'relative',
   },
   title: {
     fontSize: 16,
