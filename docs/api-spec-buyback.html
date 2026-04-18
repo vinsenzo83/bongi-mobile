@@ -273,6 +273,13 @@
     <b>전체 전송 vs 변경분만:</b> 변경된 모델만 전송하면 효율적. 전체 전송도 가능 (봉이에서 upsert 처리).<br>
     <b>봉이 처리:</b> 수신 → <span class="mono">bongi_used_phone_prices</span> 테이블 upsert → 고객에게 최신 시세 표시
   </div>
+
+  <div class="st2">Response (봉이가 응답)</div>
+<div class="code">{
+  "success": true,
+  "updated_count": 2,
+  "received": "2026-04-18T09:00:01+09:00"
+}</div>
 </div>
 
 <!-- 5. 접속 정보 -->
@@ -328,11 +335,14 @@
       <tr><td>6</td><td><b>시세 웹훅 가능 여부</b></td><td>시세 변경 시 웹훅 푸시 가능한지, 아니면 봉이가 주기적 조회?</td></tr>
       <tr><td>7</td><td><b>시세 API URL</b></td><td>시세 웹훅 불가 시 봉이가 조회할 시세 API</td></tr>
       <tr><td>8</td><td><b>사진 등록</b></td><td>고객이 기기 사진 업로드 필요한지? 사진등록URL은 트레딧에서 제공?</td></tr>
-      <tr><td>9</td><td><b>테스트 환경</b></td><td>스테이징/샌드박스 환경 제공 여부</td></tr>
+      <tr><td>9</td><td><b>매장 코드</b></td><td>추천인(매장명) 전달 시 매장명 문자열 or 매장 코드(831=상무점 등)? 코드 목록 필요</td></tr>
+      <tr><td>10</td><td><b>에러 코드 목록</b></td><td>접수 실패 시 에러 코드 종류 (INVALID_MODEL 외)</td></tr>
+      <tr><td>11</td><td><b>웹훅 재시도 정책</b></td><td>봉이 서버 응답 실패 시 재시도 횟수/간격?</td></tr>
+      <tr><td>12</td><td><b>테스트 환경</b></td><td>스테이징/샌드박스 환경 제공 여부</td></tr>
     </tbody>
   </table>
   <div class="warn">
-    <b>우선 확인:</b> 1번(접수 API URL) + 2번(인증) + 6번(시세 웹훅 가능 여부)가 가장 중요합니다.
+    <b>우선 확인:</b> 1번(접수 API URL) + 2번(인증) + 6번(시세 웹훅 가능 여부) + 9번(매장 코드)가 가장 중요합니다.
   </div>
 </div>
 
