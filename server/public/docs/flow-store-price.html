@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>봉이모바일 — 매장 · 휴대폰 시세 플로우</title>
+<title>봉이모바일 — 휴대폰 구매 · 유심 · 매장 플로우</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root { --bg:#f8f7f4; --bg2:#fff; --border:#e2ddd6; --navy:#1a2744; --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5; --orange:#d97706; --orange2:#fef3c7; --red:#dc2626; --red2:#fee2e2; --purple:#7c3aed; --purple2:#f3e8ff; --text:#1a1a1a; --text2:#4a4a4a; --text3:#8a8a8a; }
@@ -67,393 +67,1043 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
 </head>
 <body>
 
-<h1>매장 · 휴대폰 시세 플로우</h1>
-<div class="subtitle">어드민 08~09번 메뉴 · 8개 직영점 · 18개 5G 모델 + 저가/오픈박스 · 매장 방문 유도</div>
+<h1>휴대폰 구매 · 유심 · 매장 플로우</h1>
+<div class="subtitle">전국 매장 · 지역별 가격 · 온라인/오프라인/유심 3가지 경로 · 위치 기반 매장 노출</div>
 
-<!-- ===== 핵심 — 왜 매장 시세인가? ===== -->
-<div class="step-label" style="background:var(--orange)">핵심 — 휴대폰은 매장에서만 개통</div>
+<!-- ===== 핵심 — 2가지 경로 × 2가지 상품 ===== -->
+<div class="step-label" style="background:var(--orange)">핵심 — 2가지 경로 (매장 / 온라인) × 2가지 상품 (휴대폰 / 유심)</div>
 <div class="step-card" style="border:2px solid var(--orange)">
   <div class="grid2">
-    <div class="card-mock" style="border:2px solid var(--red)">
-      <div style="font-weight:900;color:var(--red);font-size:11px;margin-bottom:4px">플랫폼에서 안 하는 것</div>
-      휴대폰 온라인 개통 ❌<br>
-      → 휴대폰은 매장에서만 개통 가능<br>
-      → 플랫폼은 시세 안내 + 매장 방문 유도만
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:13px;margin-bottom:6px">📍 매장 방문</div>
+      <div style="font-weight:700;font-size:10px;margin-bottom:2px">휴대폰 구매</div>
+      · 지역별 가격 · 위치 기반 가까운 매장 · 매장 방문 신청서<br>
+      <div style="font-weight:700;font-size:10px;margin:6px 0 2px">유심만 변경</div>
+      · 매장에서 유심 교체 · 유심 리베이트 지역별 상이
     </div>
     <div class="card-mock" style="border:2px solid var(--green)">
-      <div style="font-weight:900;color:var(--green);font-size:11px;margin-bottom:4px">플랫폼이 하는 것</div>
-      시세 확인 → 매장 선택 → 방문/전화<br>
-      → AI 채팅에서 시세 카드 표시<br>
-      → 고객이 매장 방문하면 DB 확보
+      <div style="font-weight:900;color:var(--green);font-size:13px;margin-bottom:6px">🌐 온라인</div>
+      <div style="font-weight:700;font-size:10px;margin-bottom:2px">휴대폰 구매</div>
+      · 전국 동일 가격 · 배송 · 온라인 신청서<br>
+      <div style="font-weight:700;font-size:10px;margin:6px 0 2px">유심만 변경</div>
+      · 유심 배송 → 셀프 개통 · 유심 리베이트 전국 동일
     </div>
   </div>
-  <div class="note"><strong>목적:</strong> 시세를 보여주고 매장 방문을 유도하여 DB를 확보한다. 연 6만명 매장 개통 고객 → CRM 자동 유입.</div>
+  <div class="note"><strong>2가지 경로(매장/온라인)를 동시에 보여주고, 각 경로 안에서 휴대폰 구매 / 유심만 변경 선택.</strong> 가격 비교로 전환율 극대화.</div>
 </div>
 <div class="arrow-down">↓</div>
 
-<!-- ===== STEP 0: 유입 경로 ===== -->
-<div class="step-label">STEP 0 — 고객 유입 경로 (휴대폰 시세)</div>
-<div class="step-card">
-  <div class="flow">
-    <div class="fb fb-user" style="font-size:10px">경로 A<br><strong>AI 채팅</strong></div>
-    <div class="fa">→</div>
-    <div class="fb fb-neutral" style="font-size:9px">"갤럭시 S26 시세 알려줘"<br>AI가 바텀시트 오픈</div>
-    <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:9px">PhoneSelectCard<br>통신사→개통유형<br>→제조사→기종 선택</div>
-    <div class="fa">→</div>
-    <div class="fb fb-neutral" style="font-size:10px">시세 카드 확인</div>
-    <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px">매장 선택<br>(8개 직영점)</div>
-    <div class="fa">→</div>
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <div class="fb" style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);padding:4px 10px;font-size:9px"><strong>매장 방문</strong></div>
-      <div class="fb" style="background:var(--red2);border:1.5px solid var(--red);color:var(--red);padding:4px 10px;font-size:9px"><strong>전화 상담</strong></div>
+<!-- ===== 통신 구조도 ===== -->
+<div class="step-label" style="background:var(--navy)">개발자 참고 — 통신 유통 구조도</div>
+<div class="step-card" style="border:2px solid var(--navy)">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:12px">왜 온라인/오프라인 가격이 다른가?</div>
+
+  <!-- 유통 구조 다이어그램 -->
+  <div style="display:flex;flex-direction:column;align-items:center;gap:0">
+    <!-- 통신사 -->
+    <div style="display:flex;gap:12px;margin-bottom:4px">
+      <div style="background:#fee2e2;border:2px solid #ef4444;border-radius:10px;padding:10px 20px;text-align:center;font-size:12px;font-weight:800;color:#ef4444">SKT</div>
+      <div style="background:#dbeafe;border:2px solid #2563eb;border-radius:10px;padding:10px 20px;text-align:center;font-size:12px;font-weight:800;color:#2563eb">KT</div>
+      <div style="background:#fce7f3;border:2px solid #e40981;border-radius:10px;padding:10px 20px;text-align:center;font-size:12px;font-weight:800;color:#e40981">LG U+</div>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:2px">통신사 (본사)</div>
+    <div style="font-size:18px;color:var(--text3)">↓ 리베이트 지급</div>
+
+    <!-- 대리점 -->
+    <div style="display:flex;gap:14px;margin:6px 0 4px">
+      <div style="background:#eff6ff;border:2px solid #2563eb;border-radius:10px;padding:12px 16px;text-align:center">
+        <div style="font-size:12px;font-weight:800;color:#2563eb;margin-bottom:4px">🌐 온라인 대리점</div>
+        <div style="font-size:9px;color:var(--text3);line-height:1.5">통신사 공식 온라인몰<br>리베이트 A (전국 동일)</div>
+      </div>
+      <div style="background:#f0fdf4;border:2px solid #059669;border-radius:10px;padding:12px 16px;text-align:center">
+        <div style="font-size:12px;font-weight:800;color:#059669;margin-bottom:4px">📍 오프라인 대리점</div>
+        <div style="font-size:9px;color:var(--text3);line-height:1.5">지역별 대리점<br>리베이트 B (지역별 상이)</div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:2px">대리점 (중간 유통)</div>
+    <div style="font-size:10px;color:var(--red);font-weight:700;margin-bottom:2px">⚠️ 리베이트 A ≠ 리베이트 B → 가격이 다를 수밖에 없음</div>
+    <div style="font-size:18px;color:var(--text3)">↓ 수수료 지급</div>
+
+    <!-- 판매점 (봉이모바일) -->
+    <div style="background:var(--navy);border-radius:12px;padding:14px 20px;text-align:center;margin:6px 0">
+      <div style="font-size:14px;font-weight:900;color:#fff;margin-bottom:4px">🐟 봉이모바일 (판매점)</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.7);line-height:1.6">
+        온라인 대리점 + 오프라인 대리점 <strong style="color:#fbbf24">정책을 모두 스왑해서 사용</strong><br>
+        → 오늘은 온라인이 좋으면 온라인 정책, 내일은 오프라인이 좋으면 오프라인 정책
+      </div>
+    </div>
+    <div style="font-size:18px;color:var(--text3);margin:4px 0">↓</div>
+
+    <!-- 고객 판매 경로 -->
+    <div style="display:flex;gap:14px;margin:6px 0">
+      <div style="flex:1;border:2px solid #2563eb;border-radius:10px;padding:10px 14px;text-align:center;position:relative">
+        <div style="font-size:12px;font-weight:800;color:#2563eb;margin-bottom:4px">🌐 온라인 판매</div>
+        <div style="font-size:9px;color:var(--text2);line-height:1.5">온라인 정책만 사용 가능<br>비대면 · 배송</div>
+        <div style="position:absolute;top:-8px;right:-8px;background:#dc2626;color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px">오프라인 정책 X</div>
+      </div>
+      <div style="flex:1;border:2px solid #059669;border-radius:10px;padding:10px 14px;text-align:center;position:relative">
+        <div style="font-size:12px;font-weight:800;color:#059669;margin-bottom:4px">📍 매장 판매</div>
+        <div style="font-size:9px;color:var(--text2);line-height:1.5">온라인 + 오프라인 정책 <strong>둘 다 가능</strong><br>대면 · 신분증 확인</div>
+        <div style="position:absolute;top:-8px;right:-8px;background:#059669;color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px">양쪽 다 OK</div>
+      </div>
+    </div>
+
+    <div style="font-size:18px;color:var(--text3);margin:4px 0">↓</div>
+    <div style="display:flex;gap:14px">
+      <div style="flex:1;background:#f8f7f4;border:1.5px solid #e8e8e8;border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px;margin-bottom:2px">👤</div>
+        <div style="font-size:11px;font-weight:700;color:var(--navy)">온라인 고객</div>
+        <div style="font-size:9px;color:var(--text3)">전국 동일 가격 (온라인 대리점 리베이트 기준)</div>
+      </div>
+      <div style="flex:1;background:#f8f7f4;border:1.5px solid #e8e8e8;border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px;margin-bottom:2px">👤</div>
+        <div style="font-size:11px;font-weight:700;color:var(--navy)">매장 방문 고객</div>
+        <div style="font-size:9px;color:var(--text3)">지역별 가격 (더 유리한 쪽 선택 가능)</div>
+      </div>
     </div>
   </div>
+
+  <!-- 왜 가격이 다른지 설명 -->
+  <div class="grid2" style="margin-top:14px">
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:11px;margin-bottom:6px">🌐 온라인 정책 적용 시</div>
+      <div style="font-size:10px;line-height:1.6;color:var(--text2)">
+        · 온라인 대리점의 리베이트 기준<br>
+        · <strong>전국 동일 가격</strong><br>
+        · 통신사 공식 URL로 신청<br>
+        · 배송으로 수령
+      </div>
+    </div>
+    <div class="card-mock" style="border:2px solid var(--green)">
+      <div style="font-weight:900;color:var(--green);font-size:11px;margin-bottom:6px">📍 오프라인 정책 적용 시</div>
+      <div style="font-size:10px;line-height:1.6;color:var(--text2)">
+        · 오프라인 대리점의 리베이트 기준<br>
+        · <strong>지역별 가격 상이</strong> (대리점마다 다름)<br>
+        · 매장 방문해서 개통<br>
+        · 매장에서 직접 수령
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#fef3c7;border:2px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-top:12px">
+    <div style="font-size:11px;font-weight:800;color:#92400e;margin-bottom:4px">💡 핵심 — 봉이모바일은 양쪽 정책을 스왑</div>
+    <div style="font-size:10px;color:#78350f;line-height:1.7">
+      · 매일 온라인/오프라인 리베이트가 변동됨<br>
+      · 오늘 온라인이 유리하면 → 온라인 가격이 더 쌈<br>
+      · 내일 오프라인이 유리하면 → 매장 가격이 더 쌈<br>
+      · <strong>고객에게 두 가격을 동시에 보여주는 이유</strong> = 항상 유리한 쪽을 선택할 수 있게<br>
+      · 어드민에서 매일 온라인/오프라인 시세를 각각 업데이트
+    </div>
+    <div style="margin-top:8px;background:#fee2e2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px">
+      <div style="font-size:10px;font-weight:800;color:#dc2626;line-height:1.7">
+        ⚠️ <strong>단, 온라인에서 오프라인 정책 사용 불가</strong><br>
+        · 오프라인 정책 = 매장 방문 + 신분증 지참 필수 (대면 확인)<br>
+        · 온라인 고객이 오프라인 가격을 받을 수 없음<br>
+        · 반대로 매장 방문 고객은 온라인 정책도 적용 가능 (매장에서 온라인 신청 대행)
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:10px">
+    <strong>유통 구조 요약:</strong> 통신사 → 대리점(온라인/오프라인) → 판매점(봉이모바일)<br>
+    <strong>리베이트:</strong> 통신사가 대리점에 지급, 대리점이 판매점에 수수료 지급<br>
+    <strong>가격 차이 원인:</strong> 온라인 대리점 리베이트 ≠ 오프라인 대리점 리베이트<br>
+    <strong>봉이모바일:</strong> 양쪽 정책을 모두 사용 → 유리한 쪽을 고객에게 제공<br>
+    <strong>유심도 동일:</strong> 유심 리베이트도 온라인/오프라인 대리점별로 다름
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 0: 통합 바텀시트 전체 단계 ===== -->
+<div class="step-label">STEP 0 — 통합 바텀시트 (피그마 기준 목업)</div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:14px">AI 채팅에서 휴대폰/유심 문의 → 통합 바텀시트 → 매장/온라인 동시 노출</div>
+
+  <!-- ─── STEP 1: 현재 통신사 선택 ─── -->
+  <div style="font-size:11px;font-weight:800;color:#3617ce;margin-bottom:6px;border-left:3px solid #3617ce;padding-left:8px">STEP 1 — 현재 사용 중인 통신사</div>
+  <div style="background:#fff;border:1.5px solid #e8e8e8;border-radius:14px;padding:16px;max-width:360px;margin-bottom:6px">
+    <div style="display:flex;gap:4px;margin-bottom:12px">
+      <div style="flex:1;text-align:center"><div style="width:24px;height:24px;border-radius:50%;background:#3617ce;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin:0 auto">01</div><div style="font-size:8px;color:#3617ce;margin-top:2px">STEP</div></div>
+      <div style="flex:1;text-align:center"><div style="width:24px;height:24px;border-radius:50%;background:#e8e8e8;color:#999;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin:0 auto">02</div><div style="font-size:8px;color:#999;margin-top:2px">STEP</div></div>
+      <div style="flex:1;text-align:center"><div style="width:24px;height:24px;border-radius:50%;background:#e8e8e8;color:#999;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin:0 auto">03</div><div style="font-size:8px;color:#999;margin-top:2px">STEP</div></div>
+    </div>
+    <div style="font-size:14px;font-weight:700;color:#1a2744;margin-bottom:10px">현재 사용 중인 통신사를 선택하세요</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #3617ce;border-radius:10px;background:#f8f7ff">
+        <div style="width:36px;height:36px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#ef4444">SKT</div>
+        <div style="font-weight:700;font-size:14px">SKT</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #e8e8e8;border-radius:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#2563eb">KT</div>
+        <div style="font-weight:700;font-size:14px">KT</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #e8e8e8;border-radius:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#e40981">LG</div>
+        <div style="font-weight:700;font-size:14px">LG U+</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #e8e8e8;border-radius:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#6b7280">알뜰</div>
+        <div><div style="font-weight:700;font-size:14px">알뜰폰</div><div style="font-size:10px;color:#999">SKT/KT/LGU+ 망 MVNO</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="arrow-down" style="margin:4px 0">↓</div>
+
+  <!-- ─── STEP 2: 서비스 유형 선택 (분기점) ─── -->
+  <div style="font-size:11px;font-weight:800;color:#dc2626;margin-bottom:6px;border-left:3px solid #dc2626;padding-left:8px">STEP 2 — 원하는 서비스 ⚡ 분기점</div>
+  <div style="background:#fff;border:2px solid #dc2626;border-radius:14px;padding:16px;max-width:360px;margin-bottom:6px">
+    <div style="display:inline-block;background:#ede9fc;color:#3617ce;font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;margin-bottom:10px">현재: SKT</div>
+    <div style="font-size:14px;font-weight:700;color:#1a2744;margin-bottom:10px">어떤 서비스를 원하시나요?</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #2563eb;border-radius:12px;background:#eff6ff">
+        <div style="width:40px;height:40px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:18px">🔄</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:#1a2744">번호이동 (휴대폰 구매)</div>
+          <div style="font-size:11px;color:#999;margin-top:2px">다른 통신사로 이동 + 새 기기 구매</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #059669;border-radius:12px;background:#f0fdf4">
+        <div style="width:40px;height:40px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;font-size:18px">📱</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:#1a2744">기기변경</div>
+          <div style="font-size:11px;color:#999;margin-top:2px">현재 통신사 유지, 기기만 새로 구매</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #7c3aed;border-radius:12px;background:#f5f3ff">
+        <div style="width:40px;height:40px;border-radius:50%;background:#ede9fc;display:flex;align-items:center;justify-content:center;font-size:18px">💳</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:#1a2744">유심만 변경 (MNP)</div>
+          <div style="font-size:11px;color:#999;margin-top:2px">기기 그대로, 다른 통신사로 유심만 교체</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:10px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:8px 12px;font-size:10px;color:#92400e;line-height:1.5">
+      <strong>⚠️ 알뜰폰 선택 시:</strong> 기기변경 불가 → 번호이동 / 유심만 변경만 표시
+    </div>
+    <div style="margin-top:10px;width:100%;padding:8px 0;border-radius:8px;border:1px solid #e8e8e8;background:#fff;color:#999;font-size:12px;text-align:center">← 이전</div>
+  </div>
+
+  <!-- 분기 다이어그램 -->
+  <div style="display:flex;gap:10px;margin:8px 0 6px;align-items:flex-start">
+    <div style="flex:1;text-align:center">
+      <div style="font-size:14px;margin-bottom:4px">↙</div>
+      <div style="background:#eff6ff;border:1.5px solid #2563eb;border-radius:8px;padding:5px 8px;font-size:9px;font-weight:700;color:#2563eb">🔄 번호이동<br><span style="font-weight:400">→ 변경할 통신사 선택</span></div>
+    </div>
+    <div style="flex:1;text-align:center">
+      <div style="font-size:14px;margin-bottom:4px">↓</div>
+      <div style="background:#f0fdf4;border:1.5px solid #059669;border-radius:8px;padding:5px 8px;font-size:9px;font-weight:700;color:#059669">📱 기기변경<br><span style="font-weight:400">→ 바로 제조사/기종</span></div>
+    </div>
+    <div style="flex:1;text-align:center">
+      <div style="font-size:14px;margin-bottom:4px">↘</div>
+      <div style="background:#f5f3ff;border:1.5px solid #7c3aed;border-radius:8px;padding:5px 8px;font-size:9px;font-weight:700;color:#7c3aed">💳 유심 MNP<br><span style="font-weight:400">→ 변경할 통신사 선택</span></div>
+    </div>
+  </div>
+
+  <!-- ─── 분기 A: 번호이동 → 변경할 통신사 → 제조사/기종 ─── -->
+  <!-- ─── 분기 B: 기기변경 → 바로 제조사/기종 ─── -->
+  <div class="grid2" style="margin-top:10px;gap:14px">
+    <div>
+      <div style="font-size:11px;font-weight:800;color:#2563eb;margin-bottom:6px;border-left:3px solid #2563eb;padding-left:8px">STEP 3 — 변경할 통신사 (번호이동 시)</div>
+      <div style="background:#fff;border:1.5px solid #2563eb;border-radius:14px;padding:14px;margin-bottom:6px">
+        <div style="display:inline-block;background:#ede9fc;color:#3617ce;font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:8px">현재: SKT · 번호이동</div>
+        <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px">어디로 이동하시나요?</div>
+        <div style="font-size:9px;color:#999;margin-bottom:6px">* 현재 통신사(SKT) 제외</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #e8e8e8;border-radius:10px">
+            <div style="width:32px;height:32px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#2563eb">KT</div>
+            <div style="font-weight:700;font-size:13px">KT</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #e8e8e8;border-radius:10px">
+            <div style="width:32px;height:32px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#e40981">LG</div>
+            <div style="font-weight:700;font-size:13px">LG U+</div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow-down" style="margin:2px 0">↓</div>
+
+      <div style="font-size:11px;font-weight:800;color:#2563eb;margin-bottom:6px;border-left:3px solid #2563eb;padding-left:8px">STEP 4 — 제조사 + 기종 선택 (피그마 기준)</div>
+      <div style="background:#fff;border:1.5px solid #2563eb;border-radius:14px;padding:14px;margin-bottom:6px">
+        <div style="display:inline-block;background:#ede9fc;color:#3617ce;font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:8px">SKT → KT 번호이동</div>
+        <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:10px">상품 선택</div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:600;color:#1a2744;margin-bottom:4px">제조사 선택</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #3617ce;border-radius:10px;background:#f8f7ff">
+            <div style="width:18px;height:18px;border-radius:50%;background:#3617ce;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;border-radius:50%;background:#fff"></div></div>
+            <div><span style="font-weight:700;font-size:13px">삼성</span> <span style="font-size:10px;color:#999">갤럭시 S · Z · A Series</span></div>
+            <div style="margin-left:auto;font-size:10px;color:#999">▼</div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:600;color:#1a2744;margin-bottom:4px">기종 선택</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #3617ce;border-radius:10px;background:#f8f7ff">
+            <div style="width:18px;height:18px;border-radius:50%;background:#3617ce;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;border-radius:50%;background:#fff"></div></div>
+            <div style="font-weight:700;font-size:13px">S26 울트라</div>
+            <div style="margin-left:auto;font-size:10px;color:#999">▼</div>
+          </div>
+        </div>
+        <div style="padding:10px 0;border-radius:10px;background:#3617ce;color:#fff;font-size:14px;font-weight:700;text-align:center">오늘의 시세 확인하기</div>
+      </div>
+      <div class="arrow-down" style="margin:4px 0">↓</div>
+
+      <!-- 휴대폰 시세 결과 -->
+      <div style="font-size:11px;font-weight:800;color:#2563eb;margin-bottom:6px;border-left:3px solid #2563eb;padding-left:8px">결과 — 휴대폰 시세 비교</div>
+      <div style="background:#fff;border:1.5px solid #2563eb;border-radius:14px;padding:14px">
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <div style="flex:1;display:flex;align-items:center;gap:6px;padding:6px 8px;border:1.5px solid #2563eb;border-radius:6px;background:#eff6ff;font-size:10px;font-weight:700;color:#1a2744">KT ▼</div>
+          <div style="flex:2;padding:6px 8px;border:1.5px solid #2563eb;border-radius:6px;background:#eff6ff;font-size:10px;font-weight:700;color:#1a2744">S26 울트라 ▼</div>
+        </div>
+        <div style="display:inline-block;background:#ede9fc;color:#3617ce;font-size:9px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:8px">SKT → KT 번호이동</div>
+        <div style="height:1px;background:#e8e8e8;margin-bottom:8px"></div>
+        <div style="margin-bottom:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:11px;font-weight:700;color:#2563eb">📍 매장 (광주 서구) ▼</span>
+            <span style="font-size:9px;color:#2563eb;border:1px solid #2563eb;padding:1px 6px;border-radius:4px">🔄 지역</span>
+          </div>
+          <div style="background:#f8f7f4;border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:10px;color:#767676">시세</span>
+            <span style="font-size:18px;font-weight:900;color:#1a2744">64<span style="font-size:11px">만원</span></span>
+          </div>
+        </div>
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:700;color:#059669;margin-bottom:4px">🌐 온라인</div>
+          <div style="background:#f8f7f4;border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:10px;color:#767676">시세</span>
+            <span style="font-size:18px;font-weight:900;color:#1a2744">59<span style="font-size:11px">만원</span></span>
+          </div>
+        </div>
+        <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:6px;padding:6px 10px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid #e8e8e8"></div>
+          <div><span style="font-size:10px;font-weight:700;color:#1a2744">인터넷+TV 동시 가입</span> <span style="font-size:9px;color:#059669;font-weight:700">+OO만원</span></div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <div style="flex:1;padding:7px 0;border-radius:6px;background:#3617ce;color:#fff;font-size:10px;font-weight:700;text-align:center">매장 방문 신청</div>
+          <div style="flex:1;padding:7px 0;border-radius:6px;border:1.5px solid #3617ce;color:#3617ce;font-size:10px;font-weight:700;text-align:center">온라인 신청</div>
+        </div>
+      </div>
+      <div class="note" style="font-size:9px">
+        <strong>기기변경 선택 시:</strong> 변경할 통신사 선택 없이 바로 제조사/기종 → 결과<br>
+        <strong>드롭다운:</strong> 카드 내에서 통신사/기종 변경 가능 (바텀시트 다시 안 열어도 됨)
+      </div>
+    </div>
+
+    <!-- ─── 분기 C: 유심만 변경 ─── -->
+    <div>
+      <div style="font-size:11px;font-weight:800;color:#7c3aed;margin-bottom:6px;border-left:3px solid #7c3aed;padding-left:8px">STEP 3 — 변경할 통신사 (유심 MNP)</div>
+      <div style="background:#fff;border:1.5px solid #7c3aed;border-radius:14px;padding:14px;margin-bottom:6px">
+        <div style="display:inline-block;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:8px">현재: SKT · 유심 변경</div>
+        <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:6px">어디로 이동하시나요?</div>
+        <div style="font-size:9px;color:#999;margin-bottom:6px">* 현재 통신사(SKT) 제외</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #7c3aed;border-radius:10px;background:#f5f3ff">
+            <div style="width:32px;height:32px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#2563eb">KT</div>
+            <div style="font-weight:700;font-size:13px">KT</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #e8e8e8;border-radius:10px">
+            <div style="width:32px;height:32px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#e40981">LG</div>
+            <div style="font-weight:700;font-size:13px">LG U+</div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow-down" style="margin:4px 0">↓</div>
+
+      <div style="font-size:11px;font-weight:800;color:#7c3aed;margin-bottom:6px;border-left:3px solid #7c3aed;padding-left:8px">STEP 4 — 요금제 구간 선택</div>
+      <div style="background:#fff;border:1.5px solid #7c3aed;border-radius:14px;padding:14px;margin-bottom:6px">
+        <div style="display:inline-block;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:8px">SKT → KT 유심 변경</div>
+        <div style="font-size:13px;font-weight:700;color:#1a2744;margin-bottom:8px">요금제 구간을 선택하세요</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1.5px solid #e8e8e8;border-radius:10px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:50%;border:2px solid #e8e8e8"></div>
+              <div><div style="font-weight:700;font-size:13px">S_33</div><div style="font-size:10px;color:#999">33,000원 이상 요금제</div></div>
+            </div>
+            <div style="font-size:14px;font-weight:800;color:#059669">30만원</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1.5px solid #e8e8e8;border-radius:10px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:50%;border:2px solid #e8e8e8"></div>
+              <div><div style="font-weight:700;font-size:13px">R_43</div><div style="font-size:10px;color:#999">43,000원 이상 요금제</div></div>
+            </div>
+            <div style="font-size:14px;font-weight:800;color:#059669">35만원</div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1.5px solid #7c3aed;border-radius:10px;background:#f5f3ff">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:18px;height:18px;border-radius:50%;background:#7c3aed;border:2px solid #7c3aed;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;border-radius:50%;background:#fff"></div></div>
+              <div><div style="font-weight:700;font-size:13px">M_50 이상</div><div style="font-size:10px;color:#999">50,000원 이상 요금제</div></div>
+            </div>
+            <div style="font-size:14px;font-weight:800;color:#059669">40만원</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;background:#f8f7f4;border-radius:8px;padding:8px 10px;font-size:9px;color:var(--text3);line-height:1.5">
+          📍 14일 개통 후 지급 · 유지기간 M+6개월<br>
+          · 미유지/정지/해지/요금제 하향/단말 기변 시 전액 재정산<br>
+          · MNP(번호이동)만 가능 · 010 신규 제외 · SIM 단독 개통건만 (MVNO 포함) · 증빙서류 불필요<br>
+          <span style="color:var(--red)">※ 통신사별 요금제 구간·페이백 금액은 어드민에서 등록/관리</span>
+        </div>
+      </div>
+
+      <div class="arrow-down" style="margin:6px 0">↓</div>
+
+      <!-- 유심 결과 카드 -->
+      <div style="font-size:11px;font-weight:800;color:#7c3aed;margin-bottom:6px;border-left:3px solid #7c3aed;padding-left:8px">결과 — 유심 페이백 비교 (매장/온라인)</div>
+      <div style="background:#fff;border:1.5px solid #e8e8e8;border-radius:12px;padding:14px;font-size:11px;line-height:1.6">
+        <div style="font-size:15px;font-weight:900;color:#1a2744;margin-bottom:2px">SKT 유심 변경</div>
+        <div style="display:inline-block;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:10px">M_50 이상 · 페이백 40만원</div>
+        <div style="height:1px;background:#e8e8e8;margin-bottom:10px"></div>
+
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:#3617ce;margin-bottom:6px">📍 매장 유심 (광주 서구)</div>
+          <div style="background:#f8f7f4;border:1px solid #e8e8e8;border-radius:8px;padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:#767676">페이백</span><span style="color:#059669;font-weight:800;font-size:16px">40만원</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#767676">유심비</span><span style="color:#1a2744;font-weight:600">무료</span></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:10px">
+          <div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:6px">🌐 온라인 유심 (배송)</div>
+          <div style="background:#f8f7f4;border:1px solid #e8e8e8;border-radius:8px;padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:#767676">페이백</span><span style="color:#059669;font-weight:800;font-size:16px">35만원</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#767676">유심비</span><span style="color:#1a2744;font-weight:600">무료 (배송)</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;padding:8px 0;border-radius:8px;background:#3617ce;color:#fff;font-size:12px;font-weight:600;text-align:center">매장 방문 신청</div>
+          <div style="flex:1;padding:8px 0;border-radius:8px;border:1.5px solid #3617ce;color:#3617ce;font-size:12px;font-weight:600;text-align:center">온라인 신청</div>
+        </div>
+        <div style="display:flex;justify-content:center;margin-top:6px">
+          <div style="font-size:10px;color:#3617ce;font-weight:600;cursor:pointer">📋 직접 신청 (통신사 공식) →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 흐름 -->
+  <div style="margin-top:16px">
+    <div class="arrow-down">↓</div>
+    <div style="font-size:11px;font-weight:800;color:var(--navy);margin-bottom:6px;border-left:3px solid var(--navy);padding-left:8px">결과 — 매장/온라인 동시 노출</div>
+    <div class="flow">
+      <div class="fb fb-user" style="font-size:10px">AI 채팅</div>
+      <div class="fa">→</div>
+      <div class="fb fb-neutral" style="font-size:9px">"갤럭시 시세"<br>"유심 변경하고 싶어"</div>
+      <div class="fa">→</div>
+      <div class="fb fb-user" style="font-size:9px">통합 바텀시트<br>통신사 → 유형 분기<br>→ 기종 or 요금제</div>
+      <div class="fa">→</div>
+      <div class="fb fb-api" style="font-size:10px;font-weight:900">📍 매장 가격<br>🌐 온라인 가격<br>동시 비교 카드</div>
+    </div>
+    <div class="note">
+      <strong>휴대폰 키워드:</strong> 갤럭시, 아이폰, 시세, 휴대폰 → 바텀시트 오픈<br>
+      <strong>유심 키워드:</strong> 유심, 번호이동, 통신사 변경 → 바텀시트 오픈 (유심 선택 상태로)<br>
+      <strong>결과:</strong> 매장(📍 지역 가격 + 리베이트) + 온라인(🌐 전국 동일) 동시 비교
+    </div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 1-A: 휴대폰 시세 결과 카드 ===== -->
+<div class="step-label">STEP 1-A — 휴대폰 시세 결과 카드 (매장/온라인 비교)</div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">번호이동/기기변경 선택 후 → 매장/온라인 시세 동시 비교 + 인터넷+TV 동시 가입 옵션</div>
+  <div class="grid2">
+    <!-- 휴대폰 시세 카드 (카드 내 드롭다운으로 통신사/기종 변경 가능) -->
+    <div style="background:#fff;border:1.5px solid #e8e8e8;border-radius:14px;padding:16px;max-width:340px">
+      <!-- 카드 내 변경 드롭다운 -->
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <div style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 10px;border:1.5px solid #3617ce;border-radius:8px;background:#f8f7ff;cursor:pointer">
+          <div style="width:20px;height:20px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#2563eb">KT</div>
+          <span style="font-size:12px;font-weight:700;color:#1a2744">KT</span>
+          <span style="font-size:10px;color:#999;margin-left:auto">▼</span>
+        </div>
+        <div style="flex:2;display:flex;align-items:center;padding:8px 10px;border:1.5px solid #3617ce;border-radius:8px;background:#f8f7ff;cursor:pointer">
+          <span style="font-size:12px;font-weight:700;color:#1a2744">갤럭시 S26 울트라</span>
+          <span style="font-size:10px;color:#999;margin-left:auto">▼</span>
+        </div>
+      </div>
+
+      <div style="display:inline-block;background:#ede9fc;color:#3617ce;font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;margin-bottom:10px">SKT → KT 번호이동</div>
+      <div style="height:1px;background:#e8e8e8;margin-bottom:12px"></div>
+
+      <!-- 매장 -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:13px;font-weight:700;color:#3617ce">📍 매장 (광주 서구) <span style="font-size:10px;color:#999;font-weight:400">▼</span></div>
+          <div style="font-size:10px;color:#3617ce;font-weight:600;cursor:pointer;border:1px solid #3617ce;padding:2px 8px;border-radius:6px">🔄 지역 변경</div>
+        </div>
+        <div style="background:#f8f7f4;border:1px solid #e8e8e8;border-radius:10px;padding:12px 14px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#767676;font-size:12px">시세</span><span style="color:#1a2744;font-weight:900;font-size:22px">64<span style="font-size:14px">만원</span></span></div>
+          <div style="font-size:9px;color:#767676;margin-top:2px">현금 구입가 · 공시지원금 기준</div>
+        </div>
+      </div>
+
+      <!-- 온라인 -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:#059669;margin-bottom:6px">🌐 온라인</div>
+        <div style="background:#f8f7f4;border:1px solid #e8e8e8;border-radius:10px;padding:12px 14px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#767676;font-size:12px">시세</span><span style="color:#1a2744;font-weight:900;font-size:22px">59<span style="font-size:14px">만원</span></span></div>
+          <div style="font-size:9px;color:#767676;margin-top:2px">현금 구입가 · 전국 동일</div>
+        </div>
+      </div>
+
+      <!-- 인터넷+TV 동시 가입 체크박스 -->
+      <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:10px 14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:18px;height:18px;border-radius:4px;background:#3617ce;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:11px;font-weight:700">✓</span></div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#1a2744">인터넷+TV 동시 가입</div>
+            <div style="font-size:10px;color:#059669;font-weight:700;margin-top:1px">인터넷+TV 사은품 +20만원</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:8px;color:#999;margin-bottom:10px">※ 공시지원금 기준 가격으로 시세는 매일 변동될 수 있습니다.</div>
+
+      <!-- CTA -->
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;padding:9px 0;border-radius:8px;background:#3617ce;color:#fff;font-size:12px;font-weight:700;text-align:center">매장 방문 신청</div>
+        <div style="flex:1;padding:9px 0;border-radius:8px;border:1.5px solid #3617ce;color:#3617ce;font-size:12px;font-weight:700;text-align:center">온라인 신청</div>
+      </div>
+    </div>
+
+    <!-- 설명 -->
+    <div>
+      <div style="font-weight:700;color:var(--navy);font-size:12px;margin-bottom:8px">휴대폰 시세 카드 구조</div>
+      <table>
+        <thead><tr><th>영역</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td>헤더</td><td>기종명 + 통신사 이동 경로 배지</td></tr>
+          <tr><td>📍 매장</td><td>지역별 시세 (만원) · 위치 기반 매장</td></tr>
+          <tr><td>🌐 온라인</td><td>전국 동일 시세 (만원)</td></tr>
+          <tr><td>☑ 인터넷+TV</td><td>동시 가입 시 인터넷+TV 사은품</td></tr>
+          <tr><td>CTA</td><td>매장 방문 신청 / 온라인 신청</td></tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <strong>유심 카드와 동일 구조:</strong> 매장/온라인 비교 + CTA 2가지<br>
+        <strong>매장 방문 신청:</strong> 간편 폼 (이름/전화/매장/날짜) → 어드민 접수 → CRM 전달<br>
+        <strong>온라인 신청:</strong> 기본 신청서 작성 → 통신사 공식 URL 작성 → 어드민 접수<br>
+        <strong>인터넷+TV 체크:</strong> 체크 시 신청서에 포함 → 상담사가 함께 상담
+      </div>
+    </div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 1-B: 유심 페이백 카드 ===== -->
+<div class="step-label">STEP 1-B — 유심 페이백 결과 카드</div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">유심 MNP 선택 → 변경할 통신사 → 요금제 구간 선택 후 → 매장/온라인 페이백 비교</div>
+  <div class="grid2">
+    <!-- 유심 결과 카드 (카드 내 드롭다운으로 통신사/요금제 구간 변경 가능) -->
+    <div style="background:#fff;border:1.5px solid #e8e8e8;border-radius:14px;padding:16px;max-width:340px">
+      <!-- 카드 내 변경 드롭다운 -->
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <div style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 10px;border:1.5px solid #7c3aed;border-radius:8px;background:#f5f3ff;cursor:pointer">
+          <div style="width:20px;height:20px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#2563eb">KT</div>
+          <span style="font-size:12px;font-weight:700;color:#1a2744">KT</span>
+          <span style="font-size:10px;color:#999;margin-left:auto">▼</span>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;padding:8px 10px;border:1.5px solid #7c3aed;border-radius:8px;background:#f5f3ff;cursor:pointer">
+          <span style="font-size:12px;font-weight:700;color:#1a2744">M_50 이상</span>
+          <span style="font-size:10px;color:#999;margin-left:auto">▼</span>
+        </div>
+      </div>
+
+      <div style="display:inline-block;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;margin-bottom:10px">SKT → KT 유심 변경</div>
+      <div style="height:1px;background:#e8e8e8;margin-bottom:12px"></div>
+
+      <div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:13px;font-weight:700;color:#3617ce">📍 매장 유심 (광주 서구) <span style="font-size:10px;color:#999;font-weight:400">▼</span></div>
+          <div style="font-size:10px;color:#3617ce;font-weight:600;cursor:pointer;border:1px solid #3617ce;padding:2px 8px;border-radius:6px">🔄 지역 변경</div>
+        </div>
+        <div style="background:#f8f7f4;border:1px solid #e8e8e8;border-radius:10px;padding:12px 14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="color:#767676;font-size:12px">페이백</span><span style="color:#059669;font-weight:900;font-size:22px">40<span style="font-size:14px">만원</span></span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#767676;font-size:11px">유심비</span><span style="color:#1a2744;font-weight:600;font-size:11px">무료</span></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:#059669;margin-bottom:6px">🌐 온라인 유심 (배송)</div>
+        <div style="background:#f8f7f4;border:1px solid #e8e8e8;border-radius:10px;padding:12px 14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="color:#767676;font-size:12px">페이백</span><span style="color:#059669;font-weight:900;font-size:22px">35<span style="font-size:14px">만원</span></span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#767676;font-size:11px">유심비</span><span style="color:#1a2744;font-weight:600;font-size:11px">무료 (배송)</span></div>
+        </div>
+      </div>
+
+      <!-- 인터넷+TV 동시 가입 체크박스 -->
+      <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:10px 14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:18px;height:18px;border-radius:4px;border:2px solid #e8e8e8"></div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#1a2744">인터넷+TV 동시 가입</div>
+            <div style="font-size:10px;color:#059669;font-weight:700;margin-top:1px">인터넷+TV 사은품 +OO만원</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;padding:9px 0;border-radius:8px;background:#3617ce;color:#fff;font-size:12px;font-weight:700;text-align:center">매장 방문 신청</div>
+        <div style="flex:1;padding:9px 0;border-radius:8px;border:1.5px solid #3617ce;color:#3617ce;font-size:12px;font-weight:700;text-align:center">온라인 신청</div>
+      </div>
+    </div>
+
+    <!-- DB 매핑 -->
+    <div>
+      <div style="font-weight:700;color:var(--navy);font-size:12px;margin-bottom:8px">결과 카드 DB 매핑</div>
+      <table>
+        <thead><tr><th>카드 유형</th><th>데이터 소스</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td><strong>휴대폰 시세</strong></td><td><span class="mono">bongi_phone_prices</span> (region)</td><td>번이/기변 가격 (만원)</td></tr>
+          <tr><td><strong>유심 페이백</strong></td><td><span class="mono">bongi_usim_plans</span> (region)</td><td>구간별 페이백 (만원)</td></tr>
+          <tr><td>온라인 가격</td><td><span class="mono">bongi_online_prices</span></td><td>전국 동일</td></tr>
+          <tr><td>매장 정보</td><td><span class="mono">bongi_stores</span> (region)</td><td>GPS 기반 가까운 매장</td></tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <strong>CTA 2가지:</strong><br>
+        · "매장 방문 신청" → 간편 폼 (이름/전화/매장/날짜) → 어드민 접수 → CRM 전달<br>
+        · "온라인 신청" → 기본 신청서 작성 → 통신사 공식 URL 작성 → 어드민 접수<br>
+        <strong>온라인 신청 흐름:</strong> 기본 신청서(이름/전화) → 통신사 공식 URL에서 상세 작성 → 어드민 접수
+      </div>
+    </div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 2: 지역별 가격 체계 ===== -->
+<div class="step-label">STEP 2 — 지역별 가격 체계</div>
+<div class="step-card">
+  <table>
+    <thead><tr><th>구분</th><th>가격 기준</th><th>예시</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>오프라인 (매장)</strong></td>
+        <td>지역별 상이, 같은 지역 내 매장은 동일</td>
+        <td>광주권 vs 서울권 vs 부산권</td>
+      </tr>
+      <tr>
+        <td><strong>온라인</strong></td>
+        <td>전국 동일</td>
+        <td><span class="mono">bongi_online_prices</span></td>
+      </tr>
+      <tr>
+        <td><strong>유심 (오프라인)</strong></td>
+        <td>리베이트 지역별 상이, 같은 지역 내 동일</td>
+        <td><span class="mono">bongi_usim_plans</span> (region 컬럼)</td>
+      </tr>
+      <tr>
+        <td><strong>유심 (온라인)</strong></td>
+        <td>리베이트 전국 동일</td>
+        <td><span class="mono">bongi_usim_plans</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:14px 0 6px">시세 입력 흐름</div>
   <div class="flow">
-    <div class="fb" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange);font-size:10px">경로 B<br><strong>매장 직접 방문</strong></div>
+    <div class="fb fb-admin" style="font-size:10px">어드민</div>
     <div class="fa">→</div>
-    <div class="fb fb-neutral" style="font-size:9px">매장에서 직접<br>시세 안내 + 개통</div>
+    <div class="fb fb-neutral" style="font-size:9px">지역 선택</div>
     <div class="fa">→</div>
-    <div class="fb fb-crm" style="font-size:10px">CRM 등록<br>(개통 데이터)</div>
-    <div class="fa">↔</div>
-    <div class="fb fb-admin" style="font-size:10px">어드민 동기화</div>
+    <div class="fb fb-neutral" style="font-size:9px">해당 지역<br>시세 입력</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db" style="font-size:10px">DB 저장</div>
+    <div class="fa">→</div>
+    <div class="fb fb-api" style="font-size:9px">고객 위치 기반<br>매칭</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">카드 노출</div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 3: 위치 기반 매장 매칭 ===== -->
+<div class="step-label">STEP 3 — 위치 기반 매장 매칭</div>
+<div class="step-card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">기본 흐름 (위치 허용)</div>
+  <div class="flow">
+    <div class="fb fb-user" style="font-size:10px">고객 위치 허용</div>
+    <div class="fa">→</div>
+    <div class="fb fb-api" style="font-size:9px">GPS 좌표</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db" style="font-size:9px">가까운 지역<br>매장 자동 매칭</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">해당 지역<br>가격 표시</div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 8px">Fallback (위치 미허용)</div>
+  <div class="flow">
+    <div class="fb fb-user" style="font-size:10px">위치 미허용</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px">지역 직접 선택<br>서울/경기/광주/전남<br>전북/부산 등</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db" style="font-size:9px">해당 지역<br>매장 + 가격 조회</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">카드 노출</div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 8px">🔄 지역 변경 (카드 내)</div>
+  <div class="flow">
+    <div class="fb fb-user" style="font-size:10px">카드에서<br>"🔄 지역 변경"<br>클릭</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px">지역 목록 드롭다운<br>서울/경기/광주/전남<br>전북/부산/대구...</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db" style="font-size:9px">선택 지역<br>시세 재조회</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">가격 변경 반영<br>매장 목록 변경</div>
   </div>
   <div class="note">
-    <strong>경로 A:</strong> AI 채팅 → PhoneSelectCard(통신사→개통유형→제조사→기종) → 시세 카드 확인 → 매장 선택 → 방문 or 전화<br>
-    <strong>경로 B:</strong> 매장 직접 방문 → 개통 → CRM 등록 → 어드민 동기화<br>
-    <strong>인터넷/렌탈과 차이:</strong> 셀프신청 없음. 티켓전화 없음. 매장 방문 or 전화만.
+    <strong>기본:</strong> GPS 위치 기반 가까운 매장 자동 표시<br>
+    <strong>지역 변경:</strong> 다른 지역 시세를 보고 싶을 때 직접 변경 가능<br>
+    <strong>매장 선택:</strong> 같은 지역 내 여러 매장이 있으면 ▼ 드롭다운으로 매장 변경 가능
   </div>
 </div>
 <div class="arrow-down">↓</div>
 
-<!-- ===== STEP 1: 시세 데이터 구조 ===== -->
-<div class="step-label">STEP 1 — 시세 데이터 구조</div>
+<!-- ===== STEP 4: 매장 관리 (어드민) ===== -->
+<div class="step-label">STEP 4 — 매장 관리 (어드민) — 전국 확대</div>
 <div class="step-card">
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">가격 단위: 만원 · 양수=고객 부담 / 0=공짜폰 / 음수=공짜폰+현금 지급</div>
-
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">⚡ 오늘의 특가 (유심이동 공시지원금)</div>
-  <table>
-    <thead><tr><th>통신사</th><th>가격</th><th>요금제</th><th>월정액</th></tr></thead>
-    <tbody>
-      <tr><td><span class="badge b-red">SKT</span></td><td style="color:var(--green);font-weight:700">-40만원</td><td>세이브</td><td>24,750원</td></tr>
-      <tr><td><span class="badge b-blue">KT</span></td><td style="color:var(--green);font-weight:700">-25만원</td><td>데이터ON 비디오+</td><td>51,750원</td></tr>
-      <tr><td><span class="badge" style="background:#f3e8ff;color:#7c3aed">LG U+</span></td><td style="color:var(--green);font-weight:700">-30만원</td><td>심플+</td><td>45,750원</td></tr>
-    </tbody>
-  </table>
-
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:14px 0 6px">📱 5G 모델 시세표 (18개 기종)</div>
-  <div style="overflow-x:auto">
-  <table style="min-width:700px">
-    <thead><tr><th>모델</th><th style="color:#e60012">SK 번이</th><th style="color:#e60012">SK 기변</th><th style="color:#1a73e8">KT 번이</th><th style="color:#1a73e8">KT 기변</th><th style="color:#e5007d">LG 번이</th><th style="color:#e5007d">LG 기변</th></tr></thead>
-    <tbody>
-      <tr><td style="font-weight:700">갤럭시 S26</td><td>9</td><td>19</td><td style="color:var(--green)">-10</td><td style="color:var(--green)">-5</td><td style="color:var(--green)">-15</td><td style="color:var(--green)">-10</td></tr>
-      <tr><td style="font-weight:700">갤럭시 S26+</td><td>29</td><td>39</td><td>9</td><td>14</td><td>5</td><td>9</td></tr>
-      <tr><td style="font-weight:700">갤럭시 S26 Ultra</td><td>64</td><td>74</td><td>44</td><td>49</td><td>39</td><td>44</td></tr>
-      <tr><td style="font-weight:700">Z 플립7</td><td style="color:var(--blue);font-weight:700">0</td><td>54</td><td>9</td><td>14</td><td>5</td><td style="color:var(--blue);font-weight:700">0</td></tr>
-      <tr><td style="font-weight:700">Z 폴드7</td><td>104</td><td>144</td><td>109</td><td>109</td><td>104</td><td>99</td></tr>
-      <tr><td style="font-weight:700">아이폰17 프로맥스</td><td>104</td><td>154</td><td>99</td><td>127</td><td>94</td><td>119</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <div style="font-size:9px;color:var(--text3);margin-top:4px">... 외 12개 모델 (S25/S25+/S25U/S25엣지/S25FE/아이폰16~17 시리즈)</div>
-
-  <div class="grid3" style="margin-top:14px">
-    <div class="card-mock" style="border:2px solid var(--orange)">
-      <div style="font-weight:900;color:var(--orange);font-size:11px;margin-bottom:4px">📦 오픈박스 특가</div>
-      SK 전용<br>미개봉 재고 특가<br>
-      <span style="font-size:9px;color:var(--text3)">갤럭시 S25 시리즈 등</span>
+  <div class="grid2">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">기존 → 확장</div>
+      <div class="card-mock" style="border:2px solid var(--orange);margin-bottom:8px">
+        <div style="font-weight:900;color:var(--orange);font-size:11px;margin-bottom:4px">기존: 8개 직영점 (광주/전라)</div>
+        상무점 · 익산점 · 전대점 · 신창점<br>
+        첨단점 · 순천점 · 남악점 · 여수점
+      </div>
+      <div class="card-mock" style="border:2px solid var(--green)">
+        <div style="font-weight:900;color:var(--green);font-size:11px;margin-bottom:4px">확장: 전국 매장</div>
+        서울/경기/인천/부산/대구/대전<br>
+        광주/전남/전북/경남/경북/충남/충북/강원/제주<br>
+        <span style="font-size:9px;color:var(--text3)">지역별 매장 그룹핑</span>
+      </div>
     </div>
-    <div class="card-mock" style="border:2px solid var(--blue)">
-      <div style="font-weight:900;color:var(--blue);font-size:11px;margin-bottom:4px">💰 저가 모델 특가</div>
-      키즈폰 / 효도폰<br>아이폰13, 갤럭시A17<br>버디4, 와이드8, 폴더 등
-    </div>
-    <div class="card-mock" style="border:2px solid var(--green)">
-      <div style="font-weight:900;color:var(--green);font-size:11px;margin-bottom:4px">📋 부가서비스</div>
-      통신사별 3~4개<br>우주패스/필수팩 등<br>월정액 표시
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">매장별 관리 정보</div>
+      <table>
+        <thead><tr><th>항목</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>이미지</td><td>매장 외관 사진</td></tr>
+          <tr><td>주소</td><td>도로명 주소</td></tr>
+          <tr><td>랜드마크</td><td>인근 랜드마크 안내</td></tr>
+          <tr><td>전화번호</td><td>매장 연락처 (복수)</td></tr>
+          <tr><td>네이버지도</td><td>지도 링크</td></tr>
+          <tr><td>카카오채널</td><td>채널 링크</td></tr>
+          <tr><td>운영상태</td><td>운영중/휴업 토글</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <div style="font-size:9px;color:var(--text3)">DB: bongi_phone_prices (18건) · 데이터 소스: 어드민 엑셀 업로드 or 직접 편집</div>
-</div>
-<div class="arrow-down">↓</div>
-
-<!-- ===== STEP 2: 어드민 시세 관리 ===== -->
-<div class="step-label">STEP 2 — 어드민에서 시세 관리 (08번)</div>
-<div class="step-card">
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">시세 입력/수정 3가지 방법</div>
-  <div class="grid3">
-    <div class="card-mock" style="border:2px solid var(--blue)">
-      <div style="font-weight:900;color:var(--blue);font-size:11px;margin-bottom:4px">📂 엑셀 업로드</div>
-      엑셀폼 다운로드 → 시세 입력 → 업로드<br>
-      <span style="font-size:9px;color:var(--text3)">일괄 업데이트 시 사용</span>
-    </div>
-    <div class="card-mock" style="border:2px solid var(--green)">
-      <div style="font-weight:900;color:var(--green);font-size:11px;margin-bottom:4px">✏️ 직접 편집</div>
-      어드민에서 인라인 편집<br>
-      <span style="font-size:9px;color:var(--text3)">개별 모델 수정 시 사용</span>
-    </div>
-    <div class="card-mock" style="border:2px solid var(--orange)">
-      <div style="font-weight:900;color:var(--orange);font-size:11px;margin-bottom:4px">💾 버전 관리</div>
-      "현재 시세 저장(새 차수)" 클릭<br>
-      최대 10개 이력 보관<br>
-      <span style="font-size:9px;color:var(--text3)">이전 버전 조회 가능</span>
-    </div>
-  </div>
-
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">어드민 08번 화면 구성</div>
-  <table>
-    <thead><tr><th>섹션</th><th>내용</th></tr></thead>
-    <tbody>
-      <tr><td>⚡ 오늘의 특가</td><td>유심이동 공시지원금 (SK/KT/LG)</td></tr>
-      <tr><td>📱 5G 모델 시세표</td><td>18개 기종 × 6가격 (SK번이/기변, KT번이/기변, LG번이/기변)</td></tr>
-      <tr><td>📦 오픈박스 특가</td><td>SK 전용 미개봉 재고 특가</td></tr>
-      <tr><td>💰 저가 모델 특가</td><td>키즈폰/효도폰 (통신사별 추천 여부)</td></tr>
-      <tr><td>📋 부가서비스</td><td>통신사별 3~4개 (서비스명 + 월정액)</td></tr>
-      <tr><td>📌 유의사항</td><td>워치/소노라이프/보험/할부이자</td></tr>
-    </tbody>
-  </table>
-  <div class="warn"><strong>시세는 매일 업데이트 필요.</strong> 마지막 업데이트 일시 표시. 오늘 미업데이트 시 경고 배너.</div>
-</div>
-<div class="arrow-down">↓</div>
-
-<!-- ===== STEP 3: 매장 관리 ===== -->
-<div class="step-label">STEP 3 — 매장 관리 (09번) — 8개 직영점</div>
-<div class="step-card">
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">8개 직영점 · 매장별 시세 개별 관리</div>
-  <table>
-    <thead><tr><th>#</th><th>매장명</th><th>주소</th><th>랜드마크</th><th>연락처</th></tr></thead>
-    <tbody>
-      <tr><td>1</td><td style="font-weight:700">상무점</td><td>광주 서구 상무대로 826</td><td>상무역 6번출구</td><td>010-9442-8528 외 1</td></tr>
-      <tr><td>2</td><td style="font-weight:700">익산점</td><td>전북 익산시 무왕로 1031</td><td>홈플러스 옆</td><td>010-5190-0383</td></tr>
-      <tr><td>3</td><td style="font-weight:700">전대점</td><td>광주 북구 호동로 4-1</td><td>전대후문 복개도로</td><td>010-4453-7172 외 3</td></tr>
-      <tr><td>4</td><td style="font-weight:700">신창점</td><td>광주 광산구 신창로 36</td><td>신가중사거리</td><td>010-5755-2650 외 2</td></tr>
-      <tr><td>5</td><td style="font-weight:700">첨단점</td><td>광주 북구 첨단연신로 261</td><td>휴먼시아 2차 건너편</td><td>010-8300-4947 외 1</td></tr>
-      <tr><td>6</td><td style="font-weight:700">순천점</td><td>순천시 충효로 109</td><td>용전갈치 입구</td><td>010-4758-5135 외 1</td></tr>
-      <tr><td>7</td><td style="font-weight:700">남악점</td><td>전남 무안군 후광대로274</td><td>도청프라자 108호</td><td>010-2554-8245 외 1</td></tr>
-      <tr><td>8</td><td style="font-weight:700">여수점</td><td>여수시 문수로 62</td><td></td><td>010-2789-5135</td></tr>
-    </tbody>
-  </table>
-
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">어드민 매장 카드 기능</div>
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">어드민 매장 기능</div>
   <div class="flow">
     <div class="fb fb-admin" style="font-size:10px">매장 카드</div>
     <div class="fa">→</div>
     <div style="display:flex;flex-direction:column;gap:4px">
-      <div class="fb" style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);padding:4px 10px;font-size:9px">📊 <strong>시세 관리</strong> — 해당 매장 시세 편집 모달</div>
-      <div class="fb" style="background:#f3f4f6;border:1.5px solid #6b7280;color:#6b7280;padding:4px 10px;font-size:9px"><strong>수정</strong> — 주소/전화/네이버/카카오 편집</div>
+      <div class="fb" style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);padding:4px 10px;font-size:9px"><strong>추가</strong> — 새 매장 등록</div>
+      <div class="fb" style="background:#f3f4f6;border:1.5px solid #6b7280;color:#6b7280;padding:4px 10px;font-size:9px"><strong>수정</strong> — 정보 편집</div>
       <div class="fb" style="background:var(--red2);border:1.5px solid var(--red);color:var(--red);padding:4px 10px;font-size:9px"><strong>삭제</strong></div>
-      <div class="fb" style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);padding:4px 10px;font-size:9px"><strong>운영중/휴업</strong> — 클릭 시 토글</div>
+      <div class="fb" style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);padding:4px 10px;font-size:9px"><strong>운영중/휴업</strong> — 토글</div>
     </div>
   </div>
+
   <div class="note">
-    <strong>매장별 시세 관리:</strong> 매장마다 시세가 다를 수 있음. "시세 관리" 클릭 → 해당 매장 전용 시세 편집 모달.<br>
-    <strong>매장 카드 정보:</strong> 이미지 + 주소 + 랜드마크 + 전화번호 + 네이버지도 + 카카오채널 + 운영상태
+    <strong>지역별 시세 관리:</strong> 같은 지역 매장은 동일 시세 → 지역 단위로 시세 편집.<br>
+    매장별 개별 시세가 아니라 지역 단위로 관리하여 일관성 유지.
   </div>
 </div>
 <div class="arrow-down">↓</div>
 
-<!-- ===== STEP 4: 고객에게 보이는 화면 ===== -->
-<div class="step-label">STEP 4 — 고객에게 보이는 화면 (실제 웹 UI)</div>
+<!-- ===== STEP 5: 매장 방문 신청서 ===== -->
+<div class="step-label">STEP 5 — 매장 방문 신청서 <span class="badge b-red">NEW</span></div>
 <div class="step-card">
-  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">AI 채팅 내 3단계: PhoneSelectCard → MobilePriceCard → StoreCard</div>
+  <div class="flow">
+    <div class="fb fb-user" style="font-size:9px">시세 카드에서<br>"매장 방문 신청"<br>클릭</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:10px">바텀시트 오픈</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">신청서 작성</div>
+    <div class="fa">→</div>
+    <div class="fb fb-crm" style="font-size:10px">어드민 접수</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px">매장에서<br>연락</div>
+  </div>
 
-  <!-- PhoneSelectCard -->
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">① PhoneSelectCard — 기종 선택 (4단계)</div>
-  <div class="grid2">
-    <div style="background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:16px;max-width:340px">
-      <!-- 프로그래스 -->
-      <div style="display:flex;gap:4px;margin-bottom:14px">
-        <div style="flex:1;text-align:center"><div style="width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin:0 auto">1</div><div style="font-size:9px;color:var(--blue);margin-top:2px">통신사</div></div>
-        <div style="flex:1;text-align:center"><div style="width:22px;height:22px;border-radius:50%;background:#e8e8e8;color:#999;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin:0 auto">2</div><div style="font-size:9px;color:#999;margin-top:2px">개통유형</div></div>
-        <div style="flex:1;text-align:center"><div style="width:22px;height:22px;border-radius:50%;background:#e8e8e8;color:#999;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin:0 auto">3</div><div style="font-size:9px;color:#999;margin-top:2px">제조사</div></div>
-        <div style="flex:1;text-align:center"><div style="width:22px;height:22px;border-radius:50%;background:#e8e8e8;color:#999;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin:0 auto">4</div><div style="font-size:9px;color:#999;margin-top:2px">기종</div></div>
-      </div>
-      <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px">통신사를 선택하세요</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #e8e8e8;border-radius:10px"><div style="width:36px;height:36px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#ef4444">SKT</div><div><div style="font-weight:700;font-size:15px">SKT</div><div style="font-size:11px;color:#999">Btv + 온가족할인</div></div></div>
-        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #e8e8e8;border-radius:10px"><div style="width:36px;height:36px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#2563eb">KT</div><div><div style="font-weight:700;font-size:15px">KT</div><div style="font-size:11px;color:#999">지니TV + 총액가족결합</div></div></div>
-        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #e8e8e8;border-radius:10px"><div style="width:36px;height:36px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#10b981">LG</div><div><div style="font-weight:700;font-size:15px">LG U+</div><div style="font-size:11px;color:#999">U+tv + 참쉬운가족결합</div></div></div>
-      </div>
-      <div class="note" style="font-size:9px">
-        <strong>STEP 2:</strong> 개통유형 (번호이동/기기변경)<br>
-        <strong>STEP 3:</strong> 제조사 (📱삼성/🍎애플)<br>
-        <strong>STEP 4:</strong> 기종 선택 (2열 그리드)<br>
-        → 완료 시 AI에게 자동 질의: "{기종} {통신사} {유형} 시세"
-      </div>
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">신청서 필드</div>
+  <table>
+    <thead><tr><th>필드</th><th>필수</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><strong>이름</strong></td><td><span class="badge b-red">필수</span></td><td>고객명</td></tr>
+      <tr><td><strong>전화번호</strong></td><td><span class="badge b-red">필수</span></td><td>연락처</td></tr>
+      <tr><td>희망 방문 매장</td><td></td><td>위치 기반 자동 선택 (변경 가능)</td></tr>
+      <tr><td><strong>희망 방문일</strong></td><td><span class="badge b-red">필수</span></td><td>날짜 선택</td></tr>
+      <tr><td>관심 모델</td><td></td><td>자동 채움 (선택한 기종)</td></tr>
+      <tr><td>개통 유형</td><td></td><td>번호이동 / 기기변경 / 신규</td></tr>
+      <tr><td>요청사항</td><td></td><td>자유 텍스트</td></tr>
+      <tr><td>☑ 인터넷+TV 동시 가입</td><td></td><td>체크 시 인터넷+TV 사은품 안내</td></tr>
+      <tr style="background:#fef3c7"><td><strong>개인정보 수집·이용 동의</strong></td><td><span class="badge b-red">필수</span></td><td style="font-size:9px">비회원만 표시 (회원은 가입 시 동의 완료)</td></tr>
+      <tr style="background:#fef3c7"><td><strong>마케팅 정보 수신 동의</strong></td><td><span class="badge b-red">필수</span></td><td style="font-size:9px">비회원만 표시 · 전화/문자/카카오 상품 안내 포함</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><strong>회원:</strong> 가입 시 동의 완료 → 동의 항목 안 보임<br><strong>비회원:</strong> 신청서에서 동의 받기 (BD 활용 목적)</div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 6: 온라인 구매 신청서 ===== -->
+<div class="step-label">STEP 6 — 온라인 구매 신청서 <span class="badge b-red">NEW</span></div>
+<div class="step-card">
+  <div class="flow">
+    <div class="fb fb-user" style="font-size:9px">온라인 신청<br>클릭</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">기본 신청서<br>작성</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px">통신사 공식<br>URL 작성</div>
+    <div class="fa">→</div>
+    <div class="fb fb-crm" style="font-size:10px">어드민 접수</div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">기본 신청서 필드</div>
+  <table>
+    <thead><tr><th>필드</th><th>필수</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><strong>이름</strong></td><td><span class="badge b-red">필수</span></td><td>고객명</td></tr>
+      <tr><td><strong>전화번호</strong></td><td><span class="badge b-red">필수</span></td><td>연락처</td></tr>
+      <tr><td>관심 모델</td><td></td><td>자동 채움 (선택한 기종)</td></tr>
+      <tr><td>통신사</td><td></td><td>자동 채움 (SKT / KT / LG U+)</td></tr>
+      <tr><td>개통유형</td><td></td><td>자동 채움 (번호이동 / 기기변경 / 신규)</td></tr>
+      <tr><td>☑ 인터넷+TV 동시 가입</td><td></td><td>체크 시 인터넷+TV 사은품 안내</td></tr>
+      <tr style="background:#fef3c7"><td><strong>개인정보 수집·이용 동의</strong></td><td><span class="badge b-red">필수</span></td><td style="font-size:9px">비회원만 표시</td></tr>
+      <tr style="background:#fef3c7"><td><strong>마케팅 정보 수신 동의</strong></td><td><span class="badge b-red">필수</span></td><td style="font-size:9px">비회원만 표시</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>기본 정보 작성 후 → 통신사 공식 신청서 URL로 이동하여 상세 정보 작성</strong><br>
+    <strong>동의:</strong> 회원은 가입 시 완료 → 비회원만 신청서에서 받기
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 7: 유심 정책 ===== -->
+<div class="step-label">STEP 7 — 유심 정책 <span class="badge b-red">NEW</span></div>
+<div class="step-card">
+  <div class="note" style="margin-top:0;margin-bottom:12px">
+    <strong>유심 변경이란?</strong> 기기는 그대로 사용하고 유심만 다른 통신사로 변경하는 정책. 번호이동과 동일하지만 기기 구매 없이 유심만 교체.<br>
+    <strong>MNP(번호이동)만 가능 · 010 신규 제외</strong>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">유심도 2가지 경로</div>
+  <div class="grid2" style="margin-bottom:14px">
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:11px;margin-bottom:4px">📍 오프라인 유심 (매장 방문)</div>
+      · 매장 방문해서 유심 변경<br>
+      · 지역별 가격 다를 수 있음<br>
+      · 매장 직원이 직접 처리<br>
+      <span style="font-size:9px;color:var(--text3)">DB: bongi_usim_plans (region 컬럼)</span>
     </div>
-
-    <!-- MobilePriceCard -->
-    <div>
-      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">② MobilePriceCard — 시세 결과</div>
-      <div style="background:#1e1e1e;border:1px solid #333;border-radius:12px;padding:14px;max-width:340px;color:#fff">
-        <!-- 헤더 -->
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="background:#e60012;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">SK</span>
-          <span style="font-size:15px;font-weight:600;color:#fff">갤럭시 S26</span>
-        </div>
-        <!-- 요금제 -->
-        <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 8px;background:#252525;border-radius:6px;margin-bottom:8px">
-          <span style="color:#999">📋 요금제</span>
-          <span style="color:#60a5fa;font-weight:600">프리미엄 109,000원</span>
-        </div>
-        <!-- 가격 -->
-        <div style="display:flex;background:#252525;border-radius:8px;padding:10px 0">
-          <div style="flex:1;text-align:center">
-            <div style="font-size:11px;color:#999">🔄 번호이동</div>
-            <div style="font-size:15px;font-weight:700;color:#d1d5db;margin-top:4px">9만원</div>
-          </div>
-          <div style="width:1px;height:36px;background:#444;align-self:center"></div>
-          <div style="flex:1;text-align:center">
-            <div style="font-size:11px;color:#999">🔧 기기변경</div>
-            <div style="font-size:15px;font-weight:700;color:#d1d5db;margin-top:4px">19만원</div>
-          </div>
-        </div>
-        <!-- 부가서비스 -->
-        <div style="margin-top:10px;padding-top:8px;border-top:1px solid #333">
-          <div style="font-size:12px;color:#999;margin-bottom:4px">📋 부가서비스</div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:#aaa">우주패스 All</span><span style="color:#d1d5db">10,900원</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:#aaa">우주패스 mini</span><span style="color:#d1d5db">7,700원</span></div>
-        </div>
-        <!-- 버튼 -->
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <div style="flex:1;padding:7px 0;border-radius:8px;background:#e60012;color:#fff;font-size:13px;font-weight:600;text-align:center">가입 상담</div>
-          <div style="flex:1;padding:7px 0;border-radius:8px;border:1px solid #444;color:#ccc;font-size:13px;text-align:center">상세보기</div>
-        </div>
-      </div>
-      <div class="note" style="font-size:9px;margin-top:8px">
-        <strong>가격 색상 규칙:</strong><br>
-        · 음수(-) → 초록색 (#4ade80) = 캐시백<br>
-        · 0 → 노란색 (#fbbf24) = 공짜폰<br>
-        · 양수 → 회색 (#d1d5db) = 고객 부담<br>
-        · "가입 상담" → 매장 선택 (StoreCard)
-      </div>
+    <div class="card-mock" style="border:2px solid var(--green)">
+      <div style="font-weight:900;color:var(--green);font-size:11px;margin-bottom:4px">🌐 온라인 유심 (배송)</div>
+      · 유심 배송 받아서 셀프 개통<br>
+      · 전국 동일 가격<br>
+      · 가이드 제공<br>
+      <span style="font-size:9px;color:var(--text3)">DB: bongi_usim_plans (online)</span>
     </div>
   </div>
 
-  <!-- StoreCard -->
-  <div style="margin-top:20px;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">③ StoreCard — 매장 선택 (AI 채팅 내)</div>
-  <div class="grid3">
-    <div style="min-width:240px;max-width:280px;background:#1a1a1a;border-radius:14px;overflow:hidden;border:1px solid #2a2a2a">
-      <div style="width:100%;height:100px;background:linear-gradient(135deg,#FF6B6B,#FF6B6B66);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff">매장 이미지</div>
-      <div style="padding:14px 16px">
-        <div style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#FF6B6B22;color:#FF6B6B;margin-bottom:6px">직영점</div>
-        <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:8px">봉이모바일 상무점</div>
-        <div style="font-size:12px;color:#bbb;line-height:1.5">📍 광주 서구 상무대로 826</div>
-        <div style="font-size:11px;color:#777;margin-top:2px">상무역 6번출구</div>
-        <div style="font-size:12px;color:#bbb;margin-top:4px">📞 <span style="color:#4ECDC4">010-9442-8528</span></div>
-        <div style="font-size:12px;color:#888;margin-top:4px">🕐 10:00 ~ 21:00</div>
-        <div style="display:flex;gap:6px;margin-top:12px">
-          <div style="flex:1;padding:8px 0;text-align:center;border-radius:8px;background:#1a73e8;color:#fff;font-size:12px;font-weight:600">🗺️ 지도</div>
-          <div style="flex:1;padding:8px 0;text-align:center;border-radius:8px;background:#FEE500;color:#1a1a1a;font-size:12px;font-weight:600">💬 카톡</div>
-          <div style="flex:1;padding:8px 0;text-align:center;border-radius:8px;background:#2a2a2a;color:#fff;font-size:12px;font-weight:600;border:1px solid #333">📞 전화</div>
-        </div>
-      </div>
-    </div>
-    <div style="font-size:10px;line-height:1.7;grid-column:span 2">
-      <div style="font-weight:700;color:var(--navy);font-size:12px;margin-bottom:8px">카드 필드 → DB 매핑</div>
+  <div class="grid2">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">유심 요금제 구간</div>
       <table>
-        <thead><tr><th>표시</th><th>DB 소스</th></tr></thead>
+        <thead><tr><th>구간</th><th>기준</th><th>페이백</th></tr></thead>
         <tbody>
-          <tr><td>매장 이미지</td><td>bongi_stores.image</td></tr>
-          <tr><td>직영점 배지</td><td>고정 (색상 순환)</td></tr>
-          <tr><td>매장명</td><td>bongi_stores.name</td></tr>
-          <tr><td>📍 주소</td><td>bongi_stores.address</td></tr>
-          <tr><td>랜드마크</td><td>bongi_stores.landmark</td></tr>
-          <tr><td>📞 전화</td><td>bongi_stores.phone + phone2</td></tr>
-          <tr><td>🕐 영업시간</td><td>bongi_stores.hours</td></tr>
-          <tr><td>🗺️ 지도</td><td>bongi_stores.naver_map (링크)</td></tr>
-          <tr><td>💬 카톡</td><td>bongi_stores.kakao (링크)</td></tr>
-          <tr><td>📞 전화</td><td>tel: 링크 (자동 연결)</td></tr>
+          <tr><td><strong>S_33</strong></td><td>33,000원 이상</td><td>어드민 등록 금액</td></tr>
+          <tr><td><strong>R_43</strong></td><td>43,000원 이상</td><td>어드민 등록 금액</td></tr>
+          <tr><td><strong>M_50 이상</strong></td><td>50,000원 이상</td><td>어드민 등록 금액</td></tr>
         </tbody>
       </table>
-      <div class="note" style="margin-top:10px">
-        <strong>실제 UI 특징:</strong><br>
-        · 다크 테마 (#1a1a1a 배경)<br>
-        · 매장 이미지 상단 표시 (없으면 컬러 바)<br>
-        · 전화번호 클릭 → 자동 전화 연결<br>
-        · 네이버지도/카카오톡 → 새 탭으로 열림<br>
-        · 고객 매장 페이지 (/stores)에서도 동일 구조
-      </div>
+      <div class="note" style="margin-top:6px">※ 통신사별 요금제 구간·페이백 금액은 어드민에서 등록/관리</div>
     </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">유심 신청서 필드</div>
+      <table>
+        <thead><tr><th>필드</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td><strong>이름</strong></td><td>고객명</td></tr>
+          <tr><td><strong>전화번호</strong></td><td>연락처</td></tr>
+          <tr><td>현재 통신사</td><td>현재 사용 중인 통신사</td></tr>
+          <tr><td>변경할 통신사</td><td>이동할 통신사</td></tr>
+          <tr><td>요금제 구간</td><td>요금제 구간 선택</td></tr>
+          <tr><td>수령 방법</td><td>매장 방문 / 택배 배송</td></tr>
+          <tr><td>☑ 인터넷+TV 동시 가입</td><td>체크 시 인터넷+TV 사은품 안내</td></tr>
+          <tr style="background:#fef3c7"><td><strong>개인정보·마케팅 동의</strong></td><td style="font-size:9px">비회원만 표시 (회원은 가입 시 완료)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="flow" style="margin-top:12px">
+    <div class="fb fb-user" style="font-size:10px">유심 신청<br>완료</div>
+    <div class="fa">→</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="fb" style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);padding:4px 10px;font-size:9px"><strong>📍 매장 방문</strong> — 직접 유심 교체 (지역별 가격)</div>
+      <div class="fb" style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);padding:4px 10px;font-size:9px"><strong>🌐 택배 배송</strong> — 셀프 개통 (전국 동일 가격)</div>
+    </div>
+    <div class="fa">→</div>
+    <div class="fb fb-admin" style="font-size:10px">어드민 접수</div>
   </div>
 </div>
 <div class="arrow-down">↓</div>
 
-<!-- ===== STEP 5: 데이터 파생 ===== -->
-<div class="step-label">STEP 5 — 시세 데이터가 흘러가는 곳</div>
+<!-- ===== STEP 8: 어드민 신청서 관리 ===== -->
+<div class="step-label">STEP 8 — 어드민 신청서 관리 <span class="badge b-red">NEW</span></div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">매장/온라인 신청서를 분리 관리 — 관리 주체가 다름</div>
+  <div class="grid2">
+    <!-- 매장 신청 관리 -->
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">📍 매장 방문 신청 관리</div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.7;margin-bottom:8px">
+        <strong>관리 주체:</strong> 매장 담당자<br>
+        <strong>내용:</strong> 방문 예약 확인 → 고객 연락 → 방문 유도
+      </div>
+      <table style="font-size:10px">
+        <thead><tr><th>컬럼</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>이름 / 전화번호</td><td>고객 정보</td></tr>
+          <tr><td>희망 매장</td><td>방문할 매장</td></tr>
+          <tr><td>희망 방문일</td><td>예약 날짜</td></tr>
+          <tr><td>관심 모델</td><td>기종 / 유심</td></tr>
+          <tr><td>개통 유형</td><td>번이/기변/유심</td></tr>
+          <tr><td>인터넷+TV</td><td>관심 여부 (고객 체크) → 상담 대기 플래그</td></tr>
+          <tr><td>인터넷+TV 계약</td><td>상담사가 체크 (계약 완료 시)</td></tr>
+          <tr><td>인터넷+TV 사은품</td><td>상담사 입력 · 상품권(이름+금액) / 현금(금액)</td></tr>
+          <tr><td>상태</td><td>접수 → 방문확인 → 방문완료 → 개통완료 / 취소</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:9px;color:var(--text3);margin-top:6px">필터: 매장별 / 상태별 / 날짜별 / 인터넷+TV 상담대기</div>
+    </div>
+
+    <!-- 온라인 신청 관리 -->
+    <div class="card-mock" style="border:2px solid var(--green)">
+      <div style="font-weight:900;color:var(--green);font-size:12px;margin-bottom:6px">🌐 온라인 신청 관리</div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.7;margin-bottom:8px">
+        <strong>관리 주체:</strong> 온라인 담당자 (콜센터)<br>
+        <strong>내용:</strong> 기본 신청서 확인 → 공식 URL 작성 여부 확인 → 개통 처리
+      </div>
+      <table style="font-size:10px">
+        <thead><tr><th>컬럼</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>이름 / 전화번호</td><td>고객 정보</td></tr>
+          <tr><td>관심 모델</td><td>기종 / 유심</td></tr>
+          <tr><td>통신사 / 개통유형</td><td>변경할 통신사</td></tr>
+          <tr><td>인터넷+TV</td><td>관심 여부 (고객 체크) → 상담 대기 플래그</td></tr>
+          <tr><td>인터넷+TV 계약</td><td>상담사가 체크 (계약 완료 시)</td></tr>
+          <tr><td>인터넷+TV 사은품</td><td>상담사 입력 · 상품권(이름+금액) / 현금(금액)</td></tr>
+          <tr><td>공식 URL 작성</td><td>완료 / 미완료</td></tr>
+          <tr><td>상태</td><td>접수 → 공식URL확인 → 상담중 → 개통완료 → 배송중 → 배송완료 / 취소</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:9px;color:var(--text3);margin-top:6px">필터: 통신사별 / 상태별 / 공식URL 작성여부 / 인터넷+TV 상담대기</div>
+    </div>
+  </div>
+
+  <div class="flow" style="margin-top:14px">
+    <div class="fb fb-user" style="font-size:9px">고객 신청<br>(매장/온라인)</div>
+    <div class="fa">→</div>
+    <div class="fb fb-admin" style="font-size:9px">어드민 접수<br>(매장/온라인 분리)</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px">담당자 확인<br>고객 연락</div>
+    <div class="fa">→</div>
+    <div class="fb fb-crm" style="font-size:9px">CRM 전달<br>(상담사 배정)</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px;font-weight:900;border-color:var(--red)">개통 완료<br>⚡ 자동 트리거</div>
+  </div>
+
+  <!-- 개통완료 시 자동 트리거 -->
+  <div style="margin-top:14px;background:#eff6ff;border:2px solid #93c5fd;border-radius:12px;padding:14px 16px">
+    <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">⚡ 개통완료 시 자동 트리거</div>
+    <div class="flow">
+      <div class="fb fb-admin" style="font-size:9px">상태 →<br>"개통완료"<br>변경</div>
+      <div class="fa">→</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div class="fb fb-db" style="font-size:9px;padding:4px 10px">🎁 사은품 지급 대기 자동 생성 (어드민 13번 메뉴)</div>
+        <div class="fb fb-db" style="font-size:9px;padding:4px 10px">💰 포인트 적립 (친구초대 연동 시 추천인+친구)</div>
+        <div class="fb fb-admin" style="font-size:9px;padding:4px 10px">📺 인터넷+TV 체크 시 → "상담 대기" 플래그만 (자동 사은품 X)</div>
+        <div class="fb fb-api" style="font-size:9px;padding:4px 10px">📱 알림톡 발송 ("개통 완료! 사은품 지급 예정")</div>
+        <div class="fb fb-user" style="font-size:9px;padding:4px 10px">👤 마이페이지 상태 자동 반영</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:10px">
+    <strong>분리 이유:</strong> 매장 신청은 매장 담당자가 방문 일정 관리, 온라인 신청은 콜센터가 공식 URL 작성 여부 확인 후 개통 처리<br>
+    <strong>어드민 메뉴:</strong> 매장 방문 신청 관리 / 온라인 신청 관리 (별도 탭 or 별도 메뉴)<br>
+    <strong>사은품/포인트:</strong> 기존 어드민 사은품 관리(13번) + 포인트 관리(14번)에서 통합 관리
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 9: 시세 데이터 흐름 ===== -->
+<div class="step-label">STEP 9 — 시세 데이터 흐름</div>
 <div class="step-card">
   <table>
-    <thead><tr><th>데이터</th><th>소스</th><th>파생되는 곳</th></tr></thead>
+    <thead><tr><th>데이터</th><th>소스</th><th>DB 테이블</th><th>비고</th></tr></thead>
     <tbody>
       <tr>
-        <td><strong>휴대폰 시세<br>(18개 5G모델)</strong></td>
-        <td>어드민 엑셀/직접 편집<br><span class="mono">bongi_phone_prices</span></td>
-        <td>
-          · MobilePriceCard (AI 채팅)<br>
-          · AI 채팅 응답 ("S26 SKT 번이 9만원")<br>
-          · 어드민 휴대폰 시세 (08번)<br>
-          · 매장별 시세 관리 모달 (09번)
-        </td>
+        <td><strong>오프라인 시세</strong></td>
+        <td>지역별 어드민 입력</td>
+        <td><span class="mono">bongi_phone_prices</span><br><span style="font-size:9px;color:var(--green)">(region 컬럼 추가)</span></td>
+        <td>지역별 상이</td>
       </tr>
       <tr>
-        <td><strong>매장 정보<br>(8개 직영점)</strong></td>
-        <td>어드민 매장 관리<br><span class="mono">bongi_stores</span></td>
-        <td>
-          · StoreCard (AI 채팅)<br>
-          · 고객 매장 페이지 (/stores)<br>
-          · AI 채팅 "가까운 매장" 추천<br>
-          · 어드민 매장 관리 (09번)
-        </td>
+        <td><strong>온라인 시세</strong></td>
+        <td>어드민 입력</td>
+        <td><span class="mono">bongi_online_prices</span></td>
+        <td>전국 동일</td>
       </tr>
       <tr>
-        <td><strong>요금제<br>(168개)</strong></td>
-        <td>어드민 요금제 관리<br><span class="mono">bongi_mobile_plans</span></td>
-        <td>
-          · MobilePriceCard 요금제 행<br>
-          · AI 채팅 요금제 비교 응답<br>
-          · 공시지원금 계산 참조
-        </td>
+        <td><strong>유심 요금제</strong></td>
+        <td>어드민 입력</td>
+        <td><span class="mono">bongi_usim_plans</span></td>
+        <td>통신사별 요금제</td>
       </tr>
       <tr>
         <td><strong>공시지원금</strong></td>
-        <td>smartchoice.or.kr 크롤링<br><span class="mono">bongi_subsidy_data</span></td>
-        <td>
-          · AI 채팅 공시/선택약정 비교<br>
-          · 어드민 크롤링 관리<br>
-          · 매일 09시 자동 크롤링
-        </td>
+        <td>smartchoice.or.kr 크롤링</td>
+        <td><span class="mono">bongi_subsidy_data</span></td>
+        <td>매일 09시 자동</td>
+      </tr>
+      <tr>
+        <td><strong>매장 정보</strong></td>
+        <td>어드민</td>
+        <td><span class="mono">bongi_stores</span><br><span style="font-size:9px;color:var(--green)">(region 컬럼 추가)</span></td>
+        <td>전국 매장</td>
       </tr>
     </tbody>
   </table>
 
   <div class="flow" style="margin-top:12px">
-    <div class="fb fb-admin" style="font-size:9px">어드민에서<br>시세 입력/편집</div>
+    <div class="fb fb-admin" style="font-size:9px">어드민에서<br>시세/요금제 입력</div>
     <div class="fa">→</div>
-    <div class="fb fb-db" style="font-size:9px">Supabase DB<br>phone_prices<br>stores</div>
+    <div class="fb fb-db" style="font-size:9px">Supabase DB<br>phone_prices<br>online_prices<br>usim_plans<br>stores</div>
     <div class="fa">→</div>
     <div style="display:flex;flex-direction:column;gap:4px">
-      <div class="fb fb-user" style="font-size:9px;padding:4px 8px">MobilePriceCard (시세)</div>
-      <div class="fb fb-user" style="font-size:9px;padding:4px 8px">StoreCard (매장)</div>
+      <div class="fb fb-user" style="font-size:9px;padding:4px 8px">3가지 경로 카드 (AI 채팅)</div>
       <div class="fb fb-api" style="font-size:9px;padding:4px 8px">AI 채팅 응답</div>
       <div class="fb fb-user" style="font-size:9px;padding:4px 8px">고객 매장 페이지 (/stores)</div>
-      <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">매장별 시세 모달 (09번)</div>
+      <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">어드민 시세 관리</div>
     </div>
   </div>
 </div>
 <div class="arrow-down">↓</div>
 
-<!-- ===== STEP 6: 매장 개통 후 흐름 ===== -->
-<div class="step-label">STEP 6 — 매장 방문 후 흐름</div>
+<!-- ===== STEP 10: 매장 방문 후 흐름 ===== -->
+<div class="step-label">STEP 10 — 매장 방문 후 흐름</div>
 <div class="step-card">
   <div class="flow">
-    <div class="fb fb-user" style="font-size:10px">매장 방문<br>휴대폰 개통</div>
+    <div class="fb fb-user" style="font-size:10px">매장 방문<br>개통</div>
     <div class="fa">→</div>
-    <div class="fb fb-neutral" style="font-size:9px">개통 시 확보 데이터<br>이름/전화/생년월일<br>성별/통신사/주소</div>
+    <div class="fb fb-admin" style="font-size:10px">어드민 등록<br>(개통 데이터)</div>
     <div class="fa">→</div>
-    <div class="fb fb-crm" style="font-size:10px">CRM 등록<br>(개통 데이터)</div>
-    <div class="fa">↔</div>
-    <div class="fb fb-admin" style="font-size:10px">어드민 동기화</div>
+    <div class="fb fb-crm" style="font-size:10px">CRM 전달</div>
     <div class="fa">→</div>
     <div class="fb fb-neutral" style="font-size:9px">앱 가입 유도<br>QR/알림톡</div>
     <div class="fa">→</div>
@@ -461,31 +1111,63 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   </div>
   <div class="note">
     <strong>매장 개통 = 카카오 동의항목급 데이터 확보.</strong> 이름/전화/생년월일/성별/통신사/주소 전부 확보.<br>
-    <strong>매장 인터넷 ≠ 플랫폼 인터넷:</strong> 매장 인터넷은 별도 상품체계 (오프라인 요금/사은품 다름).<br>
     <strong>크로스셀링:</strong> 매장 개통 고객 → 앱 가입 유도 → 플랫폼에서 인터넷/렌탈 추가 신청 유도.
   </div>
 </div>
 <div class="arrow-down">↓</div>
 
-<!-- ===== 예외 케이스 ===== -->
-<div class="step-label" style="background:#6b7280">예외 케이스 — 매장 · 휴대폰 시세</div>
-<div class="step-card" style="border:2px solid #6b7280">
-  <table>
-    <thead><tr><th>상황</th><th>처리 방법</th></tr></thead>
-    <tbody>
-      <tr><td><strong>시세 미업데이트</strong></td><td>어드민에 경고 배너 표시. 마지막 업데이트 일시 노출.</td></tr>
-      <tr><td><strong>매장별 시세 차이</strong></td><td>매장마다 시세가 다를 수 있음. 어드민 09번에서 매장별 개별 편집.</td></tr>
-      <tr><td><strong>공시지원금 변경</strong></td><td>smartchoice.or.kr 매일 09시 자동 크롤링. 변경 감지 시 어드민 알림.</td></tr>
-      <tr><td><strong>모델 단종/신규</strong></td><td>어드민에서 모델 추가/비활성. AI 채팅 자동 반영.</td></tr>
-      <tr><td><strong>매장 휴업</strong></td><td>운영중/휴업 토글. 휴업 시 고객에게 안 보임.</td></tr>
-      <tr><td><strong>매장 방문 후 앱 미가입</strong></td><td>CRM에 등록됨 → 알림톡으로 앱 가입 유도 → 전화번호 매칭.</td></tr>
-    </tbody>
-  </table>
+<!-- ===== STEP 11: 마이페이지 표시 ===== -->
+<div class="step-label">STEP 11 — 마이페이지에서 보이는 화면</div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">회원만 마이페이지에서 신청 내역 확인 가능 (비회원은 앱 가입 유도)</div>
+  <div class="grid2">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">매장 방문 신청 내역</div>
+      <div style="background:#fff;border:1.5px solid #e8e8e8;border-radius:10px;padding:12px 14px;font-size:11px;line-height:1.7">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:700">갤럭시 S26 울트라</span><span class="badge b-blue">방문확인</span></div>
+        <div style="color:#767676">SKT → KT 번호이동</div>
+        <div style="color:#767676">봉이모바일 상무점 · 04/20 방문 예정</div>
+        <div style="display:flex;gap:4px;margin-top:8px">
+          <div style="flex:1;height:4px;border-radius:2px;background:#3617ce"></div>
+          <div style="flex:1;height:4px;border-radius:2px;background:#3617ce"></div>
+          <div style="flex:1;height:4px;border-radius:2px;background:#e8e8e8"></div>
+          <div style="flex:1;height:4px;border-radius:2px;background:#e8e8e8"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:#999;margin-top:2px">
+          <span>접수</span><span>방문확인</span><span>방문완료</span><span>개통완료</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">온라인 신청 내역</div>
+      <div style="background:#fff;border:1.5px solid #e8e8e8;border-radius:10px;padding:12px 14px;font-size:11px;line-height:1.7">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:700">KT 유심 변경</span><span class="badge b-green">배송중</span></div>
+        <div style="color:#767676">SKT → KT · M_50 이상</div>
+        <div style="color:#767676">페이백 35만원 예정</div>
+        <div style="display:flex;gap:4px;margin-top:8px">
+          <div style="flex:1;height:4px;border-radius:2px;background:#059669"></div>
+          <div style="flex:1;height:4px;border-radius:2px;background:#059669"></div>
+          <div style="flex:1;height:4px;border-radius:2px;background:#059669"></div>
+          <div style="flex:1;height:4px;border-radius:2px;background:#059669"></div>
+          <div style="flex:1;height:4px;border-radius:2px;background:#059669"></div>
+          <div style="flex:1;height:4px;border-radius:2px;background:#e8e8e8"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:7px;color:#999;margin-top:2px">
+          <span>접수</span><span>URL확인</span><span>상담중</span><span>개통</span><span>배송중</span><span>완료</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="note">
+    <strong>회원:</strong> 마이페이지 → 신청 내역 탭에서 매장/온라인 모두 확인<br>
+    <strong>비회원:</strong> 카카오 알림톡으로 상태 안내 → "앱 가입하면 실시간 확인 가능" 유도<br>
+    <strong>상태바:</strong> 매장은 4단계 (접수→방문확인→방문완료→개통완료), 온라인은 6단계 (접수→URL확인→상담중→개통→배송중→완료)
+  </div>
 </div>
 
 <!-- URL -->
 <div style="margin-top:24px;background:var(--bg2);border:2px solid var(--navy);border-radius:12px;padding:16px 20px">
-  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">🔗 관련 URL</div>
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">관련 URL</div>
   <table>
     <tbody>
       <tr><td><strong>어드민</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/admin/" target="_blank" class="mono" style="color:var(--blue)">https://bongi-mobile-production.up.railway.app/admin/</a></td><td>08 휴대폰 시세 · 09 매장 관리</td></tr>
@@ -500,8 +1182,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
 </div>
 
 <div style="text-align:center;padding:40px 0;color:var(--text3);font-size:11px">
-  봉이모바일 · 매장 · 휴대폰 시세 플로우 · 2026-04-09<br>
-  다음: 사은품관리 / 포인트 / 친구초대 / 돈지키미 플로우 (별도 파일)
+  봉이모바일 · 휴대폰 구매 · 유심 · 매장 플로우 · 2026-04-09
 </div>
 
 <script>
