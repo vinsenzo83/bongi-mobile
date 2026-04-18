@@ -141,7 +141,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
         <span class="badge b-green">셀프신청</span> 인터넷/렌탈/중고폰<br>
         <span class="badge b-green">티켓전화</span> 티켓번호로 상담<br>
         <span class="badge b-green">후기 열람</span> 다른 고객 후기 확인<br>
-        <span class="badge b-green">매장 안내</span> 8개 직영점 확인
+        <span class="badge b-green">매장 안내</span> 전국 매장 안내
       </div>
     </div>
     <div class="card-mock" style="border:2px solid var(--red)">
@@ -206,7 +206,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <div class="fa">→</div>
     <div class="fb fb-neutral" style="font-size:10px;line-height:1.5">
       <strong>카테고리 선택</strong><br>
-      ① 인터넷+TV<br>② 휴대폰 매장+시세<br>③ 렌탈<br>④ 중고폰 매입
+      ① 인터넷+TV<br>② 휴대폰/유심 (매장+온라인)<br>③ 렌탈<br>④ 중고폰 매입
     </div>
     <div class="fa">→</div>
     <div class="fb fb-user" style="font-size:10px">STEP 4로<br>(상품 탐색)</div>
@@ -228,7 +228,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">경로 C — 매장 직접 방문</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
     <div class="card-mock" style="border:2px solid var(--orange)">
-      <div style="font-weight:900;color:var(--orange);font-size:11px;margin-bottom:6px">매장 — 휴대폰 개통</div>
+      <div style="font-weight:900;color:var(--orange);font-size:11px;margin-bottom:6px">매장 — 휴대폰 개통 / 유심 변경</div>
       <div style="font-size:10px;line-height:1.6">
         개통 시 확보되는 데이터:<br>
         <span class="badge b-green">이름</span> <span class="badge b-green">전화번호</span> <span class="badge b-green">생년월일</span> <span class="badge b-green">성별</span> <span class="badge b-green">통신사</span> <span class="badge b-green">주소</span><br>
@@ -243,15 +243,23 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
         <span style="color:var(--text3);font-size:9px">매장 인터넷은 별도 상품체계</span>
       </div>
     </div>
+    <div class="card-mock" style="border:2px solid var(--green)">
+      <div style="font-weight:900;color:var(--green);font-size:11px;margin-bottom:6px">매장 — 온라인 판매 대행</div>
+      <div style="font-size:10px;line-height:1.6">
+        매장에서 온라인 정책으로도 신청 가능<br>
+        <span class="badge b-green">온라인 상품</span> <span class="badge b-green">온라인 사은품</span><br>
+        <span style="color:var(--green);font-weight:700;font-size:9px">→ 매장 방문 고객에게 온라인 혜택 제공</span>
+      </div>
+    </div>
   </div>
   <div class="flow">
     <div class="fb" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange)">매장 방문</div>
     <div class="fa">→</div>
-    <div class="fb fb-neutral" style="font-size:9px;line-height:1.4">휴대폰 개통<br>or 매장 인터넷 가입</div>
+    <div class="fb fb-neutral" style="font-size:9px;line-height:1.4">휴대폰 개통/유심 변경<br>or 매장 인터넷 가입<br>or 온라인 판매 대행</div>
     <div class="fa">→</div>
-    <div class="fb fb-crm" style="font-size:10px">CRM 등록<br>(개통 데이터 전체)</div>
-    <div class="fa">↔</div>
-    <div class="fb fb-admin" style="font-size:10px">어드민 동기화</div>
+    <div class="fb fb-admin" style="font-size:10px">어드민 등록</div>
+    <div class="fa">→</div>
+    <div class="fb fb-crm" style="font-size:10px">CRM 전달</div>
     <div class="fa">→</div>
     <div class="fb fb-neutral" style="font-size:9px;line-height:1.4">앱 설치 유도<br>QR/알림톡</div>
     <div class="fa">→</div>
@@ -260,7 +268,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   <div class="note">
     <strong>경로 A:</strong> AI 채팅 → 카테고리 선택 → SelectCard 바텀시트(정보 수집) → 상품 카드 확인 → 셀프신청/바로상담/티켓전화 (STEP 4~5로 이동)<br>
     <strong>경로 B:</strong> 티켓번호 없이 직접 전화 → 상담사가 처음부터 안내 → CRM 등록 → 어드민 동기화 (STEP 5 바로상담과 합류)<br>
-    <strong>경로 C:</strong> 매장 방문 → 휴대폰 개통(카카오급 데이터 확보) or 매장 인터넷(별도 상품) → CRM 등록 → 앱 유도 → 플랫폼 크로스셀링<br>
+    <strong>경로 C:</strong> 매장 방문 → 휴대폰 개통/유심 변경(카카오급 데이터 확보) or 매장 인터넷(별도 상품) or 온라인 판매 대행 → 어드민 등록 → CRM 전달 → 앱 유도 → 플랫폼 크로스셀링 (전국 매장 확대)<br>
     <strong>주의:</strong> 매장 인터넷 ≠ 플랫폼 인터넷 (상품/사은품 체계 다름)
   </div>
 </div>
@@ -273,7 +281,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   <div class="flow">
     <div class="fb fb-user" style="min-width:100px">① 인터넷+TV</div>
     <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px;border-color:var(--blue)"><strong>InternetSelectCard</strong><br>통신사→속도→TV<br>(3단계 바텀시트)</div>
+    <div class="fb fb-user" style="font-size:10px;border-color:var(--blue)"><strong>InternetSelectCard</strong><br>통신사→속도→TV→셋톱→WiFi<br>(5단계 바텀시트)</div>
     <div class="fa">→</div>
     <div class="card-mock" style="border:2px solid var(--blue);min-width:140px">
       <strong style="color:var(--blue)">상품 카드</strong><br>
@@ -285,22 +293,22 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <div class="fb" style="background:var(--purple2);border:1.5px solid var(--purple);color:var(--purple);padding:4px 10px;font-size:9px"><strong>티켓전화</strong></div>
     </div>
   </div>
-  <!-- ② 휴대폰 시세 -->
+  <!-- ② 휴대폰/유심 -->
   <div class="flow">
-    <div class="fb fb-user" style="min-width:100px">② 휴대폰 시세</div>
+    <div class="fb fb-user" style="min-width:100px">② 휴대폰/유심</div>
     <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px;border-color:var(--orange)"><strong>PhoneSelectCard</strong><br>통신사→개통유형<br>→제조사→기종<br>(4단계 바텀시트)</div>
+    <div class="fb fb-user" style="font-size:9px;border-color:var(--orange)"><strong>통합 바텀시트</strong><br>현재통신사→서비스유형<br>(번이/기변/유심MNP)<br>→변경통신사→기종or구간</div>
     <div class="fa">→</div>
-    <div class="card-mock" style="border:2px solid var(--orange);min-width:140px">
-      <strong style="color:var(--orange)">시세 카드</strong><br>
-      통신사별 번이·기변<br>부가서비스
+    <div class="card-mock" style="border:2px solid var(--orange);min-width:150px">
+      <strong style="color:var(--orange)">시세/페이백 카드</strong><br>
+      📍 매장 가격 (지역별)<br>
+      🌐 온라인 가격 (전국 동일)<br>
+      ☑ 인터넷+TV 동시 가입
     </div>
     <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px">매장 선택<br>(8개 직영점)</div>
-    <div class="fa">→</div>
     <div style="display:flex;flex-direction:column;gap:4px">
-      <div class="fb" style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);padding:4px 10px;font-size:9px"><strong>매장 방문</strong></div>
-      <div class="fb" style="background:var(--red2);border:1.5px solid var(--red);color:var(--red);padding:4px 10px;font-size:9px"><strong>전화 상담</strong></div>
+      <div class="fb" style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);padding:4px 10px;font-size:9px"><strong>매장 방문 신청</strong></div>
+      <div class="fb" style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);padding:4px 10px;font-size:9px"><strong>온라인 신청</strong><br><span style="font-size:8px">간편폼→공식URL→어드민</span></div>
     </div>
   </div>
   <!-- ③ 렌탈 -->
@@ -372,6 +380,26 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <div class="fa">↔</div>
     <div class="fb fb-admin" style="font-size:10px">어드민 동기화</div>
   </div>
+  <!-- 매장 방문 신청 -->
+  <div class="flow">
+    <div class="fb" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange)"><strong>매장 방문 신청</strong></div>
+    <div class="fa">→</div>
+    <div class="fb fb-db" style="font-size:10px">DB 저장<br><span class="mono">bongi_applications</span></div>
+    <div class="fa">→</div>
+    <div class="fb fb-admin" style="font-size:10px">어드민<br>매장 신청 관리</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:10px">매장 담당자 연락</div>
+  </div>
+  <!-- 온라인 신청 -->
+  <div class="flow">
+    <div class="fb" style="background:var(--green2);border:2px solid var(--green);color:var(--green)"><strong>온라인 신청</strong></div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:10px">기본 신청서</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">통신사 공식 URL</div>
+    <div class="fa">→</div>
+    <div class="fb fb-admin" style="font-size:10px">어드민<br>온라인 신청 관리</div>
+  </div>
   <div class="note"><strong>어드민 ↔ CRM 양방향 실시간 동기화:</strong> 고객정보 · 신청상품 · 진행상태(상담중→계약완료→취소) · 설치완료→사은품 자동 생성 · 상담사 배정은 CRM 내부 처리</div>
 </div>
 <div class="arrow-down">↓</div>
@@ -386,7 +414,10 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       → 사은품 자동 생성 <span class="mono">(bongi_gifts)</span><br>
       → 포인트 적립 <span class="mono">(bongi_cash_balance)</span><br>
       → 마이페이지에서 확인 가능<br>
-      → 친구초대 보상 지급
+      → 친구초대 보상 지급<br>
+      → 휴대폰/유심 개통완료 시<br>
+      &nbsp;&nbsp;사은품 자동 생성 + 포인트 적립<br>
+      &nbsp;&nbsp;+ 인터넷+TV 상담 대기 플래그
     </div>
     <div class="card-mock" style="border:2px solid var(--orange)">
       <div style="font-weight:900;color:var(--orange);font-size:13px;margin-bottom:8px">⚠️ 비회원인 경우</div>
@@ -486,7 +517,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
 
   <div style="font-size:11px;font-weight:700;color:var(--navy);margin:16px 0 8px">출금 조건 (4가지 모두 충족)</div>
   <div class="grid4">
-    <div style="background:var(--blue2);border-radius:8px;padding:8px;font-size:10px;text-align:center;font-weight:700;color:var(--blue)">① 최소 30,000원<br><span style="font-weight:400;font-size:9px">이상 보유</span></div>
+    <div style="background:var(--blue2);border-radius:8px;padding:8px;font-size:10px;text-align:center;font-weight:700;color:var(--blue)">① 최소 50,000원<br><span style="font-weight:400;font-size:9px">이상 보유</span></div>
     <div style="background:var(--blue2);border-radius:8px;padding:8px;font-size:10px;text-align:center;font-weight:700;color:var(--blue)">② 1회 이상 계약<br><span style="font-weight:400;font-size:9px">완료 이력</span></div>
     <div style="background:var(--blue2);border-radius:8px;padding:8px;font-size:10px;text-align:center;font-weight:700;color:var(--blue)">③ PASS 인증<br><span style="font-weight:400;font-size:9px">본인 확인 완료</span></div>
     <div style="background:var(--blue2);border-radius:8px;padding:8px;font-size:10px;text-align:center;font-weight:700;color:var(--blue)">④ 계좌 등록<br><span style="font-weight:400;font-size:9px">은행+계좌번호</span></div>
@@ -613,6 +644,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <div style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);padding:8px;border-radius:8px;font-size:10px;font-weight:700;text-align:center">포인트 잔액<br><span style="font-weight:400">출금 신청</span></div>
       <div style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);padding:8px;border-radius:8px;font-size:10px;font-weight:700;text-align:center">사은품<br><span style="font-weight:400">지급 현황</span></div>
       <div style="background:var(--purple2);border:1.5px solid var(--purple);color:var(--purple);padding:8px;border-radius:8px;font-size:10px;font-weight:700;text-align:center">돈지키미<br><span style="font-weight:400">약정 알람</span></div>
+      <div style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);padding:8px;border-radius:8px;font-size:10px;font-weight:700;text-align:center">휴대폰/유심<br><span style="font-weight:400">매장방문/온라인 신청 현황</span></div>
     </div>
   </div>
 
