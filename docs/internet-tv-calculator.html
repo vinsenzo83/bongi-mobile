@@ -673,11 +673,12 @@
 
 <!-- ═══ 17. 티켓 조합 리스트 ═══ -->
 <div class="section">
-  <div class="st">🎫 17. 티켓 조합 리스트 (전체 63개)</div>
+  <div class="st">🎫 17. 티켓 조합 리스트 (전체 105개)</div>
   <div class="note">
     <b>설계 원칙</b>:<br>
-    · 티켓번호 = <b>속도 × TV 조합</b>만으로 결정 (셋톱/WiFi 독립)<br>
-    · 셋톱/WiFi 모델 추가·단종 → 기본값만 교체 → <b>티켓번호 영향 없음</b> (요금만 재계산)<br>
+    · 티켓번호 = <b>속도 × TV × WiFi 유/무</b>로 결정 (셋톱은 필수 독립, WiFi는 기본 1종 고정)<br>
+    · WiFi 요금이 0원인 경우(KT 1G / LGU+ 전 속도)는 유/무 구분 없이 1개 티켓<br>
+    · 셋톱·WiFi 모델 추가·단종 → 기본값 교체 → <b>티켓번호 영향 없음</b> (요금만 재계산)<br>
     · 티켓번호는 영구 발급 (재사용 X, 비활성만 존재)
   </div>
   <div id="ticket-list-container"></div>
@@ -804,26 +805,45 @@ function fmt(n) { return n.toLocaleString() + '원'; }
 // 티켓 = 속도 × TV 조합만 (셋톱/WiFi 독립)
 function pad4(n) { return ('0000' + n).slice(-4); }
 
+// WiFi 유/무 구분이 의미 있는지 판별
+function wifiIsOptional(d, sp, hasTv) {
+  if (hasTv) {
+    return d.tvInternetNoWifi[sp] !== d.tvInternetWithWifi[sp];
+  }
+  var wifiForSp = d.wifiPrice ? d.wifiPrice[sp] : (typeof d.wifiCost === 'number' ? d.wifiCost : 1100);
+  return wifiForSp > 0;
+}
+
 function generateTickets() {
   var tickets = [];
   var speeds = ['100M', '500M', '1G'];
   ['skt', 'kt', 'lgu'].forEach(function(key) {
     var d = D[key];
     var num = 1;
-    // 인터넷 단독 (TV 없음)
-    speeds.forEach(function(sp) {
+    function pushTicket(sp, tvIdx, wifi) {
       tickets.push({
         number: d.prefix + pad4(num++),
-        carrier: key, speed: sp, tvIdx: 0
+        carrier: key, speed: sp, tvIdx: tvIdx, wifi: wifi
       });
+    }
+    // 인터넷 단독
+    speeds.forEach(function(sp) {
+      if (wifiIsOptional(d, sp, false)) {
+        pushTicket(sp, 0, false);
+        pushTicket(sp, 0, true);
+      } else {
+        pushTicket(sp, 0, true);
+      }
     });
-    // 인터넷+TV 조합
+    // 인터넷+TV
     for (var i = 1; i < d.tv.length; i++) {
       speeds.forEach(function(sp) {
-        tickets.push({
-          number: d.prefix + pad4(num++),
-          carrier: key, speed: sp, tvIdx: i
-        });
+        if (wifiIsOptional(d, sp, true)) {
+          pushTicket(sp, i, false);
+          pushTicket(sp, i, true);
+        } else {
+          pushTicket(sp, i, true);
+        }
       });
     }
   });
@@ -832,10 +852,15 @@ function generateTickets() {
 
 var TICKETS = generateTickets();
 
-function findTicket(carrier, speed, tvIdx) {
+function findTicket(carrier, speed, tvIdx, wifi) {
   for (var i = 0; i < TICKETS.length; i++) {
     var t = TICKETS[i];
-    if (t.carrier === carrier && t.speed === speed && t.tvIdx === tvIdx) return t;
+    if (t.carrier === carrier && t.speed === speed && t.tvIdx === tvIdx && t.wifi === wifi) return t;
+  }
+  // WiFi 고정 조합은 wifi=true만 존재
+  for (var j = 0; j < TICKETS.length; j++) {
+    var tt = TICKETS[j];
+    if (tt.carrier === carrier && tt.speed === speed && tt.tvIdx === tvIdx) return tt;
   }
   return null;
 }
@@ -907,8 +932,8 @@ function calc() {
   var installPrice = hasTv ? d.install.combo : d.install.solo;
   var html = '';
 
-  // 티켓번호 표시 (속도 × TV만으로 결정)
-  var ticket = findTicket(c, sp, ti);
+  // 티켓번호 표시 (속도 × TV × WiFi유무로 결정, 셋톱 독립)
+  var ticket = findTicket(c, sp, ti, wf);
   if (ticket) {
     html += '<div style="background:rgba(99,102,241,0.15);border:1.5px solid #818cf8;border-radius:8px;padding:8px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">' +
             '<span style="font-size:11px;color:rgba(255,255,255,0.6)">🎫 티켓번호</span>' +
@@ -967,17 +992,17 @@ document.getElementById('c-wifi').addEventListener('change', calc);
 
 init();
 
-// 티켓 리스트 렌더 (기본 WiFi 사용 기준 요금)
-function calcTicketPrice(d, sp, tvIdx) {
+// 티켓 요금 계산 (WiFi 유무 반영)
+function calcTicketPrice(d, sp, tvIdx, hasWifi) {
   var hasTv = tvIdx > 0;
   var wifiForSp = d.wifiPrice ? d.wifiPrice[sp] : (typeof d.wifiCost === 'number' ? d.wifiCost : 1100);
   if (hasTv) {
-    var netCombo = d.tvInternetWithWifi[sp];
+    var netCombo = hasWifi ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp];
     var tvBase = d.tv[tvIdx].p;
     var tvDc = d.tv[tvIdx].dc || 0;
     return netCombo + (tvBase - tvDc) + (d.setTop || 0);
   } else {
-    return d.internet[sp] + wifiForSp;
+    return d.internet[sp] + (hasWifi ? wifiForSp : 0);
   }
 }
 
@@ -990,15 +1015,16 @@ function renderTicketList() {
     var carrierTickets = TICKETS.filter(function(t){ return t.carrier === key; });
     html += '<div class="st2" style="margin-top:16px"><span class="badge ' + badges[key] + '">' + labels[key] + '</span> ' + d.name + ' — ' + carrierTickets.length + '개 티켓 (' + carrierTickets[0].number + ' ~ ' + carrierTickets[carrierTickets.length-1].number + ')</div>';
     html += '<div style="font-size:10px;color:#666;margin-bottom:6px">기본 셋톱: <b>' + d.setTopName + '</b> (' + fmt(d.setTop) + ') · 기본 WiFi: <b>' + d.wifiName + '</b></div>';
-    html += '<table><thead><tr><th>티켓번호</th><th>속도</th><th>TV 상품</th><th>월 요금</th></tr></thead><tbody>';
+    html += '<table><thead><tr><th>티켓번호</th><th>속도</th><th>TV 상품</th><th>WiFi</th><th>월 요금</th></tr></thead><tbody>';
     carrierTickets.forEach(function(t) {
       var tvLabel = t.tvIdx === 0 ? '<span style="color:#999">인터넷 단독</span>' : d.tv[t.tvIdx].n;
-      var price = calcTicketPrice(d, t.speed, t.tvIdx);
-      html += '<tr><td style="font-weight:700;font-family:\'SF Mono\',Monaco,monospace;color:#6366f1">' + t.number + '</td><td><b>' + t.speed + '</b></td><td>' + tvLabel + '</td><td><b>' + fmt(price) + '</b></td></tr>';
+      var price = calcTicketPrice(d, t.speed, t.tvIdx, t.wifi);
+      var wifiLabel = t.wifi ? '<span style="color:#16a34a;font-weight:700">✓ 사용</span>' : '<span style="color:#dc2626;font-weight:700">✗ 미사용</span>';
+      html += '<tr><td style="font-weight:700;font-family:\'SF Mono\',Monaco,monospace;color:#6366f1">' + t.number + '</td><td><b>' + t.speed + '</b></td><td>' + tvLabel + '</td><td>' + wifiLabel + '</td><td><b>' + fmt(price) + '</b></td></tr>';
     });
     html += '</tbody></table>';
   });
-  html += '<div class="note" style="margin-top:12px">전체 <b>' + TICKETS.length + '개 티켓</b> · 셋톱/WiFi 변경 시 요금만 재계산되고 티켓번호는 유지됨.</div>';
+  html += '<div class="note" style="margin-top:12px">전체 <b>' + TICKETS.length + '개 티켓</b> · 티켓번호 = 속도 × TV × WiFi유무로 결정. 셋톱/WiFi 모델 변경 시 요금만 재계산, 티켓번호는 유지.</div>';
   document.getElementById('ticket-list-container').innerHTML = html;
 }
 renderTicketList();
