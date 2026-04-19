@@ -683,6 +683,30 @@
   <div class="note"><b>결론: 1년 약정이 30~40만원 이상 손해.</b> ⚠️ 단, 설치 12개월 내 중도해지 시 사은품 전액 반환 의무.</div>
 </div>
 
+<!-- ═══ 18. 기본 모델 관리 (시뮬레이션) ═══ -->
+<div class="section">
+  <div class="st">🛠️ 18. 기본 셋톱/WiFi 전환·단종 시뮬레이터</div>
+  <div class="note">
+    <b>⭐ 기본</b> = 현재 티켓 요금 계산에 적용되는 모델 · <b>기본 설정</b> = 클릭 시 해당 모델을 새 기본으로 전환 · <b>단종</b> = 비활성 처리 (기본이면 다음 활성 모델로 자동 이동)<br>
+    모든 전환은 <b>티켓번호 유지 / 요금·리스트만 실시간 재계산</b>. 새로고침 시 초기값으로 복원 (데모).
+  </div>
+
+  <div class="st2"><span class="badge b-skt">SKT</span> 셋톱 옵션</div>
+  <div id="ctrl-settop-skt"></div>
+  <div class="st2"><span class="badge b-skt">SKT</span> WiFi 옵션</div>
+  <div id="ctrl-wifi-skt"></div>
+
+  <div class="st2" style="margin-top:18px"><span class="badge b-kt">KT</span> 셋톱 옵션</div>
+  <div id="ctrl-settop-kt"></div>
+  <div class="st2"><span class="badge b-kt">KT</span> WiFi 옵션</div>
+  <div id="ctrl-wifi-kt"></div>
+
+  <div class="st2" style="margin-top:18px"><span class="badge b-lgu">LGU+</span> 셋톱 옵션</div>
+  <div id="ctrl-settop-lgu"></div>
+  <div class="st2"><span class="badge b-lgu">LGU+</span> WiFi 옵션</div>
+  <div id="ctrl-wifi-lgu"></div>
+</div>
+
 <!-- ═══ 17. 티켓 조합 리스트 ═══ -->
 <div class="section">
   <div class="st">🎫 17. 티켓 조합 리스트 (전체 105개)</div>
@@ -1026,6 +1050,82 @@ document.getElementById('c-wifi').addEventListener('change', calc);
 
 init();
 
+// 기본 셋톱/WiFi 전환 함수 (모델 변경/단종 대응 시연)
+function setDefaultSetTop(carrierKey, optionId) {
+  var d = D[carrierKey];
+  d.setTopOptions.forEach(function(o) { o.isDefault = (o.id === optionId); });
+  var def = d.setTopOptions.find(function(o){ return o.isDefault; });
+  if (def) { d.setTop = def.fee; d.setTopName = def.name; }
+  renderDefaultControls();
+  renderTicketList();
+  updateSetTopInfo();
+  calc();
+}
+function setDefaultWifi(carrierKey, optionId) {
+  var d = D[carrierKey];
+  d.wifiOptions.forEach(function(o) { o.isDefault = (o.id === optionId); });
+  var def = d.wifiOptions.find(function(o){ return o.isDefault; });
+  if (def) { d.wifiName = def.name; }
+  renderDefaultControls();
+  renderTicketList();
+  updateWifiUI();
+  calc();
+}
+function toggleActive(carrierKey, type, optionId) {
+  var d = D[carrierKey];
+  var arr = type === 'settop' ? d.setTopOptions : d.wifiOptions;
+  var opt = arr.find(function(o){ return o.id === optionId; });
+  if (!opt) return;
+  opt.active = !opt.active;
+  // 단종된 항목이 isDefault면 다음 active 옵션으로 자동 이동
+  if (!opt.active && opt.isDefault) {
+    var next = arr.find(function(o){ return o.active; });
+    if (next) {
+      arr.forEach(function(o){ o.isDefault = false; });
+      next.isDefault = true;
+      if (type === 'settop') { d.setTop = next.fee; d.setTopName = next.name; }
+      else { d.wifiName = next.name; }
+    }
+  }
+  renderDefaultControls();
+  renderTicketList();
+  updateWifiUI();
+  updateSetTopInfo();
+  calc();
+}
+
+function renderDefaultControls() {
+  ['skt','kt','lgu'].forEach(function(key) {
+    var d = D[key];
+    var stEl = document.getElementById('ctrl-settop-' + key);
+    var wfEl = document.getElementById('ctrl-wifi-' + key);
+    if (stEl) {
+      stEl.innerHTML = d.setTopOptions.map(function(o) {
+        var isDef = o.isDefault && o.active;
+        var isDis = !o.active;
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;margin:4px 0;border-radius:6px;' + (isDef ? 'background:#fef3c7;border:1.5px solid #f59e0b' : isDis ? 'background:#f3f4f6;opacity:0.5' : 'background:#f9fafb;border:1.5px solid #e5e7eb') + '">' +
+          '<span style="flex:1;font-size:11px;' + (isDis ? 'text-decoration:line-through' : '') + '"><b>' + o.name + '</b> (' + fmt(o.fee) + ')</span>' +
+          (isDef ? '<span style="font-size:10px;color:#d97706;font-weight:700">⭐ 기본</span>' :
+            '<button onclick="setDefaultSetTop(\'' + key + '\', \'' + o.id + '\')" ' + (isDis ? 'disabled' : '') + ' style="padding:3px 8px;font-size:10px;border:1px solid #6366f1;background:#fff;color:#6366f1;border-radius:4px;cursor:pointer' + (isDis ? ';opacity:0.3;cursor:not-allowed' : '') + '">기본 설정</button>') +
+          '<button onclick="toggleActive(\'' + key + '\', \'settop\', \'' + o.id + '\')" style="padding:3px 8px;font-size:10px;border:1px solid ' + (isDis ? '#16a34a' : '#dc2626') + ';background:#fff;color:' + (isDis ? '#16a34a' : '#dc2626') + ';border-radius:4px;cursor:pointer">' + (isDis ? '복구' : '단종') + '</button>' +
+          '</div>';
+      }).join('');
+    }
+    if (wfEl) {
+      wfEl.innerHTML = d.wifiOptions.map(function(o) {
+        var isDef = o.isDefault && o.active;
+        var isDis = !o.active;
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;margin:4px 0;border-radius:6px;' + (isDef ? 'background:#fef3c7;border:1.5px solid #f59e0b' : isDis ? 'background:#f3f4f6;opacity:0.5' : 'background:#f9fafb;border:1.5px solid #e5e7eb') + '">' +
+          '<span style="flex:1;font-size:11px;' + (isDis ? 'text-decoration:line-through' : '') + '"><b>' + o.name + '</b></span>' +
+          (isDef ? '<span style="font-size:10px;color:#d97706;font-weight:700">⭐ 기본</span>' :
+            '<button onclick="setDefaultWifi(\'' + key + '\', \'' + o.id + '\')" ' + (isDis ? 'disabled' : '') + ' style="padding:3px 8px;font-size:10px;border:1px solid #6366f1;background:#fff;color:#6366f1;border-radius:4px;cursor:pointer' + (isDis ? ';opacity:0.3;cursor:not-allowed' : '') + '">기본 설정</button>') +
+          '<button onclick="toggleActive(\'' + key + '\', \'wifi\', \'' + o.id + '\')" style="padding:3px 8px;font-size:10px;border:1px solid ' + (isDis ? '#16a34a' : '#dc2626') + ';background:#fff;color:' + (isDis ? '#16a34a' : '#dc2626') + ';border-radius:4px;cursor:pointer">' + (isDis ? '복구' : '단종') + '</button>' +
+          '</div>';
+      }).join('');
+    }
+  });
+}
+
 // 티켓번호 조회 기능
 (function setupTicketLookup() {
   var dl = document.getElementById('ticket-options');
@@ -1103,6 +1203,7 @@ function renderTicketList() {
   document.getElementById('ticket-list-container').innerHTML = html;
 }
 renderTicketList();
+renderDefaultControls();
 </script>
 
 </div>
