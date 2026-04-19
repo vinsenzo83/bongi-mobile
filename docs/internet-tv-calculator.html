@@ -101,6 +101,18 @@
 <div class="calc">
   <h2>🧮 요금 계산기</h2>
 
+  <!-- 티켓번호 조회 -->
+  <div style="background:rgba(99,102,241,0.15);border:1.5px solid #818cf8;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+    <div style="font-size:11px;color:#a5b4fc;font-weight:700;margin-bottom:6px;letter-spacing:1px">🎫 티켓번호로 빠른 조회</div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="c-ticket-lookup" list="ticket-options" placeholder="예: SK0015 / KT0008 / LG0003"
+             style="flex:1;padding:10px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:13px;font-family:'SF Mono',Monaco,monospace;text-transform:uppercase;letter-spacing:1px">
+      <datalist id="ticket-options"></datalist>
+      <button id="c-ticket-lookup-btn" style="padding:10px 16px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size:13px;font-weight:700;cursor:pointer">조회</button>
+    </div>
+    <div id="c-ticket-lookup-msg" style="font-size:11px;color:#fca5a5;margin-top:6px;display:none"></div>
+  </div>
+
   <div class="calc-row">
     <div class="calc-group">
       <div class="calc-label">통신사</div>
@@ -1013,6 +1025,45 @@ document.getElementById('c-tv').addEventListener('change', calc);
 document.getElementById('c-wifi').addEventListener('change', calc);
 
 init();
+
+// 티켓번호 조회 기능
+(function setupTicketLookup() {
+  var dl = document.getElementById('ticket-options');
+  TICKETS.forEach(function(t) {
+    var opt = document.createElement('option');
+    opt.value = t.number;
+    dl.appendChild(opt);
+  });
+
+  var input = document.getElementById('c-ticket-lookup');
+  var btn = document.getElementById('c-ticket-lookup-btn');
+  var msg = document.getElementById('c-ticket-lookup-msg');
+
+  function lookup() {
+    var num = input.value.trim().toUpperCase();
+    if (!num) { msg.style.display = 'none'; return; }
+    var t = TICKETS.find(function(x){ return x.number === num; });
+    if (!t) {
+      msg.textContent = '⚠️ 티켓번호를 찾을 수 없습니다: ' + num;
+      msg.style.display = 'block';
+      return;
+    }
+    msg.style.display = 'none';
+    document.getElementById('c-carrier').value = t.carrier;
+    buildTV();
+    document.getElementById('c-speed').value = t.speed;
+    document.getElementById('c-tv').value = t.tvIdx;
+    updateWifiUI();
+    var wf = document.getElementById('c-wifi');
+    if (!wf.disabled) wf.checked = t.wifi;
+    updateSetTopInfo();
+    calc();
+  }
+
+  btn.addEventListener('click', lookup);
+  input.addEventListener('keypress', function(e) { if (e.key === 'Enter') lookup(); });
+  input.addEventListener('change', lookup);
+})();
 
 // 티켓 요금 계산 (WiFi 유무 반영)
 function calcTicketPrice(d, sp, tvIdx, hasWifi) {
