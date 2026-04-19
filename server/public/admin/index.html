@@ -1567,10 +1567,10 @@ const screens = [
       </div>
 
       <div class="g4" style="margin-bottom:14px">
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--red)">450</div><div class="kpi-label">SKT (SK0001~)</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--blue)">360</div><div class="kpi-label">KT (KT0001~)</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--green)">288</div><div class="kpi-label">LG U+ (LG0001~)</div></div>
-        <div class="kpi-card"><div class="kpi-val" style="color:var(--navy)">1,149</div><div class="kpi-label">전체 (인터넷1,098+렌탈51)</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--red)">60</div><div class="kpi-label">SKT (SK0001~SK0060)</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--blue)">30</div><div class="kpi-label">KT (KT0001~KT0030)</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--green)">15</div><div class="kpi-label">LG U+ (LG0001~LG0015)</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--navy)">156</div><div class="kpi-label">전체 (인터넷105+렌탈51)</div></div>
       </div>
 
       <div class="filter-bar">
@@ -5023,29 +5023,67 @@ function applyRentalFilter() { renderRentalPage(0); }
 var carrierComboData = {}; // 페이지 로드 시 항상 초기화
 var carrierComboPage = {};
 
+// 신 구조: 속도 × TV × WiFi유무 = 티켓 1개 (셋톱/WiFi 모델은 독립 기본 고정)
 var comboConfig = {
   SKT: {
     prefix: 'SK',
-    speeds: [['100M',22000],['500M',33000],['1G',38500]],
-    tvs: [['없음',0],['Btv 이코노미',9900],['Btv 스탠다드',13200],['Btv 올',16500],['Btv 올+',22000],['Btv 올 넷플릭스 프리미엄',31000]],
-    settops: [['없음',0],['스마트3 미니',4400],['AI NUGU',6600],['사운드 맥스',8800],['애플TV',6600]],
-    wifis: [['없음',0],['GIGA WiFi',0],['GIGA WiFi 6',1100],['GIGA WiFi 프리미엄',5500],['윙즈',1650]]
+    speeds: ['100M','500M','1G'],
+    internet: {'100M':22000,'500M':33000,'1G':38500},
+    wifiAdd: {'100M':1100,'500M':1100,'1G':1100},   // WiFi 사용 시 추가 요금
+    tvInternetNoWifi: {'100M':19800,'500M':27500,'1G':33000},
+    tvInternetWithWifi: {'100M':22000,'500M':28600,'1G':34100},
+    tvs: [
+      ['없음',0,0],
+      ['Btv 이코노미',12100,2200],
+      ['Btv 스탠다드',15400,2200],
+      ['Btv 올',18700,2200],
+      ['Btv 스탠다드 플러스',23100,2200],
+      ['Btv 올 플러스',24200,2200],
+      ['Btv 스탠다드 넷플릭스',27700,2200],
+      ['Btv 올 넷플릭스',30200,2200],
+      ['Btv 스탠다드 넷플릭스 프리미엄',30700,2200],
+      ['Btv 올 넷플릭스 프리미엄',33200,2200]
+    ],
+    setTop: {name:'스마트3 (기본)', fee:4400},
+    wifi: {name:'GIGA WiFi (기본)'},
+    wifiOptional: {'100M':true,'500M':true,'1G':true}
   },
   KT: {
     prefix: 'KT',
-    speeds: [['100M',22000],['500M',33000],['1G',38500]],
-    tvs: [['없음',0],['지니TV 베이직',16500],['지니TV 라이트',17600],['지니TV 모든G',22000],['지니TV 디즈니+모든G',24300],['지니TV+넷플릭스HD',32200]],
-    settops: [['없음',0],['기가지니A',3300],['기가지니3',4400],['지니TV 올인원 사운드바',8800]],
-    wifis: [['없음',0],['KT GIGA WAVE2',1100],['GIGA WIFI 홈AX',2200],['GIGA WIFIBUDDY',1650],['GIGA WIFI프리미엄',4400]]
+    speeds: ['100M','500M','1G'],
+    internet: {'100M':22000,'500M':33000,'1G':38500},
+    wifiAdd: {'100M':1100,'500M':1100,'1G':0},
+    tvInternetNoWifi: {'100M':22000,'500M':27500,'1G':33000},
+    tvInternetWithWifi: {'100M':23100,'500M':28600,'1G':33000},
+    tvs: [
+      ['없음',0,0],
+      ['지니TV 베이직',14740,2640],
+      ['지니TV 라이트',15840,2640],
+      ['지니TV 에센스',20240,3740],
+      ['지니TV 모든G',21340,4400],
+      ['지니TV 디즈니+모든G',28100,6600]
+    ],
+    setTop: {name:'기가지니3 (기본)', fee:4400},
+    wifi: {name:'KT GIGA WAVE2 (기본)'},
+    wifiOptional: {'100M':true,'500M':true,'1G':false}  // 1G 무료라 단일 티켓
   },
   LGU: {
     prefix: 'LG',
-    speeds: [['100M',22000],['500M',33000],['1G',38500]],
-    tvs: [['없음',0],['실속형',14630],['기본형',15730],['프리미엄',17600],['프리미엄 디즈니+',26950],['프리미엄 넷플릭스HD',30550],['프리미엄 티빙',30550],['프리미엄 넷플릭스UHD',34050]],
-    settops: [['없음',0],['U+tv UHD4',4400],['U+tv 사운드바 블랙',6600]],
-    // 100M: 기가와이파이 의무(기본제공) / 500M+: 기가와이파이6 의무(기본제공)
-    wifis100: [['기가와이파이(의무)',0],['기가와이파이+추가1대',2200]],
-    wifis500: [['기가와이파이6(의무)',0],['기가와이파이6+추가1대',2200],['기가와이파이메쉬(추가)',2200]]
+    speeds: ['100M','500M','1G'],
+    internet: {'100M':22000,'500M':33000,'1G':38500},
+    wifiAdd: {'100M':0,'500M':0,'1G':0},
+    tvInternetNoWifi: {'100M':22000,'500M':27500,'1G':33000},
+    tvInternetWithWifi: {'100M':22000,'500M':27500,'1G':33000},
+    tvs: [
+      ['없음',0,0],
+      ['U+tv 실속형',15400,2200],
+      ['U+tv 기본형',16500,2200],
+      ['U+tv 프리미엄',18700,2200],
+      ['U+tv 프리미엄 VOD',24200,5500]
+    ],
+    setTop: {name:'U+tv UHD4 (기본)', fee:4400},
+    wifi: {name:'기가와이파이 (기본)'},
+    wifiOptional: {'100M':false,'500M':false,'1G':false}  // 모든 속도 무료 포함
   }
 };
 
@@ -5055,36 +5093,45 @@ function generateCombos(key) {
   if(!cfg) return [];
   var combos = [];
   var num = 1;
-  cfg.speeds.forEach(function(sp){
-    // LG U+는 속도별 와이파이가 다름
-    var wifis;
-    if(key === 'LGU') {
-      wifis = sp[0]==='100M' ? cfg.wifis100 : cfg.wifis500;
+  function pushTicket(sp, tvIdx, useWifi) {
+    var hasTv = tvIdx > 0;
+    var tv = cfg.tvs[tvIdx];
+    var netPrice, settopFee, settopLabel;
+    if (hasTv) {
+      netPrice = useWifi ? cfg.tvInternetWithWifi[sp] : cfg.tvInternetNoWifi[sp];
+      settopFee = cfg.setTop.fee;
+      settopLabel = cfg.setTop.name;
     } else {
-      wifis = cfg.wifis;
+      netPrice = cfg.internet[sp] + (useWifi ? cfg.wifiAdd[sp] : 0);
+      settopFee = 0;
+      settopLabel = '-';
     }
-    cfg.tvs.forEach(function(tv){
-      cfg.settops.forEach(function(st){
-        wifis.forEach(function(wf){
-          var total = sp[1] + tv[1] + st[1] + wf[1];
-          var tid = cfg.prefix + String(num).padStart(4,'0');
-          combos.push({
-            ticket: tid,
-            speed: sp[0],
-            tv: tv[0],
-            settop: st[0],
-            wifi: wf[0],
-            inetPrice: sp[1],
-            tvPrice: tv[1],
-            settopPrice: st[1],
-            wifiPrice: wf[1],
-            total: total
-          });
-          num++;
-        });
-      });
+    var tvFinal = hasTv ? (tv[1] - tv[2]) : 0;
+    combos.push({
+      ticket: cfg.prefix + String(num++).padStart(4,'0'),
+      speed: sp,
+      tv: tv[0],
+      settop: settopLabel,
+      wifi: useWifi ? (cfg.wifi.name + ' 사용') : '미사용',
+      inetPrice: netPrice,
+      tvPrice: tvFinal,
+      settopPrice: settopFee,
+      wifiPrice: 0,
+      total: netPrice + tvFinal + settopFee
     });
+  }
+  // 인터넷 단독
+  cfg.speeds.forEach(function(sp){
+    if (cfg.wifiOptional[sp]) pushTicket(sp, 0, false);
+    pushTicket(sp, 0, true);
   });
+  // 인터넷+TV
+  for (var i = 1; i < cfg.tvs.length; i++) {
+    cfg.speeds.forEach(function(sp){
+      if (cfg.wifiOptional[sp]) pushTicket(sp, i, false);
+      pushTicket(sp, i, true);
+    });
+  }
   carrierComboData[key] = combos;
   return combos;
 }
