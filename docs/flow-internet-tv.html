@@ -265,7 +265,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
           · 티켓 조합 생성 (bongi_tickets)<br>
           · 고객 상품 카드 (속도 표시 + 월요금)<br>
           · AI 채팅 응답 ("500M 추천드려요")<br>
-          · 결합할인 시뮬레이터 계산<br>
+          · 통합 계산기 계산<br>
           · 사은품 금액 결정 기준<br>
           · CRM 상담사 화면
         </td>
@@ -282,52 +282,50 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
         </td>
       </tr>
       <tr>
-        <td><strong>셋톱박스</strong></td>
-        <td>어드민 상품관리<br><span class="mono">bongi_settop_boxes</span></td>
+        <td><strong>셋톱박스</strong> <small>(독립)</small></td>
+        <td>통합 계산기<br><span class="mono">setTopOptions[] · isDefault</span></td>
         <td>
-          · 티켓 조합 생성 (bongi_tickets)<br>
-          · 고객 상품 카드 (셋톱 표시)<br>
-          · AI 채팅 응답<br>
-          · <span class="badge b-red">비활성 → 포함 티켓 연쇄 비활성</span>
+          · <b>티켓 비포함</b> (기본 모델만 요금에 적용)<br>
+          · 기본 전환/단종/신규 추가 → 요금만 재계산<br>
+          · <span class="badge b-gray">비활성 → 다음 활성 모델로 자동 이동, 티켓 영향 없음</span>
         </td>
       </tr>
       <tr>
-        <td><strong>와이파이</strong></td>
-        <td>어드민 상품관리<br><span class="mono">bongi_wifi_products</span></td>
+        <td><strong>와이파이</strong> <small>(독립)</small></td>
+        <td>통합 계산기<br><span class="mono">wifiOptions[] · isDefault</span></td>
         <td>
-          · 티켓 조합 생성 (bongi_tickets)<br>
-          · 고객 상품 카드 (WiFi 표시)<br>
-          · AI 채팅 응답<br>
-          · <span class="badge b-red">비활성 → 포함 티켓 연쇄 비활성</span>
+          · <b>티켓 비포함</b> (기본 모델만 요금에 적용)<br>
+          · 기본 전환/단종/신규 추가 → 요금만 재계산<br>
+          · <span class="badge b-gray">비활성 → 다음 활성 모델로 자동 이동, 티켓 영향 없음</span>
         </td>
       </tr>
       <tr>
         <td><strong>제휴카드</strong></td>
-        <td>어드민 상품관리<br>(하드코딩/어드민 편집)</td>
+        <td>통합 계산기 (섹션 6)</td>
         <td>
           · 고객 상품 카드 (카드할인 금액)<br>
           · 요금 계산 (실납부 = 기본 - 결합 - <strong>카드</strong>)<br>
           · AI 채팅 응답 ("하나카드 15,000원 할인")<br>
-          · 결합할인 시뮬레이터<br>
           · <span class="badge b-gray">비활성 → 티켓 영향 없음</span>
         </td>
       </tr>
       <tr>
         <td><strong>사은품 금액</strong></td>
-        <td>어드민 상품관리<br>(속도별 수기 입력)</td>
+        <td>통합 계산기 (섹션 8)<br>(3사 × 속도 × TV결합별)<br>+ 변경 이력 localStorage</td>
         <td>
+          · 티켓 리스트 사은품 컬럼<br>
           · 고객 상품 카드 ("현금 사은품 43만")<br>
           · AI 채팅 응답<br>
           · 신청서 (bongi_applications.gift_amount)<br>
           · 사은품관리 (bongi_gifts 지급대기)<br>
-          · CRM 상담사 화면<br>
-          · 마이페이지 사은품 현황
+          · CRM 상담사 화면
         </td>
       </tr>
       <tr>
         <td><strong>설치비</strong></td>
-        <td>어드민 상품관리<br>(통신사별 편집)</td>
+        <td>통합 계산기 (섹션 5)<br>평일/주말 구분</td>
         <td>
+          · 계산기 월 합계 아래 표시<br>
           · 고객 상품 상세 (설치비 안내)<br>
           · AI 채팅 응답 ("설치비 56,100원")<br>
           · CRM 상담사 안내
@@ -658,7 +656,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
           <tr><td>📦 셋탑</td><td>bongi_settop_boxes.name + monthly_fee</td></tr>
           <tr><td>📡 WiFi</td><td>bongi_wifi_products.name + monthly_fee</td></tr>
           <tr><td>소계</td><td>인터넷+TV+셋탑+WiFi 합산</td></tr>
-          <tr><td>🏷️ 결합할인</td><td>시뮬레이터 계산 (가족결합 종류별)</td></tr>
+          <tr><td>🏷️ 결합할인</td><td>계산기 계산 (가족결합 종류별)</td></tr>
           <tr><td>💳 카드할인</td><td>제휴카드 전월실적별 할인</td></tr>
           <tr><td>✅ 최종 월요금</td><td>소계 - 결합할인 - 카드할인</td></tr>
           <tr><td>🎁 사은품</td><td>어드민 수기 입력 (속도+TV결합별)</td></tr>
