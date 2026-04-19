@@ -238,51 +238,14 @@
 <div class="section">
   <div class="st">1. 인터넷 · WiFi</div>
 
-  <!-- ① 인터넷 단독 + WiFi 기본 -->
-  <div class="st2">① 인터넷 단독 요금 + 기본 WiFi</div>
-  <table>
-    <thead><tr><th>속도</th><th>인터넷 (3사 동일)</th><th>SKT<br><small>GIGA WiFi</small></th><th>KT<br><small>KT GIGA WAVE2</small></th><th>LGU+<br><small>기가와이파이</small></th></tr></thead>
-    <tbody>
-      <tr><td><b>100M</b></td><td>22,000원</td><td>+1,100원</td><td>+1,100원</td><td>무료</td></tr>
-      <tr><td><b>500M</b></td><td>33,000원</td><td>+1,100원</td><td>+1,100원</td><td>무료</td></tr>
-      <tr><td><b>1G</b></td><td>38,500원</td><td>+1,100원</td><td>무료</td><td>무료</td></tr>
-    </tbody>
-  </table>
+  <div class="st2">① 인터넷 단독 요금 (3사 공통)</div>
+  <div class="note"><b>100M 22,000원 · 500M 33,000원 · 1G 38,500원</b> (3년 약정, 부가세 포함) · TV 결합 및 WiFi 유무별 상세 결합가는 <b>계산기</b> / <b>섹션 8 티켓 리스트</b>에서 확인</div>
 
-  <!-- ② TV 결합가 -->
-  <div class="st2" style="margin-top:18px">② TV 결합 시 인터넷 결합가 (WiFi 유무별)</div>
-  <table>
-    <thead>
-      <tr>
-        <th rowspan="2">속도</th>
-        <th colspan="2"><span class="badge b-skt">SKT</span></th>
-        <th colspan="2"><span class="badge b-kt">KT</span></th>
-        <th><span class="badge b-lgu">LGU+</span></th>
-      </tr>
-      <tr>
-        <th>WiFi 미사용</th><th>WiFi 사용</th>
-        <th>WiFi 미사용</th><th>WiFi 사용</th>
-        <th>WiFi 포함</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td><b>100M</b></td><td>19,800원</td><td>22,000원</td><td>22,000원</td><td>23,100원</td><td>22,000원</td></tr>
-      <tr><td><b>500M</b></td><td>27,500원</td><td>28,600원</td><td>27,500원</td><td>28,600원</td><td>27,500원</td></tr>
-      <tr><td><b>1G</b></td><td>33,000원</td><td>34,100원</td><td colspan="2">33,000원 (WiFi 포함)</td><td>33,000원</td></tr>
-    </tbody>
-  </table>
-  <div class="note">
-    <b>할인 패턴</b>: 500M·1G는 3사 공통 <b>-5,500원</b> 결합할인 / 100M은 SKT만 할인 (WiFi 미사용 -2,200, 사용 -1,100) / KT·LGU+ 100M은 할인 0.<br>
-    결합가에 <b>TV 최종요금 + 셋톱박스 4,400원</b> 추가되면 월 합계.
-  </div>
-
-  <!-- ③ WiFi 공유기 라인업 + 관리 -->
-  <div class="st2" style="margin-top:18px">③ WiFi 공유기 라인업 (기본 전환 / 단종 / 신규 추가)</div>
-  <div class="note">⭐ 기본 = 티켓 요금 계산에 적용 · 전환·단종·추가 시 티켓번호 유지, 요금만 실시간 재계산.</div>
-  <div class="note">⭐ 기본 = 티켓 요금 계산에 적용 · 기본 전환·단종·추가 시 모든 티켓번호 유지하고 요금만 실시간 재계산.</div>
-  <div style="margin-top:10px"><span class="badge b-skt">SKT</span> WiFi</div>
+  <div class="st2" style="margin-top:18px">② WiFi 공유기 (기본 모델 선택 · 단종 · 신규 추가)</div>
+  <div class="note">셀렉트박스로 기본 전환 즉시 반영 → 모든 티켓 요금 실시간 재계산 · 티켓번호 유지</div>
+  <div style="margin-top:10px"><span class="badge b-skt">SKT</span></div>
   <div id="ctrl-wifi-skt"></div>
-  <div style="margin-top:14px"><span class="badge b-kt">KT</span> WiFi</div>
+  <div style="margin-top:14px"><span class="badge b-kt">KT</span></div>
   <div id="ctrl-wifi-kt"></div>
   <div style="margin-top:14px"><span class="badge b-lgu">LGU+</span> WiFi</div>
   <div id="ctrl-wifi-lgu"></div>
@@ -952,33 +915,59 @@ function renderDefaultControls() {
     // 셋톱
     var stEl = document.getElementById('ctrl-settop-' + key);
     if (stEl) {
-      var html = '<table><thead><tr><th>모델</th><th>월 임대료</th><th style="width:180px">관리</th></tr></thead><tbody>';
+      var sel = '<div style="display:flex;align-items:center;gap:8px;padding:10px;background:#fef3c7;border-radius:6px;margin-bottom:8px">' +
+        '<span style="font-size:12px;font-weight:700;color:#92400e">⭐ 기본 셋톱:</span>' +
+        '<select onchange="setDefaultSetTop(\'' + key + '\', this.value)" style="flex:1;padding:6px 10px;border:1.5px solid #f59e0b;border-radius:4px;font-size:12px;font-weight:700;background:#fff">';
+      d.setTopOptions.filter(function(o){ return o.active; }).forEach(function(o) {
+        sel += '<option value="' + o.id + '"' + (o.isDefault ? ' selected' : '') + '>' + o.name + ' — ' + fmt(o.fee) + '</option>';
+      });
+      sel += '</select>' +
+        '<button onclick="addSetTop(\'' + key + '\')" style="padding:6px 12px;font-size:11px;border:1.5px dashed #6366f1;background:#fff;color:#6366f1;border-radius:4px;cursor:pointer;font-weight:700;white-space:nowrap">+ 추가</button>' +
+        '</div>';
+
+      var html = '<table><thead><tr><th>모델</th><th>월 임대료</th><th style="width:80px">상태</th></tr></thead><tbody>';
       d.setTopOptions.forEach(function(o) {
-        var c = ctrlBtns(key, 'settop', o);
-        var rowStyle = c.isDef ? 'background:#fef3c7' : (c.isDis ? 'opacity:0.5' : '');
-        var nameStyle = c.isDis ? 'text-decoration:line-through' : '';
-        html += '<tr style="' + rowStyle + '"><td style="' + nameStyle + '">' + c.star + '<b>' + o.name + '</b></td><td><b>' + fmt(o.fee) + '</b></td><td>' + c.defBtn + c.delBtn + '</td></tr>';
+        var isDef = o.isDefault && o.active;
+        var isDis = !o.active;
+        var rowStyle = isDef ? 'background:#fef3c7' : (isDis ? 'opacity:0.5' : '');
+        var nameStyle = isDis ? 'text-decoration:line-through' : '';
+        var delBtn = '<button onclick="toggleActive(\'' + key + '\', \'settop\', \'' + o.id + '\')" style="padding:3px 8px;font-size:10px;border:1px solid ' + (isDis ? '#16a34a' : '#dc2626') + ';background:#fff;color:' + (isDis ? '#16a34a' : '#dc2626') + ';border-radius:4px;cursor:pointer">' + (isDis ? '복구' : '단종') + '</button>';
+        html += '<tr style="' + rowStyle + '"><td style="' + nameStyle + '">' + (isDef ? '⭐ ' : '') + '<b>' + o.name + '</b></td><td><b>' + fmt(o.fee) + '</b></td><td>' + delBtn + '</td></tr>';
       });
       html += '</tbody></table>';
-      html += '<button onclick="addSetTop(\'' + key + '\')" style="margin-top:6px;padding:7px 14px;font-size:11px;border:1.5px dashed #6366f1;background:#fff;color:#6366f1;border-radius:6px;cursor:pointer;width:100%;font-weight:700">+ 새 셋톱 모델 추가</button>';
-      stEl.innerHTML = html;
+      stEl.innerHTML = sel + html;
     }
     // WiFi
     var wfEl = document.getElementById('ctrl-wifi-' + key);
     if (wfEl) {
-      var html2 = '<table><thead><tr><th>모델</th><th>100M</th><th>500M</th><th>1G</th><th style="width:180px">관리</th></tr></thead><tbody>';
-      d.wifiOptions.forEach(function(o) {
-        var c = ctrlBtns(key, 'wifi', o);
-        var rowStyle = c.isDef ? 'background:#fef3c7' : (c.isDis ? 'opacity:0.5' : '');
-        var nameStyle = c.isDis ? 'text-decoration:line-through' : '';
+      // 기본 모델 셀렉트박스 (active 모델만)
+      var sel = '<div style="display:flex;align-items:center;gap:8px;padding:10px;background:#fef3c7;border-radius:6px;margin-bottom:8px">' +
+        '<span style="font-size:12px;font-weight:700;color:#92400e">⭐ 기본 WiFi:</span>' +
+        '<select onchange="setDefaultWifi(\'' + key + '\', this.value)" style="flex:1;padding:6px 10px;border:1.5px solid #f59e0b;border-radius:4px;font-size:12px;font-weight:700;background:#fff">';
+      d.wifiOptions.filter(function(o){ return o.active; }).forEach(function(o) {
         var f = o.fees || {};
-        html2 += '<tr style="' + rowStyle + '"><td style="' + nameStyle + '">' + c.star + '<b>' + o.name + '</b></td>' +
+        var feeStr = fmt(f['100M']||0) + ' / ' + fmt(f['500M']||0) + ' / ' + fmt(f['1G']||0);
+        sel += '<option value="' + o.id + '"' + (o.isDefault ? ' selected' : '') + '>' + o.name + ' — ' + feeStr + '</option>';
+      });
+      sel += '</select>' +
+        '<button onclick="addWifi(\'' + key + '\')" style="padding:6px 12px;font-size:11px;border:1.5px dashed #6366f1;background:#fff;color:#6366f1;border-radius:4px;cursor:pointer;font-weight:700;white-space:nowrap">+ 추가</button>' +
+        '</div>';
+
+      // 전체 모델 관리 표 (단종 포함)
+      var html2 = '<table><thead><tr><th>모델</th><th>100M</th><th>500M</th><th>1G</th><th style="width:80px">상태</th></tr></thead><tbody>';
+      d.wifiOptions.forEach(function(o) {
+        var isDef = o.isDefault && o.active;
+        var isDis = !o.active;
+        var rowStyle = isDef ? 'background:#fef3c7' : (isDis ? 'opacity:0.5' : '');
+        var nameStyle = isDis ? 'text-decoration:line-through' : '';
+        var f = o.fees || {};
+        var delBtn = '<button onclick="toggleActive(\'' + key + '\', \'wifi\', \'' + o.id + '\')" style="padding:3px 8px;font-size:10px;border:1px solid ' + (isDis ? '#16a34a' : '#dc2626') + ';background:#fff;color:' + (isDis ? '#16a34a' : '#dc2626') + ';border-radius:4px;cursor:pointer">' + (isDis ? '복구' : '단종') + '</button>';
+        html2 += '<tr style="' + rowStyle + '"><td style="' + nameStyle + '">' + (isDef ? '⭐ ' : '') + '<b>' + o.name + '</b></td>' +
           '<td>' + fmt(f['100M']||0) + '</td><td>' + fmt(f['500M']||0) + '</td><td>' + fmt(f['1G']||0) + '</td>' +
-          '<td>' + c.defBtn + c.delBtn + '</td></tr>';
+          '<td>' + delBtn + '</td></tr>';
       });
       html2 += '</tbody></table>';
-      html2 += '<button onclick="addWifi(\'' + key + '\')" style="margin-top:6px;padding:7px 14px;font-size:11px;border:1.5px dashed #6366f1;background:#fff;color:#6366f1;border-radius:6px;cursor:pointer;width:100%;font-weight:700">+ 새 WiFi 모델 추가</button>';
-      wfEl.innerHTML = html2;
+      wfEl.innerHTML = sel + html2;
     }
   });
 }
