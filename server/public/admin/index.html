@@ -448,8 +448,8 @@ body { background: var(--bg); font-family: var(--sans); color: var(--text); min-
     <div class="sl-item" onclick="show(23)"><span class="sl-num">20</span>공시지원금</div>
     <div class="sl-item" onclick="show(14)"><span class="sl-num">21</span>가족결합</div>
     <div class="sl-item" onclick="show(17)"><span class="sl-num">22</span>가이드</div>
-    <div class="sl-group">시뮬레이터</div>
-    <div class="sl-item" onclick="show(21)"><span class="sl-num">23</span>결합할인 시뮬레이터</div>
+    <div class="sl-group">요금 계산기</div>
+    <div class="sl-item" onclick="show(21)"><span class="sl-num">23</span>🧮 통합 계산기</div>
     <div class="sl-group">크롤링</div>
     <div class="sl-item" onclick="show(20)"><span class="sl-num">24</span>크롤링 관리</div>
     <div class="sl-group">개발 현황</div>
@@ -857,6 +857,18 @@ const screens = [
 
       <!-- ━━ 인터넷+TV ━━ -->
       <div id="prod-section-wired">
+
+        <!-- 통합 계산기 안내 배너 -->
+        <div class="wf-card" style="background:linear-gradient(135deg,#eff6ff,#fef2f2);border:1.5px solid #c7d2fe;margin-bottom:14px;padding:14px 18px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:24px">🧮</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:3px">통합 요금 계산기가 신 데이터 소스입니다</div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.5">3사 · 105개 티켓 · 사은품 · 셋톱/WiFi 관리 → <strong>23번 메뉴 "🧮 통합 계산기"</strong>에서 단일 관리. 아래 03/04/05 섹션은 레거시 데이터로, 변경은 계산기에서 하세요.</div>
+            </div>
+            <a onclick="show(21)" style="padding:8px 14px;background:#1a2744;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none;cursor:pointer;white-space:nowrap">계산기 열기 →</a>
+          </div>
+        </div>
 
         <!-- SKT -->
         <div id="carrier-section-SKT">
@@ -1531,9 +1543,10 @@ const screens = [
       "플랫폼 모든 상품에 티켓번호 자동 부여",
       "유저가 콜센터 전화 시 티켓번호만 말하면 상품 즉시 파악",
       "━━ 티켓번호 체계 ━━",
-      "SKT: SK0001~ (속도×TV×셋톱×와이파이 조합 450개)",
-      "KT: KT0001~ (조합 360개)",
-      "LG U+: LG0001~ (조합 192개, 와이파이 필수)",
+      "SKT: SK0001~SK0060 (속도×TV×WiFi유무 조합 60개)",
+      "KT: KT0001~KT0030 (조합 30개, 1G는 WiFi 기본 포함)",
+      "LG U+: LG0001~LG0015 (조합 15개, WiFi 전속도 기본 포함)",
+      "셋톱/WiFi는 독립 관리 (기본 모델 전환·단종 시 티켓번호 유지, 요금만 재계산)",
       "렌탈: R001~ (상품 1:1 매핑 51개)",
       "━━ 상품 변경 시 티켓 처리 정책 ━━",
       "이름/요금 변경 → 티켓번호 유지, 값만 업데이트",
@@ -1545,7 +1558,7 @@ const screens = [
       "━━ 핵심 원칙 ━━",
       "① 티켓번호는 영원히 해당 조합을 가리킨다",
       "② 삭제 없다 — 비활성만 있다",
-      "③ 번호 재사용 금지 (SK0451 다음은 SK0452)",
+      "③ 번호 재사용 금지 (SK0061 다음은 SK0062)",
       "④ '티켓 동기화' 버튼으로 변경사항 일괄 반영"
     ],
     render: () => adminShell(9, "티켓 관리", `
@@ -3357,97 +3370,21 @@ const screens = [
     annotations: ["신규(초록)/변경(노랑)/삭제(빨강) 색상 구분","건별 승인/반려 + 일괄 승인 지원","승인 시 즉시 AI 학습 데이터 반영","반려 시 기존 데이터 유지"]
   },
   {
-    title: "23. 결합할인 시뮬레이터",
-    tag: "SIMULATOR",
-    url: "admin.bongimobile.com/simulator",
+    title: "23. 🧮 요금 계산기 (통합)",
+    tag: "CALCULATOR",
+    url: "admin.bongimobile.com/calculator",
     notes: [
-      "통신사/인터넷/휴대폰/회선수 선택 → 최종 요금 자동 계산",
-      "미결합 요금 + 결합할인 + 카드할인 조합",
-      "유저에게 보여줄 최저가 미리 확인",
-      "상담사가 고객 전화 시 즉시 견적 가능"
+      "3사 통합 계산기 (calculator.html) · 단일 데이터 소스",
+      "티켓 105개 자동 생성 · 속도 × TV × WiFi유무 조합",
+      "셋톱/WiFi 기본 전환·단종·신규 추가 실시간 반영",
+      "사은품 편집 + 변경 이력 (localStorage)"
     ],
-    render: () => adminShell(14, "결합할인 시뮬레이터", `
-      <div class="wf-card" style="background:#eff6ff;border-color:#bfdbfe;margin-bottom:14px;padding:12px 16px">
-        <div style="font-size:12px;color:var(--navy)">💡 인터넷 + TV + 셋톱 + 와이파이 각각 선택 → 결합할인 + 카드할인 적용 후 <strong>최종 월요금</strong> 자동 계산</div>
+    render: () => adminShell(14, "🧮 요금 계산기 (통합)", `
+      <div class="wf-card" style="background:linear-gradient(135deg,#eff6ff,#fef2f2);border:none;padding:14px 18px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px">📊 3사 통합 요금 계산기 · 티켓 105개 · 사은품 관리</div>
+        <div style="font-size:11px;color:var(--text2)">속도×TV×WiFi유무 조합 티켓 자동 생성 · 셋톱/WiFi 모델 기본 전환·단종·신규 관리 · 변경 이력 저장</div>
       </div>
-
-      <div class="wf-card" style="margin-bottom:14px">
-        <div class="wf-h2" style="margin-bottom:14px">📋 조건 선택</div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-          <div>
-            <div class="wf-label">① 통신사</div>
-            <select id="sim-carrier" class="wf-input" style="margin-bottom:0" onchange="runSimulator()">
-              <option value="">선택하세요</option>
-              <option>SKT</option>
-              <option>KT</option>
-              <option>LG U+</option>
-            </select>
-          </div>
-          <div>
-            <div class="wf-label">② 인터넷 속도</div>
-            <select id="sim-speed" class="wf-input" style="margin-bottom:0" onchange="runSimulator()">
-              <option value="">선택하세요</option>
-              <option>100M</option>
-              <option>500M</option>
-              <option>1G</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-          <div>
-            <div class="wf-label">③ TV 상품</div>
-            <select id="sim-tv" class="wf-input" style="margin-bottom:0" onchange="runSimulator()">
-              <option value="0">통신사 먼저 선택</option>
-            </select>
-          </div>
-          <div>
-            <div class="wf-label">④ 셋톱박스</div>
-            <select id="sim-settop" class="wf-input" style="margin-bottom:0" onchange="runSimulator()">
-              <option value="0">통신사 먼저 선택</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
-          <div>
-            <div class="wf-label">⑤ 와이파이</div>
-            <select id="sim-wifi" class="wf-input" style="margin-bottom:0" onchange="runSimulator()">
-              <option value="0">통신사 먼저 선택</option>
-            </select>
-          </div>
-          <div>
-            <div class="wf-label">⑥ 결합 종류</div>
-            <select id="sim-bundle" class="wf-input" style="margin-bottom:0" onchange="runSimulator()">
-              <option value="없음">통신사 먼저 선택</option>
-            </select>
-          </div>
-          <div>
-            <div class="wf-label">⑦ 제휴카드</div>
-            <select id="sim-card" class="wf-input" style="margin-bottom:0" onchange="runSimulator()">
-              <option value="0">통신사 먼저 선택</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- 결과 -->
-      <div id="sim-result" class="wf-card" style="display:none">
-        <div class="wf-h2" style="margin-bottom:14px">📊 시뮬레이션 결과</div>
-        <div class="g5" style="margin-bottom:14px">
-          <div class="kpi-card"><div id="sim-base" class="kpi-val" style="color:var(--navy);font-size:18px">-</div><div class="kpi-label">인터넷</div></div>
-          <div class="kpi-card"><div id="sim-tv-price" class="kpi-val" style="color:var(--blue);font-size:18px">-</div><div class="kpi-label">TV</div></div>
-          <div class="kpi-card"><div id="sim-option-price" class="kpi-val" style="color:var(--orange);font-size:18px">-</div><div class="kpi-label">셋톱+와이파이</div></div>
-          <div class="kpi-card"><div id="sim-discount" class="kpi-val" style="color:var(--green);font-size:18px">-</div><div class="kpi-label">결합할인</div></div>
-          <div class="kpi-card"><div id="sim-card-disc" class="kpi-val" style="color:var(--blue);font-size:18px">-</div><div class="kpi-label">카드할인</div></div>
-        </div>
-        <div style="background:var(--navy);border-radius:12px;padding:20px;text-align:center;margin-bottom:14px">
-          <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:4px">최종 월요금 (유저 노출가)</div>
-          <div id="sim-final" style="font-size:36px;font-weight:900;color:#fff">-</div>
-        </div>
-        <div id="sim-detail" style="font-size:12px;color:var(--text2);line-height:1.8"></div>
-      </div>
+      <iframe src="/docs/calculator.html" style="width:100%;height:calc(100vh - 180px);min-height:800px;border:1.5px solid #e2ddd6;border-radius:10px;background:#f8f7f4" title="인터넷+TV 요금 계산기"></iframe>
     `),
     annotations: [
       "조건 선택 → 최종 월요금 자동 계산",
