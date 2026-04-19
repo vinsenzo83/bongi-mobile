@@ -314,7 +314,7 @@
 <div class="section">
   <div class="st">3. TV 상품</div>
 
-  <div class="st2"><span class="badge b-skt">SKT</span> B tv (9개) — WiFi(Band Giga WiFi) 모든 속도 +1,100원 / 결합 할인 -2,200원 / 셋톱박스(스마트2 세톱) 4,400원 별도</div>
+  <div class="st2"><span class="badge b-skt">SKT</span> B tv (9개) — WiFi(GIGA WiFi) 모든 속도 +1,100원 / 결합 할인 -2,200원 / 셋톱박스(스마트3) 4,400원 별도</div>
   <table>
     <thead><tr><th>채널</th><th>상품명</th><th>기본 요금</th><th>할인</th><th>최종 요금</th></tr></thead>
     <tbody>
@@ -671,17 +671,41 @@
   <div class="note"><b>결론: 1년 약정이 30~40만원 이상 손해.</b> ⚠️ 단, 설치 12개월 내 중도해지 시 사은품 전액 반환 의무.</div>
 </div>
 
+<!-- ═══ 17. 티켓 조합 리스트 ═══ -->
+<div class="section">
+  <div class="st">🎫 17. 티켓 조합 리스트 (전체 63개)</div>
+  <div class="note">
+    <b>설계 원칙</b>:<br>
+    · 티켓번호 = <b>속도 × TV 조합</b>만으로 결정 (셋톱/WiFi 독립)<br>
+    · 셋톱/WiFi 모델 추가·단종 → 기본값만 교체 → <b>티켓번호 영향 없음</b> (요금만 재계산)<br>
+    · 티켓번호는 영구 발급 (재사용 X, 비활성만 존재)
+  </div>
+  <div id="ticket-list-container"></div>
+</div>
+
 </div>
 
 <script>
 var D = {
   skt: {
     name: 'SKT (B tv)',
+    prefix: 'SK',
     internet: { '100M': 22000, '500M': 33000, '1G': 38500 },
     wifiCost: 1100,
-    wifiName: 'GIGA WiFi',
-    setTop: 4400,
-    setTopName: '스마트3',
+    // 셋톱 옵션 (단종 시 isDefault/active 전환 → 티켓번호 영향 없음, 요금만 변경)
+    setTopOptions: [
+      { id: 'smart3', name: '스마트3', fee: 4400, isDefault: true, active: true },
+      { id: 'smart3-mini', name: '스마트3 미니', fee: 4400, active: true },
+      { id: 'ai-nugu', name: 'AI NUGU', fee: 6600, active: true },
+      { id: 'sound-max', name: '사운드 맥스', fee: 8800, active: true },
+      { id: 'apple-tv', name: '애플TV', fee: 6600, active: true }
+    ],
+    wifiOptions: [
+      { id: 'giga-wifi', name: 'GIGA WiFi', isDefault: true, active: true },
+      { id: 'giga-wifi-6', name: 'GIGA WiFi 6', active: true },
+      { id: 'giga-wifi-prem', name: 'GIGA WiFi 프리미엄', active: true },
+      { id: 'wings', name: '윙즈', active: true }
+    ],
     // TV 결합 시 인터넷 결합가 (WiFi 유무별)
     tvInternetNoWifi: { '100M': 19800, '500M': 27500, '1G': 33000 },
     tvInternetWithWifi: { '100M': 22000, '500M': 28600, '1G': 34100 },
@@ -701,11 +725,22 @@ var D = {
   },
   kt: {
     name: 'KT (지니TV)',
+    prefix: 'KT',
     internet: { '100M': 22000, '500M': 33000, '1G': 38500 },
     wifiPrice: { '100M': 1100, '500M': 1100, '1G': 0 },
-    wifiName: 'KT GIGA WAVE2',
-    setTop: 4400,
-    setTopName: '기가지니3',
+    setTopOptions: [
+      { id: 'genie-3', name: '기가지니3', fee: 4400, isDefault: true, active: true },
+      { id: 'genie-a', name: '기가지니A', fee: 3300, active: true },
+      { id: 'soundbar', name: '지니TV 올인원 사운드바', fee: 8800, active: true }
+    ],
+    wifiOptions: [
+      { id: 'wave2', name: 'KT GIGA WAVE2', isDefault: true, active: true },
+      { id: 'home-ax', name: 'GIGA WIFI 홈AX', active: true },
+      { id: 'buddy', name: 'GIGA WIFI BUDDY', active: true },
+      { id: 'prem-24', name: 'GIGA WIFI 프리미엄 2.4', active: true },
+      { id: 'prem-24-6e', name: 'GIGA WIFI 프리미엄 2.4 (6E)', active: true },
+      { id: 'prem-48', name: 'GIGA WIFI 프리미엄 4.8', active: true }
+    ],
     // KT WiFi 유무에 따라 결합가 다름 (1G는 WiFi 무료라 동일)
     tvInternetNoWifi: { '100M': 22000, '500M': 27500, '1G': 33000 },
     tvInternetWithWifi: { '100M': 23100, '500M': 28600, '1G': 33000 },
@@ -721,11 +756,18 @@ var D = {
   },
   lgu: {
     name: 'LGU+ (U+tv)',
+    prefix: 'LG',
     internet: { '100M': 22000, '500M': 33000, '1G': 38500 },
     wifiCost: 0,
-    wifiName: '기가와이파이',
-    setTop: 4400,
-    setTopName: 'U+tv UHD4',
+    setTopOptions: [
+      { id: 'uhd4', name: 'U+tv UHD4', fee: 4400, isDefault: true, active: true },
+      { id: 'soundbar-black', name: 'U+tv 사운드바 블랙', fee: 6600, active: true }
+    ],
+    wifiOptions: [
+      { id: 'giga-wifi', name: '기가와이파이', isDefault: true, active: true },
+      { id: 'giga-wifi-6', name: '기가와이파이6', active: true },
+      { id: 'giga-wifi-mesh', name: '기가와이파이 메쉬', active: true }
+    ],
     // LGU+ WiFi 모든 속도 무료이므로 두 값 동일
     tvInternetNoWifi: { '100M': 22000, '500M': 27500, '1G': 33000 },
     tvInternetWithWifi: { '100M': 22000, '500M': 27500, '1G': 33000 },
@@ -741,6 +783,62 @@ var D = {
 };
 
 function fmt(n) { return n.toLocaleString() + '원'; }
+
+// 셋톱/WiFi 기본값 resolve (단종 시 isDefault/active 전환만으로 대응)
+(function resolveDefaults() {
+  for (var k in D) {
+    var d = D[k];
+    if (d.setTopOptions) {
+      var defSt = d.setTopOptions.find(function(o){ return o.isDefault && o.active; })
+                || d.setTopOptions.find(function(o){ return o.active; });
+      if (defSt) { d.setTop = defSt.fee; d.setTopName = defSt.name; }
+    }
+    if (d.wifiOptions) {
+      var defWf = d.wifiOptions.find(function(o){ return o.isDefault && o.active; })
+                || d.wifiOptions.find(function(o){ return o.active; });
+      if (defWf) { d.wifiName = defWf.name; }
+    }
+  }
+})();
+
+// 티켓 = 속도 × TV 조합만 (셋톱/WiFi 독립)
+function pad4(n) { return ('0000' + n).slice(-4); }
+
+function generateTickets() {
+  var tickets = [];
+  var speeds = ['100M', '500M', '1G'];
+  ['skt', 'kt', 'lgu'].forEach(function(key) {
+    var d = D[key];
+    var num = 1;
+    // 인터넷 단독 (TV 없음)
+    speeds.forEach(function(sp) {
+      tickets.push({
+        number: d.prefix + pad4(num++),
+        carrier: key, speed: sp, tvIdx: 0
+      });
+    });
+    // 인터넷+TV 조합
+    for (var i = 1; i < d.tv.length; i++) {
+      speeds.forEach(function(sp) {
+        tickets.push({
+          number: d.prefix + pad4(num++),
+          carrier: key, speed: sp, tvIdx: i
+        });
+      });
+    }
+  });
+  return tickets;
+}
+
+var TICKETS = generateTickets();
+
+function findTicket(carrier, speed, tvIdx) {
+  for (var i = 0; i < TICKETS.length; i++) {
+    var t = TICKETS[i];
+    if (t.carrier === carrier && t.speed === speed && t.tvIdx === tvIdx) return t;
+  }
+  return null;
+}
 
 function updateSetTopInfo() {
   var c = document.getElementById('c-carrier').value;
@@ -809,6 +907,15 @@ function calc() {
   var installPrice = hasTv ? d.install.combo : d.install.solo;
   var html = '';
 
+  // 티켓번호 표시 (속도 × TV만으로 결정)
+  var ticket = findTicket(c, sp, ti);
+  if (ticket) {
+    html += '<div style="background:rgba(99,102,241,0.15);border:1.5px solid #818cf8;border-radius:8px;padding:8px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-size:11px;color:rgba(255,255,255,0.6)">🎫 티켓번호</span>' +
+            '<span style="font-size:16px;font-weight:900;color:#a5b4fc;font-family:\'SF Mono\',Monaco,monospace;letter-spacing:1px">' + ticket.number + '</span>' +
+            '</div>';
+  }
+
   var wifiForSp = d.wifiPrice ? d.wifiPrice[sp] : (typeof d.wifiCost === 'number' ? d.wifiCost : 1100);
 
   if (hasTv) {
@@ -859,6 +966,42 @@ document.getElementById('c-tv').addEventListener('change', calc);
 document.getElementById('c-wifi').addEventListener('change', calc);
 
 init();
+
+// 티켓 리스트 렌더 (기본 WiFi 사용 기준 요금)
+function calcTicketPrice(d, sp, tvIdx) {
+  var hasTv = tvIdx > 0;
+  var wifiForSp = d.wifiPrice ? d.wifiPrice[sp] : (typeof d.wifiCost === 'number' ? d.wifiCost : 1100);
+  if (hasTv) {
+    var netCombo = d.tvInternetWithWifi[sp];
+    var tvBase = d.tv[tvIdx].p;
+    var tvDc = d.tv[tvIdx].dc || 0;
+    return netCombo + (tvBase - tvDc) + (d.setTop || 0);
+  } else {
+    return d.internet[sp] + wifiForSp;
+  }
+}
+
+function renderTicketList() {
+  var badges = { skt: 'b-skt', kt: 'b-kt', lgu: 'b-lgu' };
+  var labels = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' };
+  var html = '';
+  ['skt', 'kt', 'lgu'].forEach(function(key) {
+    var d = D[key];
+    var carrierTickets = TICKETS.filter(function(t){ return t.carrier === key; });
+    html += '<div class="st2" style="margin-top:16px"><span class="badge ' + badges[key] + '">' + labels[key] + '</span> ' + d.name + ' — ' + carrierTickets.length + '개 티켓 (' + carrierTickets[0].number + ' ~ ' + carrierTickets[carrierTickets.length-1].number + ')</div>';
+    html += '<div style="font-size:10px;color:#666;margin-bottom:6px">기본 셋톱: <b>' + d.setTopName + '</b> (' + fmt(d.setTop) + ') · 기본 WiFi: <b>' + d.wifiName + '</b></div>';
+    html += '<table><thead><tr><th>티켓번호</th><th>속도</th><th>TV 상품</th><th>월 요금</th></tr></thead><tbody>';
+    carrierTickets.forEach(function(t) {
+      var tvLabel = t.tvIdx === 0 ? '<span style="color:#999">인터넷 단독</span>' : d.tv[t.tvIdx].n;
+      var price = calcTicketPrice(d, t.speed, t.tvIdx);
+      html += '<tr><td style="font-weight:700;font-family:\'SF Mono\',Monaco,monospace;color:#6366f1">' + t.number + '</td><td><b>' + t.speed + '</b></td><td>' + tvLabel + '</td><td><b>' + fmt(price) + '</b></td></tr>';
+    });
+    html += '</tbody></table>';
+  });
+  html += '<div class="note" style="margin-top:12px">전체 <b>' + TICKETS.length + '개 티켓</b> · 셋톱/WiFi 변경 시 요금만 재계산되고 티켓번호는 유지됨.</div>';
+  document.getElementById('ticket-list-container').innerHTML = html;
+}
+renderTicketList();
 </script>
 
 </div>
