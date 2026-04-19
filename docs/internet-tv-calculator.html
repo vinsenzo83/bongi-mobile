@@ -504,9 +504,16 @@
   <div class="note"><b>결론: 1년 약정이 30~40만원 이상 손해.</b> ⚠️ 단, 설치 12개월 내 중도해지 시 사은품 전액 반환 의무.</div>
 </div>
 
-<!-- ═══ 8. 티켓 조합 리스트 ═══ -->
+<!-- ═══ 8. 사은품 관리 ═══ -->
 <div class="section">
-  <div class="st">🎫 8. 티켓 조합 리스트 (전체 105개)</div>
+  <div class="st">🎁 8. 사은품 관리 (속도 × TV결합별 편집)</div>
+  <div class="note">값 변경 즉시 티켓 리스트·계산기 사은품에 반영. 데모용 — 새로고침 시 초기값으로 복원.</div>
+  <div id="gift-controls"></div>
+</div>
+
+<!-- ═══ 9. 티켓 조합 리스트 ═══ -->
+<div class="section">
+  <div class="st">🎫 9. 티켓 조합 리스트 (전체 105개)</div>
   <div class="note">
     <b>설계 원칙</b>:<br>
     · 티켓번호 = <b>속도 × TV × WiFi 유/무</b>로 결정 (셋톱은 필수 독립, WiFi는 기본 1종 고정)<br>
@@ -1142,6 +1149,40 @@ function renderTicketList() {
 }
 renderTicketList();
 renderDefaultControls();
+
+// 사은품 편집
+function updateGift(carrierKey, bucket, speed, value) {
+  var n = parseInt(String(value).replace(/[^0-9]/g, '')) || 0;
+  if (!D[carrierKey].gift[bucket]) D[carrierKey].gift[bucket] = {};
+  D[carrierKey].gift[bucket][speed] = n;
+  renderTicketList();
+  calc();
+}
+
+function renderGiftControls() {
+  var container = document.getElementById('gift-controls');
+  if (!container) return;
+  var badges = { skt: 'b-skt', kt: 'b-kt', lgu: 'b-lgu' };
+  var labels = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' };
+  var html = '';
+  ['skt', 'kt', 'lgu'].forEach(function(key) {
+    var d = D[key];
+    var g = d.gift || { solo: {}, combo: {} };
+    html += '<div class="st2" style="margin-top:14px"><span class="badge ' + badges[key] + '">' + labels[key] + '</span> ' + d.name + '</div>';
+    html += '<table><thead><tr><th style="width:140px">구분</th><th>100M</th><th>500M</th><th>1G</th></tr></thead><tbody>';
+    [['solo','인터넷 단독'],['combo','인터넷+TV']].forEach(function(b) {
+      html += '<tr><td><b>' + b[1] + '</b></td>';
+      ['100M','500M','1G'].forEach(function(sp) {
+        var v = (g[b[0]] && g[b[0]][sp]) || 0;
+        html += '<td><input type="text" inputmode="numeric" value="' + v.toLocaleString() + '" onchange="updateGift(\'' + key + '\', \'' + b[0] + '\', \'' + sp + '\', this.value); this.value=(parseInt(String(this.value).replace(/[^0-9]/g,\'\')||0).toLocaleString())" style="width:90px;padding:5px 8px;border:1.5px solid #e5e7eb;border-radius:4px;font-size:12px;font-family:inherit;text-align:right"> 원</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+  });
+  container.innerHTML = html;
+}
+renderGiftControls();
 </script>
 
 </div>
