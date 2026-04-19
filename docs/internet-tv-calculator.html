@@ -687,7 +687,7 @@
 <div class="section">
   <div class="st">🛠️ 18. 기본 셋톱/WiFi 전환·단종 시뮬레이터</div>
   <div class="note">
-    <b>⭐ 기본</b> = 현재 티켓 요금 계산에 적용되는 모델 · <b>기본 설정</b> = 클릭 시 해당 모델을 새 기본으로 전환 · <b>단종</b> = 비활성 처리 (기본이면 다음 활성 모델로 자동 이동)<br>
+    <b>⭐ 기본</b> = 현재 티켓 요금 계산에 적용되는 모델 · <b>기본 설정</b> = 클릭 시 해당 모델을 새 기본으로 전환 · <b>단종</b> = 비활성 처리 (기본이면 다음 활성 모델로 자동 이동) · <b>+ 새 모델 추가</b> = 신규 출시 모델 즉시 등록<br>
     모든 전환은 <b>티켓번호 유지 / 요금·리스트만 실시간 재계산</b>. 새로고침 시 초기값으로 복원 (데모).
   </div>
 
@@ -738,10 +738,10 @@ var D = {
       { id: 'apple-tv', name: '애플TV', fee: 6600, active: true }
     ],
     wifiOptions: [
-      { id: 'giga-wifi', name: 'GIGA WiFi', isDefault: true, active: true },
-      { id: 'giga-wifi-6', name: 'GIGA WiFi 6', active: true },
-      { id: 'giga-wifi-prem', name: 'GIGA WiFi 프리미엄', active: true },
-      { id: 'wings', name: '윙즈', active: true }
+      { id: 'giga-wifi', name: 'GIGA WiFi', fees: { '100M': 1100, '500M': 1100, '1G': 1100 }, isDefault: true, active: true },
+      { id: 'giga-wifi-6', name: 'GIGA WiFi 6', fees: { '100M': 1100, '500M': 1100, '1G': 1100 }, active: true },
+      { id: 'giga-wifi-prem', name: 'GIGA WiFi 프리미엄', fees: { '100M': 5500, '500M': 5500, '1G': 5500 }, active: true },
+      { id: 'wings', name: '윙즈', fees: { '100M': 1650, '500M': 1650, '1G': 1650 }, active: true }
     ],
     // TV 결합 시 인터넷 결합가 (WiFi 유무별)
     tvInternetNoWifi: { '100M': 19800, '500M': 27500, '1G': 33000 },
@@ -775,12 +775,12 @@ var D = {
       { id: 'soundbar', name: '지니TV 올인원 사운드바', fee: 8800, active: true }
     ],
     wifiOptions: [
-      { id: 'wave2', name: 'KT GIGA WAVE2', isDefault: true, active: true },
-      { id: 'home-ax', name: 'GIGA WIFI 홈AX', active: true },
-      { id: 'buddy', name: 'GIGA WIFI BUDDY', active: true },
-      { id: 'prem-24', name: 'GIGA WIFI 프리미엄 2.4', active: true },
-      { id: 'prem-24-6e', name: 'GIGA WIFI 프리미엄 2.4 (6E)', active: true },
-      { id: 'prem-48', name: 'GIGA WIFI 프리미엄 4.8', active: true }
+      { id: 'wave2', name: 'KT GIGA WAVE2', fees: { '100M': 1100, '500M': 1100, '1G': 0 }, isDefault: true, active: true },
+      { id: 'home-ax', name: 'GIGA WIFI 홈AX', fees: { '100M': 0, '500M': 1100, '1G': 0 }, active: true },
+      { id: 'buddy', name: 'GIGA WIFI BUDDY', fees: { '100M': 1650, '500M': 1650, '1G': 1650 }, active: true },
+      { id: 'prem-24', name: 'GIGA WIFI 프리미엄 2.4', fees: { '100M': 4400, '500M': 4400, '1G': 4400 }, active: true },
+      { id: 'prem-24-6e', name: 'GIGA WIFI 프리미엄 2.4 (6E)', fees: { '100M': 4400, '500M': 4400, '1G': 4400 }, active: true },
+      { id: 'prem-48', name: 'GIGA WIFI 프리미엄 4.8', fees: { '100M': 4400, '500M': 4400, '1G': 4400 }, active: true }
     ],
     // KT WiFi 유무에 따라 결합가 다름 (1G는 WiFi 무료라 동일)
     tvInternetNoWifi: { '100M': 22000, '500M': 27500, '1G': 33000 },
@@ -809,9 +809,9 @@ var D = {
       { id: 'soundbar-black', name: 'U+tv 사운드바 블랙', fee: 6600, active: true }
     ],
     wifiOptions: [
-      { id: 'giga-wifi', name: '기가와이파이', isDefault: true, active: true },
-      { id: 'giga-wifi-6', name: '기가와이파이6', active: true },
-      { id: 'giga-wifi-mesh', name: '기가와이파이 메쉬', active: true }
+      { id: 'giga-wifi', name: '기가와이파이', fees: { '100M': 0, '500M': 0, '1G': 0 }, isDefault: true, active: true },
+      { id: 'giga-wifi-6', name: '기가와이파이6', fees: { '100M': 0, '500M': 0, '1G': 0 }, active: true },
+      { id: 'giga-wifi-mesh', name: '기가와이파이 메쉬', fees: { '100M': 0, '500M': 0, '1G': 0 }, active: true }
     ],
     // LGU+ WiFi 모든 속도 무료이므로 두 값 동일
     tvInternetNoWifi: { '100M': 22000, '500M': 27500, '1G': 33000 },
@@ -851,7 +851,13 @@ function fmt(n) { return n.toLocaleString() + '원'; }
     if (d.wifiOptions) {
       var defWf = d.wifiOptions.find(function(o){ return o.isDefault && o.active; })
                 || d.wifiOptions.find(function(o){ return o.active; });
-      if (defWf) { d.wifiName = defWf.name; }
+      if (defWf) {
+        d.wifiName = defWf.name;
+        if (defWf.fees) {
+          d.wifiPrice = defWf.fees;
+          d.wifiCost = defWf.fees['100M'];
+        }
+      }
     }
   }
 })();
@@ -1065,7 +1071,13 @@ function setDefaultWifi(carrierKey, optionId) {
   var d = D[carrierKey];
   d.wifiOptions.forEach(function(o) { o.isDefault = (o.id === optionId); });
   var def = d.wifiOptions.find(function(o){ return o.isDefault; });
-  if (def) { d.wifiName = def.name; }
+  if (def) {
+    d.wifiName = def.name;
+    if (def.fees) {
+      d.wifiPrice = def.fees;
+      d.wifiCost = def.fees['100M'];
+    }
+  }
   renderDefaultControls();
   renderTicketList();
   updateWifiUI();
@@ -1115,15 +1127,60 @@ function renderDefaultControls() {
       wfEl.innerHTML = d.wifiOptions.map(function(o) {
         var isDef = o.isDefault && o.active;
         var isDis = !o.active;
+        var feeLabel = o.fees ?
+          ' <span style="font-size:10px;color:#666">(100M ' + fmt(o.fees['100M']) + ' / 500M ' + fmt(o.fees['500M']) + ' / 1G ' + fmt(o.fees['1G']) + ')</span>'
+          : '';
         return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;margin:4px 0;border-radius:6px;' + (isDef ? 'background:#fef3c7;border:1.5px solid #f59e0b' : isDis ? 'background:#f3f4f6;opacity:0.5' : 'background:#f9fafb;border:1.5px solid #e5e7eb') + '">' +
-          '<span style="flex:1;font-size:11px;' + (isDis ? 'text-decoration:line-through' : '') + '"><b>' + o.name + '</b></span>' +
+          '<span style="flex:1;font-size:11px;' + (isDis ? 'text-decoration:line-through' : '') + '"><b>' + o.name + '</b>' + feeLabel + '</span>' +
           (isDef ? '<span style="font-size:10px;color:#d97706;font-weight:700">⭐ 기본</span>' :
             '<button onclick="setDefaultWifi(\'' + key + '\', \'' + o.id + '\')" ' + (isDis ? 'disabled' : '') + ' style="padding:3px 8px;font-size:10px;border:1px solid #6366f1;background:#fff;color:#6366f1;border-radius:4px;cursor:pointer' + (isDis ? ';opacity:0.3;cursor:not-allowed' : '') + '">기본 설정</button>') +
           '<button onclick="toggleActive(\'' + key + '\', \'wifi\', \'' + o.id + '\')" style="padding:3px 8px;font-size:10px;border:1px solid ' + (isDis ? '#16a34a' : '#dc2626') + ';background:#fff;color:' + (isDis ? '#16a34a' : '#dc2626') + ';border-radius:4px;cursor:pointer">' + (isDis ? '복구' : '단종') + '</button>' +
           '</div>';
       }).join('');
+      // 추가 버튼
+      wfEl.innerHTML += '<button onclick="addWifi(\'' + key + '\')" style="margin-top:6px;padding:7px 14px;font-size:11px;border:1.5px dashed #6366f1;background:#fff;color:#6366f1;border-radius:6px;cursor:pointer;width:100%;font-weight:700">+ 새 WiFi 모델 추가</button>';
+    }
+    if (stEl) {
+      // 셋톱 추가 버튼
+      stEl.innerHTML += '<button onclick="addSetTop(\'' + key + '\')" style="margin-top:6px;padding:7px 14px;font-size:11px;border:1.5px dashed #6366f1;background:#fff;color:#6366f1;border-radius:6px;cursor:pointer;width:100%;font-weight:700">+ 새 셋톱 모델 추가</button>';
     }
   });
+}
+
+function addSetTop(carrierKey) {
+  var name = prompt('셋톱박스 이름:');
+  if (!name || !name.trim()) return;
+  var feeStr = prompt('월 임대료 (원, 숫자만):');
+  if (!feeStr) return;
+  var fee = parseInt(feeStr.replace(/[^0-9]/g, ''));
+  if (isNaN(fee)) { alert('유효한 금액을 입력하세요'); return; }
+  D[carrierKey].setTopOptions.push({
+    id: 'custom-' + Date.now(),
+    name: name.trim(),
+    fee: fee,
+    active: true
+  });
+  renderDefaultControls();
+  renderTicketList();
+  calc();
+}
+
+function addWifi(carrierKey) {
+  var name = prompt('WiFi 모델 이름:');
+  if (!name || !name.trim()) return;
+  var f100 = parseInt((prompt('100M 월 요금 (원, 무료=0):') || '0').replace(/[^0-9]/g, ''));
+  var f500 = parseInt((prompt('500M 월 요금 (원, 무료=0):') || '0').replace(/[^0-9]/g, ''));
+  var f1g = parseInt((prompt('1G 월 요금 (원, 무료=0):') || '0').replace(/[^0-9]/g, ''));
+  if (isNaN(f100) || isNaN(f500) || isNaN(f1g)) { alert('유효한 금액을 입력하세요'); return; }
+  D[carrierKey].wifiOptions.push({
+    id: 'custom-' + Date.now(),
+    name: name.trim(),
+    fees: { '100M': f100, '500M': f500, '1G': f1g },
+    active: true
+  });
+  renderDefaultControls();
+  renderTicketList();
+  calc();
 }
 
 // 티켓번호 조회 기능
