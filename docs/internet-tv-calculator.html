@@ -1147,40 +1147,90 @@ function renderDefaultControls() {
   });
 }
 
+function parseFee(str) {
+  if (!str) return 0;
+  return parseInt(String(str).replace(/[^0-9]/g, '')) || 0;
+}
+
 function addSetTop(carrierKey) {
-  var name = prompt('셋톱박스 이름:');
-  if (!name || !name.trim()) return;
-  var feeStr = prompt('월 임대료 (원, 숫자만):');
-  if (!feeStr) return;
-  var fee = parseInt(feeStr.replace(/[^0-9]/g, ''));
-  if (isNaN(fee)) { alert('유효한 금액을 입력하세요'); return; }
-  D[carrierKey].setTopOptions.push({
-    id: 'custom-' + Date.now(),
-    name: name.trim(),
-    fee: fee,
-    active: true
+  openAddModal({
+    title: '📦 새 셋톱박스 추가 — ' + D[carrierKey].name,
+    fields: [
+      { name: 'name', label: '모델명', placeholder: '예: 스마트4' },
+      { name: 'fee', label: '월 임대료 (원)', placeholder: '예: 4400', type: 'money' }
+    ],
+    onSubmit: function(v) {
+      if (!v.name) { alert('모델명을 입력하세요'); return false; }
+      D[carrierKey].setTopOptions.push({
+        id: 'custom-' + Date.now(),
+        name: v.name,
+        fee: parseFee(v.fee),
+        active: true
+      });
+      renderDefaultControls();
+      renderTicketList();
+      calc();
+      return true;
+    }
   });
-  renderDefaultControls();
-  renderTicketList();
-  calc();
 }
 
 function addWifi(carrierKey) {
-  var name = prompt('WiFi 모델 이름:');
-  if (!name || !name.trim()) return;
-  var f100 = parseInt((prompt('100M 월 요금 (원, 무료=0):') || '0').replace(/[^0-9]/g, ''));
-  var f500 = parseInt((prompt('500M 월 요금 (원, 무료=0):') || '0').replace(/[^0-9]/g, ''));
-  var f1g = parseInt((prompt('1G 월 요금 (원, 무료=0):') || '0').replace(/[^0-9]/g, ''));
-  if (isNaN(f100) || isNaN(f500) || isNaN(f1g)) { alert('유효한 금액을 입력하세요'); return; }
-  D[carrierKey].wifiOptions.push({
-    id: 'custom-' + Date.now(),
-    name: name.trim(),
-    fees: { '100M': f100, '500M': f500, '1G': f1g },
-    active: true
+  openAddModal({
+    title: '📡 새 WiFi 모델 추가 — ' + D[carrierKey].name,
+    fields: [
+      { name: 'name', label: '모델명', placeholder: '예: GIGA WiFi 7' },
+      { name: 'fee100', label: '100M 월 요금 (원, 무료=0)', placeholder: '0', type: 'money' },
+      { name: 'fee500', label: '500M 월 요금 (원, 무료=0)', placeholder: '0', type: 'money' },
+      { name: 'fee1g', label: '1G 월 요금 (원, 무료=0)', placeholder: '0', type: 'money' }
+    ],
+    onSubmit: function(v) {
+      if (!v.name) { alert('모델명을 입력하세요'); return false; }
+      D[carrierKey].wifiOptions.push({
+        id: 'custom-' + Date.now(),
+        name: v.name,
+        fees: { '100M': parseFee(v.fee100), '500M': parseFee(v.fee500), '1G': parseFee(v.fee1g) },
+        active: true
+      });
+      renderDefaultControls();
+      renderTicketList();
+      calc();
+      return true;
+    }
   });
-  renderDefaultControls();
-  renderTicketList();
-  calc();
+}
+
+function openAddModal(config) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+  var modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:12px;padding:20px 24px;width:380px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)';
+  var inputsHtml = config.fields.map(function(f) {
+    return '<div style="margin-bottom:12px"><label style="display:block;font-size:11px;font-weight:700;color:#1a2744;margin-bottom:4px">' + f.label + '</label>' +
+      '<input data-field="' + f.name + '" placeholder="' + (f.placeholder||'') + '" ' +
+      (f.type==='money' ? 'inputmode="numeric"' : '') +
+      ' style="width:100%;padding:8px 10px;border:1.5px solid #e5e7eb;border-radius:6px;font-size:13px;font-family:inherit"></div>';
+  }).join('');
+  modal.innerHTML = '<div style="font-size:14px;font-weight:900;color:#1a2744;margin-bottom:14px">' + config.title + '</div>' +
+    inputsHtml +
+    '<div style="display:flex;gap:8px;margin-top:14px">' +
+    '<button data-act="cancel" style="flex:1;padding:9px;border:1.5px solid #e5e7eb;background:#fff;color:#555;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">취소</button>' +
+    '<button data-act="submit" style="flex:1;padding:9px;border:none;background:#6366f1;color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">저장</button>' +
+    '</div>';
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  function close() { document.body.removeChild(overlay); }
+  modal.querySelector('[data-act="cancel"]').onclick = close;
+  modal.querySelector('[data-act="submit"]').onclick = function() {
+    var v = {};
+    config.fields.forEach(function(f) {
+      v[f.name] = modal.querySelector('[data-field="' + f.name + '"]').value.trim();
+    });
+    if (config.onSubmit(v) !== false) close();
+  };
+  overlay.onclick = function(e) { if (e.target === overlay) close(); };
+  var firstInput = modal.querySelector('input');
+  if (firstInput) firstInput.focus();
 }
 
 // 티켓번호 조회 기능
