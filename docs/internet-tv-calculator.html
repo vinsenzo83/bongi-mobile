@@ -507,8 +507,11 @@
 <!-- ═══ 8. 사은품 관리 ═══ -->
 <div class="section">
   <div class="st">🎁 8. 사은품 관리 (속도 × TV결합별 편집)</div>
-  <div class="note">값 변경 즉시 티켓 리스트·계산기 사은품에 반영. 데모용 — 새로고침 시 초기값으로 복원.</div>
+  <div class="note">값 변경 즉시 티켓 리스트·계산기 사은품에 반영. 변경 이력은 브라우저에 저장 (localStorage).</div>
   <div id="gift-controls"></div>
+
+  <div class="st2" style="margin-top:18px">📜 변경 이력 (최근 50건)</div>
+  <div id="gift-history"></div>
 </div>
 
 <!-- ═══ 9. 티켓 조합 리스트 ═══ -->
@@ -1150,13 +1153,78 @@ function renderTicketList() {
 renderTicketList();
 renderDefaultControls();
 
-// 사은품 편집
+// 사은품 편집 + 이력 관리
+var GIFT_HISTORY_KEY = 'bongi-gift-history';
+var GIFT_HISTORY = [];
+try { GIFT_HISTORY = JSON.parse(localStorage.getItem(GIFT_HISTORY_KEY) || '[]'); } catch (e) { GIFT_HISTORY = []; }
+
+function saveGiftHistory(entry) {
+  GIFT_HISTORY.unshift(entry);
+  if (GIFT_HISTORY.length > 50) GIFT_HISTORY = GIFT_HISTORY.slice(0, 50);
+  try { localStorage.setItem(GIFT_HISTORY_KEY, JSON.stringify(GIFT_HISTORY)); } catch (e) {}
+}
+
+function nowKst() {
+  var d = new Date();
+  var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' +
+         pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+
 function updateGift(carrierKey, bucket, speed, value) {
   var n = parseInt(String(value).replace(/[^0-9]/g, '')) || 0;
   if (!D[carrierKey].gift[bucket]) D[carrierKey].gift[bucket] = {};
+  var old = D[carrierKey].gift[bucket][speed] || 0;
+  if (old === n) return;
   D[carrierKey].gift[bucket][speed] = n;
+  saveGiftHistory({
+    at: nowKst(),
+    carrier: carrierKey,
+    bucket: bucket,
+    speed: speed,
+    from: old,
+    to: n
+  });
   renderTicketList();
+  renderGiftHistory();
   calc();
+}
+
+function renderGiftHistory() {
+  var el = document.getElementById('gift-history');
+  if (!el) return;
+  if (GIFT_HISTORY.length === 0) {
+    el.innerHTML = '<div class="note" style="text-align:center;color:#999">변경 이력 없음</div>';
+    return;
+  }
+  var labels = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' };
+  var badges = { skt: 'b-skt', kt: 'b-kt', lgu: 'b-lgu' };
+  var bucketLabels = { solo: '인터넷 단독', combo: '인터넷+TV' };
+  var html = '<table><thead><tr><th>일시</th><th>통신사</th><th>구분</th><th>속도</th><th>이전</th><th>변경 후</th><th>증감</th></tr></thead><tbody>';
+  GIFT_HISTORY.forEach(function(h) {
+    var diff = h.to - h.from;
+    var diffStr = diff > 0 ? '+' + fmt(diff) : diff < 0 ? '-' + fmt(-diff) : '0원';
+    var diffColor = diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#999';
+    html += '<tr>' +
+      '<td style="font-size:10px;color:#666">' + h.at + '</td>' +
+      '<td><span class="badge ' + badges[h.carrier] + '">' + labels[h.carrier] + '</span></td>' +
+      '<td>' + bucketLabels[h.bucket] + '</td>' +
+      '<td><b>' + h.speed + '</b></td>' +
+      '<td style="color:#999">' + fmt(h.from) + '</td>' +
+      '<td style="color:#d97706;font-weight:700">' + fmt(h.to) + '</td>' +
+      '<td style="color:' + diffColor + ';font-weight:700">' + diffStr + '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table>';
+  html += '<button onclick="clearGiftHistory()" style="margin-top:6px;padding:5px 12px;font-size:11px;border:1px solid #dc2626;color:#dc2626;background:#fff;border-radius:4px;cursor:pointer">이력 초기화</button>';
+  el.innerHTML = html;
+}
+
+function clearGiftHistory() {
+  if (!confirm('변경 이력을 모두 삭제하시겠습니까?')) return;
+  GIFT_HISTORY = [];
+  try { localStorage.setItem(GIFT_HISTORY_KEY, '[]'); } catch (e) {}
+  renderGiftHistory();
 }
 
 function renderGiftControls() {
@@ -1183,6 +1251,7 @@ function renderGiftControls() {
   container.innerHTML = html;
 }
 renderGiftControls();
+renderGiftHistory();
 </script>
 
 </div>
