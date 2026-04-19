@@ -9,7 +9,8 @@
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
     "postinstall": "cd client && npm install",
-    "build": "cd client && npm run build",
+    "build": "cd client && npm run build && cd .. && npm run sync:docs",
+    "sync:docs": "mkdir -p server/public/docs && cp docs/*.html server/public/docs/",
     "start": "cd server && node index.js",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install"
   },
