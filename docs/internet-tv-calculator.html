@@ -239,7 +239,7 @@
   <div class="st">1. 인터넷 · WiFi</div>
 
   <div class="st2">① 인터넷 단독 요금 (3사 공통)</div>
-  <div class="note"><b>100M 22,000원 · 500M 33,000원 · 1G 38,500원</b> (3년 약정, 부가세 포함) · TV 결합 및 WiFi 유무별 상세 결합가는 <b>계산기</b> / <b>섹션 8 티켓 리스트</b>에서 확인</div>
+  <div class="note"><b>100M 22,000원 · 500M 33,000원 · 1G 38,500원</b> (3년 약정, 부가세 포함) · TV 결합 및 WiFi 유무별 상세 결합가는 <b>계산기</b> / <b>섹션 9 티켓 리스트</b>에서 확인</div>
 
   <div class="st2" style="margin-top:18px">② WiFi 공유기 (기본 모델 선택 · 단종 · 신규 추가)</div>
   <div class="note">셀렉트박스로 기본 전환 즉시 반영 → 모든 티켓 요금 실시간 재계산 · 티켓번호 유지</div>
@@ -903,7 +903,10 @@ function toggleActive(carrierKey, type, optionId) {
       arr.forEach(function(o){ o.isDefault = false; });
       next.isDefault = true;
       if (type === 'settop') { d.setTop = next.fee; d.setTopName = next.name; }
-      else { d.wifiName = next.name; }
+      else {
+        d.wifiName = next.name;
+        if (next.fees) { d.wifiPrice = next.fees; d.wifiCost = next.fees['100M']; }
+      }
     }
   }
   renderDefaultControls();
