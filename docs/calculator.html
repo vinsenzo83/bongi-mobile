@@ -149,7 +149,7 @@
       <div class="calc-label">결합 종류 (택 1)</div>
       <select class="calc-select" id="c-bundle">
         <option value="home">요즘우리집결합</option>
-        <option value="family">요즘가족결합</option>
+        <option value="family">요즘가족결합 (무선결합)</option>
       </select>
     </div>
     <div class="calc-group" id="c-lines-group" style="display:none">
@@ -948,7 +948,7 @@ function calc() {
     var finalInet = inetAfterFamily + tvAfterFamily + setTopFee;
 
     html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(34,197,94,0.15);border:1.5px solid #4ade80;border-radius:8px">' +
-      '<div style="font-size:12px;color:#86efac;font-weight:800;margin-bottom:8px">👨‍👩‍👧 섹터 2 — 요즘가족결합 적용 (' + lines + '명 결합 · ' + sp + ' 기준)</div>' +
+      '<div style="font-size:12px;color:#86efac;font-weight:800;margin-bottom:8px">👨‍👩‍👧 섹터 2 — 요즘가족결합 (무선결합) 적용 (' + lines + '명 결합 · ' + sp + ' 기준)</div>' +
       // 인터넷
       '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi) + '</span></div>' +
       '<div class="calc-line discount"><span class="l">요즘가족결합 인터넷 할인 (요즘우리집 대체)</span><span class="v">-' + fmt(famInet) + '</span></div>' +
