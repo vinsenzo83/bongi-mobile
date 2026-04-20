@@ -409,7 +409,10 @@
   </table>
 
   <div class="st2" style="margin-top:20px"><span class="badge b-lgu">LGU+</span> 참쉬운 가족결합 / 투게더 결합</div>
-  <div class="note">85,000원 이상 요금제 + 2명 이상 → 투게더 결합 / 그 이하 → 참쉬운 가족결합.</div>
+  <div class="note">
+    · <b>참쉬운</b>: 2회선부터 결합 · 일반 요금제 대상<br>
+    · <b>투게더</b>: 2회선부터 결합 · 85,000원 이상 고가 요금제 전용 (100M 결합 불가)
+  </div>
   <table>
     <thead><tr><th>결합</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
     <tbody>
@@ -738,7 +741,7 @@ var D = {
       { id: 'giga-wifi-mesh', name: '기가와이파이 메쉬', fees: { '100M': 0, '500M': 0, '1G': 0 }, active: true }
     ],
     bundle: {
-      // 참쉬운 가족결합 (2~4+ 회선, 월요금 구간 × 회선수)
+      // 참쉬운 가족결합 (2회선부터)
       chweyswun: {
         internet: { '100M': 5500, '500M': 9900, '1G': 13200 },
         planLabels: ['69,000원 미만', '69,000원 이상', '88,000원 이상'],
@@ -1116,15 +1119,15 @@ function calc() {
     var lguData = isChweyswun ? d.bundle.chweyswun : d.bundle.together;
     var lguInetDc = lguData.internet[sp] || 0;
     var lines = parseInt(document.getElementById('c-lines').value) || 2;
-    var linesIdx = Math.min(lines, 4) - 2;  // 2→0, 3→1, 4+→2
+    var idx = Math.min(lines, 4) - 2;  // 2→0, 3→1, 4+→2
     var lguMobDc = 0;
     var planLabel = '';
     if (isChweyswun) {
       var planIdx = parseInt(document.getElementById('c-range').value) || 0;
-      lguMobDc = lguData.mobile[planIdx][linesIdx] || 0;
+      lguMobDc = lguData.mobile[planIdx][idx] || 0;
       planLabel = lguData.planLabels[planIdx];
     } else {
-      lguMobDc = lguData.mobile[linesIdx] || 0;
+      lguMobDc = lguData.mobile[idx] || 0;
       planLabel = '85,000원 이상 고가요금제';
     }
 
