@@ -153,13 +153,13 @@
       </select>
     </div>
     <div class="calc-group" id="c-lines-group" style="display:none">
-      <div class="calc-label">결합 인원수</div>
+      <div class="calc-label">지정할인 회선수</div>
       <select class="calc-select" id="c-lines">
-        <option value="1">1인 결합</option>
-        <option value="2">2인 결합</option>
-        <option value="3">3인 결합</option>
-        <option value="4">4인 결합</option>
-        <option value="5">5인 결합</option>
+        <option value="1">지정할인 1회선</option>
+        <option value="2">지정할인 2회선</option>
+        <option value="3">지정할인 3회선</option>
+        <option value="4">지정할인 4회선</option>
+        <option value="5">지정할인 5회선</option>
       </select>
     </div>
   </div>
@@ -376,21 +376,21 @@
     · 인터넷 할인은 대체 관계 (요즘가족결합 선택하면 요즘우리집결합 인터넷 할인은 적용 안 됨)
   </div>
 
-  <div class="st2" style="margin-top:18px">표 ② 요즘가족결합 무선(휴대폰) 할인 · 인당 × 인수 (속도 무관)</div>
+  <div class="st2" style="margin-top:18px">표 ② 요즘가족결합 무선(휴대폰) 할인 · 회선당 × 지정할인 회선수 (속도 무관)</div>
   <table>
-    <thead><tr><th>결합 인원</th><th>인당 할인</th><th>총 할인 (인당 × 인수)</th></tr></thead>
+    <thead><tr><th>지정할인 회선수</th><th>회선당 할인</th><th>총 할인 (회선당 × 회선수)</th></tr></thead>
     <tbody>
-      <tr><td><b>1인 결합시</b></td><td>3,500원</td><td style="font-weight:700">3,500원</td></tr>
-      <tr><td><b>2인 결합시</b></td><td>3,500원</td><td style="font-weight:700">7,000원</td></tr>
-      <tr><td><b>3인 결합시</b></td><td>6,000원</td><td style="color:#dc2626;font-weight:700">18,000원</td></tr>
-      <tr><td><b>4인 결합시</b></td><td>4,500원</td><td style="color:#dc2626;font-weight:700">18,000원</td></tr>
-      <tr><td><b>5인 결합시</b></td><td>3,600원</td><td style="color:#dc2626;font-weight:700">18,000원</td></tr>
+      <tr><td><b>지정할인 1회선</b></td><td>3,500원</td><td style="font-weight:700">3,500원</td></tr>
+      <tr><td><b>지정할인 2회선</b></td><td>3,500원</td><td style="font-weight:700">7,000원</td></tr>
+      <tr><td><b>지정할인 3회선</b></td><td>6,000원</td><td style="color:#dc2626;font-weight:700">18,000원</td></tr>
+      <tr><td><b>지정할인 4회선</b></td><td>4,500원</td><td style="color:#dc2626;font-weight:700">18,000원</td></tr>
+      <tr><td><b>지정할인 5회선</b></td><td>3,600원</td><td style="color:#dc2626;font-weight:700">18,000원</td></tr>
     </tbody>
   </table>
   <div class="note">
-    · <b>인당 할인액은 인수에 따라 다름</b> (1·2인 3,500 / 3인 6,000 / 4인 4,500 / 5인 3,600)<br>
-    · 총 할인 = 인당 × 인수 (3~5인은 총 18,000원 고정, 인당 금액만 달라짐)<br>
-    · 계산기에서 요즘가족결합 선택 → 인원수 드롭다운 → 자동 적용
+    · <b>회선당 할인액은 지정할인 회선수에 따라 다름</b> (1·2회선 3,500 / 3회선 6,000 / 4회선 4,500 / 5회선 3,600)<br>
+    · 총 할인 = 회선당 × 지정할인 회선수 (3~5회선은 총 18,000원 고정, 회선당 금액만 달라짐)<br>
+    · 계산기에서 요즘가족결합 선택 → 지정할인 회선수 드롭다운 → 자동 적용
   </div>
 
   <div class="st2">온가족할인 (가입년수 기반 추가 할인 — 2025.08.31 이후 기준)</div>
@@ -939,7 +939,7 @@ function calc() {
     var finalInet = inetAfterFamily + tvAfterFamily + setTopFee;
 
     html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(34,197,94,0.15);border:1.5px solid #4ade80;border-radius:8px">' +
-      '<div style="font-size:12px;color:#86efac;font-weight:800;margin-bottom:8px">👨‍👩‍👧 섹터 2 — 요즘가족결합 적용 (' + lines + '인 결합)</div>' +
+      '<div style="font-size:12px;color:#86efac;font-weight:800;margin-bottom:8px">👨‍👩‍👧 섹터 2 — 요즘가족결합 적용 (지정할인 ' + lines + '회선)</div>' +
       // 인터넷
       '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi) + '</span></div>' +
       '<div class="calc-line discount"><span class="l">요즘가족결합 인터넷 할인 (요즘우리집 대체)</span><span class="v">-' + fmt(famInet) + '</span></div>' +
@@ -954,8 +954,8 @@ function calc() {
     html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#86efac">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#4ade80;font-size:20px">' + fmt(finalInet) + '</span></div>' +
       // 무선
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#86efac;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
-      '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '인 결합시)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
-      '<div class="calc-line sub"><span class="l">· 인당 ' + fmt(perPerson) + '원 × ' + lines + '인 = 휴대폰 고지서 매월 -' + fmt(mobDc) + '</span><span class="v"></span></div>' +
+      '<div class="calc-line discount"><span class="l">휴대폰 할인 (지정할인 ' + lines + '회선)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
+      '<div class="calc-line sub"><span class="l">· 회선당 ' + fmt(perPerson) + '원 × ' + lines + '회선 = 휴대폰 고지서 매월 -' + fmt(mobDc) + '</span><span class="v"></span></div>' +
       '</div>';
   }
 
