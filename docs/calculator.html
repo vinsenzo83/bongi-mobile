@@ -737,6 +737,24 @@ var D = {
       { id: 'giga-wifi-6', name: '기가와이파이6', fees: { '100M': 0, '500M': 0, '1G': 0 }, active: true },
       { id: 'giga-wifi-mesh', name: '기가와이파이 메쉬', fees: { '100M': 0, '500M': 0, '1G': 0 }, active: true }
     ],
+    bundle: {
+      // 참쉬운 가족결합 (2~4+ 회선, 월요금 구간 × 회선수)
+      chweyswun: {
+        internet: { '100M': 5500, '500M': 9900, '1G': 13200 },
+        planLabels: ['69,000원 미만', '69,000원 이상', '88,000원 이상'],
+        // [2회선, 3회선, 4회선+]
+        mobile: [
+          [2200, 3300, 4400],  // 69,000 미만
+          [3300, 5500, 6600],  // 69,000 이상
+          [4400, 6600, 8800]   // 88,000 이상
+        ]
+      },
+      // 투게더 결합 (85,000원 이상 고가요금제 · 100M 결합 불가)
+      together: {
+        internet: { '100M': 0, '500M': 11000, '1G': 11000 },
+        mobile: [10000, 14000, 20000]  // 2회선, 3회선, 4+회선
+      }
+    },
     // LGU+ WiFi 모든 속도 무료이므로 두 값 동일
     tvInternetNoWifi: { '100M': 22000, '500M': 27500, '1G': 33000 },
     tvInternetWithWifi: { '100M': 22000, '500M': 27500, '1G': 33000 },
@@ -872,6 +890,10 @@ function updateBundleUI() {
     opts = '<option value="home">TV만 결합 (기본)</option>' +
            '<option value="kt-total">총액 결합할인 (중복)</option>' +
            '<option value="kt-fixed">정액 결합할인 (중복)</option>';
+  } else if (c === 'lgu') {
+    opts = '<option value="home">TV 결합 (기본)</option>' +
+           '<option value="lgu-chweyswun">참쉬운 가족결합 (무선결합)</option>' +
+           '<option value="lgu-together">투게더 결합 (고가요금제)</option>';
   } else {
     opts = '<option value="home">TV 결합 (기본)</option>';
     rangeSel.innerHTML = '';
@@ -891,16 +913,33 @@ function updateRangeUI() {
   linesGroup.style.display = 'none';
   rangeGroup.style.display = 'none';
 
+  // 회선수 드롭다운 기본 (SKT 1~5)
+  var linesSel = document.getElementById('c-lines');
+  var resetLines = function(html) {
+    linesSel.innerHTML = html;
+  };
+
   if (c === 'skt' && bundle === 'family') {
+    resetLines('<option value="1">1명 결합</option><option value="2">2명 결합</option><option value="3">3명 결합</option><option value="4">4명 결합</option><option value="5">5명 결합</option>');
     linesGroup.style.display = '';
   } else if (c === 'kt' && (bundle === 'kt-total' || bundle === 'kt-fixed')) {
     var ranges = (bundle === 'kt-total')
       ? D.kt.bundle.ranges_total
       : D.kt.bundle.ranges_fixed;
     rangeSel.innerHTML = ranges.map(function(r, i) {
-      return '<option value="' + i + '">' + r + '원</option>';
+      return '<option value="' + i + '">' + r + '</option>';
     }).join('');
     rangeGroup.style.display = '';
+  } else if (c === 'lgu' && bundle === 'lgu-chweyswun') {
+    rangeSel.innerHTML = D.lgu.bundle.chweyswun.planLabels.map(function(p, i) {
+      return '<option value="' + i + '">휴대폰 월요금 ' + p + '</option>';
+    }).join('');
+    rangeGroup.style.display = '';
+    resetLines('<option value="2">2회선</option><option value="3">3회선</option><option value="4">4회선+</option>');
+    linesGroup.style.display = '';
+  } else if (c === 'lgu' && bundle === 'lgu-together') {
+    resetLines('<option value="2">2회선</option><option value="3">3회선</option><option value="4">4회선+</option>');
+    linesGroup.style.display = '';
   }
 }
 
@@ -1068,6 +1107,53 @@ function calc() {
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#93c5fd;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + rangeLabels[rangeIdx] + ' 구간)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
       (mobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 구간은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(mobDc) + '</span><span class="v"></span></div>') +
+      '</div>';
+  }
+
+  // LGU+ 참쉬운 가족결합 / 투게더 결합
+  if (c === 'lgu' && (bundleType === 'lgu-chweyswun' || bundleType === 'lgu-together')) {
+    var isChweyswun = bundleType === 'lgu-chweyswun';
+    var lguData = isChweyswun ? d.bundle.chweyswun : d.bundle.together;
+    var lguInetDc = lguData.internet[sp] || 0;
+    var lines = parseInt(document.getElementById('c-lines').value) || 2;
+    var linesIdx = Math.min(lines, 4) - 2;  // 2→0, 3→1, 4+→2
+    var lguMobDc = 0;
+    var planLabel = '';
+    if (isChweyswun) {
+      var planIdx = parseInt(document.getElementById('c-range').value) || 0;
+      lguMobDc = lguData.mobile[planIdx][linesIdx] || 0;
+      planLabel = lguData.planLabels[planIdx];
+    } else {
+      lguMobDc = lguData.mobile[linesIdx] || 0;
+      planLabel = '85,000원 이상 고가요금제';
+    }
+
+    var netSingleWithWifi = netBase + (wf ? wifiForSp : 0);
+    var inetAfter = netSingleWithWifi - lguInetDc;
+    var tvBaseVal = hasTv ? d.tv[ti].p : 0;
+    var tvBaseDc = hasTv ? (d.tv[ti].dc || 0) : 0;
+    var tvAfter = tvBaseVal - tvBaseDc;
+    var setTopFee = hasTv ? (d.setTop || 0) : 0;
+    var finalInet = inetAfter + tvAfter + setTopFee;
+
+    html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(236,72,153,0.12);border:1.5px solid #f472b6;border-radius:8px">' +
+      '<div style="font-size:12px;color:#f9a8d4;font-weight:800;margin-bottom:8px">💕 섹터 2 — LGU+ ' + (isChweyswun ? '참쉬운 가족결합' : '투게더 결합') + ' (' + lines + '회선' + (isChweyswun ? ' · ' + planLabel : '') + ')</div>';
+    if (lguInetDc === 0) {
+      html += '<div class="calc-line sub" style="color:#fca5a5">· 이 속도는 해당 결합 인터넷 할인 없음 (투게더 100M 결합 불가)</div>';
+    }
+    html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi) + '</span></div>' +
+      '<div class="calc-line discount"><span class="l">' + (isChweyswun ? '참쉬운' : '투게더') + ' 인터넷 할인 (기본 TV결합 할인 대체)</span><span class="v">-' + fmt(lguInetDc) + '</span></div>' +
+      '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfter) + '</span></div>';
+    if (hasTv) {
+      html += '<div class="calc-line" style="margin-top:6px"><span class="l">' + d.tv[ti].n.split('(')[0].trim() + '</span><span class="v">' + fmt(tvBaseVal) + '</span></div>' +
+        '<div class="calc-line discount"><span class="l">TV 결합 할인</span><span class="v">-' + fmt(tvBaseDc) + '</span></div>' +
+        '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfter) + '</span></div>' +
+        '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee) + '</span></div>';
+    }
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#f9a8d4">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#ec4899;font-size:20px">' + fmt(finalInet) + '</span></div>' +
+      '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#f9a8d4;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
+      '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선)</span><span class="v">-' + fmt(lguMobDc) + '</span></div>' +
+      (lguMobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 조건은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(lguMobDc) + '</span><span class="v"></span></div>') +
       '</div>';
   }
 
