@@ -603,6 +603,7 @@ var D = {
     bundle: {
       family: {
         internet: { '100M': 4400, '500M': 11000, '1G': 13200 },
+        iptv: 1100,
         mobile: {
           '100M':  { 1: 3500, 2: 7000, 3: 18000, 4: 18000, 5: 18000 },
           '500M+': { 1: 3500, 2: 7000, 3: 18000, 4: 24000, 5: 24000 }
@@ -894,14 +895,17 @@ function calc() {
 
   if (bundleType === 'family' && d.bundle && d.bundle.family) {
     var famInet = d.bundle.family.internet[sp];
+    var famIptv = hasTv ? (d.bundle.family.iptv || 0) : 0;
     var lines = parseInt(document.getElementById('c-lines').value) || 1;
     var mobKey = (sp === '100M') ? '100M' : '500M+';
     var mobDc = d.bundle.family.mobile[mobKey][lines] || 0;
+    var totalAdd = famInet + famIptv + mobDc;
     html += '<div style="margin-top:10px;padding:10px 12px;background:rgba(34,197,94,0.15);border:1.5px solid #4ade80;border-radius:8px">' +
-      '<div style="font-size:11px;color:#86efac;font-weight:700;margin-bottom:6px">👨‍👩‍👧 요즘가족결합 추가 할인 (요즘우리집결합 대체)</div>' +
-      '<div class="calc-line discount"><span class="l">인터넷 추가 할인 (' + sp + ')</span><span class="v">-' + fmt(famInet) + '</span></div>' +
+      '<div style="font-size:11px;color:#86efac;font-weight:700;margin-bottom:6px">👨‍👩‍👧 요즘가족결합 (인터넷 할인은 대체 · TV 할인 유지)</div>' +
+      '<div class="calc-line discount"><span class="l">인터넷 할인 (' + sp + ')</span><span class="v">-' + fmt(famInet) + '</span></div>' +
+      (hasTv ? '<div class="calc-line discount"><span class="l">IPTV 추가 할인</span><span class="v">-' + fmt(famIptv) + '</span></div>' : '') +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선, ' + mobKey + ' 기준)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
-      '<div class="calc-line sub"><span class="l">→ 총 추가 할인</span><span class="v" style="color:#86efac">-' + fmt(famInet + mobDc) + '</span></div>' +
+      '<div class="calc-line sub"><span class="l">→ 총 할인</span><span class="v" style="color:#86efac">-' + fmt(totalAdd) + '</span></div>' +
       '</div>';
   }
 
