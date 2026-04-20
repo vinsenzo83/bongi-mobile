@@ -165,6 +165,38 @@
     </div>
   </div>
 
+  <!-- 프리미엄 가족결합 전용 입력 -->
+  <div id="c-premium-group" style="display:none;background:rgba(251,191,36,0.1);border:1.5px solid rgba(251,191,36,0.4);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+    <div style="font-size:11px;font-weight:800;color:#fbbf24;margin-bottom:8px">💎 프리미엄 가족결합 입력</div>
+    <div class="calc-row" style="margin-bottom:8px">
+      <div class="calc-group">
+        <div class="calc-label">프리미엄 요금제 (77,000원↑)</div>
+        <select class="calc-select" id="c-premium-plan"></select>
+      </div>
+      <div class="calc-group">
+        <div class="calc-label">프리미엄 회선수</div>
+        <select class="calc-select" id="c-premium-lines">
+          <option value="1">1명 (대표자 외 1명)</option>
+          <option value="2">2명 (대표자 외 2명)</option>
+          <option value="3">3명 (대표자 외 3명)</option>
+          <option value="4">4명 (대표자 외 4명)</option>
+        </select>
+      </div>
+    </div>
+    <div class="calc-row">
+      <div class="calc-group">
+        <div class="calc-label">대표자 + 일반 구성원 합산액 (총액결합 대상)</div>
+        <input type="number" class="calc-select" id="c-premium-total" placeholder="예: 89000 (대표자 요금제만) / 154780 (대표 + 32890×2 등)" style="color:#fff" value="89000">
+      </div>
+    </div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:8px;line-height:1.5">
+      • 대표명의자는 무조건 총액결합 적용<br>
+      • 77,000원↑ 구성원만 프리미엄 할인 대상<br>
+      • 77,000원 미만 구성원은 총액결합에 포함 (합산액에 더하기)<br>
+      • 5,500원은 인터넷 또는 대표자 휴대폰에 적용 (총 할인액 동일)
+    </div>
+  </div>
+
   <div class="calc-result" id="c-result"></div>
 </div>
 
@@ -723,6 +755,20 @@ var D = {
       fixed: {
         internet: [5500, 5500, 5500, 5500],
         mobile:   [0, 3000, 5000, 7000]
+      },
+      // 프리미엄 가족결합 (2회선+ & 77,000원↑ 요금제)
+      premium: {
+        internet: 5500,  // 인터넷 or 대표자 휴대폰 고정 할인
+        planOptions: [
+          { v: 80000, label: '80,000원 (5G 슈퍼플랜 베이직)', dc: 20000 },
+          { v: 87890, label: '87,890원 (데이터선택 87.8)', dc: 22000 },
+          { v: 89000, label: '89,000원 (데이터ON 프리미엄)', dc: 22250 },
+          { v: 90000, label: '90,000원 (5G 슈퍼플랜 베이직 Plus / 초이스)', dc: 22500 },
+          { v: 100000, label: '100,000원 (5G 슈퍼플랜 스페셜)', dc: 25000 },
+          { v: 109000, label: '109,000원 (데이터선택 109)', dc: 27500 },
+          { v: 110000, label: '110,000원 (5G 슈퍼플랜 스페셜 Plus / 초이스)', dc: 27500 },
+          { v: 130000, label: '130,000원 (5G 슈퍼플랜 프리미엄 / 초이스)', dc: 32500 }
+        ]
       }
     }
   },
@@ -892,6 +938,7 @@ function updateBundleUI() {
   } else if (c === 'kt') {
     opts = '<option value="kt-total">휴대폰 결합 (총액) ⭐</option>' +
            '<option value="kt-fixed">휴대폰 결합 (정액)</option>' +
+           '<option value="kt-premium">💎 프리미엄 가족결합 (77,000원↑ 2회선+)</option>' +
            '<option value="home">TV만 결합 (휴대폰 없을 때)</option>';
   } else if (c === 'lgu') {
     opts = '<option value="lgu-chweyswun">휴대폰 결합 (참쉬운) ⭐</option>' +
@@ -911,10 +958,12 @@ function updateRangeUI() {
   var rangeSel = document.getElementById('c-range');
   var rangeGroup = document.getElementById('c-range-group');
   var linesGroup = document.getElementById('c-lines-group');
+  var premGroup = document.getElementById('c-premium-group');
 
   // 리셋
   linesGroup.style.display = 'none';
   rangeGroup.style.display = 'none';
+  if (premGroup) premGroup.style.display = 'none';
 
   // 회선수 드롭다운 기본 (SKT 1~5)
   var linesSel = document.getElementById('c-lines');
@@ -933,6 +982,17 @@ function updateRangeUI() {
       return '<option value="' + i + '">' + r + '</option>';
     }).join('');
     rangeGroup.style.display = '';
+  } else if (c === 'kt' && bundle === 'kt-premium') {
+    // 프리미엄 가족결합 UI
+    if (premGroup) {
+      premGroup.style.display = '';
+      var planSel = document.getElementById('c-premium-plan');
+      if (planSel && !planSel.options.length) {
+        planSel.innerHTML = D.kt.bundle.premium.planOptions.map(function(p, i) {
+          return '<option value="' + i + '">' + p.label + ' → 할인 ' + p.dc.toLocaleString() + '원</option>';
+        }).join('');
+      }
+    }
   } else if (c === 'lgu' && bundle === 'lgu-chweyswun') {
     rangeSel.innerHTML = D.lgu.bundle.chweyswun.planLabels.map(function(p, i) {
       return '<option value="' + i + '">휴대폰 월요금 ' + p + '</option>';
@@ -1113,6 +1173,66 @@ function calc() {
       '</div>';
   }
 
+  // KT 프리미엄 가족결합
+  if (c === 'kt' && bundleType === 'kt-premium') {
+    var premData = D.kt.bundle.premium;
+    var planIdx = parseInt(document.getElementById('c-premium-plan').value) || 0;
+    var premLines = parseInt(document.getElementById('c-premium-lines').value) || 1;
+    var totalSum = parseInt(document.getElementById('c-premium-total').value) || 0;
+    var chosenPlan = premData.planOptions[planIdx];
+    var premDcPerLine = chosenPlan.dc;
+    var premTotalDc = premDcPerLine * premLines;
+
+    // 총액결합 구간 계산 (대표자 + 77K미만 구성원 합산)
+    var totalRanges = d.bundle.ranges_total;
+    var rngIdx = 0;
+    if (totalSum >= 174900) rngIdx = 5;
+    else if (totalSum >= 141900) rngIdx = 4;
+    else if (totalSum >= 108900) rngIdx = 3;
+    else if (totalSum >= 64900) rngIdx = 2;
+    else if (totalSum >= 22000) rngIdx = 1;
+    else rngIdx = 0;
+    var totalMobDc = d.bundle.total.mobile[sp][rngIdx] || 0;
+
+    // 인터넷/대표자 휴대폰 고정 5,500 + 총액결합 대표자 몫 + 프리미엄 할인
+    var fixedDc = premData.internet;
+    var totalGrandDc = fixedDc + totalMobDc + premTotalDc;
+
+    // 인터넷 실질 (TV 결합 기본할인도 유지)
+    var netSingleWithWifi2 = netBase + (wf ? wifiForSp : 0);
+    var ktNetCombo2 = hasTv ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]) : netSingleWithWifi2;
+    var inetAfterPrem = ktNetCombo2 - fixedDc;
+    var tvBaseValP = hasTv ? d.tv[ti].p : 0;
+    var tvBaseDcP = hasTv ? (d.tv[ti].dc || 0) : 0;
+    var tvAfterP = tvBaseValP - tvBaseDcP;
+    var setTopFeeP = hasTv ? (d.setTop || 0) : 0;
+    var finalInetP = inetAfterPrem + tvAfterP + setTopFeeP;
+
+    html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(251,191,36,0.12);border:1.5px solid #fbbf24;border-radius:8px">' +
+      '<div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:8px">💎 섹터 2 — KT 프리미엄 가족결합 (' + chosenPlan.label.split('(')[0].trim() + ' × ' + premLines + '명)</div>' +
+      // 인터넷
+      '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi2) + '</span></div>';
+    if (hasTv && ktNetCombo2 < netSingleWithWifi2) {
+      html += '<div class="calc-line discount"><span class="l">KT 기본 TV결합 인터넷 할인</span><span class="v">-' + fmt(netSingleWithWifi2 - ktNetCombo2) + '</span></div>';
+    }
+    html += '<div class="calc-line discount"><span class="l">프리미엄 인터넷 할인 (고정, 대표자 휴대폰 이전 가능)</span><span class="v">-' + fmt(fixedDc) + '</span></div>' +
+      '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfterPrem) + '</span></div>';
+    if (hasTv) {
+      html += '<div class="calc-line" style="margin-top:6px"><span class="l">' + d.tv[ti].n.split('(')[0].trim() + '</span><span class="v">' + fmt(tvBaseValP) + '</span></div>' +
+        '<div class="calc-line discount"><span class="l">TV 결합 할인</span><span class="v">-' + fmt(tvBaseDcP) + '</span></div>' +
+        '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfterP) + '</span></div>' +
+        '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFeeP) + '</span></div>';
+    }
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#fde68a">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#fbbf24;font-size:20px">' + fmt(finalInetP) + '</span></div>' +
+      // 휴대폰
+      '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#fde68a;font-weight:700">📱 휴대폰 고지서 별도 할인 (월)</div>' +
+      '<div class="calc-line discount"><span class="l">· 대표자 + 77K미만 구성원 총액결합 (' + totalRanges[rngIdx] + ')</span><span class="v">-' + fmt(totalMobDc) + '</span></div>' +
+      '<div class="calc-line discount"><span class="l">· 프리미엄 ' + premLines + '명 (' + fmt(premDcPerLine) + ' × ' + premLines + ')</span><span class="v">-' + fmt(premTotalDc) + '</span></div>' +
+      '<div class="calc-line total" style="margin-top:6px;padding-top:6px"><span class="l">휴대폰 할인 합계</span><span class="v" style="color:#fbbf24">-' + fmt(totalMobDc + premTotalDc) + '</span></div>' +
+      '<div style="background:rgba(251,191,36,0.15);border-radius:6px;padding:8px 10px;margin-top:10px;font-size:11px;color:#fde68a">💰 총 월 절감액: ' + fmt(totalGrandDc) + ' (인터넷 5,500 + 총액 ' + fmt(totalMobDc) + ' + 프리미엄 ' + fmt(premTotalDc) + ')</div>' +
+      '</div>';
+  }
+
   // LGU+ 참쉬운 가족결합 / 투게더 결합
   if (c === 'lgu' && (bundleType === 'lgu-chweyswun' || bundleType === 'lgu-together')) {
     var isChweyswun = bundleType === 'lgu-chweyswun';
@@ -1218,6 +1338,10 @@ document.getElementById('c-wifi').addEventListener('change', calc);
 document.getElementById('c-bundle').addEventListener('change', function() { updateRangeUI(); calc(); });
 document.getElementById('c-lines').addEventListener('change', calc);
 document.getElementById('c-range').addEventListener('change', calc);
+['c-premium-plan','c-premium-lines','c-premium-total'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el){ el.addEventListener('change', calc); el.addEventListener('input', calc); }
+});
 
 init();
 
