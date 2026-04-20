@@ -162,6 +162,7 @@ var D = {
       {n:'B tv 올 넷플릭스 프리미엄 (252채널)',p:33200,dc:2200}
     ],
     gift:{solo:{'100M':110000,'500M':170000,'1G':170000},combo:{'100M':400000,'500M':430000,'1G':490000}},
+    install:{solo:36300,combo:56100},
     bundle:{family:{internet:{'100M':4400,'500M':11000,'1G':13200},iptv:1100,
       mobilePerBySpeed:{
         '100M':{1:3500,2:3500,3:6000,4:4500,5:3600},
@@ -185,6 +186,7 @@ var D = {
       {n:'지니TV 디즈니+모든G (250채널)',p:28100,dc:6600}
     ],
     gift:{solo:{'100M':90000,'500M':140000,'1G':140000},combo:{'100M':370000,'500M':450000,'1G':450000}},
+    install:{solo:36000,combo:56200},
     bundle:{total:{
       internet:{'100M':[1650,3300,5500,5500,5500,5500],'500M':[2200,5500,5500,5500,5500,5500],'1G':[2200,5500,5500,5500,5500,5500]},
       mobile:{'100M':[0,0,3300,14300,18700,23100],'500M':[0,0,5500,16610,22110,27610],'1G':[0,0,5500,16610,22110,27610]}
@@ -205,6 +207,7 @@ var D = {
       {n:'U+tv 프리미엄 VOD (257채널)',p:24200,dc:5500}
     ],
     gift:{solo:{'100M':200000,'500M':230000,'1G':230000},combo:{'100M':400000,'500M':470000,'1G':470000}},
+    install:{solo:36300,combo:56100},
     bundle:{chweyswun:{
       internet:{'100M':5500,'500M':9900,'1G':13200},
       planLabels:['69,000원 미만','69,000원 이상','88,000원 이상'],
@@ -363,18 +366,24 @@ function calculate(){
 
   var finalFee = bundleFee - mobileSide; // 혜택가 (휴대폰 할인까지 반영)
   var giftAmt = hasTv ? (d.gift.combo[sp]||0) : (d.gift.solo[sp]||0);
+  var installFee = hasTv ? (d.install?d.install.combo:0) : (d.install?d.install.solo:0);
+  var setTopFee = hasTv ? (d.setTop||0) : 0;
 
-  return { basicFee:basicFee, bundleFee:bundleFee, mobileSide:mobileSide, finalFee:finalFee, gift:giftAmt, benefit:benefitLabel };
+  return { basicFee:basicFee, bundleFee:bundleFee, mobileSide:mobileSide, finalFee:finalFee, gift:giftAmt, benefit:benefitLabel, installFee:installFee, setTopFee:setTopFee, setTopName:d.setTopName };
 }
 
 function renderBottom(){
   var r=calculate();
   var price = state.mobileOn ? r.bundleFee : r.basicFee;
-  var h='<div class="bb-line bb-final"><span class="l">💰 기본요금</span><span class="v">'+fmt(price)+'</span></div>';
+  var h='<div class="bb-line bb-final"><span class="l">💰 월 기본요금</span><span class="v">'+fmt(price)+'</span></div>';
   if (state.mobileOn && r.mobileSide>0){
     h+='<div class="bb-line"><span class="l">📱 휴대폰요금 별도할인</span><span class="v" style="color:#059669;font-weight:700">-'+fmt(r.mobileSide)+'</span></div>';
   }
-  if (r.gift) h+='<div class="bb-gift">🎁 사은품 '+fmt(r.gift)+' + 추가혜택</div>';
+  if (r.setTopFee>0){
+    h+='<div class="bb-line" style="font-size:11px;color:#888"><span class="l">· 셋톱박스 ('+r.setTopName+') 포함</span><span class="v">'+fmt(r.setTopFee)+'</span></div>';
+  }
+  if (r.installFee) h+='<div class="bb-line" style="font-size:11px;color:#888"><span class="l">🔧 최초 설치비 (1회)</span><span class="v">'+fmt(r.installFee)+'</span></div>';
+  if (r.gift) h+='<div class="bb-gift">🎁 사은품 '+fmt(r.gift)+' + 제휴카드 / 상품권 / 현금 추가혜택</div>';
   document.getElementById('bb-info').innerHTML=h;
 }
 
