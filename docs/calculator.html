@@ -350,7 +350,7 @@
   <div class="st2"><span class="badge b-skt">SKT</span> 3종 결합 체계 (택 1, 중복 불가)</div>
   <div class="note">① 요즘우리집결합 (인터넷+TV) · ② 요즘가족결합 (휴대폰 추가) · ③ 온가족할인 (장기가입). <b>세 가지 중 가장 유리한 1개만 적용</b> — 휴대폰 결합 있으면 보통 ②가 유리, 장기가입이면 ③ 비교 필요.</div>
 
-  <div class="st2">표 ① 인터넷 할인 비교 (결합 종류별 · 택 1)</div>
+  <div class="st2">표 ① 인터넷 · IPTV 할인 비교 (결합 종류별 · 택 1)</div>
   <table>
     <thead>
       <tr>
@@ -362,16 +362,20 @@
         <th>인터넷 할인</th>
         <th>IPTV 할인</th>
         <th>인터넷 할인</th>
-        <th>IPTV 할인</th>
+        <th>IPTV 할인 (중복)</th>
       </tr>
     </thead>
     <tbody>
-      <tr><td><b>100M</b></td><td>-1,100원</td><td rowspan="3">-1,100원<br><small>(TV 결합 시)</small></td><td>-4,400원</td><td rowspan="3">-1,100원<br><small>(TV 결합 시)</small></td></tr>
+      <tr><td><b>100M</b></td><td>-1,100원</td><td rowspan="3">-2,200원<br><small>(TV 결합 시)</small></td><td>-4,400원</td><td rowspan="3"><b>-3,300원</b><br><small>(-2,200 기본 + -1,100 추가)</small></td></tr>
       <tr><td><b>500M</b></td><td>-5,500원</td><td>-11,000원</td></tr>
       <tr><td><b>1G</b></td><td>-5,500원</td><td>-13,200원</td></tr>
     </tbody>
   </table>
-  <div class="note">IPTV 할인(-1,100원)은 <b>두 결합 모두 공통 적용</b> (TV 결합 시). 차이는 인터넷 할인 규모만 · 요즘가족결합 선택 시 요즘우리집결합 인터넷 할인이 대체됨.</div>
+  <div class="note">
+    · IPTV 할인 기본 <b>-2,200원</b>은 두 결합 공통 (TV 결합 시 자동 적용)<br>
+    · 요즘가족결합 선택 시 IPTV 할인 <b>-1,100원 추가 중복</b> 적용 → 총 -3,300원<br>
+    · 인터넷 할인은 대체 관계 (요즘가족결합 선택하면 요즘우리집결합 인터넷 할인은 적용 안 됨)
+  </div>
 
   <div class="st2" style="margin-top:18px">표 ② 요즘가족결합 휴대폰 할인 (인터넷 속도별 × 회선수)</div>
   <table>
@@ -914,7 +918,7 @@ function calc() {
     html += '<div style="margin-top:10px;padding:10px 12px;background:rgba(34,197,94,0.15);border:1.5px solid #4ade80;border-radius:8px">' +
       '<div style="font-size:11px;color:#86efac;font-weight:700;margin-bottom:6px">👨‍👩‍👧 요즘가족결합 (인터넷 할인은 대체 · TV 할인 유지)</div>' +
       '<div class="calc-line discount"><span class="l">인터넷 할인 (' + sp + ')</span><span class="v">-' + fmt(famInet) + '</span></div>' +
-      (hasTv ? '<div class="calc-line discount"><span class="l">IPTV 추가 할인</span><span class="v">-' + fmt(famIptv) + '</span></div>' : '') +
+      (hasTv ? '<div class="calc-line discount"><span class="l">IPTV 추가 할인 (기본 -2,200에 중복)</span><span class="v">-' + fmt(famIptv) + '</span></div>' : '') +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선, ' + mobKey + ' 기준)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">→ 총 할인</span><span class="v" style="color:#86efac">-' + fmt(totalAdd) + '</span></div>' +
       '</div>';
