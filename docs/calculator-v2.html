@@ -357,14 +357,10 @@ function calculate(){
 
 function renderBottom(){
   var r=calculate();
-  var h='';
-  h+='<div class="bb-line"><span class="l">기본 요금 (휴대폰 X)</span><span class="v">'+fmt(r.basicFee)+'</span></div>';
-  if (state.mobileOn){
-    h+='<div class="bb-line"><span class="l">휴대폰 결합 요금 ('+r.benefit+')</span><span class="v">'+fmt(r.bundleFee)+'</span></div>';
-    h+='<div class="bb-line"><span class="l">· 휴대폰 고지서 별도 할인</span><span class="v" style="color:#059669;font-weight:700">-'+fmt(r.mobileSide)+'</span></div>';
-    h+='<div class="bb-line bb-final"><span class="l">💰 혜택가 (최종)</span><span class="v">'+fmt(r.finalFee)+'</span></div>';
-  } else {
-    h+='<div class="bb-line bb-final"><span class="l">💰 월 요금</span><span class="v">'+fmt(r.basicFee)+'</span></div>';
+  var price = state.mobileOn ? r.bundleFee : r.basicFee;
+  var h='<div class="bb-line bb-final"><span class="l">💰 기본요금</span><span class="v">'+fmt(price)+'</span></div>';
+  if (state.mobileOn && r.mobileSide>0){
+    h+='<div class="bb-line"><span class="l">📱 휴대폰요금 별도할인</span><span class="v" style="color:#059669;font-weight:700">-'+fmt(r.mobileSide)+'</span></div>';
   }
   if (r.gift) h+='<div class="bb-gift">🎁 사은품 '+fmt(r.gift)+' + 추가혜택</div>';
   document.getElementById('bb-info').innerHTML=h;
