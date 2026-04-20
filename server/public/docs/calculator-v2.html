@@ -33,6 +33,16 @@ h1 { font-size:24px; font-weight:900; color:#1a2744; margin-bottom:6px; }
 .sub-field-label { font-size:11px; font-weight:700; color:#888; margin-bottom:6px; letter-spacing:1px; }
 .sub-select { width:100%; padding:10px 12px; border:1.5px solid #e2ddd6; border-radius:8px; font-size:13px; font-family:inherit; background:#fff; color:#1a1a1a; cursor:pointer; }
 .card-grid-2 { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.tv-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:6px; }
+.tv-card { position:relative; background:#fff; border:1.5px solid #e2ddd6; border-radius:10px; padding:14px 12px; text-align:center; cursor:pointer; transition:all 0.15s; min-height:120px; display:flex; flex-direction:column; justify-content:space-between; }
+.tv-card:hover { border-color:#93c5fd; }
+.tv-card.selected { border:2px solid #2563eb; background:linear-gradient(135deg,#eff6ff,#fff); box-shadow:0 3px 10px rgba(37,99,235,0.1); }
+.tv-card .tv-icon { font-size:22px; margin-bottom:4px; }
+.tv-card .tv-name { font-size:12px; font-weight:700; color:#1a2744; line-height:1.3; margin-bottom:4px; }
+.tv-card .tv-price { font-size:12px; color:#2563eb; font-weight:700; }
+.tv-card .tv-dc { font-size:10px; color:#059669; margin-top:2px; }
+.tv-card.none { background:#f8f9fc; }
+.tv-card.none .tv-name { color:#888; }
 
 /* 하단 고정 바 */
 .bottom-bar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:2px solid #e2ddd6; box-shadow:0 -4px 20px rgba(0,0,0,0.06); padding:14px 0; z-index:100; }
@@ -92,8 +102,8 @@ h1 { font-size:24px; font-weight:900; color:#1a2744; margin-bottom:6px; }
 
     <!-- TV 선택 (체크 시) -->
     <div class="sub-field" id="f-tv-field" style="display:none">
-      <div class="sub-field-label">TV 상품</div>
-      <select class="sub-select" id="f-tv"></select>
+      <div class="sub-field-label">TV 상품 선택</div>
+      <div class="tv-grid" id="f-tv"></div>
     </div>
 
     <!-- 휴대폰 결합 (체크 시) -->
@@ -229,12 +239,23 @@ function renderSpeeds(){
 }
 
 function buildTv(){
-  var sel=document.getElementById('f-tv');
+  var el=document.getElementById('f-tv');
   var d=D[state.carrier];
-  sel.innerHTML=d.tv.map(function(t,i){
-    return '<option value="'+i+'">'+t.n+(t.p?' — '+fmt(t.p):'')+'</option>';
+  var icons=['🚫','📺','📺','🎬','🎞️'];
+  el.innerHTML=d.tv.map(function(t,i){
+    var sel=(state.tv===i)?' selected':'';
+    var none=(i===0)?' none':'';
+    var priceHtml=t.p?('<div class="tv-price">월 '+fmt(t.p)+'</div>'):'<div class="tv-price" style="color:#888">선택 안함</div>';
+    var dcHtml=(t.dc>0)?('<div class="tv-dc">결합 -'+fmt(t.dc)+'</div>'):'';
+    return '<div class="tv-card'+sel+none+'" data-tv="'+i+'">'+
+      '<div class="tv-icon">'+icons[i]+'</div>'+
+      '<div class="tv-name">'+t.n+'</div>'+
+      priceHtml+dcHtml+
+    '</div>';
   }).join('');
-  sel.value=state.tv||0;
+  el.querySelectorAll('.tv-card').forEach(function(c){
+    c.onclick=function(){ state.tv=parseInt(c.dataset.tv); refresh(); };
+  });
 }
 
 function buildLinesRange(){
@@ -351,7 +372,6 @@ function refresh(){
 document.getElementById('f-tv-on').addEventListener('change',function(e){ state.tvOn=e.target.checked; if(e.target.checked && state.tv===0) state.tv=1; refresh(); });
 document.getElementById('f-mobile-on').addEventListener('change',function(e){ state.mobileOn=e.target.checked; refresh(); });
 document.getElementById('f-wifi').addEventListener('change',function(e){ state.wifi=e.target.checked; renderBottom(); });
-document.getElementById('f-tv').addEventListener('change',function(e){ state.tv=parseInt(e.target.value); renderBottom(); });
 document.getElementById('f-lines').addEventListener('change',function(e){ state.lines=e.target.value; renderBottom(); });
 document.getElementById('f-range').addEventListener('change',function(e){ state.rangeIdx=parseInt(e.target.value); renderBottom(); });
 
