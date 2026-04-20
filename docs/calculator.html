@@ -869,6 +869,7 @@ function calc() {
   }
 
   var wifiForSp = d.wifiPrice ? d.wifiPrice[sp] : (typeof d.wifiCost === 'number' ? d.wifiCost : 1100);
+  var baseTotal = 0;
 
   if (hasTv) {
     var netCombo = wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp];
@@ -877,6 +878,7 @@ function calc() {
     var tvFinal = tvBase - tvDc;
     var setTop = d.setTop || 0;
     var total = netCombo + tvFinal + setTop;
+    baseTotal = total;
     var netDiscount = netBase + (wf ? wifiForSp : 0) - netCombo;
 
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')</span><span class="v">' + fmt(netBase) + '</span></div>';
@@ -900,6 +902,7 @@ function calc() {
     // TV 없음: 인터넷 + WiFi 선택
     var addWifi = wf ? wifiForSp : 0;
     var total = netBase + addWifi;
+    baseTotal = total;
 
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')</span><span class="v">' + fmt(netBase) + '</span></div>';
     if (wf) {
@@ -920,12 +923,19 @@ function calc() {
     var mobKey = (sp === '100M') ? '100M' : '500M+';
     var mobDc = d.bundle.family.mobile[mobKey][lines] || 0;
     var totalAdd = famInet + famIptv + mobDc;
+
+    // 인터넷/IPTV 할인은 인터넷 요금에서, 무선(휴대폰) 할인은 휴대폰 요금에서 차감
+    var inetSideDc = famInet + famIptv;      // 인터넷+TV 요금에 적용
+    var mobileSideDc = mobDc;                 // 휴대폰 요금에 적용
+    var finalInet = baseTotal - inetSideDc;
     html += '<div style="margin-top:10px;padding:10px 12px;background:rgba(34,197,94,0.15);border:1.5px solid #4ade80;border-radius:8px">' +
-      '<div style="font-size:11px;color:#86efac;font-weight:700;margin-bottom:6px">👨‍👩‍👧 요즘가족결합 (인터넷 할인은 대체 · TV 할인 유지)</div>' +
+      '<div style="font-size:11px;color:#86efac;font-weight:700;margin-bottom:6px">👨‍👩‍👧 요즘가족결합 할인 (' + lines + '회선 · ' + mobKey + ' 기준)</div>' +
       '<div class="calc-line discount"><span class="l">인터넷 할인 (' + sp + ')</span><span class="v">-' + fmt(famInet) + '</span></div>' +
       (hasTv ? '<div class="calc-line discount"><span class="l">IPTV 추가 할인 (기본 -2,200에 중복)</span><span class="v">-' + fmt(famIptv) + '</span></div>' : '') +
-      '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선, ' + mobKey + ' 기준)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
-      '<div class="calc-line sub"><span class="l">→ 총 할인</span><span class="v" style="color:#86efac">-' + fmt(totalAdd) + '</span></div>' +
+      '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.15);margin-top:6px;padding-top:8px"><span class="l" style="color:#86efac">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#4ade80;font-size:18px">' + fmt(finalInet) + '</span></div>' +
+      '<div style="border-top:1px dashed rgba(255,255,255,0.15);margin:10px 0 6px;padding-top:8px;font-size:11px;color:#86efac;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
+      '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선)</span><span class="v">-' + fmt(mobileSideDc) + '</span></div>' +
+      '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 ' + fmt(mobileSideDc) + ' 차감</span><span class="v"></span></div>' +
       '</div>';
   }
 
