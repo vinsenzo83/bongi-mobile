@@ -919,20 +919,24 @@ function renderPremiumMembers() {
   var catalog = D.kt.bundle.premium.planCatalog;
   var html = '';
   for (var i = 0; i < 5; i++) {
-    var role = (i === 0) ? '대표명의자' : ('구성원 ' + i);
-    var badge = (i === 0) ? '<span style="background:rgba(251,191,36,0.3);color:#fbbf24;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700">대표</span>' : '';
-    var defVal = (i === 0) ? 8 : (i < 3 ? 8 : 0);  // 대표+구성원2명 default 89K, 나머지 없음
-    var disabled = (i === 0) ? 'disabled' : '';
-    html += '<div class="c-prem-row" data-idx="' + i + '" style="display:flex;gap:8px;align-items:center;font-size:12px">' +
-      '<div style="width:90px;color:#fde68a;font-weight:600">회선 ' + (i+1) + ' ' + badge + '<br><span style="font-size:10px;color:rgba(255,255,255,0.5)">' + role + '</span></div>' +
+    var isRep = (i === 0);
+    var role = isRep ? '대표명의자 (총액결합 고정)' : ('구성원 ' + i);
+    var badge = isRep
+      ? '<span style="background:#dc2626;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700">대표 · 총액결합만</span>'
+      : '';
+    var defVal = isRep ? 8 : (i < 3 ? 8 : 0);  // 대표+구성원2명 default 89K, 나머지 없음
+    html += '<div class="c-prem-row" data-idx="' + i + '" style="display:flex;gap:8px;align-items:center;font-size:12px' + (isRep ? ';opacity:0.95;background:rgba(220,38,38,0.08);padding:6px 8px;border-radius:6px;border:1px solid rgba(220,38,38,0.3)' : '') + '">' +
+      '<div style="width:110px;color:#fde68a;font-weight:600">회선 ' + (i+1) + ' ' + badge + '<br><span style="font-size:10px;color:rgba(255,255,255,0.55)">' + role + '</span></div>' +
       '<select class="calc-select c-prem-plan" data-idx="' + i + '" style="flex:1">' +
         catalog.map(function(p, pi) {
-          return '<option value="' + pi + '"' + (pi === defVal ? ' selected' : '') + '>' + p.label + (p.dc ? ' → 프리미엄 ' + p.dc.toLocaleString() + '원' : '') + '</option>';
+          // 대표자는 프리미엄 할인 표시 안함 (총액결합 고정이므로)
+          var hint = (!isRep && p.dc) ? ' → 프리미엄 ' + p.dc.toLocaleString() + '원' : '';
+          return '<option value="' + pi + '"' + (pi === defVal ? ' selected' : '') + '>' + p.label + hint + '</option>';
         }).join('') +
       '</select>' +
-      '<label style="display:flex;align-items:center;gap:4px;font-size:10px;color:#fde68a;white-space:nowrap;min-width:100px">' +
-        '<input type="checkbox" class="c-prem-use" data-idx="' + i + '" ' + (i === 0 ? 'disabled' : 'checked') + '> 프리미엄' +
-      '</label>' +
+      (isRep
+        ? '<div style="min-width:110px;font-size:10px;color:#fca5a5;white-space:nowrap;text-align:right">❌ 프리미엄 불가</div>'
+        : '<label style="display:flex;align-items:center;gap:4px;font-size:10px;color:#fde68a;white-space:nowrap;min-width:110px"><input type="checkbox" class="c-prem-use" data-idx="' + i + '" checked> 프리미엄 적용</label>') +
     '</div>';
   }
   wrap.innerHTML = html;
@@ -1198,9 +1202,14 @@ function calc() {
       var planIdx = parseInt(sel.value) || 0;
       var plan = catalog[planIdx];
       if (!plan || plan.v === 0) return;  // 회선 없음 스킵
-      var useCb = document.querySelector('.c-prem-use[data-idx="'+idx+'"]');
-      var usePrem = useCb && useCb.checked && plan.prem && idx !== 0;  // 대표자는 프리미엄 불가
-      members.push({ idx: idx, isRep: idx === 0, plan: plan, usePrem: usePrem });
+      var isRep = idx === 0;
+      // 대표자는 프리미엄 불가, 구성원은 77K+ 요금제 & 체크박스 활성 시 프리미엄
+      var usePrem = false;
+      if (!isRep && plan.prem) {
+        var useCb = document.querySelector('.c-prem-use[data-idx="'+idx+'"]');
+        usePrem = !!(useCb && useCb.checked);
+      }
+      members.push({ idx: idx, isRep: isRep, plan: plan, usePrem: usePrem });
     });
 
     // 분류: 프리미엄 / 총액
