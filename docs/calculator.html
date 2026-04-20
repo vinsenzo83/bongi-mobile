@@ -376,19 +376,21 @@
     · 인터넷 할인은 대체 관계 (요즘가족결합 선택하면 요즘우리집결합 인터넷 할인은 적용 안 됨)
   </div>
 
-  <div class="st2" style="margin-top:18px">표 ② 요즘가족결합 무선(휴대폰) 할인 (인터넷 속도 × 회선수)</div>
+  <div class="st2" style="margin-top:18px">표 ② 요즘가족결합 무선(휴대폰) 할인 · 인당 × 회선수 (속도 무관)</div>
   <table>
-    <thead><tr><th>인터넷 속도</th><th>1회선</th><th>2회선</th><th>3회선</th><th>4회선</th><th>5회선</th><th>최대 할인</th></tr></thead>
+    <thead><tr><th>회선수</th><th>인당 할인</th><th>총 할인 (인당 × 회선수)</th></tr></thead>
     <tbody>
-      <tr><td><b>100M</b></td><td>-3,500원</td><td>-7,000원</td><td>-18,000원</td><td>-18,000원</td><td>-18,000원</td><td style="color:#dc2626;font-weight:700">-18,000원</td></tr>
-      <tr><td><b>500M</b></td><td>-3,500원</td><td>-7,000원</td><td>-18,000원</td><td>-24,000원</td><td>-24,000원</td><td style="color:#dc2626;font-weight:700">-24,000원</td></tr>
-      <tr><td><b>1G</b></td><td>-3,500원</td><td>-7,000원</td><td>-18,000원</td><td>-24,000원</td><td>-24,000원</td><td style="color:#dc2626;font-weight:700">-24,000원</td></tr>
+      <tr><td><b>1회선</b></td><td>3,500원</td><td style="font-weight:700">3,500원</td></tr>
+      <tr><td><b>2회선</b></td><td>3,500원</td><td style="font-weight:700">7,000원</td></tr>
+      <tr><td><b>3회선</b></td><td>6,000원</td><td style="color:#dc2626;font-weight:700">18,000원</td></tr>
+      <tr><td><b>4회선</b></td><td>4,500원</td><td style="color:#dc2626;font-weight:700">18,000원</td></tr>
+      <tr><td><b>5회선</b></td><td>3,600원</td><td style="color:#dc2626;font-weight:700">18,000원</td></tr>
     </tbody>
   </table>
   <div class="note">
-    · <b>1~2회선</b>은 속도 무관 동일 할인 (-3,500 / -7,000원)<br>
-    · <b>3회선 이상</b>부터 속도별 차이 — 100M는 -18,000원 고정 / 500M·1G는 4회선 이상 -24,000원<br>
-    · 계산기에서 요즘가족결합 선택 → 회선수 드롭다운 활성화 → 자동 적용
+    · <b>인당 할인은 회선수에 따라 다름</b> (1~2인 3,500 / 3인 6,000 / 4인 4,500 / 5인 3,600)<br>
+    · 총 할인 = 인당 × 회선수 (3~5회선은 총 18,000원 고정, 인당 금액만 달라짐)<br>
+    · 계산기에서 요즘가족결합 선택 → 회선수 드롭다운 → 자동 적용
   </div>
 
   <div class="st2">온가족할인 (가입년수 기반 추가 할인 — 2025.08.31 이후 기준)</div>
@@ -623,10 +625,8 @@ var D = {
       family: {
         internet: { '100M': 4400, '500M': 11000, '1G': 13200 },
         iptv: 1100,
-        mobile: {
-          '100M':  { 1: 3500, 2: 7000, 3: 18000, 4: 18000, 5: 18000 },
-          '500M+': { 1: 3500, 2: 7000, 3: 18000, 4: 24000, 5: 24000 }
-        }
+        // 인당 할인 × 회선수 = 총 할인 (속도 무관 공통)
+        mobilePer: { 1: 3500, 2: 3500, 3: 6000, 4: 4500, 5: 3600 }
       }
     }
   },
@@ -919,8 +919,8 @@ function calc() {
     var famInet = d.bundle.family.internet[sp];
     var famIptv = hasTv ? (d.bundle.family.iptv || 0) : 0;
     var lines = parseInt(document.getElementById('c-lines').value) || 1;
-    var mobKey = (sp === '100M') ? '100M' : '500M+';
-    var mobDc = d.bundle.family.mobile[mobKey][lines] || 0;
+    var perPerson = d.bundle.family.mobilePer[lines] || 0;
+    var mobDc = perPerson * lines;
 
     // 인터넷: 단독가 + WiFi - 요즘가족결합 인터넷 할인 (요즘우리집 대체)
     var netSingleWithWifi = netBase + (wf ? wifiForSp : 0);
@@ -951,7 +951,7 @@ function calc() {
     html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#86efac">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#4ade80;font-size:20px">' + fmt(finalInet) + '</span></div>' +
       // 무선
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#86efac;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
-      '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선, ' + mobKey + ')</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
+      '<div class="calc-line discount"><span class="l">휴대폰 할인 (인당 ' + fmt(perPerson) + ' × ' + lines + '회선)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 ' + fmt(mobDc) + ' 차감</span><span class="v"></span></div>' +
       '</div>';
   }
