@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>KT 프리미엄 가족결합 테스트</title>
+<style>
+body { font-family:-apple-system,sans-serif; background:#1a1a1a; color:#fff; padding:24px; line-height:1.6; }
+h1 { color:#fbbf24; }
+.test { background:#262626; border:1px solid #404040; border-radius:8px; padding:14px 18px; margin-bottom:12px; }
+.test.pass { border-left:4px solid #10b981; }
+.test.fail { border-left:4px solid #ef4444; background:#450a0a; }
+.test h3 { color:#fbbf24; margin-bottom:8px; font-size:14px; }
+.test .status { font-size:12px; font-weight:700; }
+.test.pass .status { color:#10b981; }
+.test.fail .status { color:#ef4444; }
+.row { display:flex; justify-content:space-between; font-size:12px; color:#a3a3a3; margin:2px 0; }
+.row b { color:#fff; font-family:monospace; }
+.expected { color:#60a5fa; }
+.actual { color:#fbbf24; }
+.summary { background:#262626; border:2px solid #fbbf24; border-radius:8px; padding:16px 20px; margin-bottom:20px; }
+</style>
+</head>
+<body>
+<h1>💎 KT 프리미엄 가족결합 — 로직 검증</h1>
+<div id="summary" class="summary"></div>
+<div id="tests"></div>
+
+<script>
+// 실제 calculator.html과 동일한 데이터
+var KT_DATA = {
+  internet: { '100M': 22000, '500M': 33000, '1G': 38500 },
+  bundle: {
+    ranges_total: ['22,000원 이하', '22,000원 이상', '64,900원 이상', '108,900원 이상', '141,900원 이상', '174,900원 이상'],
+    total: {
+      internet: {
+        '100M': [1650, 3300, 5500, 5500, 5500, 5500],
+        '500M': [2200, 5500, 5500, 5500, 5500, 5500],
+        '1G':   [2200, 5500, 5500, 5500, 5500, 5500]
+      },
+      mobile: {
+        '100M': [0, 0, 3300, 14300, 18700, 23100],
+        '500M': [0, 0, 5500, 16610, 22110, 27610],
+        '1G':   [0, 0, 5500, 16610, 22110, 27610]
+      }
+    },
+    premium: {
+      internet: 5500,
+      planCatalog: [
+        { v: 0, label:'없음', dc:0, prem:false },
+        { v: 32890, label:'32,890', dc:0, prem:false },
+        { v: 47000, label:'47,000', dc:0, prem:false },
+        { v: 55000, label:'55,000', dc:0, prem:false },
+        { v: 65000, label:'65,000', dc:0, prem:false },
+        { v: 77000, label:'77,000', dc:19250, prem:true },
+        { v: 80000, label:'80,000', dc:20000, prem:true },
+        { v: 87890, label:'87,890', dc:22000, prem:true },
+        { v: 89000, label:'89,000', dc:22250, prem:true },
+        { v: 90000, label:'90,000', dc:22500, prem:true },
+        { v: 100000, label:'100,000', dc:25000, prem:true },
+        { v: 109000, label:'109,000', dc:27500, prem:true },
+        { v: 110000, label:'110,000', dc:27500, prem:true },
+        { v: 130000, label:'130,000', dc:32500, prem:true }
+      ]
+    }
+  }
+};
+
+// 테스트용 순수 계산 함수 (calculator.html 로직 추출)
+function calcPremium(speed, members) {
+  // members: [{ v: 요금제금액, usePrem: true/false, isRep: true/false }]
+  var d = KT_DATA;
+  var catalog = d.bundle.premium.planCatalog;
+
+  // 회선 분류
+  var premMembers = members.filter(function(m){
+    var plan = catalog.find(function(p){ return p.v === m.v; });
+    return !m.isRep && m.usePrem && plan && plan.prem;
+  });
+  var totalMembers = members.filter(function(m){
+    var plan = catalog.find(function(p){ return p.v === m.v; });
+    return m.isRep || !m.usePrem || !plan || !plan.prem;
+  });
+
+  var totalSum = totalMembers.reduce(function(a,b){ return a + b.v; }, 0);
+
+  // 자격 체크
+  var highPlanCount = members.filter(function(m){
+    var plan = catalog.find(function(p){ return p.v === m.v; });
+    return plan && plan.prem;
+  }).length;
+  var eligible = highPlanCount >= 2 && premMembers.length >= 1;
+
+  // 총액결합 구간
+  var rngIdx = 0;
+  if (totalSum >= 174900) rngIdx = 5;
+  else if (totalSum >= 141900) rngIdx = 4;
+  else if (totalSum >= 108900) rngIdx = 3;
+  else if (totalSum >= 64900) rngIdx = 2;
+  else if (totalSum >= 22000) rngIdx = 1;
+  else rngIdx = 0;
+
+  var totalMobDc = totalSum > 0 ? d.bundle.total.mobile[speed][rngIdx] : 0;
+  var premTotalDc = premMembers.reduce(function(acc, m){
+    var plan = catalog.find(function(p){ return p.v === m.v; });
+    return acc + (plan ? plan.dc : 0);
+  }, 0);
+  var fixedDc = d.bundle.premium.internet;
+  var total = fixedDc + totalMobDc + premTotalDc;
+
+  return {
+    eligible: eligible,
+    totalSum: totalSum,
+    rngIdx: rngIdx,
+    totalMobDc: totalMobDc,
+    premTotalDc: premTotalDc,
+    fixedDc: fixedDc,
+    total: total,
+    highPlanCount: highPlanCount,
+    premCount: premMembers.length,
+    totalMemberCount: totalMembers.length
+  };
+}
+
+// 테스트 케이스
+var TESTS = [
+  {
+    name: '자료 예시 1 — 100M + 3×89K (대표1 + 프리미엄2)',
+    speed: '100M',
+    members: [
+      { v: 89000, isRep: true, usePrem: false },
+      { v: 89000, isRep: false, usePrem: true },
+      { v: 89000, isRep: false, usePrem: true }
+    ],
+    expected: { eligible: true, totalSum: 89000, rngIdx: 2, totalMobDc: 3300, premTotalDc: 44500, total: 53300 }
+  },
+  {
+    name: '자료 예시 2 — 100M + 2×89K + 2×32.89K (프리미엄 1명)',
+    speed: '100M',
+    members: [
+      { v: 89000, isRep: true, usePrem: false },
+      { v: 89000, isRep: false, usePrem: true },
+      { v: 32890, isRep: false, usePrem: false },
+      { v: 32890, isRep: false, usePrem: false }
+    ],
+    expected: { eligible: true, totalSum: 154780, rngIdx: 4, totalMobDc: 18700, premTotalDc: 22250, total: 46450 }
+  },
+  {
+    name: '예시 1 비교 — 500M 속도에서 (인터넷 할인 유지, 모바일 할인 변화)',
+    speed: '500M',
+    members: [
+      { v: 89000, isRep: true, usePrem: false },
+      { v: 89000, isRep: false, usePrem: true },
+      { v: 89000, isRep: false, usePrem: true }
+    ],
+    expected: { eligible: true, totalSum: 89000, rngIdx: 2, totalMobDc: 5500, premTotalDc: 44500, total: 55500 }
+  },
+  {
+    name: '자격 미충족 — 77K+ 요금제 1대만 있음',
+    speed: '100M',
+    members: [
+      { v: 89000, isRep: true, usePrem: false },
+      { v: 65000, isRep: false, usePrem: false },
+      { v: 55000, isRep: false, usePrem: false }
+    ],
+    expected: { eligible: false, totalSum: 209000, premTotalDc: 0, highPlanCount: 1 }
+  },
+  {
+    name: '자격 미충족 — 77K+ 2대 있으나 모두 총액 선택 (premCount=0)',
+    speed: '100M',
+    members: [
+      { v: 89000, isRep: true, usePrem: false },
+      { v: 89000, isRep: false, usePrem: false },
+      { v: 89000, isRep: false, usePrem: false }
+    ],
+    expected: { eligible: false, totalSum: 267000, premTotalDc: 0, highPlanCount: 3, premCount: 0 }
+  },
+  {
+    name: '최대 — 5회선 × 89K (대표 + 프리미엄 4명)',
+    speed: '100M',
+    members: [
+      { v: 89000, isRep: true, usePrem: false },
+      { v: 89000, isRep: false, usePrem: true },
+      { v: 89000, isRep: false, usePrem: true },
+      { v: 89000, isRep: false, usePrem: true },
+      { v: 89000, isRep: false, usePrem: true }
+    ],
+    expected: { eligible: true, totalSum: 89000, rngIdx: 2, totalMobDc: 3300, premTotalDc: 89000, total: 97800 }
+  },
+  {
+    name: '대표 77K 임계값 + 프리미엄 2명 (100M)',
+    speed: '100M',
+    members: [
+      { v: 77000, isRep: true, usePrem: false },
+      { v: 87890, isRep: false, usePrem: true },
+      { v: 87890, isRep: false, usePrem: true }
+    ],
+    expected: { eligible: true, totalSum: 77000, rngIdx: 2, totalMobDc: 3300, premTotalDc: 44000, total: 52800 }
+  },
+  {
+    name: '대표 130K 프리미엄 플랜 + 구성원 130K 프리미엄',
+    speed: '1G',
+    members: [
+      { v: 130000, isRep: true, usePrem: false },  // 대표자는 프리미엄 불가, 총액에만
+      { v: 130000, isRep: false, usePrem: true }
+    ],
+    expected: { eligible: true, totalSum: 130000, rngIdx: 3, totalMobDc: 16610, premTotalDc: 32500, total: 54610 }
+  },
+  {
+    name: '대표는 77K 미만인데 구성원 2명이 77K+ 프리미엄',
+    speed: '100M',
+    members: [
+      { v: 55000, isRep: true, usePrem: false },
+      { v: 89000, isRep: false, usePrem: true },
+      { v: 89000, isRep: false, usePrem: true }
+    ],
+    expected: { eligible: true, totalSum: 55000, rngIdx: 1, totalMobDc: 0, premTotalDc: 44500, total: 50000 }
+  },
+  {
+    name: '프리미엄 구성원 1명이 체크 해제 (총액으로 이동)',
+    speed: '100M',
+    members: [
+      { v: 89000, isRep: true, usePrem: false },
+      { v: 89000, isRep: false, usePrem: true },
+      { v: 89000, isRep: false, usePrem: false }  // 체크 해제
+    ],
+    expected: { eligible: true, totalSum: 178000, rngIdx: 5, totalMobDc: 23100, premTotalDc: 22250, total: 50850 }
+  }
+];
+
+// 실행 및 비교
+var tests = document.getElementById('tests');
+var passCount = 0;
+var failCount = 0;
+
+TESTS.forEach(function(t, idx){
+  var r = calcPremium(t.speed, t.members);
+  var pass = true;
+  var diffs = [];
+
+  Object.keys(t.expected).forEach(function(k){
+    if (r[k] !== t.expected[k]) {
+      pass = false;
+      diffs.push(k + ': 예상=' + t.expected[k] + ' / 실제=' + r[k]);
+    }
+  });
+
+  if (pass) passCount++; else failCount++;
+
+  var html = '<div class="test ' + (pass ? 'pass' : 'fail') + '">' +
+    '<h3>' + (idx+1) + '. ' + t.name + '</h3>' +
+    '<div class="status">' + (pass ? '✅ PASS' : '❌ FAIL') + '</div>' +
+    '<div style="margin-top:8px">';
+
+  Object.keys(t.expected).forEach(function(k){
+    var ok = r[k] === t.expected[k];
+    html += '<div class="row">' +
+      '<span>' + k + '</span>' +
+      '<span class="' + (ok ? 'expected' : 'actual') + '"><b>' + r[k] + '</b>' +
+      (ok ? '' : ' (예상: ' + t.expected[k] + ')') + '</span>' +
+    '</div>';
+  });
+
+  html += '<div class="row" style="margin-top:6px;border-top:1px dashed #404040;padding-top:6px"><span>입력</span><span style="font-family:monospace;font-size:11px">' +
+    t.speed + ' · ' + t.members.map(function(m){
+      return (m.isRep?'REP ':'') + m.v + (m.usePrem?'(P)':'');
+    }).join(' + ') + '</span></div>';
+
+  html += '</div></div>';
+  tests.innerHTML += html;
+});
+
+document.getElementById('summary').innerHTML =
+  '<h2 style="color:' + (failCount === 0 ? '#10b981' : '#ef4444') + ';font-size:18px;margin-bottom:6px">' +
+  (failCount === 0 ? '✅ 모든 테스트 통과' : '❌ ' + failCount + '개 실패') +
+  '</h2>' +
+  '<div style="font-size:13px">총 ' + TESTS.length + '개 · 통과 ' + passCount + ' · 실패 ' + failCount + '</div>';
+</script>
+</body>
+</html>
