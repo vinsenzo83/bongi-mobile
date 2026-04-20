@@ -45,6 +45,9 @@ h1 { font-size:24px; font-weight:900; color:#1a2744; margin-bottom:6px; }
 .tv-card.none .tv-name { color:#888; }
 .bundle-name { display:inline-block; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; font-size:13px; font-weight:800; padding:6px 14px; border-radius:20px; margin-bottom:12px; letter-spacing:-0.3px; }
 .bundle-name .bn-sub { font-size:10px; font-weight:600; opacity:0.85; margin-left:6px; }
+.bundle-guide { background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:10px 14px; margin-bottom:10px; font-size:12px; color:#0369a1; line-height:1.55; }
+.bundle-guide b { color:#0c4a6e; }
+.bundle-guide .tip { color:#059669; font-weight:700; margin-top:4px; display:block; }
 
 /* 하단 고정 바 */
 .bottom-bar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:2px solid #e2ddd6; box-shadow:0 -4px 20px rgba(0,0,0,0.06); padding:14px 0; z-index:100; }
@@ -111,13 +114,14 @@ h1 { font-size:24px; font-weight:900; color:#1a2744; margin-bottom:6px; }
     <!-- 휴대폰 결합 (체크 시) -->
     <div class="sub-field" id="f-mobile-field">
       <div class="bundle-name" id="f-bundle-name"></div>
+      <div class="bundle-guide" id="f-bundle-guide"></div>
       <div class="card-grid-2">
-        <div>
-          <div class="sub-field-label">결합 인원 / 회선수</div>
+        <div id="f-lines-wrap">
+          <div class="sub-field-label" id="f-lines-label">결합 인원 / 회선수</div>
           <select class="sub-select" id="f-lines"></select>
         </div>
         <div id="f-range-wrap" style="display:none">
-          <div class="sub-field-label">월 요금 합산</div>
+          <div class="sub-field-label" id="f-range-label">월 요금 합산</div>
           <select class="sub-select" id="f-range"></select>
         </div>
       </div>
@@ -263,18 +267,24 @@ function buildTv(){
 function buildLinesRange(){
   var c=state.carrier;
   var linesSel=document.getElementById('f-lines');
+  var linesWrap=document.getElementById('f-lines-wrap');
   var rangeWrap=document.getElementById('f-range-wrap');
   var rangeSel=document.getElementById('f-range');
+  var rangeLabel=document.getElementById('f-range-label');
   if (c==='skt'){
-    linesSel.innerHTML='<option value="1">1명 (요즘가족결합)</option><option value="2">2명</option><option value="3">3명</option><option value="4">4명</option><option value="5">5명</option>';
+    linesWrap.style.display='';
+    linesSel.innerHTML='<option value="1">1명</option><option value="2">2명</option><option value="3">3명</option><option value="4">4명</option><option value="5">5명</option>';
     rangeWrap.style.display='none';
   } else if (c==='kt'){
-    linesSel.innerHTML='<option value="-">해당 없음 (구간으로 계산)</option>';
+    linesWrap.style.display='none';
     rangeSel.innerHTML=D.kt.bundle.ranges.map(function(r,i){return '<option value="'+i+'">'+r+'</option>';}).join('');
+    rangeLabel.textContent='휴대폰 월 요금 합산 구간';
     rangeWrap.style.display='';
   } else {
-    linesSel.innerHTML='<option value="2">2회선 (참쉬운)</option><option value="3">3회선</option><option value="4">4회선+</option>';
-    rangeSel.innerHTML=D.lgu.bundle.chweyswun.planLabels.map(function(p,i){return '<option value="'+i+'">휴대폰 월 '+p+'</option>';}).join('');
+    linesWrap.style.display='';
+    linesSel.innerHTML='<option value="2">2회선</option><option value="3">3회선</option><option value="4">4회선+</option>';
+    rangeSel.innerHTML=D.lgu.bundle.chweyswun.planLabels.map(function(p,i){return '<option value="'+i+'">'+p+'</option>';}).join('');
+    rangeLabel.textContent='휴대폰 월 요금';
     rangeWrap.style.display='';
   }
   linesSel.value=state.lines;
@@ -361,15 +371,29 @@ function renderBottom(){
 }
 
 var BUNDLE_INFO = {
-  skt:{name:'요즘가족결합',desc:'가족/지인 최대 5명 휴대폰 결합 시'},
-  kt:{name:'총액결합할인',desc:'휴대폰 월 요금 합산 구간별 할인'},
-  lgu:{name:'참쉬운가족결합',desc:'2회선부터 휴대폰 결합 가능'}
+  skt:{
+    name:'요즘가족결합',
+    desc:'가족/지인 휴대폰 결합',
+    guide:'<b>요즘가족결합</b>은 함께 결합하는 <b>휴대폰 회선 수(인원수)</b>에 따라 인당 할인금액이 달라집니다. 최대 5명까지 결합 가능합니다.<span class="tip">💡 회선이 많을수록 인터넷/IPTV/휴대폰 모두 할인폭이 커집니다.</span>'
+  },
+  kt:{
+    name:'총액결합할인',
+    desc:'휴대폰 요금 합산 구간별 할인',
+    guide:'<b>총액 결합할인</b>은 결합할 <b>휴대폰들의 요금제를 모두 합한 금액</b>이 얼마냐에 따라 할인금액이 달라집니다.<span class="tip">💡 아래에서 해당하는 합산 구간을 선택해주세요.</span>'
+  },
+  lgu:{
+    name:'참쉬운가족결합',
+    desc:'2회선부터 결합',
+    guide:'<b>참쉬운가족결합</b>은 <b>2회선부터</b> 결합 가능하며, 휴대폰 월 요금과 회선수에 따라 할인금액이 달라집니다.<span class="tip">💡 휴대폰 요금이 높고 회선수가 많을수록 할인폭이 커집니다.</span>'
+  }
 };
 
 function renderBundleName(){
   var b=BUNDLE_INFO[state.carrier];
   var el=document.getElementById('f-bundle-name');
   if(el) el.innerHTML='🎯 '+b.name+'<span class="bn-sub">'+b.desc+'</span>';
+  var guide=document.getElementById('f-bundle-guide');
+  if(guide) guide.innerHTML=b.guide;
   var lbl=document.getElementById('f-mobile-label');
   if(lbl) lbl.textContent=b.name;
 }
