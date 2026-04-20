@@ -342,13 +342,13 @@ function refresh(){
   renderSpeeds();
   buildTv();
   buildLinesRange();
-  document.getElementById('f-tv-field').style.display=state.tvOn?'':'none';
-  document.getElementById('f-mobile-field').style.display=state.mobileOn?'':'none';
+  document.getElementById('f-tv-field').style.display=state.tvOn?'block':'none';
+  document.getElementById('f-mobile-field').style.display=state.mobileOn?'block':'none';
   renderBottom();
 }
 
 // 이벤트
-document.getElementById('f-tv-on').addEventListener('change',function(e){ state.tvOn=e.target.checked; refresh(); });
+document.getElementById('f-tv-on').addEventListener('change',function(e){ state.tvOn=e.target.checked; if(e.target.checked && state.tv===0) state.tv=1; refresh(); });
 document.getElementById('f-mobile-on').addEventListener('change',function(e){ state.mobileOn=e.target.checked; refresh(); });
 document.getElementById('f-wifi').addEventListener('change',function(e){ state.wifi=e.target.checked; renderBottom(); });
 document.getElementById('f-tv').addEventListener('change',function(e){ state.tv=parseInt(e.target.value); renderBottom(); });
