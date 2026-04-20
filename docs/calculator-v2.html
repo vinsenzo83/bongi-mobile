@@ -375,16 +375,17 @@ function calculate(){
 
 function renderBottom(){
   var r=calculate();
-  var price = state.mobileOn ? r.bundleFee : r.basicFee;
-  var h='<div class="bb-line bb-final"><span class="l">💰 월 기본요금</span><span class="v">'+fmt(price)+'</span></div>';
+  var basePrice = state.mobileOn ? r.bundleFee : r.basicFee;
+  var finalPrice = state.mobileOn ? r.finalFee : r.basicFee;
+  var h='<div class="bb-line"><span class="l">월 기본요금</span><span class="v">'+fmt(basePrice)+'</span></div>';
   if (state.mobileOn && r.mobileSide>0){
     h+='<div class="bb-line"><span class="l">📱 휴대폰요금 별도할인</span><span class="v" style="color:#059669;font-weight:700">-'+fmt(r.mobileSide)+'</span></div>';
   }
   if (r.setTopFee>0){
     h+='<div class="bb-line" style="font-size:11px;color:#888"><span class="l">· 셋톱박스 ('+r.setTopName+') 포함</span><span class="v">'+fmt(r.setTopFee)+'</span></div>';
   }
-  if (r.installFee) h+='<div class="bb-line" style="font-size:11px;color:#888"><span class="l">🔧 최초 설치비 (1회)</span><span class="v">'+fmt(r.installFee)+'</span></div>';
-  if (r.gift) h+='<div class="bb-gift">🎁 사은품 '+fmt(r.gift)+' + 제휴카드 / 상품권 / 현금 추가혜택</div>';
+  h+='<div class="bb-line bb-final"><span class="l">💰 최종 월 요금</span><span class="v">'+fmt(finalPrice)+'</span></div>';
+  if (r.gift) h+='<div class="bb-gift">🎁 사은품 '+fmt(r.gift)+' (현금 / 상품권 선택)</div>';
   document.getElementById('bb-info').innerHTML=h;
 }
 
