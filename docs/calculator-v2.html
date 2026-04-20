@@ -43,6 +43,8 @@ h1 { font-size:24px; font-weight:900; color:#1a2744; margin-bottom:6px; }
 .tv-card .tv-dc { font-size:10px; color:#059669; margin-top:2px; }
 .tv-card.none { background:#f8f9fc; }
 .tv-card.none .tv-name { color:#888; }
+.bundle-name { display:inline-block; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; font-size:13px; font-weight:800; padding:6px 14px; border-radius:20px; margin-bottom:12px; letter-spacing:-0.3px; }
+.bundle-name .bn-sub { font-size:10px; font-weight:600; opacity:0.85; margin-left:6px; }
 
 /* 하단 고정 바 */
 .bottom-bar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:2px solid #e2ddd6; box-shadow:0 -4px 20px rgba(0,0,0,0.06); padding:14px 0; z-index:100; }
@@ -96,7 +98,7 @@ h1 { font-size:24px; font-weight:900; color:#1a2744; margin-bottom:6px; }
   <div class="field-body">
     <div class="option-row">
       <label><input type="checkbox" id="f-tv-on"> 📺 TV와 함께</label>
-      <label><input type="checkbox" id="f-mobile-on" checked> 📱 휴대폰 결합 (⭐ 권장)</label>
+      <label><input type="checkbox" id="f-mobile-on" checked> 📱 <span id="f-mobile-label">휴대폰 결합</span> (⭐ 권장)</label>
       <label><input type="checkbox" id="f-wifi"> 📡 WiFi 추가</label>
     </div>
 
@@ -108,7 +110,7 @@ h1 { font-size:24px; font-weight:900; color:#1a2744; margin-bottom:6px; }
 
     <!-- 휴대폰 결합 (체크 시) -->
     <div class="sub-field" id="f-mobile-field">
-      <div class="sub-field-label">휴대폰 결합 상세</div>
+      <div class="bundle-name" id="f-bundle-name"></div>
       <div class="card-grid-2">
         <div>
           <div class="sub-field-label">결합 인원 / 회선수</div>
@@ -358,11 +360,26 @@ function renderBottom(){
   document.getElementById('bb-info').innerHTML=h;
 }
 
+var BUNDLE_INFO = {
+  skt:{name:'요즘가족결합',desc:'가족/지인 최대 5명 휴대폰 결합 시'},
+  kt:{name:'총액결합할인',desc:'휴대폰 월 요금 합산 구간별 할인'},
+  lgu:{name:'참쉬운가족결합',desc:'2회선부터 휴대폰 결합 가능'}
+};
+
+function renderBundleName(){
+  var b=BUNDLE_INFO[state.carrier];
+  var el=document.getElementById('f-bundle-name');
+  if(el) el.innerHTML='🎯 '+b.name+'<span class="bn-sub">'+b.desc+'</span>';
+  var lbl=document.getElementById('f-mobile-label');
+  if(lbl) lbl.textContent=b.name;
+}
+
 function refresh(){
   renderCarriers();
   renderSpeeds();
   buildTv();
   buildLinesRange();
+  renderBundleName();
   document.getElementById('f-tv-field').style.display=state.tvOn?'block':'none';
   document.getElementById('f-mobile-field').style.display=state.mobileOn?'block':'none';
   renderBottom();
