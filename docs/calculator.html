@@ -144,9 +144,25 @@
     📺 셋톱박스: <span id="c-settop-info" style="color:#fff;font-weight:700">스마트3 (4,400원)</span> · 고정
   </div>
 
-  <div class="calc-check">
-    <input type="checkbox" id="c-mobile">
-    <label for="c-mobile">휴대폰 결합 (1대)</label>
+  <div class="calc-row">
+    <div class="calc-group">
+      <div class="calc-label">결합 종류 (택 1)</div>
+      <select class="calc-select" id="c-bundle">
+        <option value="home">요즘우리집결합 (TV만)</option>
+        <option value="family">요즘가족결합 (+ 휴대폰)</option>
+        <option value="none">결합 없음</option>
+      </select>
+    </div>
+    <div class="calc-group" id="c-lines-group" style="display:none">
+      <div class="calc-label">휴대폰 회선수</div>
+      <select class="calc-select" id="c-lines">
+        <option value="1">1회선</option>
+        <option value="2">2회선</option>
+        <option value="3">3회선</option>
+        <option value="4">4회선</option>
+        <option value="5">5회선</option>
+      </select>
+    </div>
   </div>
 
   <div class="calc-result" id="c-result"></div>
@@ -331,12 +347,26 @@
 <div class="section">
   <div class="st">4. 결합 할인 (3사)</div>
 
-  <div class="st2"><span class="badge b-skt">SKT</span> 요즘가족결합</div>
-  <div class="note">휴대폰 1~5회선 결합 가능. 인터넷 할인은 속도별 고정, 휴대폰 할인은 회선수별 차등 적용.</div>
+  <div class="st2"><span class="badge b-skt">SKT</span> 3종 결합 체계 (택 1, 중복 불가)</div>
+  <div class="note">① 요즘우리집결합 (인터넷+TV) · ② 요즘가족결합 (휴대폰 추가) · ③ 온가족할인 (장기가입). <b>세 가지 중 가장 유리한 1개만 적용</b> — 휴대폰 결합 있으면 보통 ②가 유리, 장기가입이면 ③ 비교 필요.</div>
+
+  <div class="st2">① 요즘우리집결합 (TV 결합만, 휴대폰 X)</div>
+  <div class="note">계산기 섹션 2의 "TV 결합가"에 이미 적용되어 있음. 추가 할인 없음.</div>
   <table>
-    <thead><tr><th>속도</th><th>인터넷 할인</th><th>휴대폰 할인 (회선수별)</th></tr></thead>
+    <thead><tr><th>속도</th><th>인터넷 할인</th></tr></thead>
     <tbody>
-      <tr><td><b>100M</b></td><td>-4,400원</td><td rowspan="3">1회선: -3,500원<br>2회선: -7,000원<br>3회선: -18,000원<br>4~5회선: -24,000원</td></tr>
+      <tr><td><b>100M</b></td><td>-1,100원</td></tr>
+      <tr><td><b>500M</b></td><td>-5,500원</td></tr>
+      <tr><td><b>1G</b></td><td>-5,500원</td></tr>
+    </tbody>
+  </table>
+
+  <div class="st2" style="margin-top:14px">② 요즘가족결합 (휴대폰 1~5회선 추가 시)</div>
+  <div class="note">요즘우리집결합과 <b>중복 적용</b>. 인터넷·휴대폰 모두 추가 할인. 휴대폰 할인은 인터넷 속도별로 다름.</div>
+  <table>
+    <thead><tr><th>속도</th><th>인터넷 할인</th><th>휴대폰 할인 (100M 기준)</th><th>휴대폰 할인 (500M·1G 기준)</th></tr></thead>
+    <tbody>
+      <tr><td><b>100M</b></td><td>-4,400원</td><td rowspan="3">1회선: -3,500원<br>2회선: -7,000원<br>3~5회선: -18,000원</td><td rowspan="3">1회선: -3,500원<br>2회선: -7,000원<br>3회선: -18,000원<br>4~5회선: -24,000원</td></tr>
       <tr><td><b>500M</b></td><td>-11,000원</td></tr>
       <tr><td><b>1G</b></td><td>-13,200원</td></tr>
     </tbody>
@@ -569,6 +599,15 @@ var D = {
     gift: {
       solo: { '100M': 110000, '500M': 170000, '1G': 170000 },
       combo: { '100M': 400000, '500M': 430000, '1G': 490000 }
+    },
+    bundle: {
+      family: {
+        internet: { '100M': 4400, '500M': 11000, '1G': 13200 },
+        mobile: {
+          '100M':  { 1: 3500, 2: 7000, 3: 18000, 4: 18000, 5: 18000 },
+          '500M+': { 1: 3500, 2: 7000, 3: 18000, 4: 24000, 5: 24000 }
+        }
+      }
     }
   },
   kt: {
@@ -848,6 +887,24 @@ function calc() {
     html += '<div class="calc-line total"><span class="l">월 합계</span><span class="v">' + fmt(total) + '</span></div>';
   }
 
+  // 결합 종류 (SKT 요즘가족결합 — 요즘우리집결합 할인 대체)
+  var bundleType = document.getElementById('c-bundle').value;
+  var linesGroup = document.getElementById('c-lines-group');
+  if (linesGroup) linesGroup.style.display = (bundleType === 'family') ? '' : 'none';
+
+  if (bundleType === 'family' && d.bundle && d.bundle.family) {
+    var famInet = d.bundle.family.internet[sp];
+    var lines = parseInt(document.getElementById('c-lines').value) || 1;
+    var mobKey = (sp === '100M') ? '100M' : '500M+';
+    var mobDc = d.bundle.family.mobile[mobKey][lines] || 0;
+    html += '<div style="margin-top:10px;padding:10px 12px;background:rgba(34,197,94,0.15);border:1.5px solid #4ade80;border-radius:8px">' +
+      '<div style="font-size:11px;color:#86efac;font-weight:700;margin-bottom:6px">👨‍👩‍👧 요즘가족결합 추가 할인 (요즘우리집결합 대체)</div>' +
+      '<div class="calc-line discount"><span class="l">인터넷 추가 할인 (' + sp + ')</span><span class="v">-' + fmt(famInet) + '</span></div>' +
+      '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선, ' + mobKey + ' 기준)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
+      '<div class="calc-line sub"><span class="l">→ 총 추가 할인</span><span class="v" style="color:#86efac">-' + fmt(famInet + mobDc) + '</span></div>' +
+      '</div>';
+  }
+
   var giftAmount = getGiftAmount(d, sp, ti);
   if (giftAmount > 0) {
     html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:6px;padding:6px 10px;margin-top:6px"><span class="l" style="color:#fbbf24">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900">' + fmt(giftAmount) + '</span></div>';
@@ -860,6 +917,8 @@ document.getElementById('c-carrier').addEventListener('change', function() { bui
 document.getElementById('c-speed').addEventListener('change', function() { updateWifiUI(); calc(); });
 document.getElementById('c-tv').addEventListener('change', calc);
 document.getElementById('c-wifi').addEventListener('change', calc);
+document.getElementById('c-bundle').addEventListener('change', calc);
+document.getElementById('c-lines').addEventListener('change', calc);
 
 init();
 
