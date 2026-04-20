@@ -703,7 +703,7 @@ var D = {
     },
     bundle: {
       // 총액/정액 결합할인 — 기본 TV 결합 인터넷 할인과 중복 적용
-      ranges_total: ['~22,000', '22,000~', '64,900~', '108,900~', '141,900~', '174,900~'],
+      ranges_total: ['22,000원 이하', '22,000원 이상', '64,900원 이상', '108,900원 이상', '141,900원 이상', '174,900원 이상'],
       total: {
         internet: {
           '100M': [1650, 3300, 5500, 5500, 5500, 5500],  // 메가급
@@ -716,7 +716,7 @@ var D = {
           '1G':   [0, 0, 5500, 16610, 22110, 27610]
         }
       },
-      ranges_fixed: ['~37,000', '37,000~', '61,000~', '77,000~'],
+      ranges_fixed: ['37,000원 이하', '37,000원 이상', '61,000원 이상', '77,000원 이상'],
       fixed: {
         internet: [5500, 5500, 5500, 5500],
         mobile:   [0, 3000, 5000, 7000]
@@ -986,8 +986,9 @@ function calc() {
     baseTotal = total;
     var netDiscount = netBase + (wf ? wifiForSp : 0) - netCombo;
 
+    var sec1Name = (c === 'skt') ? '요즘우리집결합 (TV만)' : (c === 'kt') ? 'KT TV 결합 기본' : 'TV 결합 기본';
     html += '<div style="padding:12px 14px;background:rgba(59,130,246,0.12);border:1.5px solid #60a5fa;border-radius:8px;margin-bottom:10px">';
-    html += '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:8px">🏠 섹터 1 — 요즘우리집결합 (TV만, 기본)</div>';
+    html += '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:8px">🏠 섹터 1 — ' + sec1Name + '</div>';
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')</span><span class="v">' + fmt(netBase) + '</span></div>';
     if (wf && wifiForSp > 0) {
       html += '<div class="calc-line"><span class="l">+ WiFi' + (d.wifiName ? ' (' + d.wifiName + ')' : '') + '</span><span class="v">+' + fmt(wifiForSp) + '</span></div>';
@@ -1035,13 +1036,37 @@ function calc() {
       inetDc = tbl.internet[rangeIdx] || 0;
       mobDc = tbl.mobile[rangeIdx] || 0;
     }
-    var finalInet = baseTotal - inetDc;
+
+    // 상세 계산
+    var netSingleWithWifi = netBase + (wf ? wifiForSp : 0);
+    var ktNetCombo = hasTv ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]) : netSingleWithWifi;
+    var ktBaseInetDc = hasTv ? (netSingleWithWifi - ktNetCombo) : 0;  // KT 기본 TV결합 인터넷 할인
+    var inetAfterAll = ktNetCombo - inetDc;
+    var tvBaseVal = hasTv ? d.tv[ti].p : 0;
+    var tvBaseDc = hasTv ? (d.tv[ti].dc || 0) : 0;
+    var tvAfter = tvBaseVal - tvBaseDc;
+    var setTopFee = hasTv ? (d.setTop || 0) : 0;
+    var finalInet = inetAfterAll + tvAfter + setTopFee;
+
     html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(59,130,246,0.12);border:1.5px solid #60a5fa;border-radius:8px">' +
-      '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:8px">📊 섹터 2 — KT ' + (isTotal ? '총액' : '정액') + ' 결합할인 (월 요금 ' + rangeLabels[rangeIdx] + '원 구간)</div>' +
-      '<div class="calc-line discount"><span class="l">인터넷 추가 할인 (기본 결합할인과 중복)</span><span class="v">-' + fmt(inetDc) + '</span></div>' +
-      '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#93c5fd">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#60a5fa;font-size:20px">' + fmt(finalInet) + '</span></div>' +
+      '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:8px">📊 섹터 2 — KT ' + (isTotal ? '총액' : '정액') + ' 결합할인 (월 요금 ' + rangeLabels[rangeIdx] + ' 구간) · 기본 할인과 중복</div>' +
+      // 인터넷
+      '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi) + '</span></div>';
+    if (ktBaseInetDc > 0) {
+      html += '<div class="calc-line discount"><span class="l">KT 기본 TV결합 인터넷 할인</span><span class="v">-' + fmt(ktBaseInetDc) + '</span></div>';
+    }
+    html += '<div class="calc-line discount"><span class="l">' + (isTotal ? '총액' : '정액') + ' 결합 인터넷 추가 할인 (중복)</span><span class="v">-' + fmt(inetDc) + '</span></div>' +
+      '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfterAll) + '</span></div>';
+    if (hasTv) {
+      html += '<div class="calc-line" style="margin-top:6px"><span class="l">' + d.tv[ti].n.split('(')[0].trim() + '</span><span class="v">' + fmt(tvBaseVal) + '</span></div>' +
+        '<div class="calc-line discount"><span class="l">TV 결합 할인</span><span class="v">-' + fmt(tvBaseDc) + '</span></div>' +
+        '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfter) + '</span></div>' +
+        '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee) + '</span></div>';
+    }
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#93c5fd">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#60a5fa;font-size:20px">' + fmt(finalInet) + '</span></div>' +
+      // 무선
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#93c5fd;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
-      '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + rangeLabels[rangeIdx] + '원 구간)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
+      '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + rangeLabels[rangeIdx] + ' 구간)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
       (mobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 구간은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(mobDc) + '</span><span class="v"></span></div>') +
       '</div>';
   }
