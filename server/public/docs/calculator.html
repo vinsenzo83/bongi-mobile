@@ -144,26 +144,23 @@
     📺 셋톱박스: <span id="c-settop-info" style="color:#fff;font-weight:700">스마트3 (4,400원)</span> · 고정
   </div>
 
-  <div class="calc-row">
+  <div class="calc-check">
+    <input type="checkbox" id="c-mobile-bundle">
+    <label for="c-mobile-bundle">📱 무선결합 포함 (가장 유리한 결합 자동 적용)</label>
+  </div>
+
+  <div class="calc-row" id="c-bundle-detail" style="display:none">
     <div class="calc-group">
-      <div class="calc-label">결합 종류</div>
-      <select class="calc-select" id="c-bundle"></select>
-    </div>
-    <div class="calc-group" id="c-lines-group" style="display:none">
       <div class="calc-label">결합 인원</div>
-      <select class="calc-select" id="c-lines">
-        <option value="1">1명 결합</option>
-        <option value="2">2명 결합</option>
-        <option value="3">3명 결합</option>
-        <option value="4">4명 결합</option>
-        <option value="5">5명 결합</option>
-      </select>
+      <select class="calc-select" id="c-lines"></select>
     </div>
     <div class="calc-group" id="c-range-group" style="display:none">
-      <div class="calc-label">월 요금 합산 구간</div>
+      <div class="calc-label">월 요금 합산</div>
       <select class="calc-select" id="c-range"></select>
     </div>
   </div>
+
+  <select class="calc-select" id="c-bundle" style="display:none"></select>
 
   <div class="calc-result" id="c-result"></div>
 </div>
@@ -879,29 +876,77 @@ function updateSetTopInfo() {
   }
 }
 
-// 통신사별 결합 드롭다운 옵션 업데이트
+// 무선결합 체크 여부에 따라 UI 업데이트
 function updateBundleUI() {
   var c = document.getElementById('c-carrier').value;
-  var sel = document.getElementById('c-bundle');
+  var mobOn = document.getElementById('c-mobile-bundle').checked;
+  var detailGroup = document.getElementById('c-bundle-detail');
+  var rangeGroup = document.getElementById('c-range-group');
+  var linesSel = document.getElementById('c-lines');
   var rangeSel = document.getElementById('c-range');
-  var opts = '';
-  if (c === 'skt') {
-    opts = '<option value="home">요즘우리집결합</option>' +
-           '<option value="family">요즘가족결합 (무선결합)</option>';
-    rangeSel.innerHTML = '';
-  } else if (c === 'kt') {
-    opts = '<option value="home">TV만 결합 (기본)</option>' +
-           '<option value="kt-total">총액 결합할인 (중복)</option>' +
-           '<option value="kt-fixed">정액 결합할인 (중복)</option>';
-  } else if (c === 'lgu') {
-    opts = '<option value="home">TV 결합 (기본)</option>' +
-           '<option value="lgu-chweyswun">참쉬운 가족결합 (무선결합)</option>' +
-           '<option value="lgu-together">투게더 결합 (고가요금제)</option>';
-  } else {
-    opts = '<option value="home">TV 결합 (기본)</option>';
-    rangeSel.innerHTML = '';
+  var bundleSel = document.getElementById('c-bundle');
+
+  // 무선결합 체크 안됨 → 기본 (TV만 결합)
+  if (!mobOn) {
+    detailGroup.style.display = 'none';
+    bundleSel.value = 'home';
+    return;
   }
-  sel.innerHTML = opts;
+
+  detailGroup.style.display = 'flex';
+  var linesGroup = linesSel.parentElement;
+
+  if (c === 'skt') {
+    bundleSel.value = 'family';
+    linesSel.innerHTML = '<option value="1">1명 결합</option><option value="2">2명 결합</option><option value="3">3명 결합</option><option value="4">4명 결합</option><option value="5">5명 결합</option>';
+    linesGroup.style.display = '';
+    rangeGroup.style.display = 'none';
+  } else if (c === 'kt') {
+    bundleSel.value = 'kt-total';  // 기본 총액 (최종 결정은 calc에서 총액 vs 정액 자동 비교)
+    rangeSel.innerHTML = D.kt.bundle.ranges_total.map(function(r, i) {
+      return '<option value="' + i + '">' + r + '</option>';
+    }).join('');
+    rangeGroup.style.display = '';
+    linesGroup.style.display = 'none';
+  } else if (c === 'lgu') {
+    bundleSel.value = 'lgu-chweyswun';  // 기본 참쉬운 (calc에서 참쉬운 vs 투게더 자동 비교)
+    linesSel.innerHTML = '<option value="2">2회선</option><option value="3">3회선</option><option value="4">4회선+</option>';
+    linesGroup.style.display = '';
+    rangeSel.innerHTML = D.lgu.bundle.chweyswun.planLabels.map(function(p, i) {
+      return '<option value="' + i + '">휴대폰 월 ' + p + '</option>';
+    }).join('');
+    rangeGroup.style.display = '';
+  } else {
+    detailGroup.style.display = 'none';
+    bundleSel.value = 'home';
+  }
+}
+
+// 통신사/조건별 최적 결합 자동 선택 (KT 총액 vs 정액, LGU+ 참쉬운 vs 투게더)
+function selectBestBundle() {
+  var c = document.getElementById('c-carrier').value;
+  var sp = document.getElementById('c-speed').value;
+  if (!document.getElementById('c-mobile-bundle').checked) return;
+  var bundleSel = document.getElementById('c-bundle');
+
+  if (c === 'kt') {
+    var rangeIdx = parseInt(document.getElementById('c-range').value) || 0;
+    // 총액 할인 합계
+    var totalSum = D.kt.bundle.total.internet[sp][rangeIdx] + D.kt.bundle.total.mobile[sp][rangeIdx];
+    // 정액은 rangeIdx를 정액 구간에 맞춰 재매핑 (단순: 동일 index 사용 후 클리핑)
+    var fixedIdx = Math.min(rangeIdx, D.kt.bundle.fixed.internet.length - 1);
+    var fixedSum = D.kt.bundle.fixed.internet[fixedIdx] + D.kt.bundle.fixed.mobile[fixedIdx];
+    bundleSel.value = (totalSum >= fixedSum) ? 'kt-total' : 'kt-fixed';
+  } else if (c === 'lgu') {
+    var lines = parseInt(document.getElementById('c-lines').value) || 2;
+    var idx = Math.min(lines, 4) - 2;
+    var planIdx = parseInt(document.getElementById('c-range').value) || 0;
+    var chweySum = D.lgu.bundle.chweyswun.internet[sp] + D.lgu.bundle.chweyswun.mobile[planIdx][idx];
+    // 투게더는 100M 불가, 또 88K 이상 고가요금제 필요
+    var togetherUsable = sp !== '100M' && planIdx === 2;
+    var togetherSum = togetherUsable ? (D.lgu.bundle.together.internet[sp] + D.lgu.bundle.together.mobile[idx]) : 0;
+    bundleSel.value = (togetherUsable && togetherSum > chweySum) ? 'lgu-together' : 'lgu-chweyswun';
+  }
 }
 
 // KT 결합 선택에 따라 구간 드롭다운 업데이트
@@ -976,7 +1021,7 @@ function init() {
   }
   buildTV();
   updateBundleUI();
-  updateRangeUI();
+  selectBestBundle();
   updateWifiUI();
   updateSetTopInfo();
   calc();
@@ -1208,16 +1253,68 @@ function calc() {
     html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:6px;padding:6px 10px;margin-top:6px"><span class="l" style="color:#fbbf24">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900">' + fmt(giftAmount) + '</span></div>';
   }
   html += '<div class="calc-line"><span class="l">설치비 (1회)</span><span class="v">' + fmt(installPrice) + '</span></div>';
+
+  // 기본 vs 무선결합 비교 요약 (무선결합 체크 시)
+  if (document.getElementById('c-mobile-bundle').checked) {
+    var baseFinal = baseTotal;
+    var bundleFinal = baseFinal;
+    var mobileSide = 0;
+    var bundleName = '';
+    if (c === 'skt' && bundleType === 'family') {
+      var netSingleWithWifi = netBase + (wf ? wifiForSp : 0);
+      var famInet2 = d.bundle.family.internet[sp];
+      var famIptv2 = hasTv ? (d.bundle.family.iptv || 0) : 0;
+      var lines2 = parseInt(document.getElementById('c-lines').value) || 1;
+      var tbl2 = d.bundle.family.mobilePerBySpeed[sp] || d.bundle.family.mobilePerBySpeed['1G'];
+      var perPerson2 = tbl2[lines2] || 0;
+      bundleFinal = (netSingleWithWifi - famInet2) + (hasTv ? (d.tv[ti].p - (d.tv[ti].dc || 0) - famIptv2) : 0) + (hasTv ? (d.setTop || 0) : 0);
+      mobileSide = perPerson2 * lines2;
+      bundleName = '요즘가족결합 (' + lines2 + '명)';
+    } else if (c === 'kt' && (bundleType === 'kt-total' || bundleType === 'kt-fixed')) {
+      var rangeIdx2 = parseInt(document.getElementById('c-range').value) || 0;
+      var isTotal2 = bundleType === 'kt-total';
+      var tblK = isTotal2 ? d.bundle.total : d.bundle.fixed;
+      bundleFinal = baseTotal - (isTotal2 ? tblK.internet[sp][rangeIdx2] : tblK.internet[rangeIdx2]);
+      mobileSide = isTotal2 ? tblK.mobile[sp][rangeIdx2] : tblK.mobile[rangeIdx2];
+      bundleName = 'KT ' + (isTotal2 ? '총액' : '정액') + ' 결합할인';
+    } else if (c === 'lgu' && (bundleType === 'lgu-chweyswun' || bundleType === 'lgu-together')) {
+      var isChwey = bundleType === 'lgu-chweyswun';
+      var lguData2 = isChwey ? d.bundle.chweyswun : d.bundle.together;
+      var lguInet2 = lguData2.internet[sp] || 0;
+      var lines3 = parseInt(document.getElementById('c-lines').value) || 2;
+      var idx3 = Math.min(lines3, 4) - 2;
+      var netSingle2 = netBase + (wf ? wifiForSp : 0);
+      bundleFinal = (netSingle2 - lguInet2) + (hasTv ? (d.tv[ti].p - (d.tv[ti].dc || 0)) : 0) + (hasTv ? (d.setTop || 0) : 0);
+      if (isChwey) {
+        var planIdx2 = parseInt(document.getElementById('c-range').value) || 0;
+        mobileSide = lguData2.mobile[planIdx2][idx3] || 0;
+      } else {
+        mobileSide = lguData2.mobile[idx3] || 0;
+      }
+      bundleName = isChwey ? '참쉬운 가족결합' : '투게더 결합';
+    }
+
+    var inetSavings = baseFinal - bundleFinal;
+    html += '<div style="margin-top:14px;padding:12px 14px;background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(34,197,94,0.1));border:2px solid #fbbf24;border-radius:10px">' +
+      '<div style="font-size:12px;color:#fcd34d;font-weight:800;margin-bottom:10px">⚖️ 기본 vs 무선결합 비교 (가장 유리한 결합 자동 선택)</div>' +
+      '<div class="calc-line"><span class="l">🏠 기본 할인 (무선결합 X)</span><span class="v">' + fmt(baseFinal) + '</span></div>' +
+      '<div class="calc-line" style="background:rgba(251,191,36,0.15);padding:6px 10px;border-radius:6px;margin-top:4px"><span class="l" style="color:#fcd34d;font-weight:700">⭐ ' + bundleName + ' (인터넷+TV)</span><span class="v" style="color:#fbbf24;font-weight:900;font-size:18px">' + fmt(bundleFinal) + '</span></div>' +
+      '<div class="calc-line sub"><span class="l" style="color:#86efac">· 인터넷+TV 절감</span><span class="v" style="color:#86efac;font-weight:700">-' + fmt(inetSavings) + '/월</span></div>' +
+      '<div class="calc-line sub"><span class="l" style="color:#86efac">· 휴대폰 고지서 별도 절감</span><span class="v" style="color:#86efac;font-weight:700">-' + fmt(mobileSide) + '/월</span></div>' +
+      '<div class="calc-line total" style="border-top:1px dashed rgba(255,255,255,0.2);margin-top:8px;padding-top:8px"><span class="l" style="color:#fcd34d">🎯 총 월 절감 (인터넷+무선)</span><span class="v" style="color:#4ade80;font-size:20px">-' + fmt(inetSavings + mobileSide) + '</span></div>' +
+      '</div>';
+  }
+
   document.getElementById('c-result').innerHTML = html;
 }
 
-document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); updateRangeUI(); updateWifiUI(); updateSetTopInfo(); calc(); });
-document.getElementById('c-speed').addEventListener('change', function() { updateWifiUI(); calc(); });
+document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); selectBestBundle(); updateWifiUI(); updateSetTopInfo(); calc(); });
+document.getElementById('c-speed').addEventListener('change', function() { updateWifiUI(); selectBestBundle(); calc(); });
 document.getElementById('c-tv').addEventListener('change', calc);
 document.getElementById('c-wifi').addEventListener('change', calc);
-document.getElementById('c-bundle').addEventListener('change', function() { updateRangeUI(); calc(); });
-document.getElementById('c-lines').addEventListener('change', calc);
-document.getElementById('c-range').addEventListener('change', calc);
+document.getElementById('c-mobile-bundle').addEventListener('change', function() { updateBundleUI(); selectBestBundle(); calc(); });
+document.getElementById('c-lines').addEventListener('change', function() { selectBestBundle(); calc(); });
+document.getElementById('c-range').addEventListener('change', function() { selectBestBundle(); calc(); });
 
 init();
 
