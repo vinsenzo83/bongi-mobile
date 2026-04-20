@@ -247,7 +247,7 @@ function buildLinesRange(){
     rangeWrap.style.display='none';
   } else if (c==='kt'){
     linesSel.innerHTML='<option value="-">해당 없음 (구간으로 계산)</option>';
-    rangeSel.innerHTML=D.kt.bundle.total.ranges.map(function(r,i){return '<option value="'+i+'">'+r+'</option>';}).join('');
+    rangeSel.innerHTML=D.kt.bundle.ranges.map(function(r,i){return '<option value="'+i+'">'+r+'</option>';}).join('');
     rangeWrap.style.display='';
   } else {
     linesSel.innerHTML='<option value="2">2회선 (참쉬운)</option><option value="3">3회선</option><option value="4">4회선+</option>';
@@ -299,7 +299,7 @@ function calculate(){
       var inetDc=d.bundle.total.internet[sp][rIdx]||0;
       mobileSide=d.bundle.total.mobile[sp][rIdx]||0;
       bundleFee=baseTotal-inetDc;
-      benefitLabel='총액 결합 ('+d.bundle.total.ranges[rIdx]+')';
+      benefitLabel='총액 결합 ('+d.bundle.ranges[rIdx]+')';
     } else if (state.carrier==='lgu' && d.bundle && d.bundle.chweyswun){
       var pIdx=parseInt(state.rangeIdx)||0;
       var ln=parseInt(state.lines)||2;
