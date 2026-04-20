@@ -263,13 +263,14 @@ function buildTv(){
   var el=document.getElementById('f-tv');
   var d=D[state.carrier];
   var icons=['🚫','📺','📺','📺','🎬','🎬','🎞️','🎞️','⭐','💎'];
-  el.innerHTML=d.tv.map(function(t,i){
+  // i=0 (TV 없음)은 제외 — TV와 함께 선택했으니 상품만 노출
+  el.innerHTML=d.tv.slice(1).map(function(t,offset){
+    var i=offset+1;
     var sel=(state.tv===i)?' selected':'';
-    var none=(i===0)?' none':'';
-    var priceHtml=t.p?('<div class="tv-price">월 '+fmt(t.p)+'</div>'):'<div class="tv-price" style="color:#888">선택 안함</div>';
+    var priceHtml='<div class="tv-price">월 '+fmt(t.p)+'</div>';
     var dcHtml=(t.dc>0)?('<div class="tv-dc">결합 -'+fmt(t.dc)+'</div>'):'';
     var icon=icons[i]||'📺';
-    return '<div class="tv-card'+sel+none+'" data-tv="'+i+'">'+
+    return '<div class="tv-card'+sel+'" data-tv="'+i+'">'+
       '<div class="tv-icon">'+icon+'</div>'+
       '<div class="tv-name">'+t.n+'</div>'+
       priceHtml+dcHtml+
