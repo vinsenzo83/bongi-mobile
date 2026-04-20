@@ -146,11 +146,8 @@
 
   <div class="calc-row">
     <div class="calc-group">
-      <div class="calc-label">결합 종류 (택 1)</div>
-      <select class="calc-select" id="c-bundle">
-        <option value="home">요즘우리집결합</option>
-        <option value="family">요즘가족결합 (무선결합)</option>
-      </select>
+      <div class="calc-label">결합 종류</div>
+      <select class="calc-select" id="c-bundle"></select>
     </div>
     <div class="calc-group" id="c-lines-group" style="display:none">
       <div class="calc-label">결합 인원</div>
@@ -161,6 +158,10 @@
         <option value="4">4명 결합</option>
         <option value="5">5명 결합</option>
       </select>
+    </div>
+    <div class="calc-group" id="c-range-group" style="display:none">
+      <div class="calc-label">월 요금 합산 구간</div>
+      <select class="calc-select" id="c-range"></select>
     </div>
   </div>
 
@@ -699,6 +700,27 @@ var D = {
     gift: {
       solo: { '100M': 90000, '500M': 140000, '1G': 140000 },
       combo: { '100M': 370000, '500M': 450000, '1G': 450000 }
+    },
+    bundle: {
+      // 총액/정액 결합할인 — 기본 TV 결합 인터넷 할인과 중복 적용
+      ranges_total: ['~22,000', '22,000~', '64,900~', '108,900~', '141,900~', '174,900~'],
+      total: {
+        internet: {
+          '100M': [1650, 3300, 5500, 5500, 5500, 5500],  // 메가급
+          '500M': [2200, 5500, 5500, 5500, 5500, 5500],  // 기가급
+          '1G':   [2200, 5500, 5500, 5500, 5500, 5500]
+        },
+        mobile: {
+          '100M': [0, 0, 3300, 14300, 18700, 23100],
+          '500M': [0, 0, 5500, 16610, 22110, 27610],
+          '1G':   [0, 0, 5500, 16610, 22110, 27610]
+        }
+      },
+      ranges_fixed: ['~37,000', '37,000~', '61,000~', '77,000~'],
+      fixed: {
+        internet: [5500, 5500, 5500, 5500],
+        mobile:   [0, 3000, 5000, 7000]
+      }
     }
   },
   lgu: {
@@ -836,6 +858,52 @@ function updateSetTopInfo() {
   }
 }
 
+// 통신사별 결합 드롭다운 옵션 업데이트
+function updateBundleUI() {
+  var c = document.getElementById('c-carrier').value;
+  var sel = document.getElementById('c-bundle');
+  var rangeSel = document.getElementById('c-range');
+  var opts = '';
+  if (c === 'skt') {
+    opts = '<option value="home">요즘우리집결합</option>' +
+           '<option value="family">요즘가족결합 (무선결합)</option>';
+    rangeSel.innerHTML = '';
+  } else if (c === 'kt') {
+    opts = '<option value="home">TV만 결합 (기본)</option>' +
+           '<option value="kt-total">총액 결합할인 (중복)</option>' +
+           '<option value="kt-fixed">정액 결합할인 (중복)</option>';
+  } else {
+    opts = '<option value="home">TV 결합 (기본)</option>';
+    rangeSel.innerHTML = '';
+  }
+  sel.innerHTML = opts;
+}
+
+// KT 결합 선택에 따라 구간 드롭다운 업데이트
+function updateRangeUI() {
+  var c = document.getElementById('c-carrier').value;
+  var bundle = document.getElementById('c-bundle').value;
+  var rangeSel = document.getElementById('c-range');
+  var rangeGroup = document.getElementById('c-range-group');
+  var linesGroup = document.getElementById('c-lines-group');
+
+  // 리셋
+  linesGroup.style.display = 'none';
+  rangeGroup.style.display = 'none';
+
+  if (c === 'skt' && bundle === 'family') {
+    linesGroup.style.display = '';
+  } else if (c === 'kt' && (bundle === 'kt-total' || bundle === 'kt-fixed')) {
+    var ranges = (bundle === 'kt-total')
+      ? D.kt.bundle.ranges_total
+      : D.kt.bundle.ranges_fixed;
+    rangeSel.innerHTML = ranges.map(function(r, i) {
+      return '<option value="' + i + '">' + r + '원</option>';
+    }).join('');
+    rangeGroup.style.display = '';
+  }
+}
+
 function updateWifiUI() {
   var c = document.getElementById('c-carrier').value;
   var sp = document.getElementById('c-speed').value;
@@ -865,6 +933,8 @@ function init() {
     cs.appendChild(o);
   }
   buildTV();
+  updateBundleUI();
+  updateRangeUI();
   updateWifiUI();
   updateSetTopInfo();
   calc();
@@ -949,11 +1019,34 @@ function calc() {
     html += '<div class="calc-line total"><span class="l">월 합계</span><span class="v">' + fmt(total) + '</span></div>';
   }
 
-  // 결합 종류 (SKT 요즘가족결합 — 요즘우리집결합 할인 대체)
   var bundleType = document.getElementById('c-bundle').value;
-  var linesGroup = document.getElementById('c-lines-group');
-  if (linesGroup) linesGroup.style.display = (bundleType === 'family') ? '' : 'none';
 
+  // KT 총액/정액 결합할인 (기본 인터넷 할인과 중복 적용)
+  if (c === 'kt' && (bundleType === 'kt-total' || bundleType === 'kt-fixed')) {
+    var rangeIdx = parseInt(document.getElementById('c-range').value) || 0;
+    var isTotal = bundleType === 'kt-total';
+    var tbl = isTotal ? d.bundle.total : d.bundle.fixed;
+    var rangeLabels = isTotal ? d.bundle.ranges_total : d.bundle.ranges_fixed;
+    var inetDc, mobDc;
+    if (isTotal) {
+      inetDc = tbl.internet[sp][rangeIdx] || 0;
+      mobDc = tbl.mobile[sp][rangeIdx] || 0;
+    } else {
+      inetDc = tbl.internet[rangeIdx] || 0;
+      mobDc = tbl.mobile[rangeIdx] || 0;
+    }
+    var finalInet = baseTotal - inetDc;
+    html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(59,130,246,0.12);border:1.5px solid #60a5fa;border-radius:8px">' +
+      '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:8px">📊 섹터 2 — KT ' + (isTotal ? '총액' : '정액') + ' 결합할인 (월 요금 ' + rangeLabels[rangeIdx] + '원 구간)</div>' +
+      '<div class="calc-line discount"><span class="l">인터넷 추가 할인 (기본 결합할인과 중복)</span><span class="v">-' + fmt(inetDc) + '</span></div>' +
+      '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#93c5fd">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#60a5fa;font-size:20px">' + fmt(finalInet) + '</span></div>' +
+      '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#93c5fd;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
+      '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + rangeLabels[rangeIdx] + '원 구간)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
+      (mobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 구간은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(mobDc) + '</span><span class="v"></span></div>') +
+      '</div>';
+  }
+
+  // 결합 종류 (SKT 요즘가족결합 — 요즘우리집결합 할인 대체)
   if (bundleType === 'family' && d.bundle && d.bundle.family) {
     var famInet = d.bundle.family.internet[sp];
     var famIptv = hasTv ? (d.bundle.family.iptv || 0) : 0;
@@ -1004,12 +1097,13 @@ function calc() {
   document.getElementById('c-result').innerHTML = html;
 }
 
-document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateWifiUI(); updateSetTopInfo(); calc(); });
+document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); updateRangeUI(); updateWifiUI(); updateSetTopInfo(); calc(); });
 document.getElementById('c-speed').addEventListener('change', function() { updateWifiUI(); calc(); });
 document.getElementById('c-tv').addEventListener('change', calc);
 document.getElementById('c-wifi').addEventListener('change', calc);
-document.getElementById('c-bundle').addEventListener('change', calc);
+document.getElementById('c-bundle').addEventListener('change', function() { updateRangeUI(); calc(); });
 document.getElementById('c-lines').addEventListener('change', calc);
+document.getElementById('c-range').addEventListener('change', calc);
 
 init();
 
