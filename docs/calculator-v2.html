@@ -102,7 +102,7 @@ h1 { font-size:24px; font-weight:900; color:#1a2744; margin-bottom:6px; }
     <div class="option-row">
       <label><input type="checkbox" id="f-tv-on"> 📺 TV와 함께</label>
       <label><input type="checkbox" id="f-mobile-on" checked> 📱 <span id="f-mobile-label">휴대폰 결합</span> (⭐ 권장)</label>
-      <label><input type="checkbox" id="f-wifi"> 📡 WiFi 추가</label>
+      <label id="f-wifi-label"><input type="checkbox" id="f-wifi"> 📡 <span id="f-wifi-text">WiFi 추가</span></label>
     </div>
 
     <!-- TV 선택 (체크 시) -->
@@ -188,7 +188,8 @@ var D = {
     bundle:{total:{
       internet:{'100M':[1650,3300,5500,5500,5500,5500],'500M':[2200,5500,5500,5500,5500,5500],'1G':[2200,5500,5500,5500,5500,5500]},
       mobile:{'100M':[0,0,3300,14300,18700,23100],'500M':[0,0,5500,16610,22110,27610],'1G':[0,0,5500,16610,22110,27610]}
-    }, ranges:['22,000원 이하','22,000원 이상','64,900원 이상','108,900원 이상','141,900원 이상','174,900원 이상']}
+    }, ranges:['22,000원 이하','22,000원 이상','64,900원 이상','108,900원 이상','141,900원 이상','174,900원 이상'],
+    fixed:{ internet:[5500,5500,5500,5500], mobile:[0,3000,5000,7000], ranges:['37,000원 이하','37,000원 이상','61,000원 이상','77,000원 이상']}}
   },
   lgu: {
     name:'LG U+', logo:'LG', color:'#e40981',
@@ -208,6 +209,10 @@ var D = {
       internet:{'100M':5500,'500M':9900,'1G':13200},
       planLabels:['69,000원 미만','69,000원 이상','88,000원 이상'],
       mobile:[[2200,3300,4400],[3300,5500,6600],[4400,6600,8800]]
+    },
+    together:{
+      internet:{'100M':0,'500M':11000,'1G':11000},
+      mobile:[10000,14000,20000]
     }}}
 };
 
@@ -401,12 +406,33 @@ function renderBundleName(){
   if(lbl) lbl.textContent=b.name;
 }
 
+function renderWifiOption(){
+  var d=D[state.carrier];
+  var sp=state.speed;
+  var wifiCost=d.wifiPrice?d.wifiPrice[sp]:(typeof d.wifiCost==='number'?d.wifiCost:1100);
+  var cb=document.getElementById('f-wifi');
+  var txt=document.getElementById('f-wifi-text');
+  var lbl=document.getElementById('f-wifi-label');
+  if (wifiCost===0){
+    txt.innerHTML='WiFi <b style="color:#059669">무료 제공 ✓</b>';
+    cb.checked=true;
+    cb.disabled=true;
+    state.wifi=true;
+    lbl.style.opacity='0.9';
+  } else {
+    txt.textContent='WiFi 추가 (+'+fmt(wifiCost)+')';
+    cb.disabled=false;
+    lbl.style.opacity='1';
+  }
+}
+
 function refresh(){
   renderCarriers();
   renderSpeeds();
   buildTv();
   buildLinesRange();
   renderBundleName();
+  renderWifiOption();
   document.getElementById('f-tv-field').style.display=state.tvOn?'block':'none';
   document.getElementById('f-mobile-field').style.display=state.mobileOn?'block':'none';
   renderBottom();
