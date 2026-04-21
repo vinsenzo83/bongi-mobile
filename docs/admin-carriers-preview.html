@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>어드민 3사 분리 미리보기 · 상품관리</title>
+<style>
+:root {
+  --navy:#1a2744; --blue:#2563eb; --green:#10b981; --red:#ef4444;
+  --orange:#f59e0b; --text1:#1a1a1a; --text2:#555; --text3:#888;
+  --border:#e5e7eb; --bg:#f8f9fc;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Noto Sans KR',-apple-system,sans-serif; background:var(--bg); color:var(--text1); line-height:1.6; padding:20px; }
+.wrap { max-width:1280px; margin:0 auto; }
+
+.topbar { background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px 20px; margin-bottom:16px; display:flex; align-items:center; gap:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+.topbar h1 { font-size:18px; font-weight:900; color:var(--navy); flex:1; }
+.topbar .sub { font-size:11px; color:var(--text3); }
+
+.tab-bar { display:flex; gap:8px; margin-bottom:16px; }
+.tab { flex:1; padding:14px; border-radius:10px; text-align:center; cursor:pointer; font-weight:800; font-size:14px; transition:all 0.15s; background:#fff; border:2px solid var(--border); color:var(--text2); }
+.tab.active { color:#fff; }
+.tab.skt.active { background:#ef4444; border-color:#ef4444; }
+.tab.kt.active { background:#2563eb; border-color:#2563eb; }
+.tab.lgu.active { background:#e40981; border-color:#e40981; }
+.tab .count { font-size:10px; margin-top:4px; opacity:0.7; }
+.tab:not(.active):hover { border-color:#999; }
+
+.carrier-pane { display:none; }
+.carrier-pane.active { display:block; }
+
+.wf-card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:18px 22px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+.wf-card h2 { font-size:15px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:8px; margin-bottom:12px; padding-bottom:10px; border-bottom:2px solid #f0f0f0; }
+.wf-card h2 .icon { font-size:18px; }
+.wf-card h3 { font-size:13px; font-weight:700; margin:14px 0 8px; color:var(--text2); }
+.wf-table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:8px; }
+.wf-table th { background:#f5f5f7; color:var(--navy); padding:9px 10px; text-align:left; font-weight:700; border-bottom:1px solid var(--border); }
+.wf-table td { padding:9px 10px; border-bottom:1px solid var(--border); }
+.wf-table tbody tr:hover { background:#fafafa; }
+.money { color:var(--navy); font-weight:700; font-family:'SF Mono',Monaco,monospace; text-align:right; }
+.discount { color:var(--green); font-weight:600; text-align:right; }
+.final { color:var(--blue); font-weight:700; text-align:right; }
+.badge-pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; background:#fef3c7; color:#d97706; }
+.bundle-info { background:#eff6ff; border-left:4px solid var(--blue); padding:8px 12px; border-radius:4px; margin-bottom:10px; font-size:11px; color:var(--text2); line-height:1.7; }
+.premium-warn { background:#fef3c7; border:1px solid #fbbf24; border-radius:6px; padding:8px 12px; font-size:11px; color:#92400e; line-height:1.6; margin-bottom:10px; }
+.notice { background:#fffbeb; border-left:4px solid var(--orange); padding:10px 14px; border-radius:6px; font-size:12px; color:var(--text2); margin-bottom:16px; line-height:1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+  <h1>🧮 어드민 3사 분리 미리보기</h1>
+  <div class="sub">데이터 소스: docs/calculator.html (D 객체) · 2026-04-21</div>
+</div>
+
+<div class="notice">
+  <b>이 페이지는 확인용 미리보기입니다.</b> 통합 계산기(docs/calculator.html)의 D 객체에서 직접 추출한 데이터로 구성됨.<br>
+  승인되면 어드민 상품관리(03/04/05) 섹션을 이 구조로 교체 예정.
+</div>
+
+<div class="tab-bar">
+  <div class="tab skt active" data-carrier="skt" onclick="showTab('skt')">
+    📱 SKT
+    <div class="count">TV 9 · 셋톱 5 · WiFi 4 · 결합 1종 · 카드 2종 · 티켓 60</div>
+  </div>
+  <div class="tab kt" data-carrier="kt" onclick="showTab('kt')">
+    📱 KT
+    <div class="count">TV 5 · 셋톱 3 · WiFi 6 · 결합 3종 · 카드 17종 · 티켓 30</div>
+  </div>
+  <div class="tab lgu" data-carrier="lgu" onclick="showTab('lgu')">
+    📱 LG U+
+    <div class="count">TV 4 · 셋톱 2 · WiFi 3 · 결합 2종 · 카드 7종 · 티켓 15</div>
+  </div>
+</div>
+
+<div class="carrier-pane skt active" id="pane-skt">
+  <div class="wf-card">
+  <h2><span class="icon">📡</span> 인터넷 요금</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>속도</th><th>단독 월요금</th></tr></thead>
+      <tbody>
+        <tr><td><b>100M</b></td><td class="money">22,000원</td></tr>
+        <tr><td><b>500M</b></td><td class="money">33,000원</td></tr>
+        <tr><td><b>1G</b></td><td class="money">38,500원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">📺</span> TV 상품 (9개)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>TV 상품</th><th>채널수</th><th>단독 요금</th><th>결합할인</th><th>결합가</th></tr></thead>
+      <tbody>
+        
+          <tr><td><b>B tv 이코노미</b></td><td>182</td><td class="money">12,100원</td><td class="discount">-2,200원</td><td class="final">9,900원</td></tr>
+        
+          <tr><td><b>B tv 스탠다드</b></td><td>236</td><td class="money">15,400원</td><td class="discount">-2,200원</td><td class="final">13,200원</td></tr>
+        
+          <tr><td><b>B tv 올</b></td><td>252</td><td class="money">18,700원</td><td class="discount">-2,200원</td><td class="final">16,500원</td></tr>
+        
+          <tr><td><b>B tv 스탠다드 플러스</b></td><td>222</td><td class="money">23,100원</td><td class="discount">-2,200원</td><td class="final">20,900원</td></tr>
+        
+          <tr><td><b>B tv 올 플러스</b></td><td>252</td><td class="money">24,200원</td><td class="discount">-2,200원</td><td class="final">22,000원</td></tr>
+        
+          <tr><td><b>B tv 스탠다드 넷플릭스</b></td><td>222</td><td class="money">27,700원</td><td class="discount">-2,200원</td><td class="final">25,500원</td></tr>
+        
+          <tr><td><b>B tv 올 넷플릭스</b></td><td>222</td><td class="money">30,200원</td><td class="discount">-2,200원</td><td class="final">28,000원</td></tr>
+        
+          <tr><td><b>B tv 스탠다드 넷플릭스 프리미엄</b></td><td>252</td><td class="money">30,700원</td><td class="discount">-2,200원</td><td class="final">28,500원</td></tr>
+        
+          <tr><td><b>B tv 올 넷플릭스 프리미엄</b></td><td>252</td><td class="money">33,200원</td><td class="discount">-2,200원</td><td class="final">31,000원</td></tr>
+        
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🔗</span> 인터넷+TV 결합 인터넷가 (WiFi 유/무)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>구분</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+      <tbody>
+        <tr><td><b>WiFi 미포함</b></td><td class="money">19,800원</td><td class="money">27,500원</td><td class="money">33,000원</td></tr>
+        <tr><td><b>WiFi 포함</b></td><td class="money">22,000원</td><td class="money">28,600원</td><td class="money">34,100원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">📦</span> 셋톱박스 (5종)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>기본</th><th>셋톱박스명</th><th>월 임대료</th><th>활성</th></tr></thead>
+      <tbody>
+        
+          <tr>
+            <td><span class="badge-pill">기본</span></td>
+            <td><b>스마트3</b></td>
+            <td class="money">4,400원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>스마트3 미니</b></td>
+            <td class="money">4,400원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>AI NUGU</b></td>
+            <td class="money">6,600원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>사운드 맥스</b></td>
+            <td class="money">8,800원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>애플TV</b></td>
+            <td class="money">6,600원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">📡</span> WiFi (4종)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>기본</th><th>WiFi 모델</th><th>100M</th><th>500M</th><th>1G</th><th>활성</th></tr></thead>
+      <tbody>
+        
+          <tr>
+            <td><span class="badge-pill">기본</span></td>
+            <td><b>GIGA WiFi</b></td>
+            <td class="money">1,100원</td>
+            <td class="money">1,100원</td>
+            <td class="money">1,100원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>GIGA WiFi 6</b></td>
+            <td class="money">1,100원</td>
+            <td class="money">1,100원</td>
+            <td class="money">1,100원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>GIGA WiFi 프리미엄</b></td>
+            <td class="money">5,500원</td>
+            <td class="money">5,500원</td>
+            <td class="money">5,500원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>윙즈</b></td>
+            <td class="money">1,650원</td>
+            <td class="money">1,650원</td>
+            <td class="money">1,650원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🏷️</span> 결합할인 — 요즘가족결합 (1종)</h2>
+  
+      <div class="bundle-info">조건: 같은 명의 인터넷+휴대폰 1대 필수 · 동거인 가능 · 인터넷 최대 2회선 + 휴대폰 최대 5회선 · IPTV할인은 TV 결합 시에만 적용</div>
+      <table class="wf-table">
+        <thead><tr><th>속도</th><th>회선수</th><th>휴대폰 할인</th><th>인터넷 할인</th><th>IPTV 추가</th><th>총 할인</th></tr></thead>
+        <tbody><tr><td><b>100M</b></td><td>1회선</td><td class="discount">-3,500원</td><td class="discount">-4,400원</td><td class="discount">-1,100원</td><td class="final">-9,000원</td></tr><tr><td><b>100M</b></td><td>2회선</td><td class="discount">-3,500원</td><td class="discount">-4,400원</td><td class="discount">-1,100원</td><td class="final">-9,000원</td></tr><tr><td><b>100M</b></td><td>3회선</td><td class="discount">-6,000원</td><td class="discount">-4,400원</td><td class="discount">-1,100원</td><td class="final">-11,500원</td></tr><tr><td><b>100M</b></td><td>4회선</td><td class="discount">-4,500원</td><td class="discount">-4,400원</td><td class="discount">-1,100원</td><td class="final">-10,000원</td></tr><tr><td><b>100M</b></td><td>5회선</td><td class="discount">-3,600원</td><td class="discount">-4,400원</td><td class="discount">-1,100원</td><td class="final">-9,100원</td></tr><tr><td><b>500M</b></td><td>1회선</td><td class="discount">-3,500원</td><td class="discount">-11,000원</td><td class="discount">-1,100원</td><td class="final">-15,600원</td></tr><tr><td><b>500M</b></td><td>2회선</td><td class="discount">-3,500원</td><td class="discount">-11,000원</td><td class="discount">-1,100원</td><td class="final">-15,600원</td></tr><tr><td><b>500M</b></td><td>3회선</td><td class="discount">-6,000원</td><td class="discount">-11,000원</td><td class="discount">-1,100원</td><td class="final">-18,100원</td></tr><tr><td><b>500M</b></td><td>4회선</td><td class="discount">-6,000원</td><td class="discount">-11,000원</td><td class="discount">-1,100원</td><td class="final">-18,100원</td></tr><tr><td><b>500M</b></td><td>5회선</td><td class="discount">-4,800원</td><td class="discount">-11,000원</td><td class="discount">-1,100원</td><td class="final">-16,900원</td></tr><tr><td><b>1G</b></td><td>1회선</td><td class="discount">-3,500원</td><td class="discount">-13,200원</td><td class="discount">-1,100원</td><td class="final">-17,800원</td></tr><tr><td><b>1G</b></td><td>2회선</td><td class="discount">-3,500원</td><td class="discount">-13,200원</td><td class="discount">-1,100원</td><td class="final">-17,800원</td></tr><tr><td><b>1G</b></td><td>3회선</td><td class="discount">-6,000원</td><td class="discount">-13,200원</td><td class="discount">-1,100원</td><td class="final">-20,300원</td></tr><tr><td><b>1G</b></td><td>4회선</td><td class="discount">-6,000원</td><td class="discount">-13,200원</td><td class="discount">-1,100원</td><td class="final">-20,300원</td></tr><tr><td><b>1G</b></td><td>5회선</td><td class="discount">-4,800원</td><td class="discount">-13,200원</td><td class="discount">-1,100원</td><td class="final">-19,100원</td></tr></tbody>
+      </table>
+    
+</div><div class="wf-card">
+  <h2><span class="icon">💳</span> 제휴카드 (2종)</h2>
+  
+    <div class="note">통신요금 자동이체 + 실적 조건 충족 시 월 추가 할인</div>
+    <table class="wf-table">
+      <thead><tr><th>카드사</th><th>카드명</th><th>실적</th><th>할인</th></tr></thead>
+      <tbody>
+        <tr><td>롯데카드</td><td><b>SK브로드밴드 B롯데카드</b></td><td>50만원</td><td class="discount">-10,000원</td></tr><tr><td>삼성카드</td><td><b>SK브로드밴드 삼성카드</b></td><td>30만원</td><td class="discount">-7,000원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🔧</span> 설치비 (1회성)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>구분</th><th>인터넷 단독</th><th>인터넷+TV 결합</th></tr></thead>
+      <tbody>
+        <tr><td><b>평일</b></td><td class="money">36,300원</td><td class="money">56,100원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🎁</span> 사은품 (현금/상품권)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>구분</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+      <tbody>
+        <tr><td><b>단독 (TV 없음)</b></td><td class="final">110,000원</td><td class="final">170,000원</td><td class="final">170,000원</td></tr>
+        <tr><td><b>결합 (TV 있음)</b></td><td class="final">400,000원</td><td class="final">430,000원</td><td class="final">490,000원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🎫</span> 티켓 (총 60개)</h2>
+  
+    <div style="font-size:12px;color:var(--text3);line-height:1.7">
+      <b>티켓번호 구조</b>: SK0001 ~ SK0060<br>
+      <b>생성 규칙</b>: 속도(3) × TV상품(10, 없음 포함) × WiFi유무(조건부)<br>
+      <b>실제 카운트</b>: 60개<br>
+      <b>영구 발급</b>: 티켓번호 재사용 X, 비활성만 존재
+    </div>
+  
+</div>
+</div>
+
+<div class="carrier-pane kt" id="pane-kt">
+  <div class="wf-card">
+  <h2><span class="icon">📡</span> 인터넷 요금</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>속도</th><th>단독 월요금</th></tr></thead>
+      <tbody>
+        <tr><td><b>100M</b></td><td class="money">22,000원</td></tr>
+        <tr><td><b>500M</b></td><td class="money">33,000원</td></tr>
+        <tr><td><b>1G</b></td><td class="money">38,500원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">📺</span> TV 상품 (5개)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>TV 상품</th><th>채널수</th><th>단독 요금</th><th>결합할인</th><th>결합가</th></tr></thead>
+      <tbody>
+        
+          <tr><td><b>지니TV 베이직</b></td><td>238</td><td class="money">14,740원</td><td class="discount">-2,640원</td><td class="final">12,100원</td></tr>
+        
+          <tr><td><b>지니TV 라이트</b></td><td>240</td><td class="money">15,840원</td><td class="discount">-2,640원</td><td class="final">13,200원</td></tr>
+        
+          <tr><td><b>지니TV 에센스</b></td><td>263</td><td class="money">20,240원</td><td class="discount">-3,740원</td><td class="final">16,500원</td></tr>
+        
+          <tr><td><b>지니TV 모든G</b></td><td>250</td><td class="money">21,340원</td><td class="discount">-4,400원</td><td class="final">16,940원</td></tr>
+        
+          <tr><td><b>지니TV 디즈니+모든G</b></td><td>250</td><td class="money">28,100원</td><td class="discount">-6,600원</td><td class="final">21,500원</td></tr>
+        
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🔗</span> 인터넷+TV 결합 인터넷가 (WiFi 유/무)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>구분</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+      <tbody>
+        <tr><td><b>WiFi 미포함</b></td><td class="money">22,000원</td><td class="money">27,500원</td><td class="money">33,000원</td></tr>
+        <tr><td><b>WiFi 포함</b></td><td class="money">23,100원</td><td class="money">28,600원</td><td class="money">33,000원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">📦</span> 셋톱박스 (3종)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>기본</th><th>셋톱박스명</th><th>월 임대료</th><th>활성</th></tr></thead>
+      <tbody>
+        
+          <tr>
+            <td><span class="badge-pill">기본</span></td>
+            <td><b>기가지니3</b></td>
+            <td class="money">4,400원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>기가지니A</b></td>
+            <td class="money">3,300원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>지니TV 올인원 사운드바</b></td>
+            <td class="money">8,800원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">📡</span> WiFi (6종)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>기본</th><th>WiFi 모델</th><th>100M</th><th>500M</th><th>1G</th><th>활성</th></tr></thead>
+      <tbody>
+        
+          <tr>
+            <td><span class="badge-pill">기본</span></td>
+            <td><b>KT GIGA WAVE2</b></td>
+            <td class="money">1,100원</td>
+            <td class="money">1,100원</td>
+            <td class="money">무료</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>GIGA WIFI 홈AX</b></td>
+            <td class="money">무료</td>
+            <td class="money">1,100원</td>
+            <td class="money">무료</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>GIGA WIFI BUDDY</b></td>
+            <td class="money">1,650원</td>
+            <td class="money">1,650원</td>
+            <td class="money">1,650원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>GIGA WIFI 프리미엄 2.4</b></td>
+            <td class="money">4,400원</td>
+            <td class="money">4,400원</td>
+            <td class="money">4,400원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>GIGA WIFI 프리미엄 2.4 (6E)</b></td>
+            <td class="money">4,400원</td>
+            <td class="money">4,400원</td>
+            <td class="money">4,400원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>GIGA WIFI 프리미엄 4.8</b></td>
+            <td class="money">4,400원</td>
+            <td class="money">4,400원</td>
+            <td class="money">4,400원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🏷️</span> 결합할인 (3종) — 총액 / 정액 / 💎 프리미엄</h2>
+  
+      <h3>▶ 총액결합 (기본)</h3>
+      <table class="wf-table">
+        <thead><tr><th>월요금 합산</th><th>100M 인터넷</th><th>500M·1G 인터넷</th><th>100M 휴대폰</th><th>500M·1G 휴대폰</th></tr></thead>
+        <tbody>
+          
+            <tr><td><b>22,000원 이하</b></td><td class="discount">-1,650원</td><td class="discount">-2,200원</td><td class="discount">-0원</td><td class="discount">-0원</td></tr>
+          
+            <tr><td><b>22,000원 이상</b></td><td class="discount">-3,300원</td><td class="discount">-5,500원</td><td class="discount">-0원</td><td class="discount">-0원</td></tr>
+          
+            <tr><td><b>64,900원 이상</b></td><td class="discount">-5,500원</td><td class="discount">-5,500원</td><td class="discount">-3,300원</td><td class="discount">-5,500원</td></tr>
+          
+            <tr><td><b>108,900원 이상</b></td><td class="discount">-5,500원</td><td class="discount">-5,500원</td><td class="discount">-14,300원</td><td class="discount">-16,610원</td></tr>
+          
+            <tr><td><b>141,900원 이상</b></td><td class="discount">-5,500원</td><td class="discount">-5,500원</td><td class="discount">-18,700원</td><td class="discount">-22,110원</td></tr>
+          
+            <tr><td><b>174,900원 이상</b></td><td class="discount">-5,500원</td><td class="discount">-5,500원</td><td class="discount">-23,100원</td><td class="discount">-27,610원</td></tr>
+          
+        </tbody>
+      </table>
+      <h3>▶ 정액결합</h3>
+      <table class="wf-table">
+        <thead><tr><th>월요금 구간</th><th>인터넷</th><th>휴대폰</th></tr></thead>
+        <tbody>
+          
+            <tr><td><b>37,000원 이하</b></td><td class="discount">-5,500원</td><td class="discount">-0원</td></tr>
+          
+            <tr><td><b>37,000원 이상</b></td><td class="discount">-5,500원</td><td class="discount">-3,000원</td></tr>
+          
+            <tr><td><b>61,000원 이상</b></td><td class="discount">-5,500원</td><td class="discount">-5,000원</td></tr>
+          
+            <tr><td><b>77,000원 이상</b></td><td class="discount">-5,500원</td><td class="discount">-7,000원</td></tr>
+          
+        </tbody>
+      </table>
+      <h3 style="color:#d97706">💎 프리미엄 가족결합 (77K↑ 2회선+)</h3>
+      <div class="premium-warn">
+        <b>자격</b>: 77,000원↑ 요금제 2회선 이상 / 대표자는 총액결합만 (프리미엄 불가) / 인터넷 -5,500원 기본
+      </div>
+      <table class="wf-table">
+        <thead><tr><th>요금제</th><th>월정액</th><th>25% 할인액 (올림)</th></tr></thead>
+        <tbody>
+          
+            <tr><td><b>임계값</b></td><td class="money">77,000원</td><td class="discount">-19,250원</td></tr>
+          
+            <tr><td><b>5G 슈퍼플랜 베이직</b></td><td class="money">80,000원</td><td class="discount">-20,000원</td></tr>
+          
+            <tr><td><b>데이터선택 87.8</b></td><td class="money">87,890원</td><td class="discount">-22,000원</td></tr>
+          
+            <tr><td><b>데이터ON 프리미엄</b></td><td class="money">89,000원</td><td class="discount">-22,250원</td></tr>
+          
+            <tr><td><b>슈퍼플랜 베이직 Plus/초이스</b></td><td class="money">90,000원</td><td class="discount">-22,500원</td></tr>
+          
+            <tr><td><b>슈퍼플랜 스페셜</b></td><td class="money">100,000원</td><td class="discount">-25,000원</td></tr>
+          
+            <tr><td><b>데이터선택 109</b></td><td class="money">109,000원</td><td class="discount">-27,500원</td></tr>
+          
+            <tr><td><b>슈퍼플랜 스페셜 Plus/초이스</b></td><td class="money">110,000원</td><td class="discount">-27,500원</td></tr>
+          
+            <tr><td><b>슈퍼플랜 프리미엄/초이스</b></td><td class="money">130,000원</td><td class="discount">-32,500원</td></tr>
+          
+        </tbody>
+      </table>
+    
+</div><div class="wf-card">
+  <h2><span class="icon">💳</span> 제휴카드 (17종)</h2>
+  
+    <div class="note">통신요금 자동이체 + 실적 조건 충족 시 월 추가 할인</div>
+    <table class="wf-table">
+      <thead><tr><th>카드사</th><th>카드명</th><th>실적</th><th>할인</th></tr></thead>
+      <tbody>
+        <tr><td>KB국민</td><td><b>KT DC Plus 국민카드</b></td><td>30만원</td><td class="discount">-7,000원</td></tr><tr><td>현대</td><td><b>KT-현대카드M Edition3 (청구할인형)</b></td><td>30만원</td><td class="discount">-13,000원 (1~24개월)</td></tr><tr><td>현대</td><td><b>KT-현대카드M Edition3 (청구할인형2.0)</b></td><td>100만원</td><td class="discount">-22,000원 (1~36개월)</td></tr><tr><td>신한</td><td><b>KT 신한 체크카드</b></td><td>30만원</td><td class="discount">3,000원 캐시백</td></tr><tr><td>신한</td><td><b>KT 가족만족 DC 신한카드</b></td><td>30만원</td><td class="discount">-7,000원</td></tr><tr><td>신한</td><td><b>KT 으랏차차 신한카드</b></td><td>50만원</td><td class="discount">-12,000원</td></tr><tr><td>IBK</td><td><b>olleh super DC IBK카드</b></td><td>30만원</td><td class="discount">-7,000원</td></tr><tr><td>IBK</td><td><b>KT 으랏차차 IBK카드</b></td><td>자동납부</td><td class="discount">5% 청구할인</td></tr><tr><td>삼성</td><td><b>KT 삼성카드</b></td><td>30만원</td><td class="discount">-7,000원</td></tr><tr><td>우리</td><td><b>KT Plus 우리카드</b></td><td>40만원</td><td class="discount">-10,000원 (1~24개월)</td></tr><tr><td>우리</td><td><b>KT 36 Plus 우리카드</b></td><td>40만원</td><td class="discount">-8,000원 (1~24개월)</td></tr><tr><td>하나</td><td><b>KT DC Plus 더 심플 하나카드</b></td><td>30만원</td><td class="discount">-10,000원</td></tr><tr><td>NH농협</td><td><b>KT 할부 Plus NH농협카드</b></td><td>40만원</td><td class="discount">-5,000원 (할부중복불가)</td></tr><tr><td>롯데</td><td><b>KT DC Plus 롯데카드</b></td><td>40만원</td><td class="discount">-10,000원</td></tr><tr><td>비씨</td><td><b>KT SUPER DC BC 바로카드</b></td><td>40만원</td><td class="discount">-5,000원</td></tr><tr><td>비씨</td><td><b>KT DC Plus BC 바로카드</b></td><td>30만원</td><td class="discount">-7,000원</td></tr><tr><td>케이뱅크</td><td><b>KT멤버십x케이뱅크 더블혜택 체크카드</b></td><td>20만원</td><td class="discount">5% 캐시백 (최대 5,000원)</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🔧</span> 설치비 (1회성)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>구분</th><th>인터넷 단독</th><th>인터넷+TV 결합</th></tr></thead>
+      <tbody>
+        <tr><td><b>평일</b></td><td class="money">36,000원</td><td class="money">56,200원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🎁</span> 사은품 (현금/상품권)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>구분</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+      <tbody>
+        <tr><td><b>단독 (TV 없음)</b></td><td class="final">90,000원</td><td class="final">140,000원</td><td class="final">140,000원</td></tr>
+        <tr><td><b>결합 (TV 있음)</b></td><td class="final">370,000원</td><td class="final">450,000원</td><td class="final">450,000원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🎫</span> 티켓 (총 30개)</h2>
+  
+    <div style="font-size:12px;color:var(--text3);line-height:1.7">
+      <b>티켓번호 구조</b>: KT0001 ~ KT0030<br>
+      <b>생성 규칙</b>: 속도(3) × TV상품(6, 없음 포함) × WiFi유무(조건부)<br>
+      <b>실제 카운트</b>: 30개<br>
+      <b>영구 발급</b>: 티켓번호 재사용 X, 비활성만 존재
+    </div>
+  
+</div>
+</div>
+
+<div class="carrier-pane lgu" id="pane-lgu">
+  <div class="wf-card">
+  <h2><span class="icon">📡</span> 인터넷 요금</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>속도</th><th>단독 월요금</th></tr></thead>
+      <tbody>
+        <tr><td><b>100M</b></td><td class="money">22,000원</td></tr>
+        <tr><td><b>500M</b></td><td class="money">33,000원</td></tr>
+        <tr><td><b>1G</b></td><td class="money">38,500원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">📺</span> TV 상품 (4개)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>TV 상품</th><th>채널수</th><th>단독 요금</th><th>결합할인</th><th>결합가</th></tr></thead>
+      <tbody>
+        
+          <tr><td><b>U+tv 실속형</b></td><td>217</td><td class="money">15,400원</td><td class="discount">-2,200원</td><td class="final">13,200원</td></tr>
+        
+          <tr><td><b>U+tv 기본형</b></td><td>223</td><td class="money">16,500원</td><td class="discount">-2,200원</td><td class="final">14,300원</td></tr>
+        
+          <tr><td><b>U+tv 프리미엄</b></td><td>252</td><td class="money">18,700원</td><td class="discount">-2,200원</td><td class="final">16,500원</td></tr>
+        
+          <tr><td><b>U+tv 프리미엄 VOD</b></td><td>257</td><td class="money">24,200원</td><td class="discount">-5,500원</td><td class="final">18,700원</td></tr>
+        
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🔗</span> 인터넷+TV 결합 인터넷가 (WiFi 유/무)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>구분</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+      <tbody>
+        <tr><td><b>WiFi 미포함</b></td><td class="money">22,000원</td><td class="money">27,500원</td><td class="money">33,000원</td></tr>
+        <tr><td><b>WiFi 포함</b></td><td class="money">22,000원</td><td class="money">27,500원</td><td class="money">33,000원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">📦</span> 셋톱박스 (2종)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>기본</th><th>셋톱박스명</th><th>월 임대료</th><th>활성</th></tr></thead>
+      <tbody>
+        
+          <tr>
+            <td><span class="badge-pill">기본</span></td>
+            <td><b>U+tv UHD4</b></td>
+            <td class="money">4,400원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>U+tv 사운드바 블랙</b></td>
+            <td class="money">6,600원</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">📡</span> WiFi (3종)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>기본</th><th>WiFi 모델</th><th>100M</th><th>500M</th><th>1G</th><th>활성</th></tr></thead>
+      <tbody>
+        
+          <tr>
+            <td><span class="badge-pill">기본</span></td>
+            <td><b>기가와이파이</b></td>
+            <td class="money">무료</td>
+            <td class="money">무료</td>
+            <td class="money">무료</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>기가와이파이6</b></td>
+            <td class="money">무료</td>
+            <td class="money">무료</td>
+            <td class="money">무료</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+          <tr>
+            <td></td>
+            <td><b>기가와이파이 메쉬</b></td>
+            <td class="money">무료</td>
+            <td class="money">무료</td>
+            <td class="money">무료</td>
+            <td><span style="color:var(--green)">● ON</span></td>
+          </tr>
+        
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🏷️</span> 결합할인 (2종) — 참쉬운 / 투게더</h2>
+  
+      <h3>▶ 참쉬운가족결합 (2회선부터 · 기본)</h3>
+      <table class="wf-table">
+        <thead><tr><th>인터넷 할인</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+        <tbody>
+          <tr><td><b>3년 약정</b></td><td class="discount">-5,500원</td><td class="discount">-9,900원</td><td class="discount">-13,200원</td></tr>
+        </tbody>
+      </table>
+      <table class="wf-table">
+        <thead><tr><th>휴대폰 월요금</th><th>2회선 (인당)</th><th>3회선 (인당)</th><th>4+회선 (인당)</th></tr></thead>
+        <tbody>
+          
+            <tr><td><b>69,000원 미만</b></td><td class="discount">-2,200원</td><td class="discount">-3,300원</td><td class="discount">-4,400원</td></tr>
+          
+            <tr><td><b>69,000원 이상</b></td><td class="discount">-3,300원</td><td class="discount">-5,500원</td><td class="discount">-6,600원</td></tr>
+          
+            <tr><td><b>88,000원 이상</b></td><td class="discount">-4,400원</td><td class="discount">-6,600원</td><td class="discount">-8,800원</td></tr>
+          
+        </tbody>
+      </table>
+      <h3>▶ 투게더 결합 (85,000원↑ 고가요금제 · 100M 결합 불가)</h3>
+      <table class="wf-table">
+        <thead><tr><th>구분</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+        <tbody>
+          <tr><td><b>인터넷 할인</b></td><td class="discount">불가</td><td class="discount">-11,000원</td><td class="discount">-11,000원</td></tr>
+        </tbody>
+      </table>
+      <table class="wf-table">
+        <thead><tr><th>회선수</th><th>휴대폰 할인 (인당)</th></tr></thead>
+        <tbody>
+          <tr><td>2회선</td><td class="discount">-10,000원</td></tr>
+          <tr><td>3회선</td><td class="discount">-14,000원</td></tr>
+          <tr><td>4~5회선</td><td class="discount">-20,000원</td></tr>
+        </tbody>
+      </table>
+    
+</div><div class="wf-card">
+  <h2><span class="icon">💳</span> 제휴카드 (7종)</h2>
+  
+    <div class="note">통신요금 자동이체 + 실적 조건 충족 시 월 추가 할인</div>
+    <table class="wf-table">
+      <thead><tr><th>카드사</th><th>카드명</th><th>실적</th><th>할인</th></tr></thead>
+      <tbody>
+        <tr><td>삼성카드</td><td><b>LG U+ 삼성카드</b></td><td>30만원</td><td class="discount">-7,000원</td></tr><tr><td>현대카드</td><td><b>LG U+ 현대카드M Edition3</b></td><td>50만원</td><td class="discount">-15,000원 (1~24개월)</td></tr><tr><td>하나카드</td><td><b>더 심플 하나카드</b></td><td>30만원</td><td class="discount">-10,000원</td></tr><tr><td>하나카드</td><td><b>LG U+Family 하나카드</b></td><td>30만원</td><td class="discount">통신료 25% 청구 (25개월↑ 15%)</td></tr><tr><td>신한카드</td><td><b>LG U+ 사장님 통할인</b></td><td>70만원</td><td class="discount">-10,000원 (25개월↑ -6,000)</td></tr><tr><td>롯데카드</td><td><b>LG U+ x LOCA</b></td><td>30만원</td><td class="discount">-10,000원 (25개월↑ -6,000)</td></tr><tr><td>NH카드</td><td><b>NH올원 LG U+ 카드</b></td><td>30만원</td><td class="discount">-9,000원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🔧</span> 설치비 (1회성)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>구분</th><th>인터넷 단독</th><th>인터넷+TV 결합</th></tr></thead>
+      <tbody>
+        <tr><td><b>평일</b></td><td class="money">36,300원</td><td class="money">56,100원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🎁</span> 사은품 (현금/상품권)</h2>
+  
+    <table class="wf-table">
+      <thead><tr><th>구분</th><th>100M</th><th>500M</th><th>1G</th></tr></thead>
+      <tbody>
+        <tr><td><b>단독 (TV 없음)</b></td><td class="final">200,000원</td><td class="final">230,000원</td><td class="final">230,000원</td></tr>
+        <tr><td><b>결합 (TV 있음)</b></td><td class="final">400,000원</td><td class="final">470,000원</td><td class="final">470,000원</td></tr>
+      </tbody>
+    </table>
+  
+</div><div class="wf-card">
+  <h2><span class="icon">🎫</span> 티켓 (총 15개)</h2>
+  
+    <div style="font-size:12px;color:var(--text3);line-height:1.7">
+      <b>티켓번호 구조</b>: LG0001 ~ LG0015<br>
+      <b>생성 규칙</b>: 속도(3) × TV상품(5, 없음 포함) × WiFi유무(조건부)<br>
+      <b>실제 카운트</b>: 15개<br>
+      <b>영구 발급</b>: 티켓번호 재사용 X, 비활성만 존재
+    </div>
+  
+</div>
+</div>
+
+</div>
+
+<script>
+function showTab(key) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.tab[data-carrier="'+key+'"]').classList.add('active');
+  document.querySelectorAll('.carrier-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('pane-'+key).classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
