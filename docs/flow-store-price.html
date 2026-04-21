@@ -1126,8 +1126,6 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
             <tr><td>LG</td><td>S26U</td><td>프리미어 슈퍼(125,000)</td><td style="color:#dc2626;font-weight:700">29</td><td style="color:#dc2626;font-weight:700">34</td></tr>
           </tbody>
         </table>
-        <div style="font-size:8px;color:#1e40af;margin-top:2px">※ 번이/기변 값(만원) = 고객 부담금 · 공시지원금/선택약정 계산 후 최종가</div>
-
         <div style="font-size:10px;font-weight:800;color:#1a2744;margin:8px 0 3px">② 📇 유심 (유심-매장) <span style="font-weight:500;color:#dc2626;font-size:9px">· 선택약정 25% 할인 자동</span></div>
         <table style="font-size:9px">
           <thead><tr><th>통신사</th><th>요금제(월요금)</th><th>25%↓실납</th><th>번이</th></tr></thead>
@@ -1161,8 +1159,6 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
             <tr><td>LG</td><td>S26U</td><td>프리미어 슈퍼(125,000)</td><td style="color:#dc2626;font-weight:700">29</td><td style="color:#dc2626;font-weight:700">34</td></tr>
           </tbody>
         </table>
-        <div style="font-size:8px;color:#065f46;margin-top:2px">※ 번이/기변 값(만원) = 고객 부담금 · 공시지원금/선택약정 계산 후 최종가</div>
-
         <div style="font-size:10px;font-weight:800;color:#1a2744;margin:8px 0 3px">② 📇 유심 (유심-온라인) <span style="font-weight:500;color:#dc2626;font-size:9px">· 선택약정 25% 할인 자동</span></div>
         <table style="font-size:9px">
           <thead><tr><th>통신사</th><th>요금제(월요금)</th><th>25%↓실납</th><th>번이</th></tr></thead>
@@ -1189,8 +1185,34 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       예) SK S26U 번이 44 + 인터넷+TV 70 = <strong>114만원</strong> 부담 (반대로 SK 아이폰16 번이 -55 + 인터넷+TV 70 = <strong>15만원 부담</strong>)
     </div>
 
-    <div style="margin-top:10px;padding:8px 12px;background:#eff6ff;border-left:3px solid #2563eb;border-radius:6px;font-size:10px;color:#1a2744;line-height:1.6">
-      📥 <strong>실제 데이터 샘플</strong>: <a href="https://bongi-mobile-production.up.railway.app/docs/sample-prices-20260421.xlsx" target="_blank" class="mono" style="color:#2563eb">sample-prices-20260421.xlsx</a> (3사 × 휴대폰 54행 + 유심 13행)
+    <!-- Excel 업로드/다운로드 기능 -->
+    <div style="margin-top:12px;background:#fff;border:2px solid #059669;border-radius:10px;padding:12px 14px">
+      <div style="font-size:12px;font-weight:800;color:#059669;margin-bottom:6px">📊 Excel 업로드 / 다운로드 — 폼 대량 편집</div>
+      <div style="font-size:10px;color:#1a2744;line-height:1.7;margin-bottom:8px">
+        어드민 UI에서 한 행씩 편집 대신 <strong>Excel 일괄 편집</strong> 지원 · 매장/온라인별 별도 파일
+      </div>
+      <div class="flow" style="gap:6px">
+        <div class="fb" style="background:#d1fae5;border:2px solid #059669;color:#065f46;font-size:10px;font-weight:700">
+          📥 Excel<br>다운로드<br><span style="font-size:8px;font-weight:500">현재 폼 데이터</span>
+        </div>
+        <div class="fa">→</div>
+        <div class="fb" style="background:#fef3c7;border:2px solid #f7c94f;color:#92400e;font-size:10px;font-weight:700">
+          ✏️ Excel에서<br>편집<br><span style="font-size:8px;font-weight:500">대량 수정</span>
+        </div>
+        <div class="fa">→</div>
+        <div class="fb" style="background:#dbeafe;border:2px solid #2563eb;color:#1a2744;font-size:10px;font-weight:700">
+          📤 Excel<br>업로드<br><span style="font-size:8px;font-weight:500">검증 · 덮어쓰기</span>
+        </div>
+        <div class="fa">→</div>
+        <div class="fb" style="background:#fee2e2;border:2px solid #dc2626;color:#991b1b;font-size:10px;font-weight:700">
+          🛠️ 어드민<br>폼 반영<br><span style="font-size:8px;font-weight:500">DB 저장</span>
+        </div>
+      </div>
+      <div style="font-size:9px;color:var(--text3);line-height:1.6;margin-top:8px">
+        · <strong>업로드 검증</strong>: 필수 컬럼 체크 (통신사/모델명/펫네임/요금제/번이/기변) · 오타/누락 행 오류 표시<br>
+        · <strong>파일 구분</strong>: 오프라인 공통폼 = 매장별 파일 (12개) + 온라인 공통폼 = 통합 파일 (1개)<br>
+        · <strong>템플릿 제공</strong>: <a href="https://bongi-mobile-production.up.railway.app/docs/sample-prices-20260421.xlsx" target="_blank" class="mono" style="color:var(--green);font-weight:700">sample-prices-20260421.xlsx</a> (3사 × 휴대폰 54행 + 유심 13행)
+      </div>
     </div>
   </div>
 
