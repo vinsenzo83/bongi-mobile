@@ -1093,75 +1093,126 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     </div>
   </div>
 
-  <div style="font-size:11px;font-weight:800;color:var(--navy);margin:10px 0 6px">🗄️ DB 스키마 · 데이터 소스</div>
+  <div style="font-size:11px;font-weight:800;color:var(--navy);margin:10px 0 6px">🗄️ DB 스키마 · 데이터 소스 (공통폼 구조 반영)</div>
   <table>
-    <thead><tr><th>데이터</th><th>소스</th><th>DB 테이블</th><th>비고</th></tr></thead>
+    <thead><tr><th>데이터</th><th>소스</th><th>DB 테이블</th><th>주요 컬럼</th><th>비고</th></tr></thead>
     <tbody>
       <tr>
-        <td><strong>오프라인 시세</strong></td>
-        <td>지역별 어드민 입력</td>
-        <td><span class="mono">bongi_phone_prices</span><br><span style="font-size:9px;color:var(--green)">(region 컬럼 추가)</span></td>
-        <td>지역별 상이</td>
+        <td><strong>🏪 매장</strong></td>
+        <td>어드민 매장 등록</td>
+        <td><span class="mono">bongi_stores</span></td>
+        <td class="mono" style="font-size:9px">id, name, type(offline/online), address, phone, lat, lng</td>
+        <td>오프라인 12 + 온라인 1 = 13개</td>
       </tr>
       <tr>
-        <td><strong>온라인 시세</strong></td>
-        <td>어드민 입력</td>
-        <td><span class="mono">bongi_online_prices</span></td>
-        <td>전국 동일</td>
+        <td><strong>📱 무선 시세</strong></td>
+        <td>공통폼 ① 시트 업로드</td>
+        <td><span class="mono">bongi_phone_prices</span></td>
+        <td class="mono" style="font-size:9px">store_id, carrier, pet_name, plan, mnp_price, change_price</td>
+        <td>매장별 독립 · PK=(store_id+carrier+pet_name+plan)</td>
       </tr>
       <tr>
-        <td><strong>유심 요금제</strong></td>
-        <td>어드민 입력</td>
-        <td><span class="mono">bongi_usim_plans</span></td>
-        <td>통신사별 요금제</td>
+        <td><strong>📇 유심 시세</strong></td>
+        <td>공통폼 ② 시트 업로드</td>
+        <td><span class="mono">bongi_usim_prices</span></td>
+        <td class="mono" style="font-size:9px">store_id, carrier, plan, monthly_fee, discounted_fee, mnp_price</td>
+        <td>매장별 독립 · PK=(store_id+carrier+plan)</td>
       </tr>
       <tr>
-        <td><strong>공시지원금</strong></td>
+        <td><strong>📡 인터넷+TV 현금 페이백</strong></td>
+        <td>공통폼 ③ 시트 업로드</td>
+        <td><span class="mono">bongi_internet_tv_payback</span></td>
+        <td class="mono" style="font-size:9px">carrier, amount (3행: SK/KT/LG)</td>
+        <td><strong>통합 1개 정책</strong> (store_id 없음 · 3사별 단일 테이블)</td>
+      </tr>
+      <tr>
+        <td><strong>🔗 통신사 공식 URL</strong></td>
+        <td>어드민 온라인 매장</td>
+        <td><span class="mono">bongi_carrier_urls</span></td>
+        <td class="mono" style="font-size:9px">carrier, type(mnp/change), url</td>
+        <td>3사 × 2유형 = 6행</td>
+      </tr>
+      <tr>
+        <td><strong>💰 공시지원금</strong></td>
         <td>smartchoice.or.kr 크롤링</td>
         <td><span class="mono">bongi_subsidy_data</span></td>
-        <td>매일 09시 자동</td>
-      </tr>
-      <tr>
-        <td><strong>매장 정보</strong></td>
-        <td>어드민</td>
-        <td><span class="mono">bongi_stores</span><br><span style="font-size:9px;color:var(--green)">(region 컬럼 추가)</span></td>
-        <td>전국 매장</td>
+        <td class="mono" style="font-size:9px">carrier, model, plan, subsidy, updated_at</td>
+        <td>매일 09시 자동 크롤링 · 참조용</td>
       </tr>
     </tbody>
   </table>
 
   <div class="flow" style="margin-top:12px">
-    <div class="fb fb-admin" style="font-size:9px">어드민에서<br>시세/요금제 입력</div>
+    <div class="fb fb-admin" style="font-size:9px">공통폼 Excel<br>업로드</div>
     <div class="fa">→</div>
-    <div class="fb fb-db" style="font-size:9px">Supabase DB<br>phone_prices<br>online_prices<br>usim_plans<br>stores</div>
+    <div class="fb fb-api" style="font-size:9px">업로드 검증<br>Upsert</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db" style="font-size:9px">Supabase DB<br>5개 테이블<br>+ 크롤링 1개</div>
     <div class="fa">→</div>
     <div style="display:flex;flex-direction:column;gap:4px">
-      <div class="fb fb-user" style="font-size:9px;padding:4px 8px">3가지 경로 카드 (AI 채팅)</div>
-      <div class="fb fb-api" style="font-size:9px;padding:4px 8px">AI 채팅 응답</div>
-      <div class="fb fb-user" style="font-size:9px;padding:4px 8px">고객 매장 페이지 (/stores)</div>
-      <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">어드민 시세 관리</div>
+      <div class="fb fb-user" style="font-size:9px;padding:4px 8px">STEP 0 통합 바텀시트 (AI 채팅)</div>
+      <div class="fb fb-user" style="font-size:9px;padding:4px 8px">매장/온라인 동시 비교 카드</div>
+      <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">STEP 8 어드민 신청서 관리</div>
     </div>
   </div>
 </div>
 <div class="arrow-down">↓</div>
 
-<!-- ===== STEP 10: 매장 방문 후 흐름 ===== -->
-<div class="step-label" style="background:#2563eb">🏪 오프라인 · STEP 10 — 매장 방문 후 흐름</div>
+<!-- ===== STEP 10: 매장 방문 2가지 경로 ===== -->
+<div class="step-label" style="background:#2563eb">🏪 오프라인 · STEP 10 — 매장 방문 2가지 경로</div>
 <div class="step-card">
-  <div class="flow">
-    <div class="fb fb-user" style="font-size:10px">매장 방문<br>개통</div>
-    <div class="fa">→</div>
-    <div class="fb fb-admin" style="font-size:10px">어드민 등록<br>(개통 데이터)</div>
-    <div class="fa">→</div>
-    <div class="fb fb-crm" style="font-size:10px">CRM 전달</div>
-    <div class="fa">→</div>
-    <div class="fb fb-neutral" style="font-size:9px">앱 가입 유도<br>QR/알림톡</div>
-    <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:9px">플랫폼 크로스셀링<br>(인터넷/렌탈)</div>
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">고객이 매장을 방문하는 경로는 2가지</div>
+
+  <div class="grid2" style="gap:12px;margin-bottom:12px">
+    <!-- 경로 A: 앱 신청서 작성 후 방문 -->
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">A. 📱 앱에서 신청서 작성 후 방문 (예약)</div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.7;margin-bottom:8px">
+        STEP 0 바텀시트 → [매장 방문 신청] → 신청서 제출 → 예약 확정 → 매장 방문
+      </div>
+      <div class="flow" style="flex-direction:column;gap:4px;align-items:stretch">
+        <div class="fb fb-user" style="font-size:9px;padding:4px 8px">📱 앱 신청서 제출<br>(성별·생년월일·휴대폰·색상·방문일시·메모)</div>
+        <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">🛠️ 어드민 접수<br>(매장 담당자 배정)</div>
+        <div class="fb fb-api" style="font-size:9px;padding:4px 8px">📞 담당자 방문 확인 전화</div>
+        <div class="fb fb-user" style="font-size:9px;padding:4px 8px">🏪 예약 일시 매장 방문 · 개통</div>
+      </div>
+      <div style="font-size:9px;color:var(--blue);margin-top:6px;font-weight:700">장점: 회원 정보 자동 매칭 · 준비 완료 상태로 방문 · 대기 없음</div>
+    </div>
+
+    <!-- 경로 B: 그냥 방문 -->
+    <div class="card-mock" style="border:2px solid var(--orange)">
+      <div style="font-weight:900;color:var(--orange);font-size:12px;margin-bottom:6px">B. 🚶 앱 없이 그냥 매장 방문 (워크인)</div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.7;margin-bottom:8px">
+        고객이 직접 매장 방문 → 상담사가 현장에서 신규 접수 → 개통
+      </div>
+      <div class="flow" style="flex-direction:column;gap:4px;align-items:stretch">
+        <div class="fb fb-user" style="font-size:9px;padding:4px 8px">🚶 매장 직접 방문<br>(앱 가입 여부 무관)</div>
+        <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">🛠️ 현장 접수 (상담사)<br>개인정보·시세 안내</div>
+        <div class="fb fb-neutral" style="font-size:9px;padding:4px 8px">🎯 앱 가입 유도 (QR·알림톡)<br>혜택 안내 후 설치 권장</div>
+        <div class="fb fb-user" style="font-size:9px;padding:4px 8px">🏪 개통 완료</div>
+      </div>
+      <div style="font-size:9px;color:var(--orange);margin-top:6px;font-weight:700">포인트: 현장에서 앱 가입 유도 → 재방문·크로스셀 전환</div>
+    </div>
   </div>
+
+  <!-- 공통 후처리 -->
+  <div style="background:#eff6ff;border:2px solid #93c5fd;border-radius:10px;padding:12px 14px;margin-top:10px">
+    <div style="font-size:11px;font-weight:800;color:var(--navy);margin-bottom:8px">⚡ 개통 후 공통 처리 (A·B 동일)</div>
+    <div class="flow">
+      <div class="fb fb-admin" style="font-size:9px">어드민 등록<br>(개통 데이터)</div>
+      <div class="fa">→</div>
+      <div class="fb fb-crm" style="font-size:9px">CRM 전달<br>고객 프로필 생성</div>
+      <div class="fa">→</div>
+      <div class="fb fb-api" style="font-size:9px">알림톡 · 마이페이지<br>상태 반영</div>
+      <div class="fa">→</div>
+      <div class="fb fb-user" style="font-size:9px">플랫폼 크로스셀<br>(인터넷+TV · 렌탈 · 중고폰)</div>
+    </div>
+  </div>
+
   <div class="note">
-    <strong>매장 개통 = 카카오 동의항목급 데이터 확보.</strong> 이름/전화/생년월일/성별/통신사/주소 전부 확보.<br>
-    <strong>크로스셀링:</strong> 매장 개통 고객 → 앱 가입 유도 → 플랫폼에서 인터넷/렌탈 추가 신청 유도.
+    <strong>매장 개통 데이터 범위:</strong> 이름/전화/생년월일/성별/통신사/주소 전부 확보 · CRM 통합 관리<br>
+    <strong>크로스셀 목표:</strong> 매장 개통 고객을 앱으로 유도 → 플랫폼에서 인터넷+TV/렌탈/중고폰 추가 가입<br>
+    <strong>B(워크인) 비중 관리:</strong> 앱 가입 전환율이 핵심 KPI · 현장 QR·알림톡 · 가입 혜택 안내
   </div>
 </div>
 <div class="arrow-down">↓</div>
