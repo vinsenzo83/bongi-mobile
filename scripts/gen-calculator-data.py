@@ -113,6 +113,27 @@ for line in [
     idx.merge_cells(start_row=r, start_column=1, end_row=r, end_column=3)
     r += 1
 
+r += 2
+c = idx.cell(row=r, column=1, value='🔗 참고자료 (원본 출처)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='2563eb')
+idx.merge_cells(start_row=r, start_column=1, end_row=r, end_column=3)
+r += 1
+refs = [
+    ('SK 상품 전체 안내 (요즘가족결합)', 'https://www.100mb.kr/01_product/sk.php'),
+    ('KT 프리미엄 가족결합 상세 해설', 'https://www.100mb.kr/bbs/board.php?bo_table=information&wr_id=11986'),
+    ('LG U+ 상품 전체 안내 (참쉬운/투게더)', 'https://www.100mb.kr/01_product/lg.php'),
+    ('봉이모바일 통합 계산기 (원본 데이터 소스)', 'https://bongi-mobile-production.up.railway.app/docs/calculator.html'),
+    ('GitHub 리포지토리', 'https://github.com/vinsenzo83/bongi-mobile'),
+]
+for label, url in refs:
+    c = idx.cell(row=r, column=1, value=f'🔗 {label}')
+    c.hyperlink = url
+    c.font = Font(name='Noto Sans KR', size=10, color='2563eb', underline='single')
+    c2 = idx.cell(row=r, column=2, value=url)
+    c2.font = Font(name='SF Mono', size=9, color='666666')
+    idx.merge_cells(start_row=r, start_column=2, end_row=r, end_column=3)
+    r += 1
+
 # ═══════════════════════════════════════════════
 # 계산기 공통 헬퍼
 # ═══════════════════════════════════════════════
@@ -731,8 +752,28 @@ r = table(ws, r, ['통신사','카드사','카드명','실적','할인'], cards)
 
 # 결합할인 시트들
 ws = wb.create_sheet('10_SKT_Bundle')
-for col in 'ABCDEF': ws.column_dimensions[col].width = 15
-r = title(ws, 1, '🏷️ SKT 요즘가족결합', 'ef4444')
+for col in 'ABCDEF': ws.column_dimensions[col].width = 18
+r = title(ws, 1, '🏷️ SKT 요즘가족결합 (완전 명세)', 'ef4444')
+
+# ① 자격 조건
+c = ws.cell(row=r, column=1, value='① 자격 조건')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='ef4444'); r += 1
+for line in [
+    '▶ 같은 명의자의 인터넷+휴대폰 1대 이상 필수',
+    '▶ 가족/동거인/친구 등 지인 결합 허용 (최대 5회선)',
+    '▶ 적용 방식: 단독가 REPLACE (기존 요즘우리집 인터넷 할인 대체)',
+    '▶ TV 결합 시: IPTV 추가 -1,100원 중복',
+    '▶ 인터넷 최대 2회선 + 휴대폰 최대 5회선',
+]:
+    c = ws.cell(row=r, column=1, value=line)
+    c.font = Font(name='Noto Sans KR', size=10)
+    c.fill = PatternFill('solid', fgColor='fef3c7')
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6); r += 1
+r += 1
+
+# ② 할인 표
+c = ws.cell(row=r, column=1, value='② 할인 테이블 (속도 × 회선수)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='ef4444'); r += 1
 skt_rows = []
 mob_100 = {1:3500,2:7000,3:18000,4:18000,5:18000}
 mob_500 = {1:3500,2:7000,3:18000,4:24000,5:24000}
@@ -742,7 +783,74 @@ for sp in ['100M','500M','1G']:
         mob = mob_100[ln] if sp=='100M' else mob_500[ln]
         inet = inet_map[sp]
         skt_rows.append([sp, ln, mob, inet, 1100, mob+inet+1100])
-r = table(ws, r, ['속도','회선수','휴대폰','인터넷','IPTV 추가','총할인'], skt_rows, SKT_FILL)
+r = table(ws, r, ['속도','회선수','휴대폰 (총합)','인터넷','IPTV 추가','총할인'], skt_rows, SKT_FILL)
+r += 1
+
+# 인당 할인 참고
+c = ws.cell(row=r, column=1, value='📌 휴대폰 인당 할인 (개발 참조)')
+c.font = Font(name='Noto Sans KR', size=11, bold=True, color='666666'); r += 1
+r = table(ws, r, ['속도','1회선','2회선','3회선','4회선','5회선'], [
+    ['100M (인당)',3500,3500,6000,4500,3600],
+    ['500M·1G (인당)',3500,3500,6000,6000,4800],
+])
+r += 1
+
+# ③ 계산 알고리즘
+c = ws.cell(row=r, column=1, value='③ 계산 알고리즘 (의사코드)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='ef4444'); r += 1
+for line in [
+    '// 입력: speed, tvIdx, wifi(bool), lines(1~5)',
+    '',
+    '1. 단독가 기준으로 재계산 (요즘우리집 REPLACE):',
+    '   netSingle = internet[speed] + (wifi ? wifiCost : 0)  // SKT wifiCost=1100',
+    '   famInet = bundle.family.internet[speed]',
+    '   inetAfter = netSingle - famInet',
+    '',
+    '2. TV 결합 시:',
+    '   famIptv = hasTv ? bundle.family.iptv : 0  // iptv=1100',
+    '   tvAfter = tv[tvIdx].p - tv[tvIdx].dc - famIptv',
+    '   monthlyFee = inetAfter + tvAfter + setTop',
+    '',
+    '3. 휴대폰 별도 차감 (월):',
+    '   perPerson = bundle.family.mobilePerBySpeed[speed][lines]',
+    '   mobileDiscount = perPerson × lines  // 고지서에서 차감',
+    '',
+    '4. 혜택가:',
+    '   finalFee = monthlyFee - mobileDiscount',
+]:
+    c = ws.cell(row=r, column=1, value=line)
+    c.font = Font(name='SF Mono', size=10, color='1a2744')
+    c.fill = PatternFill('solid', fgColor='f5f5f7')
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6); r += 1
+r += 1
+
+# ④ 검증 예시
+c = ws.cell(row=r, column=1, value='④ 검증 예시 — 500M + B tv 올 + WiFi X + 3회선')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='ef4444'); r += 1
+r = table(ws, r, ['단계','계산','값'], [
+    ['단독가','33,000 + 0','33,000'],
+    ['요즘가족 인터넷 할인','-11,000','-11,000'],
+    ['인터넷 실질','33,000 - 11,000','22,000'],
+    ['TV 기본 (B tv 올)','18,700','18,700'],
+    ['TV 결합할인 + IPTV','-2,200 + -1,100','-3,300'],
+    ['TV 실질','18,700 - 3,300','15,400'],
+    ['셋톱 (스마트3)','4,400','4,400'],
+    ['= 월 실납부','22,000 + 15,400 + 4,400','41,800'],
+    ['휴대폰 3회선 × 6,000','-18,000','-18,000'],
+    ['🎉 혜택가','41,800 - 18,000','23,800'],
+], SKT_FILL)
+r += 1
+
+# ⑤ 참고자료
+c = ws.cell(row=r, column=1, value='⑤ 참고자료')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='ef4444'); r += 1
+rc = ws.cell(row=r, column=1, value='🔗 백메가 SK 상품 전체 안내 (결합할인 원본)')
+rc.hyperlink = 'https://www.100mb.kr/01_product/sk.php'
+rc.font = Font(name='Noto Sans KR', size=11, color='2563eb', underline='single', bold=True)
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6); r += 1
+rc2 = ws.cell(row=r, column=1, value='    URL: https://www.100mb.kr/01_product/sk.php')
+rc2.font = Font(name='SF Mono', size=9, color='666666')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
 
 ws = wb.create_sheet('11_KT_Total')
 for col in 'ABCDE': ws.column_dimensions[col].width = 17
@@ -765,13 +873,38 @@ r = table(ws, r, ['구간','인터넷','휴대폰','합계'], [
 ], KT_FILL)
 
 ws = wb.create_sheet('13_KT_Premium')
-for col, w in zip('ABCDE', [14,44,14,14,14]): ws.column_dimensions[col].width = w
-r = title(ws, 1, '💎 KT 프리미엄 가족결합 (원본 planCatalog 14종)', 'd97706')
-c = ws.cell(row=r, column=1, value='자격: 77,000원↑ 요금제 2회선 이상 필수 · 대표자는 총액결합만 · 구성원 77K↑만 프리미엄 선택 가능 · 인터넷 -5,500원 기본')
-c.font = Font(name='Noto Sans KR', size=10, italic=True, color='92400e')
-c.fill = PatternFill('solid', fgColor='fef3c7')
-ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5); r += 2
-# 원본 planCatalog 14종 그대로 (calculator.html 749-759)
+for col, w in zip('ABCDEF', [14,44,14,14,14,30]): ws.column_dimensions[col].width = w
+r = title(ws, 1, '💎 KT 프리미엄 가족결합 (완전 명세서)', 'd97706')
+
+# ─── 1. 자격 조건 ───
+c = ws.cell(row=r, column=1, value='① 자격 조건')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='d97706'); r += 1
+for line in [
+    '▶ 필수: 77,000원↑ 요금제 휴대폰 2회선 이상 결합',
+    '▶ 대표명의자 1명 + 구성원 최대 N명 (총 5회선까지)',
+    '▶ 자격 미충족 시: 총액결합만 가능 (프리미엄 선택 불가)',
+    '▶ 77,000원↑ 요금제가 1회선뿐 (대표자 본인) → 프리미엄 불가',
+]:
+    c = ws.cell(row=r, column=1, value=line)
+    c.font = Font(name='Noto Sans KR', size=10)
+    c.fill = PatternFill('solid', fgColor='fef3c7')
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6); r += 1
+r += 1
+
+# ─── 2. 분배 규칙 ───
+c = ws.cell(row=r, column=1, value='② 회선별 분배 규칙 (누가 어디 속하는가)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='d97706'); r += 1
+r = table(ws, r, ['회선 종류','조건','귀속 할인','비고'], [
+    ['대표명의자','무조건 (총대)','총액결합할인','프리미엄 불가 · 인터넷 -5,500 대체 가능'],
+    ['구성원 (77K↑)','선택 가능','프리미엄 가족결합','요금제별 고정 dc × 회선수'],
+    ['구성원 (77K↑)','선택 안 함','총액결합할인','합산에 포함 (구간 상승 효과)'],
+    ['구성원 (77K미만)','무조건','총액결합할인','합산에 포함'],
+])
+r += 1
+
+# ─── 3. 요금제 카탈로그 ───
+c = ws.cell(row=r, column=1, value='③ 요금제 카탈로그 (원본 planCatalog 14종)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='d97706'); r += 1
 r = table(ws, r, ['월정액 (v)','요금제명 (label)','prem 자격','할인액 (dc)','비율'], [
     [0,'— 회선 없음 —','X',0,'-'],
     [32890,'32,890원 (LTE 데이터선택)','X',0,'-'],
@@ -788,22 +921,209 @@ r = table(ws, r, ['월정액 (v)','요금제명 (label)','prem 자격','할인�
     [110000,'110,000원 (슈퍼플랜 스페셜 Plus/초이스)','✓',27500,'25%'],
     [130000,'130,000원 (슈퍼플랜 프리미엄/초이스)','✓',32500,'25%'],
 ], PatternFill('solid', fgColor='fef3c7'))
+r += 1
+
+# ─── 4. 계산 알고리즘 (의사코드) ───
+c = ws.cell(row=r, column=1, value='④ 계산 알고리즘 (의사코드)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='d97706'); r += 1
+algo_lines = [
+    '// 입력: members: Array<{ isRep: boolean, planV: number, usePrem?: boolean }>',
+    '//      speed: "100M" | "500M" | "1G"',
+    '',
+    '1. 자격 체크:',
+    '   highPlanCount = members.filter(m => m.planV >= 77000).length',
+    '   IF highPlanCount < 2 THEN 프리미엄 불가 (총액결합만 사용)',
+    '',
+    '2. 회선 분배:',
+    '   premMembers = members.filter(m => !m.isRep && m.usePrem && m.planV >= 77000)',
+    '   totalMembers = members.filter(m => m.isRep || !m.usePrem || m.planV < 77000)',
+    '   IF premMembers.length == 0 THEN 프리미엄 불가 (총액결합만 사용)',
+    '',
+    '3. 총액결합 합산액:',
+    '   totalSum = sum(totalMembers.map(m => m.planV))',
+    '',
+    '4. 총액결합 구간 판정:',
+    '   rngIdx = 0 ~ 5',
+    '   if totalSum >= 174900: rngIdx = 5',
+    '   else if totalSum >= 141900: rngIdx = 4',
+    '   else if totalSum >= 108900: rngIdx = 3',
+    '   else if totalSum >= 64900:  rngIdx = 2',
+    '   else if totalSum >= 22000:  rngIdx = 1',
+    '   else: rngIdx = 0',
+    '',
+    '5. 할인 계산:',
+    '   inetFixedDc = 5500  // 인터넷 또는 대표자 휴대폰 (기본: 대표자 휴대폰)',
+    '   totalMobDc = kt.total.mobile[speed][rngIdx]',
+    '   premTotalDc = sum(premMembers.map(m => planCatalog[m.planV].dc))',
+    '',
+    '6. 최종:',
+    '   totalDiscount = inetFixedDc + totalMobDc + premTotalDc',
+]
+for line in algo_lines:
+    c = ws.cell(row=r, column=1, value=line)
+    c.font = Font(name='SF Mono', size=10, color='1a2744')
+    c.fill = PatternFill('solid', fgColor='f5f5f7')
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6); r += 1
+r += 1
+
+# ─── 5. 검증 예시 1 ───
+c = ws.cell(row=r, column=1, value='⑤ 검증 예시 1 — 100M + 3회선 (모두 89,000원)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='d97706'); r += 1
+r = table(ws, r, ['단계','구성','계산','할인액'], [
+    ['회선 1','대표자 89K (총액)','자동','대표자는 총액결합 대상'],
+    ['회선 2','구성원 89K (프리미엄)','체크','프리미엄 대상'],
+    ['회선 3','구성원 89K (프리미엄)','체크','프리미엄 대상'],
+    ['총액 합산','대표자 1명 89,000원','rngIdx=2 (64.9K↑)','-'],
+    ['인터넷','대표자 휴대폰에 -5,500','고정','-5,500'],
+    ['대표자 총액결합','100M mobile[2]','3,300','-3,300'],
+    ['구성원 프리미엄','89K × 2명','22,250 × 2','-44,500'],
+    ['🎉 총 할인','5,500 + 3,300 + 44,500','','-53,300'],
+    ['비교 (총액결합만)','3×89K=267K → idx 5','mobile[5]=23,100 + 인터넷 5,500','-28,600'],
+    ['차액','프리미엄 선택 시 추가 혜택','','+24,700'],
+], PatternFill('solid', fgColor='fef3c7'))
+r += 1
+
+# ─── 6. 검증 예시 2 ───
+c = ws.cell(row=r, column=1, value='⑥ 검증 예시 2 — 100M + 4회선 (2×89K + 2×32.89K)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='d97706'); r += 1
+r = table(ws, r, ['단계','구성','계산','할인액'], [
+    ['회선 1','대표자 89K','총액','-'],
+    ['회선 2','구성원 89K (프리미엄)','체크','프리미엄 대상'],
+    ['회선 3','구성원 32.89K','77K미만 → 자동 총액','-'],
+    ['회선 4','구성원 32.89K','77K미만 → 자동 총액','-'],
+    ['총액 합산','89 + 32.89×2 = 154,780','rngIdx=4 (141.9K↑)','-'],
+    ['인터넷','고정','','-5,500'],
+    ['대표자+일반 총액결합','100M mobile[4]','18,700','-18,700'],
+    ['프리미엄 89K','1명','22,250','-22,250'],
+    ['🎉 총 할인','5,500 + 18,700 + 22,250','','-46,450'],
+], PatternFill('solid', fgColor='fef3c7'))
+r += 1
+
+# ─── 7. 엣지 케이스 ───
+c = ws.cell(row=r, column=1, value='⑦ 엣지 케이스 처리')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='d97706'); r += 1
+r = table(ws, r, ['케이스','처리'], [
+    ['77K+ 요금제가 1명만 (대표자만)','프리미엄 선택 불가 → 총액결합으로만 계산'],
+    ['77K+ 구성원 중 프리미엄 체크 0명','프리미엄 미적용 (전원 총액)'],
+    ['대표자 요금제가 77K 미만','가능 · 대표자는 항상 총액결합'],
+    ['모든 구성원이 77K 미만','프리미엄 불가 (자격 미달)'],
+    ['1회선만 결합','프리미엄 불가 (2회선 이상 필수)'],
+    ['프리미엄 구성원 5명+','현실적으로 5회선까지 결합 가능 (KT 규정)'],
+])
+r += 1
+
+# ─── 8. 참고자료 ───
+c = ws.cell(row=r, column=1, value='⑧ 참고자료 (원본 출처)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='d97706'); r += 1
+ref_cell = ws.cell(row=r, column=1, value='🔗 백메가 블로그 — KT 프리미엄 가족결합 상세 해설 (원본 소스)')
+ref_cell.hyperlink = 'https://www.100mb.kr/bbs/board.php?bo_table=information&wr_id=11986'
+ref_cell.font = Font(name='Noto Sans KR', size=11, color='2563eb', underline='single', bold=True)
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6); r += 1
+ref_cell2 = ws.cell(row=r, column=1, value='    URL: https://www.100mb.kr/bbs/board.php?bo_table=information&wr_id=11986')
+ref_cell2.font = Font(name='SF Mono', size=9, color='666666')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6); r += 1
+ref_note = ws.cell(row=r, column=1, value='    · 자격 조건, 대표자/구성원 분배 규칙, 실제 계산 예시 2건 원본')
+ref_note.font = Font(name='Noto Sans KR', size=10, color='666666', italic=True)
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
 
 ws = wb.create_sheet('14_LGU_Chweyswun')
-for col in 'ABCDE': ws.column_dimensions[col].width = 17
-r = title(ws, 1, '🏷️ LG U+ 참쉬운가족결합', 'e40981')
+for col in 'ABCDE': ws.column_dimensions[col].width = 18
+r = title(ws, 1, '🏷️ LG U+ 참쉬운가족결합 (완전 명세)', 'e40981')
+
+c = ws.cell(row=r, column=1, value='① 자격 조건')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='e40981'); r += 1
+for line in [
+    '▶ 휴대폰 2회선부터 결합 (1회선 불가)',
+    '▶ 알뜰폰 결합 가능 (추가 할인 대당 -440원)',
+    '▶ 휴대폰 최대 10대 + 인터넷 최대 3대',
+    '▶ 적용 방식: 단독가 REPLACE',
+]:
+    c = ws.cell(row=r, column=1, value=line)
+    c.font = Font(name='Noto Sans KR', size=10)
+    c.fill = PatternFill('solid', fgColor='fef3c7')
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5); r += 1
+r += 1
+
+c = ws.cell(row=r, column=1, value='② 인터넷 할인 (3년 약정 기준)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='e40981'); r += 1
 r = table(ws, r, ['구분','100M','500M','1G'], [['인터넷 할인',5500,9900,13200]], LGU_FILL)
 r += 1
+
+c = ws.cell(row=r, column=1, value='③ 휴대폰 인당 할인 매트릭스 (요금구간 × 회선수)')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='e40981'); r += 1
 r = table(ws, r, ['요금구간','2회선','3회선','4+회선'], [
     ['69K 미만',2200,3300,4400],['69K 이상',3300,5500,6600],['88K 이상',4400,6600,8800],
 ], LGU_FILL)
+r += 1
+
+c = ws.cell(row=r, column=1, value='④ 계산 알고리즘')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='e40981'); r += 1
+for line in [
+    '// 입력: speed, tvIdx, planRange(1~3), lines(2~4+)',
+    '1. lguInet = bundle.chweyswun.internet[speed]',
+    '2. netSingle = internet[speed]  // LGU+ WiFi 전속도 무료',
+    '3. inetAfter = netSingle - lguInet  // REPLACE 방식',
+    '4. 휴대폰: idx = min(lines, 4) - 2  // 2회선=0 / 3회선=1 / 4+=2',
+    '   perPerson = bundle.chweyswun.mobile[planRange-1][idx]',
+    '   mobileDc = perPerson × min(lines, 4)',
+    '5. TV: tvAfter = tv[tvIdx].p - tv[tvIdx].dc',
+    '6. monthlyFee = inetAfter + tvAfter + setTop(4,400)',
+    '7. finalFee = monthlyFee - mobileDc',
+]:
+    c = ws.cell(row=r, column=1, value=line)
+    c.font = Font(name='SF Mono', size=10, color='1a2744')
+    c.fill = PatternFill('solid', fgColor='f5f5f7')
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5); r += 1
+r += 1
+
+c = ws.cell(row=r, column=1, value='⑤ 참고자료')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='e40981'); r += 1
+rc = ws.cell(row=r, column=1, value='🔗 백메가 LG U+ 상품 전체 안내 (결합할인 원본 소스)')
+rc.hyperlink = 'https://www.100mb.kr/01_product/lg.php'
+rc.font = Font(name='Noto Sans KR', size=11, color='2563eb', underline='single', bold=True)
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5); r += 1
+rc2 = ws.cell(row=r, column=1, value='    URL: https://www.100mb.kr/01_product/lg.php')
+rc2.font = Font(name='SF Mono', size=9, color='666666')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
 
 ws = wb.create_sheet('15_LGU_Together')
-for col in 'ABCD': ws.column_dimensions[col].width = 18
-r = title(ws, 1, '🏷️ LG U+ 투게더 (85K↑)', 'e40981')
-r = table(ws, r, ['구분','100M','500M','1G'], [['인터넷','불가',11000,11000]], LGU_FILL)
+for col in 'ABCD': ws.column_dimensions[col].width = 20
+r = title(ws, 1, '🏷️ LG U+ 투게더 결합 (85,000원↑ 고가요금제)', 'e40981')
+
+c = ws.cell(row=r, column=1, value='① 자격 조건')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='e40981'); r += 1
+for line in [
+    '▶ 5G 85,000원 이상 요금제 필수',
+    '▶ 500M 이상 인터넷 (100M 결합 불가)',
+    '▶ 휴대폰 최대 5회선 + 인터넷 최대 5회선',
+    '▶ 선택약정 25% 중복 가능',
+    '▶ 적용 방식: 단독가 REPLACE',
+]:
+    c = ws.cell(row=r, column=1, value=line)
+    c.font = Font(name='Noto Sans KR', size=10)
+    c.fill = PatternFill('solid', fgColor='fef3c7')
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4); r += 1
 r += 1
-r = table(ws, r, ['회선수','휴대폰 할인 (인당)'], [['2회선',10000],['3회선',14000],['4~5회선',20000]], LGU_FILL)
+
+c = ws.cell(row=r, column=1, value='② 인터넷 할인')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='e40981'); r += 1
+r = table(ws, r, ['구분','100M','500M','1G'], [['인터넷','❌ 불가',11000,11000]], LGU_FILL)
+r += 1
+
+c = ws.cell(row=r, column=1, value='③ 휴대폰 인당 할인')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='e40981'); r += 1
+r = table(ws, r, ['회선수','인당 할인'], [['2회선',10000],['3회선',14000],['4~5회선',20000]], LGU_FILL)
+r += 1
+c = ws.cell(row=r, column=1, value='※ 추가 혜택: 청소년 가족할인 -10,000 / 시그니처 가족할인 자녀 1대 최대 -33,000')
+c.font = Font(name='Noto Sans KR', size=9, italic=True, color='666666')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4); r += 2
+
+c = ws.cell(row=r, column=1, value='④ 참고자료')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='e40981'); r += 1
+rc = ws.cell(row=r, column=1, value='🔗 백메가 LG U+ 상품 안내')
+rc.hyperlink = 'https://www.100mb.kr/01_product/lg.php'
+rc.font = Font(name='Noto Sans KR', size=11, color='2563eb', underline='single', bold=True)
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
 
 # Schema & Formula
 ws = wb.create_sheet('20_Schema')
