@@ -555,6 +555,24 @@ for r_idx, (step, formula) in enumerate(formulas):
     r += 1
 
 r += 2
+c = ws.cell(row=r, column=1, value='⚠️ 핵심 주의사항 — 3사 결합할인 적용 방식 다름')
+c.font = Font(name='Noto Sans KR', size=13, bold=True, color='dc2626')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=2)
+r += 1
+for line in [
+    '• SKT 요즘가족결합: 단독가 **REPLACE** (요즘우리집 대체) → tvInternetNoWifi 무시',
+    '• KT 총액/정액: 기본 TV결합할인 + 총액할인 **STACK** (중복 적용)',
+    '• KT 프리미엄: 총액대상(대표자+77K미만) + 프리미엄대상(77K↑) 독립 계산',
+    '• LG U+ 참쉬운: 단독가 **REPLACE** (SKT와 유사)',
+    '• LG U+ 투게더: 단독가 **REPLACE** (85K↑ 고가요금제 한정)',
+]:
+    c = ws.cell(row=r, column=1, value=line)
+    c.font = Font(name='Noto Sans KR', size=10)
+    c.fill = PatternFill('solid', fgColor='fef3c7')
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=2)
+    r += 1
+
+r += 2
 r = add_section_title(ws, r, '🏷️ 결합할인 계산 — 통신사별 분기', '1a2744')
 
 bundle_calc = [
@@ -620,24 +638,36 @@ example_skt = [
     ('  결합 종류', '요즘가족결합 (family)', ''),
     ('  결합 인원', '3명', ''),
     ('', '', ''),
-    ('기본가 계산', '', ''),
-    ('  1. 인터넷 결합가 (WiFi 미포함)', '27,500원', 'D.skt.tvInternetNoWifi[\"500M\"]'),
-    ('  2. TV 최종요금 (결합할인 후)', '16,500원', '18,700 - 2,200'),
-    ('  3. 셋톱박스 스마트3', '4,400원', 'D.skt.setTopOptions[0].fee'),
-    ('  = 월 기본요금', '48,400원', '27,500 + 16,500 + 4,400'),
+    ('【경로 A】 휴대폰 결합 X (요즘우리집결합만 적용)', '', ''),
+    ('  1. 인터넷 결합가 (tvInternetNoWifi)', '27,500원', 'D.skt.tvInternetNoWifi[\"500M\"]'),
+    ('  2. TV 최종요금 (결합할인 -2,200)', '16,500원', '18,700 - 2,200'),
+    ('  3. 셋톱박스 스마트3', '4,400원', 'D.skt.setTop'),
+    ('  = 월 기본요금 (요즘우리집)', '48,400원', '27,500 + 16,500 + 4,400'),
     ('', '', ''),
-    ('요즘가족결합 할인', '', ''),
-    ('  인터넷 할인', '-11,000원', 'D.skt.bundle.family.internet[\"500M\"]'),
-    ('  IPTV 추가 할인 (TV 결합 시)', '-1,100원', 'D.skt.bundle.family.iptv'),
-    ('  휴대폰 할인 (500M, 3회선 × 6,000)', '-18,000원', 'mobilePerBySpeed[\"500M\"][3] × 3'),
+    ('【경로 B】 휴대폰 결합 O (요즘가족결합 적용 · 요즘우리집 REPLACE)', '', ''),
+    ('  ※ 주의: 단독가에서 재계산 (tvInternetNoWifi 사용 X)', '', ''),
+    ('  1. 인터넷 단독가 500M', '33,000원', 'D.skt.internet[\"500M\"]'),
+    ('  2. 요즘가족결합 인터넷 할인', '-11,000원', 'D.skt.bundle.family.internet[\"500M\"]'),
+    ('  → 인터넷 실질', '22,000원', '33,000 - 11,000'),
+    ('  3. TV 기본 (B tv 올)', '18,700원', 'D.skt.tv[3].p'),
+    ('  4. TV 결합할인', '-2,200원', 'D.skt.tv[3].dc'),
+    ('  5. IPTV 추가 할인 (요즘가족 전용)', '-1,100원', 'D.skt.bundle.family.iptv'),
+    ('  → TV 실질', '15,400원', '18,700 - 2,200 - 1,100'),
+    ('  6. 셋톱박스', '4,400원', ''),
+    ('  = 인터넷+TV 월 실납부', '41,800원', '22,000 + 15,400 + 4,400'),
     ('', '', ''),
-    ('최종 계산', '', ''),
-    ('  인터넷+TV 실납부', '36,300원', '48,400 - 11,000 - 1,100'),
-    ('  휴대폰 고지서 별도 차감', '-18,000원', '(3회선 합산)'),
-    ('  🎉 혜택가 (최종)', '18,300원/월', '36,300 - 18,000'),
+    ('휴대폰 고지서 별도 차감', '', ''),
+    ('  휴대폰 할인 인당 (500M, 3회선)', '6,000원', 'mobilePerBySpeed[\"500M\"][3]'),
+    ('  총 할인 (인당 × 회선수)', '-18,000원', '6,000 × 3'),
+    ('', '', ''),
+    ('  🎉 혜택가 (최종)', '23,800원/월', '41,800 - 18,000'),
+    ('', '', ''),
+    ('경로 A vs B 차이', '', ''),
+    ('  요즘우리집 (A): 48,400원', '', '휴대폰 결합 없을 때'),
+    ('  요즘가족 (B): 23,800원', '', '휴대폰 3회선 결합 시 (-24,600 절감)'),
     ('', '', ''),
     ('부가 혜택', '', ''),
-    ('  설치비 (1회성)', '56,100원', 'D.skt.install.combo'),
+    ('  설치비 (1회성, 결합)', '56,100원', 'D.skt.install.combo'),
     ('  사은품 (500M + TV 결합)', '430,000원', 'D.skt.gift.combo[\"500M\"]'),
 ]
 
@@ -655,6 +685,65 @@ for step, value, source in example_skt:
             c.fill = PatternFill('solid', fgColor='f0f0f0')
         elif '혜택가' in step or '월 기본요금' in step:
             c.fill = SKT_FILL
+    r += 1
+
+# ═══════════════════════════════════════════════
+# 31b_CALC_Example_KT_Total (총액결합 중복 적용 예시)
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('31b_CALC_Example_KT_Total')
+ws.column_dimensions['A'].width = 40
+ws.column_dimensions['B'].width = 22
+ws.column_dimensions['C'].width = 40
+r = add_section_title(ws, 1, '🧮 KT 총액결합 계산 예시 — 500M+지니TV 에센스+WiFi O+총액결합(108,900원↑)', '2563eb')
+
+example_kt_total = [
+    ('입력값', '', ''),
+    ('  통신사/속도', 'KT 500M', ''),
+    ('  TV 상품', '지니TV 에센스 (tvIdx=3)', 'D.kt.tv[3] = {p:20240, dc:3740}'),
+    ('  WiFi', '사용 (+1,100원)', 'D.kt.wifiPrice[\"500M\"]'),
+    ('  결합 종류', '총액결합 (kt-total)', ''),
+    ('  휴대폰 합산 구간', '108,900원 이상 (rngIdx=3)', ''),
+    ('', '', ''),
+    ('【기본 TV 결합 인터넷 할인】 (KT 기본)', '', ''),
+    ('  인터넷 단독 (500M)', '33,000원', 'D.kt.internet[\"500M\"]'),
+    ('  WiFi 추가', '+1,100원', ''),
+    ('  인터넷 결합가 (tvInternetWithWifi)', '28,600원', 'D.kt.tvInternetWithWifi[\"500M\"]'),
+    ('  → 기본 TV결합 인터넷 할인', '-5,500원', '(33,000+1,100) - 28,600'),
+    ('', '', ''),
+    ('【총액결합 추가 할인】 ← 중복 적용', '', ''),
+    ('  총액결합 인터넷 할인', '-5,500원', 'D.kt.bundle.total.internet[\"500M\"][3]'),
+    ('  → 인터넷 최종', '23,100원', '28,600 - 5,500'),
+    ('', '', ''),
+    ('【TV + 셋톱】', '', ''),
+    ('  TV 기본', '20,240원', 'D.kt.tv[3].p'),
+    ('  TV 결합할인', '-3,740원', 'D.kt.tv[3].dc'),
+    ('  → TV 실질', '16,500원', '20,240 - 3,740'),
+    ('  셋톱박스 기가지니3', '4,400원', 'D.kt.setTop'),
+    ('', '', ''),
+    ('【월 실납부】', '', ''),
+    ('  인터넷+TV+셋톱', '44,000원', '23,100 + 16,500 + 4,400'),
+    ('', '', ''),
+    ('휴대폰 고지서 별도 할인', '', ''),
+    ('  500M mobile[3]', '-16,610원', 'D.kt.bundle.total.mobile[\"500M\"][3]'),
+    ('', '', ''),
+    ('  🎉 총 월 절감액 (vs 단독)', '44,000 + (-16,610) 별도', ''),
+    ('', '', ''),
+    ('※ KT 특성: 기본 TV결합 할인 + 총액결합 할인 **중복 적용** (STACK)', '', ''),
+    ('   → SKT 요즘가족결합(REPLACE)과 반대 방식', '', ''),
+]
+
+for step, value, source in example_kt_total:
+    cells = [
+        (step, Font(name='Noto Sans KR', size=11, bold=(not step.startswith('  ') and step != ''), color='1a2744')),
+        (value, MONO),
+        (source, Font(name='SF Mono', size=9, color='666666')),
+    ]
+    for ci, (val, font) in enumerate(cells):
+        c = ws.cell(row=r, column=ci+1, value=val)
+        c.font = font
+        c.border = BORDER
+        if '🎉' in step or '월 실납부' in step:
+            c.fill = KT_FILL
     r += 1
 
 # ═══════════════════════════════════════════════
