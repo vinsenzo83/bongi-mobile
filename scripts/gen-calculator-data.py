@@ -328,9 +328,12 @@ kt_tv_names = [t[0] for t in KT_TVS]
 r = input_row(ws, r, '속도', '500M', '100M / 500M / 1G', ['100M','500M','1G'])
 r = input_row(ws, r, 'TV 상품', '지니TV 에센스', 'KT 지니TV 5종', kt_tv_names)
 r = input_row(ws, r, 'WiFi 사용', 'Y', 'Y=1,100원 (1G는 무료) / N', ['Y','N'])
-r = input_row(ws, r, '결합 종류', '총액결합', '결합없음/총액/정액', ['결합없음','총액결합','정액결합'])
+r = input_row(ws, r, '결합 종류', '총액결합', '결합없음/총액/정액/💎프리미엄', ['결합없음','총액결합','정액결합','💎 프리미엄 가족결합'])
 r = input_row(ws, r, '총액결합 구간 (1~6)', 4, '1=22K↓, 2=22K↑, 3=64.9K↑, 4=108.9K↑, 5=141.9K↑, 6=174.9K↑', ['1','2','3','4','5','6'])
 r = input_row(ws, r, '정액결합 구간 (1~4)', 2, '1=37K↓, 2=37K↑, 3=61K↑, 4=77K↑', ['1','2','3','4'])
+r = input_row(ws, r, '💎 프리미엄 요금제', '89,000원', '77K+ 요금제 (드롭다운)',
+    ['77,000원','80,000원','87,890원','89,000원','90,000원','100,000원','109,000원','110,000원','130,000원'])
+r = input_row(ws, r, '💎 프리미엄 회선수', 2, '대표자 제외 구성원 77K+ 회선수 (최소 1명)', ['1','2','3','4'])
 r += 1
 
 c = ws.cell(row=r, column=1, value='🧮 자동 계산')
@@ -338,7 +341,7 @@ c.font = Font(name='Noto Sans KR', size=12, bold=True, color='1a2744')
 ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
 r += 1
 
-SP, TVN, WIFI, BUNDLE, R_T, R_F = 'B4', 'B5', 'B6', 'B7', 'B8', 'B9'
+SP, TVN, WIFI, BUNDLE, R_T, R_F, PREM_PLAN, PREM_LINES = 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'B10', 'B11'
 
 r = frow(ws, r, 'TV 인덱스',
     f'=MATCH({TVN},{{"TV 없음","지니TV 베이직","지니TV 라이트","지니TV 에센스","지니TV 모든G","지니TV 디즈니+모든G"}},0)')
@@ -423,17 +426,41 @@ r = frow(ws, r, '  [정액] 휴대폰 할인',
     comment='→ 12_KT_Fixed · 4구간')
 FIXED_MOB = r - 1
 
+# 💎 프리미엄 가족결합
+r = frow(ws, r, '  [💎프리미엄] 인터넷 할인 (고정)',
+    f'=IF({BUNDLE}="💎 프리미엄 가족결합",5500,0)',
+    comment='→ 13_KT_Premium · 인터넷 또는 대표자 휴대폰 고정 -5,500')
+PREM_INET = r - 1
+
+r = frow(ws, r, '  [💎프리미엄] 대표자 총액결합 (합산=요금제1명)',
+    f'=IF({BUNDLE}="💎 프리미엄 가족결합",IF({SP}="100M",CHOOSE({R_T},0,0,3300,14300,18700,23100),CHOOSE({R_T},0,0,5500,16610,22110,27610)),0)',
+    comment='총액결합 구간 활용 (대표자 1명 기준)')
+PREM_REP_MOB = r - 1
+
+r = frow(ws, r, '  [💎프리미엄] 요금제별 할인액',
+    f'=IF({BUNDLE}="💎 프리미엄 가족결합",CHOOSE(MATCH({PREM_PLAN},{{"77,000원","80,000원","87,890원","89,000원","90,000원","100,000원","109,000원","110,000원","130,000원"}},0),19250,20000,22000,22250,22500,25000,27500,27500,32500),0)',
+    comment='→ 13_KT_Premium · planCatalog dc')
+PREM_DC = r - 1
+
+r = frow(ws, r, '  [💎프리미엄] 구성원 총 할인 (dc × 회선수)',
+    f'=B{PREM_DC}*IF({BUNDLE}="💎 프리미엄 가족결합",{PREM_LINES},0)',
+    comment='77K+ 구성원만 해당 (대표자 제외)')
+PREM_MOB_TOTAL = r - 1
+
 r += 1
+# 인터넷+TV 월 실납부 — 결합 종류별 분기
 r = frow(ws, r, '  = 인터넷+TV 월 실납부',
-    f'=B{PATH_A}-B{TOTAL_INET}-B{FIXED_INET}',
-    KT_FILL, True)
+    f'=IF({BUNDLE}="💎 프리미엄 가족결합",B{PATH_A}-B{PREM_INET},B{PATH_A}-B{TOTAL_INET}-B{FIXED_INET})',
+    KT_FILL, True,
+    comment='프리미엄: -5,500 고정 / 총액+정액: 해당 할인')
 BUNDLE_FEE = r - 1
 
 r = frow(ws, r, '  - 휴대폰 고지서 별도 차감',
-    f'=-(B{TOTAL_MOB}+B{FIXED_MOB})', KT_FILL)
+    f'=-(B{TOTAL_MOB}+B{FIXED_MOB}+B{PREM_REP_MOB}+B{PREM_MOB_TOTAL})', KT_FILL,
+    comment='총액/정액 + 프리미엄(대표자 총액 + 구성원 프리미엄)')
 
 r = frow(ws, r, '🎉 혜택가 (최종 월요금)',
-    f'=IF({BUNDLE}="결합없음",B{PATH_A},B{BUNDLE_FEE}-(B{TOTAL_MOB}+B{FIXED_MOB}))',
+    f'=IF({BUNDLE}="결합없음",B{PATH_A},B{BUNDLE_FEE}-(B{TOTAL_MOB}+B{FIXED_MOB}+B{PREM_REP_MOB}+B{PREM_MOB_TOTAL}))',
     RESULT_FILL, True, '2563eb')
 c = ws.cell(row=r-1, column=2)
 c.font = Font(name='SF Mono', size=16, bold=True, color='2563eb')
