@@ -243,7 +243,7 @@ lookup_end = write_hidden_lookup()
 # 계산 로직 (수식)
 CARRIER = 'B4'; SP = 'B5'; TVNAME = 'B6'; WIFI = 'B7'; BUNDLE = 'B8'; LINES = 'B9'; RANGE_IDX = 'B10'
 
-def frow(r_, label, formula, fill=None, bold=False, color=None):
+def frow(r_, label, formula, fill=None, bold=False, color=None, comment=''):
     ws.cell(row=r_, column=1, value=label).font = Font(name='Noto Sans KR', size=10, bold=bold)
     c = ws.cell(row=r_, column=2, value=formula)
     c.font = Font(name='SF Mono', size=11, bold=bold, color=color or '1a2744')
@@ -251,45 +251,58 @@ def frow(r_, label, formula, fill=None, bold=False, color=None):
     c.alignment = Alignment(horizontal='right')
     c.number_format = '#,##0"원"'
     if fill: c.fill = fill
+    if comment:
+        cc = ws.cell(row=r_, column=3, value=comment)
+        cc.font = Font(name='Noto Sans KR', size=9, color='666666', italic=True)
+        cc.alignment = Alignment(vertical='center')
+        ws.merge_cells(start_row=r_, start_column=3, end_row=r_, end_column=5)
     return r_ + 1
 
 # 단독가
 r = frow(r, '인터넷 단독가',
-    f'=IF({SP}="100M",22000,IF({SP}="500M",33000,38500))')
+    f'=IF({SP}="100M",22000,IF({SP}="500M",33000,38500))',
+    comment='→ 01_Internet 시트 · 3사 동일 요금')
 
 # TV 가격 (VLOOKUP by carrier + tv_name) — SUMPRODUCT로 두 조건 매칭
 r = frow(r, 'TV 가격 (p)',
-    f'=IFERROR(SUMPRODUCT(($G$2:$G${lookup_end}={CARRIER})*($H$2:$H${lookup_end}={TVNAME})*($I$2:$I${lookup_end})),0)')
+    f'=IFERROR(SUMPRODUCT(($G$2:$G${lookup_end}={CARRIER})*($H$2:$H${lookup_end}={TVNAME})*($I$2:$I${lookup_end})),0)',
+    comment='→ 02_TV 시트 · 통신사+상품명 조회 (숨김 G~J)')
 TV_P = r - 1
 
 r = frow(r, 'TV 결합할인 (dc)',
-    f'=IFERROR(SUMPRODUCT(($G$2:$G${lookup_end}={CARRIER})*($H$2:$H${lookup_end}={TVNAME})*($J$2:$J${lookup_end})),0)')
+    f'=IFERROR(SUMPRODUCT(($G$2:$G${lookup_end}={CARRIER})*($H$2:$H${lookup_end}={TVNAME})*($J$2:$J${lookup_end})),0)',
+    comment='→ 02_TV 시트 · 인터넷 결합 시 TV 할인')
 TV_DC = r - 1
 
 r = frow(r, 'TV 선택 여부',
-    f'=IF({TVNAME}="TV 없음",0,1)')
+    f'=IF({TVNAME}="TV 없음",0,1)',
+    comment='0 = 인터넷 단독 / 1 = TV 결합')
 HAS_TV = r - 1
 
 # WiFi 추가금
 r = frow(r, 'WiFi 추가금 (속도별)',
-    f'=IF({WIFI}="N",0,IF({CARRIER}="SKT",1100,IF({CARRIER}="KT",IF({SP}="1G",0,1100),0)))')
+    f'=IF({WIFI}="N",0,IF({CARRIER}="SKT",1100,IF({CARRIER}="KT",IF({SP}="1G",0,1100),0)))',
+    comment='→ 05_WiFi 기본 모델 · SKT 1,100 / KT 100M·500M 1,100, 1G 무료 / LGU+ 전속도 무료')
 WIFI_FEE = r - 1
 
 # tvInternetNoWifi
 r = frow(r, 'tvInternetNoWifi',
     f'=IF({CARRIER}="SKT",IF({SP}="100M",19800,IF({SP}="500M",27500,33000)),'
     f'IF({CARRIER}="KT",IF({SP}="100M",22000,IF({SP}="500M",27500,33000)),'
-    f'IF({SP}="100M",22000,IF({SP}="500M",27500,33000))))')
+    f'IF({SP}="100M",22000,IF({SP}="500M",27500,33000))))',
+    comment='→ 03_TV_Internet 시트 · TV 결합 시 인터넷가 (WiFi 미포함)')
 TV_INET_NO = r - 1
 
 r = frow(r, 'tvInternetWithWifi',
     f'=IF({CARRIER}="SKT",IF({SP}="100M",22000,IF({SP}="500M",28600,34100)),'
     f'IF({CARRIER}="KT",IF({SP}="100M",23100,IF({SP}="500M",28600,33000)),'
-    f'IF({SP}="100M",22000,IF({SP}="500M",27500,33000))))')
+    f'IF({SP}="100M",22000,IF({SP}="500M",27500,33000))))',
+    comment='→ 03_TV_Internet 시트 · TV+WiFi 결합 시 인터넷가')
 TV_INET_WITH = r - 1
 
 # 셋톱 (3사 모두 4,400)
-r = frow(r, '셋톱박스 (기본)', '=4400')
+r = frow(r, '셋톱박스 (기본)', '=4400',
+    comment='→ 04_SetTop 기본 모델 · SKT 스마트3 / KT 기가지니3 / LGU+ U+tv UHD4 (모두 4,400원)')
 SETTOP = r - 1
 
 r += 1
@@ -312,50 +325,59 @@ r += 1
 # SKT 요즘가족결합 인터넷 할인
 r = frow(r, '  [SKT] 요즘가족 인터넷 할인',
     f'=IF(AND({CARRIER}="SKT",{BUNDLE}="요즘가족결합",{LINES}>0),'
-    f'IF({SP}="100M",4400,IF({SP}="500M",11000,13200)),0)')
+    f'IF({SP}="100M",4400,IF({SP}="500M",11000,13200)),0)',
+    comment='→ 10_SKT_Bundle · 단독가 REPLACE 방식')
 SKT_FAM_INET = r - 1
 
 r = frow(r, '  [SKT] IPTV 추가 (TV결합 시)',
-    f'=IF(AND({CARRIER}="SKT",{BUNDLE}="요즘가족결합",{LINES}>0,B{HAS_TV}=1),1100,0)')
+    f'=IF(AND({CARRIER}="SKT",{BUNDLE}="요즘가족결합",{LINES}>0,B{HAS_TV}=1),1100,0)',
+    comment='TV 결합 시에만 추가 -1,100원')
 SKT_FAM_IPTV = r - 1
 
 r = frow(r, '  [SKT] 휴대폰 인당 할인',
     f'=IF(AND({CARRIER}="SKT",{BUNDLE}="요즘가족결합",{LINES}>0),'
-    f'IF({SP}="100M",CHOOSE({LINES},3500,3500,6000,4500,3600),CHOOSE({LINES},3500,3500,6000,6000,4800)),0)')
+    f'IF({SP}="100M",CHOOSE({LINES},3500,3500,6000,4500,3600),CHOOSE({LINES},3500,3500,6000,6000,4800)),0)',
+    comment='→ 10_SKT_Bundle · 속도+회선수별 인당')
 SKT_MOB_PER = r - 1
 
 r = frow(r, '  [SKT] 휴대폰 총 할인',
-    f'=B{SKT_MOB_PER}*IF(AND({CARRIER}="SKT",{BUNDLE}="요즘가족결합"),{LINES},0)')
+    f'=B{SKT_MOB_PER}*IF(AND({CARRIER}="SKT",{BUNDLE}="요즘가족결합"),{LINES},0)',
+    comment='인당 × 회선수 (휴대폰 고지서 별도 차감)')
 SKT_MOB_TOTAL = r - 1
 
 # KT 총액결합 (STACK)
 r = frow(r, '  [KT] 총액결합 인터넷 할인',
     f'=IF(AND({CARRIER}="KT",{BUNDLE}="총액결합"),'
     f'IF({SP}="100M",CHOOSE({RANGE_IDX},1650,3300,5500,5500,5500,5500),'
-    f'CHOOSE({RANGE_IDX},2200,5500,5500,5500,5500,5500)),0)')
+    f'CHOOSE({RANGE_IDX},2200,5500,5500,5500,5500,5500)),0)',
+    comment='→ 11_KT_Total · 구간 1~6 · 기본 TV결합과 STACK')
 KT_TOTAL_INET = r - 1
 
 r = frow(r, '  [KT] 총액결합 휴대폰 할인',
     f'=IF(AND({CARRIER}="KT",{BUNDLE}="총액결합"),'
     f'IF({SP}="100M",CHOOSE({RANGE_IDX},0,0,3300,14300,18700,23100),'
-    f'CHOOSE({RANGE_IDX},0,0,5500,16610,22110,27610)),0)')
+    f'CHOOSE({RANGE_IDX},0,0,5500,16610,22110,27610)),0)',
+    comment='→ 11_KT_Total · 휴대폰 고지서 별도 차감')
 KT_TOTAL_MOB = r - 1
 
 # LGU+ 참쉬운
 r = frow(r, '  [LGU+] 참쉬운 인터넷 할인',
     f'=IF(AND({CARRIER}="LG U+",{BUNDLE}="참쉬운 가족결합",{LINES}>=2),'
-    f'IF({SP}="100M",5500,IF({SP}="500M",9900,13200)),0)')
+    f'IF({SP}="100M",5500,IF({SP}="500M",9900,13200)),0)',
+    comment='→ 14_LGU_Chweyswun · 단독가 REPLACE · 2회선부터')
 LGU_CHW_INET = r - 1
 
 r = frow(r, '  [LGU+] 참쉬운 휴대폰 인당 할인',
     f'=IF(AND({CARRIER}="LG U+",{BUNDLE}="참쉬운 가족결합",{LINES}>=2),'
     f'CHOOSE({RANGE_IDX},CHOOSE(MIN({LINES},4)-1,2200,3300,4400),'
     f'CHOOSE(MIN({LINES},4)-1,3300,5500,6600),'
-    f'CHOOSE(MIN({LINES},4)-1,4400,6600,8800)),0)')
+    f'CHOOSE(MIN({LINES},4)-1,4400,6600,8800)),0)',
+    comment='→ 14_LGU_Chweyswun · 요금구간(1~3) × 회선(2~4+)')
 LGU_MOB_PER = r - 1
 
 r = frow(r, '  [LGU+] 참쉬운 휴대폰 총 할인',
-    f'=B{LGU_MOB_PER}*IF(AND({CARRIER}="LG U+",{BUNDLE}="참쉬운 가족결합"),MIN({LINES},4),0)')
+    f'=B{LGU_MOB_PER}*IF(AND({CARRIER}="LG U+",{BUNDLE}="참쉬운 가족결합"),MIN({LINES},4),0)',
+    comment='인당 × 회선수')
 LGU_MOB_TOTAL = r - 1
 
 r += 1
@@ -471,43 +493,53 @@ r = table(ws, r, ['통신사', 'WiFi 유무', '100M', '500M', '1G'], [
 ])
 
 ws = wb.create_sheet('04_SetTop')
-for col, w in zip('ABCDEF', [10, 20, 28, 12, 10, 10]):
+for col, w in zip('ABCDEFG', [10, 20, 28, 12, 10, 10, 50]):
     ws.column_dimensions[col].width = w
 r = title(ws, 1, '📦 셋톱박스 옵션')
+c = ws.cell(row=r, column=1, value='💬 기본값(isDefault) 선정 기준: 매장 판매량 1위 · 가격 대비 기능 균형 · 고객 선호 · 요금 계산 시 기본 적용')
+c.font = Font(name='Noto Sans KR', size=10, italic=True, color='92400e')
+c.fill = PatternFill('solid', fgColor='fef3c7')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+r += 2
 settops = [
-    ['SKT','smart3','스마트3',4400,'O','O'],
-    ['SKT','smart3-mini','스마트3 미니',4400,'X','O'],
-    ['SKT','ai-nugu','AI NUGU',6600,'X','O'],
-    ['SKT','sound-max','사운드 맥스',8800,'X','O'],
-    ['SKT','apple-tv','애플TV',6600,'X','O'],
-    ['KT','genie-3','기가지니3',4400,'O','O'],
-    ['KT','genie-a','기가지니A',3300,'X','O'],
-    ['KT','soundbar','지니TV 올인원 사운드바',8800,'X','O'],
-    ['LG U+','uhd4','U+tv UHD4',4400,'O','O'],
-    ['LG U+','soundbar-black','U+tv 사운드바 블랙',6600,'X','O'],
+    ['SKT','smart3','스마트3',4400,'O','O','✅ 기본값 · SKT 표준 셋톱 · OTT 대부분 지원 · 매장 판매 1위'],
+    ['SKT','smart3-mini','스마트3 미니',4400,'X','O','저가형 · 일부 OTT(넷플릭스 등) 미지원'],
+    ['SKT','ai-nugu','AI NUGU',6600,'X','O','AI 음성인식 특화 · 가격 인상형'],
+    ['SKT','sound-max','사운드 맥스',8800,'X','O','사운드바 일체형 · OTT 거의 불가'],
+    ['SKT','apple-tv','애플TV',6600,'X','O','아이폰 연동형 · 쿠팡/애플TV 특화'],
+    ['KT','genie-3','기가지니3',4400,'O','O','✅ 기본값 · KT 대표 모델 · AI 블루투스 스피커 일체 · 고객 선호 1위'],
+    ['KT','genie-a','기가지니A',3300,'X','O','저가형 (3,300원) · 기본 기능만'],
+    ['KT','soundbar','지니TV 올인원 사운드바',8800,'X','O','사운드바+공유기 일체 · 고가형'],
+    ['LG U+','uhd4','U+tv UHD4',4400,'O','O','✅ 기본값 · LG U+ 표준 · AI 음향기술 탑재'],
+    ['LG U+','soundbar-black','U+tv 사운드바 블랙',6600,'X','O','돌비비전 지원 고급형'],
 ]
-r = table(ws, r, ['통신사','ID','모델명','월 임대료','기본','활성'], settops)
+r = table(ws, r, ['통신사','ID','모델명','월 임대료','기본','활성','💬 설명'], settops)
 
 ws = wb.create_sheet('05_WiFi')
-for col, w in zip('ABCDEFGH', [10, 20, 28, 12, 12, 12, 10, 10]):
+for col, w in zip('ABCDEFGHI', [10, 20, 28, 10, 10, 10, 8, 8, 50]):
     ws.column_dimensions[col].width = w
 r = title(ws, 1, '📡 WiFi 옵션')
+c = ws.cell(row=r, column=1, value='💬 기본값 선정 기준: 속도별 단가가 낮은 표준 모델 · 가입 시 자동 지급 · 요금 계산 기본 대상')
+c.font = Font(name='Noto Sans KR', size=10, italic=True, color='92400e')
+c.fill = PatternFill('solid', fgColor='fef3c7')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
+r += 2
 wifis = [
-    ['SKT','giga-wifi','GIGA WiFi',1100,1100,1100,'O','O'],
-    ['SKT','giga-wifi-6','GIGA WiFi 6',1100,1100,1100,'X','O'],
-    ['SKT','giga-wifi-prem','GIGA WiFi 프리미엄',5500,5500,5500,'X','O'],
-    ['SKT','wings','윙즈',1650,1650,1650,'X','O'],
-    ['KT','wave2','KT GIGA WAVE2',1100,1100,0,'O','O'],
-    ['KT','home-ax','GIGA WIFI 홈AX',0,1100,0,'X','O'],
-    ['KT','buddy','GIGA WIFI BUDDY',1650,1650,1650,'X','O'],
-    ['KT','prem-24','GIGA WIFI 프리미엄 2.4',4400,4400,4400,'X','O'],
-    ['KT','prem-24-6e','GIGA WIFI 프리미엄 2.4 (6E)',4400,4400,4400,'X','O'],
-    ['KT','prem-48','GIGA WIFI 프리미엄 4.8',4400,4400,4400,'X','O'],
-    ['LG U+','giga-wifi','기가와이파이',0,0,0,'O','O'],
-    ['LG U+','giga-wifi-6','기가와이파이6',0,0,0,'X','O'],
-    ['LG U+','giga-wifi-mesh','기가와이파이 메쉬',0,0,0,'X','O'],
+    ['SKT','giga-wifi','GIGA WiFi',1100,1100,1100,'O','O','✅ 기본값 · SKT 표준 WiFi · 속도 관계없이 1,100원 균일'],
+    ['SKT','giga-wifi-6','GIGA WiFi 6',1100,1100,1100,'X','O','WiFi-6 지원 · 같은 요금이나 수요 부족으로 비활성'],
+    ['SKT','giga-wifi-prem','GIGA WiFi 프리미엄',5500,5500,5500,'X','O','최대 1.7Gbps · 고급 사용자용 · 인터넷+TV 결합 시 3,300 할인'],
+    ['SKT','wings','윙즈',1650,1650,1650,'X','O','WiFi 증폭기 · 기존 WiFi에 추가'],
+    ['KT','wave2','KT GIGA WAVE2',1100,1100,0,'O','O','✅ 기본값 · KT 표준 · 1G 속도 시 무료 제공 (요금 변동 없음)'],
+    ['KT','home-ax','GIGA WIFI 홈AX',0,1100,0,'X','O','WiFi-6 · 100M/1G 무료, 500M만 유료'],
+    ['KT','buddy','GIGA WIFI BUDDY',1650,1650,1650,'X','O','WiFi 증폭기 · 홈AX와 호환'],
+    ['KT','prem-24','GIGA WIFI 프리미엄 2.4',4400,4400,4400,'X','O','최대 10Gbps 고급형 · 2.4GHz'],
+    ['KT','prem-24-6e','GIGA WIFI 프리미엄 2.4 (6E)',4400,4400,4400,'X','O','2.4GHz + 6E 지원'],
+    ['KT','prem-48','GIGA WIFI 프리미엄 4.8',4400,4400,4400,'X','O','4.8GHz 대역'],
+    ['LG U+','giga-wifi','기가와이파이',0,0,0,'O','O','✅ 기본값 · LG U+ 전 속도 무료 · 대표 WiFi'],
+    ['LG U+','giga-wifi-6','기가와이파이6',0,0,0,'X','O','WiFi-6 · 500M+ 가입 시 기본 (동일 무료)'],
+    ['LG U+','giga-wifi-mesh','기가와이파이 메쉬',0,0,0,'X','O','메쉬 지원 · 500M+ 선택 가능'],
 ]
-r = table(ws, r, ['통신사','ID','모델명','100M','500M','1G','기본','활성'], wifis)
+r = table(ws, r, ['통신사','ID','모델명','100M','500M','1G','기본','활성','💬 설명'], wifis)
 
 ws = wb.create_sheet('06_Install')
 for col in 'ABCD': ws.column_dimensions[col].width = 18
