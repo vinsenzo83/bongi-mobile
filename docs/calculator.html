@@ -1053,12 +1053,60 @@ function init() {
     o.value = k; o.textContent = D[k].name;
     cs.appendChild(o);
   }
+
+  // URL 파라미터 ?carrier=skt|kt|lgu → 해당 통신사만 필터링 (원본 구조 그대로)
+  var urlParams = new URLSearchParams(window.location.search);
+  var filterCarrier = urlParams.get('carrier');
+  if (filterCarrier && D[filterCarrier]) {
+    window.__CARRIER_FILTER__ = filterCarrier;
+    cs.value = filterCarrier;
+    applyCarrierFilter(filterCarrier);
+  }
+
   buildTV();
   updateBundleUI();
   updateRangeUI();
   updateWifiUI();
   updateSetTopInfo();
   calc();
+}
+
+// 통신사 필터 — 다른 통신사의 .st2 섹션 및 관련 내용 숨김
+function applyCarrierFilter(target) {
+  document.querySelectorAll('.st2').forEach(function(st2){
+    var badges = st2.querySelectorAll('.badge');
+    if (!badges.length) return;
+    var section = null;
+    for (var i = 0; i < badges.length; i++) {
+      if (badges[i].classList.contains('b-skt')) { section = 'skt'; break; }
+      if (badges[i].classList.contains('b-kt')) { section = 'kt'; break; }
+      if (badges[i].classList.contains('b-lgu')) { section = 'lgu'; break; }
+    }
+    if (section && section !== target) {
+      st2.style.display = 'none';
+      var next = st2.nextElementSibling;
+      while (next && !next.classList.contains('st2') && !next.classList.contains('section')) {
+        next.style.display = 'none';
+        next = next.nextElementSibling;
+      }
+    }
+  });
+  // 배지 단독 div (컨트롤 박스 위) 숨김
+  document.querySelectorAll('div').forEach(function(d){
+    if (d.children.length === 1 && d.firstElementChild && d.firstElementChild.classList.contains('badge')) {
+      var b = d.firstElementChild;
+      if ((b.classList.contains('b-skt') && target !== 'skt') ||
+          (b.classList.contains('b-kt') && target !== 'kt') ||
+          (b.classList.contains('b-lgu') && target !== 'lgu')) {
+        d.style.display = 'none';
+        var next = d.nextElementSibling;
+        while (next && next.tagName === 'DIV' && !next.querySelector('.badge')) {
+          next.style.display = 'none';
+          next = next.nextElementSibling;
+        }
+      }
+    }
+  });
 }
 
 function buildTV() {
@@ -1670,8 +1718,9 @@ function calcTicketPrice(d, sp, tvIdx, hasWifi) {
 function renderTicketList() {
   var badges = { skt: 'b-skt', kt: 'b-kt', lgu: 'b-lgu' };
   var labels = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' };
+  var carriers = window.__CARRIER_FILTER__ ? [window.__CARRIER_FILTER__] : ['skt', 'kt', 'lgu'];
   var html = '';
-  ['skt', 'kt', 'lgu'].forEach(function(key) {
+  carriers.forEach(function(key) {
     var d = D[key];
     var carrierTickets = TICKETS.filter(function(t){ return t.carrier === key; });
     html += '<div class="st2" style="margin-top:16px"><span class="badge ' + badges[key] + '">' + labels[key] + '</span> ' + d.name + ' — ' + carrierTickets.length + '개 티켓 (' + carrierTickets[0].number + ' ~ ' + carrierTickets[carrierTickets.length-1].number + ')</div>';
