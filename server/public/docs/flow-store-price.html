@@ -119,6 +119,12 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     · 휴대폰 / 유심 — 오프라인 매장별 독립 + 온라인 1개 통합<br>
     · 인터넷+TV — 온·오프라인 <strong>통합 1개</strong> (요금은 3사 표준 결합, 사은품만 등록)
   </div>
+  <div style="margin-top:10px;padding:10px 14px;background:rgba(124,58,237,0.15);border-left:3px solid #a78bfa;border-radius:6px;font-size:11px;color:#e9d5ff;line-height:1.7">
+    📇 <strong>유심 정책 팁</strong>:<br>
+    · <strong>유심 변경</strong> = 기기 그대로, 유심만 다른 통신사로 교체 (번호이동과 동일하지만 기기 구매 없음)<br>
+    · <strong>MNP(번호이동)만 가능 · 010 신규 제외</strong><br>
+    · 🔑 선택약정 기반 → 월 요금 <strong>25% 할인</strong> (SK/KT 개통 시 적용 · LG 개통 후 고객센터 신청)
+  </div>
 </div>
 
 <!-- ===== 어드민 매장 중심 관리 구조 ===== -->
@@ -186,11 +192,10 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <div style="background:rgba(247,201,79,0.15);border-left:3px solid #f7c94f;padding:10px 14px;border-radius:6px">
       <div style="font-size:11px;font-weight:800;color:#f7c94f;margin-bottom:6px">⚙️ 공통/관리 (정책 등록)</div>
       <div style="font-size:10px;line-height:1.8;color:#d4e6f7">
-        STEP 2 · 지역별 가격 체계<br>
         STEP 4 · 매장 관리 (어드민)<br>
-        STEP 7 · 유심 정책<br>
         STEP 8 · 어드민 신청서 관리<br>
-        STEP 9 · 시세 데이터 흐름
+        STEP 9 · 시세 데이터 흐름 + 공통폼
+        <div style="font-size:9px;color:#91e8b8;margin-top:4px">※ 지역별 가격·유심 정책은 상단 매트릭스 참조</div>
       </div>
     </div>
   </div>
@@ -704,52 +709,6 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     </div>
   </div>
 </div>
-<!-- ===== STEP 2: 지역별 가격 체계 ===== -->
-<div class="step-label" style="background:#d97706">⚙️ 공통 · STEP 2 — 지역별 가격 체계</div>
-<div class="step-card">
-  <table>
-    <thead><tr><th>구분</th><th>가격 기준</th><th>예시</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><strong>오프라인 (매장)</strong></td>
-        <td>지역별 상이, 같은 지역 내 매장은 동일</td>
-        <td>광주권 vs 서울권 vs 부산권</td>
-      </tr>
-      <tr>
-        <td><strong>온라인</strong></td>
-        <td>전국 동일</td>
-        <td><span class="mono">bongi_online_prices</span></td>
-      </tr>
-      <tr>
-        <td><strong>유심 (오프라인)</strong></td>
-        <td>리베이트 지역별 상이, 같은 지역 내 동일</td>
-        <td><span class="mono">bongi_usim_plans</span> (region 컬럼)</td>
-      </tr>
-      <tr>
-        <td><strong>유심 (온라인)</strong></td>
-        <td>리베이트 전국 동일</td>
-        <td><span class="mono">bongi_usim_plans</span></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:14px 0 6px">시세 입력 흐름</div>
-  <div class="flow">
-    <div class="fb fb-admin" style="font-size:10px">어드민</div>
-    <div class="fa">→</div>
-    <div class="fb fb-neutral" style="font-size:9px">지역 선택</div>
-    <div class="fa">→</div>
-    <div class="fb fb-neutral" style="font-size:9px">해당 지역<br>시세 입력</div>
-    <div class="fa">→</div>
-    <div class="fb fb-db" style="font-size:10px">DB 저장</div>
-    <div class="fa">→</div>
-    <div class="fb fb-api" style="font-size:9px">고객 위치 기반<br>매칭</div>
-    <div class="fa">→</div>
-    <div class="fb fb-user" style="font-size:10px">카드 노출</div>
-  </div>
-</div>
-<div class="arrow-down">↓</div>
-
 <!-- ===== STEP 3: 위치 기반 매장 매칭 ===== -->
 <div class="step-label" style="background:#2563eb">🏪 오프라인 · STEP 3 — 위치 기반 매장 매칭</div>
 <div class="step-card">
@@ -881,130 +840,6 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <strong>매장별 독립 관리:</strong> 오프라인 12개 매장 각자 휴대폰 시세·유심 정책 등록 (지역·협상력 반영)<br>
     <strong>온라인 매장:</strong> 단일 통합 매장 · 전국 동일 가격 · 공식 URL 6개 관리<br>
     <strong>등록 폼 공통 템플릿:</strong> 매장/시세/유심/사은품 모두 동일 UI 구조 (필드만 상품별 차이)
-  </div>
-</div>
-<div class="arrow-down">↓</div>
-
-<div class="step-label" style="background:#d97706">⚙️ 공통 · STEP 7 — 유심 정책 <span class="badge b-red">NEW</span></div>
-<div class="step-card">
-  <div class="note" style="margin-top:0;margin-bottom:12px">
-    <strong>유심 변경이란?</strong> 기기는 그대로 사용하고 유심만 다른 통신사로 변경하는 정책. 번호이동과 동일하지만 기기 구매 없이 유심만 교체.<br>
-    <strong>MNP(번호이동)만 가능 · 010 신규 제외</strong><br>
-    <strong style="color:var(--red)">🔑 유심 개통은 선택약정 기반 → 월 요금 25% 할인 (SK/KT 개통 시 적용 · LG 개통 후 고객센터 신청)</strong>
-  </div>
-
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">유심 2가지 경로 (등록 방식도 2가지)</div>
-  <div class="grid2" style="margin-bottom:14px">
-    <div class="card-mock" style="border:2px solid var(--blue)">
-      <div style="font-weight:900;color:var(--blue);font-size:11px;margin-bottom:4px">📍 오프라인 유심 (유심-매장)</div>
-      · 매장 방문해서 유심 변경<br>
-      · <strong>매장별 각자 등록 (12개 매장)</strong> — 지역/협상력 반영<br>
-      · 매장 직원이 직접 처리<br>
-      <span style="font-size:9px;color:var(--text3)">STEP 9 오프라인 공통폼 ② 블록</span>
-    </div>
-    <div class="card-mock" style="border:2px solid var(--green)">
-      <div style="font-weight:900;color:var(--green);font-size:11px;margin-bottom:4px">🌐 온라인 유심 (유심-온라인)</div>
-      · 유심 배송 받아서 셀프 개통<br>
-      · <strong>통합 1개 정책</strong> (전국 동일 가격)<br>
-      · 가이드 제공<br>
-      <span style="font-size:9px;color:var(--text3)">STEP 9 온라인 공통폼 ② 블록</span>
-    </div>
-  </div>
-
-  <!-- 3사 유심 유지기간 (페이백 금액은 어드민 관리 · 문서 미표기) -->
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">🗂️ 3사 유심 정책 — 유지기간</div>
-  <div style="background:#fef9c3;border:2px solid #f7c94f;border-radius:10px;overflow:hidden;margin-bottom:8px">
-    <div style="background:#f7c94f;color:#78350f;font-weight:900;text-align:center;padding:8px;font-size:12px">MNP / 010 USIM 단독개통 · 14일 개통~ 지급</div>
-    <table style="font-size:10px;margin-top:0">
-      <thead><tr><th>통신사</th><th>요금제 구간</th><th>유지기간 (요금제/회선)</th></tr></thead>
-      <tbody>
-        <tr><td><span class="badge b-red">SK</span></td><td style="text-align:center">S_33 / R_43 / M_50 이상</td><td style="color:#059669;font-weight:700;text-align:center"><strong>M+6개월</strong></td></tr>
-        <tr><td><span class="badge b-red">KT</span></td><td style="text-align:center">S_33 / R_43 / M_50 이상</td><td style="color:#059669;font-weight:700;text-align:center"><strong>183일</strong></td></tr>
-        <tr><td><span class="badge" style="background:#fce7f3;color:#e40981">LG</span></td><td style="text-align:center">S_33 / R_43 / M_50 이상</td><td style="color:#059669;font-weight:700;text-align:center"><strong>183일</strong></td></tr>
-      </tbody>
-    </table>
-    <div style="padding:6px 10px;font-size:9px;color:#78350f;background:#fffbeb">※ 구간별 페이백 금액은 어드민에서 개별 등록 (본 문서 미표기)</div>
-  </div>
-
-  <table style="font-size:10px">
-    <thead><tr><th>항목</th><th colspan="3">내용</th></tr></thead>
-    <tbody>
-      <tr><td rowspan="3"><strong>환수조건</strong><br><span style="font-size:9px;color:var(--text3)">SK: M+6 / KT·LG: 183일</span></td><td colspan="3">유지기간 내 회선 <strong>미유지 · 정지 · 해지</strong> 등 비정상 판정 시</td></tr>
-      <tr><td colspan="3">유지기간 내 <strong>요금제 하향</strong> 시 전액 환수</td></tr>
-      <tr><td colspan="3">유지기간 내 <strong>New 단말 기변</strong> 시 전액 환수</td></tr>
-      <tr><td><strong>지급 대상</strong></td><td colspan="3">SIM 단독으로 개통건만 지급 <strong>(MVNO 포함)</strong></td></tr>
-      <tr><td><strong>지급 제외</strong></td><td colspan="3">전통신사 MNP 선불 이동 · 함께쓰기 가입건</td></tr>
-      <tr><td><strong>증빙서류</strong></td><td colspan="3" style="color:#059669;font-weight:700">첨부 필요 없음</td></tr>
-    </tbody>
-  </table>
-
-  <div style="font-size:9px;color:var(--text3);margin-top:6px;line-height:1.6">
-    ※ 페이백 금액은 통신사·정책 종류(법인/일반·매장/온라인)에 따라 어드민에서 개별 등록 · 위 이미지는 SK 브레인 법인 온라인 샘플<br>
-    ※ 월 요금은 선택약정 25% 할인 적용 후 실납 (SK/KT 개통 시 적용 · LG 고객센터 신청)<br>
-    ※ 3사별 실제 요금제 예시는 <strong>STEP 9 공통폼 ②</strong> 블록 또는 <a href="https://bongi-mobile-production.up.railway.app/docs/sample-prices-20260421.xlsx" target="_blank" class="mono" style="color:var(--blue)">sample-prices-20260421.xlsx</a> 참조
-  </div>
-
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:14px 0 6px">📝 유심 신청서</div>
-  <div class="note" style="margin-top:0">
-    <strong>기본 필드</strong>는 STEP 0 통합 신청서와 동일 (성별/생년월일/휴대폰번호 · 현재/변경할 통신사 · 요금제 · 수령 방법)<br>
-    <strong style="color:var(--red)">⚠️ 유의사항은 무선(휴대폰)과 다르다 — 아래 유심 전용 유의사항 적용</strong> · 온라인만 공식 URL 작성<br>
-    어드민 접수 → <strong>STEP 8</strong> 어드민 신청서 관리에서 상태 흐름 관리
-  </div>
-
-  <!-- 유심 전용 유의사항 (온라인 신청서 제출 전 필수 · 무선 6단계와 별개) -->
-  <div style="margin-top:12px;background:linear-gradient(135deg,#f3e8ff,#fff);border:2px solid #7c3aed;border-radius:12px;padding:14px 16px">
-    <div style="font-size:12px;font-weight:800;color:#7c3aed;margin-bottom:4px">📋 유심 전용 상품 유의사항 (온라인 신청서 제출 전 필수)</div>
-    <div style="font-size:10px;color:#5b21b6;margin-bottom:10px">무선 6단계와 별개 · 유심은 4단계 · 각 단계 "확인했어요" 버튼 후 공식 URL 이동</div>
-
-    <div class="grid2" style="gap:10px">
-      <!-- 1/4 -->
-      <div style="background:#fff;border:1.5px solid #7c3aed;border-radius:10px;padding:12px;font-size:10px;line-height:1.6">
-        <div style="font-weight:800;color:#7c3aed;font-size:11px;margin-bottom:6px">1 / 4 · 유지기간 (3사 상이)</div>
-        <div style="color:#1a1a1a"><strong>요금제/회선 유지기간 3사별 상이</strong></div>
-        <div style="color:#8a8a8a;font-size:9px;margin-top:4px">· <strong>SK: M+6개월</strong> (당월 말일 + 6개월)<br>· <strong>KT: 183일</strong><br>· <strong>LG: 183일</strong></div>
-        <div style="margin-top:8px;padding:5px 0;border-radius:6px;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:700;text-align:center">✓ 확인했어요</div>
-      </div>
-      <!-- 2/4 -->
-      <div style="background:#fff;border:1.5px solid #7c3aed;border-radius:10px;padding:12px;font-size:10px;line-height:1.6">
-        <div style="font-weight:800;color:#7c3aed;font-size:11px;margin-bottom:6px">2 / 4 · 환수조건 (유지기간 내)</div>
-        <div style="color:#1a1a1a"><strong>다음 경우 페이백 전액 재정산</strong></div>
-        <div style="color:#8a8a8a;font-size:9px;margin-top:4px">· 회선 미유지 · 정지 · 해지 등 비정상 판정<br>· 요금제 하향<br>· New 단말 기변</div>
-        <div style="margin-top:8px;padding:5px 0;border-radius:6px;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:700;text-align:center">✓ 확인했어요</div>
-      </div>
-      <!-- 3/4 -->
-      <div style="background:#fff;border:1.5px solid #7c3aed;border-radius:10px;padding:12px;font-size:10px;line-height:1.6">
-        <div style="font-weight:800;color:#7c3aed;font-size:11px;margin-bottom:6px">3 / 4 · 지급 대상 / 제외</div>
-        <div style="color:#1a1a1a"><strong>SIM 단독 개통건만 지급 (MVNO 포함)</strong></div>
-        <div style="color:#8a8a8a;font-size:9px;margin-top:4px">· 지급 제외: 전통신사 MNP 선불 이동 · 함께쓰기 가입건<br>· 010 신규 제외 (MNP 전용)<br>· <strong style="color:#059669">증빙서류 첨부 필요 없음</strong></div>
-        <div style="margin-top:8px;padding:5px 0;border-radius:6px;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:700;text-align:center">✓ 확인했어요</div>
-      </div>
-      <!-- 4/4 -->
-      <div style="background:#fff;border:2px solid #dc2626;border-radius:10px;padding:12px;font-size:10px;line-height:1.6">
-        <div style="font-weight:800;color:#dc2626;font-size:11px;margin-bottom:6px">4 / 4 · 선택약정 25% 할인 ⚠️</div>
-        <div style="color:#1a1a1a"><strong>월 요금 25% 할인 (3사 적용 방식 상이)</strong></div>
-        <div style="color:#8a8a8a;font-size:9px;margin-top:4px">· <strong>SK / KT</strong>: 개통 시 적용<br>· <strong>LG</strong>: 개통 후 고객센터 통해 <strong>고객 본인 직접 신청</strong></div>
-        <div style="color:#8a8a8a;font-size:9px;margin-top:4px">· 실납 = 월요금 × 0.75<br>· 선택약정 해지 시 월 요금 원복<br>· 페이백 재정산 대상 가능</div>
-        <div style="margin-top:8px;padding:5px 0;border-radius:6px;background:#fee2e2;color:#dc2626;font-size:10px;font-weight:700;text-align:center">✓ 확인했어요</div>
-      </div>
-    </div>
-
-    <div style="margin-top:12px;padding:10px 0;border-radius:10px;background:linear-gradient(90deg,#7c3aed,#2563eb);color:#fff;font-size:13px;font-weight:800;text-align:center">
-      ✅ 모두 확인했어요 → 통신사 공식 URL로 이동 (온라인만)
-    </div>
-    <div style="margin-top:6px;font-size:9px;color:#5b21b6;text-align:center">
-      오프라인(매장 방문)은 매장 상담사가 구두 고지 후 접수
-    </div>
-  </div>
-
-  <div class="flow" style="margin-top:12px">
-    <div class="fb fb-user" style="font-size:10px">유심 신청<br>완료</div>
-    <div class="fa">→</div>
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <div class="fb" style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);padding:4px 10px;font-size:9px"><strong>📍 매장 방문</strong> — 직접 유심 교체 (매장별 시세)</div>
-      <div class="fb" style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);padding:4px 10px;font-size:9px"><strong>🌐 택배 배송</strong> — 셀프 개통 (전국 동일)</div>
-    </div>
-    <div class="fa">→</div>
-    <div class="fb fb-admin" style="font-size:10px">어드민 접수<br>(STEP 8)</div>
   </div>
 </div>
 <div class="arrow-down">↓</div>
