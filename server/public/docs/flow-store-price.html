@@ -89,13 +89,13 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       </tr>
       <tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
         <td style="padding:10px;color:#fff;font-weight:700">📱 휴대폰 시세</td>
-        <td style="padding:10px;color:#a5c4f2">매장별 각자 등록 (지역별 차등)</td>
-        <td style="padding:10px;color:#91e8b8">통합 1개 (전국 동일)</td>
+        <td style="padding:10px;color:#a5c4f2"><strong>매장별 각자 등록</strong> (12개 매장 독립)</td>
+        <td style="padding:10px;color:#91e8b8"><strong>통합 1개</strong> (온라인 정책표)</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
         <td style="padding:10px;color:#fff;font-weight:700">📇 유심 정책</td>
-        <td style="padding:10px;color:#a5c4f2">매장별 각자 등록 (리베이트 차등)</td>
-        <td style="padding:10px;color:#91e8b8">통합 1개 (전국 동일)</td>
+        <td style="padding:10px;color:#a5c4f2"><strong>매장별 각자 등록</strong> (유심-매장 · 12개 매장)</td>
+        <td style="padding:10px;color:#91e8b8"><strong>통합 1개</strong> (유심-온라인)</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(79,247,160,0.05)">
         <td style="padding:10px;color:#fff;font-weight:700">🔗 통신사 공식 URL</td>
@@ -429,7 +429,8 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <div style="font-size:11px;font-weight:800;color:#7c3aed;margin-bottom:6px;border-left:3px solid #7c3aed;padding-left:8px">결과 — 유심 페이백 비교 (매장/온라인)</div>
       <div style="background:#fff;border:1.5px solid #e8e8e8;border-radius:12px;padding:14px;font-size:11px;line-height:1.6">
         <div style="font-size:15px;font-weight:900;color:#1a2744;margin-bottom:2px">SKT 유심 변경</div>
-        <div style="display:inline-block;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:10px">M_50 이상 · 페이백 40만원</div>
+        <div style="display:inline-block;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:6px">M_50 이상 · 페이백 40만원</div>
+        <div style="display:inline-block;background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;margin-bottom:10px;margin-left:4px">🔑 선택약정 25% 할인 자동</div>
         <div style="height:1px;background:#e8e8e8;margin-bottom:10px"></div>
 
         <div style="margin-bottom:12px">
@@ -835,7 +836,8 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
 <div class="step-card">
   <div class="note" style="margin-top:0;margin-bottom:12px">
     <strong>유심 변경이란?</strong> 기기는 그대로 사용하고 유심만 다른 통신사로 변경하는 정책. 번호이동과 동일하지만 기기 구매 없이 유심만 교체.<br>
-    <strong>MNP(번호이동)만 가능 · 010 신규 제외</strong>
+    <strong>MNP(번호이동)만 가능 · 010 신규 제외</strong><br>
+    <strong style="color:var(--red)">🔑 유심 개통은 선택약정으로 개통 → 월 요금 25% 할인 자동 적용</strong>
   </div>
 
   <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">유심도 2가지 경로</div>
@@ -996,57 +998,92 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
 <div class="step-label" style="background:#d97706">⚙️ 데이터 · STEP 9 — 시세 데이터 흐름 + 공통 입력 폼</div>
 <div class="step-card">
 
-  <!-- 공통 입력 폼 구조 (오프라인/온라인 동일) -->
+  <!-- 공통 입력 폼 — 오프라인/온라인 별도 등록 (구조 동일) -->
   <div style="background:linear-gradient(135deg,#fef3c7,#fff);border:2px solid #f7c94f;border-radius:12px;padding:14px 16px;margin-bottom:14px">
-    <div style="font-size:12px;font-weight:900;color:#92400e;margin-bottom:4px">📋 시세 입력 공통 폼 (오프라인 매장별 · 온라인 통합 · <strong>동일 양식</strong>)</div>
+    <div style="font-size:12px;font-weight:900;color:#92400e;margin-bottom:4px">📋 시세 입력 공통 폼 — <strong>오프라인 · 온라인 별도 등록 (구조 동일)</strong></div>
     <div style="font-size:10px;color:#78350f;margin-bottom:10px;line-height:1.7">
-      · <strong>컬럼 구조 1벌</strong>을 오프라인 12개 매장 + 온라인 1개 통합 매장 = <strong>총 13세트</strong> 입력<br>
-      · 같은 폼이라 어드민 UI 1개로 전체 관리 · 매장만 바꿔가며 입력<br>
-      · <strong>한 화면에 3블록 동시 표시</strong>: 📱 무선(휴대폰) · 📇 유심 · 📡 인터넷+TV 사은품<br>
+      · 🏪 <strong>오프라인 공통폼</strong>: 각 매장(12개)에서 자기 매장 시세 등록 · 지역/매장별 차등 가능<br>
+      · 🌐 <strong>온라인 공통폼</strong>: 온라인 통합 매장 1개가 전국 동일 시세 등록<br>
+      · <strong>두 폼 구조는 완전 동일</strong> — 3블록(📱 무선 + 📇 유심 + 📡 인터넷+TV 사은품)이 한 화면에 같이 보임<br>
       · 단위: <strong>만원</strong> · <strong>음수 = 페이백(고객 수령)</strong>, 양수 = 고객 부담
     </div>
 
-    <div style="font-size:11px;font-weight:800;color:#1a2744;margin:8px 0 4px">① 📱 무선(휴대폰) 시세 — 컬럼 8개</div>
-    <table style="font-size:10px">
-      <thead><tr><th>통신사</th><th>모델명</th><th>펫네임</th><th>요금제</th><th>번이</th><th>기변</th><th>인터넷</th><th>인터넷+TV</th></tr></thead>
-      <tbody>
-        <tr><td>SK</td><td class="mono">SM-S948N</td><td>S26U</td><td>프리미엄</td><td style="color:#dc2626;font-weight:700">44</td><td style="color:#dc2626;font-weight:700">64</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
-        <tr><td>KT</td><td class="mono">SM-S948NK</td><td>S26U</td><td>초이스스페셜</td><td style="color:#dc2626;font-weight:700">34</td><td style="color:#dc2626;font-weight:700">39</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
-        <tr><td>LG</td><td class="mono">SM-S948N</td><td>S26U</td><td>프리미어 슈퍼</td><td style="color:#dc2626;font-weight:700">29</td><td style="color:#dc2626;font-weight:700">34</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
-        <tr><td>SK</td><td class="mono">SM-F966N</td><td>폴드7</td><td>프리미엄</td><td style="color:#dc2626;font-weight:700">127</td><td style="color:#dc2626;font-weight:700">139</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
-        <tr><td>SK</td><td class="mono">SM-S731N</td><td>S25 FE</td><td>프리미엄</td><td style="color:#059669;font-weight:700">-35</td><td style="color:#059669;font-weight:700">-5</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
-        <tr><td>KT</td><td class="mono">AIP16-128</td><td>아이폰16</td><td>초이스스페셜</td><td style="color:#059669;font-weight:700">-55</td><td style="color:#059669;font-weight:700">-30</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
-      </tbody>
-    </table>
-    <div style="font-size:9px;color:#78350f;margin-top:4px">※ 샘플 (SK·KT·LG 각 18종 = 54행 전체는 Excel 참고). <span style="color:#059669;font-weight:700">초록</span> = 페이백(고객 수령), <span style="color:#dc2626;font-weight:700">빨강</span> = 고객 부담.</div>
+    <!-- 두 폼 나란히 표시 -->
+    <div class="grid2" style="gap:14px;margin-top:10px">
+      <!-- 🏪 오프라인 공통폼 -->
+      <div style="background:#eff6ff;border:2px solid #2563eb;border-radius:10px;padding:12px">
+        <div style="font-size:12px;font-weight:900;color:#2563eb;margin-bottom:8px">🏪 오프라인 공통폼 (매장별 등록)</div>
 
-    <div style="font-size:11px;font-weight:800;color:#1a2744;margin:14px 0 4px">② 📇 유심 시세 — 동일 폼 (모델명 = 유심-매장/유심-온라인)</div>
-    <table style="font-size:10px">
-      <thead><tr><th>통신사</th><th>모델명</th><th>펫네임</th><th>요금제</th><th>번이</th><th>기변</th><th>인터넷</th><th>인터넷+TV</th></tr></thead>
-      <tbody>
-        <tr><td>SK</td><td class="mono">유심-매장</td><td>유심-매장</td><td>세이브</td><td style="color:#059669;font-weight:700">-40</td><td style="color:#8a8a8a">-</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
-        <tr><td>SK</td><td class="mono">유심-온라인</td><td>유심-온라인</td><td>세이브 / T플랜 / 5G 슬림</td><td style="color:#059669;font-weight:700">-25 ~ -35</td><td style="color:#8a8a8a">-</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
-        <tr><td>KT</td><td class="mono">유심-매장 / 온라인</td><td>유심</td><td>5G 슬림 4GB / 30GB</td><td style="color:#059669;font-weight:700">-5 ~ -15</td><td style="color:#8a8a8a">-</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
-        <tr><td>LG</td><td class="mono">유심-매장 / 온라인</td><td>유심</td><td>데이터33 / 심플+ / 5G 에센셜</td><td style="color:#059669;font-weight:700">-15 ~ -40</td><td style="color:#8a8a8a">-</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
-      </tbody>
-    </table>
-    <div style="font-size:9px;color:#78350f;margin-top:4px">※ 유심은 MNP(번호이동) 전용 → <strong>기변 칸 공란</strong>. 모델명 `유심-매장` / `유심-온라인` 으로 구분.</div>
+        <div style="font-size:10px;font-weight:800;color:#1a2744;margin:6px 0 3px">① 📱 무선(휴대폰)</div>
+        <table style="font-size:9px">
+          <thead><tr><th>통신사</th><th>펫네임</th><th>요금제</th><th>번이</th><th>기변</th><th>인터넷</th><th>+TV</th></tr></thead>
+          <tbody>
+            <tr><td>SK</td><td>S26U</td><td>프리미엄</td><td style="color:#dc2626;font-weight:700">44</td><td style="color:#dc2626;font-weight:700">64</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
+            <tr><td>KT</td><td>S26U</td><td>초이스</td><td style="color:#dc2626;font-weight:700">34</td><td style="color:#dc2626;font-weight:700">39</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
+            <tr><td>LG</td><td>S26U</td><td>슈퍼</td><td style="color:#dc2626;font-weight:700">29</td><td style="color:#dc2626;font-weight:700">34</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
+          </tbody>
+        </table>
 
-    <div style="font-size:11px;font-weight:800;color:#1a2744;margin:14px 0 4px">③ 📡 인터넷+TV 사은품 — 통합 1개 (온·오프라인 공통)</div>
-    <table style="font-size:10px">
-      <thead><tr><th>상품 (인터넷+TV)</th><th>사은품 종류</th><th>이름</th><th>금액(만원)</th><th>비고</th></tr></thead>
-      <tbody>
-        <tr><td rowspan="2">공통 결합 혜택 적용</td><td>상품권</td><td class="mono">백화점 / 신세계</td><td style="color:#059669;font-weight:700">예: 30~50</td><td>상담 시점 가액</td></tr>
-        <tr><td>현금</td><td class="mono">페이백 입금</td><td style="color:#059669;font-weight:700">예: 20~40</td><td>어드민 지급 처리</td></tr>
-      </tbody>
-    </table>
-    <div style="font-size:9px;color:#78350f;margin-top:4px">※ 사은품은 <strong>매장별 입력 X</strong> · 통합 1개 정책으로 관리 · 어드민 "매장 목록 → 🌐 온라인 통합 매장" 또는 별도 메뉴에서 등록<br>
-    ※ 결합 요금은 <strong>3사 표준 계산기</strong> 사용 (calculator.html) · 사은품만 별도 등록</div>
+        <div style="font-size:10px;font-weight:800;color:#1a2744;margin:8px 0 3px">② 📇 유심 (유심-매장) <span style="font-weight:500;color:#dc2626;font-size:9px">· 선택약정 25% 할인 자동 적용</span></div>
+        <table style="font-size:9px">
+          <thead><tr><th>통신사</th><th>요금제</th><th>번이</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td>SK</td><td>세이브</td><td style="color:#059669;font-weight:700">-40</td><td>MNP · 25%↓</td></tr>
+            <tr><td>KT</td><td>5G 슬림 4GB</td><td style="color:#059669;font-weight:700">-15</td><td>MNP · 25%↓</td></tr>
+            <tr><td>LG</td><td>5G 에센셜</td><td style="color:#059669;font-weight:700">-40</td><td>MNP · 25%↓</td></tr>
+          </tbody>
+        </table>
 
-    <div style="margin-top:10px;padding:8px 12px;background:#fff;border:1.5px solid #f7c94f;border-radius:8px;font-size:10px;color:#92400e;line-height:1.6">
-      💡 <strong>인터넷·인터넷+TV 컬럼 (폼의 ①·②에 포함)</strong>: 모든 행 공통 결합 혜택 (인터넷 +40만원 · 인터넷+TV +70만원) · 고객이 결합 가입 시 <strong>번이/기변 값에 자동 합산</strong><br>
-      예) SK S26U 번이 44 + 인터넷+TV 70 = <strong>114만원</strong> 부담 (반대로 SK 아이폰16 번이 -55 + 인터넷+TV 70 = <strong>15만원 부담</strong>)<br>
-      ※ 이 혜택 값은 결합 판매 촉진용이며, 사은품(③)과는 별개
+        <div style="font-size:10px;font-weight:800;color:#1a2744;margin:8px 0 3px">③ 📡 인터넷+TV 사은품</div>
+        <table style="font-size:9px">
+          <thead><tr><th>종류</th><th>이름</th><th>금액</th></tr></thead>
+          <tbody>
+            <tr><td>상품권</td><td>백화점 / 신세계</td><td style="color:#059669;font-weight:700">매장 지정</td></tr>
+            <tr><td>현금</td><td>페이백</td><td style="color:#059669;font-weight:700">매장 지정</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:8px;color:#1e40af;margin-top:6px">※ 12개 매장 각자 등록 · 지역/협상력 반영</div>
+      </div>
+
+      <!-- 🌐 온라인 공통폼 -->
+      <div style="background:#f0fdf4;border:2px solid #059669;border-radius:10px;padding:12px">
+        <div style="font-size:12px;font-weight:900;color:#059669;margin-bottom:8px">🌐 온라인 공통폼 (통합 1개)</div>
+
+        <div style="font-size:10px;font-weight:800;color:#1a2744;margin:6px 0 3px">① 📱 무선(휴대폰)</div>
+        <table style="font-size:9px">
+          <thead><tr><th>통신사</th><th>펫네임</th><th>요금제</th><th>번이</th><th>기변</th><th>인터넷</th><th>+TV</th></tr></thead>
+          <tbody>
+            <tr><td>SK</td><td>S26U</td><td>프리미엄</td><td style="color:#dc2626;font-weight:700">44</td><td style="color:#dc2626;font-weight:700">64</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
+            <tr><td>KT</td><td>S26U</td><td>초이스</td><td style="color:#dc2626;font-weight:700">34</td><td style="color:#dc2626;font-weight:700">39</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
+            <tr><td>LG</td><td>S26U</td><td>슈퍼</td><td style="color:#dc2626;font-weight:700">29</td><td style="color:#dc2626;font-weight:700">34</td><td style="color:#059669;font-weight:700">40</td><td style="color:#059669;font-weight:700">70</td></tr>
+          </tbody>
+        </table>
+
+        <div style="font-size:10px;font-weight:800;color:#1a2744;margin:8px 0 3px">② 📇 유심 (유심-온라인) <span style="font-weight:500;color:#dc2626;font-size:9px">· 선택약정 25% 할인 자동 적용</span></div>
+        <table style="font-size:9px">
+          <thead><tr><th>통신사</th><th>요금제</th><th>번이</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td>SK</td><td>5G 슬림</td><td style="color:#059669;font-weight:700">-35</td><td>배송 · 25%↓</td></tr>
+            <tr><td>KT</td><td>5G 심플 30GB</td><td style="color:#059669;font-weight:700">-10</td><td>배송 · 25%↓</td></tr>
+            <tr><td>LG</td><td>5G 에센셜</td><td style="color:#059669;font-weight:700">-35</td><td>배송 · 25%↓</td></tr>
+          </tbody>
+        </table>
+
+        <div style="font-size:10px;font-weight:800;color:#1a2744;margin:8px 0 3px">③ 📡 인터넷+TV 사은품</div>
+        <table style="font-size:9px">
+          <thead><tr><th>종류</th><th>이름</th><th>금액</th></tr></thead>
+          <tbody>
+            <tr><td>상품권</td><td>백화점 / 신세계</td><td style="color:#059669;font-weight:700">온라인 고정</td></tr>
+            <tr><td>현금</td><td>페이백</td><td style="color:#059669;font-weight:700">온라인 고정</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:8px;color:#065f46;margin-top:6px">※ 전국 동일 · 통합 1개 정책</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;padding:8px 12px;background:#fff;border:1.5px solid #f7c94f;border-radius:8px;font-size:10px;color:#92400e;line-height:1.6">
+      💡 <strong>인터넷·인터넷+TV 컬럼</strong>: 모든 행 공통 결합 혜택 (인터넷 +40만원 · 인터넷+TV +70만원) · 고객이 결합 가입 시 <strong>번이/기변 값에 자동 합산</strong><br>
+      예) SK S26U 번이 44 + 인터넷+TV 70 = <strong>114만원</strong> 부담 (반대로 SK 아이폰16 번이 -55 + 인터넷+TV 70 = <strong>15만원 부담</strong>)
     </div>
 
     <div style="margin-top:10px;padding:8px 12px;background:#eff6ff;border-left:3px solid #2563eb;border-radius:6px;font-size:10px;color:#1a2744;line-height:1.6">
