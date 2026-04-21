@@ -5187,24 +5187,24 @@ function showCarrier(key) {
 
     var carrierName = key==='SKT'?'SKT':key==='KT'?'KT':'LG U+';
     var carrierColor = key==='SKT'?'red':key==='KT'?'blue':'green';
-    var carrierParam = key==='SKT'?'skt':key==='KT'?'kt':'lgu';
+    var carrierFile = key==='SKT'?'calculator-skt.html':key==='KT'?'calculator-kt.html':'calculator-lgu.html';
 
     // 기존 iframe 섹션 제거 후 재생성
     var existing = document.getElementById('combo-section');
     if(existing) existing.remove();
 
-    // iframe으로 calculator.html?carrier=xxx 임베드 (3사 구조 동일)
+    // 통신사별 전용 문서 iframe 임베드 (계산기 UI 없이 데이터만)
     var section = document.createElement('div');
     section.id = 'combo-section';
     section.style.marginBottom = '20px';
     section.innerHTML = '<div class="wf-card" style="margin-bottom:14px;padding:0;overflow:hidden">'
       +'<div style="display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid #e5e7eb">'
       +'<span class="wf-status '+carrierColor+'" style="font-size:14px;padding:5px 12px">'+carrierName+'</span>'
-      +'<span class="wf-h2" style="margin:0">상품관리 · 요금 계산기 (통합)</span>'
+      +'<span class="wf-h2" style="margin:0">상품관리 문서</span>'
       +'<div style="margin-left:auto;display:flex;gap:8px">'
-      +'<a href="/docs/calculator.html?carrier='+carrierParam+'" target="_blank" class="action-btn primary" style="font-size:11px;text-decoration:none">🔗 새 창으로 열기</a>'
+      +'<a href="/docs/'+carrierFile+'" target="_blank" class="action-btn primary" style="font-size:11px;text-decoration:none">🔗 새 창으로 열기</a>'
       +'</div></div>'
-      +'<iframe src="/docs/calculator.html?carrier='+carrierParam+'" style="width:100%;height:2400px;border:0;display:block" title="'+carrierName+' 상품관리"></iframe>'
+      +'<iframe src="/docs/'+carrierFile+'" style="width:100%;height:2400px;border:0;display:block" title="'+carrierName+' 상품관리"></iframe>'
       +'</div>';
     container.insertBefore(section, container.firstChild);
 
