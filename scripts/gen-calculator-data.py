@@ -116,13 +116,13 @@ for line in [
 # ═══════════════════════════════════════════════
 # 계산기 공통 헬퍼
 # ═══════════════════════════════════════════════
-def frow(ws, r, label, formula, fill=None, bold=False, color=None, comment=''):
+def frow(ws, r, label, formula, fill=None, bold=False, color=None, comment='', fmt='#,##0"원"'):
     ws.cell(row=r, column=1, value=label).font = Font(name='Noto Sans KR', size=10, bold=bold)
     c = ws.cell(row=r, column=2, value=formula)
     c.font = Font(name='SF Mono', size=11, bold=bold, color=color or '1a2744')
     c.border = BORDER
     c.alignment = Alignment(horizontal='right')
-    c.number_format = '#,##0"원"'
+    c.number_format = fmt
     if fill: c.fill = fill
     if comment:
         cc = ws.cell(row=r, column=3, value=comment)
@@ -185,12 +185,12 @@ r += 1
 SP, TVN, WIFI, LINES = 'B4', 'B5', 'B6', 'B7'
 
 # 인덱스 변환
-r = frow(ws, r, 'TV 인덱스', f'=MATCH({TVN},{{"TV 없음","B tv 이코노미","B tv 스탠다드","B tv 올","B tv 스탠다드 플러스","B tv 올 플러스","B tv 스탠다드 넷플릭스","B tv 올 넷플릭스","B tv 스탠다드 넷플릭스 프리미엄","B tv 올 넷플릭스 프리미엄"}},0)',
-    comment='드롭다운 이름 → 숫자 인덱스')
+r = frow(ws, r, 'TV 인덱스 (내부 변환)', f'=MATCH({TVN},{{"TV 없음","B tv 이코노미","B tv 스탠다드","B tv 올","B tv 스탠다드 플러스","B tv 올 플러스","B tv 스탠다드 넷플릭스","B tv 올 넷플릭스","B tv 스탠다드 넷플릭스 프리미엄","B tv 올 넷플릭스 프리미엄"}},0)',
+    comment='드롭다운 이름 → 배열 번호 (1=TV 없음, 2~10=상품) · 수식 조회용', fmt='General')
 TV_IDX = r - 1
 
-r = frow(ws, r, 'TV 선택 여부', f'=IF({TVN}="TV 없음",0,1)',
-    comment='1=TV 결합 / 0=인터넷 단독')
+r = frow(ws, r, 'TV 선택 여부 (내부 변환)', f'=IF({TVN}="TV 없음",0,1)',
+    comment='0=TV 없음 (인터넷 단독) / 1=TV 결합 · 수식 분기용', fmt='General')
 HAS_TV = r - 1
 
 r += 1
@@ -240,10 +240,10 @@ c.font = Font(name='Noto Sans KR', size=11, bold=True, color='666666')
 ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
 r += 1
 
-r = frow(ws, r, '  월 기본요금 (요즘우리집)',
+r = frow(ws, r, '  월 기본요금 (요즘우리집 · 휴대폰결합 없을 때)',
     f'=IF(B{HAS_TV}=0,B{SOLO}+B{WIFI_FEE},IF({WIFI}="Y",B{TV_INET_W},B{TV_INET_N})+B{TV_P}-B{TV_DC}+B{SETTOP})',
     SKT_FILL, True,
-    comment='TV 있으면: tvInternet + (p-dc) + 셋톱 / 없으면: 단독+WiFi')
+    comment='TV 결합: tvInternet(WiFi반영) + (p-dc) + 셋톱 / TV 없음: 단독+WiFi')
 PATH_A = r - 1
 
 r += 1
@@ -343,11 +343,13 @@ r += 1
 
 SP, TVN, WIFI, BUNDLE, R_T, R_F, PREM_PLAN, PREM_LINES = 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'B10', 'B11'
 
-r = frow(ws, r, 'TV 인덱스',
-    f'=MATCH({TVN},{{"TV 없음","지니TV 베이직","지니TV 라이트","지니TV 에센스","지니TV 모든G","지니TV 디즈니+모든G"}},0)')
+r = frow(ws, r, 'TV 인덱스 (내부 변환)',
+    f'=MATCH({TVN},{{"TV 없음","지니TV 베이직","지니TV 라이트","지니TV 에센스","지니TV 모든G","지니TV 디즈니+모든G"}},0)',
+    comment='드롭다운 이름 → 배열 번호 (1=없음, 2~6=상품) · 수식 조회용', fmt='General')
 TV_IDX = r - 1
 
-r = frow(ws, r, 'TV 선택 여부', f'=IF({TVN}="TV 없음",0,1)')
+r = frow(ws, r, 'TV 선택 여부 (내부 변환)', f'=IF({TVN}="TV 없음",0,1)',
+    comment='0=TV 없음 / 1=TV 결합 · 수식 분기용', fmt='General')
 HAS_TV = r - 1
 
 r += 1
@@ -395,9 +397,10 @@ c.font = Font(name='Noto Sans KR', size=11, bold=True, color='666666')
 ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
 r += 1
 
-r = frow(ws, r, '  월 기본요금',
+r = frow(ws, r, '  월 기본요금 (기본 TV결합 · 휴대폰결합 없을 때)',
     f'=IF(B{HAS_TV}=0,B{SOLO}+B{WIFI_FEE},IF({WIFI}="Y",B{TV_INET_W},B{TV_INET_N})+B{TV_P}-B{TV_DC}+B{SETTOP})',
-    KT_FILL, True)
+    KT_FILL, True,
+    comment='KT 기본 TV결합 할인 자동 적용 (tvInternetNoWifi/WithWifi)')
 PATH_A = r - 1
 
 r += 1
@@ -501,11 +504,13 @@ r += 1
 
 SP, TVN, BUNDLE, RANGE, LINES = 'B4', 'B5', 'B6', 'B7', 'B8'
 
-r = frow(ws, r, 'TV 인덱스',
-    f'=MATCH({TVN},{{"TV 없음","U+tv 실속형","U+tv 기본형","U+tv 프리미엄","U+tv 프리미엄 VOD"}},0)')
+r = frow(ws, r, 'TV 인덱스 (내부 변환)',
+    f'=MATCH({TVN},{{"TV 없음","U+tv 실속형","U+tv 기본형","U+tv 프리미엄","U+tv 프리미엄 VOD"}},0)',
+    comment='드롭다운 이름 → 배열 번호 (1=없음, 2~5=상품) · 수식 조회용', fmt='General')
 TV_IDX = r - 1
 
-r = frow(ws, r, 'TV 선택 여부', f'=IF({TVN}="TV 없음",0,1)')
+r = frow(ws, r, 'TV 선택 여부 (내부 변환)', f'=IF({TVN}="TV 없음",0,1)',
+    comment='0=TV 없음 / 1=TV 결합 · 수식 분기용', fmt='General')
 HAS_TV = r - 1
 
 r += 1
@@ -542,12 +547,9 @@ ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
 r += 1
 
 r = frow(ws, r, '  월 기본요금',
-    f'=IF(B{HAS_TV}=0,B{SOLO},22000+IF({SP}="100M",0,IF({SP}="500M",5500,11000))+B{TV_P}-B{TV_DC}+B{SETTOP})',
+    f'=IF(B{HAS_TV}=0,B{SOLO},IF({SP}="100M",22000,IF({SP}="500M",27500,33000))+B{TV_P}-B{TV_DC}+B{SETTOP})',
     LGU_FILL, True,
-    comment='TV 없으면 단독가 / TV 있으면 tvInternet(LGU+ WiFi 유무 동일) + TV + 셋톱')
-# Actually LGU+ tvInternet 동일: 22000/27500/33000
-# Simpler:
-ws.cell(row=r-1, column=2).value = f'=IF(B{HAS_TV}=0,B{SOLO},IF({SP}="100M",22000,IF({SP}="500M",27500,33000))+B{TV_P}-B{TV_DC}+B{SETTOP})'
+    comment='TV 없으면 단독가 (WiFi 무료) / TV 있으면 tvInternet + (p-dc) + 셋톱')
 PATH_A = r - 1
 
 r += 1
