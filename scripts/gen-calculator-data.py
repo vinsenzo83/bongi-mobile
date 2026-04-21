@@ -1,0 +1,786 @@
+"""
+개발자용 통신사 요금 계산기 데이터 엑셀
+출처: docs/calculator.html D 객체 (2026-04-21 기준)
+"""
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+OUT = '/Users/vinsenzo/bongi-mobile/docs/bongi-calculator-data.xlsx'
+SCRIPT_OUT = '/Users/vinsenzo/bongi-mobile/scripts/gen-calculator-data.py'  # 리포지토리 보관용
+
+# 스타일
+HEAD_FILL = PatternFill('solid', fgColor='1a2744')
+SKT_FILL = PatternFill('solid', fgColor='fef2f2')
+KT_FILL = PatternFill('solid', fgColor='eff6ff')
+LGU_FILL = PatternFill('solid', fgColor='fdf2f8')
+BORDER = Border(
+    left=Side(style='thin', color='cccccc'),
+    right=Side(style='thin', color='cccccc'),
+    top=Side(style='thin', color='cccccc'),
+    bottom=Side(style='thin', color='cccccc'),
+)
+HEAD_FONT = Font(name='Noto Sans KR', size=11, bold=True, color='ffffff')
+BODY_FONT = Font(name='Noto Sans KR', size=10)
+MONO = Font(name='SF Mono', size=10)
+
+def style_header(cell):
+    cell.fill = HEAD_FILL
+    cell.font = HEAD_FONT
+    cell.alignment = Alignment(horizontal='center', vertical='center')
+    cell.border = BORDER
+
+def style_body(cell, fill=None):
+    cell.font = BODY_FONT
+    cell.border = BORDER
+    cell.alignment = Alignment(vertical='center')
+    if fill:
+        cell.fill = fill
+
+def write_table(ws, start_row, headers, rows, fill=None):
+    for i, h in enumerate(headers):
+        c = ws.cell(row=start_row, column=i+1, value=h)
+        style_header(c)
+    for ri, row in enumerate(rows):
+        for ci, val in enumerate(row):
+            c = ws.cell(row=start_row+1+ri, column=ci+1, value=val)
+            style_body(c, fill)
+    return start_row + 1 + len(rows)
+
+def add_section_title(ws, row, title, color='1a2744'):
+    c = ws.cell(row=row, column=1, value=title)
+    c.font = Font(name='Noto Sans KR', size=14, bold=True, color=color)
+    ws.row_dimensions[row].height = 24
+    return row + 2
+
+wb = openpyxl.Workbook()
+
+# ═══════════════════════════════════════════════
+# INDEX (안내)
+# ═══════════════════════════════════════════════
+idx = wb.active
+idx.title = 'INDEX'
+idx.column_dimensions['A'].width = 24
+idx.column_dimensions['B'].width = 60
+idx.column_dimensions['C'].width = 20
+
+idx['A1'] = '봉이모바일 — 3사 통신 요금 계산기 데이터'
+idx['A1'].font = Font(name='Noto Sans KR', size=18, bold=True, color='1a2744')
+idx.merge_cells('A1:C1')
+
+idx['A2'] = '개발자 참고용 · 출처: docs/calculator.html D 객체 · 기준일: 2026-04-21'
+idx['A2'].font = Font(name='Noto Sans KR', size=11, color='666666', italic=True)
+idx.merge_cells('A2:C2')
+
+row = 4
+r = add_section_title(idx, row, '📋 시트 구조')
+sheets_info = [
+    ['INDEX', '전체 시트 목록 · 데이터 스키마 안내', '시작'],
+    ['01_Internet', '3사 인터넷 단독 요금 (속도별)', '필수'],
+    ['02_TV', '3사 TV 상품 (채널/가격/결합할인)', '필수'],
+    ['03_TV_Internet', 'TV 결합 시 인터넷 요금 (WiFi 유/무)', '필수'],
+    ['04_SetTop', '3사 셋톱박스 옵션 (기본/활성/요금)', '필수'],
+    ['05_WiFi', '3사 WiFi 옵션 (속도별 추가요금)', '필수'],
+    ['06_Install', '3사 설치비 (단독/결합)', '필수'],
+    ['07_Gift', '3사 사은품 (속도 × TV결합 매트릭스)', '필수'],
+    ['08_Cards', '3사 제휴카드 (카드사/실적/할인)', '참고'],
+    ['10_SKT_Bundle', 'SKT 요즘가족결합 (속도 × 회선수)', '결합'],
+    ['11_KT_Total', 'KT 총액결합 (6구간 × 속도별)', '결합'],
+    ['12_KT_Fixed', 'KT 정액결합 (4구간)', '결합'],
+    ['13_KT_Premium', 'KT 💎 프리미엄 가족결합 (요금제 카탈로그)', '결합'],
+    ['14_LGU_Chweyswun', 'LGU+ 참쉬운가족결합 (요금구간 × 회선수)', '결합'],
+    ['15_LGU_Together', 'LGU+ 투게더 결합 (고가요금제)', '결합'],
+    ['20_Schema', 'D 객체 JSON 스키마 (개발 참조)', '개발'],
+]
+r = write_table(idx, r, ['시트명', '내용', '카테고리'], sheets_info)
+
+r += 2
+r = add_section_title(idx, r, '🔗 데이터 일관성 원칙')
+for line in [
+    '1. 모든 데이터는 docs/calculator.html의 D 객체에서 추출',
+    '2. calculator.html 수정 시 이 엑셀도 반드시 재생성 (python3 /tmp/gen-excel-dev.py)',
+    '3. 3사 공통 속성: internet, wifiCost/wifiPrice, setTopOptions, tvInternetNoWifi/WithWifi, tv, install, gift',
+    '4. 통신사별 고유: bundle (SKT.family / KT.total,fixed,premium / LGU.chweyswun,together)',
+    '5. WiFi 요금: SKT wifiCost 단일값 / KT wifiPrice 속도별 / LGU wifiCost=0 전속도 무료',
+]:
+    c = idx.cell(row=r, column=1, value=line)
+    c.font = BODY_FONT
+    idx.merge_cells(start_row=r, start_column=1, end_row=r, end_column=3)
+    r += 1
+
+# ═══════════════════════════════════════════════
+# 01_Internet
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('01_Internet')
+ws.column_dimensions['A'].width = 12
+for col in 'BCDE':
+    ws.column_dimensions[col].width = 14
+r = add_section_title(ws, 1, '📡 인터넷 단독 요금 (3사 공통)', '1a2744')
+r = write_table(ws, r, ['통신사', '프리픽스', '100M', '500M', '1G'], [
+    ['SKT (B tv)', 'SK', 22000, 33000, 38500],
+    ['KT (지니TV)', 'KT', 22000, 33000, 38500],
+    ['LG U+ (U+tv)', 'LG', 22000, 33000, 38500],
+])
+r += 1
+c = ws.cell(row=r, column=1, value='※ 3사 모두 3년 약정 기준 · 부가세 포함 · WiFi/셋톱 별도')
+c.font = Font(name='Noto Sans KR', size=10, italic=True, color='666666')
+
+# ═══════════════════════════════════════════════
+# 02_TV
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('02_TV')
+for col, w in zip('ABCDEFG', [10, 40, 10, 12, 12, 12, 30]):
+    ws.column_dimensions[col].width = w
+r = add_section_title(ws, 1, '📺 TV 상품 (3사 전체)', '1a2744')
+
+tv_data = [
+    ('SKT', SKT_FILL, [
+        ['B tv 이코노미', 182, 12100, 2200, 9900],
+        ['B tv 스탠다드', 236, 15400, 2200, 13200],
+        ['B tv 올', 252, 18700, 2200, 16500],
+        ['B tv 스탠다드 플러스', 222, 23100, 2200, 20900],
+        ['B tv 올 플러스', 252, 24200, 2200, 22000],
+        ['B tv 스탠다드 넷플릭스', 222, 27700, 2200, 25500],
+        ['B tv 올 넷플릭스', 222, 30200, 2200, 28000],
+        ['B tv 스탠다드 넷플릭스 프리미엄', 252, 30700, 2200, 28500],
+        ['B tv 올 넷플릭스 프리미엄', 252, 33200, 2200, 31000],
+    ]),
+    ('KT', KT_FILL, [
+        ['지니TV 베이직', 238, 14740, 2640, 12100],
+        ['지니TV 라이트', 240, 15840, 2640, 13200],
+        ['지니TV 에센스', 263, 20240, 3740, 16500],
+        ['지니TV 모든G', 250, 21340, 4400, 16940],
+        ['지니TV 디즈니+모든G', 250, 28100, 6600, 21500],
+    ]),
+    ('LG U+', LGU_FILL, [
+        ['U+tv 실속형', 217, 15400, 2200, 13200],
+        ['U+tv 기본형', 223, 16500, 2200, 14300],
+        ['U+tv 프리미엄', 252, 18700, 2200, 16500],
+        ['U+tv 프리미엄 VOD', 257, 24200, 5500, 18700],
+    ]),
+]
+
+headers = ['통신사', 'TV 상품', '채널수', 'TV 단독', '결합할인', '인터넷 결합 시']
+for i, h in enumerate(headers):
+    c = ws.cell(row=r, column=i+1, value=h)
+    style_header(c)
+r += 1
+for carrier, fill, rows in tv_data:
+    for row_data in rows:
+        ws.cell(row=r, column=1, value=carrier).font = BODY_FONT
+        ws.cell(row=r, column=1).fill = fill
+        for i, v in enumerate(row_data):
+            c = ws.cell(row=r, column=i+2, value=v)
+            style_body(c, fill)
+        r += 1
+
+# ═══════════════════════════════════════════════
+# 03_TV_Internet (TV 결합 시 인터넷 요금)
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('03_TV_Internet')
+for col, w in zip('ABCDE', [14, 18, 12, 12, 12]):
+    ws.column_dimensions[col].width = w
+r = add_section_title(ws, 1, '🔗 TV 결합 시 인터넷 요금 (WiFi 유/무)', '1a2744')
+r = write_table(ws, r, ['통신사', 'WiFi 유무', '100M', '500M', '1G'], [
+    ['SKT', 'WiFi 미포함', 19800, 27500, 33000],
+    ['SKT', 'WiFi 포함', 22000, 28600, 34100],
+    ['KT', 'WiFi 미포함', 22000, 27500, 33000],
+    ['KT', 'WiFi 포함 (1G는 동일)', 23100, 28600, 33000],
+    ['LG U+', 'WiFi 미포함=포함', 22000, 27500, 33000],
+])
+
+# ═══════════════════════════════════════════════
+# 04_SetTop
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('04_SetTop')
+for col, w in zip('ABCDEF', [10, 30, 14, 10, 10, 20]):
+    ws.column_dimensions[col].width = w
+r = add_section_title(ws, 1, '📦 셋톱박스 옵션 (3사 전체)', '1a2744')
+
+settop_data = [
+    ('SKT', SKT_FILL, [
+        ['smart3', '스마트3', 4400, True, True],
+        ['smart3-mini', '스마트3 미니', 4400, False, True],
+        ['ai-nugu', 'AI NUGU', 6600, False, True],
+        ['sound-max', '사운드 맥스', 8800, False, True],
+        ['apple-tv', '애플TV', 6600, False, True],
+    ]),
+    ('KT', KT_FILL, [
+        ['genie-3', '기가지니3', 4400, True, True],
+        ['genie-a', '기가지니A', 3300, False, True],
+        ['soundbar', '지니TV 올인원 사운드바', 8800, False, True],
+    ]),
+    ('LG U+', LGU_FILL, [
+        ['uhd4', 'U+tv UHD4', 4400, True, True],
+        ['soundbar-black', 'U+tv 사운드바 블랙', 6600, False, True],
+    ]),
+]
+
+headers = ['통신사', 'ID', '모델명', '월 임대료', '기본', '활성']
+for i, h in enumerate(headers):
+    c = ws.cell(row=r, column=i+1, value=h)
+    style_header(c)
+r += 1
+for carrier, fill, rows in settop_data:
+    for rd in rows:
+        ws.cell(row=r, column=1, value=carrier)
+        ws.cell(row=r, column=1).font = BODY_FONT
+        ws.cell(row=r, column=1).fill = fill
+        for i, v in enumerate(rd):
+            if isinstance(v, bool):
+                v = 'O' if v else 'X'
+            c = ws.cell(row=r, column=i+2, value=v)
+            style_body(c, fill)
+        r += 1
+
+# ═══════════════════════════════════════════════
+# 05_WiFi
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('05_WiFi')
+for col, w in zip('ABCDEFGH', [10, 20, 28, 12, 12, 12, 10, 10]):
+    ws.column_dimensions[col].width = w
+r = add_section_title(ws, 1, '📡 WiFi 옵션 (3사 전체)', '1a2744')
+
+wifi_data = [
+    ('SKT', SKT_FILL, [
+        ['giga-wifi', 'GIGA WiFi', 1100, 1100, 1100, True, True],
+        ['giga-wifi-6', 'GIGA WiFi 6', 1100, 1100, 1100, False, True],
+        ['giga-wifi-prem', 'GIGA WiFi 프리미엄', 5500, 5500, 5500, False, True],
+        ['wings', '윙즈', 1650, 1650, 1650, False, True],
+    ]),
+    ('KT', KT_FILL, [
+        ['wave2', 'KT GIGA WAVE2', 1100, 1100, 0, True, True],
+        ['home-ax', 'GIGA WIFI 홈AX', 0, 1100, 0, False, True],
+        ['buddy', 'GIGA WIFI BUDDY', 1650, 1650, 1650, False, True],
+        ['prem-24', 'GIGA WIFI 프리미엄 2.4', 4400, 4400, 4400, False, True],
+        ['prem-24-6e', 'GIGA WIFI 프리미엄 2.4 (6E)', 4400, 4400, 4400, False, True],
+        ['prem-48', 'GIGA WIFI 프리미엄 4.8', 4400, 4400, 4400, False, True],
+    ]),
+    ('LG U+', LGU_FILL, [
+        ['giga-wifi', '기가와이파이', 0, 0, 0, True, True],
+        ['giga-wifi-6', '기가와이파이6', 0, 0, 0, False, True],
+        ['giga-wifi-mesh', '기가와이파이 메쉬', 0, 0, 0, False, True],
+    ]),
+]
+
+headers = ['통신사', 'ID', '모델명', '100M', '500M', '1G', '기본', '활성']
+for i, h in enumerate(headers):
+    c = ws.cell(row=r, column=i+1, value=h)
+    style_header(c)
+r += 1
+for carrier, fill, rows in wifi_data:
+    for rd in rows:
+        ws.cell(row=r, column=1, value=carrier).fill = fill
+        ws.cell(row=r, column=1).font = BODY_FONT
+        for i, v in enumerate(rd):
+            if isinstance(v, bool):
+                v = 'O' if v else 'X'
+            c = ws.cell(row=r, column=i+2, value=v)
+            style_body(c, fill)
+        r += 1
+
+# ═══════════════════════════════════════════════
+# 06_Install
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('06_Install')
+for col in 'ABCD':
+    ws.column_dimensions[col].width = 16
+r = add_section_title(ws, 1, '🔧 설치비 (1회성 · 평일 기준)', '1a2744')
+r = write_table(ws, r, ['통신사', '인터넷 단독 (solo)', '인터넷+TV 결합 (combo)', '비고'], [
+    ['SKT', 36300, 56100, '주말 +25%'],
+    ['KT', 36000, 56200, '주말 +25%'],
+    ['LG U+', 36300, 56100, '주말 +25%'],
+])
+
+# ═══════════════════════════════════════════════
+# 07_Gift
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('07_Gift')
+for col, w in zip('ABCDE', [10, 16, 12, 12, 12]):
+    ws.column_dimensions[col].width = w
+r = add_section_title(ws, 1, '🎁 사은품 (속도 × TV결합 매트릭스 · 원 단위)', '1a2744')
+r = write_table(ws, r, ['통신사', '구분', '100M', '500M', '1G'], [
+    ['SKT', 'solo (TV 없음)', 110000, 170000, 170000],
+    ['SKT', 'combo (TV 결합)', 400000, 430000, 490000],
+    ['KT', 'solo', 90000, 140000, 140000],
+    ['KT', 'combo', 370000, 450000, 450000],
+    ['LG U+', 'solo', 200000, 230000, 230000],
+    ['LG U+', 'combo', 400000, 470000, 470000],
+])
+
+# ═══════════════════════════════════════════════
+# 08_Cards
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('08_Cards')
+for col, w in zip('ABCDE', [10, 14, 40, 14, 30]):
+    ws.column_dimensions[col].width = w
+r = add_section_title(ws, 1, '💳 제휴카드 (3사 전체, 총 26종)', '1a2744')
+
+cards_data = [
+    ('SKT', SKT_FILL, [
+        ['롯데카드', 'SK브로드밴드 B롯데카드', '50만원', '-10,000원'],
+        ['삼성카드', 'SK브로드밴드 삼성카드', '30만원', '-7,000원'],
+    ]),
+    ('KT', KT_FILL, [
+        ['KB국민', 'KT DC Plus 국민카드', '30만원', '-7,000원'],
+        ['현대', 'KT-현대카드M Edition3 (청구할인형)', '30만원', '-13,000원 (1~24개월)'],
+        ['현대', 'KT-현대카드M Edition3 (청구할인형2.0)', '100만원', '-22,000원 (1~36개월)'],
+        ['신한', 'KT 신한 체크카드', '30만원', '3,000원 캐시백'],
+        ['신한', 'KT 가족만족 DC 신한카드', '30만원', '-7,000원'],
+        ['신한', 'KT 으랏차차 신한카드', '50만원', '-12,000원'],
+        ['IBK', 'olleh super DC IBK카드', '30만원', '-7,000원'],
+        ['IBK', 'KT 으랏차차 IBK카드', '자동납부', '5% 청구할인'],
+        ['삼성', 'KT 삼성카드', '30만원', '-7,000원'],
+        ['우리', 'KT Plus 우리카드', '40만원', '-10,000원 (1~24개월)'],
+        ['우리', 'KT 36 Plus 우리카드', '40만원', '-8,000원 (1~24개월)'],
+        ['하나', 'KT DC Plus 더 심플 하나카드', '30만원', '-10,000원'],
+        ['NH농협', 'KT 할부 Plus NH농협카드', '40만원', '-5,000원 (할부중복불가)'],
+        ['롯데', 'KT DC Plus 롯데카드', '40만원', '-10,000원'],
+        ['비씨', 'KT SUPER DC BC 바로카드', '40만원', '-5,000원'],
+        ['비씨', 'KT DC Plus BC 바로카드', '30만원', '-7,000원'],
+        ['케이뱅크', 'KT멤버십x케이뱅크 더블혜택 체크카드', '20만원', '5% 캐시백 (최대 5,000원)'],
+    ]),
+    ('LG U+', LGU_FILL, [
+        ['삼성카드', 'LG U+ 삼성카드', '30만원', '-7,000원'],
+        ['현대카드', 'LG U+ 현대카드M Edition3', '50만원', '-15,000원 (1~24개월)'],
+        ['하나카드', '더 심플 하나카드', '30만원', '-10,000원'],
+        ['하나카드', 'LG U+Family 하나카드', '30만원', '통신료 25% 청구 (25개월↑ 15%)'],
+        ['신한카드', 'LG U+ 사장님 통할인', '70만원', '-10,000원 (25개월↑ -6,000)'],
+        ['롯데카드', 'LG U+ x LOCA', '30만원', '-10,000원 (25개월↑ -6,000)'],
+        ['NH카드', 'NH올원 LG U+ 카드', '30만원', '-9,000원'],
+    ]),
+]
+
+headers = ['통신사', '카드사', '카드명', '실적', '할인']
+for i, h in enumerate(headers):
+    c = ws.cell(row=r, column=i+1, value=h)
+    style_header(c)
+r += 1
+for carrier, fill, rows in cards_data:
+    for rd in rows:
+        ws.cell(row=r, column=1, value=carrier).fill = fill
+        ws.cell(row=r, column=1).font = BODY_FONT
+        for i, v in enumerate(rd):
+            c = ws.cell(row=r, column=i+2, value=v)
+            style_body(c, fill)
+        r += 1
+
+# ═══════════════════════════════════════════════
+# 10_SKT_Bundle (요즘가족결합)
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('10_SKT_Bundle')
+for col in 'ABCDEF':
+    ws.column_dimensions[col].width = 15
+r = add_section_title(ws, 1, '🏷️ SKT 요즘가족결합 (속도 × 회선수)', 'ef4444')
+
+r = write_table(ws, r, ['속도', '회선수', '휴대폰 할인', '인터넷 할인', 'IPTV 할인', '총 할인'], [
+    ['100M', 1, 3500, 4400, 1100, 9000],
+    ['100M', 2, 7000, 4400, 1100, 12500],
+    ['100M', 3, 18000, 4400, 1100, 23500],
+    ['100M', 4, 18000, 4400, 1100, 23500],
+    ['100M', 5, 18000, 4400, 1100, 23500],
+    ['500M', 1, 3500, 11000, 1100, 15600],
+    ['500M', 2, 7000, 11000, 1100, 19100],
+    ['500M', 3, 18000, 11000, 1100, 30100],
+    ['500M', 4, 24000, 11000, 1100, 36100],
+    ['500M', 5, 24000, 11000, 1100, 36100],
+    ['1G', 1, 3500, 13200, 1100, 17800],
+    ['1G', 2, 7000, 13200, 1100, 21300],
+    ['1G', 3, 18000, 13200, 1100, 32300],
+    ['1G', 4, 24000, 13200, 1100, 38300],
+    ['1G', 5, 24000, 13200, 1100, 38300],
+], SKT_FILL)
+
+r += 1
+c = ws.cell(row=r, column=1, value='※ IPTV 할인은 TV 결합 시에만 적용 · 휴대폰 할인 = 인당 × 회선수 (인당: 100M 1~2회선 3,500 / 3회선 6,000 / 4~5회선 4,500 or 3,600)')
+c.font = Font(name='Noto Sans KR', size=9, italic=True, color='666666')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+
+# ═══════════════════════════════════════════════
+# 11_KT_Total
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('11_KT_Total')
+for col in 'ABCDEFG':
+    ws.column_dimensions[col].width = 17
+r = add_section_title(ws, 1, '🏷️ KT 총액결합할인 (6구간 × 속도별)', '2563eb')
+
+ranges_total = ['22,000원 이하', '22,000원 이상', '64,900원 이상', '108,900원 이상', '141,900원 이상', '174,900원 이상']
+total_inet = {
+    '100M': [1650, 3300, 5500, 5500, 5500, 5500],
+    '500M': [2200, 5500, 5500, 5500, 5500, 5500],
+    '1G':   [2200, 5500, 5500, 5500, 5500, 5500],
+}
+total_mob = {
+    '100M': [0, 0, 3300, 14300, 18700, 23100],
+    '500M': [0, 0, 5500, 16610, 22110, 27610],
+    '1G':   [0, 0, 5500, 16610, 22110, 27610],
+}
+rows = []
+for sp in ['100M', '500M', '1G']:
+    for i in range(6):
+        rows.append([sp, ranges_total[i], total_inet[sp][i], total_mob[sp][i], total_inet[sp][i] + total_mob[sp][i]])
+r = write_table(ws, r, ['속도', '월요금 합산 구간', '인터넷 할인', '휴대폰 할인', '합계'], rows, KT_FILL)
+
+# ═══════════════════════════════════════════════
+# 12_KT_Fixed
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('12_KT_Fixed')
+for col in 'ABCD':
+    ws.column_dimensions[col].width = 18
+r = add_section_title(ws, 1, '🏷️ KT 정액결합할인 (4구간)', '2563eb')
+
+ranges_fixed = ['37,000원 이하', '37,000원 이상', '61,000원 이상', '77,000원 이상']
+fx_inet = [5500, 5500, 5500, 5500]
+fx_mob = [0, 3000, 5000, 7000]
+r = write_table(ws, r, ['월요금 구간', '인터넷 할인', '휴대폰 할인', '합계'], [
+    [ranges_fixed[i], fx_inet[i], fx_mob[i], fx_inet[i] + fx_mob[i]] for i in range(4)
+], KT_FILL)
+
+# ═══════════════════════════════════════════════
+# 13_KT_Premium
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('13_KT_Premium')
+for col, w in zip('ABCD', [14, 40, 14, 18]):
+    ws.column_dimensions[col].width = w
+r = add_section_title(ws, 1, '💎 KT 프리미엄 가족결합 (요금제 카탈로그)', 'd97706')
+
+c = ws.cell(row=r, column=1, value='자격: 77,000원↑ 요금제 2회선 이상 | 대표자는 총액결합만 (프리미엄 불가) | 인터넷 -5,500원 고정 | 구성원 77K↑만 25% 할인 (100원 올림)')
+c.font = Font(name='Noto Sans KR', size=10, italic=True, color='92400e')
+c.fill = PatternFill('solid', fgColor='fef3c7')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+r += 2
+
+plan_catalog = [
+    [77000, '77,000원 (임계값)', 19250, '≈25%'],
+    [80000, '80,000원 (5G 슈퍼플랜 베이직)', 20000, '25%'],
+    [87890, '87,890원 (데이터선택 87.8)', 22000, '≈25%'],
+    [89000, '89,000원 (데이터ON 프리미엄)', 22250, '25%'],
+    [90000, '90,000원 (슈퍼플랜 베이직 Plus/초이스)', 22500, '25%'],
+    [100000, '100,000원 (슈퍼플랜 스페셜)', 25000, '25%'],
+    [109000, '109,000원 (데이터선택 109)', 27500, '≈25%'],
+    [110000, '110,000원 (슈퍼플랜 스페셜 Plus/초이스)', 27500, '25%'],
+    [130000, '130,000원 (슈퍼플랜 프리미엄/초이스)', 32500, '25%'],
+]
+r = write_table(ws, r, ['월정액 (v)', '요금제명 (label)', '할인액 (dc)', '할인율'], plan_catalog, PatternFill('solid', fgColor='fef3c7'))
+
+# ═══════════════════════════════════════════════
+# 14_LGU_Chweyswun
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('14_LGU_Chweyswun')
+for col in 'ABCDEF':
+    ws.column_dimensions[col].width = 17
+r = add_section_title(ws, 1, '🏷️ LGU+ 참쉬운가족결합 (요금구간 × 회선수)', 'e40981')
+
+# 인터넷 할인
+r = write_table(ws, r, ['구분', '100M', '500M', '1G'], [
+    ['인터넷 할인 (3년 약정)', 5500, 9900, 13200],
+], LGU_FILL)
+
+r += 1
+c = ws.cell(row=r, column=1, value='휴대폰 할인 매트릭스 (인당)')
+c.font = Font(name='Noto Sans KR', size=12, bold=True, color='e40981')
+r += 1
+r = write_table(ws, r, ['휴대폰 월요금', '2회선', '3회선', '4+회선'], [
+    ['69,000원 미만', 2200, 3300, 4400],
+    ['69,000원 이상', 3300, 5500, 6600],
+    ['88,000원 이상', 4400, 6600, 8800],
+], LGU_FILL)
+
+r += 1
+c = ws.cell(row=r, column=1, value='※ 알뜰폰 결합 가능 · 휴대폰 10대 + 인터넷 3대까지')
+c.font = Font(name='Noto Sans KR', size=9, italic=True, color='666666')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+
+# ═══════════════════════════════════════════════
+# 15_LGU_Together
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('15_LGU_Together')
+for col in 'ABCD':
+    ws.column_dimensions[col].width = 18
+r = add_section_title(ws, 1, '🏷️ LGU+ 투게더 결합 (85,000원↑ 고가요금제)', 'e40981')
+
+c = ws.cell(row=r, column=1, value='조건: 5G 85,000원 이상 요금제 + 500M 이상 인터넷 (100M 결합 불가)')
+c.font = Font(name='Noto Sans KR', size=10, italic=True, color='92400e')
+c.fill = PatternFill('solid', fgColor='fef3c7')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+r += 2
+
+r = write_table(ws, r, ['구분', '100M', '500M', '1G'], [
+    ['인터넷 할인', '결합 불가', 11000, 11000],
+], LGU_FILL)
+r += 1
+r = write_table(ws, r, ['회선수', '휴대폰 할인 (인당)', '', ''], [
+    ['2회선', 10000, '', ''],
+    ['3회선', 14000, '', ''],
+    ['4~5회선', 20000, '', ''],
+], LGU_FILL)
+
+# ═══════════════════════════════════════════════
+# 30_CALC_Formula (계산 공식 설명)
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('30_CALC_Formula')
+ws.column_dimensions['A'].width = 30
+ws.column_dimensions['B'].width = 70
+r = add_section_title(ws, 1, '🧮 월 요금 계산 공식 (3사 공통 구조)', '1a2744')
+
+formulas = [
+    ('단계', '공식'),
+    ('STEP 1 — 인터넷 기본가', 'netSingle = D[carrier].internet[speed]'),
+    ('STEP 2 — WiFi 추가금', 'wifiForSp = D.wifiPrice[speed] (KT) 또는 D.wifiCost (SKT/LGU+)'),
+    ('STEP 3 — TV 결합 여부 분기', 'hasTv = (tvIdx > 0)'),
+    ('  ├─ TV 없음 (단독)', 'base = netSingle + (wifi ? wifiForSp : 0)'),
+    ('  └─ TV 결합', 'netCombo = wifi ? D.tvInternetWithWifi[sp] : D.tvInternetNoWifi[sp]'),
+    ('', 'tvFinal = D.tv[tvIdx].p - D.tv[tvIdx].dc'),
+    ('', 'base = netCombo + tvFinal + D.setTop.fee'),
+    ('STEP 4 — 휴대폰 결합할인', '통신사별 상이 (아래 참조)'),
+    ('STEP 5 — 최종 월요금', 'monthlyTotal = base - bundleDiscount'),
+    ('STEP 6 — 휴대폰 고지서 별도 할인', 'mobileSideDiscount (가족결합만 해당)'),
+    ('STEP 7 — 혜택가', 'finalFee = monthlyTotal - mobileSideDiscount'),
+    ('', ''),
+    ('부가: 설치비 (1회성)', 'installFee = hasTv ? D.install.combo : D.install.solo'),
+    ('부가: 사은품', 'gift = D.gift[hasTv ? "combo" : "solo"][speed]'),
+]
+
+for r_idx, (step, formula) in enumerate(formulas):
+    if r_idx == 0:
+        c1 = ws.cell(row=r, column=1, value=step); style_header(c1)
+        c2 = ws.cell(row=r, column=2, value=formula); style_header(c2)
+    else:
+        c1 = ws.cell(row=r, column=1, value=step)
+        c1.font = Font(name='Noto Sans KR', size=10, bold=(not step.startswith('  ') and step != ''))
+        c1.border = BORDER
+        c2 = ws.cell(row=r, column=2, value=formula)
+        c2.font = Font(name='SF Mono', size=10, color='1a2744')
+        c2.border = BORDER
+    r += 1
+
+r += 2
+r = add_section_title(ws, r, '🏷️ 결합할인 계산 — 통신사별 분기', '1a2744')
+
+bundle_calc = [
+    ('통신사', '결합 종류', '계산 공식'),
+    ('SKT', '요즘가족결합', 'inetDc = D.skt.bundle.family.internet[sp]'),
+    ('', '', 'iptvDc = hasTv ? D.skt.bundle.family.iptv : 0'),
+    ('', '', 'mobPer = D.skt.bundle.family.mobilePerBySpeed[sp][lines]'),
+    ('', '', 'mobTotal = mobPer × lines  ← 인당 × 인원'),
+    ('', '', 'bundleDc = inetDc + iptvDc (인터넷/TV 할인)'),
+    ('', '', 'mobileSideDiscount = mobTotal (휴대폰 고지서에서 별도 차감)'),
+    ('KT', '총액결합 (total)', 'rngIdx = 합산_요금_구간 (6단계)'),
+    ('', '', 'inetDc = D.kt.bundle.total.internet[sp][rngIdx]'),
+    ('', '', 'mobDc = D.kt.bundle.total.mobile[sp][rngIdx]'),
+    ('', '', 'bundleDc = inetDc (인터넷 할인 · 기본 TV결합할인과 중복 적용)'),
+    ('', '', 'mobileSideDiscount = mobDc'),
+    ('KT', '정액결합 (fixed)', 'fxIdx = 요금_구간 (4단계)'),
+    ('', '', 'inetDc = D.kt.bundle.fixed.internet[fxIdx]  (전구간 5,500)'),
+    ('', '', 'mobDc = D.kt.bundle.fixed.mobile[fxIdx]'),
+    ('KT', '💎 프리미엄 가족결합', '자격: 77K↑ 요금제 2회선 이상'),
+    ('', '', '대표자 + 77K미만 구성원 → 총액결합 합산 → 구간 mobDc'),
+    ('', '', '77K↑ 구성원(대표자 제외) → 각각 D.kt.bundle.premium.planCatalog[plan].dc 합산'),
+    ('', '', 'totalDc = 5500 (인터넷 고정) + 총액결합mobDc + 프리미엄dc 합'),
+    ('LG U+', '참쉬운가족결합', 'inetDc = D.lgu.bundle.chweyswun.internet[sp]'),
+    ('', '', 'planIdx = 요금제_구간 (3단계: 69K미만/69K↑/88K↑)'),
+    ('', '', 'lineIdx = min(lines,4) - 2  ← 2회선:0, 3회선:1, 4+:2'),
+    ('', '', 'mobDc = D.lgu.bundle.chweyswun.mobile[planIdx][lineIdx]'),
+    ('LG U+', '투게더 결합', '자격: 85K↑ 고가요금제 (100M 결합 불가)'),
+    ('', '', 'inetDc = D.lgu.bundle.together.internet[sp]  (100M=0)'),
+    ('', '', 'mobDc = D.lgu.bundle.together.mobile[lineIdx]'),
+]
+
+for r_idx, row_data in enumerate(bundle_calc):
+    fill = None
+    if r_idx == 0:
+        for ci, v in enumerate(row_data):
+            c = ws.cell(row=r, column=ci+1, value=v); style_header(c)
+    else:
+        if row_data[0] == 'SKT': fill = SKT_FILL
+        elif row_data[0] == 'KT': fill = KT_FILL
+        elif row_data[0] == 'LG U+': fill = LGU_FILL
+        for ci, v in enumerate(row_data):
+            c = ws.cell(row=r, column=ci+1, value=v)
+            c.border = BORDER
+            c.font = Font(name='SF Mono' if ci == 2 else 'Noto Sans KR', size=10)
+            if fill: c.fill = fill
+    r += 1
+
+# ═══════════════════════════════════════════════
+# 31_CALC_Example_SKT (예시 계산)
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('31_CALC_Example_SKT')
+ws.column_dimensions['A'].width = 35
+ws.column_dimensions['B'].width = 22
+ws.column_dimensions['C'].width = 40
+r = add_section_title(ws, 1, '🧮 SKT 계산 예시 — 500M + B tv 올 + WiFi 없음 + 요즘가족결합 3회선', 'ef4444')
+
+example_skt = [
+    ('입력값', '', ''),
+    ('  통신사', 'SKT', 'D[\"skt\"]'),
+    ('  속도', '500M', ''),
+    ('  TV 상품', 'B tv 올 (tvIdx=3)', 'D.skt.tv[3] = {p:18700, dc:2200}'),
+    ('  WiFi', '없음', ''),
+    ('  결합 종류', '요즘가족결합 (family)', ''),
+    ('  결합 인원', '3명', ''),
+    ('', '', ''),
+    ('기본가 계산', '', ''),
+    ('  1. 인터넷 결합가 (WiFi 미포함)', '27,500원', 'D.skt.tvInternetNoWifi[\"500M\"]'),
+    ('  2. TV 최종요금 (결합할인 후)', '16,500원', '18,700 - 2,200'),
+    ('  3. 셋톱박스 스마트3', '4,400원', 'D.skt.setTopOptions[0].fee'),
+    ('  = 월 기본요금', '48,400원', '27,500 + 16,500 + 4,400'),
+    ('', '', ''),
+    ('요즘가족결합 할인', '', ''),
+    ('  인터넷 할인', '-11,000원', 'D.skt.bundle.family.internet[\"500M\"]'),
+    ('  IPTV 추가 할인 (TV 결합 시)', '-1,100원', 'D.skt.bundle.family.iptv'),
+    ('  휴대폰 할인 (500M, 3회선 × 6,000)', '-18,000원', 'mobilePerBySpeed[\"500M\"][3] × 3'),
+    ('', '', ''),
+    ('최종 계산', '', ''),
+    ('  인터넷+TV 실납부', '36,300원', '48,400 - 11,000 - 1,100'),
+    ('  휴대폰 고지서 별도 차감', '-18,000원', '(3회선 합산)'),
+    ('  🎉 혜택가 (최종)', '18,300원/월', '36,300 - 18,000'),
+    ('', '', ''),
+    ('부가 혜택', '', ''),
+    ('  설치비 (1회성)', '56,100원', 'D.skt.install.combo'),
+    ('  사은품 (500M + TV 결합)', '430,000원', 'D.skt.gift.combo[\"500M\"]'),
+]
+
+for step, value, source in example_skt:
+    cells = [
+        (step, Font(name='Noto Sans KR', size=11, bold=(not step.startswith('  ') and step != ''), color='1a2744' if not step.startswith('  ') else '333333')),
+        (value, MONO),
+        (source, Font(name='SF Mono', size=9, color='666666')),
+    ]
+    for ci, (val, font) in enumerate(cells):
+        c = ws.cell(row=r, column=ci+1, value=val)
+        c.font = font
+        c.border = BORDER
+        if step == '' and value == '':
+            c.fill = PatternFill('solid', fgColor='f0f0f0')
+        elif '혜택가' in step or '월 기본요금' in step:
+            c.fill = SKT_FILL
+    r += 1
+
+# ═══════════════════════════════════════════════
+# 32_CALC_Example_KT_Premium (프리미엄 예시)
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('32_CALC_Example_KT_Premium')
+ws.column_dimensions['A'].width = 40
+ws.column_dimensions['B'].width = 22
+ws.column_dimensions['C'].width = 40
+r = add_section_title(ws, 1, '💎 KT 프리미엄 가족결합 계산 예시 (자료 예시 1)', 'd97706')
+
+example_kt = [
+    ('입력값', '', ''),
+    ('  인터넷', '100M + WiFi 없음 (TV 없음)', ''),
+    ('  회선 구성', '대표 89K + 구성원 89K(프리미엄) + 구성원 89K(프리미엄)', '총 3회선'),
+    ('  총액결합 대상', '대표자 89K만 (프리미엄 2명 제외)', '합산 89,000원'),
+    ('  구간 판정', '64,900원 이상 (index 2)', ''),
+    ('', '', ''),
+    ('총액결합 할인 (대표자 몫)', '', ''),
+    ('  100M mobile[index 2]', '-3,300원', 'D.kt.bundle.total.mobile[\"100M\"][2]'),
+    ('', '', ''),
+    ('프리미엄 할인 (구성원 2명)', '', ''),
+    ('  89,000원 요금제 × 25% (정확)', '-22,250원 × 2 = -44,500원', 'planCatalog[89000].dc'),
+    ('', '', ''),
+    ('인터넷 할인 (고정)', '', ''),
+    ('  프리미엄 인터넷 할인', '-5,500원', 'D.kt.bundle.premium.internet'),
+    ('', '', ''),
+    ('합계', '', ''),
+    ('  총 할인액', '-53,300원', '3,300 + 44,500 + 5,500'),
+    ('  총액결합만 했을 때 비교', '-28,600원', '(174,900↑ 구간 기준)'),
+    ('  💎 프리미엄 선택 시 추가 이득', '+24,700원 더 할인', ''),
+]
+
+for step, value, source in example_kt:
+    cells = [
+        (step, Font(name='Noto Sans KR', size=11, bold=(not step.startswith('  ') and step != ''), color='1a2744')),
+        (value, MONO),
+        (source, Font(name='SF Mono', size=9, color='666666')),
+    ]
+    for ci, (val, font) in enumerate(cells):
+        c = ws.cell(row=r, column=ci+1, value=val)
+        c.font = font
+        c.border = BORDER
+        if '프리미엄' in step and '이득' in step:
+            c.fill = PatternFill('solid', fgColor='fef3c7')
+        elif '총 할인액' in step:
+            c.fill = KT_FILL
+    r += 1
+
+# ═══════════════════════════════════════════════
+# 20_Schema (JSON 스키마)
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('20_Schema')
+ws.column_dimensions['A'].width = 80
+r = add_section_title(ws, 1, '📐 D 객체 JSON 스키마 (TypeScript 인터페이스)', '1a2744')
+
+schema_lines = [
+    'interface CarrierData {',
+    '  name: string;          // "SKT (B tv)"',
+    '  prefix: string;        // "SK" | "KT" | "LG"',
+    '  internet: Record<"100M"|"500M"|"1G", number>;',
+    '  wifiCost?: number;     // SKT, LGU+ 사용 (단일값)',
+    '  wifiPrice?: Record<"100M"|"500M"|"1G", number>;  // KT 사용 (속도별)',
+    '  setTopOptions: SetTop[];',
+    '  wifiOptions: WiFi[];',
+    '  tvInternetNoWifi: Record<"100M"|"500M"|"1G", number>;',
+    '  tvInternetWithWifi: Record<"100M"|"500M"|"1G", number>;',
+    '  tv: TVProduct[];',
+    '  install: { solo: number; combo: number; };',
+    '  gift: { solo: SpeedMap; combo: SpeedMap; };',
+    '  bundle: BundleConfig;  // 통신사별 상이',
+    '}',
+    '',
+    'interface SetTop { id: string; name: string; fee: number; isDefault?: boolean; active: boolean; }',
+    'interface WiFi { id: string; name: string; fees: Record<"100M"|"500M"|"1G", number>; isDefault?: boolean; active: boolean; }',
+    'interface TVProduct { n: string; p: number; dc: number; }  // n=이름, p=단독가, dc=결합할인',
+    '',
+    'type BundleConfig =',
+    '  | { family: SktFamily }                              // SKT',
+    '  | { ranges_total, total, ranges_fixed, fixed, premium }  // KT',
+    '  | { chweyswun, together };                           // LGU+',
+    '',
+    'interface SktFamily {',
+    '  internet: SpeedMap;',
+    '  iptv: number;  // 1100',
+    '  mobilePerBySpeed: Record<Speed, Record<1|2|3|4|5, number>>;',
+    '}',
+    '',
+    'interface KTTotal {',
+    '  internet: Record<Speed, number[]>;  // 6구간',
+    '  mobile: Record<Speed, number[]>;    // 6구간',
+    '}',
+    '',
+    'interface KTPremium {',
+    '  internet: 5500;',
+    '  planCatalog: Array<{ v: number; label: string; dc: number; prem: boolean }>;',
+    '}',
+    '',
+    'interface LguChweyswun {',
+    '  internet: SpeedMap;',
+    '  planLabels: string[];  // 3개',
+    '  mobile: number[][];    // 3 (요금구간) × 3 (회선수)',
+    '}',
+    '',
+    'interface LguTogether {',
+    '  internet: SpeedMap;  // 100M=0 (불가)',
+    '  mobile: [number, number, number];  // 2/3/4+회선',
+    '}',
+    '',
+    'type Speed = "100M" | "500M" | "1G";',
+    'type SpeedMap = Record<Speed, number>;',
+]
+for line in schema_lines:
+    c = ws.cell(row=r, column=1, value=line)
+    c.font = Font(name='SF Mono', size=10, color='1a2744')
+    r += 1
+
+# 저장
+import os
+os.makedirs(os.path.dirname(OUT), exist_ok=True)
+wb.save(OUT)
+print(f'✅ {OUT} 생성 완료 ({len(wb.sheetnames)} 시트)')
+print('   시트:', ', '.join(wb.sheetnames))
+
+# 스크립트 자체를 리포지토리 scripts/ 폴더에도 복사 (유지보수용)
+os.makedirs(os.path.dirname(SCRIPT_OUT), exist_ok=True)
+import shutil
+shutil.copy(__file__, SCRIPT_OUT)
+print(f'✅ 스크립트 {SCRIPT_OUT}에 보관')
