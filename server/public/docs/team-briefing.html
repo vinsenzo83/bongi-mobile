@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이모바일 — 신규 팀원 브리핑</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#f8f7f4; --bg2:#fff; --border:#e2ddd6; --navy:#1a2744; --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5; --orange:#d97706; --orange2:#fef3c7; --red:#dc2626; --red2:#fee2e2; --purple:#7c3aed; --purple2:#f3e8ff; --text:#1a1a1a; --text2:#4a4a4a; --text3:#8a8a8a; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; padding:40px 20px; max-width:1200px; margin:0 auto; line-height:1.7; }
+
+.hero { background:linear-gradient(135deg, var(--navy) 0%, #3617ce 100%); color:#fff; padding:48px 36px; border-radius:20px; margin-bottom:32px; position:relative; overflow:hidden; }
+.hero::before { content:''; position:absolute; top:-60px; right:-60px; width:300px; height:300px; background:rgba(255,255,255,0.05); border-radius:50%; }
+.hero h1 { font-size:34px; font-weight:900; margin-bottom:6px; position:relative; }
+.hero .tagline { font-size:14px; opacity:0.85; position:relative; }
+.hero .meta { margin-top:20px; font-family:'JetBrains Mono',monospace; font-size:11px; opacity:0.7; position:relative; }
+
+.toc { background:var(--bg2); border:1.5px solid var(--border); border-radius:14px; padding:20px 26px; margin-bottom:32px; }
+.toc h3 { font-size:13px; font-weight:800; color:var(--navy); margin-bottom:12px; }
+.toc ol { margin-left:20px; font-size:13px; }
+.toc ol li { margin-bottom:4px; }
+.toc a { color:var(--navy); }
+
+.section { background:var(--bg2); border:1.5px solid var(--border); border-radius:16px; padding:28px 32px; margin-bottom:24px; }
+.section-title { font-size:22px; font-weight:900; color:var(--navy); margin-bottom:20px; display:flex; align-items:center; gap:14px; border-bottom:3px solid var(--navy); padding-bottom:12px; }
+.section-num { background:var(--navy); color:#fff; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; flex-shrink:0; }
+
+h3 { font-size:15px; font-weight:800; color:var(--navy); margin:18px 0 10px; }
+p { font-size:13px; color:var(--text); margin-bottom:10px; }
+
+.mono { font-family:'JetBrains Mono',monospace; font-size:11px; }
+.badge { display:inline-block; padding:3px 10px; border-radius:10px; font-size:10px; font-weight:700; }
+.b-blue { background:var(--blue2); color:var(--blue); } .b-green { background:var(--green2); color:var(--green); }
+.b-orange { background:var(--orange2); color:var(--orange); } .b-red { background:var(--red2); color:var(--red); }
+.b-purple { background:var(--purple2); color:var(--purple); } .b-gray { background:#f3f4f6; color:#6b7280; }
+
+table { width:100%; border-collapse:collapse; font-size:12px; margin:10px 0; }
+th { background:var(--navy); color:#fff; padding:10px 12px; text-align:left; font-size:11px; }
+td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+
+a { color:var(--blue); text-decoration:none; font-weight:500; }
+a:hover { text-decoration:underline; }
+
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+
+.stat-card { background:linear-gradient(135deg, var(--bg2), #fafaf7); border:1.5px solid var(--border); border-radius:12px; padding:16px 18px; text-align:center; }
+.stat-num { font-size:28px; font-weight:900; color:var(--navy); font-family:'JetBrains Mono',monospace; }
+.stat-label { font-size:11px; color:var(--text3); margin-top:4px; }
+
+.pillar { border-left:4px solid var(--navy); padding:14px 18px; background:#f8f8f5; border-radius:8px; margin-bottom:10px; }
+.pillar h4 { font-size:14px; font-weight:800; color:var(--navy); margin-bottom:4px; }
+.pillar p { font-size:12px; color:var(--text2); margin:0; }
+
+.callout { padding:14px 18px; border-left:4px solid var(--orange); background:var(--orange2); border-radius:4px; font-size:12px; margin:14px 0; }
+.callout b { color:var(--navy); }
+
+.link-card { display:block; background:var(--bg2); border:2px solid var(--border); border-radius:12px; padding:14px 18px; transition:all 0.15s; color:var(--text); text-decoration:none; }
+.link-card:hover { border-color:var(--blue); transform:translateY(-2px); box-shadow:0 4px 12px rgba(37,99,235,0.15); text-decoration:none; }
+.link-card .lc-icon { font-size:22px; margin-bottom:6px; }
+.link-card .lc-title { font-size:13px; font-weight:800; color:var(--navy); margin-bottom:2px; }
+.link-card .lc-desc { font-size:10px; color:var(--text3); }
+
+.checklist { background:#f8f8f5; border:1.5px solid var(--border); border-radius:10px; padding:14px 18px; }
+.checklist-item { display:flex; align-items:flex-start; gap:10px; padding:6px 0; font-size:12px; }
+.checklist-item input[type="checkbox"] { margin-top:4px; transform:scale(1.2); accent-color:var(--green); }
+
+.timeline { border-left:3px solid var(--blue); padding-left:20px; margin-left:10px; }
+.timeline-item { margin-bottom:16px; position:relative; }
+.timeline-item::before { content:''; position:absolute; left:-27px; top:4px; width:12px; height:12px; border-radius:50%; background:var(--blue); border:3px solid var(--bg2); }
+.timeline-item h4 { font-size:13px; font-weight:800; color:var(--navy); }
+.timeline-item p { font-size:12px; color:var(--text2); margin-top:2px; }
+
+.footer { text-align:center; padding:30px 0; color:var(--text3); font-size:11px; }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>👋 봉이모바일에 오신 것을 환영합니다</h1>
+  <div class="tagline">신규 팀원 브리핑 문서 · 광주/전라 8개 직영 매장 기반 통신 판매 플랫폼</div>
+  <div class="meta">v1.0 · 2026-04-21 · Onboarding Day 1</div>
+</div>
+
+<!-- 목차 -->
+<div class="toc">
+  <h3>📋 목차</h3>
+  <ol>
+    <li><a href="#about">회사/제품 개요</a></li>
+    <li><a href="#business">비즈니스 모델</a></li>
+    <li><a href="#product">핵심 제품 구성</a></li>
+    <li><a href="#tech">기술 스택 & 아키텍처</a></li>
+    <li><a href="#docs">필수 문서 인덱스</a></li>
+    <li><a href="#calc">요금 계산기 · 3사 결합할인</a></li>
+    <li><a href="#team">팀 & 역할</a></li>
+    <li><a href="#onboarding">입사 1주 체크리스트</a></li>
+    <li><a href="#links">주요 URL 모음</a></li>
+  </ol>
+</div>
+
+<!-- 1. About -->
+<div class="section" id="about">
+  <div class="section-title"><div class="section-num">1</div>회사/제품 개요</div>
+  <div class="grid3" style="margin-bottom:20px">
+    <div class="stat-card"><div class="stat-num">8</div><div class="stat-label">광주/전라 직영 매장</div></div>
+    <div class="stat-card"><div class="stat-num">3사</div><div class="stat-label">SKT · KT · LG U+ 통합</div></div>
+    <div class="stat-card"><div class="stat-num">105</div><div class="stat-label">인터넷+TV 상품 티켓</div></div>
+  </div>
+  <p><b>봉이모바일</b>은 광주·전라 지역 8개 직영 매장을 기반으로 한 <b>통신 판매 통합 플랫폼</b>입니다. 고객은 웹/모바일에서 요금 견적 → 상담 신청 → 매장 방문/원격 개통까지 one-stop으로 처리 가능합니다.</p>
+  <div class="pillar">
+    <h4>🎯 미션</h4>
+    <p>복잡한 통신 3사 요금을 <b>투명하고 단순하게</b> 비교·제공. 오프라인 매장의 전문 상담 + 온라인의 편리함 결합.</p>
+  </div>
+</div>
+
+<!-- 2. Business -->
+<div class="section" id="business">
+  <div class="section-title"><div class="section-num">2</div>비즈니스 모델</div>
+  <table>
+    <thead><tr><th>수익 라인</th><th>설명</th><th>현황</th></tr></thead>
+    <tbody>
+      <tr><td><b>🌐 인터넷+TV 가입 수수료</b></td><td>SKT/KT/LG U+ 3사 결합상품 가입 유치 · 통신사 판매 수수료</td><td><span class="badge b-green">핵심</span></td></tr>
+      <tr><td><b>📱 중고폰 매입</b></td><td>고객 중고폰 매입 → 검수 → 재판매 · A~E 등급 시세표</td><td><span class="badge b-green">운영중</span></td></tr>
+      <tr><td><b>🔌 렌탈 상품</b></td><td>가전/렌탈 51종 · 렌트리 URL 파싱 · 카테고리 11개</td><td><span class="badge b-blue">확장중</span></td></tr>
+      <tr><td><b>💳 제휴카드 수수료</b></td><td>통신료 자동납부 카드 발급 · 26종 카드</td><td><span class="badge b-orange">부가</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 3. Product -->
+<div class="section" id="product">
+  <div class="section-title"><div class="section-num">3</div>핵심 제품 구성</div>
+  <div class="grid2">
+    <div>
+      <h3>🌐 고객용 웹사이트</h3>
+      <p>React 19 + Vite 기반. 요금 계산기, 상품 탐색, AI 채팅, 상담 신청, 마이페이지.</p>
+      <p class="mono">URL: <a href="https://bongi-mobile-production.up.railway.app/">bongi-mobile-production.up.railway.app</a></p>
+    </div>
+    <div>
+      <h3>🛠️ 어드민 CRM</h3>
+      <p>HTML 단일파일 + Mock API. 상품관리, 회원관리, 티켓관리, 판매 시뮬레이터, 통계.</p>
+      <p class="mono">URL: <a href="https://bongi-mobile-production.up.railway.app/admin/">/admin</a></p>
+    </div>
+    <div>
+      <h3>🤖 AI 채팅 (Claude)</h3>
+      <p>Anthropic Claude API 연동. 요금제 추천, 결합할인 설명, 상품 비교.</p>
+    </div>
+    <div>
+      <h3>📞 CTI (콜센터)</h3>
+      <p>Mock 어댑터 (NHN Contiple 연동 예정). 인바운드 상담 연결.</p>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Tech -->
+<div class="section" id="tech">
+  <div class="section-title"><div class="section-num">4</div>기술 스택 & 아키텍처</div>
+  <div class="grid4">
+    <div class="pillar">
+      <h4>Frontend</h4>
+      <p>React 19 · Vite · react-router-dom</p>
+    </div>
+    <div class="pillar">
+      <h4>Backend</h4>
+      <p>Node.js · Express · ES modules</p>
+    </div>
+    <div class="pillar">
+      <h4>Database</h4>
+      <p>Supabase (PostgreSQL) + Mock JSON</p>
+    </div>
+    <div class="pillar">
+      <h4>AI/CTI</h4>
+      <p>Claude API · Mock 어댑터</p>
+    </div>
+  </div>
+  <h3>📐 주요 규칙</h3>
+  <ul style="font-size:12px;padding-left:24px">
+    <li><b>ES modules</b> 사용 (import/export)</li>
+    <li>서버: <span class="mono">snake_case</span> / 클라이언트: <span class="mono">camelCase</span></li>
+    <li>에러 처리: try-catch 필수, 전역 errorHandler</li>
+    <li>환경변수: <span class="mono">.env</span> 사용 · 하드코딩 금지</li>
+    <li>단일 진실 소스(SSOT): <span class="mono">docs/calculator.html</span> D 객체 → 요금 데이터</li>
+  </ul>
+</div>
+
+<!-- 5. Docs -->
+<div class="section" id="docs">
+  <div class="section-title"><div class="section-num">5</div>필수 문서 인덱스</div>
+  <div class="grid3">
+    <a class="link-card" href="master-map.html">
+      <div class="lc-icon">🗺️</div>
+      <div class="lc-title">마스터 맵</div>
+      <div class="lc-desc">전체 문서 인덱스 · 11개 플로우</div>
+    </a>
+    <a class="link-card" href="service-flow-v2.html">
+      <div class="lc-icon">00</div>
+      <div class="lc-title">전체 서비스 플로우</div>
+      <div class="lc-desc">고객 접속 → 상품 탐색 → 신청 → 개통</div>
+    </a>
+    <a class="link-card" href="flow-internet-tv.html">
+      <div class="lc-icon">01</div>
+      <div class="lc-title">인터넷+TV 상품관리</div>
+      <div class="lc-desc">3사 요금 계산 로직 · 계산기 v1/v2 · Excel</div>
+    </a>
+    <a class="link-card" href="flow-rental.html">
+      <div class="lc-icon">02</div>
+      <div class="lc-title">렌탈 상품관리</div>
+      <div class="lc-desc">51개 상품 · 렌트리 URL 파싱</div>
+    </a>
+    <a class="link-card" href="flow-used-phone.html">
+      <div class="lc-icon">03</div>
+      <div class="lc-title">중고폰 매입</div>
+      <div class="lc-desc">302개 모델 · A~E 등급 시세</div>
+    </a>
+    <a class="link-card" href="flow-store-price.html">
+      <div class="lc-icon">04</div>
+      <div class="lc-title">매장 시세표</div>
+      <div class="lc-desc">공시지원금 · 선택약정</div>
+    </a>
+    <a class="link-card" href="flow-applications.html">
+      <div class="lc-icon">05</div>
+      <div class="lc-title">신청 처리</div>
+      <div class="lc-desc">상담 신청 → CTI → TM 배정</div>
+    </a>
+    <a class="link-card" href="flow-gifts.html">
+      <div class="lc-icon">06</div>
+      <div class="lc-title">사은품 관리</div>
+      <div class="lc-desc">속도 × TV결합 매트릭스</div>
+    </a>
+    <a class="link-card" href="flow-points-referral-guard.html">
+      <div class="lc-icon">07</div>
+      <div class="lc-title">포인트·추천·머니가드</div>
+      <div class="lc-desc">리텐션 프로그램</div>
+    </a>
+    <a class="link-card" href="flow-reviews.html">
+      <div class="lc-icon">08</div>
+      <div class="lc-title">리뷰 관리</div>
+      <div class="lc-desc">고객 후기 · 포인트 보상</div>
+    </a>
+    <a class="link-card" href="flow-ticket.html">
+      <div class="lc-icon">09</div>
+      <div class="lc-title">티켓 관리</div>
+      <div class="lc-desc">상품 ID 체계 · 105개 고유 번호</div>
+    </a>
+    <a class="link-card" href="README_DEV.md">
+      <div class="lc-icon">📘</div>
+      <div class="lc-title">개발자 인수 가이드</div>
+      <div class="lc-desc">백엔드/프론트/DevOps 체크리스트</div>
+    </a>
+  </div>
+</div>
+
+<!-- 6. Calculator -->
+<div class="section" id="calc">
+  <div class="section-title"><div class="section-num">6</div>🧮 요금 계산기 · 3사 결합할인</div>
+  <p><b>비즈니스 핵심</b>: 통신 3사 요금이 복잡하고 결합할인 방식이 전부 다름. 봉이모바일의 차별점은 <b>정확한 비교 견적</b>을 자동 계산하는 것.</p>
+
+  <h3>3사 결합할인 핵심 차이</h3>
+  <table>
+    <thead><tr><th>통신사</th><th>결합 상품</th><th>적용 방식</th><th>특이사항</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge b-red">SKT</span></td><td>요즘가족결합</td><td><b>REPLACE</b> (단독가 기준)</td><td>요즘우리집결합 대체 · IPTV 추가 -1,100</td></tr>
+      <tr><td><span class="badge b-blue">KT</span></td><td>총액/정액 결합</td><td><b>STACK</b> (중복 적용)</td><td>기본 TV결합 할인 + 추가 할인</td></tr>
+      <tr><td><span class="badge b-blue">KT</span></td><td>💎 프리미엄 가족결합</td><td>별도 계산</td><td>77K+ 요금제 2회선 이상 · 대표자·구성원 분리</td></tr>
+      <tr><td><span class="badge b-purple">LG U+</span></td><td>참쉬운/투게더</td><td><b>REPLACE</b></td><td>투게더는 85K+ 고가요금제 · 100M 불가</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <b>✅ 검증 상태</b>: 1,434개 계산 케이스 전수 테스트 완료 (SKT 360 + KT 834 + LGU+ 240).
+    <br>통합계산기(calculator.html) ↔ 개발자용 Excel 100% 동기화.
+  </div>
+
+  <h3>관련 자원</h3>
+  <div class="grid3">
+    <a class="link-card" href="calculator.html">
+      <div class="lc-icon">🧮</div>
+      <div class="lc-title">통합 계산기 (v1)</div>
+      <div class="lc-desc">상담원용 상세 모드</div>
+    </a>
+    <a class="link-card" href="calculator-v2.html">
+      <div class="lc-icon">🧮</div>
+      <div class="lc-title">계산기 v2</div>
+      <div class="lc-desc">데이터 검증용 · 카드형 UI</div>
+    </a>
+    <a class="link-card" href="bongi-calculator-data.xlsx">
+      <div class="lc-icon">📊</div>
+      <div class="lc-title">개발자용 Excel</div>
+      <div class="lc-desc">20 시트 · 대화형 계산기</div>
+    </a>
+  </div>
+</div>
+
+<!-- 7. Team -->
+<div class="section" id="team">
+  <div class="section-title"><div class="section-num">7</div>팀 & 역할</div>
+  <table>
+    <thead><tr><th>역할</th><th>책임</th><th>주요 도구</th></tr></thead>
+    <tbody>
+      <tr><td><b>🎯 대표 / 기획</b></td><td>비즈니스 방향 · 스펙 정의 · 바이브 코딩으로 1차 프로토타입</td><td>Claude Code · Excel · 플로우 문서</td></tr>
+      <tr><td><b>🖥️ 프론트엔드</b></td><td>React 고객 웹 · 어드민 UI · API 연동</td><td>React 19 · Vite</td></tr>
+      <tr><td><b>⚙️ 백엔드</b></td><td>Express API · Supabase · 비즈니스 로직</td><td>Node.js · PostgreSQL</td></tr>
+      <tr><td><b>🤖 AI/데이터</b></td><td>Claude API 통합 · 추천 엔진 · 크롤링</td><td>Anthropic SDK · Playwright</td></tr>
+      <tr><td><b>📞 CTI/운영</b></td><td>콜센터 연동 · TM 배정 · 고객 상담</td><td>NHN Contiple · 어드민</td></tr>
+      <tr><td><b>🏪 매장 직원</b></td><td>8개 직영 매장 개통 · 상담 · 고객 응대</td><td>어드민 CRM</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 8. Onboarding -->
+<div class="section" id="onboarding">
+  <div class="section-title"><div class="section-num">8</div>입사 1주 체크리스트</div>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <h4>Day 1 — 환경 설정</h4>
+      <p>GitHub 초대 수락 · 리포 clone · Node 20 설치 · Supabase 계정 접근 권한 요청 · Railway 프로젝트 접근</p>
+    </div>
+    <div class="timeline-item">
+      <h4>Day 2 — 문서 읽기</h4>
+      <p>이 브리핑 문서 → master-map.html → flow-internet-tv.html → README_DEV.md → 해당 역할 문서</p>
+    </div>
+    <div class="timeline-item">
+      <h4>Day 3 — 로컬 실행</h4>
+      <p><span class="mono">npm install && npm run dev</span> · 서버(3001) + 클라이언트(5173) 구동 · 어드민 접속 확인</p>
+    </div>
+    <div class="timeline-item">
+      <h4>Day 4 — 첫 작업</h4>
+      <p>작은 티켓 하나 받아서 PR 생성 · 코드 리뷰 받기</p>
+    </div>
+    <div class="timeline-item">
+      <h4>Day 5 — 매장/운영 이해</h4>
+      <p>매장 방문 또는 CTI 영상 · 실제 고객 플로우 체험 · 팀 미팅 참석</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px">필수 체크리스트</h3>
+  <div class="checklist">
+    <label class="checklist-item"><input type="checkbox"> GitHub 리포지토리 clone 및 로컬 빌드 성공</label>
+    <label class="checklist-item"><input type="checkbox"> Supabase 대시보드 접근 (읽기 권한 확인)</label>
+    <label class="checklist-item"><input type="checkbox"> Railway 프로덕션 빌드 로그 조회 가능</label>
+    <label class="checklist-item"><input type="checkbox"> CLAUDE.md 읽고 코드 규칙 이해</label>
+    <label class="checklist-item"><input type="checkbox"> 📊 Excel 파일 다운로드 후 3사 계산기 시트 동작 확인</label>
+    <label class="checklist-item"><input type="checkbox"> 🧮 calculator.html 열고 주요 케이스 계산 검증</label>
+    <label class="checklist-item"><input type="checkbox"> 어드민 로그인 + 주요 메뉴 탐색</label>
+    <label class="checklist-item"><input type="checkbox"> 첫 PR 작성 + 팀 리뷰 받기</label>
+  </div>
+</div>
+
+<!-- 9. Links -->
+<div class="section" id="links">
+  <div class="section-title"><div class="section-num">9</div>주요 URL 모음</div>
+  <table>
+    <thead><tr><th>항목</th><th>URL</th><th>용도</th></tr></thead>
+    <tbody>
+      <tr><td><b>🌐 프로덕션 (고객)</b></td><td><a href="https://bongi-mobile-production.up.railway.app/" target="_blank" class="mono">bongi-mobile-production.up.railway.app</a></td><td>고객 웹사이트</td></tr>
+      <tr><td><b>🛠️ 어드민</b></td><td><a href="https://bongi-mobile-production.up.railway.app/admin/" target="_blank" class="mono">/admin</a></td><td>관리자 CRM</td></tr>
+      <tr><td><b>📋 문서 포털</b></td><td><a href="https://bongi-mobile-production.up.railway.app/docs/" target="_blank" class="mono">/docs</a></td><td>모든 플로우·계산기·스펙</td></tr>
+      <tr><td><b>🗺️ 마스터 맵</b></td><td><a href="master-map.html" class="mono">docs/master-map.html</a></td><td>전체 문서 인덱스</td></tr>
+      <tr><td><b>🧮 계산기 v1</b></td><td><a href="calculator.html" class="mono">docs/calculator.html</a></td><td>통합 요금 계산기</td></tr>
+      <tr><td><b>📊 개발자 Excel</b></td><td><a href="bongi-calculator-data.xlsx" class="mono">docs/bongi-calculator-data.xlsx</a></td><td>데이터 + 계산식 + 검증 예시</td></tr>
+      <tr><td><b>📘 개발자 가이드</b></td><td><a href="README_DEV.md" class="mono">docs/README_DEV.md</a></td><td>구현 체크리스트</td></tr>
+      <tr><td><b>💾 GitHub</b></td><td><a href="https://github.com/vinsenzo83/bongi-mobile" target="_blank" class="mono">vinsenzo83/bongi-mobile</a></td><td>소스 리포지토리</td></tr>
+      <tr><td><b>🚂 Railway</b></td><td class="mono">railway.com (프로젝트 ID 별도 공유)</td><td>배포 대시보드</td></tr>
+      <tr><td><b>🗄️ Supabase</b></td><td class="mono">supabase.com/dashboard (프로젝트 별도 공유)</td><td>DB · Auth · Storage</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout" style="margin-top:20px">
+    <b>🔐 접근 권한</b>: GitHub / Railway / Supabase 계정은 대표에게 요청. 본인 이메일로 초대받음.<br>
+    <b>🔑 환경변수</b>: <span class="mono">.env</span> 파일은 리포에 없음. 팀 비밀 저장소에서 복사.
+  </div>
+</div>
+
+<div class="footer">
+  봉이모바일 · 신규 팀원 브리핑 · 2026-04-21<br>
+  이 문서는 <span class="mono">docs/team-briefing.html</span>에 있으며 수시로 업데이트됩니다.
+</div>
+
+</body>
+</html>
