@@ -794,6 +794,359 @@ for step, value, source in example_kt:
     r += 1
 
 # ═══════════════════════════════════════════════
+# 40_CALC_Interactive_SKT (대화형 계산기 — SKT)
+# ═══════════════════════════════════════════════
+from openpyxl.worksheet.datavalidation import DataValidation
+
+ws = wb.create_sheet('40_CALC_Interactive_SKT')
+for col, w in zip('ABCDE', [24, 18, 18, 18, 30]):
+    ws.column_dimensions[col].width = w
+
+def calc_sheet_header(ws, row, title, color):
+    c = ws.cell(row=row, column=1, value=title)
+    c.font = Font(name='Noto Sans KR', size=16, bold=True, color='ffffff')
+    c.fill = PatternFill('solid', fgColor=color)
+    c.alignment = Alignment(horizontal='center', vertical='center')
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=5)
+    ws.row_dimensions[row].height = 32
+    return row + 2
+
+def input_row(ws, r, label, default, source_note='', options=None):
+    ws.cell(row=r, column=1, value=label).font = Font(name='Noto Sans KR', size=11, bold=True)
+    c = ws.cell(row=r, column=2, value=default)
+    c.font = MONO
+    c.fill = PatternFill('solid', fgColor='fef3c7')
+    c.border = BORDER
+    c.alignment = Alignment(horizontal='center')
+    ws.cell(row=r, column=3, value='← 여기 수정').font = Font(name='Noto Sans KR', size=9, italic=True, color='d97706')
+    if source_note:
+        ws.cell(row=r, column=4, value=source_note).font = Font(name='Noto Sans KR', size=9, color='666666')
+    if options:
+        dv = DataValidation(type='list', formula1=f'"{",".join(options)}"', allow_blank=False)
+        ws.add_data_validation(dv)
+        dv.add(c)
+    return r + 1
+
+def formula_row(ws, r, label, formula, fill=None):
+    ws.cell(row=r, column=1, value=label).font = Font(name='Noto Sans KR', size=10, color='333333')
+    c = ws.cell(row=r, column=2, value=formula)
+    c.font = MONO
+    c.border = BORDER
+    c.alignment = Alignment(horizontal='right')
+    c.number_format = '#,##0"원"'
+    if fill:
+        c.fill = fill
+    return r + 1
+
+# SKT 계산기
+r = calc_sheet_header(ws, 1, '🧮 SKT 요즘가족결합 계산기', 'ef4444')
+
+# 입력
+ws.cell(row=r, column=1, value='📝 입력 (노란 셀 수정)').font = Font(name='Noto Sans KR', size=12, bold=True, color='1a2744')
+r += 1
+r = input_row(ws, r, '속도', '500M', 'D.skt.internet', ['100M','500M','1G'])
+r = input_row(ws, r, 'TV 상품 (1=없음, 2~10=선택)', 4, '1=TV없음, 2=이코노미, 3=스탠다드, 4=올, ..., 10=올넷프리미엄')
+r = input_row(ws, r, 'WiFi 사용', 'N', 'Y/N', ['Y','N'])
+r = input_row(ws, r, '휴대폰 회선수', 3, '1~5 (0=결합 없음)')
+r += 1
+
+# 계산 (수식 기반)
+ws.cell(row=r, column=1, value='🧮 자동 계산').font = Font(name='Noto Sans KR', size=12, bold=True, color='1a2744')
+r += 1
+
+# 참조 셀 위치
+SP, TV, WIFI, LINES = 'B4', 'B5', 'B6', 'B7'
+
+# 속도별 인터넷 단독가
+r = formula_row(ws, r, '인터넷 단독가',
+    f'=IF({SP}="100M",22000,IF({SP}="500M",33000,38500))')
+
+# TV 상품 정보 (9개 배열)
+r = formula_row(ws, r, 'TV 상품 가격 (p)',
+    f'=IF({TV}=1,0,CHOOSE({TV}-1,12100,15400,18700,23100,24200,27700,30200,30700,33200))')
+tv_p_row = r - 1
+
+r = formula_row(ws, r, 'TV 결합 할인 (dc)',
+    f'=IF({TV}=1,0,2200)')
+tv_dc_row = r - 1
+
+# WiFi 추가금 (SKT 전속도 1,100)
+r = formula_row(ws, r, 'WiFi 추가금',
+    f'=IF({WIFI}="Y",1100,0)')
+
+# TV 결합가 (noWifi/withWifi)
+r = formula_row(ws, r, 'tvInternetNoWifi',
+    f'=IF({SP}="100M",19800,IF({SP}="500M",27500,33000))')
+r = formula_row(ws, r, 'tvInternetWithWifi',
+    f'=IF({SP}="100M",22000,IF({SP}="500M",28600,34100))')
+
+# 요즘가족결합 인터넷 할인
+r = formula_row(ws, r, '요즘가족결합 인터넷 할인',
+    f'=IF({LINES}=0,0,IF({SP}="100M",4400,IF({SP}="500M",11000,13200)))')
+fam_inet_row = r - 1
+
+# IPTV 추가
+r = formula_row(ws, r, 'IPTV 추가 할인 (TV 있고 결합 시)',
+    f'=IF(AND({LINES}>0,{TV}>1),1100,0)')
+fam_iptv_row = r - 1
+
+# 휴대폰 인당 할인 (속도×회선수)
+r = formula_row(ws, r, '휴대폰 인당 할인',
+    f'=IF({LINES}=0,0,IF({SP}="100M",CHOOSE({LINES},3500,3500,6000,4500,3600),CHOOSE({LINES},3500,3500,6000,6000,4800)))')
+fam_mob_per_row = r - 1
+
+# 휴대폰 총 할인
+r = formula_row(ws, r, '휴대폰 총 할인 (인당 × 회선수)',
+    f'=B{fam_mob_per_row}*{LINES}')
+fam_mob_total_row = r - 1
+r += 1
+
+# 결과
+ws.cell(row=r, column=1, value='💰 결과').font = Font(name='Noto Sans KR', size=12, bold=True, color='1a2744')
+r += 1
+
+# 경로 A: 요즘우리집 (휴대폰 결합 X)
+ws.cell(row=r, column=1, value='【경로 A】 휴대폰 결합 X').font = Font(name='Noto Sans KR', size=11, bold=True, color='666666')
+r += 1
+r = formula_row(ws, r, '  월 기본요금 (요즘우리집)',
+    f'=IF({WIFI}="Y",B10,B9)+IF({TV}=1,0,B7-B8)+IF({TV}=1,0,4400)',
+    SKT_FILL)
+# Note: B9=tvInternetNoWifi, B10=tvInternetWithWifi, B7=TV 가격 (tv_p_row=7), B8=TV 할인 (tv_dc_row=8)
+# Recalculate actual rows based on structure
+# Actually let me just use explicit cell references
+
+# Re-approach: write formulas with cell references I know
+# After input rows (rows 4-7), formulas start at row 9
+# Let me reconstruct properly - simpler to hardcode values based on row positions
+
+# Better approach: use named references. But for simplicity, let me use direct cell refs.
+# The actual layout:
+#   Row 4: 속도 input = B4
+#   Row 5: TV input = B5
+#   Row 6: WiFi input = B6
+#   Row 7: 회선수 input = B7
+#   Row 9: title
+#   Row 10: 단독가 = B10
+#   Row 11: TV p = B11
+#   Row 12: TV dc = B12
+#   Row 13: WiFi 추가 = B13
+#   Row 14: tvInternetNoWifi = B14
+#   Row 15: tvInternetWithWifi = B15
+#   Row 16: 요즘가족 인터넷 = B16
+#   Row 17: IPTV 추가 = B17
+#   Row 18: 휴대폰 인당 = B18
+#   Row 19: 휴대폰 총 = B19
+
+# The formula I wrote above has wrong refs. Let me rewrite explicitly.
+
+# Reset the problematic cell
+ws.cell(row=r-1, column=2, value='=B14+(B11-B12)+IF(B5=1,0,4400)')
+
+# Explain: if TV=1 (no TV), base = internet + wifi; else = tvInternetNoWifi + tvFinal + setTop
+# But above simplified - let me do properly with IF
+ws.cell(row=r-1, column=2, value='=IF(B5=1,B10+B13,B14+(B11-B12)+4400)')
+# Note: uses tvInternetNoWifi (no wifi used in formula for simplicity per example 기본)
+# Actually should respect WiFi choice
+ws.cell(row=r-1, column=2, value='=IF(B5=1,B10+B13,IF(B6="Y",B15,B14)+(B11-B12)+4400)')
+
+# 경로 B: 요즘가족결합 (REPLACE)
+ws.cell(row=r, column=1, value='【경로 B】 휴대폰 결합 O (요즘가족)').font = Font(name='Noto Sans KR', size=11, bold=True, color='ef4444')
+r += 1
+
+# 인터넷 after family (단독가 기준)
+r = formula_row(ws, r, '  인터넷 (단독가 - 요즘가족할인)',
+    '=B10+B13-B16', SKT_FILL)
+inet_after_row = r - 1
+
+# TV after family (tvBase - tvDc - iptv)
+r = formula_row(ws, r, '  TV (기본 - 결합할인 - IPTV 추가)',
+    '=IF(B5=1,0,B11-B12-B17)', SKT_FILL)
+tv_after_row = r - 1
+
+# 셋톱
+r = formula_row(ws, r, '  셋톱박스 (TV 있을 때만)',
+    '=IF(B5=1,0,4400)', SKT_FILL)
+settop_row = r - 1
+
+# 인터넷+TV 월 실납부
+r = formula_row(ws, r, '  = 인터넷+TV 월 실납부',
+    f'=B{inet_after_row}+B{tv_after_row}+B{settop_row}', SKT_FILL)
+bundle_total_row = r - 1
+
+# 휴대폰 별도
+r = formula_row(ws, r, '  - 휴대폰 고지서 별도 차감',
+    '=-B19', SKT_FILL)
+
+# 혜택가
+r = formula_row(ws, r, '🎉 혜택가 (최종)',
+    f'=B{bundle_total_row}-B19')
+c = ws.cell(row=r-1, column=2)
+c.fill = PatternFill('solid', fgColor='fef2f2')
+c.font = Font(name='SF Mono', size=14, bold=True, color='ef4444')
+c.number_format = '#,##0"원"'
+
+r += 1
+# 부가
+ws.cell(row=r, column=1, value='🎁 부가 (참고)').font = Font(name='Noto Sans KR', size=12, bold=True, color='666666')
+r += 1
+r = formula_row(ws, r, '  설치비 (1회성)',
+    '=IF(B5=1,36300,56100)')
+r = formula_row(ws, r, '  사은품 (속도×TV결합)',
+    '=IF(B5=1,IF(B4="100M",110000,170000),CHOOSE(MATCH(B4,{"100M","500M","1G"},0),400000,430000,490000))')
+
+r += 2
+c = ws.cell(row=r, column=1, value='※ B4(속도)·B5(TV)·B6(WiFi)·B7(회선) 입력 셀만 수정하면 자동 재계산됩니다.')
+c.font = Font(name='Noto Sans KR', size=10, italic=True, color='666666')
+ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
+
+# ═══════════════════════════════════════════════
+# 41_CALC_Interactive_KT (대화형 계산기 — KT 총액결합)
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('41_CALC_Interactive_KT')
+for col, w in zip('ABCDE', [24, 18, 18, 18, 30]):
+    ws.column_dimensions[col].width = w
+
+r = calc_sheet_header(ws, 1, '🧮 KT 총액결합 계산기 (STACK)', '2563eb')
+
+ws.cell(row=r, column=1, value='📝 입력').font = Font(name='Noto Sans KR', size=12, bold=True, color='1a2744')
+r += 1
+r = input_row(ws, r, '속도', '500M', '100M/500M/1G', ['100M','500M','1G'])
+r = input_row(ws, r, 'TV 상품 (1=없음, 2~6=선택)', 3, '1=없음, 2=베이직, 3=라이트, 4=에센스, 5=모든G, 6=디즈니+')
+r = input_row(ws, r, 'WiFi 사용', 'Y', 'Y/N', ['Y','N'])
+r = input_row(ws, r, '총액결합 구간 (1~6)', 4, '1=22K↓, 2=22K↑, 3=64.9K↑, 4=108.9K↑, 5=141.9K↑, 6=174.9K↑')
+r += 1
+
+ws.cell(row=r, column=1, value='🧮 자동 계산').font = Font(name='Noto Sans KR', size=12, bold=True, color='1a2744')
+r += 1
+
+r = formula_row(ws, r, '인터넷 단독가',
+    '=IF(B4="100M",22000,IF(B4="500M",33000,38500))')
+r = formula_row(ws, r, 'TV 가격',
+    '=IF(B5=1,0,CHOOSE(B5-1,14740,15840,20240,21340,28100))')
+r = formula_row(ws, r, 'TV 결합할인',
+    '=IF(B5=1,0,CHOOSE(B5-1,2640,2640,3740,4400,6600))')
+r = formula_row(ws, r, 'WiFi 추가금 (속도별)',
+    '=IF(B6="Y",IF(B4="1G",0,1100),0)')
+r = formula_row(ws, r, 'tvInternetNoWifi',
+    '=IF(B4="100M",22000,IF(B4="500M",27500,33000))')
+r = formula_row(ws, r, 'tvInternetWithWifi',
+    '=IF(B4="100M",23100,IF(B4="500M",28600,33000))')
+
+r = formula_row(ws, r, '총액결합 인터넷 할인',
+    '=IF(B4="100M",CHOOSE(B7,1650,3300,5500,5500,5500,5500),IF(B4="500M",CHOOSE(B7,2200,5500,5500,5500,5500,5500),CHOOSE(B7,2200,5500,5500,5500,5500,5500)))')
+kt_inet_dc = r - 1
+
+r = formula_row(ws, r, '총액결합 휴대폰 할인',
+    '=IF(B4="100M",CHOOSE(B7,0,0,3300,14300,18700,23100),CHOOSE(B7,0,0,5500,16610,22110,27610))')
+kt_mob_dc = r - 1
+
+r += 1
+ws.cell(row=r, column=1, value='💰 결과').font = Font(name='Noto Sans KR', size=12, bold=True, color='1a2744')
+r += 1
+
+# TV 있을 때: tvInternet(WiFi유무) + TV결합가 + 셋톱 - 총액결합할인
+# TV 없을 때: 단독가 + WiFi - 총액결합할인
+r = formula_row(ws, r, '  인터넷 결합가 (기본 TV결합)',
+    f'=IF(B5=1,B10+B13,IF(B6="Y",B15,B14))', KT_FILL)
+kt_netbase = r - 1
+
+r = formula_row(ws, r, '  - 총액결합 추가 할인 (STACK)',
+    f'=-B{kt_inet_dc}', KT_FILL)
+
+r = formula_row(ws, r, '  TV 최종',
+    '=IF(B5=1,0,B11-B12)', KT_FILL)
+kt_tv = r - 1
+
+r = formula_row(ws, r, '  셋톱박스',
+    '=IF(B5=1,0,4400)', KT_FILL)
+kt_settop = r - 1
+
+r = formula_row(ws, r, '  = 인터넷+TV 월 실납부',
+    f'=B{kt_netbase}-B{kt_inet_dc}+B{kt_tv}+B{kt_settop}', KT_FILL)
+kt_total_row = r - 1
+
+r = formula_row(ws, r, '  - 휴대폰 고지서 별도 차감',
+    f'=-B{kt_mob_dc}', KT_FILL)
+
+r = formula_row(ws, r, '🎉 혜택가 (최종)',
+    f'=B{kt_total_row}-B{kt_mob_dc}')
+c = ws.cell(row=r-1, column=2)
+c.fill = PatternFill('solid', fgColor='eff6ff')
+c.font = Font(name='SF Mono', size=14, bold=True, color='2563eb')
+c.number_format = '#,##0"원"'
+
+# ═══════════════════════════════════════════════
+# 42_CALC_Interactive_LGU (대화형 계산기 — LG U+)
+# ═══════════════════════════════════════════════
+ws = wb.create_sheet('42_CALC_Interactive_LGU')
+for col, w in zip('ABCDE', [24, 18, 18, 18, 30]):
+    ws.column_dimensions[col].width = w
+
+r = calc_sheet_header(ws, 1, '🧮 LG U+ 참쉬운가족결합 계산기', 'e40981')
+
+ws.cell(row=r, column=1, value='📝 입력').font = Font(name='Noto Sans KR', size=12, bold=True, color='1a2744')
+r += 1
+r = input_row(ws, r, '속도', '500M', '100M/500M/1G', ['100M','500M','1G'])
+r = input_row(ws, r, 'TV 상품 (1=없음, 2~5=선택)', 3, '1=없음, 2=실속형, 3=기본형, 4=프리미엄, 5=프리미엄 VOD')
+r = input_row(ws, r, '휴대폰 요금 구간 (1~3)', 2, '1=69K미만, 2=69K↑, 3=88K↑')
+r = input_row(ws, r, '결합 회선수 (2~4)', 3, '2/3/4+ (1회선은 결합 불가)')
+r += 1
+
+ws.cell(row=r, column=1, value='🧮 자동 계산').font = Font(name='Noto Sans KR', size=12, bold=True, color='1a2744')
+r += 1
+
+r = formula_row(ws, r, '인터넷 단독가',
+    '=IF(B4="100M",22000,IF(B4="500M",33000,38500))')
+r = formula_row(ws, r, 'TV 가격',
+    '=IF(B5=1,0,CHOOSE(B5-1,15400,16500,18700,24200))')
+r = formula_row(ws, r, 'TV 결합할인',
+    '=IF(B5=1,0,CHOOSE(B5-1,2200,2200,2200,5500))')
+r = formula_row(ws, r, 'WiFi 추가금 (전속도 무료)',
+    '=0')
+r = formula_row(ws, r, '참쉬운 인터넷 할인',
+    '=IF(B4="100M",5500,IF(B4="500M",9900,13200))')
+lgu_inet_dc = r - 1
+
+# 휴대폰 할인 (3×3 매트릭스)
+r = formula_row(ws, r, '참쉬운 휴대폰 인당 할인',
+    '=CHOOSE(B6,CHOOSE(MIN(B7,4)-1,2200,3300,4400),CHOOSE(MIN(B7,4)-1,3300,5500,6600),CHOOSE(MIN(B7,4)-1,4400,6600,8800))')
+lgu_mob_per = r - 1
+
+r = formula_row(ws, r, '휴대폰 총 할인',
+    f'=B{lgu_mob_per}*MIN(B7,4)')
+lgu_mob_total = r - 1
+
+r += 1
+ws.cell(row=r, column=1, value='💰 결과').font = Font(name='Noto Sans KR', size=12, bold=True, color='1a2744')
+r += 1
+
+r = formula_row(ws, r, '  인터넷 (단독가 - 참쉬운할인)',
+    f'=B10+B13-B{lgu_inet_dc}', LGU_FILL)
+lgu_inet_after = r - 1
+
+r = formula_row(ws, r, '  TV 최종',
+    '=IF(B5=1,0,B11-B12)', LGU_FILL)
+lgu_tv = r - 1
+
+r = formula_row(ws, r, '  셋톱박스',
+    '=IF(B5=1,0,4400)', LGU_FILL)
+lgu_settop = r - 1
+
+r = formula_row(ws, r, '  = 인터넷+TV 월 실납부',
+    f'=B{lgu_inet_after}+B{lgu_tv}+B{lgu_settop}', LGU_FILL)
+lgu_total_row = r - 1
+
+r = formula_row(ws, r, '  - 휴대폰 고지서 별도 차감',
+    f'=-B{lgu_mob_total}', LGU_FILL)
+
+r = formula_row(ws, r, '🎉 혜택가 (최종)',
+    f'=B{lgu_total_row}-B{lgu_mob_total}')
+c = ws.cell(row=r-1, column=2)
+c.fill = PatternFill('solid', fgColor='fdf2f8')
+c.font = Font(name='SF Mono', size=14, bold=True, color='e40981')
+c.number_format = '#,##0"원"'
+
+# ═══════════════════════════════════════════════
 # 20_Schema (JSON 스키마)
 # ═══════════════════════════════════════════════
 ws = wb.create_sheet('20_Schema')
