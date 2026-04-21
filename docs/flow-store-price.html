@@ -1213,6 +1213,16 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
         · <strong>파일 구분</strong>: 오프라인 공통폼 = 매장별 파일 (12개) + 온라인 공통폼 = 통합 파일 (1개)<br>
         · <strong>템플릿 제공</strong>: <a href="https://bongi-mobile-production.up.railway.app/docs/sample-prices-20260421.xlsx" target="_blank" class="mono" style="color:var(--green);font-weight:700">sample-prices-20260421.xlsx</a> (3사 × 휴대폰 54행 + 유심 13행)
       </div>
+
+      <!-- 기종 추가/삭제 규칙 -->
+      <div style="margin-top:10px;padding:10px 12px;background:#f3e8ff;border-left:3px solid #7c3aed;border-radius:6px;font-size:10px;color:#1a2744;line-height:1.7">
+        🔧 <strong>기종 추가/삭제 시 → 컬럼이 아닌 "행(Row)"으로 처리</strong><br>
+        · 컬럼 구조는 <strong>고정 6개</strong> (통신사/모델명/펫네임/요금제/번이/기변) — 자동 확장 X<br>
+        · 신규 기종 출시: Excel에서 <strong>행 추가</strong> → 업로드하면 DB에 insert (예: 갤럭시 Z플립8 출시 → 3사 × 1행씩 = 3행 추가)<br>
+        · 단종 기종: 행 <strong>삭제</strong> 또는 <strong>"운영중지" 플래그</strong> 컬럼 추가 (히스토리 보존 원할 시)<br>
+        · 요금제 신설: 동일 기종을 여러 요금제로 등록 가능 (예: SK S26 · 프리미엄 / SK S26 · 베이직 2행)<br>
+        · <strong>Upsert 규칙</strong>: (통신사 + 모델명 + 요금제) 조합이 PK → 업로드 시 동일 조합 있으면 덮어쓰기, 없으면 insert
+      </div>
     </div>
   </div>
 
