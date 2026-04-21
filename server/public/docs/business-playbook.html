@@ -967,19 +967,37 @@ const sections = [
     title: "우리가 만드는 것",
     tag: "OVERVIEW",
     render: () => `
-      <div class="keypoint"><strong>핵심 한 줄:</strong> 매장과 플랫폼으로 고객을 모으고, AI+TM+CRM으로 매출을 만드는 시스템</div>
+      <div class="keypoint"><strong>핵심 한 줄:</strong> <strong>매장 + 플랫폼</strong>으로 고객을 모으고, <strong>AI + 콜센터(CRM+CTI)</strong>로 매출을 만드는 통합 시스템</div>
+
+      <div class="subsection-title">① 고객 채널 (고객을 만나는 접점)</div>
       <div class="grid3">
-        <div class="stat-card"><div class="stat-val">TM</div><div class="stat-label">상담사 전화 계약</div></div>
-        <div class="stat-card"><div class="stat-val">CRM</div><div class="stat-label">고객/상담/계약 관리</div></div>
-        <div class="stat-card"><div class="stat-val">AI</div><div class="stat-label">상담사 매출 보조</div></div>
+        <div class="stat-card"><div class="stat-val">🌐 플랫폼</div><div class="stat-label">웹 · 앱 · 어드민 (AI 채팅 내장)</div></div>
+        <div class="stat-card"><div class="stat-val">🏪 매장</div><div class="stat-label">광주/전라 8개 직영 (선순환)</div></div>
+        <div class="stat-card"><div class="stat-val">📞 콜센터</div><div class="stat-label">CRM + CTI (AI 어시스턴트)</div></div>
       </div>
-      <div class="diagram">매장 ←──── 선순환 ────→ 플랫폼 ←── 마케팅
-             ↓
-        고객 DB 확보
-             ↓
-    TM + CRM + AI (매출 엔진)
-             ↓
-           계약!</div>
+
+      <div class="subsection-title">② 매출 엔진 (계약을 만드는 시스템)</div>
+      <div class="grid3">
+        <div class="stat-card"><div class="stat-val">🤖 AI</div><div class="stat-label">채팅·스코어링·추천·스크립트</div></div>
+        <div class="stat-card"><div class="stat-val">👥 TM</div><div class="stat-label">상담사 아웃바운드 전화</div></div>
+        <div class="stat-card"><div class="stat-val">📊 CRM</div><div class="stat-label">고객·상담·계약 통합 관리</div></div>
+      </div>
+
+      <div class="diagram">┌─────────── 고객 채널 ───────────┐
+│  🌐 플랫폼(웹·앱·어드민)           │
+│  🏪 매장(8개)                      │
+│  📞 콜센터(CRM+CTI)                │
+└────────────────┬───────────────┘
+                 ↓
+        고객 DB · 상담 이력 누적
+                 ↓
+┌─────────── 매출 엔진 ───────────┐
+│  🤖 AI (스코어링·추천)              │
+│  👥 TM (아웃바운드 콜)              │
+│  📊 CRM (파이프라인 관리)           │
+└────────────────┬───────────────┘
+                 ↓
+             🎉 계약!</div>
     `
   },
   {
@@ -1063,7 +1081,7 @@ const sections = [
     `
   },
   {
-    id: 5,
+    id: 4,
     title: "우리가 파는 상품 (1차 MVP)",
     tag: "PRODUCTS",
     render: () => `
@@ -1093,7 +1111,7 @@ const sections = [
     `
   },
   {
-    id: 6,
+    id: 5,
     title: "고객 신청 5가지 방법",
     tag: "CHANNELS",
     render: () => `
@@ -1110,7 +1128,7 @@ const sections = [
     `
   },
   {
-    id: 7,
+    id: 6,
     title: "AI 채팅이 하는 일",
     tag: "AI SYSTEM",
     render: () => `
@@ -1156,7 +1174,7 @@ const sections = [
     `
   },
   {
-    id: 8,
+    id: 7,
     title: "CRM이 하는 일",
     tag: "CRM",
     render: () => `
@@ -1191,7 +1209,7 @@ const sections = [
     `
   },
   {
-    id: 9,
+    id: 8,
     title: "상담사 인센티브",
     tag: "INCENTIVE",
     render: () => `
@@ -1233,7 +1251,7 @@ const sections = [
     `
   },
   {
-    id: 10,
+    id: 9,
     title: "전체 시스템 구조도",
     tag: "ARCHITECTURE",
     render: () => `
@@ -1280,7 +1298,7 @@ const sections = [
     `
   },
   {
-    id: 11,
+    id: 10,
     title: "경쟁사 분석 (아정당)",
     tag: "COMPETITOR",
     render: () => `
@@ -1319,7 +1337,7 @@ const sections = [
     `
   },
   {
-    id: 12,
+    id: 11,
     title: "수익 시뮬레이션",
     tag: "REVENUE",
     render: () => `
@@ -1364,7 +1382,7 @@ const sections = [
     `
   },
   {
-    id: 13,
+    id: 12,
     title: "기술 스택",
     tag: "TECH STACK",
     render: () => `
@@ -1413,7 +1431,7 @@ const sections = [
     `
   },
   {
-    id: 14,
+    id: 13,
     title: "개발 순서",
     tag: "ROADMAP",
     render: () => `
