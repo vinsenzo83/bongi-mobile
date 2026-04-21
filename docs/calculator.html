@@ -180,6 +180,88 @@
   <div class="calc-result" id="c-result"></div>
 </div>
 
+<!-- ═══ 0. 다이어그램 (한눈에 보기) ═══ -->
+<div class="section">
+  <div class="st">📊 요금 구조 한눈에 보기</div>
+
+  <div class="st2">계산 흐름</div>
+  <div class="diag-formula">
+    <span class="var">월 요금</span>
+    <span class="op">=</span>
+    <span class="var">인터넷 결합가</span>
+    <span class="op">+</span>
+    <span class="var">TV 최종요금</span>
+    <span class="op">+</span>
+    <span class="var">셋톱박스 4,400</span>
+  </div>
+
+  <div class="diag-flow">
+    <div class="diag-step">
+      <h4>STEP 1</h4>
+      <div class="val">통신사 선택<br><small style="color:#999;font-weight:400">SKT / KT / LGU+</small></div>
+    </div>
+    <div class="diag-arrow">→</div>
+    <div class="diag-step">
+      <h4>STEP 2</h4>
+      <div class="val">속도 선택<br><small style="color:#999;font-weight:400">100M / 500M / 1G</small></div>
+    </div>
+    <div class="diag-arrow">→</div>
+    <div class="diag-step">
+      <h4>STEP 3</h4>
+      <div class="val">WiFi 선택<br><small style="color:#999;font-weight:400">미사용 / 사용</small></div>
+    </div>
+    <div class="diag-arrow">→</div>
+    <div class="diag-step">
+      <h4>STEP 4</h4>
+      <div class="val">TV 상품 선택<br><small style="color:#999;font-weight:400">채널 패키지</small></div>
+    </div>
+    <div class="diag-arrow">→</div>
+    <div class="diag-step result">
+      <h4>RESULT</h4>
+      <div class="val">월 합계<br>+ 설치비 1회</div>
+    </div>
+  </div>
+
+  <div class="st2" style="margin-top:20px;">3사 핵심 비교 (TV 결합 기준)</div>
+  <div class="diag-cards">
+
+    <div class="diag-card skt">
+      <h3>🔴 SKT (B tv)</h3>
+      <div class="row"><span class="k">100M</span><span class="v">19,800 / 22,000</span></div>
+      <div class="row"><span class="k">500M</span><span class="v">27,500 / 28,600</span></div>
+      <div class="row"><span class="k">1G</span><span class="v">33,000 / 34,100</span></div>
+      <div class="row"><span class="k">TV 상품</span><span class="v">9개</span></div>
+      <div class="row"><span class="k">WiFi</span><span class="v">모든 속도 +1,100</span></div>
+      <div class="feat">✓ 가장 많은 TV 상품<br>✓ WiFi 미사용/사용 모두 선택 가능<br>✓ TV 결합할인 모든 상품 -2,200원</div>
+    </div>
+
+    <div class="diag-card kt">
+      <h3>🔵 KT (지니TV)</h3>
+      <div class="row"><span class="k">100M</span><span class="v">22,000 / 23,100</span></div>
+      <div class="row"><span class="k">500M</span><span class="v">27,500 / 28,600</span></div>
+      <div class="row"><span class="k">1G</span><span class="v">33,000 (WiFi 포함)</span></div>
+      <div class="row"><span class="k">TV 상품</span><span class="v">5개</span></div>
+      <div class="row"><span class="k">WiFi</span><span class="v">1G만 무료</span></div>
+      <div class="feat">✓ 1G는 WiFi 기본 포함<br>✓ TV 상품별 할인율 차등<br>✓ 디즈니+모든G 할인 -6,600원 최대</div>
+    </div>
+
+    <div class="diag-card lgu">
+      <h3>🟣 LGU+ (U+tv)</h3>
+      <div class="row"><span class="k">100M</span><span class="v">22,000</span></div>
+      <div class="row"><span class="k">500M</span><span class="v">27,500</span></div>
+      <div class="row"><span class="k">1G</span><span class="v">33,000</span></div>
+      <div class="row"><span class="k">TV 상품</span><span class="v">4개</span></div>
+      <div class="row"><span class="k">WiFi</span><span class="v">모든 속도 무료</span></div>
+      <div class="feat">✓ 구조가 가장 단순 (단일 요금)<br>✓ 모든 속도 WiFi 기본 포함<br>✓ 프라임VOD 할인 -5,500원</div>
+    </div>
+
+  </div>
+
+  <div class="note" style="margin-top:12px;">
+    결합가는 <b>WiFi 미사용 / WiFi 사용</b> 형식. 모든 결합가에 <b>TV 최종요금 + 셋톱박스 4,400원</b>이 추가로 더해집니다. 셋톱박스: SKT 스마트2 세톱 / KT 기가지니3 / LGU+ 4k UHD4.
+  </div>
+</div>
+
 <!-- ═══ 1. 인터넷 · WiFi ═══ -->
 <div class="section">
   <div class="st">1. 인터넷 · WiFi</div>
@@ -971,72 +1053,12 @@ function init() {
     o.value = k; o.textContent = D[k].name;
     cs.appendChild(o);
   }
-
-  // URL 파라미터 carrier=skt|kt|lgu 처리
-  var urlParams = new URLSearchParams(window.location.search);
-  var filterCarrier = urlParams.get('carrier');
-  if (filterCarrier && D[filterCarrier]) {
-    cs.value = filterCarrier;
-    document.body.classList.add('carrier-filter-' + filterCarrier);
-    applyCarrierFilter(filterCarrier);
-  }
-
   buildTV();
   updateBundleUI();
   updateRangeUI();
   updateWifiUI();
   updateSetTopInfo();
   calc();
-}
-
-// 특정 통신사만 보이도록 다른 통신사의 배지 섹션을 숨김
-function applyCarrierFilter(target) {
-  // 모든 .st2 div를 순회하여 배지 class로 통신사 판별
-  var st2s = document.querySelectorAll('.st2');
-  st2s.forEach(function(st2){
-    var badges = st2.querySelectorAll('.badge');
-    if (!badges.length) return;
-    var section = null;
-    for (var i = 0; i < badges.length; i++) {
-      if (badges[i].classList.contains('b-skt')) { section = 'skt'; break; }
-      if (badges[i].classList.contains('b-kt')) { section = 'kt'; break; }
-      if (badges[i].classList.contains('b-lgu')) { section = 'lgu'; break; }
-    }
-    if (section && section !== target) {
-      st2.style.display = 'none';
-      // 다음 .st2 또는 .section까지 숨김
-      var next = st2.nextElementSibling;
-      while (next && !next.classList.contains('st2') && !next.classList.contains('section')) {
-        next.style.display = 'none';
-        next = next.nextElementSibling;
-      }
-    }
-  });
-  // 단독 배지(컨트롤 박스 위) 숨김
-  document.querySelectorAll('div').forEach(function(d){
-    if (d.children.length === 1 && d.firstElementChild && d.firstElementChild.classList.contains('badge')) {
-      var b = d.firstElementChild;
-      if ((b.classList.contains('b-skt') && target !== 'skt') ||
-          (b.classList.contains('b-kt') && target !== 'kt') ||
-          (b.classList.contains('b-lgu') && target !== 'lgu')) {
-        d.style.display = 'none';
-        // 바로 아래 컨트롤 박스 등도 숨김
-        var next = d.nextElementSibling;
-        while (next && next.tagName === 'DIV' && !next.querySelector('.badge')) {
-          next.style.display = 'none';
-          next = next.nextElementSibling;
-        }
-      }
-    }
-  });
-  // 페이지 상단에 통신사 표시 배너
-  var banner = document.createElement('div');
-  var color = target==='skt'?'#ef4444':target==='kt'?'#2563eb':'#e40981';
-  var name = D[target].name;
-  banner.style.cssText = 'background:linear-gradient(135deg,'+color+',#1a2744);color:#fff;padding:12px 20px;font-weight:900;font-size:16px;text-align:center;border-radius:8px;margin-bottom:14px';
-  banner.innerHTML = '📦 ' + name + ' 상품관리 · 계산기 (calculator-'+target+')';
-  var wrap = document.querySelector('.wrap');
-  if (wrap && wrap.firstChild) wrap.insertBefore(banner, wrap.firstChild);
 }
 
 function buildTV() {
