@@ -5176,57 +5176,46 @@ function generateCombos(key) {
 function showCarrier(key) {
   show(2);
   setTimeout(function(){
-    // 상품관리 탭 숨기기
-    switchProdTab('wired');
-
-    // 선택한 통신사만 보이기
+    // 기존 정적 섹션 전부 숨김
     ['SKT','KT','LGU'].forEach(function(k){
       var sec = document.getElementById('carrier-section-'+k);
-      if(sec) sec.style.display = (k===key) ? 'block' : 'none';
+      if(sec) sec.style.display = 'none';
     });
 
     var container = document.getElementById('prod-section-wired');
     if(!container) return;
 
-    var cfg = comboConfig[key];
     var carrierName = key==='SKT'?'SKT':key==='KT'?'KT':'LG U+';
     var carrierColor = key==='SKT'?'red':key==='KT'?'blue':'green';
-    var combos = generateCombos(key);
+    var carrierParam = key==='SKT'?'skt':key==='KT'?'kt':'lgu';
 
-    // 기존 내용 위에 조합 상품 섹션 추가 (이미 있으면 교체)
+    // 기존 iframe 섹션 제거 후 재생성
     var existing = document.getElementById('combo-section');
     if(existing) existing.remove();
 
+    // iframe으로 calculator.html?carrier=xxx 임베드 (3사 구조 동일)
     var section = document.createElement('div');
     section.id = 'combo-section';
     section.style.marginBottom = '20px';
-    section.innerHTML = '<div class="wf-card" style="margin-bottom:14px">'
-      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'
+    section.innerHTML = '<div class="wf-card" style="margin-bottom:14px;padding:0;overflow:hidden">'
+      +'<div style="display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid #e5e7eb">'
       +'<span class="wf-status '+carrierColor+'" style="font-size:14px;padding:5px 12px">'+carrierName+'</span>'
-      +'<span class="wf-h2" style="margin:0">조합 상품 목록</span>'
-      +'<span style="font-size:12px;color:var(--text3);margin-left:8px">총 '+combos.length+'개</span>'
-      +'<div style="margin-left:auto;display:flex;gap:8px;align-items:center">'
-      +'<input class="filter-input" id="combo-search" placeholder="검색 (TV/셋톱/와이파이)" oninput="filterCombos(\''+key+'\')" style="width:180px">'
+      +'<span class="wf-h2" style="margin:0">상품관리 · 요금 계산기 (통합)</span>'
+      +'<div style="margin-left:auto;display:flex;gap:8px">'
+      +'<a href="/docs/calculator.html?carrier='+carrierParam+'" target="_blank" class="action-btn primary" style="font-size:11px;text-decoration:none">🔗 새 창으로 열기</a>'
       +'</div></div>'
-      +'<div style="overflow-x:auto;max-height:500px;overflow-y:auto">'
-      +'<table class="wf-table" style="margin-bottom:0;font-size:11px;min-width:900px">'
-      +'<thead style="position:sticky;top:0"><tr><th>티켓번호</th><th>속도</th><th>TV</th><th>셋톱박스</th><th>와이파이</th><th>인터넷</th><th>TV</th><th>셋톱</th><th>WiFi</th><th style="color:var(--navy)">합계</th><th>상태</th></tr></thead>'
-      +'<tbody id="combo-tbody"></tbody></table></div>'
-      +'<div id="combo-pager" style="display:flex;justify-content:center;gap:4px;margin-top:10px"></div>'
-      +'<div id="combo-count" style="text-align:center;font-size:11px;color:var(--text3);margin-top:4px"></div>'
+      +'<iframe src="/docs/calculator.html?carrier='+carrierParam+'" style="width:100%;height:2400px;border:0;display:block" title="'+carrierName+' 상품관리"></iframe>'
       +'</div>';
     container.insertBefore(section, container.firstChild);
-
-    renderCombos(key, 0);
 
     // 노트 변경
     var notesEl = document.getElementById('notes-content');
     if(notesEl) notesEl.innerHTML = [
-      carrierName+' 조합 상품 '+combos.length+'개',
-      '인터넷('+cfg.speeds.length+') × TV('+cfg.tvs.length+') × 셋톱('+cfg.settops.length+') × WiFi('+cfg.wifis.length+')',
-      '티켓번호: '+cfg.prefix+'0001~',
-      '가격 자동 계산 (인터넷+TV+셋톱+WiFi)',
-      '결합할인·카드할인은 시뮬레이터에서 추가 계산'
+      carrierName+' 통합 상품관리',
+      '인터넷 · TV · 셋톱박스 · WiFi · 결합할인 · 사은품 · 제휴카드',
+      '데이터 소스: docs/calculator.html (단일 진실)',
+      '전체 3사 계산기: /docs/calculator.html (무필터)',
+      '고객용 심플: /docs/calculator-v2.html'
     ].map(function(n){return '<div class="notes-item">'+n+'</div>';}).join('');
 
     var titleEl = document.getElementById('tb-title');
