@@ -1158,6 +1158,70 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
 </div>
 <div class="arrow-down">↓</div>
 
+<!-- ===== STEP 9.5: 부가서비스 어드민 관리 (무선 전용) ===== -->
+<div class="step-label" style="background:#d97706">⚙️ 관리 · 부가서비스 정책 (무선 전용 · 어드민 직접 편집) <span class="badge b-red">NEW</span></div>
+<div class="step-card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:10px">무선(휴대폰) 개통 시 적용 · 유심·인터넷+TV 해당 없음 · Excel 업로드 X · 어드민 UI에서 직접 추가/삭제/편집</div>
+
+  <!-- 📌 부가서비스 10종 -->
+  <div style="background:linear-gradient(135deg,#fef3c7,#fff);border:2px solid #f7c94f;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:900;color:#92400e">🎁 부가서비스 (10종)</div>
+      <div style="display:flex;gap:4px">
+        <div style="padding:3px 10px;background:var(--green);color:#fff;border-radius:6px;font-size:10px;font-weight:700">+ 추가</div>
+        <div style="padding:3px 10px;border:1px solid var(--navy);border-radius:6px;font-size:10px;font-weight:700;color:var(--navy)">편집</div>
+        <div style="padding:3px 10px;border:1px solid var(--red);border-radius:6px;font-size:10px;font-weight:700;color:var(--red)">삭제</div>
+      </div>
+    </div>
+    <table style="font-size:10px">
+      <thead><tr><th>통신사</th><th>부가서비스명</th><th>월청구금</th><th>유지기간</th><th>미가입 추가금</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3"><span class="badge b-red">SK</span></td><td>우주패스</td><td>혜택별 상이</td><td>당월+6개월</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+        <tr><td>벅스 앤 데이터 플러스</td><td>17,500원</td><td>당월+4개월</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+        <tr><td>마이스마트콜3</td><td>3,500원</td><td>당월+2개월</td><td style="color:var(--red);font-weight:700">2만원</td></tr>
+        <tr><td rowspan="4"><span class="badge b-red">KT</span></td><td>필수팩</td><td>9,900원</td><td>당월+3개월</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+        <tr><td>OTT+스타벅스</td><td>13,900원</td><td>당월+3개월</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+        <tr><td>모아진</td><td>13,000원</td><td>당월+3개월</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+        <tr><td>DC카드</td><td style="color:var(--green);font-weight:700">무료</td><td>당월+3개월</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+        <tr><td rowspan="3"><span class="badge" style="background:#fce7f3;color:#e40981">LG</span></td><td>교보SAM+구글원 패키지</td><td>16,500원</td><td>당월+3개월</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+        <tr><td>V컬러링 음악감상+벨링콘텐츠팩</td><td>15,400원</td><td>당월+3개월</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+        <tr><td>유플레이 프리미엄</td><td>15,400원</td><td>당월+4개월</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+      </tbody>
+    </table>
+    <div style="font-size:9px;color:#78350f;margin-top:6px">※ 의무 가입 · 유지기간 내 해지 시 미가입 추가금 발생 · "당월+N개월" = 개통 당월 + N개월 유지</div>
+  </div>
+
+  <!-- 📌 필수 조건 / 유의사항 -->
+  <div style="background:linear-gradient(135deg,#fee2e2,#fff);border:2px solid #fca5a5;border-radius:10px;padding:12px 14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:900;color:var(--red)">📌 필수 조건 / 유의사항 (부가서비스 아님 · 개별 정책)</div>
+      <div style="display:flex;gap:4px">
+        <div style="padding:3px 10px;background:var(--green);color:#fff;border-radius:6px;font-size:10px;font-weight:700">+ 추가</div>
+        <div style="padding:3px 10px;border:1px solid var(--navy);border-radius:6px;font-size:10px;font-weight:700;color:var(--navy)">편집</div>
+      </div>
+    </div>
+    <table style="font-size:10px">
+      <thead><tr><th>항목</th><th>조건 설명</th><th>추가금/이자</th></tr></thead>
+      <tbody>
+        <tr><td><strong>워치</strong></td><td>워치 동시개통 조건 · 워치 미개통 시 추가금 발생</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+        <tr><td><strong>소노라이프</strong></td><td>LG U+ 소노라이프 상품 가입 조건 · 비용 발생 X · 미가입 시 추가금 발생</td><td style="color:var(--red);font-weight:700">5만원</td></tr>
+        <tr><td><strong>휴대폰 보험</strong></td><td><strong style="color:var(--red)">의무 가입 (부가서비스 아님)</strong> · 유지기간: M+3개월</td><td>보험료 별도</td></tr>
+        <tr><td><strong>할부이자</strong></td><td>할부 개통 시 발생 · 금액 상이 가능</td><td style="color:var(--red);font-weight:700">5.9%</td></tr>
+      </tbody>
+    </table>
+    <div style="font-size:9px;color:var(--red);margin-top:6px">※ 부가서비스가 아닌 개별 가입 조건 · 어드민에서 별도 테이블로 관리</div>
+  </div>
+
+  <!-- 어드민 UI 구조 안내 -->
+  <div class="note" style="margin-top:12px">
+    <strong>어드민 메뉴:</strong> 📱 무선 정책 → 🎁 부가서비스 / 📌 필수 조건 (2개 탭)<br>
+    <strong>편집 방식:</strong> 행 단위 + / 편집 / 삭제 (Excel 업로드 X · 변경 빈도 낮음)<br>
+    <strong>DB 테이블:</strong> <span class="mono">bongi_wireless_addons</span> (부가서비스) · <span class="mono">bongi_wireless_conditions</span> (필수조건)<br>
+    <strong>적용 범위:</strong> 무선(휴대폰) 개통 신청서 제출 시 자동 표시 · 유심/인터넷+TV 해당 없음
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
 <!-- ===== STEP 10: 매장 방문 2가지 경로 ===== -->
 <div class="step-label" style="background:#2563eb">🏪 오프라인 · STEP 10 — 매장 방문 2가지 경로</div>
 <div class="step-card">
