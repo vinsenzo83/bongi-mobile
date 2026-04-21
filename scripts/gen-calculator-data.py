@@ -123,7 +123,7 @@ refs = [
     ('KT 프리미엄 가족결합 상세 해설', 'https://www.100mb.kr/bbs/board.php?bo_table=information&wr_id=11986'),
     ('LG U+ 상품 전체 안내 (참쉬운/투게더)', 'https://www.100mb.kr/01_product/lg.php'),
     ('봉이모바일 통합 계산기 v1 (원본 · 상담원용 상세)', 'https://bongi-mobile-production.up.railway.app/docs/calculator.html'),
-    ('봉이모바일 계산기 v2 (고객용 · 심플 카드형 UI)', 'https://bongi-mobile-production.up.railway.app/docs/calculator-v2.html'),
+    ('봉이모바일 계산기 v2 (데이터 검증용)', 'https://bongi-mobile-production.up.railway.app/docs/calculator-v2.html'),
     ('GitHub 리포지토리', 'https://github.com/vinsenzo83/bongi-mobile'),
 ]
 for label, url in refs:
