@@ -275,26 +275,27 @@ MOB_TOTAL = r - 1
 
 r += 1
 r = frow(ws, r, '  → 인터넷 (단독 - 요즘가족할인)',
-    f'=B{SOLO}+B{WIFI_FEE}-B{FAM_INET}',
+    f'=IF({LINES}=0,"-",B{SOLO}+B{WIFI_FEE}-B{FAM_INET})',
     SKT_FILL)
 r = frow(ws, r, '  → TV (p - dc - iptv)',
-    f'=IF(B{HAS_TV}=0,0,B{TV_P}-B{TV_DC}-B{FAM_IPTV})',
+    f'=IF({LINES}=0,"-",IF(B{HAS_TV}=0,0,B{TV_P}-B{TV_DC}-B{FAM_IPTV}))',
     SKT_FILL)
 r = frow(ws, r, '  → 셋톱 (TV 있을 때만)',
-    f'=IF(B{HAS_TV}=0,0,B{SETTOP})',
+    f'=IF({LINES}=0,"-",IF(B{HAS_TV}=0,0,B{SETTOP}))',
     SKT_FILL)
 
 r = frow(ws, r, '  = 인터넷+TV 월 실납부 (결합 적용)',
-    f'=(B{SOLO}+B{WIFI_FEE}-B{FAM_INET})+IF(B{HAS_TV}=0,0,B{TV_P}-B{TV_DC}-B{FAM_IPTV}+B{SETTOP})',
+    f'=IF({LINES}=0,"-",(B{SOLO}+B{WIFI_FEE}-B{FAM_INET})+IF(B{HAS_TV}=0,0,B{TV_P}-B{TV_DC}-B{FAM_IPTV}+B{SETTOP}))',
     SKT_FILL, True)
 BUNDLE_FEE = r - 1
 
 r = frow(ws, r, '  - 휴대폰 고지서 별도 차감',
-    f'=-B{MOB_TOTAL}', SKT_FILL)
+    f'=IF({LINES}=0,"-",-B{MOB_TOTAL})', SKT_FILL)
 
 r = frow(ws, r, '🎉 혜택가 (최종 월요금)',
     f'=IF({LINES}=0,B{PATH_A},B{BUNDLE_FEE}-B{MOB_TOTAL})',
-    RESULT_FILL, True, 'ef4444')
+    RESULT_FILL, True, 'ef4444',
+    comment='결합없음이면 경로 A 값 / 결합 있으면 경로 B - 휴대폰할인')
 c = ws.cell(row=r-1, column=2)
 c.font = Font(name='SF Mono', size=16, bold=True, color='ef4444')
 
