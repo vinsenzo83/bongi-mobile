@@ -97,7 +97,7 @@ a:hover { text-decoration:underline; }
       <div class="doc-num" style="color:#059669">01</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
         <span style="padding:3px 10px;background:#059669;color:#fff;border-radius:12px;font-size:10px;font-weight:700">🟢 Phase 1</span>
-        <span style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700">⏱️ 2주</span>
+        <span class="duration-btn" data-card="01" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
         <span class="status-btn" data-card="01" data-state="fixed" onclick="cycleStatus(event, this)" style="padding:3px 10px;background:#d1fae5;color:#065f46;border:1.5px solid #059669;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">✅ 데이터 픽스</span>
       </div>
     </div>
@@ -109,7 +109,7 @@ a:hover { text-decoration:underline; }
       <div class="doc-num" style="color:var(--orange)">04</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
         <span style="padding:3px 10px;background:var(--orange);color:#fff;border-radius:12px;font-size:10px;font-weight:700">🟡 Phase 2</span>
-        <span style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700">⏱️ 2주</span>
+        <span class="duration-btn" data-card="04" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
         <span class="status-btn" data-card="04" data-state="partial" onclick="cycleStatus(event, this)" style="padding:3px 10px;background:#fef3c7;color:#92400e;border:1.5px solid #f7c94f;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">🟡 부분 픽스</span>
       </div>
     </div>
@@ -121,7 +121,7 @@ a:hover { text-decoration:underline; }
       <div class="doc-num" style="color:var(--blue)">03</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
         <span style="padding:3px 10px;background:var(--blue);color:#fff;border-radius:12px;font-size:10px;font-weight:700">🔵 Phase 3</span>
-        <span style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700">⏱️ 2주</span>
+        <span class="duration-btn" data-card="03" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
         <span class="status-btn" data-card="03" data-state="unfixed" onclick="cycleStatus(event, this)" style="padding:3px 10px;background:#fee2e2;color:#991b1b;border:1.5px solid #dc2626;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⚠️ 데이터 미픽스</span>
       </div>
     </div>
@@ -133,7 +133,7 @@ a:hover { text-decoration:underline; }
       <div class="doc-num" style="color:var(--purple)">02</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
         <span style="padding:3px 10px;background:var(--purple);color:#fff;border-radius:12px;font-size:10px;font-weight:700">🟣 Phase 4</span>
-        <span style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700">⏱️ 2주</span>
+        <span class="duration-btn" data-card="02" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
         <span class="status-btn" data-card="02" data-state="unfixed" onclick="cycleStatus(event, this)" style="padding:3px 10px;background:#fee2e2;color:#991b1b;border:1.5px solid #dc2626;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⚠️ 데이터 미픽스</span>
       </div>
     </div>
@@ -143,7 +143,7 @@ a:hover { text-decoration:underline; }
   <a class="doc-card" href="flow-ticket.html" style="border-color:#dbeafe">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
       <div class="doc-num" style="color:var(--blue)">05</div>
-      <span style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700">⏱️ 2주</span>
+      <span class="duration-btn" data-card="05" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
     </div>
     <div class="doc-title">티켓 관리</div>
     <div class="doc-desc">인터넷 1,002개 + 렌탈 51개 = 1,053개 · 조합 자동 생성 · 연쇄 비활성</div>
@@ -151,7 +151,7 @@ a:hover { text-decoration:underline; }
   <a class="doc-card" href="flow-applications.html" style="border-color:#fef3c7">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
       <div class="doc-num" style="color:var(--orange)">06</div>
-      <span style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700">⏱️ 2주</span>
+      <span class="duration-btn" data-card="06" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
     </div>
     <div class="doc-title">신청 현황</div>
     <div class="doc-desc">모든 유입 경로 통합 · CRM 양방향 동기화 · 상태 전이</div>
@@ -159,7 +159,7 @@ a:hover { text-decoration:underline; }
   <a class="doc-card" href="flow-gifts.html" style="border-color:#d1fae5">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
       <div class="doc-num" style="color:var(--green)">07</div>
-      <span style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700">⏱️ 2주</span>
+      <span class="duration-btn" data-card="07" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
     </div>
     <div class="doc-title">현금 페이백 관리</div>
     <div class="doc-desc">계약완료 → 지급대기 자동 생성 · PASS+계좌 필수 · 비회원 알림톡 3단계</div>
@@ -167,7 +167,7 @@ a:hover { text-decoration:underline; }
   <a class="doc-card" href="flow-points-referral-guard.html" style="border-color:#f3e8ff">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
       <div class="doc-num" style="color:var(--purple)">08</div>
-      <span style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700">⏱️ 2주</span>
+      <span class="duration-btn" data-card="08" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
     </div>
     <div class="doc-title">포인트 + 친구초대 + 돈지키미 + 알림</div>
     <div class="doc-desc">적립/출금 · 추천코드 · 약정 알람 · 앱푸시/카카오톡</div>
@@ -175,7 +175,7 @@ a:hover { text-decoration:underline; }
   <a class="doc-card" href="flow-reviews.html" style="border-color:#fef3c7">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
       <div class="doc-num" style="color:var(--orange)">09</div>
-      <span style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700">⏱️ 2주</span>
+      <span class="duration-btn" data-card="09" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
     </div>
     <div class="doc-title">후기 관리</div>
     <div class="doc-desc">자체 후기 · 사진 필수 · 15,000P 적립 · AI 채팅 자동 노출</div>
@@ -739,7 +739,30 @@ a:hover { text-decoration:underline; }
     });
   }
 
+  window.editDuration = function(e, el) {
+    e.preventDefault();
+    e.stopPropagation();
+    var current = el.dataset.weeks || '2';
+    var input = prompt('개발 기간 (주 단위)', current);
+    if (input === null) return;
+    var n = parseInt(input);
+    if (isNaN(n) || n < 1 || n > 52) { alert('1~52주 범위로 입력'); return; }
+    el.dataset.weeks = n;
+    el.textContent = '⏱️ ' + n + '주';
+    localStorage.setItem('master-map-weeks-' + el.dataset.card, n);
+  };
+
   document.addEventListener('DOMContentLoaded', function(){
+    // Duration 복원
+    document.querySelectorAll('.duration-btn').forEach(function(el){
+      var saved = localStorage.getItem('master-map-weeks-' + el.dataset.card);
+      if (saved) {
+        el.dataset.weeks = saved;
+        el.textContent = '⏱️ ' + saved + '주';
+      }
+      el.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+      el.addEventListener('touchstart', function(e){ e.stopPropagation(); });
+    });
     document.querySelectorAll('.status-btn').forEach(function(el){
       var cardId = el.dataset.card;
       var saved = localStorage.getItem('master-map-status-' + cardId);
