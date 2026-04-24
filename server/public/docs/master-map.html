@@ -688,41 +688,46 @@ a:hover { text-decoration:underline; }
 <script>
 (function(){
   var STATES = [
-    {name:'unfixed', label:'⚠️ 데이터 미픽스', bg:'#fee2e2', color:'#991b1b', border:'#dc2626'},
-    {name:'partial', label:'🟡 부분 픽스',      bg:'#fef3c7', color:'#92400e', border:'#f7c94f'},
-    {name:'fixed',   label:'✅ 데이터 픽스',      bg:'#d1fae5', color:'#065f46', border:'#059669'}
+    {name:'unfixed', label:'⚠️ 미픽스', bg:'#fee2e2', color:'#991b1b', border:'#dc2626'},
+    {name:'partial', label:'🟡 부분',   bg:'#fef3c7', color:'#92400e', border:'#f7c94f'},
+    {name:'fixed',   label:'✅ 픽스',   bg:'#d1fae5', color:'#065f46', border:'#059669'}
   ];
 
-  function applyState(el, st) {
-    el.dataset.state = st.name;
-    el.textContent = st.label;
-    el.style.background = st.bg;
-    el.style.color = st.color;
-    el.style.border = '1.5px solid ' + st.border;
+  function renderToggle(container, cardId, currentState) {
+    container.innerHTML = '';
+    STATES.forEach(function(st){
+      var btn = document.createElement('span');
+      btn.textContent = st.label;
+      btn.dataset.card = cardId;
+      btn.dataset.state = st.name;
+      var active = st.name === currentState;
+      btn.style.cssText = 'padding:3px 8px;border-radius:10px;font-size:9px;font-weight:700;cursor:pointer;user-select:none;transition:all 0.15s;' +
+        (active
+          ? 'background:' + st.bg + ';color:' + st.color + ';border:1.5px solid ' + st.border + ';box-shadow:0 2px 4px rgba(0,0,0,0.1)'
+          : 'background:#f3f4f6;color:#9ca3af;border:1.5px solid #e5e7eb;opacity:0.55');
+      btn.onclick = function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        localStorage.setItem('master-map-status-' + cardId, st.name);
+        renderToggle(container, cardId, st.name);
+      };
+      btn.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+      btn.addEventListener('touchstart', function(e){ e.stopPropagation(); });
+      container.appendChild(btn);
+    });
   }
 
-  window.cycleStatus = function(e, el) {
-    e.preventDefault();
-    e.stopPropagation();
-    var curr = el.dataset.state;
-    var idx = 0;
-    for (var i = 0; i < STATES.length; i++) if (STATES[i].name === curr) { idx = i; break; }
-    var next = STATES[(idx + 1) % STATES.length];
-    applyState(el, next);
-    localStorage.setItem('master-map-status-' + el.dataset.card, next.name);
-  };
-
-  // 페이지 로드 시 저장된 상태 복원
   document.addEventListener('DOMContentLoaded', function(){
     document.querySelectorAll('.status-btn').forEach(function(el){
-      var saved = localStorage.getItem('master-map-status-' + el.dataset.card);
-      if (!saved || saved === el.dataset.state) return;
-      for (var i = 0; i < STATES.length; i++) if (STATES[i].name === saved) { applyState(el, STATES[i]); break; }
-    });
-    // 링크 전파 방지 (a 태그 안의 버튼 클릭 시 이동 방지)
-    document.querySelectorAll('.status-btn').forEach(function(el){
-      el.addEventListener('mousedown', function(e){ e.stopPropagation(); });
-      el.addEventListener('touchstart', function(e){ e.stopPropagation(); });
+      var cardId = el.dataset.card;
+      var saved = localStorage.getItem('master-map-status-' + cardId);
+      var initial = saved || el.dataset.state;
+      // 단일 버튼을 3개 토글 그룹 컨테이너로 교체
+      var container = document.createElement('div');
+      container.className = 'status-toggle';
+      container.style.cssText = 'display:flex;gap:3px;flex-wrap:wrap';
+      el.parentNode.replaceChild(container, el);
+      renderToggle(container, cardId, initial);
     });
   });
 })();
