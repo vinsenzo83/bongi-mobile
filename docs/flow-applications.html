@@ -276,7 +276,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       </tr>
       <tr>
         <td><span class="badge b-green" style="padding:3px 10px">계약완료</span></td>
-        <td>계약 성사 (사은품/포인트 후속 처리 시작)</td>
+        <td>계약 성사 (현금 페이백/포인트 후속 처리 시작)</td>
         <td>- (최종 상태)</td>
         <td>CRM에서 계약 체결 확인 시</td>
       </tr>
@@ -337,7 +337,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">테이블 컬럼 (11개)</div>
   <div style="overflow-x:auto">
   <table style="min-width:1100px">
-    <thead><tr><th>신청일시</th><th>고객명</th><th>연락처</th><th>유형</th><th>유입경로</th><th>동기화</th><th>티켓번호</th><th>상품</th><th>사은품</th><th>상태</th><th>관리</th></tr></thead>
+    <thead><tr><th>신청일시</th><th>고객명</th><th>연락처</th><th>유형</th><th>유입경로</th><th>동기화</th><th>티켓번호</th><th>상품</th><th>현금 페이백</th><th>상태</th><th>관리</th></tr></thead>
     <tbody>
       <tr>
         <td style="font-size:10px">2026-04-06 14:23</td>
@@ -426,7 +426,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
       <div style="display:flex;gap:16px;font-size:11px;color:var(--text3)">
         <span>담당: 김상담</span>
-        <span>사은품 37만원</span>
+        <span>현금 페이백 37만원</span>
       </div>
     </div>
     <div style="border:1.5px solid var(--border);border-radius:10px;padding:14px">
@@ -436,7 +436,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       </div>
       <div style="font-size:10px;color:var(--text3)">신청일 2026.02.15 &middot; AI 채팅</div>
       <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
-      <div style="font-size:11px;color:var(--text3)">사은품 15만원 지급완료</div>
+      <div style="font-size:11px;color:var(--text3)">현금 페이백 15만원 지급완료</div>
     </div>
   </div>
 
@@ -448,7 +448,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <tr><td>유입경로</td><td class="mono">type</td><td>셀프 신청 / AI 채팅 / 티켓 K227</td></tr>
       <tr><td>상태</td><td class="mono">status</td><td>상담중 / 계약완료 / 취소 / 검수중(중고폰)</td></tr>
       <tr><td>담당자</td><td class="mono">extra</td><td>"담당: 김상담" (배정된 경우)</td></tr>
-      <tr><td>사은품</td><td class="mono">gift</td><td>"사은품 37만원" / "사은품 15만원 지급완료"</td></tr>
+      <tr><td>현금 페이백</td><td class="mono">gift</td><td>"현금 페이백 37만원" / "현금 페이백 15만원 지급완료"</td></tr>
       <tr><td>중고폰</td><td class="mono">buyback</td><td>중고폰 매입 신청일 경우 매입가+진행 단계 표시</td></tr>
     </tbody>
   </table>
@@ -466,18 +466,18 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">계약완료 시 자동 트리거되는 3가지</div>
 
   <div class="grid3" style="margin-bottom:14px">
-    <!-- 사은품 -->
+    <!-- 현금 페이백 -->
     <div style="border:2px solid var(--orange);border-radius:10px;padding:14px">
-      <div style="font-weight:900;color:var(--orange);font-size:12px;margin-bottom:8px">1. 사은품 자동 생성</div>
+      <div style="font-weight:900;color:var(--orange);font-size:12px;margin-bottom:8px">1. 현금 페이백 자동 생성</div>
       <div class="flow" style="margin:0;flex-direction:column;align-items:flex-start;gap:4px">
         <div style="font-size:10px;line-height:1.6">
-          계약완료 -> 사은품 관리(13번)에<br>
+          계약완료 -> 현금 페이백 관리(13번)에<br>
           <strong>"지급 대기"</strong> 건 자동 생성<br><br>
           <strong>앱회원:</strong> 본인인증 + 계좌 등록 완료 시 즉시 지급<br>
           <strong>비회원:</strong> "비회원 대기" 상태 -> 앱 가입 유도
         </div>
       </div>
-      <div style="margin-top:8px;font-size:10px;color:var(--orange);font-weight:700">사은품 = 전액 현금 지급</div>
+      <div style="margin-top:8px;font-size:10px;color:var(--orange);font-weight:700">현금 페이백 = 전액 현금 지급</div>
     </div>
     <!-- 포인트 -->
     <div style="border:2px solid var(--blue);border-radius:10px;padding:14px">
@@ -497,11 +497,11 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <div style="font-size:10px;line-height:1.6">
         <strong>3단계 자동 발송:</strong><br><br>
         <strong>1차:</strong> 신청 완료 즉시<br>
-        "앱 가입 + 계좌 등록 시 사은품 즉시 지급"<br><br>
+        "앱 가입 + 계좌 등록 시 현금 페이백 즉시 지급"<br><br>
         <strong>2차:</strong> 계약 완료 시<br>
-        "사은품 OO만원 준비됨 -> 앱 가입 -> PASS 인증 -> 계좌 등록 -> 즉시 입금"<br><br>
+        "현금 페이백 OO만원 준비됨 -> 앱 가입 -> PASS 인증 -> 계좌 등록 -> 즉시 입금"<br><br>
         <strong>3차:</strong> D+7 (미가입 시)<br>
-        "사은품이 아직 대기 중이에요"
+        "현금 페이백이 아직 대기 중이에요"
       </div>
     </div>
   </div>
@@ -512,7 +512,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <div class="fb" style="background:var(--green2);border:2px solid var(--green);color:var(--green);font-size:10px;font-weight:900">계약완료</div>
     <div class="fa">-></div>
     <div style="display:flex;flex-direction:column;gap:4px">
-      <div class="fb fb-api" style="font-size:9px;padding:4px 10px">사은품 "지급 대기" 자동 생성 (13번)</div>
+      <div class="fb fb-api" style="font-size:9px;padding:4px 10px">현금 페이백 "지급 대기" 자동 생성 (13번)</div>
       <div class="fb fb-user" style="font-size:9px;padding:4px 10px">포인트 자동 적립 (앱회원만, 14번)</div>
       <div class="fb fb-crm" style="font-size:9px;padding:4px 10px">비회원 알림톡 2차 발송</div>
       <div class="fb fb-admin" style="font-size:9px;padding:4px 10px">마이페이지 상태 반영</div>
@@ -543,7 +543,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
         <td>로컬 배열(localApplications)에 저장 후 정상 응답 (201).<br>조회 시도 로컬 배열 fallback.</td>
       </tr>
       <tr>
-        <td style="font-weight:700;color:var(--red)">비회원 사은품 지급</td>
+        <td style="font-weight:700;color:var(--red)">비회원 현금 페이백 지급</td>
         <td>계약완료 후 비회원이 앱 가입하지 않음</td>
         <td>"비회원 대기" 상태 유지. 알림톡 3차(D+7)까지 자동 발송.<br>이후 수동 일괄 알림톡 발송 가능.</td>
       </tr>
@@ -582,7 +582,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <tr><td class="mono">sync_direction</td><td>text</td><td>동기화 방향</td><td>어드민->CRM / CRM->어드민</td></tr>
       <tr><td class="mono">product_ticket</td><td>text</td><td>티켓번호 (FK 참조)</td><td class="mono">SK0188 / R015 / null</td></tr>
       <tr><td class="mono">product_name</td><td>text</td><td>상품명</td><td>SKT 500M+Btv이코노미+AI NUGU+WiFi6</td></tr>
-      <tr><td class="mono">gift_amount</td><td>integer</td><td>사은품 금액 (원)</td><td class="mono">430000</td></tr>
+      <tr><td class="mono">gift_amount</td><td>integer</td><td>현금 페이백 금액 (원)</td><td class="mono">430000</td></tr>
       <tr><td class="mono">form_data</td><td>jsonb</td><td>추가 데이터</td><td class="mono">{ message: "...", source: "chat_ai" }</td></tr>
       <tr><td class="mono">status</td><td>text</td><td>신청 상태</td><td>신청완료 / 상담중 / 계약완료 / 취소 / new</td></tr>
       <tr><td class="mono">created_at</td><td>timestamptz</td><td>생성일시</td><td class="mono">2026-04-06T14:23:00Z</td></tr>
@@ -629,7 +629,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
 
 <div style="text-align:center;padding:40px 0;color:var(--text3);font-size:11px">
   봉이모바일 &middot; 신청 현황 플로우 &middot; 2026-04-09<br>
-  관련: 사은품 관리(13번) / 포인트 관리(14번) / 티켓 관리(09번)
+  관련: 현금 페이백 관리(13번) / 포인트 관리(14번) / 티켓 관리(09번)
 </div>
 
 <script>

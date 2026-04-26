@@ -161,7 +161,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <div class="fa">→</div>
     <div class="fb fb-neutral" style="font-size:9px;line-height:1.4">자동완성 항목:<br>상품명/브랜드/카테고리<br>모델명/이미지/기능/스펙</div>
     <div class="fa">→</div>
-    <div class="fb fb-admin" style="font-size:9px;line-height:1.4">직접 입력 항목:<br>월요금/약정/제휴카드<br>사은품 종류/금액</div>
+    <div class="fb fb-admin" style="font-size:9px;line-height:1.4">직접 입력 항목:<br>월요금/약정/제휴카드<br>현금 페이백 종류/금액</div>
     <div class="fa">→</div>
     <div class="fb fb-db" style="font-size:10px">저장 + 티켓 발급<br>+ 상품 페이지 생성</div>
   </div>
@@ -184,8 +184,8 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
         <span class="badge b-orange">월요금</span> <span class="badge b-orange">약정기간</span><br>
         <span class="badge b-orange">제휴카드 (카드사/전월실적)</span><br>
         <span class="badge b-orange">카드 후 월요금</span><br>
-        <span class="badge b-orange">사은품 종류 (현금/반값할인)</span><br>
-        <span class="badge b-orange">사은품 금액 (현금 시)</span><br>
+        <span class="badge b-orange">현금 페이백 종류 (현금/반값할인)</span><br>
+        <span class="badge b-orange">현금 페이백 금액 (현금 시)</span><br>
         <span class="badge b-orange">AI 채팅 노출 ON/OFF</span>
       </div>
     </div>
@@ -244,7 +244,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <div class="fb fb-crm" style="font-size:9px;padding:4px 8px">CRM 상담사 화면</div>
       <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">티켓관리 (09번) 렌탈 탭</div>
       <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">신청현황 (10번)</div>
-      <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">사은품관리 (13번)</div>
+      <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">현금 페이백관리 (13번)</div>
       <div class="fb fb-user" style="font-size:9px;padding:4px 8px">마이페이지 신청이력</div>
       <div class="fb fb-admin" style="font-size:9px;padding:4px 8px">회원관리 (02번) 신청 건수</div>
     </div>
@@ -329,9 +329,9 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
           </div>
         </div>
       </div>
-      <!-- 사은품 -->
+      <!-- 현금 페이백 -->
       <div style="display:flex;justify-content:space-between;padding:6px 10px;background:#2d1f0f;border:1px solid #6b4c1e;border-radius:8px;font-size:13px;color:#fbbf24;margin-bottom:6px">
-        <span>🎁 사은품</span>
+        <span>🎁 현금 페이백</span>
         <span style="font-weight:600">반값할인</span>
       </div>
       <!-- 카드할인 -->
@@ -344,7 +344,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <!-- 고객만족도 -->
       <div style="display:inline-flex;align-items:center;padding:4px 10px;background:#2d1f0f;border:1px solid #6b4c1e;border-radius:8px;font-size:12px;color:#fbbf24;font-weight:600;margin-bottom:6px">★ 4.8 고객만족도</div>
       <!-- CTA 멘트 -->
-      <div style="padding:6px 10px;background:#0f2d1a;border:1px solid #1e6b3a;border-radius:8px;font-size:12px;color:#4ade80;font-weight:600;text-align:center;margin-bottom:6px">🎁 사은품 반값할인 지급</div>
+      <div style="padding:6px 10px;background:#0f2d1a;border:1px solid #1e6b3a;border-radius:8px;font-size:12px;color:#4ade80;font-weight:600;text-align:center;margin-bottom:6px">🎁 현금 페이백 반값할인 지급</div>
       <!-- 버튼 3개 -->
       <div style="display:flex;gap:8px;margin-top:4px">
         <div style="flex:1;padding:7px 0;border-radius:8px;background:#4ade80;color:#000;font-size:13px;font-weight:600;text-align:center">렌탈 상담</div>
@@ -361,7 +361,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
           <tr><td>브랜드</td><td>bongi_rental_products.brand</td></tr>
           <tr><td>상품명</td><td>bongi_rental_products.product_name</td></tr>
           <tr><td>월 렌탈료</td><td>bongi_rental_products.monthly_fee</td></tr>
-          <tr><td>🎁 사은품</td><td>benefit_amount + promotion</td></tr>
+          <tr><td>🎁 현금 페이백</td><td>benefit_amount + promotion</td></tr>
           <tr><td>💳 카드할인</td><td>card_name + card_spend + card_fee</td></tr>
           <tr><td>상세보기 (토글)</td><td>모델번호, 기본기능, 상품URL</td></tr>
           <tr><td>★ 고객만족도</td><td>bongi_reviews 기반 평점</td></tr>
@@ -372,7 +372,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
         · 다크 테마 (#1e1e1e 배경)<br>
         · 좌측 90×90 썸네일 + 우측 텍스트 레이아웃<br>
         · 월 렌탈료 초록색(#4ade80)<br>
-        · 사은품 금색(#fbbf24) / 카드할인 파란색(#60a5fa)<br>
+        · 현금 페이백 금색(#fbbf24) / 카드할인 파란색(#60a5fa)<br>
         · "상세보기 ▼" 토글로 모델번호/기능/링크 펼침<br>
         · 버튼 3개: "렌탈 상담" + "상세보기" + "다른상품"<br>
         · "렌탈 상담" → ConsultSheet → RentalApplySheet 오픈<br>
@@ -393,7 +393,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
         <div style="font-size:14px;font-weight:700;color:var(--navy);margin-top:4px">아이콘3 냉온정 정수기</div>
         <div style="font-size:12px;color:var(--text2);margin-top:2px">코웨이</div>
         <div style="font-size:13px;color:var(--navy);font-weight:600;margin-top:4px">월 14,450원</div>
-        <div style="font-size:13px;color:var(--orange);margin-top:4px">🎁 사은품 반값할인</div>
+        <div style="font-size:13px;color:var(--orange);margin-top:4px">🎁 현금 페이백 반값할인</div>
         <div style="font-size:12px;color:var(--green);margin-top:2px">💳 카드할인 KB카드 40만↑ → 월 0원</div>
       </div>
       <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:14px;text-align:center">어떤 방식으로 진행하시겠어요?</div>
@@ -426,7 +426,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <div style="background:#f8f9fc;border:1px solid #e8e8e8;border-radius:10px;padding:12px;margin-bottom:16px;text-align:left">
         <div style="font-size:12px;color:#999;margin-bottom:2px">선택 상품</div>
         <div style="font-size:14px;font-weight:600;color:var(--navy)">아이콘3 냉온정 정수기</div>
-        <div style="font-size:12px;color:var(--green);margin-top:2px">🎁 사은품 반값할인</div>
+        <div style="font-size:12px;color:var(--green);margin-top:2px">🎁 현금 페이백 반값할인</div>
       </div>
       <!-- 전화 버튼 -->
       <div style="background:var(--green);color:#fff;text-align:center;border-radius:12px;padding:14px;font-size:16px;font-weight:700;margin-bottom:8px">📞 전화 상담하기</div>
@@ -470,7 +470,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <div style="background:#262626;border-radius:8px;padding:10px;font-size:12px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #333"><span style="color:#999">상품</span><span style="color:#d1d5db">아이콘3 냉온정 정수기</span></div>
         <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #333"><span style="color:#999">브랜드</span><span style="color:#d1d5db">코웨이</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:#999">사은품</span><span style="color:#fbbf24">반값할인</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:#999">현금 페이백</span><span style="color:#fbbf24">반값할인</span></div>
       </div>
       <div style="font-size:11px;color:#60a5fa">📞 전문 상담사가 확인 후 연락드릴게요</div>
     </div>
@@ -518,7 +518,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <div class="fb fb-admin" style="font-size:10px">어드민 동기화</div>
   </div>
 
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:16px 0 6px">상태 전이 + 사은품</div>
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:16px 0 6px">상태 전이 + 현금 페이백</div>
   <div class="flow">
     <div class="fb" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue)">신청완료</div>
     <div class="fa">→</div>
@@ -530,10 +530,10 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <div class="fa">→</div>
     <div class="fb" style="background:var(--green2);border:2px solid var(--green);color:var(--green)"><strong>설치완료</strong></div>
     <div class="fa">→</div>
-    <div class="fb fb-neutral" style="font-size:9px;line-height:1.4">사은품 조건 체크<br>앱회원+PASS+계좌</div>
+    <div class="fb fb-neutral" style="font-size:9px;line-height:1.4">현금 페이백 조건 체크<br>앱회원+PASS+계좌</div>
   </div>
 
-  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">렌탈 사은품 종류</div>
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">렌탈 현금 페이백 종류</div>
   <div class="grid2">
     <div class="card-mock" style="border:2px solid var(--orange)">
       <div style="font-weight:900;color:var(--orange);font-size:11px;margin-bottom:4px">현금 지급</div>
@@ -546,7 +546,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       (3,5년: 6개월 / 6,7년: 12개월)
     </div>
   </div>
-  <div class="note"><strong>사은품 상세 관리</strong> (지급 조건/상태/알림톡 등)는 → 사은품관리 플로우 별도 파일에서 다룸</div>
+  <div class="note"><strong>현금 페이백 상세 관리</strong> (지급 조건/상태/알림톡 등)는 → 현금 페이백관리 플로우 별도 파일에서 다룸</div>
 
   <div style="font-size:11px;font-weight:700;color:var(--navy);margin:12px 0 6px">회원관리 연동</div>
   <table>
@@ -625,7 +625,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <tr><td><strong>상품 단종</strong></td><td>비활성 처리 → 티켓(R00X) 자동 비활성. 삭제 불가.</td></tr>
       <tr><td><strong>월요금 변경</strong></td><td>어드민에서 수정. 기존 계약은 계약 시점 요금 유지.</td></tr>
       <tr><td><strong>제휴카드 변경</strong></td><td>카드사/실적/할인액 수정. 티켓 영향 없음.</td></tr>
-      <tr><td><strong>사은품 종류 변경</strong></td><td>현금→반값 or 반값→현금 변경 가능. 신규 신청부터 적용.</td></tr>
+      <tr><td><strong>현금 페이백 종류 변경</strong></td><td>현금→반값 or 반값→현금 변경 가능. 신규 신청부터 적용.</td></tr>
       <tr><td><strong>이미지 깨짐</strong></td><td>Supabase Storage에 복사되어 있어 렌트리 URL 변경 시에도 안 깨짐.</td></tr>
     </tbody>
   </table>

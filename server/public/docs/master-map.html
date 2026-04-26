@@ -146,7 +146,7 @@ a:hover { text-decoration:underline; }
       <span class="duration-btn" data-card="05" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
     </div>
     <div class="doc-title">티켓 관리</div>
-    <div class="doc-desc">인터넷 1,002개 + 렌탈 51개 = 1,053개 · 조합 자동 생성 · 연쇄 비활성</div>
+    <div class="doc-desc">인터넷 105개 + 렌탈 51개 = 156개 · 조합 자동 생성 · 셋톱·WiFi 모델 별도</div>
   </a>
   <a class="doc-card" href="flow-applications.html" style="border-color:#fef3c7">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
@@ -263,7 +263,7 @@ a:hover { text-decoration:underline; }
 
   <!-- 후속 처리 -->
   <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
-    <a href="flow-gifts.html" class="flow-node" style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);font-size:10px">사은품<br>자동 생성</a>
+    <a href="flow-gifts.html" class="flow-node" style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);font-size:10px">현금 페이백<br>자동 생성</a>
     <a href="flow-points-referral-guard.html" class="flow-node" style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);font-size:10px">포인트<br>자동 적립</a>
     <a href="flow-reviews.html" class="flow-node" style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);font-size:10px">후기 작성<br>15,000P</a>
     <a href="flow-points-referral-guard.html" class="flow-node" style="background:var(--purple2);border:1.5px solid var(--purple);color:var(--purple);font-size:10px">친구초대<br>보상</a>
@@ -273,7 +273,7 @@ a:hover { text-decoration:underline; }
 
   <!-- 마이페이지 -->
   <div style="text-align:center">
-    <a href="service-flow-v2.html" class="flow-node" style="background:var(--navy);color:#fff;display:inline-block;min-width:200px">마이페이지<br><span style="font-size:9px;opacity:0.7">신청이력 · 사은품 · 포인트 · 돈지키미</span></a>
+    <a href="service-flow-v2.html" class="flow-node" style="background:var(--navy);color:#fff;display:inline-block;min-width:200px">마이페이지<br><span style="font-size:9px;opacity:0.7">신청이력 · 현금 페이백 · 포인트 · 돈지키미</span></a>
   </div>
 </div>
 
@@ -286,7 +286,7 @@ a:hover { text-decoration:underline; }
       <tr>
         <td><strong>인터넷+TV 상품</strong><br><span style="font-size:9px;color:var(--text3)">03~05번</span></td>
         <td class="mono">speeds / tv / settop / wifi</td>
-        <td>InternetSelectCard(바텀시트) · 고객 상품 카드 · AI 채팅 · 티켓 자동 생성 · 사은품 금액 · CRM</td>
+        <td>InternetSelectCard(바텀시트) · 고객 상품 카드 · AI 채팅 · 티켓 자동 생성 · 현금 페이백 금액 · CRM</td>
         <td><a href="flow-internet-tv.html">인터넷+TV</a> · <a href="flow-ticket.html">티켓</a></td>
       </tr>
       <tr>
@@ -314,10 +314,10 @@ a:hover { text-decoration:underline; }
         <td><a href="flow-store-price.html">매장·시세</a></td>
       </tr>
       <tr>
-        <td><strong>사은품 금액</strong><br><span style="font-size:9px;color:var(--text3)">상품관리 하단</span></td>
+        <td><strong>현금 페이백 금액</strong><br><span style="font-size:9px;color:var(--text3)">상품관리 하단</span></td>
         <td class="mono">어드민 수기 입력</td>
-        <td>고객 카드 · AI 채팅 · 신청서 · 사은품관리 · CRM · 마이페이지</td>
-        <td><a href="flow-internet-tv.html">인터넷+TV</a> · <a href="flow-gifts.html">사은품</a></td>
+        <td>고객 카드 · AI 채팅 · 신청서 · 현금 페이백관리 · CRM · 마이페이지</td>
+        <td><a href="flow-internet-tv.html">인터넷+TV</a> · <a href="flow-gifts.html">현금 페이백</a></td>
       </tr>
       <tr>
         <td><strong>공시지원금</strong><br><span style="font-size:9px;color:var(--text3)">20번</span></td>
@@ -336,10 +336,10 @@ a:hover { text-decoration:underline; }
   <table>
     <thead><tr><th>#</th><th>트리거</th><th>대상</th><th>조건</th><th>관련 문서</th></tr></thead>
     <tbody>
-      <tr><td>1</td><td><strong>사은품 지급대기 자동 생성</strong></td><td>bongi_gifts (지급대기)</td><td>계약완료 확인 (CRM)</td><td><a href="flow-gifts.html">사은품</a></td></tr>
+      <tr><td>1</td><td><strong>현금 페이백 지급대기 자동 생성</strong></td><td>bongi_gifts (지급대기)</td><td>계약완료 확인 (CRM)</td><td><a href="flow-gifts.html">현금 페이백</a></td></tr>
       <tr><td>2</td><td><strong>포인트 자동 적립</strong> (본인 계약)</td><td>bongi_cash_balance</td><td>앱회원 + PASS 인증</td><td><a href="flow-points-referral-guard.html">포인트</a></td></tr>
       <tr><td>3</td><td><strong>친구초대 보상</strong> (추천인+친구)</td><td>bongi_rewards</td><td>양쪽 PASS 인증 완료</td><td><a href="flow-points-referral-guard.html">친구초대</a></td></tr>
-      <tr><td>4</td><td><strong>비회원 → 앱 가입 유도 알림톡</strong></td><td>카카오 알림톡</td><td>비회원인 경우</td><td><a href="flow-gifts.html">사은품</a></td></tr>
+      <tr><td>4</td><td><strong>비회원 → 앱 가입 유도 알림톡</strong></td><td>카카오 알림톡</td><td>비회원인 경우</td><td><a href="flow-gifts.html">현금 페이백</a></td></tr>
       <tr><td>5</td><td><strong>회원관리 신청 건수 +1</strong></td><td>bongi_user_profiles</td><td>전화번호 매칭</td><td><a href="service-flow-v2.html">서비스 플로우</a></td></tr>
       <tr><td>6</td><td><strong>마이페이지 신청이력 반영</strong></td><td>bongi_applications</td><td>앱회원만</td><td><a href="flow-applications.html">신청현황</a></td></tr>
       <tr><td>7</td><td><strong>후기 작성 유도 앱 푸시</strong></td><td>앱 푸시</td><td>설치완료 후</td><td><a href="flow-reviews.html">후기</a></td></tr>
@@ -386,7 +386,7 @@ a:hover { text-decoration:underline; }
   <table>
     <thead><tr><th>기능</th><th>PASS 필수</th><th>이유</th><th>관련 문서</th></tr></thead>
     <tbody>
-      <tr><td><strong>사은품 지급</strong></td><td><span class="badge b-red">필수</span></td><td>현금 지급 → 본인 확인</td><td><a href="flow-gifts.html">사은품</a></td></tr>
+      <tr><td><strong>현금 페이백 지급</strong></td><td><span class="badge b-red">필수</span></td><td>현금 지급 → 본인 확인</td><td><a href="flow-gifts.html">현금 페이백</a></td></tr>
       <tr><td><strong>포인트 출금</strong></td><td><span class="badge b-red">필수</span></td><td>현금 출금 → 본인 확인</td><td><a href="flow-points-referral-guard.html">포인트</a></td></tr>
       <tr><td><strong>포인트 적립 (전체)</strong></td><td><span class="badge b-red">필수</span></td><td>어뷰징 방지 (CI 중복 체크)</td><td><a href="flow-points-referral-guard.html">포인트</a></td></tr>
       <tr><td><strong>친구초대 보상</strong></td><td><span class="badge b-red">양쪽 필수</span></td><td>허위가입 방지</td><td><a href="flow-points-referral-guard.html">친구초대</a></td></tr>
@@ -413,10 +413,10 @@ a:hover { text-decoration:underline; }
       <tr><td>07</td><td>중고폰 매입 시세</td><td><a href="flow-used-phone.html">중고폰</a></td><td class="mono">used_phone_prices</td></tr>
       <tr><td>08</td><td>휴대폰 시세</td><td><a href="flow-store-price.html">매장·시세</a></td><td class="mono">phone_prices</td></tr>
       <tr><td>09</td><td>매장 관리</td><td><a href="flow-store-price.html">매장·시세</a></td><td class="mono">stores</td></tr>
-      <tr><td>10</td><td>티켓 관리</td><td><a href="flow-ticket.html">티켓</a></td><td class="mono">tickets (1,053)</td></tr>
+      <tr><td>10</td><td>티켓 관리</td><td><a href="flow-ticket.html">티켓</a></td><td class="mono">tickets (156)</td></tr>
       <tr><td>11</td><td>신청 현황</td><td><a href="flow-applications.html">신청현황</a></td><td class="mono">applications</td></tr>
       <tr><td>12</td><td>중고폰 매입 현황</td><td><a href="flow-used-phone.html">중고폰</a></td><td class="mono">used_phone_buyback</td></tr>
-      <tr><td>13</td><td>사은품 관리</td><td><a href="flow-gifts.html">사은품</a></td><td class="mono">gifts</td></tr>
+      <tr><td>13</td><td>현금 페이백 관리</td><td><a href="flow-gifts.html">현금 페이백</a></td><td class="mono">gifts</td></tr>
       <tr><td>14</td><td>포인트 관리</td><td><a href="flow-points-referral-guard.html">포인트</a></td><td class="mono">cash_balance / withdrawals</td></tr>
       <tr><td>15</td><td>후기 관리</td><td><a href="flow-reviews.html">후기</a></td><td class="mono">reviews (99)</td></tr>
       <tr><td>16</td><td>돈지키미</td><td><a href="flow-points-referral-guard.html">돈지키미</a></td><td class="mono">user_alarms</td></tr>
@@ -488,7 +488,7 @@ a:hover { text-decoration:underline; }
         <tbody>
           <tr><td class="mono">/api/admin/platform/members</td><td>회원 목록/상세(8탭)/동기화</td></tr>
           <tr><td class="mono">/api/admin/platform/applications</td><td>신청 목록/상태·상품 변경</td></tr>
-          <tr><td class="mono">/api/admin/platform/gifts</td><td>사은품 목록(회원 매칭)/상태 변경</td></tr>
+          <tr><td class="mono">/api/admin/platform/gifts</td><td>현금 페이백 목록(회원 매칭)/상태 변경</td></tr>
           <tr><td class="mono">/api/admin/platform/cash/*</td><td>출금 목록(회원 매칭)/승인(조건검증)/적립내역/수동적립</td></tr>
           <tr><td class="mono">/api/admin/platform/don-jikimi</td><td>돈지키미 목록(회원 매칭)/상태 변경</td></tr>
           <tr><td class="mono">/api/admin/platform/notifications</td><td>알림 목록(회원 매칭)/수동발송/재발송</td></tr>
@@ -695,7 +695,7 @@ a:hover { text-decoration:underline; }
       <tr><td><strong>상품 조회</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/products</td><td>전체 상품</td></tr>
       <tr><td><strong>신청 접수</strong></td><td><span class="badge b-blue">POST</span></td><td class="mono">/api/applications</td><td>신청서 제출</td></tr>
       <tr><td><strong>채팅 AI</strong></td><td><span class="badge b-blue">POST</span></td><td class="mono">/api/ai/chat</td><td>Claude AI 채팅</td></tr>
-      <tr><td><strong>사은품</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/admin/platform/gifts</td><td>사은품 관리</td></tr>
+      <tr><td><strong>현금 페이백</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/admin/platform/gifts</td><td>현금 페이백 관리</td></tr>
       <tr><td><strong>출금 요청</strong></td><td><span class="badge b-blue">POST</span></td><td class="mono">/api/cash/withdraw</td><td>캐시 출금</td></tr>
       <tr><td><strong>친구초대</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/referrals/my-code</td><td>추천코드 조회</td></tr>
       <tr><td><strong>돈지키미</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/alarms</td><td>알람 목록</td></tr>
