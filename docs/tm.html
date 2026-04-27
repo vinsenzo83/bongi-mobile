@@ -414,6 +414,18 @@ var D = {
           '500M': { 1: 3500, 2: 3500, 3: 6000, 4: 6000, 5: 4800 },
           '1G':   { 1: 3500, 2: 3500, 3: 6000, 4: 6000, 5: 4800 }
         }
+      },
+      // 온가족할인 — 가입년수 기반 % 할인
+      onfamily: {
+        netYrLabels:  ['인터넷 1년 미만', '인터넷 1년 이상', '인터넷 2년 이상', '인터넷 3년 이상'],
+        famYrLabels:  ['가족 10년 미만', '가족 10년 이상', '가족 20년 이상', '가족 30년 이상'],
+        // matrix[netYrIdx][famYrIdx] = 할인율(%)
+        matrix: [
+          [0,  0,  5,  10],
+          [0,  5,  10, 20],
+          [5,  10, 20, 30],
+          [10, 20, 30, 50]
+        ]
       }
     }
   },
@@ -673,7 +685,7 @@ function updateBundleUI() {
   var rangeSel = document.getElementById('c-range');
   var opts = '';
   if (c === 'skt') {
-    opts = '<option value="family">휴대폰 결합 (요즘가족결합) ⭐</option><option value="home">TV만 결합 (휴대폰 없을 때)</option>';
+    opts = '<option value="family">휴대폰 결합 (요즘가족결합) ⭐</option><option value="sk-onfamily">온가족할인 (가입년수 기반)</option><option value="home">TV만 결합 (휴대폰 없을 때)</option>';
     rangeSel.innerHTML = '';
   } else if (c === 'kt') {
     opts = '<option value="kt-total">휴대폰 결합 (총액) ⭐</option><option value="kt-fixed">휴대폰 결합 (정액)</option><option value="kt-premium">💎 프리미엄 가족결합 (77,000원↑ 2회선+)</option><option value="home">TV만 결합 (휴대폰 없을 때)</option>';
@@ -704,6 +716,13 @@ function updateRangeUI() {
   if (c === 'skt' && bundle === 'family') {
     resetLines('<option value="1">1명 결합</option><option value="2">2명 결합</option><option value="3">3명 결합</option><option value="4">4명 결합</option><option value="5">5명 결합</option>');
     linesGroup.style.display = '';
+  } else if (c === 'skt' && bundle === 'sk-onfamily') {
+    var netLabels = D.skt.bundle.onfamily.netYrLabels;
+    var famLabels = D.skt.bundle.onfamily.famYrLabels;
+    resetLines(netLabels.map(function(l, i){ return '<option value="' + i + '">' + l + '</option>'; }).join(''));
+    rangeSel.innerHTML = famLabels.map(function(l, i){ return '<option value="' + i + '">' + l + '</option>'; }).join('');
+    linesGroup.style.display = '';
+    rangeGroup.style.display = '';
   } else if (c === 'kt' && (bundle === 'kt-total' || bundle === 'kt-fixed')) {
     var ranges = (bundle === 'kt-total') ? D.kt.bundle.ranges_total : D.kt.bundle.ranges_fixed;
     rangeSel.innerHTML = ranges.map(function(r, i) { return '<option value="' + i + '">' + r + '</option>'; }).join('');
@@ -1008,6 +1027,42 @@ function calc() {
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#86efac;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines2 + '명 결합 · ' + sp + ')</span><span class="v">-' + fmt(mobDc2) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">· 인당 ' + fmt(perPerson) + '원 × ' + lines2 + '명 = 휴대폰 고지서 매월 -' + fmt(mobDc2) + '</span><span class="v"></span></div>' +
+      '</div>';
+  }
+
+  // SKT 온가족할인 — 인터넷가입년수 × 가족 합산 가입년수 매트릭스 기반 % 할인
+  if (c === 'skt' && bundleType === 'sk-onfamily' && d.bundle && d.bundle.onfamily) {
+    var ofData = d.bundle.onfamily;
+    var netYrIdx = parseInt(document.getElementById('c-lines').value) || 0;
+    var famYrIdx = parseInt(document.getElementById('c-range').value) || 0;
+    var pct = (ofData.matrix[netYrIdx] && ofData.matrix[netYrIdx][famYrIdx]) || 0;
+
+    // 인터넷 베이스: TV 결합 시 결합가, 단독 시 단독가+WiFi
+    var netSingleWithWifi5 = netBase + (wf ? wifiForSp : 0);
+    var inetBase = hasTv ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]) : netSingleWithWifi5;
+    var onfamilyDc = Math.round(inetBase * pct / 100);
+    var inetAfterOf = inetBase - onfamilyDc;
+    var tvBaseValO = hasTv ? d.tv[ti].p : 0;
+    var tvBaseDcO = hasTv ? (d.tv[ti].dc || 0) : 0;
+    var tvAfterO = tvBaseValO - tvBaseDcO;
+    var setTopFeeO = hasTv ? (d.setTop || 0) : 0;
+    var finalInetO = inetAfterOf + tvAfterO + setTopFeeO;
+
+    html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(168,85,247,0.12);border:1.5px solid #a855f7;border-radius:8px">' +
+      '<div style="font-size:12px;color:#d8b4fe;font-weight:800;margin-bottom:8px">👨‍👩‍👧‍👦 섹터 2 — SKT 온가족할인 (' + ofData.netYrLabels[netYrIdx] + ' × ' + ofData.famYrLabels[famYrIdx] + ' → <b>' + pct + '%</b> 할인)</div>';
+    if (pct === 0) {
+      html += '<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:#fca5a5">⚠️ 이 조건은 온가족할인 적용 불가</div>';
+    }
+    html += '<div class="calc-line"><span class="l">인터넷 ' + (hasTv ? '결합가' : '단독가') + ' (' + sp + (wf ? ' + WiFi' : '') + ')</span><span class="v">' + fmt(inetBase) + '</span></div>' +
+      '<div class="calc-line discount"><span class="l">온가족할인 ' + pct + '% (인터넷에 적용)</span><span class="v">-' + fmt(onfamilyDc) + '</span></div>' +
+      '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfterOf) + '</span></div>';
+    if (hasTv) {
+      html += '<div class="calc-line" style="margin-top:6px"><span class="l">' + d.tv[ti].n.split('(')[0].trim() + '</span><span class="v">' + fmt(tvBaseValO) + '</span></div>' +
+        '<div class="calc-line discount"><span class="l">TV 결합 할인</span><span class="v">-' + fmt(tvBaseDcO) + '</span></div>' +
+        '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfterO) + '</span></div>' +
+        '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFeeO) + '</span></div>';
+    }
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#d8b4fe">✨ ' + (hasTv ? '인터넷+TV ' : '인터넷 ') + '월 실질요금</span><span class="v" style="color:#a855f7;font-size:20px">' + fmt(finalInetO) + '</span></div>' +
       '</div>';
   }
 
