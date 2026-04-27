@@ -100,6 +100,52 @@ html, body { overflow:hidden; }
   border-color:#3b82f6; color:#1d4ed8; background:#eff6ff;
 }
 
+/* ===== 메모 저장 / 목록 ===== */
+.tm-memo-actions { display:flex; gap:6px; margin-top:6px; }
+.tm-memo-btn {
+  flex:1; padding:7px; border:1.5px solid #e2e8f0; border-radius:7px;
+  background:#fff; color:#475569; font-size:12px; font-weight:700;
+  cursor:pointer; font-family:inherit; transition:all 0.15s;
+}
+.tm-memo-btn:hover { border-color:#3b82f6; color:#1d4ed8; background:#eff6ff; }
+.tm-memo-btn.primary {
+  background:linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  border-color:#3b82f6; color:#fff;
+  box-shadow:0 1px 3px rgba(59,130,246,0.3);
+}
+.tm-memo-btn.primary:hover { color:#fff; transform:translateY(-1px); box-shadow:0 2px 6px rgba(59,130,246,0.4); }
+.tm-memo-list { margin-top:8px; display:flex; flex-direction:column; gap:5px; }
+.tm-memo-item {
+  position:relative;
+  background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px;
+  padding:7px 9px; transition:all 0.15s;
+}
+.tm-memo-item:hover { border-color:#cbd5e1; background:#f1f5f9; }
+.tm-memo-item.active { border-color:#3b82f6; background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
+.tm-memo-item-time {
+  font-size:9.5px; color:#94a3b8; font-weight:700; margin-bottom:3px;
+  letter-spacing:0.04em;
+}
+.tm-memo-item-preview {
+  font-size:11px; color:#334155; line-height:1.4;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden; text-overflow:ellipsis; word-break:break-all;
+}
+.tm-memo-item-actions {
+  position:absolute; top:5px; right:5px; display:flex; gap:3px;
+  opacity:0; transition:opacity 0.15s;
+}
+.tm-memo-item:hover .tm-memo-item-actions { opacity:1; }
+.tm-memo-item-act {
+  width:22px; height:22px; line-height:1; padding:0; border-radius:5px;
+  border:1px solid transparent; background:#fff; color:#64748b;
+  font-size:11px; font-weight:700; cursor:pointer; font-family:inherit;
+  transition:all 0.12s;
+}
+.tm-memo-item-act:hover { border-color:#cbd5e1; }
+.tm-memo-item-act.del:hover { background:#fee2e2; border-color:#fca5a5; color:#dc2626; }
+.tm-memo-empty { font-size:11px; color:#94a3b8; text-align:center; padding:10px 0; }
+
 /* ===== 중앙: 카드 UI ===== */
 .tm-cards { display:grid; gap:10px; }
 .tm-card {
@@ -152,28 +198,28 @@ html, body { overflow:hidden; }
   background:#fff; color:#0f172a; font-size:12px; font-family:inherit;
 }
 
-/* ===== 우측: 결과 패널 ===== */
+/* ===== 우측: 결과 패널 (컴팩트) ===== */
 .tm-result-panel {
   background:linear-gradient(160deg, #1e293b 0%, #0f172a 60%, #020617 100%);
-  color:#fff;
+  color:#fff; padding:12px 14px;
   box-shadow:0 4px 20px rgba(15,23,42,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
   border:none;
 }
 .tm-result-panel h2 {
   color:#e2e8f0; border-bottom-color:rgba(255,255,255,0.1);
-  font-size:14px;
+  font-size:12px; margin-bottom:8px; padding-bottom:5px;
 }
-.tm-result { padding-top:6px; }
-.tm-result .calc-line { display:flex; justify-content:space-between; padding:5px 0; font-size:13px; }
+.tm-result { padding-top:0; }
+.tm-result .calc-line { display:flex; justify-content:space-between; padding:2px 0; font-size:11.5px; line-height:1.4; }
 .tm-result .calc-line .l { color:rgba(226,232,240,0.55); }
 .tm-result .calc-line .v { font-weight:700; color:#f8fafc; }
 .tm-result .calc-line.discount .v { color:#4ade80; }
 .tm-result .calc-line.total {
-  border-top:2px solid rgba(255,255,255,0.15); margin-top:8px; padding-top:10px;
-  font-size:16px; font-weight:900;
+  border-top:1.5px solid rgba(255,255,255,0.15); margin-top:5px; padding-top:6px;
+  font-size:13.5px; font-weight:900;
 }
 .tm-result .calc-line.total .v { color:#60a5fa; }
-.tm-result .calc-line.sub { font-size:11px; padding:2px 0 2px 12px; }
+.tm-result .calc-line.sub { font-size:10px; padding:1px 0 1px 10px; }
 .tm-result .calc-line.sub .l { color:rgba(226,232,240,0.32); }
 .tm-result .calc-line.sub .v { color:rgba(226,232,240,0.4); font-weight:400; }
 
@@ -201,39 +247,41 @@ html, body { overflow:hidden; }
   .tm-info-row { grid-template-columns: 1fr; gap:4px; }
 }
 
-/* 티켓번호 조회 */
+/* 티켓번호 조회 (컴팩트) */
 .tm-ticket-lookup {
-  background:rgba(99,102,241,0.15);
-  border:1.5px solid #818cf8;
-  border-radius:10px; padding:11px 13px; margin-bottom:14px;
+  background:rgba(99,102,241,0.13);
+  border:1px solid rgba(129,140,248,0.6);
+  border-radius:7px; padding:7px 9px; margin-bottom:10px;
 }
 .tm-ticket-lookup-label {
-  font-size:10.5px; color:#a5b4fc; font-weight:700;
-  margin-bottom:7px; letter-spacing:0.06em;
+  font-size:9.5px; color:#a5b4fc; font-weight:700;
+  margin-bottom:4px; letter-spacing:0.04em;
 }
-.tm-ticket-lookup-row { display:flex; gap:7px; }
+.tm-ticket-lookup-row { display:flex; gap:5px; }
 .tm-ticket-lookup-row input {
-  flex:1; padding:9px 11px; border-radius:7px;
-  border:1.5px solid rgba(255,255,255,0.18);
-  background:rgba(255,255,255,0.08); color:#fff;
-  font-size:13px; font-family:'SF Mono', Monaco, monospace;
-  text-transform:uppercase; letter-spacing:1px; outline:none;
+  flex:1; padding:5px 8px; border-radius:5px;
+  border:1px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.07); color:#fff;
+  font-size:11.5px; font-family:'SF Mono', Monaco, monospace;
+  text-transform:uppercase; letter-spacing:0.8px; outline:none;
   transition:all 0.15s;
 }
 .tm-ticket-lookup-row input:focus {
-  background:rgba(255,255,255,0.14); border-color:#a5b4fc;
+  background:rgba(255,255,255,0.12); border-color:#a5b4fc;
 }
-.tm-ticket-lookup-row input::placeholder { color:rgba(255,255,255,0.35); letter-spacing:0; text-transform:none; }
+.tm-ticket-lookup-row input::placeholder {
+  color:rgba(255,255,255,0.32); letter-spacing:0; text-transform:none; font-size:10.5px;
+}
 .tm-ticket-lookup-row button {
-  padding:9px 14px; border:none; border-radius:7px;
+  padding:5px 11px; border:none; border-radius:5px;
   background:linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color:#fff; font-size:12.5px; font-weight:700; cursor:pointer;
+  color:#fff; font-size:11px; font-weight:700; cursor:pointer;
   font-family:inherit; transition:all 0.15s;
-  box-shadow:0 2px 6px rgba(99,102,241,0.35);
+  box-shadow:0 1px 3px rgba(99,102,241,0.3);
 }
-.tm-ticket-lookup-row button:hover { transform:translateY(-1px); box-shadow:0 3px 10px rgba(99,102,241,0.5); }
+.tm-ticket-lookup-row button:hover { transform:translateY(-1px); box-shadow:0 2px 6px rgba(99,102,241,0.45); }
 .tm-ticket-lookup-msg {
-  font-size:11px; color:#fca5a5; margin-top:7px; display:none;
+  font-size:10px; color:#fca5a5; margin-top:5px; display:none; line-height:1.4;
 }
 .tm-ticket-lookup-msg.show { display:block; }
 .tm-ticket-lookup-msg.success { color:#86efac; }
@@ -299,7 +347,12 @@ html, body { overflow:hidden; }
     <button type="button" class="tm-script-add-btn" id="tm-script-add">+ 단계 추가</button>
 
     <h2>📝 메모</h2>
-    <div class="tm-field"><textarea id="cust-memo" placeholder="상담 메모..."></textarea></div>
+    <div class="tm-field"><textarea id="cust-memo" placeholder="상담 메모를 입력하고 [저장]을 누르세요..."></textarea></div>
+    <div class="tm-memo-actions">
+      <button type="button" id="tm-memo-save" class="tm-memo-btn primary">💾 저장</button>
+      <button type="button" id="tm-memo-new" class="tm-memo-btn">+ 새 메모</button>
+    </div>
+    <div id="tm-memo-list" class="tm-memo-list"></div>
   </aside>
 
   <!-- ═══ 중앙: 카드 UI ═══ -->
@@ -845,9 +898,9 @@ function calc() {
 
   var ticket = findTicket(c, sp, ti, wf);
   if (ticket) {
-    html += '<div style="background:rgba(99,102,241,0.15);border:1.5px solid #818cf8;border-radius:8px;padding:8px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">' +
-            '<span style="font-size:11px;color:rgba(255,255,255,0.6)">🎫 티켓번호</span>' +
-            '<span style="font-size:16px;font-weight:900;color:#a5b4fc;font-family:\'SF Mono\',Monaco,monospace;letter-spacing:1px">' + ticket.number + '</span>' +
+    html += '<div style="background:rgba(99,102,241,0.15);border:1px solid #818cf8;border-radius:6px;padding:4px 9px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-size:9.5px;color:rgba(255,255,255,0.6);letter-spacing:0.04em">🎫 티켓번호</span>' +
+            '<span style="font-size:12.5px;font-weight:900;color:#a5b4fc;font-family:\'SF Mono\',Monaco,monospace;letter-spacing:0.8px">' + ticket.number + '</span>' +
             '</div>';
   }
 
@@ -863,8 +916,8 @@ function calc() {
     var netDiscount = netBase + (wf ? wifiForSp : 0) - netCombo;
 
     var sec1Name = (c === 'skt') ? '요즘우리집결합 (TV만)' : (c === 'kt') ? 'KT TV 결합 기본' : 'TV 결합 기본';
-    html += '<div style="padding:12px 14px;background:rgba(59,130,246,0.12);border:1.5px solid #60a5fa;border-radius:8px;margin-bottom:10px">';
-    html += '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:8px">🏠 섹터 1 — ' + sec1Name + '</div>';
+    html += '<div style="padding:7px 9px;background:rgba(59,130,246,0.12);border:1.5px solid #60a5fa;border-radius:8px;margin-bottom:10px">';
+    html += '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:4px">🏠 섹터 1 — ' + sec1Name + '</div>';
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')</span><span class="v">' + fmt(netBase) + '</span></div>';
     if (wf && wifiForSp > 0) html += '<div class="calc-line"><span class="l">+ WiFi' + (d.wifiName ? ' (' + d.wifiName + ')' : '') + '</span><span class="v">+' + fmt(wifiForSp) + '</span></div>';
     if (netDiscount > 0) html += '<div class="calc-line discount"><span class="l">인터넷 결합 할인</span><span class="v">-' + fmt(netDiscount) + '</span></div>';
@@ -903,8 +956,8 @@ function calc() {
     var setTopFee = hasTv ? (d.setTop || 0) : 0;
     var finalInet = inetAfterAll + tvAfter + setTopFee;
 
-    html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(59,130,246,0.12);border:1.5px solid #60a5fa;border-radius:8px">' +
-      '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:8px">📊 섹터 2 — KT ' + (isTotal ? '총액' : '정액') + ' 결합할인 (월 요금 ' + rangeLabels[rangeIdx] + ' 구간) · 기본 할인과 중복</div>' +
+    html += '<div style="margin-top:6px;padding:7px 9px;background:rgba(59,130,246,0.12);border:1.5px solid #60a5fa;border-radius:8px">' +
+      '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:4px">📊 섹터 2 — KT ' + (isTotal ? '총액' : '정액') + ' 결합할인 (월 요금 ' + rangeLabels[rangeIdx] + ' 구간) · 기본 할인과 중복</div>' +
       '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi) + '</span></div>';
     if (ktBaseInetDc > 0) html += '<div class="calc-line discount"><span class="l">KT 기본 TV결합 인터넷 할인</span><span class="v">-' + fmt(ktBaseInetDc) + '</span></div>';
     html += '<div class="calc-line discount"><span class="l">' + (isTotal ? '총액' : '정액') + ' 결합 인터넷 추가 할인 (중복)</span><span class="v">-' + fmt(inetDc) + '</span></div>' +
@@ -915,7 +968,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfter) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee) + '</span></div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#93c5fd">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#60a5fa;font-size:20px">' + fmt(finalInet) + '</span></div>' +
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#93c5fd">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#60a5fa;font-size:14px">' + fmt(finalInet) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#93c5fd;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + rangeLabels[rangeIdx] + ' 구간)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
       (mobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 구간은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(mobDc) + '</span><span class="v"></span></div>') +
@@ -967,8 +1020,8 @@ function calc() {
     var setTopFeeP = hasTv ? (d.setTop || 0) : 0;
     var finalInetP = inetAfterPrem + tvAfterP + setTopFeeP;
 
-    html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(251,191,36,0.12);border:1.5px solid #fbbf24;border-radius:8px">' +
-      '<div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:8px">💎 섹터 2 — KT 프리미엄 가족결합</div>';
+    html += '<div style="margin-top:6px;padding:7px 9px;background:rgba(251,191,36,0.12);border:1.5px solid #fbbf24;border-radius:8px">' +
+      '<div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:4px">💎 섹터 2 — KT 프리미엄 가족결합</div>';
     if (!eligible) html += '<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:#fca5a5">⚠️ 프리미엄 자격 미충족 — 77,000원↑ 요금제가 <b>2회선 이상</b> 있어야 하며, 프리미엄 회선 최소 1명 필요</div>';
     html += '<div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:8px 10px;margin-bottom:10px">';
     html += '<div style="font-size:10px;color:#fde68a;font-weight:700;margin-bottom:6px">📋 회선별 분류</div>';
@@ -989,7 +1042,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfterP) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFeeP) + '</span></div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#fde68a">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#fbbf24;font-size:20px">' + fmt(finalInetP) + '</span></div>' +
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#fde68a">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#fbbf24;font-size:14px">' + fmt(finalInetP) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#fde68a;font-weight:700">📱 휴대폰 고지서 별도 할인 (월)</div>' +
       '<div class="calc-line discount"><span class="l">· 총액결합 (' + totalMembers.length + '명 · 합산 ' + fmt(totalSum) + ' · ' + totalRanges[rngIdx] + ')</span><span class="v">-' + fmt(totalMobDc) + '</span></div>' +
       '<div class="calc-line discount"><span class="l">· 프리미엄 ' + premCount + '명 합산 할인</span><span class="v">-' + fmt(premTotalDc) + '</span></div>' +
@@ -1022,8 +1075,8 @@ function calc() {
     var setTopFee2 = hasTv ? (d.setTop || 0) : 0;
     var finalInet2 = inetAfter + tvAfter2 + setTopFee2;
 
-    html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(236,72,153,0.12);border:1.5px solid #f472b6;border-radius:8px">' +
-      '<div style="font-size:12px;color:#f9a8d4;font-weight:800;margin-bottom:8px">💕 섹터 2 — LGU+ ' + (isChweyswun ? '참쉬운 가족결합' : '투게더 결합') + ' (' + lines + '회선' + (isChweyswun ? ' · ' + planLabel : '') + ')</div>';
+    html += '<div style="margin-top:6px;padding:7px 9px;background:rgba(236,72,153,0.12);border:1.5px solid #f472b6;border-radius:8px">' +
+      '<div style="font-size:12px;color:#f9a8d4;font-weight:800;margin-bottom:4px">💕 섹터 2 — LGU+ ' + (isChweyswun ? '참쉬운 가족결합' : '투게더 결합') + ' (' + lines + '회선' + (isChweyswun ? ' · ' + planLabel : '') + ')</div>';
     if (lguInetDc === 0) html += '<div class="calc-line sub" style="color:#fca5a5">· 이 속도는 해당 결합 인터넷 할인 없음 (투게더 100M 결합 불가)</div>';
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi3) + '</span></div>' +
       '<div class="calc-line discount"><span class="l">' + (isChweyswun ? '참쉬운' : '투게더') + ' 인터넷 할인 (기본 TV결합 할인 대체)</span><span class="v">-' + fmt(lguInetDc) + '</span></div>' +
@@ -1034,7 +1087,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfter2) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee2) + '</span></div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#f9a8d4">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#ec4899;font-size:20px">' + fmt(finalInet2) + '</span></div>' +
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#f9a8d4">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#ec4899;font-size:14px">' + fmt(finalInet2) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#f9a8d4;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선)</span><span class="v">-' + fmt(lguMobDc) + '</span></div>' +
       (lguMobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 조건은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(lguMobDc) + '</span><span class="v"></span></div>') +
@@ -1057,8 +1110,8 @@ function calc() {
     var setTopFee3 = hasTv ? (d.setTop || 0) : 0;
     var finalInet3 = inetAfterFamily + tvAfterFamily + setTopFee3;
 
-    html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(34,197,94,0.15);border:1.5px solid #4ade80;border-radius:8px">' +
-      '<div style="font-size:12px;color:#86efac;font-weight:800;margin-bottom:8px">👨‍👩‍👧 섹터 2 — 요즘가족결합 (무선결합) 적용 (' + lines2 + '명 결합 · ' + sp + ' 기준)</div>' +
+    html += '<div style="margin-top:6px;padding:7px 9px;background:rgba(34,197,94,0.15);border:1.5px solid #4ade80;border-radius:8px">' +
+      '<div style="font-size:12px;color:#86efac;font-weight:800;margin-bottom:4px">👨‍👩‍👧 섹터 2 — 요즘가족결합 (무선결합) 적용 (' + lines2 + '명 결합 · ' + sp + ' 기준)</div>' +
       '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi4) + '</span></div>' +
       '<div class="calc-line discount"><span class="l">요즘가족결합 인터넷 할인 (요즘우리집 대체)</span><span class="v">-' + fmt(famInet) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfterFamily) + '</span></div>';
@@ -1069,7 +1122,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 할인 합계: -' + fmt(tvTotalDc) + ' · TV 실질</span><span class="v">' + fmt(tvAfterFamily) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee3) + '</span></div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#86efac">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#4ade80;font-size:20px">' + fmt(finalInet3) + '</span></div>' +
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#86efac">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#4ade80;font-size:14px">' + fmt(finalInet3) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#86efac;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines2 + '명 결합 · ' + sp + ')</span><span class="v">-' + fmt(mobDc2) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">· 인당 ' + fmt(perPerson) + '원 × ' + lines2 + '명 = 휴대폰 고지서 매월 -' + fmt(mobDc2) + '</span><span class="v"></span></div>' +
@@ -1094,8 +1147,8 @@ function calc() {
     var setTopFeeO = hasTv ? (d.setTop || 0) : 0;
     var finalInetO = inetAfterOf + tvAfterO + setTopFeeO;
 
-    html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(168,85,247,0.12);border:1.5px solid #a855f7;border-radius:8px">' +
-      '<div style="font-size:12px;color:#d8b4fe;font-weight:800;margin-bottom:8px">👨‍👩‍👧‍👦 섹터 2 — SKT 온가족할인 (' + ofData.netYrLabels[netYrIdx] + ' × ' + ofData.famYrLabels[famYrIdx] + ' → <b>' + pct + '%</b> 할인)</div>';
+    html += '<div style="margin-top:6px;padding:7px 9px;background:rgba(168,85,247,0.12);border:1.5px solid #a855f7;border-radius:8px">' +
+      '<div style="font-size:12px;color:#d8b4fe;font-weight:800;margin-bottom:4px">👨‍👩‍👧‍👦 섹터 2 — SKT 온가족할인 (' + ofData.netYrLabels[netYrIdx] + ' × ' + ofData.famYrLabels[famYrIdx] + ' → <b>' + pct + '%</b> 할인)</div>';
     if (pct === 0) {
       html += '<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:#fca5a5">⚠️ 이 조건은 온가족할인 적용 불가</div>';
     }
@@ -1108,20 +1161,20 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfterO) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFeeO) + '</span></div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#d8b4fe">✨ ' + (hasTv ? '인터넷+TV ' : '인터넷 ') + '월 실질요금</span><span class="v" style="color:#a855f7;font-size:20px">' + fmt(finalInetO) + '</span></div>' +
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#d8b4fe">✨ ' + (hasTv ? '인터넷+TV ' : '인터넷 ') + '월 실질요금</span><span class="v" style="color:#a855f7;font-size:14px">' + fmt(finalInetO) + '</span></div>' +
       '</div>';
   }
 
   var giftAmount = getGiftAmount(d, sp, ti);
-  if (giftAmount > 0) html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:6px;padding:6px 10px;margin-top:6px"><span class="l" style="color:#fbbf24">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900">' + fmt(giftAmount) + '</span></div>';
+  if (giftAmount > 0) html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:5px;padding:4px 8px;margin-top:5px"><span class="l" style="color:#fbbf24;font-size:11px">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900;font-size:12px">' + fmt(giftAmount) + '</span></div>';
 
-  // 설치비 평일/주말 (1회)
+  // 설치비 평일/주말 (1회) - 컴팩트
   var installWeekday = installPrice;
   var installWeekend = hasTv ? d.installWeekend.combo : d.installWeekend.solo;
-  html += '<div style="margin-top:8px;padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:6px;border:1px solid rgba(255,255,255,0.08)">' +
-    '<div style="font-size:10px;color:rgba(255,255,255,0.55);font-weight:700;margin-bottom:4px;letter-spacing:0.04em">🔧 설치비 (1회)</div>' +
-    '<div class="calc-line" style="padding:3px 0"><span class="l">평일</span><span class="v">' + fmt(installWeekday) + '</span></div>' +
-    '<div class="calc-line" style="padding:3px 0"><span class="l">주말 <span style="font-size:10px;color:rgba(248,113,113,0.7)">(약 25% 할증)</span></span><span class="v" style="color:#fca5a5">' + fmt(installWeekend) + '</span></div>' +
+  html += '<div style="margin-top:5px;padding:5px 8px;background:rgba(255,255,255,0.04);border-radius:5px;border:1px solid rgba(255,255,255,0.08)">' +
+    '<div style="font-size:9.5px;color:rgba(255,255,255,0.55);font-weight:700;margin-bottom:2px;letter-spacing:0.04em">🔧 설치비 (1회)</div>' +
+    '<div class="calc-line" style="padding:1px 0;font-size:11px"><span class="l">평일</span><span class="v">' + fmt(installWeekday) + '</span></div>' +
+    '<div class="calc-line" style="padding:1px 0;font-size:11px"><span class="l">주말 <span style="font-size:9.5px;color:rgba(248,113,113,0.7)">(+25%)</span></span><span class="v" style="color:#fca5a5">' + fmt(installWeekend) + '</span></div>' +
     '</div>';
   document.getElementById('c-result').innerHTML = html;
 }
@@ -1359,22 +1412,150 @@ window.addEventListener('visibilitychange', function(){
   if (document.visibilityState === 'hidden') saveScripts();
 });
 
-// 메모 자동 저장/복원
-var MEMO_KEY = 'tm-memo-v1';
+// ╔════════════════════════════════════════════════════╗
+// ║  메모 — 저장/목록/편집/삭제                          ║
+// ╚════════════════════════════════════════════════════╝
+var MEMO_LIST_KEY = 'tm-memos-v2';
+var MEMO_DRAFT_KEY = 'tm-memo-draft';      // 편집 중 임시 저장
+var MEMO_OLD_KEY = 'tm-memo-v1';           // 이전 버전 마이그레이션
 var memoEl = document.getElementById('cust-memo');
-if (memoEl) {
-  try { memoEl.value = localStorage.getItem(MEMO_KEY) || ''; } catch(e) {}
-  var _memoSaveTimer = null;
-  memoEl.addEventListener('input', function(){
-    clearTimeout(_memoSaveTimer);
-    _memoSaveTimer = setTimeout(function(){
-      try { localStorage.setItem(MEMO_KEY, memoEl.value); } catch(e) {}
-    }, 300);
-  });
-  window.addEventListener('beforeunload', function(){
-    try { localStorage.setItem(MEMO_KEY, memoEl.value); } catch(e) {}
-  });
+var memoListEl = document.getElementById('tm-memo-list');
+var editingMemoId = null;
+
+function loadMemos() {
+  try {
+    var arr = JSON.parse(localStorage.getItem(MEMO_LIST_KEY) || '[]');
+    if (Array.isArray(arr)) return arr;
+  } catch(e) {}
+  return [];
 }
+function saveMemoList(list) {
+  try { localStorage.setItem(MEMO_LIST_KEY, JSON.stringify(list)); } catch(e) {}
+}
+function memoTimeNow() {
+  var d = new Date();
+  var pad = function(n){ return (n<10?'0':'') + n; };
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' +
+         pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+// 이전 단일 메모(tm-memo-v1) → 첫 메모로 마이그레이션 (1회만)
+(function migrateOldMemo() {
+  try {
+    var old = localStorage.getItem(MEMO_OLD_KEY);
+    if (old && old.trim()) {
+      var list = loadMemos();
+      list.unshift({ id: Date.now(), at: memoTimeNow(), text: old });
+      saveMemoList(list);
+      localStorage.removeItem(MEMO_OLD_KEY);
+    }
+  } catch(e) {}
+})();
+
+function renderMemoList() {
+  var list = loadMemos();
+  if (!list.length) {
+    memoListEl.innerHTML = '<div class="tm-memo-empty">저장된 메모 없음</div>';
+    return;
+  }
+  memoListEl.innerHTML = list.map(function(m){
+    var preview = (m.text || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<div class="tm-memo-item' + (editingMemoId === m.id ? ' active' : '') + '" data-id="' + m.id + '">' +
+      '<div class="tm-memo-item-time">🕒 ' + m.at + '</div>' +
+      '<div class="tm-memo-item-preview">' + preview + '</div>' +
+      '<div class="tm-memo-item-actions">' +
+        '<button type="button" class="tm-memo-item-act edit" title="편집">✎</button>' +
+        '<button type="button" class="tm-memo-item-act del" title="삭제">×</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function saveCurrentMemo() {
+  var text = (memoEl.value || '').trim();
+  if (!text) { alert('메모 내용을 입력하세요.'); memoEl.focus(); return; }
+  var list = loadMemos();
+  if (editingMemoId !== null) {
+    // 편집 중 → 기존 메모 업데이트
+    var idx = list.findIndex(function(m){ return m.id === editingMemoId; });
+    if (idx >= 0) {
+      list[idx].text = text;
+      list[idx].at = memoTimeNow();
+    } else {
+      list.unshift({ id: Date.now(), at: memoTimeNow(), text: text });
+    }
+  } else {
+    // 새 메모
+    list.unshift({ id: Date.now(), at: memoTimeNow(), text: text });
+  }
+  saveMemoList(list);
+  editingMemoId = null;
+  memoEl.value = '';
+  try { localStorage.removeItem(MEMO_DRAFT_KEY); } catch(e) {}
+  renderMemoList();
+}
+
+function newMemo() {
+  if (memoEl.value.trim() && !confirm('현재 입력 중인 내용이 사라집니다. 새 메모를 시작하시겠습니까?')) return;
+  editingMemoId = null;
+  memoEl.value = '';
+  try { localStorage.removeItem(MEMO_DRAFT_KEY); } catch(e) {}
+  memoEl.focus();
+  renderMemoList();
+}
+
+function loadMemoForEdit(id) {
+  var list = loadMemos();
+  var m = list.find(function(x){ return x.id === id; });
+  if (!m) return;
+  editingMemoId = id;
+  memoEl.value = m.text;
+  memoEl.focus();
+  renderMemoList();
+}
+
+function deleteMemo(id) {
+  if (!confirm('이 메모를 삭제하시겠습니까?')) return;
+  var list = loadMemos().filter(function(m){ return m.id !== id; });
+  saveMemoList(list);
+  if (editingMemoId === id) {
+    editingMemoId = null;
+    memoEl.value = '';
+  }
+  renderMemoList();
+}
+
+// 편집 중 임시저장 복원 (페이지 로드 시)
+try {
+  var draft = localStorage.getItem(MEMO_DRAFT_KEY);
+  if (draft) memoEl.value = draft;
+} catch(e) {}
+
+// 입력 중 임시저장 (debounce)
+var _memoDraftTimer = null;
+memoEl.addEventListener('input', function(){
+  clearTimeout(_memoDraftTimer);
+  _memoDraftTimer = setTimeout(function(){
+    try { localStorage.setItem(MEMO_DRAFT_KEY, memoEl.value); } catch(e) {}
+  }, 300);
+});
+window.addEventListener('beforeunload', function(){
+  try { localStorage.setItem(MEMO_DRAFT_KEY, memoEl.value); } catch(e) {}
+});
+
+document.getElementById('tm-memo-save').addEventListener('click', saveCurrentMemo);
+document.getElementById('tm-memo-new').addEventListener('click', newMemo);
+memoListEl.addEventListener('click', function(e){
+  var item = e.target.closest('.tm-memo-item');
+  if (!item) return;
+  var id = parseInt(item.dataset.id);
+  if (e.target.closest('.tm-memo-item-act.del')) { deleteMemo(id); return; }
+  if (e.target.closest('.tm-memo-item-act.edit')) { loadMemoForEdit(id); return; }
+  // 메모 본문 클릭도 편집으로
+  loadMemoForEdit(id);
+});
+
+renderMemoList();
 
 // 단계 추가
 document.getElementById('tm-script-add').addEventListener('click', function(){
