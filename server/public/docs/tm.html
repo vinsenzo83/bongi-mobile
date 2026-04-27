@@ -580,18 +580,16 @@ function tmCopy(){
   var txt='【봉이모바일 견적】\n고객: '+n+' '+p+'\n\n'+quote+'\n사은품: '+gift+(memo?'\n\n메모: '+memo:'');
   navigator.clipboard.writeText(txt).then(function(){alert('복사됨')}).catch(function(){alert(txt)});
 }
+// MutationObserver로 bb-info 변경 감지 + 즉시 미러
 (function(){
-  var attempts=0;
-  var iv=setInterval(function(){
-    attempts++;
-    if(typeof renderBottom==='function' && !window.__tmHooked){
-      window.__tmHooked=true;
-      var orig=renderBottom;
-      window.renderBottom=function(){orig.apply(this,arguments);tmRender();if(typeof showOnfamUI==='function')showOnfamUI();};
-      tmRender();
-      clearInterval(iv);
-    }else if(attempts>30){clearInterval(iv);}
-  },200);
+  var bb = document.getElementById('bb-info');
+  if (!bb) { setTimeout(arguments.callee, 200); return; }
+  var mo = new MutationObserver(function(){ tmRender(); });
+  mo.observe(bb, { childList:true, subtree:true, characterData:true });
+  // 초기 동기화 + 보조 폴링 (200ms × 5초)
+  tmRender();
+  var n=0;
+  var iv=setInterval(function(){ tmRender(); if(++n>25) clearInterval(iv); }, 200);
 })();
 
 </script>
