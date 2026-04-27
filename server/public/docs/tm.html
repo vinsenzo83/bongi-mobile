@@ -564,14 +564,53 @@ document.getElementById('f-range').addEventListener('change',function(e){ state.
 refresh();
 
 function tmRender(){
-  var bb=document.getElementById('bb-info'),quote=document.getElementById('tm-quote');
-  if(!bb||!quote)return;
-  if(!bb.innerHTML.trim()){quote.innerHTML='<div class="tm-q"><span class="l">선택 진행 중...</span></div>';return;}
-  quote.innerHTML=bb.innerHTML;
-  var g=quote.querySelector('.bb-gift');
-  if(g){
-    document.getElementById('tm-gift').textContent=g.textContent.replace('🎁','').replace('사은품','').split('(')[0].trim()||'0원';
-    g.remove();
+  var quote = document.getElementById('tm-quote');
+  if (!quote || typeof calculate !== 'function' || typeof D === 'undefined' || typeof state === 'undefined') return;
+  try {
+    var d = D[state.carrier];
+    var sp = state.speed;
+    var hasTv = state.tv > 0;
+    var wf = state.wifi;
+    var wifiForSp = (d.wifiPrice ? d.wifiPrice[sp] : (d.wifiCost||0));
+    var inetSolo = d.internet[sp];
+    var wifiFee = wf ? wifiForSp : 0;
+    var tvP = hasTv ? d.tv[state.tv].p : 0;
+    var tvDc = hasTv ? (d.tv[state.tv].dc||0) : 0;
+    var setTopFee = hasTv ? (d.setTop||0) : 0;
+
+    var r = calculate();
+    var basicFee = r.basicFee, bundleFee = r.bundleFee, mobileSide = r.mobileSide, finalFee = r.finalFee;
+    var gift = r.gift || 0;
+    var benefit = r.benefit || '';
+    var instCombo = (d.install ? d.install.combo : 0), instSolo = (d.install ? d.install.solo : 0);
+    var instWd = hasTv ? instCombo : instSolo;
+    var instWe = Math.round(instWd * 1.25);
+
+    var html = '';
+    html += '<div class="bb-line"><span class="l">📡 통신사</span><span class="v">'+d.name.split('(')[0].trim()+'</span></div>';
+    html += '<div class="bb-line"><span class="l">속도</span><span class="v">'+sp+' ('+inetSolo.toLocaleString()+'원)</span></div>';
+    html += '<div class="bb-line"><span class="l">WiFi</span><span class="v">'+(wf?wifiFee.toLocaleString()+'원':'미가입')+'</span></div>';
+    if (hasTv) {
+      html += '<div class="bb-line"><span class="l">TV</span><span class="v" style="font-size:11px">'+d.tv[state.tv].n+'</span></div>';
+      html += '<div class="bb-line"><span class="l">· TV 정가</span><span class="v">'+tvP.toLocaleString()+'원</span></div>';
+      html += '<div class="bb-line" style="color:#86efac"><span class="l">· TV 기본 할인</span><span class="v">-'+tvDc.toLocaleString()+'원</span></div>';
+      html += '<div class="bb-line"><span class="l">셋톱 ('+(d.setTopName||'기본')+')</span><span class="v">+'+setTopFee.toLocaleString()+'원</span></div>';
+    }
+    html += '<div class="bb-line"><span class="l">결합 종류</span><span class="v" style="font-size:11px;color:#fbbf24">'+(state.mobileOn?(benefit||'결합'):'결합 없음')+'</span></div>';
+    if (state.mobileOn && bundleFee !== basicFee) {
+      var bundleDc = basicFee - bundleFee;
+      html += '<div class="bb-line" style="color:#86efac"><span class="l">↓ 결합 할인</span><span class="v">-'+bundleDc.toLocaleString()+'원</span></div>';
+    }
+    html += '<div class="bb-line bb-final"><span class="l">💰 월 실납부</span><span class="v">'+finalFee.toLocaleString()+'원</span></div>';
+    if (mobileSide > 0) {
+      html += '<div class="bb-line" style="color:#86efac;margin-top:6px"><span class="l">📱 휴대폰 고지서 별도</span><span class="v">-'+mobileSide.toLocaleString()+'원</span></div>';
+    }
+    html += '<div class="bb-line" style="border-top:1px dashed rgba(255,255,255,0.15);padding-top:6px;margin-top:6px"><span class="l">🔧 설치비 주중 (1회)</span><span class="v">'+instWd.toLocaleString()+'원</span></div>';
+    html += '<div class="bb-line"><span class="l">🔧 설치비 주말 (+25%)</span><span class="v">'+instWe.toLocaleString()+'원</span></div>';
+    quote.innerHTML = html;
+    document.getElementById('tm-gift').textContent = gift > 0 ? (gift/10000)+'만원' : '0원';
+  } catch(e) {
+    quote.innerHTML = '<div class="tm-q"><span class="l">계산 중...</span></div>';
   }
 }
 function tmCopy(){
