@@ -4,103 +4,250 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TM 상담 도구</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
 * { box-sizing: border-box; margin:0; padding:0; }
 html, body { height:100%; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif;
-  background:#f3f4f6; color:#111827; font-size:13px;
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background:#eef1f6; color:#0f172a; font-size:13px; -webkit-font-smoothing:antialiased; letter-spacing:-0.005em;
 }
 
 /* ===== 레이아웃 ===== */
-.tm-app { display:grid; grid-template-columns: 320px 1fr 400px; gap:12px; padding:12px; min-height:100vh; }
-.tm-panel { background:#fff; border-radius:12px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,0.06); overflow-y:auto; }
-.tm-panel h2 { font-size:13px; font-weight:800; color:#374151; margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid #e5e7eb; letter-spacing:-0.01em; }
-.tm-panel h2:not(:first-child) { margin-top:18px; }
-
-/* ===== 좌측: 고객정보 + 스크립트 ===== */
-.tm-field { margin-bottom:8px; }
-.tm-field label { display:block; font-size:11px; font-weight:600; color:#6b7280; margin-bottom:3px; }
-.tm-field input, .tm-field textarea, .tm-field select {
-  width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px;
-  font-size:13px; font-family:inherit; outline:none; transition:border-color 0.15s;
+html, body { overflow:hidden; }
+.tm-app {
+  display:grid; grid-template-columns: 300px minmax(0, 1fr) 400px; gap:12px;
+  padding:12px; height:100vh; max-width:1800px; margin:0 auto;
 }
-.tm-field input:focus, .tm-field textarea:focus, .tm-field select:focus { border-color:#3b82f6; }
+.tm-panel {
+  background:#fff; border-radius:14px; padding:18px;
+  box-shadow:0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.04);
+  overflow-y:auto; overflow-x:hidden; border:1px solid rgba(15,23,42,0.04);
+  min-height:0; min-width:0;
+}
+.tm-panel h2 {
+  font-size:13px; font-weight:800; color:#1e293b; margin-bottom:12px;
+  padding-bottom:8px; border-bottom:1.5px solid #f1f5f9;
+  letter-spacing:-0.01em; display:flex; align-items:center; gap:6px;
+}
+.tm-panel h2:not(:first-child) { margin-top:20px; }
+
+/* ===== 좌측 ===== */
+.tm-field { margin-bottom:9px; }
+.tm-field label { display:block; font-size:11px; font-weight:600; color:#64748b; margin-bottom:4px; letter-spacing:0.01em; }
+.tm-field input, .tm-field textarea, .tm-field select {
+  width:100%; padding:9px 11px; border:1.5px solid #e2e8f0; border-radius:8px;
+  font-size:13px; font-family:inherit; outline:none;
+  transition:border-color 0.15s, box-shadow 0.15s; background:#f8fafc;
+}
+.tm-field input:focus, .tm-field textarea:focus, .tm-field select:focus {
+  border-color:#3b82f6; background:#fff; box-shadow:0 0 0 3px rgba(59,130,246,0.1);
+}
 .tm-field textarea { min-height:80px; resize:vertical; }
 
 .tm-script-step {
-  background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px;
-  padding:9px 11px; margin-bottom:6px; cursor:pointer; transition:all 0.15s;
+  position:relative;
+  background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:9px;
+  padding:10px 12px; margin-bottom:6px; transition:all 0.18s;
 }
-.tm-script-step:hover { background:#f3f4f6; }
-.tm-script-step.active { background:#eff6ff; border-color:#3b82f6; }
-.tm-script-step-title { font-size:12px; font-weight:700; color:#1e40af; }
+.tm-script-step:hover { border-color:#cbd5e1; background:#f1f5f9; }
+.tm-script-step.active {
+  background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color:#3b82f6;
+  box-shadow:0 1px 3px rgba(59,130,246,0.15);
+}
+.tm-script-step-title-row { display:flex; align-items:center; gap:6px; }
+.tm-script-step-title {
+  flex:1; font-size:12px; font-weight:700; color:#1e293b;
+  outline:none; border-radius:4px; padding:2px 4px; min-height:14px;
+}
+.tm-script-step-title:focus {
+  background:#fffbe6; box-shadow:inset 0 0 0 1px #fbbf24;
+}
 .tm-script-step.active .tm-script-step-title { color:#1d4ed8; }
-.tm-script-step-text {
-  display:none; font-size:11px; color:#4b5563; line-height:1.55; margin-top:6px;
-  padding-top:6px; border-top:1px dashed #d1d5db;
+.tm-script-step-num {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:18px; height:18px; background:#cbd5e1; color:#475569;
+  border-radius:50%; font-size:10px; font-weight:800; flex-shrink:0;
+  cursor:pointer;
 }
-.tm-script-step.active .tm-script-step-text { display:block; }
+.tm-script-step.active .tm-script-step-num { background:#3b82f6; color:#fff; }
+.tm-script-step-del {
+  width:20px; height:20px; line-height:18px; text-align:center;
+  background:transparent; border:1px solid transparent; border-radius:5px;
+  color:#94a3b8; cursor:pointer; font-size:13px; font-weight:700;
+  opacity:0; transition:all 0.15s; padding:0; flex-shrink:0;
+}
+.tm-script-step:hover .tm-script-step-del { opacity:1; }
+.tm-script-step-del:hover { background:#fee2e2; border-color:#fca5a5; color:#dc2626; }
+.tm-script-step-text {
+  display:block; font-size:11.5px; color:#475569; line-height:1.6; margin-top:7px;
+  padding:7px 8px 0; border-top:1px dashed #cbd5e1;
+  outline:none; border-radius:4px; min-height:14px;
+}
+.tm-script-step-text:focus {
+  background:#fffbe6; box-shadow:inset 0 0 0 1px #fbbf24;
+  border-top-color:transparent;
+}
+.tm-script-step.active .tm-script-step-text { color:#1e293b; }
+.tm-script-add-btn {
+  display:block; width:100%; padding:9px; margin-top:6px;
+  background:#fff; border:1.5px dashed #cbd5e1; border-radius:9px;
+  color:#64748b; font-size:12px; font-weight:700; cursor:pointer;
+  font-family:inherit; transition:all 0.15s;
+}
+.tm-script-add-btn:hover {
+  border-color:#3b82f6; color:#1d4ed8; background:#eff6ff;
+}
 
 /* ===== 중앙: 카드 UI ===== */
 .tm-cards { display:grid; gap:10px; }
 .tm-card {
-  background:#fff; border:1.5px solid #e5e7eb; border-radius:12px;
-  padding:14px 16px; transition:border-color 0.15s;
+  background:#fff; border:1.5px solid #e2e8f0; border-radius:14px;
+  padding:14px 16px; transition:all 0.18s;
+  box-shadow:0 1px 2px rgba(15,23,42,0.03);
 }
+.tm-card:hover { border-color:#cbd5e1; box-shadow:0 2px 8px rgba(15,23,42,0.06); }
 .tm-card-title {
-  font-size:11px; font-weight:800; color:#6b7280; margin-bottom:10px;
+  font-size:11px; font-weight:800; color:#475569; margin-bottom:10px;
   letter-spacing:0.04em; text-transform:uppercase;
+  display:flex; align-items:center; gap:8px;
 }
 .tm-card-title .num {
-  display:inline-block; width:18px; height:18px; line-height:18px; text-align:center;
-  background:#3b82f6; color:#fff; border-radius:50%; font-size:10px; margin-right:6px;
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; line-height:1;
+  background:linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  color:#fff; border-radius:50%; font-size:10.5px; font-weight:800;
+  box-shadow:0 1px 3px rgba(59,130,246,0.3);
 }
-.tm-options { display:flex; gap:6px; flex-wrap:wrap; }
+.tm-card-title .hint {
+  margin-left:auto; font-size:10px; font-weight:600; color:#0ea5e9;
+  background:#e0f2fe; padding:2px 7px; border-radius:10px; text-transform:none; letter-spacing:0;
+}
+.tm-options { display:flex; gap:7px; flex-wrap:wrap; }
 .tm-option {
-  padding:8px 14px; border:1.5px solid #d1d5db; border-radius:8px; cursor:pointer;
-  font-size:13px; font-weight:600; background:#fff; color:#374151;
-  transition:all 0.12s; user-select:none; line-height:1.3;
+  padding:9px 14px; border:1.5px solid #e2e8f0; border-radius:9px; cursor:pointer;
+  font-size:13px; font-weight:600; background:#fff; color:#334155;
+  transition:all 0.14s; user-select:none; line-height:1.3;
 }
-.tm-option:hover { border-color:#60a5fa; background:#eff6ff; color:#1d4ed8; }
+.tm-option:hover {
+  border-color:#93c5fd; background:#eff6ff; color:#1d4ed8;
+  transform:translateY(-1px);
+}
 .tm-option.selected {
-  background:#3b82f6; border-color:#3b82f6; color:#fff;
-  box-shadow:0 1px 4px rgba(59,130,246,0.35);
+  background:linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  border-color:#3b82f6; color:#fff;
+  box-shadow:0 2px 8px rgba(59,130,246,0.35), 0 1px 2px rgba(0,0,0,0.05);
+  transform:translateY(-1px);
 }
+
+/* 통신사별 브랜드 컬러 */
+#card-carrier .tm-option[data-value="skt"].selected { background:linear-gradient(135deg, #ed1c24 0%, #c41218 100%); border-color:#ed1c24; box-shadow:0 2px 8px rgba(237,28,36,0.35); }
+#card-carrier .tm-option[data-value="kt"].selected  { background:linear-gradient(135deg, #1f2937 0%, #000000 100%); border-color:#000; box-shadow:0 2px 8px rgba(0,0,0,0.4); }
+#card-carrier .tm-option[data-value="lgu"].selected { background:linear-gradient(135deg, #e6007e 0%, #b30062 100%); border-color:#e6007e; box-shadow:0 2px 8px rgba(230,0,126,0.35); }
 
 /* KT 프리미엄 회선별 UI */
 #c-premium-members .calc-select {
-  padding:6px 8px; border-radius:6px; border:1px solid #d1d5db;
-  background:#fff; color:#111827; font-size:12px; font-family:inherit;
+  padding:7px 9px; border-radius:7px; border:1.5px solid #e2e8f0;
+  background:#fff; color:#0f172a; font-size:12px; font-family:inherit;
 }
 
-/* ===== 우측: 결과 패널 (v1 다크 테마 그대로) ===== */
+/* ===== 우측: 결과 패널 ===== */
 .tm-result-panel {
-  background:linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  background:linear-gradient(160deg, #1e293b 0%, #0f172a 60%, #020617 100%);
   color:#fff;
+  box-shadow:0 4px 20px rgba(15,23,42,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
+  border:none;
 }
-.tm-result-panel h2 { color:#e2e8f0; border-bottom-color:rgba(255,255,255,0.15); }
+.tm-result-panel h2 {
+  color:#e2e8f0; border-bottom-color:rgba(255,255,255,0.1);
+  font-size:14px;
+}
 .tm-result { padding-top:6px; }
 .tm-result .calc-line { display:flex; justify-content:space-between; padding:5px 0; font-size:13px; }
-.tm-result .calc-line .l { color:rgba(255,255,255,0.55); }
-.tm-result .calc-line .v { font-weight:700; color:#fff; }
+.tm-result .calc-line .l { color:rgba(226,232,240,0.55); }
+.tm-result .calc-line .v { font-weight:700; color:#f8fafc; }
 .tm-result .calc-line.discount .v { color:#4ade80; }
 .tm-result .calc-line.total {
-  border-top:2px solid rgba(255,255,255,0.18); margin-top:8px; padding-top:10px;
+  border-top:2px solid rgba(255,255,255,0.15); margin-top:8px; padding-top:10px;
   font-size:16px; font-weight:900;
 }
 .tm-result .calc-line.total .v { color:#60a5fa; }
 .tm-result .calc-line.sub { font-size:11px; padding:2px 0 2px 12px; }
-.tm-result .calc-line.sub .l { color:rgba(255,255,255,0.35); }
-.tm-result .calc-line.sub .v { color:rgba(255,255,255,0.45); font-weight:400; }
+.tm-result .calc-line.sub .l { color:rgba(226,232,240,0.32); }
+.tm-result .calc-line.sub .v { color:rgba(226,232,240,0.4); font-weight:400; }
+
+/* 정보 카드 (요금 구조 한눈에 보기) */
+.tm-info-grid { display:grid; gap:8px; margin-bottom:12px; }
+.tm-info-row {
+  display:grid; grid-template-columns: 130px 1fr; gap:10px; align-items:start;
+  padding:8px 10px; background:#f8fafc; border-radius:8px; border:1px solid #f1f5f9;
+}
+.tm-info-label { font-size:11px; font-weight:700; color:#64748b; letter-spacing:0.01em; }
+.tm-info-value { font-size:12px; color:#334155; line-height:1.5; }
+.tm-info-value b { color:#0f172a; font-weight:800; }
+.tm-info-btn {
+  display:flex; align-items:center; gap:8px;
+  padding:11px 14px; background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color:#fff; border-radius:10px; text-decoration:none;
+  font-size:13px; font-weight:700; transition:all 0.18s;
+  box-shadow:0 2px 8px rgba(15,23,42,0.2);
+}
+.tm-info-btn:hover {
+  transform:translateY(-1px);
+  box-shadow:0 4px 14px rgba(15,23,42,0.3);
+}
+@media (max-width: 768px) {
+  .tm-info-row { grid-template-columns: 1fr; gap:4px; }
+}
+
+/* WiFi 안내 배너 */
+.tm-wifi-notice {
+  margin-top:10px; padding:8px 11px; border-radius:8px;
+  background:linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border:1px solid #10b981; color:#065f46;
+  font-size:11.5px; font-weight:600; display:none;
+}
+.tm-wifi-notice.show { display:block; }
 
 .tm-hidden { position:absolute; left:-9999px; top:-9999px; }
 
-.tm-result-panel::-webkit-scrollbar { width:6px; }
-.tm-result-panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:3px; }
+/* 스크롤바 */
+.tm-panel::-webkit-scrollbar { width:6px; }
+.tm-panel::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+.tm-result-panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); }
 
-@media (max-width: 1100px) {
-  .tm-app { grid-template-columns: 1fr; }
+/* ===== 반응형 단계 ===== */
+@media (max-width: 1400px) {
+  .tm-app { grid-template-columns: 280px minmax(0,1fr) 380px; gap:10px; padding:10px; }
+  .tm-panel { padding:14px; }
+}
+@media (max-width: 1200px) {
+  .tm-app { grid-template-columns: 260px minmax(0,1fr) 360px; gap:8px; padding:8px; }
+  .tm-option { padding:7px 11px; font-size:12px; }
+  .tm-card { padding:12px 14px; }
+  .tm-card-title { font-size:10.5px; }
+}
+@media (max-width: 1024px) {
+  /* 태블릿: 좌측만 위로, 중앙+우측 2단 */
+  html, body { overflow:auto; }
+  .tm-app {
+    grid-template-columns: minmax(0,1fr) 360px;
+    grid-template-areas: "left left" "main right";
+    height:auto; min-height:100vh;
+  }
+  .tm-app > aside:first-child { grid-area: left; }
+  .tm-app > main { grid-area: main; }
+  .tm-app > aside:last-child { grid-area: right; }
+}
+@media (max-width: 768px) {
+  /* 모바일: 단일 컬럼 */
+  .tm-app {
+    grid-template-columns: 1fr;
+    grid-template-areas: "left" "main" "right";
+    padding:8px; gap:8px;
+  }
+  .tm-result-panel { max-height:60vh; }
 }
 </style>
 </head>
@@ -110,30 +257,9 @@ body {
 
   <!-- ═══ 좌측 ═══ -->
   <aside class="tm-panel">
-    <h2>📋 고객 정보</h2>
-    <div class="tm-field"><label>고객명</label><input type="text" id="cust-name" placeholder="홍길동"></div>
-    <div class="tm-field"><label>휴대폰 번호</label><input type="tel" id="cust-phone" placeholder="010-0000-0000"></div>
-    <div class="tm-field"><label>상담사</label><input type="text" id="cust-agent" placeholder="상담사명"></div>
-
-    <h2>💬 4단계 상담 스크립트</h2>
-    <div id="tm-scripts">
-      <div class="tm-script-step active">
-        <div class="tm-script-step-title">1. 인사 & 본인확인</div>
-        <div class="tm-script-step-text">안녕하세요, 리턴AI 상담사 ___입니다. 인터넷·TV 상담 도와드리겠습니다. 본인이신가요?</div>
-      </div>
-      <div class="tm-script-step">
-        <div class="tm-script-step-title">2. 현재 상품 확인</div>
-        <div class="tm-script-step-text">현재 어느 통신사 사용 중이신가요? 약정 만료일은 언제인가요? 가족 결합 여부도 확인.</div>
-      </div>
-      <div class="tm-script-step">
-        <div class="tm-script-step-title">3. 견적 안내</div>
-        <div class="tm-script-step-text">오른쪽 견적표를 보고 안내드립니다. 사은품 · 설치비 함께 설명. 결합 할인 강조.</div>
-      </div>
-      <div class="tm-script-step">
-        <div class="tm-script-step-title">4. 클로징</div>
-        <div class="tm-script-step-text">신청 의사 확인 → 설치 일정 협의 → 필요 서류 안내 (신분증·계좌·주소).</div>
-      </div>
-    </div>
+    <h2>💬 상담 스크립트</h2>
+    <div id="tm-scripts"></div>
+    <button type="button" class="tm-script-add-btn" id="tm-script-add">+ 단계 추가</button>
 
     <h2>📝 메모</h2>
     <div class="tm-field"><textarea id="cust-memo" placeholder="상담 메모..."></textarea></div>
@@ -161,11 +287,12 @@ body {
       </div>
 
       <div class="tm-card">
-        <div class="tm-card-title"><span class="num">3</span>WiFi</div>
+        <div class="tm-card-title"><span class="num">3</span>WiFi <span class="hint" id="wifi-hint" style="display:none">기본 포함</span></div>
         <div class="tm-options" id="card-wifi">
           <div class="tm-option" data-value="0">미사용</div>
           <div class="tm-option selected" data-value="1">사용</div>
         </div>
+        <div class="tm-wifi-notice" id="wifi-notice">📶 이 통신사·속도는 WiFi 라우터가 무료로 기본 제공됩니다</div>
       </div>
 
       <div class="tm-card">
@@ -173,8 +300,8 @@ body {
         <div class="tm-options" id="card-tv"></div>
       </div>
 
-      <div class="tm-card">
-        <div class="tm-card-title"><span class="num">5</span>셋톱박스</div>
+      <div class="tm-card" id="card-settop-wrap" style="display:none">
+        <div class="tm-card-title"><span class="num">5</span>셋톱박스 <span class="hint">TV 임대료 별도</span></div>
         <div class="tm-options" id="card-settop"></div>
       </div>
 
@@ -197,6 +324,13 @@ body {
         <div class="tm-card-title"><span class="num">💎</span>KT 프리미엄 가족결합 (회선별)</div>
         <div id="c-premium-members" style="display:flex;flex-direction:column;gap:6px"></div>
       </div>
+    </div>
+
+    <!-- 📊 calculator.html 임베드 — 위쪽 "요금 계산기" 영역만 hide, 나머지 모든 .section 표시 -->
+    <div id="tm-calc-doc" style="margin-top:14px;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,0.12);background:#0f172a">
+      <iframe id="calc-doc-iframe" src="/docs/calculator.html"
+              style="width:100%;border:none;display:block;background:#0f172a;min-height:1500px"
+              scrolling="no"></iframe>
     </div>
   </main>
 
@@ -266,6 +400,7 @@ var D = {
       { n: 'B tv 올 넷플릭스 프리미엄 (252채널)', p: 33200, dc: 2200 }
     ],
     install: { solo: 36300, combo: 56100 },
+    installWeekend: { solo: 45375, combo: 70125 },
     gift: {
       solo: { '100M': 110000, '500M': 170000, '1G': 170000 },
       combo: { '100M': 400000, '500M': 430000, '1G': 490000 }
@@ -310,6 +445,7 @@ var D = {
       { n: '지니TV 디즈니+모든G (250채널)', p: 28100, dc: 6600 }
     ],
     install: { solo: 36000, combo: 56200 },
+    installWeekend: { solo: 45000, combo: 71250 },
     gift: {
       solo: { '100M': 90000, '500M': 140000, '1G': 140000 },
       combo: { '100M': 370000, '500M': 450000, '1G': 450000 }
@@ -392,12 +528,31 @@ var D = {
       { n: 'U+tv 프리미엄 VOD (257채널)', p: 24200, dc: 5500 }
     ],
     install: { solo: 36300, combo: 56100 },
+    installWeekend: { solo: 45375, combo: 70125 },
     gift: {
       solo: { '100M': 200000, '500M': 230000, '1G': 230000 },
       combo: { '100M': 400000, '500M': 470000, '1G': 470000 }
     }
   }
 };
+
+// 사은품 override (calculator.html ↔ tm.html 동기화)
+var GIFT_OVERRIDE_KEY = 'bongi-gift-overrides';
+function applyGiftOverrides() {
+  try {
+    var ov = JSON.parse(localStorage.getItem(GIFT_OVERRIDE_KEY) || '{}');
+    Object.keys(ov).forEach(function(carrier) {
+      if (!D[carrier] || !D[carrier].gift) return;
+      Object.keys(ov[carrier] || {}).forEach(function(bucket) {
+        if (!D[carrier].gift[bucket]) D[carrier].gift[bucket] = {};
+        Object.keys(ov[carrier][bucket] || {}).forEach(function(sp) {
+          D[carrier].gift[bucket][sp] = ov[carrier][bucket][sp];
+        });
+      });
+    });
+  } catch(e) {}
+}
+applyGiftOverrides();
 
 function getGiftAmount(d, sp, tvIdx) {
   if (!d.gift) return 0;
@@ -858,7 +1013,15 @@ function calc() {
 
   var giftAmount = getGiftAmount(d, sp, ti);
   if (giftAmount > 0) html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:6px;padding:6px 10px;margin-top:6px"><span class="l" style="color:#fbbf24">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900">' + fmt(giftAmount) + '</span></div>';
-  html += '<div class="calc-line"><span class="l">설치비 (1회)</span><span class="v">' + fmt(installPrice) + '</span></div>';
+
+  // 설치비 평일/주말 (1회)
+  var installWeekday = installPrice;
+  var installWeekend = hasTv ? d.installWeekend.combo : d.installWeekend.solo;
+  html += '<div style="margin-top:8px;padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:6px;border:1px solid rgba(255,255,255,0.08)">' +
+    '<div style="font-size:10px;color:rgba(255,255,255,0.55);font-weight:700;margin-bottom:4px;letter-spacing:0.04em">🔧 설치비 (1회)</div>' +
+    '<div class="calc-line" style="padding:3px 0"><span class="l">평일</span><span class="v">' + fmt(installWeekday) + '</span></div>' +
+    '<div class="calc-line" style="padding:3px 0"><span class="l">주말 <span style="font-size:10px;color:rgba(248,113,113,0.7)">(약 25% 할증)</span></span><span class="v" style="color:#fca5a5">' + fmt(installWeekend) + '</span></div>' +
+    '</div>';
   document.getElementById('c-result').innerHTML = html;
 }
 
@@ -905,16 +1068,35 @@ function syncAllCards() {
   document.getElementById('card-premium-wrap').style.display = (document.getElementById('c-premium-group').style.display === 'none') ? 'none' : '';
   rebuildCardFromSelect('card-lines', 'c-lines');
   rebuildCardFromSelect('card-range', 'c-range');
+
+  // TV 없으면 셋톱 카드 숨김
+  var tvIdx = parseInt(document.getElementById('c-tv').value) || 0;
+  document.getElementById('card-settop-wrap').style.display = (tvIdx > 0) ? '' : 'none';
+
+  // WiFi 기본 포함 안내 (calc()의 wifiIncluded 로직과 동일)
+  var c = document.getElementById('c-carrier').value;
+  var sp = document.getElementById('c-speed').value;
+  var d = D[c];
+  var wifiIncluded = d.tvInternetNoWifi && d.tvInternetWithWifi && d.tvInternetNoWifi[sp] === d.tvInternetWithWifi[sp];
+  var hint = document.getElementById('wifi-hint');
+  var notice = document.getElementById('wifi-notice');
+  if (wifiIncluded) {
+    hint.style.display = '';
+    notice.classList.add('show');
+  } else {
+    hint.style.display = 'none';
+    notice.classList.remove('show');
+  }
 }
 
 // v1 이벤트 바인딩 (숨김 select가 변경될 때마다 calc + 카드 재동기화)
 document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); updateRangeUI(); updateWifiUI(); updateSetTopInfo(); calc(); syncAllCards(); });
 document.getElementById('c-speed').addEventListener('change', function() { updateWifiUI(); calc(); syncAllCards(); });
-document.getElementById('c-tv').addEventListener('change', function(){ calc(); });
-document.getElementById('c-wifi').addEventListener('change', function(){ calc(); });
+document.getElementById('c-tv').addEventListener('change', function(){ calc(); syncAllCards(); });
+document.getElementById('c-wifi').addEventListener('change', function(){ calc(); syncAllCards(); });
 document.getElementById('c-bundle').addEventListener('change', function() { updateRangeUI(); calc(); syncAllCards(); });
-document.getElementById('c-lines').addEventListener('change', function(){ calc(); });
-document.getElementById('c-range').addEventListener('change', function(){ calc(); });
+document.getElementById('c-lines').addEventListener('change', function(){ calc(); syncAllCards(); });
+document.getElementById('c-range').addEventListener('change', function(){ calc(); syncAllCards(); });
 
 // 카드 클릭 → 숨김 form 변경 → calc()
 document.addEventListener('click', function(e) {
@@ -964,17 +1146,168 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// 좌측 스크립트
+// ╔════════════════════════════════════════════════════╗
+// ║  좌측 스크립트 — 편집/추가/삭제 + localStorage 저장   ║
+// ╚════════════════════════════════════════════════════╝
+
+var SCRIPT_KEY = 'tm-scripts-v1';
+var SCRIPT_DEFAULTS = [
+  { title: '인사 & 본인확인', text: '안녕하세요, 리턴AI 상담사 ___입니다. 인터넷·TV 상담 도와드리겠습니다. 본인이신가요?' },
+  { title: '현재 상품 확인', text: '현재 어느 통신사 사용 중이신가요? 약정 만료일은 언제인가요? 가족 결합 여부도 확인.' },
+  { title: '견적 안내', text: '오른쪽 견적표를 보고 안내드립니다. 사은품 · 설치비 함께 설명. 결합 할인 강조.' },
+  { title: '클로징', text: '신청 의사 확인 → 설치 일정 협의 → 필요 서류 안내 (신분증·계좌·주소).' }
+];
+
+function loadScripts() {
+  try {
+    var saved = localStorage.getItem(SCRIPT_KEY);
+    if (saved) {
+      var arr = JSON.parse(saved);
+      if (Array.isArray(arr) && arr.length) return arr;
+    }
+  } catch(e) {}
+  return SCRIPT_DEFAULTS.slice();
+}
+
+function saveScripts() {
+  var steps = document.querySelectorAll('#tm-scripts .tm-script-step');
+  var arr = [];
+  steps.forEach(function(step){
+    arr.push({
+      title: step.querySelector('.tm-script-step-title').textContent.trim(),
+      text: step.querySelector('.tm-script-step-text').textContent.trim()
+    });
+  });
+  try { localStorage.setItem(SCRIPT_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderScriptStep(idx, data, isActive) {
+  var div = document.createElement('div');
+  div.className = 'tm-script-step' + (isActive ? ' active' : '');
+  div.innerHTML =
+    '<div class="tm-script-step-title-row">' +
+      '<span class="tm-script-step-num">' + (idx + 1) + '</span>' +
+      '<div class="tm-script-step-title" contenteditable="true" spellcheck="false">' + escapeHtml(data.title) + '</div>' +
+      '<button type="button" class="tm-script-step-del" title="단계 삭제">×</button>' +
+    '</div>' +
+    '<div class="tm-script-step-text" contenteditable="true" spellcheck="false">' + escapeHtml(data.text) + '</div>';
+  return div;
+}
+
+function renderAllScripts() {
+  var wrap = document.getElementById('tm-scripts');
+  var data = loadScripts();
+  wrap.innerHTML = '';
+  data.forEach(function(d, i){
+    wrap.appendChild(renderScriptStep(i, d, i === 0));
+  });
+}
+
+function renumberSteps() {
+  document.querySelectorAll('#tm-scripts .tm-script-step').forEach(function(step, i){
+    var num = step.querySelector('.tm-script-step-num');
+    if (num) num.textContent = (i + 1);
+  });
+}
+
+renderAllScripts();
+
+// active 토글 (번호 배지 클릭 시) + 일반 클릭으로도 active
 document.getElementById('tm-scripts').addEventListener('click', function(e){
+  var del = e.target.closest('.tm-script-step-del');
+  if (del) {
+    var step = del.closest('.tm-script-step');
+    if (step) {
+      step.remove();
+      renumberSteps();
+      saveScripts();
+    }
+    return;
+  }
+  // 편집 영역(title/text) 클릭은 active 토글 안 함
+  if (e.target.closest('.tm-script-step-title') || e.target.closest('.tm-script-step-text')) return;
   var step = e.target.closest('.tm-script-step');
   if (!step) return;
   document.querySelectorAll('.tm-script-step').forEach(function(s){ s.classList.remove('active'); });
   step.classList.add('active');
 });
 
+// 편집 시 자동 저장 (blur 시)
+document.getElementById('tm-scripts').addEventListener('blur', function(e){
+  if (e.target.classList.contains('tm-script-step-title') || e.target.classList.contains('tm-script-step-text')) {
+    saveScripts();
+  }
+}, true);
+
+// 단계 추가
+document.getElementById('tm-script-add').addEventListener('click', function(){
+  var wrap = document.getElementById('tm-scripts');
+  var idx = wrap.children.length;
+  var newStep = renderScriptStep(idx, { title: '새 단계', text: '내용을 입력하세요' }, false);
+  wrap.appendChild(newStep);
+  saveScripts();
+  // 새 단계 제목 자동 포커스
+  var titleEl = newStep.querySelector('.tm-script-step-title');
+  if (titleEl) {
+    titleEl.focus();
+    var range = document.createRange();
+    range.selectNodeContents(titleEl);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+});
+
 // 시작
 init();
 syncAllCards();
+
+// iframe 안 calculator.html에서 사은품 변경 시 자동 감지 → calc/티켓 재계산
+window.addEventListener('storage', function(e) {
+  if (e.key === GIFT_OVERRIDE_KEY) {
+    applyGiftOverrides();
+    calc();
+  }
+});
+
+// 📊 calculator.html iframe 임베드 — 위쪽 "요금 계산기" 영역만 hide, 나머지 .section들만 표시
+(function setupCalcDoc(){
+  var iframe = document.getElementById('calc-doc-iframe');
+  if (!iframe) return;
+  function trimAndResize() {
+    try {
+      var doc = iframe.contentDocument;
+      if (!doc) return;
+      // .section 첫 번째 이전의 모든 형제(<h1>, .subtitle, .calc 등) 숨김
+      var sections = doc.querySelectorAll('.section');
+      if (sections.length) {
+        var first = sections[0];
+        var parent = first.parentNode;
+        var node = parent.firstElementChild;
+        while (node && node !== first) {
+          var nextNode = node.nextElementSibling;
+          node.style.display = 'none';
+          node = nextNode;
+        }
+      }
+      // body padding 제거
+      if (doc.body) { doc.body.style.paddingTop = '0'; doc.body.style.marginTop = '0'; }
+      // 높이 자동 조정
+      var h = doc.documentElement.scrollHeight;
+      iframe.style.height = (h + 24) + 'px';
+    } catch(e) { console.warn('calc-doc embed:', e); }
+  }
+  iframe.addEventListener('load', function(){
+    trimAndResize();
+    setTimeout(trimAndResize, 250);
+    setTimeout(trimAndResize, 1000);
+  });
+  window.addEventListener('resize', function(){ setTimeout(trimAndResize, 100); });
+})();
 </script>
 
 </body>

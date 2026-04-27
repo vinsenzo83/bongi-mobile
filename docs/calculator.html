@@ -839,6 +839,33 @@ var D = {
   }
 };
 
+// 사은품 override (calculator.html ↔ tm.html 동기화 — localStorage 영구 저장)
+var GIFT_OVERRIDE_KEY = 'bongi-gift-overrides';
+function applyGiftOverrides() {
+  try {
+    var ov = JSON.parse(localStorage.getItem(GIFT_OVERRIDE_KEY) || '{}');
+    Object.keys(ov).forEach(function(carrier) {
+      if (!D[carrier] || !D[carrier].gift) return;
+      Object.keys(ov[carrier] || {}).forEach(function(bucket) {
+        if (!D[carrier].gift[bucket]) D[carrier].gift[bucket] = {};
+        Object.keys(ov[carrier][bucket] || {}).forEach(function(sp) {
+          D[carrier].gift[bucket][sp] = ov[carrier][bucket][sp];
+        });
+      });
+    });
+  } catch(e) {}
+}
+function saveGiftOverride(carrier, bucket, speed, value) {
+  try {
+    var ov = JSON.parse(localStorage.getItem(GIFT_OVERRIDE_KEY) || '{}');
+    if (!ov[carrier]) ov[carrier] = {};
+    if (!ov[carrier][bucket]) ov[carrier][bucket] = {};
+    ov[carrier][bucket][speed] = value;
+    localStorage.setItem(GIFT_OVERRIDE_KEY, JSON.stringify(ov));
+  } catch(e) {}
+}
+applyGiftOverrides();
+
 function getGiftAmount(d, sp, tvIdx) {
   if (!d.gift) return 0;
   var bucket = tvIdx > 0 ? d.gift.combo : d.gift.solo;
@@ -1794,6 +1821,7 @@ function updateGift(carrierKey, bucket, speed, value) {
   var old = D[carrierKey].gift[bucket][speed] || 0;
   if (old === n) return;
   D[carrierKey].gift[bucket][speed] = n;
+  saveGiftOverride(carrierKey, bucket, speed, n);  // ← localStorage 영구 저장 (tm.html 동기화)
   saveGiftHistory({
     at: nowKst(),
     carrier: carrierKey,
