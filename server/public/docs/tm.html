@@ -561,6 +561,39 @@ document.getElementById('f-lines').addEventListener('change',function(e){ state.
 document.getElementById('f-range').addEventListener('change',function(e){ state.rangeIdx=parseInt(e.target.value); renderBottom(); });
 
 refresh();
+
+function tmRender(){
+  var bb=document.getElementById('bb-info'),quote=document.getElementById('tm-quote');
+  if(!bb||!quote)return;
+  if(!bb.innerHTML.trim()){quote.innerHTML='<div class="tm-q"><span class="l">선택 진행 중...</span></div>';return;}
+  quote.innerHTML=bb.innerHTML;
+  var g=quote.querySelector('.bb-gift');
+  if(g){
+    document.getElementById('tm-gift').textContent=g.textContent.replace('🎁','').replace('사은품','').split('(')[0].trim()||'0원';
+    g.remove();
+  }
+}
+function tmCopy(){
+  var n=document.getElementById('tm-cn').value||'',p=document.getElementById('tm-cp').value||'',memo=document.getElementById('tm-cm').value||'';
+  var quote=document.getElementById('tm-quote').textContent.replace(/\s+/g,' ').trim();
+  var gift=document.getElementById('tm-gift').textContent;
+  var txt='【봉이모바일 견적】\n고객: '+n+' '+p+'\n\n'+quote+'\n사은품: '+gift+(memo?'\n\n메모: '+memo:'');
+  navigator.clipboard.writeText(txt).then(function(){alert('복사됨')}).catch(function(){alert(txt)});
+}
+(function(){
+  var attempts=0;
+  var iv=setInterval(function(){
+    attempts++;
+    if(typeof renderBottom==='function' && !window.__tmHooked){
+      window.__tmHooked=true;
+      var orig=renderBottom;
+      window.renderBottom=function(){orig.apply(this,arguments);tmRender();if(typeof showOnfamUI==='function')showOnfamUI();};
+      tmRender();
+      clearInterval(iv);
+    }else if(attempts>30){clearInterval(iv);}
+  },200);
+})();
+
 </script>
 
 </body>
