@@ -108,6 +108,14 @@ body.tm-mode{padding-bottom:0}
 .tm-line-cards .lc:hover{border-color:#93c5fd}
 .tm-line-cards .lc.on{border:2px solid #2563eb;background:#eff6ff;color:#2563eb}
 
+
+/* 우측 견적 다크 배경 색상 보정 */
+#tm-quote .bb-line{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#d4e6f7}
+#tm-quote .bb-line .l{color:#d4e6f7 !important}
+#tm-quote .bb-line .v{color:#fff !important;font-weight:700}
+#tm-quote .bb-final{font-size:16px !important;font-weight:900 !important;border-top:2px solid rgba(255,255,255,0.2) !important;color:#fff !important;padding-top:10px !important;margin-top:8px !important}
+#tm-quote .bb-final .v{color:#4ade80 !important;font-size:24px !important}
+
 @media (max-width:1280px){.tm-app{grid-template-columns:260px 1fr 320px}}
 
 </style>
@@ -180,6 +188,31 @@ body.tm-mode{padding-bottom:0}
     <div class="sub-field" id="f-mobile-field">
       <div class="bundle-name" id="f-bundle-name"></div>
       <div class="bundle-guide" id="f-bundle-guide"></div>
+      <div id="f-skt-bundle-type" style="display:none;margin-bottom:10px">
+        <div class="sub-field-label">SK 결합 종류</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <div class="bt-tab on" data-bt="family" style="padding:8px 14px;background:#fff;border:2px solid #2563eb;border-radius:8px;font-size:13px;font-weight:700;color:#2563eb;cursor:pointer">요즘가족결합</div>
+          <div class="bt-tab" data-bt="onfam" style="padding:8px 14px;background:#fff;border:1.5px solid #e2ddd6;border-radius:8px;font-size:13px;font-weight:700;color:#666;cursor:pointer">온가족할인 (장기가입)</div>
+        </div>
+        <div id="f-onfam-extra" style="display:none;margin-top:10px;padding:10px 12px;background:#fef3c7;border-radius:8px">
+          <div class="sub-field-label">가입년수 (인터넷 / 이동+인터넷 합산)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <select class="sub-select" id="f-onfam-i">
+              <option value="0">인터넷 1년 미만</option>
+              <option value="1">인터넷 1~2년</option>
+              <option value="2">인터넷 2~3년</option>
+              <option value="3" selected>인터넷 3년 이상</option>
+            </select>
+            <select class="sub-select" id="f-onfam-t">
+              <option value="0">이동+인터넷 10년 미만</option>
+              <option value="1">10~20년</option>
+              <option value="2">20~30년</option>
+              <option value="3" selected>30년 이상</option>
+            </select>
+          </div>
+          <div id="f-onfam-rate" style="margin-top:8px;font-size:13px;font-weight:900;color:#7c3aed;text-align:center">→ 할인율: 50%</div>
+        </div>
+      </div>
       <div class="card-grid-2">
         <div id="f-lines-wrap">
           <div class="sub-field-label" id="f-lines-label">결합 인원 / 회선수</div>
