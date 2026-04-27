@@ -479,7 +479,7 @@ function buildLinesRange(){
     rangeWrap.style.display='none';
   } else if (c==='kt'){
     linesWrap.style.display='none';
-    rangeSel.innerHTML=D.kt.bundle.ranges.map(function(r,i){return '<option value="'+i+'">'+r+'</option>';}).join('');
+    rangeSel.innerHTML=D.kt.bundle.ranges_total.map(function(r,i){return '<option value="'+i+'">'+r+'</option>';}).join('');
     rangeLabel.textContent='휴대폰 월 요금 합산 구간';
     rangeWrap.style.display='';
   } else {
@@ -534,7 +534,7 @@ function calculate(){
       var inetDc=d.bundle.total.internet[sp][rIdx]||0;
       mobileSide=d.bundle.total.mobile[sp][rIdx]||0;
       bundleFee=baseTotal-inetDc;
-      benefitLabel='총액 결합 ('+d.bundle.ranges[rIdx]+')';
+      benefitLabel='총액 결합 ('+d.bundle.ranges_total[rIdx]+')';
     } else if (state.carrier==='lgu' && d.bundle && d.bundle.chweyswun){
       var pIdx=parseInt(state.rangeIdx)||0;
       var ln=parseInt(state.lines)||2;
