@@ -8,7 +8,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Noto Sans KR',sans-serif;background:#f3f4f6;color:#1a1a1a;font-size:13px;line-height:1.4}
-.app{display:grid;grid-template-columns:240px 1fr 280px;min-height:100vh;gap:0}
+.app{display:grid;grid-template-columns:300px 1fr 380px;min-height:100vh;gap:0}
 /* 좌측 고객 패널 */
 .left{background:#fff;border-right:2px solid #e5e7eb;padding:14px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
 .left h2{font-size:14px;font-weight:900;margin-bottom:10px;color:#1a2744;display:flex;align-items:center;gap:6px}
@@ -73,21 +73,21 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f3f4f6;color:#1a1a1a;font
 .lines-pick .lp{padding:6px 10px;font-size:11px;font-weight:700;background:#f3f4f6;color:#6b7280;border-radius:6px;cursor:pointer;border:1.5px solid transparent}
 .lines-pick .lp.on{background:#fff;color:#2563eb;border-color:#2563eb}
 /* 우측 견적 */
-.right{background:#1a2744;color:#fff;padding:14px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.right{background:#1a2744;color:#fff;padding:18px 16px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
 .right h2{font-size:12px;font-weight:700;color:#a5c4f2;margin-bottom:6px;letter-spacing:0.5px}
 .quote-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;margin-bottom:8px}
-.q-line{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;color:#d4e6f7}
+.q-line{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#d4e6f7}
 .q-line.dc{color:#86efac}
-.q-line.total{border-top:2px solid rgba(255,255,255,0.2);margin-top:6px;padding-top:8px;font-size:13px;font-weight:900;color:#fff}
-.q-line.total .v{color:#4ade80;font-size:18px}
+.q-line.total{border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px;font-size:16px;font-weight:900;color:#fff}
+.q-line.total .v{color:#4ade80;font-size:24px}
 .q-line .l{flex:1;text-align:left}
 .q-line .v{font-weight:700}
 .gift-card{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-radius:8px;padding:8px 12px;margin-bottom:8px;text-align:center}
 .gift-card .lbl{font-size:10px;font-weight:700;opacity:0.9}
-.gift-card .val{font-size:18px;font-weight:900;margin-top:1px}
+.gift-card .val{font-size:22px;font-weight:900;margin-top:2px}
 .ticket-card{background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:center}
 .ticket-card .lbl{font-size:10px;font-weight:700;opacity:0.9}
-.ticket-card .val{font-size:16px;font-weight:900;margin-top:2px;font-family:'JetBrains Mono',monospace;letter-spacing:1px}
+.ticket-card .val{font-size:18px;font-weight:900;margin-top:2px;font-family:'JetBrains Mono',monospace;letter-spacing:1px}
 .actions{margin-top:auto;padding-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .act-btn{padding:10px 0;border-radius:8px;font-size:12px;font-weight:900;cursor:pointer;border:none;transition:all 0.15s}
 .act-btn.copy{background:#fff;color:#1a2744}
@@ -98,7 +98,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f3f4f6;color:#1a1a1a;font
 .act-btn.print:hover{background:rgba(255,255,255,0.18)}
 .bundle-extra{background:#fef3c7;border:1px solid #f7c94f;border-radius:8px;padding:8px 10px;margin-top:8px}
 .bundle-extra-label{font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px}
-@media (max-width:1100px){.app{grid-template-columns:240px 1fr 280px}.right h2{font-size:12px}.left .input{font-size:13px;padding:10px}}
+@media (max-width:1280px){.app{grid-template-columns:260px 1fr 320px}.right h2{font-size:12px}.left .input{font-size:13px;padding:10px}}
 </style>
 </head>
 <body>
@@ -107,14 +107,37 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f3f4f6;color:#1a1a1a;font
 <!-- 좌측: 고객 정보 -->
 <aside class="left">
   <h2>👤 고객 정보</h2>
-  <div class="label">이름</div>
+  <div class="label">이름 / 휴대폰</div>
   <input type="text" class="input" id="cn" placeholder="홍길동">
-  <div class="label">휴대폰번호</div>
   <input type="text" class="input" id="cp" placeholder="010-0000-0000">
-  <div class="label">메모</div>
-  <textarea class="input" id="cm" placeholder="상담 메모..."></textarea>
   <div class="label">상담사</div>
   <input type="text" class="input" id="ca" placeholder="상담사 이름">
+
+  <h2 style="margin-top:14px;border-top:1px solid #e5e7eb;padding-top:12px">📜 상담 스크립트</h2>
+  <div style="background:#f8f9fc;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.55;color:#1a2744;margin-bottom:8px">
+    <div style="font-weight:900;color:#2563eb;margin-bottom:4px">① 인사</div>
+    안녕하세요 고객님, 봉이모바일 [상담사명]입니다.<br>
+    오늘 인터넷+TV 상담 도와드리려고 합니다.
+  </div>
+  <div style="background:#f8f9fc;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.55;color:#1a2744;margin-bottom:8px">
+    <div style="font-weight:900;color:#2563eb;margin-bottom:4px">② 정보 확인</div>
+    현재 어느 통신사 사용 중이세요?<br>
+    가족분 휴대폰 결합 가능하세요?<br>
+    인터넷 가입 몇 년 되셨나요? (장기가입 할인)
+  </div>
+  <div style="background:#f8f9fc;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.55;color:#1a2744;margin-bottom:8px">
+    <div style="font-weight:900;color:#2563eb;margin-bottom:4px">③ 견적 안내</div>
+    [통신사] [속도] + [TV상품] 결합으로 월 [금액]원이고요,<br>
+    현금 페이백 [만원]만원 + 휴대폰 고지서에서 -[금액]원 별도 차감됩니다.
+  </div>
+  <div style="background:#f8f9fc;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.55;color:#1a2744;margin-bottom:8px">
+    <div style="font-weight:900;color:#2563eb;margin-bottom:4px">④ 마무리</div>
+    이 상품으로 진행해 드릴까요?<br>
+    설치는 주중/주말 가능합니다 (주말 +25%).
+  </div>
+
+  <div class="label">📝 상담 메모</div>
+  <textarea class="input" id="cm" placeholder="상담 중 메모..." style="min-height:80px"></textarea>
 </aside>
 
 <!-- 중앙: 메인 작업 영역 -->
