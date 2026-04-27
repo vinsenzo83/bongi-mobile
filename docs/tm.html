@@ -1236,12 +1236,44 @@ document.getElementById('tm-scripts').addEventListener('click', function(e){
   step.classList.add('active');
 });
 
-// 편집 시 자동 저장 (blur 시)
+// 편집 시 자동 저장 (input 즉시 + blur 보강)
+var _scriptSaveTimer = null;
+function scheduleSaveScripts() {
+  clearTimeout(_scriptSaveTimer);
+  _scriptSaveTimer = setTimeout(saveScripts, 300);
+}
+document.getElementById('tm-scripts').addEventListener('input', function(e){
+  if (e.target.classList.contains('tm-script-step-title') || e.target.classList.contains('tm-script-step-text')) {
+    scheduleSaveScripts();
+  }
+});
 document.getElementById('tm-scripts').addEventListener('blur', function(e){
   if (e.target.classList.contains('tm-script-step-title') || e.target.classList.contains('tm-script-step-text')) {
     saveScripts();
   }
 }, true);
+// 페이지 닫기/새로고침 직전 안전망
+window.addEventListener('beforeunload', saveScripts);
+window.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'hidden') saveScripts();
+});
+
+// 메모 자동 저장/복원
+var MEMO_KEY = 'tm-memo-v1';
+var memoEl = document.getElementById('cust-memo');
+if (memoEl) {
+  try { memoEl.value = localStorage.getItem(MEMO_KEY) || ''; } catch(e) {}
+  var _memoSaveTimer = null;
+  memoEl.addEventListener('input', function(){
+    clearTimeout(_memoSaveTimer);
+    _memoSaveTimer = setTimeout(function(){
+      try { localStorage.setItem(MEMO_KEY, memoEl.value); } catch(e) {}
+    }, 300);
+  });
+  window.addEventListener('beforeunload', function(){
+    try { localStorage.setItem(MEMO_KEY, memoEl.value); } catch(e) {}
+  });
+}
 
 // 단계 추가
 document.getElementById('tm-script-add').addEventListener('click', function(){
