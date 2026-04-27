@@ -201,6 +201,43 @@ html, body { overflow:hidden; }
   .tm-info-row { grid-template-columns: 1fr; gap:4px; }
 }
 
+/* 티켓번호 조회 */
+.tm-ticket-lookup {
+  background:rgba(99,102,241,0.15);
+  border:1.5px solid #818cf8;
+  border-radius:10px; padding:11px 13px; margin-bottom:14px;
+}
+.tm-ticket-lookup-label {
+  font-size:10.5px; color:#a5b4fc; font-weight:700;
+  margin-bottom:7px; letter-spacing:0.06em;
+}
+.tm-ticket-lookup-row { display:flex; gap:7px; }
+.tm-ticket-lookup-row input {
+  flex:1; padding:9px 11px; border-radius:7px;
+  border:1.5px solid rgba(255,255,255,0.18);
+  background:rgba(255,255,255,0.08); color:#fff;
+  font-size:13px; font-family:'SF Mono', Monaco, monospace;
+  text-transform:uppercase; letter-spacing:1px; outline:none;
+  transition:all 0.15s;
+}
+.tm-ticket-lookup-row input:focus {
+  background:rgba(255,255,255,0.14); border-color:#a5b4fc;
+}
+.tm-ticket-lookup-row input::placeholder { color:rgba(255,255,255,0.35); letter-spacing:0; text-transform:none; }
+.tm-ticket-lookup-row button {
+  padding:9px 14px; border:none; border-radius:7px;
+  background:linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color:#fff; font-size:12.5px; font-weight:700; cursor:pointer;
+  font-family:inherit; transition:all 0.15s;
+  box-shadow:0 2px 6px rgba(99,102,241,0.35);
+}
+.tm-ticket-lookup-row button:hover { transform:translateY(-1px); box-shadow:0 3px 10px rgba(99,102,241,0.5); }
+.tm-ticket-lookup-msg {
+  font-size:11px; color:#fca5a5; margin-top:7px; display:none;
+}
+.tm-ticket-lookup-msg.show { display:block; }
+.tm-ticket-lookup-msg.success { color:#86efac; }
+
 /* WiFi 안내 배너 */
 .tm-wifi-notice {
   margin-top:10px; padding:8px 11px; border-radius:8px;
@@ -337,6 +374,15 @@ html, body { overflow:hidden; }
   <!-- ═══ 우측 ═══ -->
   <aside class="tm-panel tm-result-panel">
     <h2>💰 견적 결과</h2>
+    <div class="tm-ticket-lookup">
+      <div class="tm-ticket-lookup-label">🎫 티켓번호로 빠른 조회</div>
+      <div class="tm-ticket-lookup-row">
+        <input type="text" id="c-ticket-lookup" list="ticket-options" placeholder="예: SK0015 / KT0008 / LG0003" autocomplete="off">
+        <datalist id="ticket-options"></datalist>
+        <button type="button" id="c-ticket-lookup-btn">조회</button>
+      </div>
+      <div id="c-ticket-lookup-msg" class="tm-ticket-lookup-msg"></div>
+    </div>
     <div class="tm-result"><div id="c-result"></div></div>
   </aside>
 
@@ -1348,6 +1394,54 @@ document.getElementById('tm-script-add').addEventListener('click', function(){
     sel.addRange(range);
   }
 });
+
+// 🎫 티켓번호 조회 — 입력 시 통신사/속도/TV/WiFi 자동 설정
+(function setupTicketLookup() {
+  var dl = document.getElementById('ticket-options');
+  TICKETS.forEach(function(t) {
+    var opt = document.createElement('option');
+    opt.value = t.number;
+    dl.appendChild(opt);
+  });
+
+  var input = document.getElementById('c-ticket-lookup');
+  var btn = document.getElementById('c-ticket-lookup-btn');
+  var msg = document.getElementById('c-ticket-lookup-msg');
+
+  function showMsg(text, kind) {
+    msg.textContent = text;
+    msg.className = 'tm-ticket-lookup-msg show' + (kind === 'success' ? ' success' : '');
+  }
+  function hideMsg() { msg.className = 'tm-ticket-lookup-msg'; }
+
+  function lookup() {
+    var num = input.value.trim().toUpperCase();
+    if (!num) { hideMsg(); return; }
+    var t = TICKETS.find(function(x){ return x.number === num; });
+    if (!t) { showMsg('⚠️ 티켓번호를 찾을 수 없습니다: ' + num); return; }
+
+    document.getElementById('c-carrier').value = t.carrier;
+    buildTV();
+    updateBundleUI();
+    updateRangeUI();
+    document.getElementById('c-speed').value = t.speed;
+    document.getElementById('c-tv').value = t.tvIdx;
+    updateWifiUI();
+    var wf = document.getElementById('c-wifi');
+    if (!wf.disabled) wf.checked = t.wifi;
+    updateSetTopInfo();
+    calc();
+    syncAllCards();
+
+    var labels = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' };
+    var tvLabel = t.tvIdx === 0 ? '인터넷 단독' : D[t.carrier].tv[t.tvIdx].n.split('(')[0].trim();
+    showMsg('✓ ' + labels[t.carrier] + ' ' + t.speed + ' · ' + tvLabel + ' · WiFi ' + (t.wifi ? '사용' : '미사용'), 'success');
+  }
+
+  btn.addEventListener('click', lookup);
+  input.addEventListener('keypress', function(e) { if (e.key === 'Enter') lookup(); });
+  input.addEventListener('change', lookup);
+})();
 
 // 시작
 init();
