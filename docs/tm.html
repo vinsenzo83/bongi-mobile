@@ -101,6 +101,13 @@ h1 { font-size:24px; font-weight:900; color:#1a2744; margin-bottom:6px; }
 .tm-center .wrap{max-width:none;padding:20px 24px}
 .tm-center .bottom-bar{display:none}
 body.tm-mode{padding-bottom:0}
+
+/* lines/range 카드 버튼 */
+.tm-line-cards{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.tm-line-cards .lc{padding:10px 16px;background:#fff;border:1.5px solid #e2ddd6;border-radius:10px;font-size:14px;font-weight:700;color:#666;cursor:pointer;min-width:60px;text-align:center;transition:all 0.15s}
+.tm-line-cards .lc:hover{border-color:#93c5fd}
+.tm-line-cards .lc.on{border:2px solid #2563eb;background:#eff6ff;color:#2563eb}
+
 @media (max-width:1280px){.tm-app{grid-template-columns:260px 1fr 320px}}
 
 </style>
@@ -201,15 +208,6 @@ body.tm-mode{padding-bottom:0}
   </div>
 </aside>
 
-</div>
-
-<!-- 하단 고정 요금 바 -->
-<div class="bottom-bar">
-  <div class="bottom-inner">
-    <div class="bb-info" id="bb-info"></div>
-    <button class="bb-btn bb-btn-line">가입 신청</button>
-    <button class="bb-btn bb-btn-primary">📞 전문상담 연결</button>
-  </div>
 </div>
 
 <script>
