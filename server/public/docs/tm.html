@@ -188,12 +188,9 @@ body.tm-mode{padding-bottom:0}
     <div class="sub-field" id="f-mobile-field">
       <div class="bundle-name" id="f-bundle-name"></div>
       <div class="bundle-guide" id="f-bundle-guide"></div>
-      <div id="f-skt-bundle-type" style="display:none;margin-bottom:10px">
-        <div class="sub-field-label">SK 결합 종류</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <div class="bt-tab on" data-bt="family" style="padding:8px 14px;background:#fff;border:2px solid #2563eb;border-radius:8px;font-size:13px;font-weight:700;color:#2563eb;cursor:pointer">요즘가족결합</div>
-          <div class="bt-tab" data-bt="onfam" style="padding:8px 14px;background:#fff;border:1.5px solid #e2ddd6;border-radius:8px;font-size:13px;font-weight:700;color:#666;cursor:pointer">온가족할인 (장기가입)</div>
-        </div>
+      <div id="f-bundle-type" style="display:none;margin-bottom:10px">
+        <div class="sub-field-label" id="f-bundle-type-label">결합 종류 선택</div>
+        <div id="f-bundle-type-list" style="display:flex;gap:6px;flex-wrap:wrap"></div>
         <div id="f-onfam-extra" style="display:none;margin-top:10px;padding:10px 12px;background:#fef3c7;border-radius:8px">
           <div class="sub-field-label">가입년수 (인터넷 / 이동+인터넷 합산)</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
@@ -563,6 +560,71 @@ document.getElementById('f-lines').addEventListener('change',function(e){ state.
 document.getElementById('f-range').addEventListener('change',function(e){ state.rangeIdx=parseInt(e.target.value); renderBottom(); });
 
 refresh();
+
+
+// === 통신사별 결합 종류 (클릭형 카드) ===
+var BUNDLE_OPTS = {
+  skt: [
+    { v:'family', n:'요즘가족결합 ⭐', s:'1~5명 결합' },
+    { v:'onfam', n:'온가족할인', s:'장기가입 5~50%' },
+    { v:'home', n:'요즘우리집결합', s:'TV만' }
+  ],
+  kt: [
+    { v:'kt-total', n:'총액 결합 ⭐', s:'기본+추가 중복' },
+    { v:'kt-fixed', n:'정액 결합', s:'요금제 등급별' },
+    { v:'kt-premium', n:'💎 프리미엄', s:'77K+ 2회선' },
+    { v:'home', n:'TV 결합', s:'휴대폰 없음' }
+  ],
+  lgu: [
+    { v:'lgu-chweyswun', n:'참쉬운 ⭐', s:'2회선+ 일반' },
+    { v:'lgu-together', n:'투게더', s:'85K+ 고가' },
+    { v:'home', n:'TV 결합', s:'휴대폰 없음' }
+  ]
+};
+
+function renderBundleTypes(){
+  var box = document.getElementById('f-bundle-type');
+  var list = document.getElementById('f-bundle-type-list');
+  if (!box || !list) return;
+  if (!state.mobileOn) { box.style.display='none'; return; }
+  box.style.display='block';
+  var opts = BUNDLE_OPTS[state.carrier] || [];
+  // 기본값 보정
+  if (!opts.find(function(o){return o.v===state.bundleType})) state.bundleType = opts[0].v;
+  list.innerHTML = opts.map(function(o){
+    var on = (o.v === state.bundleType);
+    return '<div class="bt-tab'+(on?' on':'')+'" data-bt="'+o.v+'" style="flex:1;min-width:120px;padding:10px 12px;background:'+(on?'#eff6ff':'#fff')+';border:'+(on?'2px':'1.5px')+' solid '+(on?'#2563eb':'#e2ddd6')+';border-radius:8px;font-size:13px;font-weight:700;color:'+(on?'#2563eb':'#666')+';cursor:pointer;text-align:center"><div>'+o.n+'</div><div style="font-size:10px;color:'+(on?'#3b82f6':'#999')+';margin-top:2px;font-weight:500">'+o.s+'</div></div>';
+  }).join('');
+  // 온가족 추가 입력 (가입년수)
+  var extra = document.getElementById('f-onfam-extra');
+  if (extra) extra.style.display = (state.bundleType === 'onfam') ? 'block' : 'none';
+}
+
+// 클릭 위임
+document.addEventListener('click', function(e){
+  var t = e.target.closest('.bt-tab');
+  if (t && t.dataset.bt){
+    state.bundleType = t.dataset.bt;
+    renderBundleTypes();
+    setTimeout(tmRender, 50);
+  }
+});
+
+// 통신사 변경 시 결합 옵션 리셋
+['f-carrier','f-mobile-on'].forEach(function(id){
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('change', function(){ setTimeout(renderBundleTypes, 30); });
+});
+// 카드 클릭 (carrier 카드)
+setTimeout(function(){
+  document.querySelectorAll('#f-carrier .select-card').forEach(function(c){
+    c.addEventListener('click', function(){ setTimeout(renderBundleTypes, 30); });
+  });
+}, 200);
+
+// 초기
+setTimeout(renderBundleTypes, 300);
+
 
 function tmRender(){
   var quote = document.getElementById('tm-quote');
