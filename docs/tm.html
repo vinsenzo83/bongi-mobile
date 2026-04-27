@@ -229,6 +229,7 @@ body.tm-mode{padding-bottom:0}
 
 </div>
 <div id="bb-info" style="display:none"></div>
+<iframe id="v1-frame" src="calculator.html" style="display:none;width:1px;height:1px;border:0"></iframe>
 </main>
 
 <aside class="tm-right">
@@ -565,52 +566,47 @@ refresh();
 
 function tmRender(){
   var quote = document.getElementById('tm-quote');
-  if (!quote || typeof calculate !== 'function' || typeof D === 'undefined' || typeof state === 'undefined') return;
-  try {
-    var d = D[state.carrier];
-    var sp = state.speed;
-    var hasTv = state.tv > 0;
-    var wf = state.wifi;
-    var wifiForSp = (d.wifiPrice ? d.wifiPrice[sp] : (d.wifiCost||0));
-    var inetSolo = d.internet[sp];
-    var wifiFee = wf ? wifiForSp : 0;
-    var tvP = hasTv ? d.tv[state.tv].p : 0;
-    var tvDc = hasTv ? (d.tv[state.tv].dc||0) : 0;
-    var setTopFee = hasTv ? (d.setTop||0) : 0;
-
-    var r = calculate();
-    var basicFee = r.basicFee, bundleFee = r.bundleFee, mobileSide = r.mobileSide, finalFee = r.finalFee;
-    var gift = r.gift || 0;
-    var benefit = r.benefit || '';
-    var instCombo = (d.install ? d.install.combo : 0), instSolo = (d.install ? d.install.solo : 0);
-    var instWd = hasTv ? instCombo : instSolo;
-    var instWe = Math.round(instWd * 1.25);
-
-    var html = '';
-    html += '<div class="bb-line"><span class="l">📡 통신사</span><span class="v">'+d.name.split('(')[0].trim()+'</span></div>';
-    html += '<div class="bb-line"><span class="l">속도</span><span class="v">'+sp+' ('+inetSolo.toLocaleString()+'원)</span></div>';
-    html += '<div class="bb-line"><span class="l">WiFi</span><span class="v">'+(wf?wifiFee.toLocaleString()+'원':'미가입')+'</span></div>';
-    if (hasTv) {
-      html += '<div class="bb-line"><span class="l">TV</span><span class="v" style="font-size:11px">'+d.tv[state.tv].n+'</span></div>';
-      html += '<div class="bb-line"><span class="l">· TV 정가</span><span class="v">'+tvP.toLocaleString()+'원</span></div>';
-      html += '<div class="bb-line" style="color:#86efac"><span class="l">· TV 기본 할인</span><span class="v">-'+tvDc.toLocaleString()+'원</span></div>';
-      html += '<div class="bb-line"><span class="l">셋톱 ('+(d.setTopName||'기본')+')</span><span class="v">+'+setTopFee.toLocaleString()+'원</span></div>';
-    }
-    html += '<div class="bb-line"><span class="l">결합 종류</span><span class="v" style="font-size:11px;color:#fbbf24">'+(state.mobileOn?(benefit||'결합'):'결합 없음')+'</span></div>';
-    if (state.mobileOn && bundleFee !== basicFee) {
-      var bundleDc = basicFee - bundleFee;
-      html += '<div class="bb-line" style="color:#86efac"><span class="l">↓ 결합 할인</span><span class="v">-'+bundleDc.toLocaleString()+'원</span></div>';
-    }
-    html += '<div class="bb-line bb-final"><span class="l">💰 월 실납부</span><span class="v">'+finalFee.toLocaleString()+'원</span></div>';
-    if (mobileSide > 0) {
-      html += '<div class="bb-line" style="color:#86efac;margin-top:6px"><span class="l">📱 휴대폰 고지서 별도</span><span class="v">-'+mobileSide.toLocaleString()+'원</span></div>';
-    }
-    html += '<div class="bb-line" style="border-top:1px dashed rgba(255,255,255,0.15);padding-top:6px;margin-top:6px"><span class="l">🔧 설치비 주중 (1회)</span><span class="v">'+instWd.toLocaleString()+'원</span></div>';
-    html += '<div class="bb-line"><span class="l">🔧 설치비 주말 (+25%)</span><span class="v">'+instWe.toLocaleString()+'원</span></div>';
-    quote.innerHTML = html;
-    document.getElementById('tm-gift').textContent = gift > 0 ? (gift/10000)+'만원' : '0원';
-  } catch(e) {
-    quote.innerHTML = '<div class="tm-q"><span class="l">계산 중...</span></div>';
+  if (!quote) return;
+  var f = document.getElementById('v1-frame');
+  if (!f || !f.contentWindow || !f.contentWindow.document) {
+    quote.innerHTML = '<div class="tm-q"><span class="l">로딩 중...</span></div>'; return;
+  }
+  var doc = f.contentWindow.document;
+  // v1 폼 동기화
+  var $c = doc.getElementById('c-carrier'); if (!$c) return;
+  $c.value = state.carrier;
+  doc.getElementById('c-speed').value = state.speed;
+  doc.getElementById('c-tv').value = (state.tv || 0);
+  doc.getElementById('c-wifi').checked = !!state.wifi;
+  // bundle 매핑: v2 mobileOn 체크 + bundleType
+  var v1Bundle = 'home';
+  if (state.mobileOn) {
+    if (state.carrier === 'skt') v1Bundle = (state.bundleType === 'onfam') ? 'onfam' : 'family';
+    else if (state.carrier === 'kt') v1Bundle = 'kt-total';
+    else if (state.carrier === 'lgu') v1Bundle = 'lgu-chweyswun';
+  }
+  var $b = doc.getElementById('c-bundle');
+  if ($b) {
+    // 옵션 존재 확인 후 값 설정
+    var hasOpt = false;
+    Array.from($b.options).forEach(function(o){ if (o.value === v1Bundle) hasOpt = true; });
+    $b.value = hasOpt ? v1Bundle : $b.options[0].value;
+  }
+  // updateBundleUI/updateRangeUI 후 lines/range 채움
+  if (typeof f.contentWindow.updateBundleUI === 'function') f.contentWindow.updateBundleUI();
+  if (typeof f.contentWindow.updateRangeUI === 'function') f.contentWindow.updateRangeUI();
+  if (typeof f.contentWindow.updateWifiUI === 'function') f.contentWindow.updateWifiUI();
+  var $l = doc.getElementById('c-lines'); if ($l && state.lines) $l.value = state.lines;
+  var $r = doc.getElementById('c-range'); if ($r && (state.rangeIdx !== undefined)) $r.value = state.rangeIdx;
+  // calc 실행
+  if (typeof f.contentWindow.calc === 'function') f.contentWindow.calc();
+  // 결과 미러
+  var src = doc.getElementById('c-result');
+  if (src) {
+    quote.innerHTML = src.innerHTML;
+    // 사은품 정보 추출
+    var m = src.innerHTML.match(/현금\s*사은품[^<]*<\/span><span[^>]*>([\d,]+)원/);
+    if (m) document.getElementById('tm-gift').textContent = (parseInt(m[1].replace(/,/g,''))/10000)+'만원';
   }
 }
 function tmCopy(){
@@ -620,16 +616,25 @@ function tmCopy(){
   var txt='【봉이모바일 견적】\n고객: '+n+' '+p+'\n\n'+quote+'\n사은품: '+gift+(memo?'\n\n메모: '+memo:'');
   navigator.clipboard.writeText(txt).then(function(){alert('복사됨')}).catch(function(){alert(txt)});
 }
-// MutationObserver로 bb-info 변경 감지 + 즉시 미러
+// iframe 로드 후 미러링 시작
 (function(){
-  var bb = document.getElementById('bb-info');
-  if (!bb) { setTimeout(arguments.callee, 200); return; }
-  var mo = new MutationObserver(function(){ tmRender(); });
-  mo.observe(bb, { childList:true, subtree:true, characterData:true });
-  // 초기 동기화 + 보조 폴링 (200ms × 5초)
-  tmRender();
-  var n=0;
-  var iv=setInterval(function(){ tmRender(); if(++n>25) clearInterval(iv); }, 200);
+  var f = document.getElementById('v1-frame');
+  if (!f) { setTimeout(arguments.callee, 200); return; }
+  function start(){
+    tmRender();
+    // v2의 state 변경 시 즉시 동기화 (input/change 이벤트 listen)
+    document.querySelectorAll('input, select, .select-card, .tv-card, .lc, .bt-tab').forEach(function(el){
+      el.addEventListener('click', function(){ setTimeout(tmRender, 30); });
+      el.addEventListener('change', function(){ setTimeout(tmRender, 30); });
+    });
+    // 보조 폴링 (300ms × 10초)
+    var n=0; var iv=setInterval(function(){ tmRender(); if(++n>30) clearInterval(iv); }, 300);
+  }
+  if (f.contentWindow && f.contentWindow.document.readyState === 'complete') {
+    setTimeout(start, 100);
+  } else {
+    f.addEventListener('load', function(){ setTimeout(start, 200); });
+  }
 })();
 
 </script>
