@@ -1,22 +1,15 @@
-// Basic Auth 미들웨어 (어드민 보호)
+// 어드민 인증 미들웨어 (X-Admin-Password 헤더 또는 cookie)
 export function basicAuth(req, res, next) {
-  const expectedUser = process.env.ADMIN_USER || 'admin';
   const expectedPass = process.env.ADMIN_PASSWORD || '1111';
+  const headerPass = req.headers['x-admin-password'];
+  const cookiePass = (req.headers.cookie || '')
+    .split(';')
+    .map(s => s.trim())
+    .find(s => s.startsWith('admin_pw='))
+    ?.split('=')[1];
 
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Basic ')) {
-    res.set('WWW-Authenticate', 'Basic realm="Special Promo Admin"');
-    return res.status(401).send('Authentication required');
+  if (headerPass === expectedPass || cookiePass === expectedPass) {
+    return next();
   }
-  try {
-    const decoded = Buffer.from(auth.split(' ')[1], 'base64').toString('utf-8');
-    const idx = decoded.indexOf(':');
-    const user = decoded.slice(0, idx);
-    const pass = decoded.slice(idx + 1);
-    if (user === expectedUser && pass === expectedPass) {
-      return next();
-    }
-  } catch (e) {}
-  res.set('WWW-Authenticate', 'Basic realm="Special Promo Admin"');
-  return res.status(401).send('Unauthorized');
+  return res.status(401).json({ ok: false, error: 'unauthorized' });
 }

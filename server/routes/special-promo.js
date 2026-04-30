@@ -88,10 +88,12 @@ router.post('/', (req, res) => {
   return res.json({ ok: true, id, created_at });
 });
 
-// 목록 조회
+// 목록 조회 (trash=1 → 휴지통, 기본 → 활성)
 router.get('/', (req, res) => {
-  const { status, q } = req.query;
-  let list = [...applications];
+  const { status, q, trash } = req.query;
+  const isTrash = trash === '1' || trash === 'true';
+
+  let list = applications.filter(a => isTrash ? a.deleted === true : !a.deleted);
 
   if (status && status !== 'all') {
     list = list.filter(a => a.status === status);
@@ -106,13 +108,15 @@ router.get('/', (req, res) => {
     );
   }
 
+  const active = applications.filter(a => !a.deleted);
   const stats = {
-    total: applications.length,
-    pending: applications.filter(a => a.status === 'pending').length,
-    contacted: applications.filter(a => a.status === 'contacted').length,
-    completed: applications.filter(a => a.status === 'completed').length,
-    cancelled: applications.filter(a => a.status === 'cancelled').length,
-    combo: applications.filter(a => a.combo).length,
+    total: active.length,
+    pending: active.filter(a => a.status === 'pending').length,
+    contacted: active.filter(a => a.status === 'contacted').length,
+    completed: active.filter(a => a.status === 'completed').length,
+    cancelled: active.filter(a => a.status === 'cancelled').length,
+    combo: active.filter(a => a.combo).length,
+    trash: applications.filter(a => a.deleted).length,
   };
 
   return res.json({ ok: true, applications: list, stats, statusLabels: STATUS_LABELS });
@@ -133,14 +137,44 @@ router.patch('/:id', (req, res) => {
   return res.json({ ok: true, application: app });
 });
 
-// 삭제
+// 삭제 (soft = 휴지통 이동, permanent=1 = 영구 삭제)
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
+  const { permanent } = req.query;
   const idx = applications.findIndex(a => a.id === id);
   if (idx === -1) return res.status(404).json({ ok: false, error: 'not found' });
-  applications.splice(idx, 1);
+
+  if (permanent === '1' || permanent === 'true') {
+    applications.splice(idx, 1);
+  } else {
+    applications[idx].deleted = true;
+    applications[idx].trashed_at = new Date().toISOString();
+    applications[idx].updated_at = new Date().toISOString();
+  }
   persist();
   return res.json({ ok: true });
+});
+
+// 복원
+router.post('/:id/restore', (req, res) => {
+  const { id } = req.params;
+  const app = applications.find(a => a.id === id);
+  if (!app) return res.status(404).json({ ok: false, error: 'not found' });
+  app.deleted = false;
+  app.trashed_at = null;
+  app.updated_at = new Date().toISOString();
+  persist();
+  return res.json({ ok: true, application: app });
+});
+
+// 휴지통 비우기 (모든 deleted 영구 삭제)
+router.delete('/trash/empty', (req, res) => {
+  const before = applications.length;
+  for (let i = applications.length - 1; i >= 0; i--) {
+    if (applications[i].deleted) applications.splice(i, 1);
+  }
+  persist();
+  return res.json({ ok: true, removed: before - applications.length });
 });
 
 export default router;

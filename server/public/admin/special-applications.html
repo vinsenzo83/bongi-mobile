@@ -140,6 +140,9 @@
   }
   .row-actions button.delete { color: #ef4444; border-color: #fecaca; }
   .row-actions button.detail { color: #1a2744; }
+  .row-actions button.restore { color: #fff; background: #059669; border-color: #059669; }
+  .mc-actions button.restore { color: #fff; background: #059669; border-color: #059669; }
+  .stat[data-status="trash"] .value { color: #888; }
 
   .empty {
     padding: 60px 20px; text-align: center; color: #888; font-size: 14px;
@@ -183,6 +186,44 @@
 
   /* ===== Mobile Card View (≤ 720px) ===== */
   .mobile-cards { display: none; }
+  /* ===== Password Lock Overlay ===== */
+  .lock-overlay {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #1a2744 0%, #0f1730 100%);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 24px;
+  }
+  .lock-card {
+    background: #fff; border-radius: 20px; padding: 36px 32px;
+    max-width: 380px; width: 100%; text-align: center;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+  }
+  .lock-icon {
+    width: 64px; height: 64px; margin: 0 auto 18px;
+    background: linear-gradient(135deg, #FFD60A 0%, #FFE15C 100%);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+  }
+  .lock-title { font-size: 20px; font-weight: 900; letter-spacing: -0.6px; margin-bottom: 6px; }
+  .lock-desc { font-size: 13px; color: #767676; margin-bottom: 24px; }
+  .lock-input {
+    width: 100%; padding: 16px; border: 2px solid #e5e7eb; border-radius: 12px;
+    font-size: 18px; font-family: inherit; letter-spacing: 4px; text-align: center;
+    margin-bottom: 12px; -webkit-appearance: none;
+  }
+  .lock-input:focus { outline: none; border-color: #1a2744; }
+  .lock-error {
+    color: #ef4444; font-size: 12px; font-weight: 700;
+    margin-top: -4px; margin-bottom: 12px; min-height: 18px;
+  }
+  .lock-btn {
+    width: 100%; padding: 16px; border: none; border-radius: 12px;
+    background: #1a2744; color: #fff; font-size: 15px; font-weight: 800;
+    cursor: pointer; font-family: inherit; letter-spacing: -0.3px;
+  }
+  .lock-btn:active { transform: scale(0.98); }
+
   @media (max-width: 720px) {
     body { font-size: 14px; }
     .wrap { padding: 14px; }
@@ -246,7 +287,20 @@
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<!-- Password Lock -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-card">
+    <div class="lock-icon">🔒</div>
+    <div class="lock-title">관리자 인증</div>
+    <div class="lock-desc">파이어니 × 에이스휴먼파워 특판 관리</div>
+    <input class="lock-input" id="lockInput" type="password" inputmode="numeric" placeholder="비밀번호" autofocus>
+    <div class="lock-error" id="lockError"></div>
+    <button class="lock-btn" id="lockBtn">접속</button>
+  </div>
+</div>
+
+<div class="wrap" style="display:none;" id="adminBody">
 
   <!-- Top -->
   <div class="topbar">
@@ -324,13 +378,87 @@
   let currentFilter = 'all';
   let currentQuery = '';
   let cache = [];
+  let adminPw = sessionStorage.getItem('admin_pw') || '';
+
+  function authHeaders() {
+    return { 'X-Admin-Password': adminPw, 'Content-Type': 'application/json' };
+  }
+
+  // === Password Lock ===
+  const lockOverlay = document.getElementById('lockOverlay');
+  const lockInput = document.getElementById('lockInput');
+  const lockError = document.getElementById('lockError');
+  const lockBtn = document.getElementById('lockBtn');
+  const adminBody = document.getElementById('adminBody');
+
+  async function attemptLogin(pw) {
+    try {
+      const r = await fetch('/api/special-promo?_=' + Date.now(), {
+        headers: { 'X-Admin-Password': pw },
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      if (r.ok) {
+        adminPw = pw;
+        sessionStorage.setItem('admin_pw', pw);
+        document.cookie = `admin_pw=${pw}; path=/; max-age=43200; SameSite=Lax`;
+        lockOverlay.style.display = 'none';
+        adminBody.style.display = 'block';
+        load();
+        setupAutoRefresh();
+        return true;
+      }
+      console.warn('Login failed status:', r.status);
+      return r.status;
+    } catch (e) {
+      console.error('Login network error:', e);
+      return 'network:' + e.message;
+    }
+  }
+
+  lockBtn.addEventListener('click', async () => {
+    const pw = lockInput.value.trim();
+    if (!pw) { lockError.textContent = '비밀번호를 입력하세요'; return; }
+    lockBtn.textContent = '확인 중...';
+    lockError.textContent = '';
+    const result = await attemptLogin(pw);
+    lockBtn.textContent = '접속';
+    if (result !== true) {
+      if (typeof result === 'number') {
+        lockError.textContent = result === 401 ? '비밀번호가 올바르지 않습니다' : `인증 실패 (HTTP ${result})`;
+      } else {
+        lockError.textContent = '서버 연결 오류 — 새로고침 후 다시 시도';
+      }
+      lockInput.value = '';
+      lockInput.focus();
+    }
+  });
+  lockInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') lockBtn.click(); });
+
+  // 자동 로그인 시도 (실패해도 조용히)
+  if (adminPw) {
+    attemptLogin(adminPw).then(result => {
+      if (result !== true) {
+        sessionStorage.removeItem('admin_pw');
+      }
+    });
+  }
 
   async function load() {
     const url = new URL(location.origin + '/api/special-promo');
-    if (currentFilter !== 'all') url.searchParams.set('status', currentFilter);
+    if (currentFilter === 'trash') {
+      url.searchParams.set('trash', '1');
+    } else if (currentFilter !== 'all') {
+      url.searchParams.set('status', currentFilter);
+    }
     if (currentQuery) url.searchParams.set('q', currentQuery);
     try {
-      const r = await fetch(url);
+      const r = await fetch(url, { headers: authHeaders() });
+      if (r.status === 401) {
+        sessionStorage.removeItem('admin_pw');
+        location.reload();
+        return;
+      }
       const d = await r.json();
       cache = d.applications || [];
       renderStats(d.stats || {});
@@ -348,6 +476,7 @@
       { key: 'contacted', label: '상담중', value: s.contacted || 0, sub: '진행 중' },
       { key: 'completed', label: '완료', value: s.completed || 0, sub: '개통 완료' },
       { key: 'cancelled', label: '취소', value: s.cancelled || 0, sub: '' },
+      { key: 'trash', label: '🗑 휴지통', value: s.trash || 0, sub: '복원 가능' },
     ];
     document.getElementById('stats').innerHTML = items.map(it => `
       <div class="stat ${currentFilter === it.key ? 'active' : ''}" data-status="${it.key}" onclick="setFilter('${it.key}')">
@@ -392,11 +521,17 @@
           <td><span class="status-badge sb-${a.status}">${STATUS_LABEL[a.status] || a.status}</span></td>
           <td>
             <div class="row-actions">
-              <select onchange="updateStatus('${a.id}', this.value)">
-                ${STATUS.map(s => `<option value="${s}" ${a.status === s ? 'selected' : ''}>${STATUS_LABEL[s]}</option>`).join('')}
-              </select>
-              <button class="detail" onclick="openDetail('${a.id}')">상세</button>
-              <button class="delete" onclick="deleteApp('${a.id}')">삭제</button>
+              ${currentFilter === 'trash' ? `
+                <button class="restore" onclick="restoreApp('${a.id}')">복원</button>
+                <button class="detail" onclick="openDetail('${a.id}')">상세</button>
+                <button class="delete" onclick="permanentDelete('${a.id}')">영구삭제</button>
+              ` : `
+                <select onchange="updateStatus('${a.id}', this.value)">
+                  ${STATUS.map(s => `<option value="${s}" ${a.status === s ? 'selected' : ''}>${STATUS_LABEL[s]}</option>`).join('')}
+                </select>
+                <button class="detail" onclick="openDetail('${a.id}')">상세</button>
+                <button class="delete" onclick="deleteApp('${a.id}')">삭제</button>
+              `}
             </div>
           </td>
         </tr>
@@ -432,11 +567,17 @@
           <div class="mc-row"><span class="k">사은품</span><span class="v">${g.name}${a.color ? ' / ' + escapeHtml(a.color) : ''}</span></div>
           <div class="mc-row"><span class="k">결합</span><span class="v">${a.combo ? '<span class="combo-yes">+60만</span>' : '<span class="combo-no">미신청</span>'}</span></div>
           <div class="mc-actions">
-            <select onchange="updateStatus('${a.id}', this.value)">
-              ${STATUS.map(s => `<option value="${s}" ${a.status === s ? 'selected' : ''}>${STATUS_LABEL[s]}</option>`).join('')}
-            </select>
-            <button class="detail" onclick="openDetail('${a.id}')">상세</button>
-            <button class="delete" onclick="deleteApp('${a.id}')">삭제</button>
+            ${currentFilter === 'trash' ? `
+              <button class="restore" onclick="restoreApp('${a.id}')">복원</button>
+              <button class="detail" onclick="openDetail('${a.id}')">상세</button>
+              <button class="delete" onclick="permanentDelete('${a.id}')">영구삭제</button>
+            ` : `
+              <select onchange="updateStatus('${a.id}', this.value)">
+                ${STATUS.map(s => `<option value="${s}" ${a.status === s ? 'selected' : ''}>${STATUS_LABEL[s]}</option>`).join('')}
+              </select>
+              <button class="detail" onclick="openDetail('${a.id}')">상세</button>
+              <button class="delete" onclick="deleteApp('${a.id}')">삭제</button>
+            `}
           </div>
         </div>
       `;
@@ -469,15 +610,24 @@
   async function updateStatus(id, status) {
     await fetch(`/api/special-promo/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ status })
     });
     load();
   }
 
   async function deleteApp(id) {
-    if (!confirm('이 신청서를 삭제하시겠습니까?')) return;
-    await fetch(`/api/special-promo/${id}`, { method: 'DELETE' });
+    if (!confirm('휴지통으로 이동하시겠습니까? (복원 가능)')) return;
+    await fetch(`/api/special-promo/${id}`, { method: 'DELETE', headers: authHeaders() });
+    load();
+  }
+  async function permanentDelete(id) {
+    if (!confirm('영구 삭제됩니다. 복원할 수 없습니다. 계속하시겠습니까?')) return;
+    await fetch(`/api/special-promo/${id}?permanent=1`, { method: 'DELETE', headers: authHeaders() });
+    load();
+  }
+  async function restoreApp(id) {
+    await fetch(`/api/special-promo/${id}/restore`, { method: 'POST', headers: authHeaders() });
     load();
   }
 
@@ -524,7 +674,7 @@
     const memo = document.getElementById('memoEdit').value;
     await fetch(`/api/special-promo/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ memo })
     });
     closeModal();
@@ -565,8 +715,7 @@
   }
   function truncate(s, n) { return (s || '').length > n ? (s.slice(0, n) + '…') : s; }
 
-  load();
-  setupAutoRefresh();
+  // load() 와 setupAutoRefresh()는 attemptLogin 성공 시 호출됨
 </script>
 </body>
 </html>
