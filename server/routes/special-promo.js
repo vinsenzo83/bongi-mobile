@@ -1,5 +1,6 @@
-// 파이어니 × 에이스휴먼파워 단독 특판 신청 API (JSON 파일 영속화)
+// 파이어니 × 에이스휴먼파워 단독 특판 신청 API (Supabase 영속화)
 import express from 'express';
+import { supabase } from '../db/supabase.js';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -7,31 +8,7 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '..', 'data');
 const DATA_FILE = join(DATA_DIR, 'special-applications.json');
-
-if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-
-let applications = [];
-try {
-  if (existsSync(DATA_FILE)) {
-    applications = JSON.parse(readFileSync(DATA_FILE, 'utf-8')) || [];
-    console.log(`[special-promo] 로드: ${applications.length}건`);
-  } else {
-    writeFileSync(DATA_FILE, '[]', 'utf-8');
-  }
-} catch (err) {
-  console.error('[special-promo] 데이터 로드 실패:', err.message);
-  applications = [];
-}
-
-function persist() {
-  try {
-    writeFileSync(DATA_FILE, JSON.stringify(applications, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('[special-promo] 데이터 저장 실패:', err.message);
-  }
-}
-
-const router = express.Router();
+const TABLE = 'bongi_special_promo_applications';
 
 const STATUS_LABELS = {
   pending: '대기',
@@ -40,13 +17,62 @@ const STATUS_LABELS = {
   cancelled: '취소',
 };
 
+// === Fallback in-memory + JSON file (Supabase 미설정 시) ===
+if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+let fallbackApps = [];
+if (!supabase) {
+  try {
+    if (existsSync(DATA_FILE)) {
+      fallbackApps = JSON.parse(readFileSync(DATA_FILE, 'utf-8')) || [];
+      console.log(`[special-promo] 파일 로드: ${fallbackApps.length}건 (Supabase 미설정)`);
+    }
+  } catch {}
+} else {
+  console.log('[special-promo] Supabase 모드');
+}
+function persistFile() {
+  if (supabase) return;
+  try { writeFileSync(DATA_FILE, JSON.stringify(fallbackApps, null, 2), 'utf-8'); } catch {}
+}
+
+// snake_case ↔ camelCase 변환
+function fromDb(r) {
+  if (!r) return r;
+  return {
+    id: r.id,
+    empno: r.empno,
+    name: r.name,
+    phone: r.phone,
+    currentCarrier: r.current_carrier,
+    moveCarrier: r.move_carrier,
+    gift: r.gift,
+    color: r.color || '',
+    combo: r.combo || false,
+    accountHolder: r.account_holder || '',
+    bank: r.bank || '',
+    account: r.account || '',
+    address: r.address,
+    addressDetail: r.address_detail || '',
+    zonecode: r.zonecode || '',
+    agreements: r.agreements || {},
+    status: r.status,
+    memo: r.memo || '',
+    deleted: r.deleted || false,
+    trashed_at: r.trashed_at,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  };
+}
+
+const router = express.Router();
+
 // 신청 접수
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const {
     empno, name, phone,
     currentCarrier, moveCarrier,
     gift, color, combo,
-    accountHolder, account,
+    accountHolder, bank, account,
     address, addressDetail, zonecode,
     agreements,
   } = req.body || {};
@@ -60,121 +86,181 @@ router.post('/', (req, res) => {
 
   const id = `SP${Date.now().toString(36).toUpperCase()}${Math.floor(Math.random() * 1000).toString(36).toUpperCase()}`;
   const created_at = new Date().toISOString();
-  const application = {
+  const record = {
     id,
     empno: String(empno).trim(),
     name: String(name).trim(),
     phone: String(phone).trim(),
-    currentCarrier,
-    moveCarrier,
+    current_carrier: currentCarrier,
+    move_carrier: moveCarrier,
     gift,
     color: color ? String(color).trim() : '',
     combo: combo === '1' || combo === true,
-    accountHolder: accountHolder ? String(accountHolder).trim() : '',
-    bank: req.body.bank ? String(req.body.bank).trim() : '',
+    account_holder: accountHolder ? String(accountHolder).trim() : '',
+    bank: bank ? String(bank).trim() : '',
     account: account ? String(account).trim() : '',
     address: String(address).trim(),
-    addressDetail: addressDetail ? String(addressDetail).trim() : '',
+    address_detail: addressDetail ? String(addressDetail).trim() : '',
     zonecode: zonecode ? String(zonecode).trim() : '',
     agreements: agreements || {},
     status: 'pending',
     memo: '',
+    deleted: false,
     created_at,
     updated_at: created_at,
   };
-  applications.unshift(application);
-  persist();
+
+  if (supabase) {
+    const { error } = await supabase.from(TABLE).insert(record);
+    if (error) {
+      console.error('[special-promo] insert error:', error.message);
+      return res.status(500).json({ ok: false, error: error.message });
+    }
+  } else {
+    fallbackApps.unshift(fromDb(record));
+    persistFile();
+  }
 
   return res.json({ ok: true, id, created_at });
 });
 
-// 목록 조회 (trash=1 → 휴지통, 기본 → 활성)
-router.get('/', (req, res) => {
+// 목록 조회
+router.get('/', async (req, res) => {
   const { status, q, trash } = req.query;
   const isTrash = trash === '1' || trash === 'true';
 
-  let list = applications.filter(a => isTrash ? a.deleted === true : !a.deleted);
+  let list = [];
+  let stats = {};
 
-  if (status && status !== 'all') {
-    list = list.filter(a => a.status === status);
-  }
-  if (q) {
-    const k = String(q).toLowerCase();
-    list = list.filter(a =>
-      (a.empno || '').toLowerCase().includes(k) ||
-      (a.name || '').toLowerCase().includes(k) ||
-      (a.phone || '').includes(k) ||
-      (a.id || '').toLowerCase().includes(k)
-    );
-  }
+  if (supabase) {
+    let query = supabase.from(TABLE).select('*').order('created_at', { ascending: false });
+    query = query.eq('deleted', isTrash);
+    if (status && status !== 'all') query = query.eq('status', status);
+    if (q) {
+      const k = String(q);
+      query = query.or(`empno.ilike.%${k}%,name.ilike.%${k}%,phone.ilike.%${k}%,id.ilike.%${k}%`);
+    }
+    const { data, error } = await query;
+    if (error) {
+      console.error('[special-promo] select error:', error.message);
+      return res.status(500).json({ ok: false, error: error.message });
+    }
+    list = (data || []).map(fromDb);
 
-  const active = applications.filter(a => !a.deleted);
-  const stats = {
-    total: active.length,
-    pending: active.filter(a => a.status === 'pending').length,
-    contacted: active.filter(a => a.status === 'contacted').length,
-    completed: active.filter(a => a.status === 'completed').length,
-    cancelled: active.filter(a => a.status === 'cancelled').length,
-    combo: active.filter(a => a.combo).length,
-    trash: applications.filter(a => a.deleted).length,
-  };
+    // stats: 전체 활성/휴지통 카운트
+    const { data: allActive } = await supabase.from(TABLE).select('status, combo').eq('deleted', false);
+    const { count: trashCount } = await supabase.from(TABLE).select('*', { count: 'exact', head: true }).eq('deleted', true);
+    const active = allActive || [];
+    stats = {
+      total: active.length,
+      pending: active.filter(a => a.status === 'pending').length,
+      contacted: active.filter(a => a.status === 'contacted').length,
+      completed: active.filter(a => a.status === 'completed').length,
+      cancelled: active.filter(a => a.status === 'cancelled').length,
+      combo: active.filter(a => a.combo).length,
+      trash: trashCount || 0,
+    };
+  } else {
+    list = fallbackApps.filter(a => isTrash ? a.deleted === true : !a.deleted);
+    if (status && status !== 'all') list = list.filter(a => a.status === status);
+    if (q) {
+      const k = String(q).toLowerCase();
+      list = list.filter(a =>
+        (a.empno || '').toLowerCase().includes(k) ||
+        (a.name || '').toLowerCase().includes(k) ||
+        (a.phone || '').includes(k) ||
+        (a.id || '').toLowerCase().includes(k)
+      );
+    }
+    const active = fallbackApps.filter(a => !a.deleted);
+    stats = {
+      total: active.length,
+      pending: active.filter(a => a.status === 'pending').length,
+      contacted: active.filter(a => a.status === 'contacted').length,
+      completed: active.filter(a => a.status === 'completed').length,
+      cancelled: active.filter(a => a.status === 'cancelled').length,
+      combo: active.filter(a => a.combo).length,
+      trash: fallbackApps.filter(a => a.deleted).length,
+    };
+  }
 
   return res.json({ ok: true, applications: list, stats, statusLabels: STATUS_LABELS });
 });
 
 // 상태/메모 변경
-router.patch('/:id', (req, res) => {
+router.patch('/:id', async (req, res) => {
   const { id } = req.params;
-  const app = applications.find(a => a.id === id);
-  if (!app) return res.status(404).json({ ok: false, error: 'not found' });
-
   const { status, memo } = req.body || {};
-  if (status && Object.keys(STATUS_LABELS).includes(status)) app.status = status;
-  if (typeof memo === 'string') app.memo = memo;
-  app.updated_at = new Date().toISOString();
-  persist();
+  const updates = { updated_at: new Date().toISOString() };
+  if (status && Object.keys(STATUS_LABELS).includes(status)) updates.status = status;
+  if (typeof memo === 'string') updates.memo = memo;
 
-  return res.json({ ok: true, application: app });
+  if (supabase) {
+    const { data, error } = await supabase.from(TABLE).update(updates).eq('id', id).select().single();
+    if (error) return res.status(404).json({ ok: false, error: error.message });
+    return res.json({ ok: true, application: fromDb(data) });
+  } else {
+    const app = fallbackApps.find(a => a.id === id);
+    if (!app) return res.status(404).json({ ok: false, error: 'not found' });
+    if (updates.status) app.status = updates.status;
+    if (updates.memo !== undefined) app.memo = updates.memo;
+    app.updated_at = updates.updated_at;
+    persistFile();
+    return res.json({ ok: true, application: app });
+  }
 });
 
-// 삭제 (soft = 휴지통 이동, permanent=1 = 영구 삭제)
-router.delete('/:id', (req, res) => {
+// 삭제 (soft / permanent)
+router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   const { permanent } = req.query;
-  const idx = applications.findIndex(a => a.id === id);
-  if (idx === -1) return res.status(404).json({ ok: false, error: 'not found' });
+  const isPermanent = permanent === '1' || permanent === 'true';
 
-  if (permanent === '1' || permanent === 'true') {
-    applications.splice(idx, 1);
+  if (supabase) {
+    if (isPermanent) {
+      const { error } = await supabase.from(TABLE).delete().eq('id', id);
+      if (error) return res.status(404).json({ ok: false, error: error.message });
+    } else {
+      const now = new Date().toISOString();
+      const { error } = await supabase.from(TABLE).update({ deleted: true, trashed_at: now, updated_at: now }).eq('id', id);
+      if (error) return res.status(404).json({ ok: false, error: error.message });
+    }
+    return res.json({ ok: true });
   } else {
-    applications[idx].deleted = true;
-    applications[idx].trashed_at = new Date().toISOString();
-    applications[idx].updated_at = new Date().toISOString();
+    const idx = fallbackApps.findIndex(a => a.id === id);
+    if (idx === -1) return res.status(404).json({ ok: false, error: 'not found' });
+    if (isPermanent) {
+      fallbackApps.splice(idx, 1);
+    } else {
+      fallbackApps[idx].deleted = true;
+      fallbackApps[idx].trashed_at = new Date().toISOString();
+      fallbackApps[idx].updated_at = new Date().toISOString();
+    }
+    persistFile();
+    return res.json({ ok: true });
   }
-  persist();
-  return res.json({ ok: true });
 });
 
 // 복원
-router.post('/:id/restore', (req, res) => {
+router.post('/:id/restore', async (req, res) => {
   const { id } = req.params;
-  const app = applications.find(a => a.id === id);
-  if (!app) return res.status(404).json({ ok: false, error: 'not found' });
-  app.deleted = false;
-  app.trashed_at = null;
-  app.updated_at = new Date().toISOString();
-  persist();
-  return res.json({ ok: true, application: app });
-});
-
-// 휴지통 비우기 (모든 deleted 영구 삭제)
-router.delete('/trash/empty', (req, res) => {
-  const before = applications.length;
-  for (let i = applications.length - 1; i >= 0; i--) {
-    if (applications[i].deleted) applications.splice(i, 1);
+  if (supabase) {
+    const { data, error } = await supabase.from(TABLE)
+      .update({ deleted: false, trashed_at: null, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return res.status(404).json({ ok: false, error: error.message });
+    return res.json({ ok: true, application: fromDb(data) });
+  } else {
+    const app = fallbackApps.find(a => a.id === id);
+    if (!app) return res.status(404).json({ ok: false, error: 'not found' });
+    app.deleted = false;
+    app.trashed_at = null;
+    app.updated_at = new Date().toISOString();
+    persistFile();
+    return res.json({ ok: true, application: app });
   }
-  persist();
-  return res.json({ ok: true, removed: before - applications.length });
 });
 
 export default router;
