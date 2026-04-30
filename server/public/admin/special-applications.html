@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>특판 신청 관리 | 봉이모바일 어드민</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://images.samsung.com">
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+    background: #f5f6fa;
+    color: #1a2744;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 28px; }
+
+  /* Header */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid #e5e7eb;
+  }
+  .topbar h1 { font-size: 22px; font-weight: 900; letter-spacing: -0.6px; }
+  .topbar h1 .pill {
+    display: inline-block; margin-left: 10px; padding: 3px 10px;
+    background: #FFD60A; color: #0a0a0a; font-size: 11px; font-weight: 800;
+    border-radius: 999px; letter-spacing: -0.2px;
+  }
+  .top-actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 10px 16px; border-radius: 10px; border: 1px solid #e5e7eb;
+    background: #fff; color: #1a2744; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit; letter-spacing: -0.2px;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: #1a2744; }
+  .btn-primary { background: #1a2744; color: #fff; border-color: #1a2744; }
+  .btn-primary:hover { background: #0f1730; }
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
+
+  /* Stats */
+  .stats {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 22px;
+  }
+  .stat {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px 20px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .stat:hover { border-color: #1a2744; transform: translateY(-2px); box-shadow: 0 8px 22px rgba(26, 39, 68, 0.06); }
+  .stat.active { border: 2px solid #1a2744; }
+  .stat .label { font-size: 12px; color: #767676; font-weight: 600; margin-bottom: 6px; }
+  .stat .value { font-size: 26px; font-weight: 900; letter-spacing: -0.8px; }
+  .stat .sub { font-size: 11px; color: #767676; margin-top: 2px; }
+  .stat[data-status="pending"] .value { color: #d97706; }
+  .stat[data-status="contacted"] .value { color: #2563eb; }
+  .stat[data-status="completed"] .value { color: #059669; }
+  .stat[data-status="cancelled"] .value { color: #888; }
+
+  /* Filters */
+  .filters {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 14px 18px; display: flex; gap: 10px; align-items: center;
+    margin-bottom: 14px;
+  }
+  .search {
+    flex: 1; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 8px;
+    font-size: 13px; font-family: inherit; background: #f9fafc;
+  }
+  .search:focus { outline: none; border-color: #1a2744; background: #fff; }
+  .auto-refresh {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: #767676; font-weight: 600;
+  }
+  .auto-refresh input { cursor: pointer; }
+  .last-update { font-size: 11px; color: #888; }
+
+  /* Table */
+  .table-wrap {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; padding: 14px 16px; font-size: 12px; font-weight: 800;
+    color: #767676; background: #fafbfc; border-bottom: 1px solid #e5e7eb;
+    letter-spacing: -0.1px; white-space: nowrap;
+  }
+  tbody td {
+    padding: 14px 16px; font-size: 13px; border-bottom: 1px solid #f0f1f5;
+    letter-spacing: -0.2px; vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafbfc; }
+  .col-id { font-family: 'SF Mono', Menlo, monospace; font-size: 11px; color: #888; }
+  .col-name { font-weight: 700; }
+  .col-phone { font-family: 'SF Mono', Menlo, monospace; font-size: 12px; }
+  .col-empno { font-family: 'SF Mono', Menlo, monospace; font-size: 12px; color: #555; }
+
+  .carrier-tag {
+    display: inline-block; font-size: 10px; font-weight: 800;
+    padding: 2px 7px; border-radius: 4px; letter-spacing: -0.1px;
+  }
+  .ct-SK { background: #ea002c; color: #fff; }
+  .ct-KT { background: #1a2744; color: #fff; }
+  .ct-LG { background: #a50034; color: #fff; }
+  .ct-MVNO { background: #FFD60A; color: #0a0a0a; }
+  .arrow { color: #aaa; margin: 0 5px; }
+
+  .gift-cell { display: flex; align-items: center; gap: 8px; }
+  .gift-cell img { width: 32px; height: 32px; object-fit: contain; background: #f5f6fa; border-radius: 6px; padding: 3px; }
+  .gift-cell .gname { font-size: 12px; font-weight: 600; }
+
+  .combo-yes { display: inline-block; padding: 3px 8px; background: linear-gradient(135deg, #ea580c, #f97316); color: #fff; font-size: 10px; font-weight: 800; border-radius: 999px; }
+  .combo-no { color: #aaa; font-size: 11px; }
+
+  .status-badge {
+    display: inline-block; padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 800; letter-spacing: -0.1px;
+  }
+  .sb-pending { background: #fef3c7; color: #92400e; }
+  .sb-contacted { background: #dbeafe; color: #1e40af; }
+  .sb-completed { background: #d1fae5; color: #065f46; }
+  .sb-cancelled { background: #f3f4f6; color: #6b7280; }
+
+  .date { font-size: 11px; color: #888; white-space: nowrap; }
+
+  .row-actions { display: flex; gap: 4px; }
+  .row-actions select {
+    padding: 5px 8px; border: 1px solid #e5e7eb; border-radius: 6px;
+    font-size: 11px; font-family: inherit; background: #fff; cursor: pointer;
+  }
+  .row-actions button {
+    padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 6px;
+    background: #fff; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .row-actions button.delete { color: #ef4444; border-color: #fecaca; }
+  .row-actions button.detail { color: #1a2744; }
+
+  .empty {
+    padding: 60px 20px; text-align: center; color: #888; font-size: 14px;
+  }
+
+  /* Detail Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center;
+    padding: 24px; z-index: 100;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 16px; max-width: 560px; width: 100%;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    padding: 20px 24px; border-bottom: 1px solid #e5e7eb;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-header h2 { font-size: 16px; font-weight: 800; }
+  .modal-header button {
+    background: #f5f6fa; border: none; border-radius: 8px; width: 32px; height: 32px;
+    cursor: pointer; font-size: 16px;
+  }
+  .modal-body { padding: 24px; }
+  .field-pair {
+    display: grid; grid-template-columns: 130px 1fr; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid #f0f1f5; font-size: 13px;
+  }
+  .field-pair:last-child { border-bottom: none; }
+  .field-pair .k { color: #767676; font-weight: 600; }
+  .field-pair .v { color: #1a2744; font-weight: 700; }
+  .modal-memo { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-family: inherit; font-size: 13px; resize: vertical; min-height: 80px; }
+
+  @media (max-width: 1024px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .table-wrap { overflow-x: auto; }
+    table { min-width: 1100px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Top -->
+  <div class="topbar">
+    <h1>특판 신청 관리 <span class="pill">파이어니 × 에이스휴먼파워</span></h1>
+    <div class="top-actions">
+      <button class="btn" id="exportBtn">📥 CSV 내보내기</button>
+      <button class="btn btn-primary" id="refreshBtn">🔄 새로고침</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="stats"></div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <input class="search" id="search" placeholder="🔍 사번 / 이름 / 휴대폰 / 신청번호 검색">
+    <label class="auto-refresh">
+      <input type="checkbox" id="autoRefresh" checked>
+      자동 새로고침 (30초)
+    </label>
+    <span class="last-update" id="lastUpdate"></span>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>접수일</th>
+          <th>신청번호</th>
+          <th>사번</th>
+          <th>이름</th>
+          <th>휴대폰</th>
+          <th>통신사 이동</th>
+          <th>사은품</th>
+          <th>결합</th>
+          <th>주소</th>
+          <th>상태</th>
+          <th>관리</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="11" class="empty">불러오는 중...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>신청서 상세</h2>
+      <button onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+  const GIFT_LABELS = {
+    'movingstyle-27': { name: '무빙스타일 M5 라이트 27"', img: 'https://images.samsung.com/kdp/goods/2025/07/16/f29965a3-c6ea-4e95-816d-ae0e6ba6e03e.png' },
+    'cooker-22': { name: '비스포크 큐커 멀티 22L', img: 'https://images.samsung.com/kdp/goods/2024/12/30/667489f8-e9b8-4f9e-8422-8fb10a4e0bfc.png' },
+    'cooker-oven-32': { name: '비스포크 큐커 오븐 32L', img: 'https://images.samsung.com/kdp/goods/2022/07/06/eb84a151-1d1b-45ba-85b3-6df024df15e9.png' },
+    'vacuum-jet-150': { name: '제트 150W 무선청소기', img: 'https://images.samsung.com/kdp/goods/2022/10/21/8eeeee1d-15e2-44b2-8967-c151798978fe.png' },
+    'speaker-aura-studio-5': { name: '하만카돈 AURA STUDIO 5', img: 'https://images.samsung.com/kdp/goods/2025/10/23/ce53c8fc-5c22-4769-bec9-7d63c56581ee.png' },
+    'monitor-m5-32': { name: '2025 스마트모니터 M5 32"', img: 'https://images.samsung.com/kdp/goods/2025/09/05/1443f069-1dd6-40e7-baf0-e8c28e1206ce.png' },
+  };
+  const STATUS = ['pending', 'contacted', 'completed', 'cancelled'];
+  const STATUS_LABEL = { pending: '대기', contacted: '상담중', completed: '완료', cancelled: '취소' };
+
+  let currentFilter = 'all';
+  let currentQuery = '';
+  let cache = [];
+
+  async function load() {
+    const url = new URL(location.origin + '/api/special-promo');
+    if (currentFilter !== 'all') url.searchParams.set('status', currentFilter);
+    if (currentQuery) url.searchParams.set('q', currentQuery);
+    try {
+      const r = await fetch(url);
+      const d = await r.json();
+      cache = d.applications || [];
+      renderStats(d.stats || {});
+      renderTable(cache);
+      document.getElementById('lastUpdate').textContent = '마지막 갱신: ' + new Date().toLocaleTimeString('ko-KR');
+    } catch (e) {
+      document.getElementById('tbody').innerHTML = `<tr><td colspan="11" class="empty">서버 연결 실패: ${e.message}</td></tr>`;
+    }
+  }
+
+  function renderStats(s) {
+    const items = [
+      { key: 'all', label: '전체', value: s.total || 0, sub: '' },
+      { key: 'pending', label: '대기', value: s.pending || 0, sub: '상담 필요' },
+      { key: 'contacted', label: '상담중', value: s.contacted || 0, sub: '진행 중' },
+      { key: 'completed', label: '완료', value: s.completed || 0, sub: '개통 완료' },
+      { key: 'cancelled', label: '취소', value: s.cancelled || 0, sub: '' },
+    ];
+    document.getElementById('stats').innerHTML = items.map(it => `
+      <div class="stat ${currentFilter === it.key ? 'active' : ''}" data-status="${it.key}" onclick="setFilter('${it.key}')">
+        <div class="label">${it.label}</div>
+        <div class="value">${it.value}</div>
+        <div class="sub">${it.sub}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderTable(list) {
+    const tbody = document.getElementById('tbody');
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="11" class="empty">신청 내역이 없습니다</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(a => {
+      const g = GIFT_LABELS[a.gift] || { name: a.gift, img: '' };
+      const dt = new Date(a.created_at);
+      const dateStr = `${dt.getMonth() + 1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+      return `
+        <tr>
+          <td class="date">${dateStr}</td>
+          <td class="col-id">${a.id}</td>
+          <td class="col-empno">${a.empno}</td>
+          <td class="col-name">${a.name}</td>
+          <td class="col-phone">${a.phone}</td>
+          <td>
+            <span class="carrier-tag ct-${a.currentCarrier}">${a.currentCarrier}</span>
+            <span class="arrow">→</span>
+            <span class="carrier-tag ct-${a.moveCarrier}">${a.moveCarrier}</span>
+          </td>
+          <td>
+            <div class="gift-cell">
+              <img src="${g.img}" alt="">
+              <div class="gname">${g.name}</div>
+            </div>
+          </td>
+          <td>${a.combo ? '<span class="combo-yes">+60만</span>' : '<span class="combo-no">―</span>'}</td>
+          <td title="${escapeHtml(a.address)}">${truncate(a.address, 16)}</td>
+          <td><span class="status-badge sb-${a.status}">${STATUS_LABEL[a.status] || a.status}</span></td>
+          <td>
+            <div class="row-actions">
+              <select onchange="updateStatus('${a.id}', this.value)">
+                ${STATUS.map(s => `<option value="${s}" ${a.status === s ? 'selected' : ''}>${STATUS_LABEL[s]}</option>`).join('')}
+              </select>
+              <button class="detail" onclick="openDetail('${a.id}')">상세</button>
+              <button class="delete" onclick="deleteApp('${a.id}')">삭제</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function setFilter(key) {
+    currentFilter = key;
+    load();
+  }
+
+  document.getElementById('search').addEventListener('input', (e) => {
+    currentQuery = e.target.value.trim();
+    clearTimeout(window._st);
+    window._st = setTimeout(load, 250);
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', load);
+
+  // Auto refresh
+  let timer = null;
+  function setupAutoRefresh() {
+    if (timer) clearInterval(timer);
+    if (document.getElementById('autoRefresh').checked) {
+      timer = setInterval(load, 30000);
+    }
+  }
+  document.getElementById('autoRefresh').addEventListener('change', setupAutoRefresh);
+
+  async function updateStatus(id, status) {
+    await fetch(`/api/special-promo/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    load();
+  }
+
+  async function deleteApp(id) {
+    if (!confirm('이 신청서를 삭제하시겠습니까?')) return;
+    await fetch(`/api/special-promo/${id}`, { method: 'DELETE' });
+    load();
+  }
+
+  function openDetail(id) {
+    const a = cache.find(x => x.id === id);
+    if (!a) return;
+    const g = GIFT_LABELS[a.gift] || { name: a.gift };
+    const ag = a.agreements || {};
+    const yes = (v) => v ? '✅ 동의' : '❌ 미동의';
+    const body = document.getElementById('modalBody');
+    body.innerHTML = `
+      <div class="field-pair"><span class="k">신청번호</span><span class="v">${a.id}</span></div>
+      <div class="field-pair"><span class="k">접수일시</span><span class="v">${new Date(a.created_at).toLocaleString('ko-KR')}</span></div>
+      <div class="field-pair"><span class="k">최종 수정일시</span><span class="v">${new Date(a.updated_at).toLocaleString('ko-KR')}</span></div>
+
+      <div style="margin:18px 0 10px; font-size:11px; font-weight:800; letter-spacing:2px; color:#888;">신청 정보</div>
+      <div class="field-pair"><span class="k">1. 현재 통신사</span><span class="v">${a.currentCarrier}</span></div>
+      <div class="field-pair"><span class="k">2. 이동할 통신사</span><span class="v">${a.moveCarrier}</span></div>
+      <div class="field-pair"><span class="k">3. 휴대폰 번호</span><span class="v">${a.phone}</span></div>
+      <div class="field-pair"><span class="k">4. 이름</span><span class="v">${a.name}</span></div>
+      <div class="field-pair"><span class="k">5. 사은품 종류</span><span class="v">${g.name} <small style="color:#888">(${a.gift})</small></span></div>
+      <div class="field-pair"><span class="k">5-1. 색상</span><span class="v">${a.color || '<span style=\"color:#999\">미선택</span>'}</span></div>
+      <div class="field-pair"><span class="k">6. 인터넷+TV 결합</span><span class="v">${a.combo ? '✅ 신청 (현금 60만원 별도)' : '❌ 미신청'}</span></div>
+      <div class="field-pair"><span class="k">6-1. 예금주</span><span class="v">${a.accountHolder ? escapeHtml(a.accountHolder) : '<span style=\"color:#999\">미입력</span>'}</span></div>
+      <div class="field-pair"><span class="k">6-2. 계좌번호</span><span class="v">${a.account ? escapeHtml(a.account) : '<span style=\"color:#999\">미입력</span>'}</span></div>
+      <div class="field-pair"><span class="k">7. 배송지 주소</span><span class="v">${a.zonecode ? '['+escapeHtml(a.zonecode)+'] ' : ''}${escapeHtml(a.address)}${a.addressDetail ? ' ' + escapeHtml(a.addressDetail) : ''}</span></div>
+      <div class="field-pair"><span class="k">8. 사원번호</span><span class="v">${a.empno}</span></div>
+
+      <div style="margin:18px 0 10px; font-size:11px; font-weight:800; letter-spacing:2px; color:#888;">개인정보 동의</div>
+      <div class="field-pair"><span class="k">필수 - 개인정보 수집·이용</span><span class="v">${yes(ag.privacy)}</span></div>
+      <div class="field-pair"><span class="k">필수 - 임직원 본인 명의</span><span class="v">${yes(ag.emp)}</span></div>
+      <div class="field-pair"><span class="k">필수 - 제3자 제공</span><span class="v">${yes(ag.thirdparty)}</span></div>
+      <div class="field-pair"><span class="k">선택 - 마케팅 활용</span><span class="v">${yes(ag.marketing)}</span></div>
+
+      <div style="margin:18px 0 10px; font-size:11px; font-weight:800; letter-spacing:2px; color:#888;">상태 / 메모</div>
+      <div class="field-pair"><span class="k">현재 상태</span><span class="v">${STATUS_LABEL[a.status] || a.status}</span></div>
+      <div class="field-pair"><span class="k">메모</span><span class="v"><textarea class="modal-memo" id="memoEdit">${escapeHtml(a.memo || '')}</textarea><br><button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="saveMemo('${a.id}')">메모 저장</button></span></div>
+    `;
+    document.getElementById('modal').classList.add('show');
+  }
+
+  async function saveMemo(id) {
+    const memo = document.getElementById('memoEdit').value;
+    await fetch(`/api/special-promo/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memo })
+    });
+    closeModal();
+    load();
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+  }
+  document.getElementById('modal').addEventListener('click', (e) => {
+    if (e.target.id === 'modal') closeModal();
+  });
+
+  // CSV export
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    if (!cache.length) return alert('내보낼 데이터가 없습니다');
+    const headers = ['접수일', '신청번호', '사번', '이름', '휴대폰', '현재', '이동', '사은품', '결합(60만)', '배송지', '상태', '메모'];
+    const rows = cache.map(a => [
+      new Date(a.created_at).toLocaleString('ko-KR'),
+      a.id, a.empno, a.name, a.phone,
+      a.currentCarrier, a.moveCarrier,
+      (GIFT_LABELS[a.gift] || {}).name || a.gift,
+      a.combo ? '신청' : '',
+      a.address,
+      STATUS_LABEL[a.status],
+      (a.memo || '').replace(/\n/g, ' '),
+    ]);
+    const csv = '﻿' + [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `special-applications_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  });
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+  function truncate(s, n) { return (s || '').length > n ? (s.slice(0, n) + '…') : s; }
+
+  load();
+  setupAutoRefresh();
+</script>
+</body>
+</html>

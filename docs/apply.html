@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>유심개통 신청 | 파이어니 × 에이스휴먼파워 단독 특판</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://images.samsung.com">
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+    background: #fafaf7;
+    color: #0a0a0a;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    background: #fff;
+    min-height: 100vh;
+    box-shadow: 0 0 40px rgba(0,0,0,0.04);
+  }
+
+  /* TOP */
+  .topnav {
+    position: sticky;
+    top: 0;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid #ececec;
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background: #f5f5f0;
+    color: #0a0a0a;
+    text-decoration: none;
+    font-size: 18px; font-weight: 700;
+  }
+  .topnav-title {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    margin-right: 36px;
+  }
+
+  /* HEADER */
+  .form-header {
+    background: linear-gradient(180deg, #000 0%, #0a0a0a 100%);
+    color: #fff;
+    padding: 28px 24px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .form-header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, #FFD60A 0%, transparent 70%);
+    opacity: 0.18;
+  }
+  .collab-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 1;
+  }
+  .collab-mini .b1 { color: #FFD60A; }
+  .collab-mini .b2 { color: #fafaf7; }
+  .collab-mini .x { color: rgba(255,255,255,0.4); font-weight: 300; }
+
+  .form-title {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -1.2px;
+    line-height: 1.2;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 8px;
+  }
+  .form-title .accent {
+    background: linear-gradient(135deg, #FFD60A 0%, #FFE15C 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .form-sub {
+    font-size: 13px;
+    color: #a8a8a0;
+    letter-spacing: -0.2px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* EMP NOTICE */
+  .emp-notice {
+    background: #FFFDF0;
+    border-left: 4px solid #FFD60A;
+    padding: 16px 20px;
+    margin: 0;
+    font-size: 13px;
+    color: #5c4500;
+    letter-spacing: -0.2px;
+    line-height: 1.55;
+  }
+  .emp-notice b { color: #0a0a0a; font-weight: 800; }
+
+  /* FORM */
+  .form-body { padding: 28px 24px 40px; }
+
+  .field-group { margin-bottom: 24px; }
+  .field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 800;
+    color: #0a0a0a;
+    letter-spacing: -0.3px;
+    margin-bottom: 8px;
+  }
+  .field-label .req {
+    color: #ef4444;
+    margin-left: 3px;
+  }
+  .field-hint {
+    font-size: 11px;
+    color: #888;
+    font-weight: 500;
+    margin-top: 6px;
+    letter-spacing: -0.1px;
+    line-height: 1.5;
+  }
+  .input, .select, .textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid #e5e5dc;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+    color: #0a0a0a;
+    letter-spacing: -0.2px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  .input:focus, .select:focus, .textarea:focus {
+    outline: none;
+    border-color: #0a0a0a;
+    box-shadow: 0 0 0 3px rgba(255, 214, 10, 0.15);
+  }
+  .select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%230a0a0a' d='M6 8L0 0h12L6 8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 18px center;
+    padding-right: 44px;
+  }
+
+  /* CHIPS (carrier) */
+  .chips {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .chip {
+    padding: 14px 8px;
+    border: 1.5px solid #e5e5dc;
+    border-radius: 12px;
+    background: #fff;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: -0.3px;
+    color: #888;
+  }
+  .chip.checked {
+    border-color: #0a0a0a;
+    background: #0a0a0a;
+    color: #FFD60A;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+  }
+
+  /* GIFT CARDS (radio) */
+  .gift-radio-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .gift-radio {
+    border: 1.5px solid #e5e5dc;
+    border-radius: 14px;
+    padding: 0;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+    position: relative;
+    text-align: left;
+  }
+  .gift-radio.checked {
+    border: 2px solid #FFD60A;
+    box-shadow: 0 6px 18px rgba(255, 214, 10, 0.3);
+    transform: translateY(-2px);
+  }
+  .gift-radio.checked::after {
+    content: '✓';
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 22px; height: 22px;
+    background: #FFD60A;
+    color: #0a0a0a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 13px;
+    z-index: 2;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .gift-radio-img {
+    background: linear-gradient(135deg, #f4f1ea 0%, #fafaf7 100%);
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .gift-radio-img img {
+    width: 90%;
+    height: 90%;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.08));
+  }
+  .gift-radio-info { padding: 10px 12px 12px; }
+  .gift-radio-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #0a0a0a;
+    letter-spacing: -0.2px;
+    line-height: 1.35;
+    min-height: 32px;
+  }
+
+  /* ACCOUNT */
+  .account-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 8px;
+  }
+  .input:disabled,
+  .input[readonly] {
+    background: #f0f0eb;
+    color: #555;
+  }
+  .input:disabled {
+    color: #aaa;
+    cursor: not-allowed;
+  }
+
+  /* ADDRESS */
+  .address-row {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 8px;
+  }
+  .addr-search-btn {
+    padding: 14px 12px;
+    border: none;
+    border-radius: 12px;
+    background: #0a0a0a;
+    color: #FFD60A;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: -0.2px;
+    transition: all 0.2s;
+  }
+  .addr-search-btn:active { transform: scale(0.97); }
+
+  /* COLOR CHIPS */
+  .color-chips {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+  }
+  .color-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1.5px solid #e5e5dc;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .color-chip.checked {
+    border-color: #0a0a0a;
+    background: #fafaf7;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  }
+  .color-chip .swatch {
+    flex-shrink: 0;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0,0,0,0.08);
+    box-shadow: inset 0 -2px 4px rgba(0,0,0,0.06);
+  }
+  .color-chip .cname {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: #0a0a0a;
+  }
+
+  /* COMBO CARD (Internet+TV) */
+  .combo-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 20px;
+    border: 2px solid #e5e5dc;
+    border-radius: 18px;
+    background: #fff;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .combo-card:hover {
+    border-color: #f97316;
+  }
+  .combo-card.checked {
+    border-color: #ea580c;
+    background: linear-gradient(135deg, #FFF5EE 0%, #FFEFE2 100%);
+    box-shadow: 0 12px 28px rgba(234, 88, 12, 0.2);
+    transform: translateY(-2px);
+  }
+  .combo-card.checked::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    background: radial-gradient(circle, rgba(234, 88, 12, 0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .combo-icon {
+    flex-shrink: 0;
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+    color: #fff;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 8px 18px rgba(234, 88, 12, 0.3);
+    position: relative;
+    z-index: 1;
+  }
+  .combo-info {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+  .combo-title {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: #0a0a0a;
+    margin-bottom: 3px;
+    line-height: 1.35;
+  }
+  .combo-desc {
+    font-size: 11px;
+    font-weight: 500;
+    color: #888;
+    letter-spacing: -0.1px;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .combo-desc b { color: #ea580c; font-weight: 800; }
+  .combo-amount {
+    display: inline-block;
+    font-size: 16px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.4px;
+    background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+    padding: 4px 12px;
+    border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25);
+  }
+  .combo-card:not(.checked) .combo-amount {
+    background: #f5f5f0;
+    color: #ea580c;
+    box-shadow: none;
+  }
+  .combo-check {
+    flex-shrink: 0;
+    width: 34px; height: 34px;
+    border: 2.5px solid #d8d8d0;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 16px;
+    color: transparent;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    z-index: 1;
+  }
+  .combo-card.checked .combo-check {
+    background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+    border-color: #ea580c;
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(234, 88, 12, 0.4);
+    transform: scale(1.05);
+  }
+
+  /* AGREEMENT */
+  .agree-block {
+    margin-top: 8px;
+    background: #fafaf7;
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .agree-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    padding: 6px 0;
+  }
+  .agree-row .checkbox {
+    flex-shrink: 0;
+    width: 22px; height: 22px;
+    border: 1.5px solid #ccc;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: transparent;
+    background: #fff;
+    margin-top: 1px;
+  }
+  .agree-row.checked .checkbox {
+    background: #0a0a0a;
+    border-color: #0a0a0a;
+    color: #FFD60A;
+  }
+  .agree-row .agree-text {
+    font-size: 13px;
+    color: #555;
+    letter-spacing: -0.2px;
+    line-height: 1.5;
+  }
+  .agree-row .agree-text b { color: #0a0a0a; font-weight: 700; }
+  .agree-row.req .agree-text::after {
+    content: ' [필수]';
+    color: #ef4444;
+    font-weight: 800;
+    font-size: 11px;
+  }
+  .agree-divider { height: 1px; background: #ececec; margin: 8px 0; }
+  .agree-all {
+    background: #0a0a0a;
+    color: #fff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .agree-all .checkbox { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: transparent; }
+  .agree-all.checked .checkbox { background: #FFD60A; border-color: #FFD60A; color: #0a0a0a; }
+  .agree-all-text { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; }
+
+  /* SUBMIT */
+  .submit-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid #ececec;
+    z-index: 30;
+    box-shadow: 0 -6px 16px rgba(0,0,0,0.04);
+  }
+  .submit-inner {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .submit-btn {
+    width: 100%;
+    padding: 18px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #FFD60A 0%, #FFE15C 100%);
+    color: #0a0a0a;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    box-shadow: 0 8px 24px rgba(255, 214, 10, 0.35);
+  }
+  .submit-btn:disabled {
+    background: #e5e5dc;
+    color: #999;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  .submit-btn:not(:disabled):active { transform: scale(0.98); }
+
+  /* SUCCESS */
+  .success-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 100;
+  }
+  .success-overlay.show { display: flex; }
+  .success-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px 28px 28px;
+    text-align: center;
+    max-width: 360px;
+    width: 100%;
+  }
+  .success-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 18px;
+    background: linear-gradient(135deg, #FFD60A 0%, #FFE15C 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    box-shadow: 0 10px 24px rgba(255, 214, 10, 0.4);
+  }
+  .success-title {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.8px;
+    margin-bottom: 8px;
+  }
+  .success-msg {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.6;
+    letter-spacing: -0.2px;
+    margin-bottom: 24px;
+  }
+  .success-close {
+    width: 100%;
+    padding: 14px;
+    background: #0a0a0a;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Top Nav -->
+  <div class="topnav">
+    <a href="promotion-movingstyle.html" class="back-btn">←</a>
+    <div class="topnav-title">유심개통 신청서</div>
+  </div>
+
+  <!-- Form Header -->
+  <div class="form-header">
+    <div class="collab-mini">
+      <span class="b1">파이어니</span>
+      <span class="x">×</span>
+      <span class="b2">에이스휴먼파워</span>
+    </div>
+    <h1 class="form-title">유심개통 <span class="accent">단독 특판</span><br>신청서 작성</h1>
+    <p class="form-sub">3분이면 끝, 상담사가 1:1로 안내합니다</p>
+  </div>
+
+  <!-- Employee notice -->
+  <div class="emp-notice">
+    <b>📌 에이스휴먼파워 임직원 한정 프로모션입니다.</b><br>
+    임직원 본인 명의로 신청해주세요.
+  </div>
+
+  <!-- Form -->
+  <form class="form-body" id="applyForm" novalidate>
+
+    <!-- 1. 현재 통신사 -->
+    <div class="field-group">
+      <label class="field-label">1. 현재 사용 중인 통신사<span class="req">*</span></label>
+      <div class="chips" id="currentChips">
+        <div class="chip" data-val="SK">SK</div>
+        <div class="chip" data-val="KT">KT</div>
+        <div class="chip" data-val="LG">LG U+</div>
+        <div class="chip" data-val="MVNO">알뜰폰</div>
+      </div>
+      <input type="hidden" id="currentCarrier" name="currentCarrier" required>
+    </div>
+
+    <!-- 2. 이동할 통신사 -->
+    <div class="field-group">
+      <label class="field-label">2. 이동할 통신사<span class="req">*</span></label>
+      <div class="chips" id="moveChips" style="grid-template-columns: 1fr 1fr 1fr;">
+        <div class="chip" data-val="SK">SK</div>
+        <div class="chip" data-val="KT">KT</div>
+        <div class="chip" data-val="LG">LG U+</div>
+      </div>
+      <input type="hidden" id="moveCarrier" name="moveCarrier" required>
+      <div class="field-hint">현재와 다른 통신사를 선택해주세요 (번호이동).</div>
+    </div>
+
+    <!-- 3. 휴대폰 번호 -->
+    <div class="field-group">
+      <label class="field-label" for="phone">3. 휴대폰 번호<span class="req">*</span></label>
+      <input class="input" id="phone" name="phone" type="tel" inputmode="tel" placeholder="010-1234-5678" required>
+      <div class="field-hint">번호이동 대상 번호 (변경 없이 유지).</div>
+    </div>
+
+    <!-- 4. 이름 -->
+    <div class="field-group">
+      <label class="field-label" for="name">4. 이름<span class="req">*</span></label>
+      <input class="input" id="name" name="name" type="text" placeholder="홍길동" required>
+    </div>
+
+    <!-- 5. 사은품 선택 -->
+    <div class="field-group">
+      <label class="field-label">5. 사은품 종류 (택 1)<span class="req">*</span></label>
+      <div class="gift-radio-grid" id="giftGrid">
+        <div class="gift-radio" data-val="movingstyle-27">
+          <div class="gift-radio-img"><img src="https://images.samsung.com/kdp/goods/2025/07/16/f29965a3-c6ea-4e95-816d-ae0e6ba6e03e.png" alt=""></div>
+          <div class="gift-radio-info"><div class="gift-radio-name">무빙스타일 M5 라이트 27"</div></div>
+        </div>
+        <div class="gift-radio" data-val="cooker-22">
+          <div class="gift-radio-img"><img src="https://images.samsung.com/kdp/goods/2024/12/30/667489f8-e9b8-4f9e-8422-8fb10a4e0bfc.png" alt=""></div>
+          <div class="gift-radio-info"><div class="gift-radio-name">비스포크 큐커 멀티 22L</div></div>
+        </div>
+        <div class="gift-radio" data-val="cooker-oven-32">
+          <div class="gift-radio-img"><img src="https://images.samsung.com/kdp/goods/2022/07/06/eb84a151-1d1b-45ba-85b3-6df024df15e9.png" alt=""></div>
+          <div class="gift-radio-info"><div class="gift-radio-name">비스포크 큐커 오븐 32L</div></div>
+        </div>
+        <div class="gift-radio" data-val="vacuum-jet-150">
+          <div class="gift-radio-img"><img src="https://images.samsung.com/kdp/goods/2022/10/21/8eeeee1d-15e2-44b2-8967-c151798978fe.png" alt=""></div>
+          <div class="gift-radio-info"><div class="gift-radio-name">제트 150W 무선청소기</div></div>
+        </div>
+        <div class="gift-radio" data-val="speaker-aura-studio-5">
+          <div class="gift-radio-img"><img src="https://images.samsung.com/kdp/goods/2025/10/23/ce53c8fc-5c22-4769-bec9-7d63c56581ee.png" alt=""></div>
+          <div class="gift-radio-info"><div class="gift-radio-name">하만카돈 AURA STUDIO 5</div></div>
+        </div>
+        <div class="gift-radio" data-val="monitor-m5-32">
+          <div class="gift-radio-img"><img src="https://images.samsung.com/kdp/goods/2025/09/05/1443f069-1dd6-40e7-baf0-e8c28e1206ce.png" alt=""></div>
+          <div class="gift-radio-info"><div class="gift-radio-name">2025 스마트모니터 M5 32"</div></div>
+        </div>
+      </div>
+      <input type="hidden" id="gift" name="gift" required>
+    </div>
+
+    <!-- 5-1. 색상 (동적) -->
+    <div class="field-group" id="colorField" style="display:none;">
+      <label class="field-label">5-1. 색상 선택<span class="req">*</span></label>
+      <div class="color-chips" id="colorChips"></div>
+      <input type="hidden" id="color" name="color">
+      <div class="field-hint" id="colorHint"></div>
+    </div>
+
+    <!-- 6. 인터넷+TV -->
+    <div class="field-group">
+      <label class="field-label">6. 인터넷+TV 신청 (선택)</label>
+      <div class="combo-card" id="comboToggle">
+        <div class="combo-icon">📡</div>
+        <div class="combo-info">
+          <div class="combo-title">인터넷+TV 결합 신청</div>
+          <div class="combo-desc">사은품과 <b>별개로</b> 현금 추가</div>
+          <span class="combo-amount">+ 현금 600,000원</span>
+        </div>
+        <div class="combo-check">✓</div>
+      </div>
+      <input type="hidden" id="combo" name="combo" value="0">
+    </div>
+
+    <!-- 6-1. 예금주 + 계좌번호 -->
+    <div class="field-group" id="accountField">
+      <label class="field-label">예금주 / 계좌번호 <span id="accountReq" class="req" style="display:none">*</span></label>
+      <div class="account-row">
+        <input class="input" id="accountHolder" name="accountHolder" type="text" placeholder="예금주명" disabled>
+        <input class="input" id="account" name="account" type="text" placeholder="은행 + 계좌번호 (예: 농협 123-4567-8901-23)" disabled>
+      </div>
+      <div class="field-hint" id="accountHint">⚠️ 인터넷+TV 결합 신청 시에만 활성화됩니다.</div>
+    </div>
+
+    <!-- 7. 배송지 -->
+    <div class="field-group">
+      <label class="field-label" for="address">7. 사은품 배송지 주소<span class="req">*</span></label>
+      <div class="address-row">
+        <input class="input" id="zonecode" type="text" placeholder="우편번호" readonly>
+        <button type="button" class="addr-search-btn" onclick="openAddressSearch()">🔍 주소 검색</button>
+      </div>
+      <input class="input" id="address" name="address" type="text" placeholder="기본 주소 (자동 입력)" readonly required style="margin-top:8px;">
+      <input class="input" id="addressDetail" name="addressDetail" type="text" placeholder="상세주소 (동/호수 등)" style="margin-top:8px;">
+      <div class="field-hint">개통 완료 후 7일 이내 배송됩니다.</div>
+    </div>
+
+    <!-- 8. 사번 -->
+    <div class="field-group">
+      <label class="field-label" for="empno">8. 에이스휴먼파워 사원번호<span class="req">*</span></label>
+      <input class="input" id="empno" name="empno" type="text" inputmode="text" placeholder="예: AHP-12345 또는 사원번호" required>
+      <div class="field-hint">상담 시 본인 확인용으로 사용됩니다.</div>
+    </div>
+
+    <!-- 약관 동의 -->
+    <div class="field-group">
+      <label class="field-label">개인정보 동의<span class="req">*</span></label>
+      <div class="agree-all" id="agreeAll">
+        <span class="checkbox">✓</span>
+        <span class="agree-all-text">전체 동의하기</span>
+      </div>
+      <div class="agree-block">
+        <div class="agree-row req" data-key="privacy">
+          <span class="checkbox">✓</span>
+          <span class="agree-text"><b>개인정보 수집·이용</b> 동의 (성명, 휴대폰, 사번, 주소)</span>
+        </div>
+        <div class="agree-divider"></div>
+        <div class="agree-row req" data-key="emp">
+          <span class="checkbox">✓</span>
+          <span class="agree-text">에이스휴먼파워 <b>임직원 본인</b> 명의로 신청합니다</span>
+        </div>
+        <div class="agree-divider"></div>
+        <div class="agree-row req" data-key="thirdparty">
+          <span class="checkbox">✓</span>
+          <span class="agree-text"><b>제3자 제공</b> (통신사 개통 처리 목적) 동의</span>
+        </div>
+        <div class="agree-divider"></div>
+        <div class="agree-row" data-key="marketing">
+          <span class="checkbox">✓</span>
+          <span class="agree-text">마케팅 활용 동의 (선택)</span>
+        </div>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+<!-- Submit bar -->
+<div class="submit-bar">
+  <div class="submit-inner">
+    <button class="submit-btn" id="submitBtn" disabled>신청서 제출하기</button>
+  </div>
+</div>
+
+<!-- Success -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-card">
+    <div class="success-icon">✓</div>
+    <div class="success-title">신청 완료!</div>
+    <div class="success-msg">
+      신청서가 정상 접수되었습니다.<br>
+      24시간 이내 상담사가 연락드리겠습니다.
+    </div>
+    <button class="success-close" onclick="location.href='promotion-movingstyle.html'">메인으로 돌아가기</button>
+    <p style="margin-top:14px; font-size:11px; color:#888; display:flex; gap:14px; justify-content:center;">
+      <a href="https://bong2mobile.com/" target="_blank" rel="noopener" style="color:#666; text-decoration:underline;">봉이모바일</a>
+      <a href="https://1taphone.com/" target="_blank" rel="noopener" style="color:#666; text-decoration:underline;">일타폰</a>
+    </p>
+  </div>
+</div>
+
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script>
+  // Daum Postcode 주소 검색
+  function openAddressSearch() {
+    new daum.Postcode({
+      oncomplete: function(data) {
+        let addr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
+        let extra = '';
+        if (data.userSelectedType === 'R') {
+          if (data.bname && /[동|로|가]$/g.test(data.bname)) extra += data.bname;
+          if (data.buildingName && data.apartment === 'Y') extra += (extra ? ', ' : '') + data.buildingName;
+          if (extra) addr += ' (' + extra + ')';
+        }
+        document.getElementById('zonecode').value = data.zonecode;
+        document.getElementById('address').value = addr;
+        document.getElementById('addressDetail').focus();
+        validate();
+      },
+      theme: {
+        bgColor: '#FFD60A',
+        searchBgColor: '#0a0a0a',
+        contentBgColor: '#FFFFFF',
+        pageBgColor: '#FAFAF7',
+        textColor: '#333333',
+        queryTextColor: '#FFFFFF',
+        emphTextColor: '#0a0a0a',
+      }
+    }).open();
+  }
+
+  // Carrier chips - current
+  function setupChips(containerId, hiddenId) {
+    const chips = document.querySelectorAll(`#${containerId} .chip`);
+    const input = document.getElementById(hiddenId);
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('checked'));
+        chip.classList.add('checked');
+        input.value = chip.dataset.val;
+        validate();
+      });
+    });
+  }
+  setupChips('currentChips', 'currentCarrier');
+  setupChips('moveChips', 'moveCarrier');
+
+  // Gift colors mapping
+  const GIFT_COLORS = {
+    'movingstyle-27': [
+      ['웜 화이트', '#F5EFE6'],
+      ['화이트', '#FAFAFA'],
+      ['블랙', '#1A1A1A'],
+    ],
+    'cooker-22': [
+      ['글램 화이트', '#F5F5F0'],
+      ['글램 썬 옐로우', '#F2D26B'],
+      ['글램 베이지', '#E8DCC8'],
+    ],
+    'cooker-oven-32': [
+      ['글램 화이트', '#F5F5F0'],
+      ['차콜', '#3A3A3A'],
+      ['베이지 핑크', '#EBC8C0'],
+    ],
+    'vacuum-jet-150': [
+      ['코타 블랙', '#1A1A1A'],
+    ],
+    'speaker-aura-studio-5': [
+      ['블랙', '#1A1A1A'],
+    ],
+    'monitor-m5-32': [
+      ['웜 화이트', '#F5EFE6'],
+    ],
+  };
+
+  // Gift selection
+  const giftCards = document.querySelectorAll('#giftGrid .gift-radio');
+  const giftInput = document.getElementById('gift');
+  const colorField = document.getElementById('colorField');
+  const colorChips = document.getElementById('colorChips');
+  const colorInput = document.getElementById('color');
+  const colorHint = document.getElementById('colorHint');
+
+  function renderColors(giftId) {
+    const colors = GIFT_COLORS[giftId] || [];
+    colorInput.value = '';
+    if (!colors.length) {
+      colorField.style.display = 'none';
+      return;
+    }
+    colorField.style.display = 'block';
+    if (colors.length === 1) {
+      // Single color → auto-select, show as info
+      colorInput.value = colors[0][0];
+      colorChips.innerHTML = `
+        <div class="color-chip checked">
+          <span class="swatch" style="background:${colors[0][1]}"></span>
+          <span class="cname">${colors[0][0]}</span>
+        </div>
+      `;
+      colorHint.textContent = '단일 색상 자동 선택';
+    } else {
+      colorChips.innerHTML = colors.map(([name, hex]) => `
+        <div class="color-chip" data-val="${name}">
+          <span class="swatch" style="background:${hex}"></span>
+          <span class="cname">${name}</span>
+        </div>
+      `).join('');
+      colorHint.textContent = '※ 재고 상황에 따라 변경될 수 있습니다.';
+      // wire clicks
+      colorChips.querySelectorAll('.color-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          colorChips.querySelectorAll('.color-chip').forEach(c => c.classList.remove('checked'));
+          chip.classList.add('checked');
+          colorInput.value = chip.dataset.val;
+          validate();
+        });
+      });
+    }
+    validate();
+  }
+
+  // pre-select first by URL param if any
+  const urlParams = new URLSearchParams(location.search);
+  const presetGift = urlParams.get('gift');
+  giftCards.forEach(card => {
+    if (presetGift && card.dataset.val === presetGift) {
+      card.classList.add('checked');
+      giftInput.value = presetGift;
+      renderColors(presetGift);
+    }
+    card.addEventListener('click', () => {
+      giftCards.forEach(c => c.classList.remove('checked'));
+      card.classList.add('checked');
+      giftInput.value = card.dataset.val;
+      renderColors(card.dataset.val);
+      validate();
+    });
+  });
+
+  // Combo toggle
+  const comboToggle = document.getElementById('comboToggle');
+  const comboInput = document.getElementById('combo');
+  const accountInput = document.getElementById('account');
+  const accountHolderInput = document.getElementById('accountHolder');
+  const accountReq = document.getElementById('accountReq');
+  const accountHint = document.getElementById('accountHint');
+  comboToggle.addEventListener('click', () => {
+    comboToggle.classList.toggle('checked');
+    const checked = comboToggle.classList.contains('checked');
+    comboInput.value = checked ? '1' : '0';
+    accountReq.style.display = checked ? 'inline' : 'none';
+    accountInput.disabled = !checked;
+    accountHolderInput.disabled = !checked;
+    if (!checked) {
+      accountInput.value = '';
+      accountHolderInput.value = '';
+    }
+    accountHint.innerHTML = checked
+      ? '<b style="color:#ea580c">현금 60만원 입금받을 계좌 (필수)</b>'
+      : '⚠️ 인터넷+TV 결합 신청 시에만 활성화됩니다.';
+    validate();
+  });
+  accountInput.addEventListener('input', validate);
+  accountHolderInput.addEventListener('input', validate);
+
+  // Phone format
+  const phoneInput = document.getElementById('phone');
+  phoneInput.addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.length > 11) v = v.slice(0, 11);
+    if (v.length >= 7) e.target.value = `${v.slice(0,3)}-${v.slice(3,7)}-${v.slice(7)}`;
+    else if (v.length >= 4) e.target.value = `${v.slice(0,3)}-${v.slice(3)}`;
+    else e.target.value = v;
+    validate();
+  });
+
+  // Empno format
+  const empInput = document.getElementById('empno');
+  empInput.addEventListener('input', validate);
+
+  // Other inputs
+  ['name', 'address'].forEach(id => {
+    document.getElementById(id).addEventListener('input', validate);
+  });
+
+  // Agreements
+  const agreeRows = document.querySelectorAll('.agree-row');
+  const agreeAll = document.getElementById('agreeAll');
+  agreeRows.forEach(row => {
+    row.addEventListener('click', () => {
+      row.classList.toggle('checked');
+      updateAgreeAll();
+      validate();
+    });
+  });
+  function updateAgreeAll() {
+    const allChecked = Array.from(agreeRows).every(r => r.classList.contains('checked'));
+    agreeAll.classList.toggle('checked', allChecked);
+  }
+  agreeAll.addEventListener('click', () => {
+    const willCheck = !agreeAll.classList.contains('checked');
+    agreeAll.classList.toggle('checked', willCheck);
+    agreeRows.forEach(r => r.classList.toggle('checked', willCheck));
+    validate();
+  });
+
+  // Validation
+  const submitBtn = document.getElementById('submitBtn');
+  function validate() {
+    const currentEl = document.getElementById('currentCarrier');
+    const moveEl = document.getElementById('moveCarrier');
+    const empOk = empInput.value.trim().length >= 1;
+    const nameOk = document.getElementById('name').value.trim().length >= 2;
+    const phoneOk = /^010-\d{4}-\d{4}$/.test(phoneInput.value);
+    const currentOk = !!currentEl.value;
+    const moveOk = !!moveEl.value;
+    const differentOk = currentEl.value && moveEl.value && currentEl.value !== moveEl.value;
+    const giftOk = !!giftInput.value;
+    const colorOk = !giftInput.value || !!colorInput.value;
+    const addressOk = document.getElementById('address').value.trim().length >= 5;
+    const comboChecked = comboInput.value === '1';
+    const accountOk = !comboChecked || (accountInput.value.trim().length >= 5 && accountHolderInput.value.trim().length >= 1);
+    const reqAgreeOk = Array.from(document.querySelectorAll('.agree-row.req')).every(r => r.classList.contains('checked'));
+
+    const valid = empOk && nameOk && phoneOk && currentOk && moveOk && differentOk && giftOk && colorOk && addressOk && accountOk && reqAgreeOk;
+    submitBtn.disabled = !valid;
+  }
+
+  // Submit
+  submitBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (submitBtn.disabled) return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = '제출 중...';
+
+    const data = {
+      empno: document.getElementById('empno').value.trim(),
+      name: document.getElementById('name').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      currentCarrier: document.getElementById('currentCarrier').value,
+      moveCarrier: document.getElementById('moveCarrier').value,
+      gift: document.getElementById('gift').value,
+      color: document.getElementById('color').value,
+      combo: document.getElementById('combo').value,
+      accountHolder: document.getElementById('accountHolder').value.trim(),
+      account: document.getElementById('account').value.trim(),
+      address: document.getElementById('address').value.trim(),
+      addressDetail: document.getElementById('addressDetail').value.trim(),
+      zonecode: document.getElementById('zonecode').value.trim(),
+      agreements: {
+        privacy: document.querySelector('.agree-row[data-key="privacy"]').classList.contains('checked'),
+        emp: document.querySelector('.agree-row[data-key="emp"]').classList.contains('checked'),
+        thirdparty: document.querySelector('.agree-row[data-key="thirdparty"]').classList.contains('checked'),
+        marketing: document.querySelector('.agree-row[data-key="marketing"]').classList.contains('checked'),
+      }
+    };
+
+    try {
+      const r = await fetch('/api/special-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await r.json();
+      if (!r.ok || !result.ok) throw new Error(result.error || '제출에 실패했습니다');
+      document.getElementById('successOverlay').classList.add('show');
+    } catch (err) {
+      alert('신청 실패: ' + err.message + '\n잠시 후 다시 시도해주세요.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = '신청서 제출하기';
+    }
+  });
+
+  validate();
+</script>
+
+</body>
+</html>
