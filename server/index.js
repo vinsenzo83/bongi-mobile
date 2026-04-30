@@ -22,6 +22,7 @@ import cacheRoutes from './routes/cache.js';
 import adminPlatformRoutes from './routes/admin-platform.js';
 import specialPromoRoutes from './routes/special-promo.js';
 import { sanitizeBody } from './middleware/sanitize.js';
+import { basicAuth } from './middleware/basicAuth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiLimiter, applicationLimiter } from './middleware/rateLimit.js';
 import { authenticateJWT, optionalAuth } from './middleware/auth.js';
@@ -43,6 +44,9 @@ app.use(cors({
 app.use(express.json({ limit: '5mb' }));
 app.use(sanitizeBody);
 app.use(apiLimiter);
+
+// 어드민 특판 페이지는 비번 인증 (정적 서빙 전에)
+app.use('/admin/special-applications.html', basicAuth);
 
 // 정적 서빙 (어드민 + CRM + 대시보드 + 매장이미지 + 플로우 문서)
 app.use('/admin', express.static(join(__dirname, 'public', 'admin')));
@@ -77,7 +81,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/applications', applicationLimiter, applicationRoutes);
-app.use('/api/special-promo', applicationLimiter, specialPromoRoutes);
+// special-promo: POST(신청)는 공개, 그 외(GET/PATCH/DELETE)는 인증 필요
+app.use('/api/special-promo', applicationLimiter, (req, res, next) => {
+  if (req.method === 'POST') return next();
+  return basicAuth(req, res, next);
+}, specialPromoRoutes);
 app.use('/api/mock', mockRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/referrals', referralRoutes);

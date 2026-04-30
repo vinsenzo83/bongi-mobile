@@ -180,6 +180,69 @@
     .table-wrap { overflow-x: auto; }
     table { min-width: 1100px; }
   }
+
+  /* ===== Mobile Card View (≤ 720px) ===== */
+  .mobile-cards { display: none; }
+  @media (max-width: 720px) {
+    body { font-size: 14px; }
+    .wrap { padding: 14px; }
+    .topbar { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .topbar h1 { font-size: 18px; }
+    .stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .stat { padding: 14px 12px; }
+    .stat .value { font-size: 22px; }
+    .filters { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; }
+    .filters .search { width: 100%; }
+
+    /* 테이블 숨기고 카드 보여주기 */
+    .table-wrap { display: none; }
+    .mobile-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .mc {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .mc-top {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .mc-name {
+      font-size: 16px; font-weight: 800; letter-spacing: -0.4px;
+    }
+    .mc-empno {
+      font-size: 11px; color: #888; font-family: 'SF Mono', Menlo, monospace;
+      margin-top: 2px;
+    }
+    .mc-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; font-size: 13px; gap: 10px;
+    }
+    .mc-row .k { color: #888; flex-shrink: 0; }
+    .mc-row .v { color: #1a2744; font-weight: 600; text-align: right; }
+    .mc-actions {
+      display: flex; gap: 6px; margin-top: 12px; padding-top: 12px;
+      border-top: 1px solid #f0f1f5;
+    }
+    .mc-actions select {
+      flex: 1; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 8px;
+      font-size: 12px; font-family: inherit; background: #fff;
+    }
+    .mc-actions button {
+      padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px;
+      background: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .mc-actions button.detail { background: #1a2744; color: #fff; border-color: #1a2744; }
+    .mc-actions button.delete { color: #ef4444; border-color: #fecaca; }
+
+    .modal { max-width: 100%; }
+    .modal-body { padding: 18px; }
+    .field-pair { grid-template-columns: 110px 1fr; font-size: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -207,7 +270,7 @@
     <span class="last-update" id="lastUpdate"></span>
   </div>
 
-  <!-- Table -->
+  <!-- Table (Desktop) -->
   <div class="table-wrap">
     <table>
       <thead>
@@ -230,6 +293,9 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Mobile Cards -->
+  <div class="mobile-cards" id="mobileCards"></div>
 </div>
 
 <!-- Detail Modal -->
@@ -293,6 +359,7 @@
   }
 
   function renderTable(list) {
+    renderMobileCards(list);
     const tbody = document.getElementById('tbody');
     if (!list.length) {
       tbody.innerHTML = '<tr><td colspan="11" class="empty">신청 내역이 없습니다</td></tr>';
@@ -333,6 +400,45 @@
             </div>
           </td>
         </tr>
+      `;
+    }).join('');
+  }
+
+  function renderMobileCards(list) {
+    const el = document.getElementById('mobileCards');
+    if (!list.length) {
+      el.innerHTML = '<div class="empty" style="background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:40px 20px; text-align:center; color:#888;">신청 내역이 없습니다</div>';
+      return;
+    }
+    el.innerHTML = list.map(a => {
+      const g = GIFT_LABELS[a.gift] || { name: a.gift, img: '' };
+      const dt = new Date(a.created_at);
+      const dateStr = `${dt.getMonth() + 1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+      return `
+        <div class="mc">
+          <div class="mc-top">
+            <div>
+              <div class="mc-name">${a.name}</div>
+              <div class="mc-empno">${a.empno} · ${dateStr}</div>
+            </div>
+            <span class="status-badge sb-${a.status}">${STATUS_LABEL[a.status] || a.status}</span>
+          </div>
+          <div class="mc-row"><span class="k">휴대폰</span><span class="v">${a.phone}</span></div>
+          <div class="mc-row"><span class="k">통신사</span><span class="v">
+            <span class="carrier-tag ct-${a.currentCarrier}">${a.currentCarrier}</span>
+            <span class="arrow">→</span>
+            <span class="carrier-tag ct-${a.moveCarrier}">${a.moveCarrier}</span>
+          </span></div>
+          <div class="mc-row"><span class="k">사은품</span><span class="v">${g.name}${a.color ? ' / ' + escapeHtml(a.color) : ''}</span></div>
+          <div class="mc-row"><span class="k">결합</span><span class="v">${a.combo ? '<span class="combo-yes">+60만</span>' : '<span class="combo-no">미신청</span>'}</span></div>
+          <div class="mc-actions">
+            <select onchange="updateStatus('${a.id}', this.value)">
+              ${STATUS.map(s => `<option value="${s}" ${a.status === s ? 'selected' : ''}>${STATUS_LABEL[s]}</option>`).join('')}
+            </select>
+            <button class="detail" onclick="openDetail('${a.id}')">상세</button>
+            <button class="delete" onclick="deleteApp('${a.id}')">삭제</button>
+          </div>
+        </div>
       `;
     }).join('');
   }
@@ -396,7 +502,8 @@
       <div class="field-pair"><span class="k">5-1. 색상</span><span class="v">${a.color || '<span style=\"color:#999\">미선택</span>'}</span></div>
       <div class="field-pair"><span class="k">6. 인터넷+TV 결합</span><span class="v">${a.combo ? '✅ 신청 (현금 60만원 별도)' : '❌ 미신청'}</span></div>
       <div class="field-pair"><span class="k">6-1. 예금주</span><span class="v">${a.accountHolder ? escapeHtml(a.accountHolder) : '<span style=\"color:#999\">미입력</span>'}</span></div>
-      <div class="field-pair"><span class="k">6-2. 계좌번호</span><span class="v">${a.account ? escapeHtml(a.account) : '<span style=\"color:#999\">미입력</span>'}</span></div>
+      <div class="field-pair"><span class="k">6-2. 은행</span><span class="v">${a.bank ? escapeHtml(a.bank) : '<span style=\"color:#999\">미입력</span>'}</span></div>
+      <div class="field-pair"><span class="k">6-3. 계좌번호</span><span class="v">${a.account ? escapeHtml(a.account) : '<span style=\"color:#999\">미입력</span>'}</span></div>
       <div class="field-pair"><span class="k">7. 배송지 주소</span><span class="v">${a.zonecode ? '['+escapeHtml(a.zonecode)+'] ' : ''}${escapeHtml(a.address)}${a.addressDetail ? ' ' + escapeHtml(a.addressDetail) : ''}</span></div>
       <div class="field-pair"><span class="k">8. 사원번호</span><span class="v">${a.empno}</span></div>
 

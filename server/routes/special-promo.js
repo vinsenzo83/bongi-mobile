@@ -71,6 +71,7 @@ router.post('/', (req, res) => {
     color: color ? String(color).trim() : '',
     combo: combo === '1' || combo === true,
     accountHolder: accountHolder ? String(accountHolder).trim() : '',
+    bank: req.body.bank ? String(req.body.bank).trim() : '',
     account: account ? String(account).trim() : '',
     address: String(address).trim(),
     addressDetail: addressDetail ? String(addressDetail).trim() : '',
