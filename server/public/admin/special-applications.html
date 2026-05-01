@@ -18,7 +18,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 28px; }
+  .wrap { max-width: 1680px; margin: 0 auto; padding: 24px 32px; }
 
   /* Header */
   .topbar {
@@ -45,7 +45,7 @@
 
   /* Stats */
   .stats {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 22px;
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 22px;
   }
   .stat {
     background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px 20px;
@@ -65,19 +65,31 @@
   .filters {
     background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
     padding: 14px 18px; display: flex; gap: 10px; align-items: center;
-    margin-bottom: 14px;
+    margin-bottom: 14px; flex-wrap: wrap;
   }
   .search {
-    flex: 1; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 8px;
+    flex: 1; min-width: 240px; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 8px;
     font-size: 13px; font-family: inherit; background: #f9fafc;
   }
   .search:focus { outline: none; border-color: #1a2744; background: #fff; }
+  .filters select {
+    padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 8px;
+    font-size: 13px; font-family: inherit; background: #fff;
+    cursor: pointer; font-weight: 600;
+  }
+  .filters select:focus { outline: none; border-color: #1a2744; }
   .auto-refresh {
     display: flex; align-items: center; gap: 6px;
     font-size: 12px; color: #767676; font-weight: 600;
   }
   .auto-refresh input { cursor: pointer; }
   .last-update { font-size: 11px; color: #888; }
+  .filter-reset {
+    padding: 8px 12px; font-size: 12px; font-weight: 700;
+    background: #f5f6fa; border: 1px solid #e5e7eb; border-radius: 8px;
+    cursor: pointer; font-family: inherit; color: #1a2744;
+  }
+  .filter-reset:hover { background: #ebedf3; }
 
   /* Table */
   .table-wrap {
@@ -86,17 +98,43 @@
   }
   table { width: 100%; border-collapse: collapse; }
   thead th {
-    text-align: left; padding: 14px 16px; font-size: 12px; font-weight: 800;
+    text-align: left; padding: 14px 12px; font-size: 12px; font-weight: 800;
     color: #767676; background: #fafbfc; border-bottom: 1px solid #e5e7eb;
     letter-spacing: -0.1px; white-space: nowrap;
   }
   tbody td {
-    padding: 14px 16px; font-size: 13px; border-bottom: 1px solid #f0f1f5;
+    padding: 14px 12px; font-size: 13px; border-bottom: 1px solid #f0f1f5;
     letter-spacing: -0.2px; vertical-align: middle;
   }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: #fafbfc; }
   .col-id { font-family: 'SF Mono', Menlo, monospace; font-size: 11px; color: #888; }
+  .col-no { font-weight: 800; color: #1a2744; font-size: 14px; text-align: center; }
+
+  /* Pagination */
+  .pagination {
+    display: flex; justify-content: center; align-items: center;
+    gap: 4px; margin-top: 18px; flex-wrap: wrap;
+  }
+  .pagination button {
+    padding: 8px 12px; min-width: 36px;
+    border: 1px solid #e5e7eb; background: #fff;
+    border-radius: 8px; cursor: pointer;
+    font-size: 13px; font-weight: 700; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .pagination button:hover:not(:disabled) {
+    border-color: #1a2744;
+  }
+  .pagination button.active {
+    background: #1a2744; color: #fff; border-color: #1a2744;
+  }
+  .pagination button:disabled {
+    opacity: 0.4; cursor: not-allowed;
+  }
+  .pagination .page-info {
+    margin: 0 8px; font-size: 12px; color: #767676; font-weight: 600;
+  }
   .col-name { font-weight: 700; }
   .col-phone { font-family: 'SF Mono', Menlo, monospace; font-size: 12px; }
   .col-empno { font-family: 'SF Mono', Menlo, monospace; font-size: 12px; color: #555; }
@@ -178,10 +216,18 @@
   .field-pair .v { color: #1a2744; font-weight: 700; }
   .modal-memo { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-family: inherit; font-size: 13px; resize: vertical; min-height: 80px; }
 
-  @media (max-width: 1024px) {
-    .stats { grid-template-columns: repeat(2, 1fr); }
+  /* ===== Tablet & Smaller PC (≤ 1280px) ===== */
+  @media (max-width: 1280px) {
+    .wrap { padding: 20px 24px; }
+    .stats { grid-template-columns: repeat(3, 1fr); }
     .table-wrap { overflow-x: auto; }
     table { min-width: 1100px; }
+  }
+
+  /* Tablet (≤ 1024px) */
+  @media (max-width: 1024px) {
+    .stats { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .stat .value { font-size: 22px; }
   }
 
   /* ===== Mobile Card View (≤ 720px) ===== */
@@ -316,7 +362,41 @@
 
   <!-- Filters -->
   <div class="filters">
-    <input class="search" id="search" placeholder="🔍 사번 / 이름 / 휴대폰 / 신청번호 검색">
+    <input class="search" id="search" placeholder="🔍 사번 / 이름 / 휴대폰 검색">
+    <select id="filterStatus">
+      <option value="all">상태: 전체</option>
+      <option value="pending">대기</option>
+      <option value="contacted">상담중</option>
+      <option value="completed">완료</option>
+      <option value="cancelled">취소</option>
+    </select>
+    <select id="filterCombo">
+      <option value="all">결합: 전체</option>
+      <option value="yes">결합: 인터넷+TV ✅</option>
+      <option value="no">결합: 미신청</option>
+    </select>
+    <select id="filterGift">
+      <option value="all">사은품: 전체</option>
+      <option value="movingstyle-27">무빙스타일 27"</option>
+      <option value="cooker-22">큐커 22L</option>
+      <option value="cooker-oven-32">큐커 오븐 32L</option>
+      <option value="vacuum-jet-150">제트 청소기</option>
+      <option value="speaker-aura-studio-5">하만카돈 스피커</option>
+      <option value="monitor-m5-32">스마트모니터 32"</option>
+    </select>
+    <select id="filterCarrier">
+      <option value="all">이동 통신사: 전체</option>
+      <option value="SK">SK</option>
+      <option value="KT">KT</option>
+      <option value="LG">LG U+</option>
+    </select>
+    <select id="filterPeriod">
+      <option value="all">기간: 전체</option>
+      <option value="today">오늘</option>
+      <option value="week">최근 7일</option>
+      <option value="month">최근 30일</option>
+    </select>
+    <button class="filter-reset" id="filterReset">필터 초기화</button>
     <label class="auto-refresh">
       <input type="checkbox" id="autoRefresh" checked>
       자동 새로고침 (30초)
@@ -329,8 +409,8 @@
     <table>
       <thead>
         <tr>
+          <th style="width:50px;">순번</th>
           <th>접수일</th>
-          <th>신청번호</th>
           <th>사번</th>
           <th>이름</th>
           <th>휴대폰</th>
@@ -350,6 +430,9 @@
 
   <!-- Mobile Cards -->
   <div class="mobile-cards" id="mobileCards"></div>
+
+  <!-- Pagination -->
+  <div class="pagination" id="pagination"></div>
 </div>
 
 <!-- Detail Modal -->
@@ -375,9 +458,11 @@
   const STATUS = ['pending', 'contacted', 'completed', 'cancelled'];
   const STATUS_LABEL = { pending: '대기', contacted: '상담중', completed: '완료', cancelled: '취소' };
 
+  const PER_PAGE = 10;
   let currentFilter = 'all';
   let currentQuery = '';
   let cache = [];
+  let currentPage = 1;
   let adminPw = sessionStorage.getItem('admin_pw') || '';
 
   function authHeaders() {
@@ -462,7 +547,10 @@
       const d = await r.json();
       cache = d.applications || [];
       renderStats(d.stats || {});
-      renderTable(cache);
+      // 페이지가 데이터 범위를 넘으면 1페이지로
+      const totalPages = Math.max(1, Math.ceil(cache.length / PER_PAGE));
+      if (currentPage > totalPages) currentPage = 1;
+      renderPage();
       document.getElementById('lastUpdate').textContent = '마지막 갱신: ' + new Date().toLocaleTimeString('ko-KR');
     } catch (e) {
       document.getElementById('tbody').innerHTML = `<tr><td colspan="11" class="empty">서버 연결 실패: ${e.message}</td></tr>`;
@@ -487,21 +575,56 @@
     `).join('');
   }
 
-  function renderTable(list) {
-    renderMobileCards(list);
+  function applyFilters(list) {
+    const status = document.getElementById('filterStatus')?.value || 'all';
+    const combo = document.getElementById('filterCombo')?.value || 'all';
+    const gift = document.getElementById('filterGift')?.value || 'all';
+    const carrier = document.getElementById('filterCarrier')?.value || 'all';
+    const period = document.getElementById('filterPeriod')?.value || 'all';
+    const now = Date.now();
+    const PERIOD_MS = { today: 86400000, week: 7*86400000, month: 30*86400000 };
+
+    return list.filter(a => {
+      if (status !== 'all' && a.status !== status) return false;
+      if (combo === 'yes' && !a.combo) return false;
+      if (combo === 'no' && a.combo) return false;
+      if (gift !== 'all' && a.gift !== gift) return false;
+      if (carrier !== 'all' && a.moveCarrier !== carrier) return false;
+      if (period !== 'all') {
+        const t = new Date(a.created_at).getTime();
+        if (now - t > PERIOD_MS[period]) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderPage() {
+    const filtered = applyFilters(cache);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+    if (currentPage > totalPages) currentPage = 1;
+    const start = (currentPage - 1) * PER_PAGE;
+    const end = start + PER_PAGE;
+    const pageList = filtered.slice(start, end);
+    renderTable(pageList, start);
+    renderPagination(filtered.length);
+  }
+
+  function renderTable(list, baseIdx = 0) {
+    renderMobileCards(list, baseIdx);
     const tbody = document.getElementById('tbody');
     if (!list.length) {
       tbody.innerHTML = '<tr><td colspan="11" class="empty">신청 내역이 없습니다</td></tr>';
       return;
     }
-    tbody.innerHTML = list.map(a => {
+    tbody.innerHTML = list.map((a, i) => {
+      const no = baseIdx + i + 1;
       const g = GIFT_LABELS[a.gift] || { name: a.gift, img: '' };
       const dt = new Date(a.created_at);
       const dateStr = `${dt.getMonth() + 1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
       return `
         <tr>
+          <td class="col-no">${no}</td>
           <td class="date">${dateStr}</td>
-          <td class="col-id">${a.id}</td>
           <td class="col-empno">${a.empno}</td>
           <td class="col-name">${a.name}</td>
           <td class="col-phone">${a.phone}</td>
@@ -516,7 +639,7 @@
               <div class="gname">${g.name}</div>
             </div>
           </td>
-          <td>${a.combo ? '<span class="combo-yes">+60만</span>' : '<span class="combo-no">―</span>'}</td>
+          <td>${a.combo ? '<span class="combo-yes">현금 추가</span>' : '<span class="combo-no">―</span>'}</td>
           <td title="${escapeHtml(a.address)}">${truncate(a.address, 16)}</td>
           <td><span class="status-badge sb-${a.status}">${STATUS_LABEL[a.status] || a.status}</span></td>
           <td>
@@ -539,13 +662,14 @@
     }).join('');
   }
 
-  function renderMobileCards(list) {
+  function renderMobileCards(list, baseIdx = 0) {
     const el = document.getElementById('mobileCards');
     if (!list.length) {
       el.innerHTML = '<div class="empty" style="background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:40px 20px; text-align:center; color:#888;">신청 내역이 없습니다</div>';
       return;
     }
-    el.innerHTML = list.map(a => {
+    el.innerHTML = list.map((a, i) => {
+      const no = baseIdx + i + 1;
       const g = GIFT_LABELS[a.gift] || { name: a.gift, img: '' };
       const dt = new Date(a.created_at);
       const dateStr = `${dt.getMonth() + 1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
@@ -553,7 +677,7 @@
         <div class="mc">
           <div class="mc-top">
             <div>
-              <div class="mc-name">${a.name}</div>
+              <div class="mc-name"><span style="color:#999; font-weight:600; margin-right:6px;">#${no}</span>${a.name}</div>
               <div class="mc-empno">${a.empno} · ${dateStr}</div>
             </div>
             <span class="status-badge sb-${a.status}">${STATUS_LABEL[a.status] || a.status}</span>
@@ -565,7 +689,7 @@
             <span class="carrier-tag ct-${a.moveCarrier}">${a.moveCarrier}</span>
           </span></div>
           <div class="mc-row"><span class="k">사은품</span><span class="v">${g.name}${a.color ? ' / ' + escapeHtml(a.color) : ''}</span></div>
-          <div class="mc-row"><span class="k">결합</span><span class="v">${a.combo ? '<span class="combo-yes">+60만</span>' : '<span class="combo-no">미신청</span>'}</span></div>
+          <div class="mc-row"><span class="k">결합</span><span class="v">${a.combo ? '<span class="combo-yes">현금 추가</span>' : '<span class="combo-no">미신청</span>'}</span></div>
           <div class="mc-actions">
             ${currentFilter === 'trash' ? `
               <button class="restore" onclick="restoreApp('${a.id}')">복원</button>
@@ -584,15 +708,73 @@
     }).join('');
   }
 
+  function renderPagination(total) {
+    const el = document.getElementById('pagination');
+    const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+    if (total === 0) { el.innerHTML = ''; return; }
+
+    let buttons = '';
+    buttons += `<button onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>«</button>`;
+    buttons += `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ 이전</button>`;
+
+    // 페이지 버튼들 (현재 ±2)
+    const startP = Math.max(1, currentPage - 2);
+    const endP = Math.min(totalPages, currentPage + 2);
+    for (let p = startP; p <= endP; p++) {
+      buttons += `<button onclick="goToPage(${p})" class="${p === currentPage ? 'active' : ''}">${p}</button>`;
+    }
+
+    buttons += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>다음 ›</button>`;
+    buttons += `<button onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>»</button>`;
+    buttons += `<span class="page-info">${currentPage} / ${totalPages} (총 ${total}건)</span>`;
+    el.innerHTML = buttons;
+  }
+
+  function goToPage(p) {
+    const totalPages = Math.max(1, Math.ceil(cache.length / PER_PAGE));
+    if (p < 1 || p > totalPages) return;
+    currentPage = p;
+    renderPage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   function setFilter(key) {
+    currentPage = 1;
     currentFilter = key;
+    // 통계 카드 클릭 시 상태 dropdown 동기화
+    const ss = document.getElementById('filterStatus');
+    if (ss) {
+      if (key === 'all' || key === 'trash') ss.value = 'all';
+      else if (['pending', 'contacted', 'completed', 'cancelled'].includes(key)) ss.value = key;
+    }
     load();
   }
+  window.goToPage = goToPage;
 
   document.getElementById('search').addEventListener('input', (e) => {
     currentQuery = e.target.value.trim();
+    currentPage = 1;
     clearTimeout(window._st);
     window._st = setTimeout(load, 250);
+  });
+
+  // 필터 변경 시 클라이언트 사이드 즉시 적용
+  ['filterStatus', 'filterCombo', 'filterGift', 'filterCarrier', 'filterPeriod'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+      currentPage = 1;
+      renderPage();
+    });
+  });
+  document.getElementById('filterReset').addEventListener('click', () => {
+    document.getElementById('filterStatus').value = 'all';
+    document.getElementById('filterCombo').value = 'all';
+    document.getElementById('filterGift').value = 'all';
+    document.getElementById('filterCarrier').value = 'all';
+    document.getElementById('filterPeriod').value = 'all';
+    document.getElementById('search').value = '';
+    currentQuery = '';
+    currentPage = 1;
+    load();
   });
 
   document.getElementById('refreshBtn').addEventListener('click', load);
@@ -650,7 +832,7 @@
       <div class="field-pair"><span class="k">4. 이름</span><span class="v">${a.name}</span></div>
       <div class="field-pair"><span class="k">5. 사은품 종류</span><span class="v">${g.name} <small style="color:#888">(${a.gift})</small></span></div>
       <div class="field-pair"><span class="k">5-1. 색상</span><span class="v">${a.color || '<span style=\"color:#999\">미선택</span>'}</span></div>
-      <div class="field-pair"><span class="k">6. 인터넷+TV 결합</span><span class="v">${a.combo ? '✅ 신청 (현금 60만원 별도)' : '❌ 미신청'}</span></div>
+      <div class="field-pair"><span class="k">6. 인터넷+TV 결합</span><span class="v">${a.combo ? '✅ 신청 (현금 사은품 별도, 가입 상품별 상이)' : '❌ 미신청'}</span></div>
       <div class="field-pair"><span class="k">6-1. 예금주</span><span class="v">${a.accountHolder ? escapeHtml(a.accountHolder) : '<span style=\"color:#999\">미입력</span>'}</span></div>
       <div class="field-pair"><span class="k">6-2. 은행</span><span class="v">${a.bank ? escapeHtml(a.bank) : '<span style=\"color:#999\">미입력</span>'}</span></div>
       <div class="field-pair"><span class="k">6-3. 계좌번호</span><span class="v">${a.account ? escapeHtml(a.account) : '<span style=\"color:#999\">미입력</span>'}</span></div>
@@ -691,7 +873,7 @@
   // CSV export
   document.getElementById('exportBtn').addEventListener('click', () => {
     if (!cache.length) return alert('내보낼 데이터가 없습니다');
-    const headers = ['접수일', '신청번호', '사번', '이름', '휴대폰', '현재', '이동', '사은품', '결합(60만)', '배송지', '상태', '메모'];
+    const headers = ['접수일', '신청번호', '사번', '이름', '휴대폰', '현재', '이동', '사은품', '인터넷+TV', '배송지', '상태', '메모'];
     const rows = cache.map(a => [
       new Date(a.created_at).toLocaleString('ko-KR'),
       a.id, a.empno, a.name, a.phone,
