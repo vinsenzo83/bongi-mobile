@@ -961,10 +961,25 @@ function calc() {
     html += '</div>';
   } else {
     var addWifi = wf ? wifiForSp : 0;
-    var total = netBase + addWifi;
+    var subTotal = netBase + addWifi;
+    // KT 프리미엄 싱글결합 인터넷 추가 할인 (TV 미가입 + 500M↑ + 휴대폰 77K↑)
+    var bundleTypeNow = document.getElementById('c-bundle') ? document.getElementById('c-bundle').value : '';
+    var psPlanForInetDc = 0;
+    if (bundleTypeNow === 'kt-premium-single') {
+      var psSelNow = document.getElementById('c-prem-single-plan');
+      psPlanForInetDc = parseInt(psSelNow ? psSelNow.value : 0) || 0;
+    }
+    var inetSoloDcSec1 = (c === 'kt' && bundleTypeNow === 'kt-premium-single'
+                         && (sp === '500M' || sp === '1G')
+                         && psPlanForInetDc >= 77000) ? 5500 : 0;
+    var totalAfterInetDc = subTotal - inetSoloDcSec1;
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')</span><span class="v">' + fmt(netBase) + '</span></div>';
     if (wf) html += '<div class="calc-line"><span class="l">WiFi' + (d.wifiName ? ' (' + d.wifiName + ')' : '') + '</span><span class="v">+' + fmt(wifiForSp) + (wifiForSp === 0 ? ' (무료)' : '') + '</span></div>';
-    html += '<div class="calc-line total"><span class="l">월 합계</span><span class="v">' + fmt(total) + '</span></div>';
+    if (inetSoloDcSec1 > 0) {
+      html += '<div class="calc-line sub"><span class="l">└ 소계</span><span class="v">' + fmt(subTotal) + '</span></div>';
+      html += '<div class="calc-line discount"><span class="l">💎 KT 프리미엄 싱글결합 추가 할인</span><span class="v">-' + fmt(inetSoloDcSec1) + '</span></div>';
+    }
+    html += '<div class="calc-line total"><span class="l">월 합계</span><span class="v">' + fmt(totalAfterInetDc) + '</span></div>';
   }
 
   var bundleType = document.getElementById('c-bundle').value;
@@ -1114,10 +1129,14 @@ function calc() {
       html += '<div class="calc-line discount"><span class="l">└ 25% 할인 (휴대폰 고지서)</span><span class="v">-' + fmt(psDc) + '</span></div>';
       html += '<div class="calc-line sub"><span class="l">→ 휴대폰 할인 후 월요금</span><span class="v" style="color:#a5b4fc;font-weight:800">' + fmt(psPlanAfter) + '</span></div>';
     }
-    if (!hasTv) {
-      html += '<div class="calc-line discount" style="margin-top:6px"><span class="l">📡 인터넷 단독 추가 할인</span><span class="v">-' + fmt(inetSoloDc) + '</span></div>';
+    if (!hasTv && inetSoloDc > 0) {
+      html += '<div style="font-size:9px;color:#94a3b8;margin-top:4px;padding-top:4px;border-top:1px dashed rgba(255,255,255,0.15)">ℹ️ 인터넷 단독 추가 할인 -' + fmt(inetSoloDc) + '은 위 섹터 1 인터넷 요금에 반영</div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#a5b4fc">💰 월 총 할인</span><span class="v" style="color:#818cf8;font-size:14px">-' + fmt(psTotalDc) + '</span></div>';
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#a5b4fc">💰 휴대폰 할인</span><span class="v" style="color:#818cf8;font-size:14px">-' + fmt(psDc) + '</span></div>';
+    if (!hasTv && inetSoloDc > 0) {
+      html += '<div class="calc-line sub"><span class="l">＋ 인터넷 할인 (섹터 1)</span><span class="v">-' + fmt(inetSoloDc) + '</span></div>';
+      html += '<div class="calc-line total" style="margin-top:4px"><span class="l" style="color:#a5b4fc">= 월 총 할인 합계</span><span class="v" style="color:#818cf8;font-size:13px">-' + fmt(psTotalDc) + '</span></div>';
+    }
     if (psPlanOk && psSpeedOk) {
       html += '<div style="background:rgba(99,102,241,0.15);border-radius:6px;padding:6px 10px;margin-top:8px;font-size:10px;color:#c7d2fe;line-height:1.5">✅ 가입 조건 충족 · 1대만 결합 · 패밀리(유선) 불필요</div>';
     }
