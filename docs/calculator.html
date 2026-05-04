@@ -426,8 +426,8 @@ var D = {
     settopDiscountRules: [
       {
         id: 'sk-500m-allplus-ai4',
-        name: '500M + 올 플러스 + AI 4 vision',
-        speed: '500M',
+        name: '500M↑ + 올 플러스 + AI 4 vision',
+        speeds: ['500M','1G'],
         tvNameContains: '올 플러스',
         settopId: 'ai-4-vision',
         components: [
@@ -438,8 +438,8 @@ var D = {
       },
       {
         id: 'sk-500m-all-ai4',
-        name: '500M + 올 시리즈 + AI 4 vision',
-        speed: '500M',
+        name: '500M↑ + 올 시리즈 + AI 4 vision',
+        speeds: ['500M','1G'],
         tvNameContains: '올',
         settopId: 'ai-4-vision',
         components: [
@@ -683,6 +683,7 @@ function getSettopDiscount(carrierKey, sp, tvIdx, settopId) {
     var rule = d.settopDiscountRules[i];
     if (!rule.active) continue;
     if (rule.speed && rule.speed !== sp) continue;
+    if (rule.speeds && Array.isArray(rule.speeds) && rule.speeds.indexOf(sp) === -1) continue;
     if (rule.tvNameContains && tv.n.indexOf(rule.tvNameContains) === -1) continue;
     if (rule.settopId && rule.settopId !== settopId) continue;
     // 매칭된 규칙의 활성 components 합산 (날짜 범위 체크)
@@ -1065,7 +1066,30 @@ function calc() {
     }
     html += '<div class="calc-line sub"><span class="l">→ TV 최종요금</span><span class="v">' + fmt(tvFinal) + '</span></div>';
     if (setTop > 0) {
-      html += '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTop) + '</span></div>';
+      html += '<div class="calc-line"><span class="l">📦 셋톱 기본료' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTop) + '</span></div>';
+      var defSt = d.setTopOptions ? d.setTopOptions.find(function(o){return o.isDefault && o.active;}) : null;
+      var stDcInfo = getSettopDiscount(c, sp, ti, defSt ? defSt.id : null);
+      if (stDcInfo.discount > 0) {
+        var baseSum = 0, promoSum = 0;
+        stDcInfo.components.forEach(function(comp){
+          if (comp.type === 'promo') promoSum += (comp.discount || 0);
+          else baseSum += (comp.discount || 0);
+        });
+        if (baseSum > 0) {
+          html += '<div class="calc-line discount"><span class="l">└ 결합 할인</span><span class="v">-' + fmt(baseSum) + '</span></div>';
+          stDcInfo.components.filter(function(co){return co.type !== 'promo';}).forEach(function(comp){
+            html += '<div class="calc-line" style="font-size:9px;color:#94a3b8;padding-left:18px"><span class="l">· ' + comp.name + '</span><span class="v">-' + fmt(comp.discount) + '</span></div>';
+          });
+        }
+        if (promoSum > 0) {
+          html += '<div class="calc-line discount"><span class="l">└ ⏰ 프로모션</span><span class="v">-' + fmt(promoSum) + '</span></div>';
+          stDcInfo.components.filter(function(co){return co.type === 'promo';}).forEach(function(comp){
+            html += '<div class="calc-line" style="font-size:9px;color:#fbbf24;padding-left:18px"><span class="l">· ' + comp.name + (comp.endDate ? ' (~' + comp.endDate + ')' : '') + '</span><span class="v">-' + fmt(comp.discount) + '</span></div>';
+          });
+        }
+        html += '<div class="calc-line sub"><span class="l">→ 셋톱 실납</span><span class="v" style="color:#60a5fa;font-weight:700">' + fmt(setTop - stDcInfo.discount) + '</span></div>';
+        total -= stDcInfo.discount;
+      }
     }
     html += '<div class="calc-line total"><span class="l">월 합계</span><span class="v" style="color:#60a5fa">' + fmt(total) + '</span></div>';
     html += '</div>';

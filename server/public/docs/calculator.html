@@ -426,8 +426,8 @@ var D = {
     settopDiscountRules: [
       {
         id: 'sk-500m-allplus-ai4',
-        name: '500M + 올 플러스 + AI 4 vision',
-        speed: '500M',
+        name: '500M↑ + 올 플러스 + AI 4 vision',
+        speeds: ['500M','1G'],
         tvNameContains: '올 플러스',
         settopId: 'ai-4-vision',
         components: [
@@ -438,8 +438,8 @@ var D = {
       },
       {
         id: 'sk-500m-all-ai4',
-        name: '500M + 올 시리즈 + AI 4 vision',
-        speed: '500M',
+        name: '500M↑ + 올 시리즈 + AI 4 vision',
+        speeds: ['500M','1G'],
         tvNameContains: '올',
         settopId: 'ai-4-vision',
         components: [
@@ -683,6 +683,7 @@ function getSettopDiscount(carrierKey, sp, tvIdx, settopId) {
     var rule = d.settopDiscountRules[i];
     if (!rule.active) continue;
     if (rule.speed && rule.speed !== sp) continue;
+    if (rule.speeds && Array.isArray(rule.speeds) && rule.speeds.indexOf(sp) === -1) continue;
     if (rule.tvNameContains && tv.n.indexOf(rule.tvNameContains) === -1) continue;
     if (rule.settopId && rule.settopId !== settopId) continue;
     // 매칭된 규칙의 활성 components 합산 (날짜 범위 체크)
