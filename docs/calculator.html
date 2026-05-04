@@ -1564,9 +1564,9 @@ function addSetTop(carrierKey) {
         fee: parseFee(v.fee),
         active: true
       });
-      renderDefaultControls();
-      renderTicketList();
-      calc();
+      var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+      logEdit('셋톱박스', labels[carrierKey] + ' 추가', '-', v.name + ' (' + parseFee(v.fee).toLocaleString() + '원)');
+      resolveDefaultsAndPersist(carrierKey);
       return true;
     }
   });
@@ -1589,9 +1589,9 @@ function addWifi(carrierKey) {
         fees: { '100M': parseFee(v.fee100), '500M': parseFee(v.fee500), '1G': parseFee(v.fee1g) },
         active: true
       });
-      renderDefaultControls();
-      renderTicketList();
-      calc();
+      var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+      logEdit('WiFi', labels[carrierKey] + ' 추가', '-', v.name + ' (100M/500M/1G: ' + parseFee(v.fee100) + '/' + parseFee(v.fee500) + '/' + parseFee(v.fee1g) + ')');
+      resolveDefaultsAndPersist(carrierKey);
       return true;
     }
   });
@@ -1844,10 +1844,13 @@ function deleteCatalogRow(id) {
   if (id.indexOf('d-') === 0) {
     var deleted = loadDeletedDefaults();
     if (deleted.indexOf(id) === -1) { deleted.push(id); saveDeletedDefaults(deleted); }
+    logEdit('사은품', '카탈로그 기본 행 숨김 (' + id + ')', '활성', '숨김');
   } else {
     var custom = loadCustomCatalog();
+    var target = custom.find(function(r){ return r.id === id; });
     custom = custom.filter(function(r){ return r.id !== id; });
     saveCustomCatalog(custom);
+    if (target) logEdit('사은품', '카탈로그 커스텀 행 삭제', target.product || id, '-');
   }
   renderGiftControls();
 }
