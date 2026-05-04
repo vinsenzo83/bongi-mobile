@@ -420,8 +420,19 @@ var D = {
       { id: 'btv-air-4', name: 'Btv Air 4세대', fee: 8800, active: true },
       { id: 'apple-tv-3', name: '애플TV 3세대', fee: 6600, active: true }
     ],
-    // 셋톱 결합 할인 규칙 (조건 매칭 시 셋톱 임대료에서 차감)
+    // 셋톱 결합 할인 규칙 (조건 매칭 시 셋톱 임대료에서 차감) — 더 구체적인 규칙을 위에 배치
     settopDiscountRules: [
+      {
+        id: 'sk-500m-allplus-ai4-promo',
+        name: '500M + 올 플러스 + AI 4 vision (프로모션 포함)',
+        speed: '500M',
+        tvNameContains: '올 플러스',
+        settopId: 'ai-4-vision',
+        discount: 4400,
+        isPromo: true,
+        breakdown: '기본 -2,200원 + 출시 프로모션 -2,200원',
+        active: true
+      },
       {
         id: 'sk-500m-all-ai4',
         name: '500M + 올 시리즈 + AI 4 vision',
