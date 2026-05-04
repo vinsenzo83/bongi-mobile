@@ -1439,16 +1439,31 @@ function renderDefaultControls() {
         '<button onclick="addSetTop(\'' + key + '\')" style="padding:6px 12px;font-size:11px;border:1.5px dashed #6366f1;background:#fff;color:#6366f1;border-radius:4px;cursor:pointer;font-weight:700;white-space:nowrap">+ 추가</button>' +
         '</div>';
 
-      var html = '<table><thead><tr><th>모델</th><th>월 임대료</th><th style="width:80px">상태</th></tr></thead><tbody>';
+      var html = '<table><thead><tr><th>모델</th><th>월 임대료</th><th>할인 규칙</th><th style="width:80px">상태</th></tr></thead><tbody>';
       d.setTopOptions.forEach(function(o) {
         var isDef = o.isDefault && o.active;
         var isDis = !o.active;
         var rowStyle = isDef ? 'background:#fef3c7' : (isDis ? 'opacity:0.5' : '');
         var toggleBtn = '<button onclick="toggleActive(\'' + key + '\', \'settop\', \'' + o.id + '\')" style="padding:3px 6px;font-size:10px;border:1px solid ' + (isDis ? '#16a34a' : '#d97706') + ';background:#fff;color:' + (isDis ? '#16a34a' : '#d97706') + ';border-radius:4px;cursor:pointer;margin-right:3px">' + (isDis ? '복구' : '단종') + '</button>';
         var hardDelBtn = '<button onclick="hardDeleteOption(\'' + key + '\', \'settop\', \'' + o.id + '\')" style="padding:3px 6px;font-size:10px;border:1px solid #dc2626;background:#fff;color:#dc2626;border-radius:4px;cursor:pointer">🗑</button>';
+        // 할인 규칙 셀
+        var rules = o.discountRules || [];
+        var ruleSummary = '';
+        if (rules.length === 0) {
+          ruleSummary = '<span style="font-size:10px;color:#999">없음</span>';
+        } else {
+          ruleSummary = rules.map(function(r){
+            var typeBg = r.type === 'promo' ? '#fef3c7' : '#dbeafe';
+            var typeClr = r.type === 'promo' ? '#92400e' : '#1d4ed8';
+            var typeIcon = r.type === 'promo' ? '⏰' : '·';
+            return '<div style="display:inline-block;margin:2px;padding:2px 6px;background:' + typeBg + ';color:' + typeClr + ';border-radius:3px;font-size:9px;font-weight:600">' + typeIcon + ' ' + r.name + ' -' + (r.discount||0).toLocaleString() + '</div>';
+          }).join('');
+        }
+        ruleSummary += '<button onclick="openRulesEditor(\'' + key + '\', \'' + o.id + '\')" style="margin-left:4px;padding:2px 6px;font-size:9px;border:1px dashed #6366f1;background:#fff;color:#6366f1;border-radius:3px;cursor:pointer">⚙ 편집</button>';
         html += '<tr style="' + rowStyle + '">' +
           '<td>' + (isDef ? '⭐ ' : '') + '<input type="text" value="' + o.name + '" onchange="updateOptionField(\'' + key + '\', \'settop\', \'' + o.id + '\', \'name\', this.value)" style="width:100%;padding:4px 6px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;font-weight:700"></td>' +
           '<td><input type="text" inputmode="numeric" value="' + o.fee.toLocaleString() + '" onchange="updateOptionField(\'' + key + '\', \'settop\', \'' + o.id + '\', \'fee\', this.value); this.value=(parseInt(String(this.value).replace(/[^0-9]/g,\'\')||0).toLocaleString())" style="width:90px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:right;font-weight:700"></td>' +
+          '<td>' + ruleSummary + '</td>' +
           '<td>' + toggleBtn + hardDelBtn + '</td></tr>';
       });
       html += '</tbody></table>';
@@ -1494,6 +1509,104 @@ function renderDefaultControls() {
 function parseFee(str) {
   if (!str) return 0;
   return parseInt(String(str).replace(/[^0-9]/g, '')) || 0;
+}
+
+// 셋톱 할인 규칙 편집 모달
+function openRulesEditor(carrierKey, settopId) {
+  var d = D[carrierKey];
+  var settop = d.setTopOptions.find(function(o){ return o.id === settopId; });
+  if (!settop) return;
+  if (!settop.discountRules) settop.discountRules = [];
+  var labels = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' };
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+  var modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:12px;padding:18px 22px;width:600px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)';
+  function render() {
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+    html += '<h3 style="margin:0;font-size:14px;color:#1a2744">⚙ ' + labels[carrierKey] + ' · ' + settop.name + ' 할인 규칙</h3>';
+    html += '<button id="modal-close" style="background:none;border:none;font-size:18px;cursor:pointer;color:#999">×</button>';
+    html += '</div>';
+    if (settop.discountRules.length === 0) {
+      html += '<div style="padding:20px;text-align:center;color:#999;font-size:11px;background:#f9fafb;border-radius:8px;margin-bottom:10px">규칙 없음. 아래에서 추가하세요.</div>';
+    } else {
+      html += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">';
+      settop.discountRules.forEach(function(r, idx) {
+        var typeBg = r.type === 'promo' ? '#fef3c7' : '#dbeafe';
+        var typeClr = r.type === 'promo' ? '#92400e' : '#1d4ed8';
+        html += '<div style="border:1.5px solid ' + typeClr + ';border-radius:8px;padding:10px;background:' + typeBg + '20">';
+        html += '<div style="display:grid;grid-template-columns:80px 1fr 80px 100px 80px;gap:6px;align-items:center;margin-bottom:6px">';
+        html += '<select onchange="updRuleField(\'' + carrierKey + '\', \'' + settopId + '\', ' + idx + ', \'type\', this.value); window.openRulesEditor(\'' + carrierKey + '\', \'' + settopId + '\')" style="padding:4px;border:1px solid #cbd5e1;border-radius:4px;font-size:10px"><option value="base"' + (r.type==='base'?' selected':'') + '>base</option><option value="promo"' + (r.type==='promo'?' selected':'') + '>promo</option></select>';
+        html += '<input type="text" value="' + (r.name||'') + '" placeholder="규칙명" onchange="updRuleField(\'' + carrierKey + '\', \'' + settopId + '\', ' + idx + ', \'name\', this.value)" style="padding:4px 6px;border:1px solid #cbd5e1;border-radius:4px;font-size:10px">';
+        html += '<input type="text" inputmode="numeric" value="' + (r.discount||0) + '" placeholder="할인" onchange="updRuleField(\'' + carrierKey + '\', \'' + settopId + '\', ' + idx + ', \'discount\', this.value)" style="padding:4px;border:1px solid #cbd5e1;border-radius:4px;font-size:10px;text-align:right">';
+        html += '<input type="text" value="' + ((r.speeds||[]).join(',') || '500M,1G') + '" placeholder="속도" onchange="updRuleField(\'' + carrierKey + '\', \'' + settopId + '\', ' + idx + ', \'speeds\', this.value)" style="padding:4px 6px;border:1px solid #cbd5e1;border-radius:4px;font-size:10px">';
+        html += '<button onclick="delRule(\'' + carrierKey + '\', \'' + settopId + '\', ' + idx + ')" style="padding:4px 8px;border:1px solid #dc2626;background:#fff;color:#dc2626;border-radius:4px;font-size:10px;cursor:pointer">삭제</button>';
+        html += '</div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 110px 110px 60px;gap:6px;align-items:center">';
+        html += '<input type="text" value="' + (r.tvNameContains||'') + '" placeholder="TV명 포함 (예: 올 플러스)" onchange="updRuleField(\'' + carrierKey + '\', \'' + settopId + '\', ' + idx + ', \'tvNameContains\', this.value)" style="padding:4px 6px;border:1px solid #cbd5e1;border-radius:4px;font-size:10px">';
+        html += '<input type="date" value="' + (r.startDate||'') + '" onchange="updRuleField(\'' + carrierKey + '\', \'' + settopId + '\', ' + idx + ', \'startDate\', this.value)" style="padding:4px;border:1px solid #cbd5e1;border-radius:4px;font-size:10px">';
+        html += '<input type="date" value="' + (r.endDate||'') + '" onchange="updRuleField(\'' + carrierKey + '\', \'' + settopId + '\', ' + idx + ', \'endDate\', this.value)" style="padding:4px;border:1px solid #cbd5e1;border-radius:4px;font-size:10px">';
+        html += '<label style="font-size:10px;display:flex;align-items:center;gap:4px"><input type="checkbox"' + (r.active?' checked':'') + ' onchange="updRuleField(\'' + carrierKey + '\', \'' + settopId + '\', ' + idx + ', \'active\', this.checked); window.openRulesEditor(\'' + carrierKey + '\', \'' + settopId + '\')"> 활성</label>';
+        html += '</div></div>';
+      });
+      html += '</div>';
+    }
+    html += '<button onclick="addRule(\'' + carrierKey + '\', \'' + settopId + '\')" style="width:100%;padding:8px;border:1.5px dashed #6366f1;background:#fff;color:#6366f1;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">+ 새 할인 규칙 추가</button>';
+    html += '<div style="font-size:10px;color:#666;margin-top:8px;line-height:1.6">컬럼 순서: type · 규칙명 · 할인(원) · 속도(쉼표구분) / TV명 포함 · 시작일 · 종료일 · 활성</div>';
+    modal.innerHTML = html;
+    document.getElementById('modal-close').onclick = function(){ document.body.removeChild(overlay); };
+  }
+  render();
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e){ if (e.target === overlay) document.body.removeChild(overlay); };
+  // 외부에서 다시 호출하기 위해 전역에 노출
+  window.openRulesEditor = openRulesEditor;
+}
+
+function updRuleField(carrierKey, settopId, idx, field, value) {
+  var settop = D[carrierKey].setTopOptions.find(function(o){return o.id===settopId;});
+  if (!settop || !settop.discountRules || !settop.discountRules[idx]) return;
+  var rule = settop.discountRules[idx];
+  var old = rule[field];
+  if (field === 'discount') rule[field] = parseFee(value);
+  else if (field === 'active') rule[field] = !!value;
+  else if (field === 'speeds') rule[field] = String(value).split(',').map(function(s){return s.trim();}).filter(Boolean);
+  else if (field === 'startDate' || field === 'endDate') rule[field] = value || null;
+  else rule[field] = String(value);
+  logEdit('셋톱박스', settop.name + ' 규칙 ' + (rule.name||'#'+idx) + ' / ' + field, old, rule[field]);
+  resolveDefaultsAndPersist(carrierKey);
+}
+
+function addRule(carrierKey, settopId) {
+  var settop = D[carrierKey].setTopOptions.find(function(o){return o.id===settopId;});
+  if (!settop) return;
+  if (!settop.discountRules) settop.discountRules = [];
+  settop.discountRules.push({
+    id: 'rule-' + Date.now(),
+    name: '새 규칙',
+    type: 'base',
+    speeds: ['500M','1G'],
+    tvNameContains: '',
+    discount: 0,
+    startDate: null,
+    endDate: null,
+    active: true
+  });
+  logEdit('셋톱박스', settop.name + ' 규칙 추가', '-', '새 규칙');
+  resolveDefaultsAndPersist(carrierKey);
+  openRulesEditor(carrierKey, settopId);
+}
+
+function delRule(carrierKey, settopId, idx) {
+  if (!confirm('이 규칙을 삭제하시겠습니까?')) return;
+  var settop = D[carrierKey].setTopOptions.find(function(o){return o.id===settopId;});
+  if (!settop || !settop.discountRules || !settop.discountRules[idx]) return;
+  var name = settop.discountRules[idx].name;
+  settop.discountRules.splice(idx, 1);
+  logEdit('셋톱박스', settop.name + ' 규칙 삭제', name, '-');
+  resolveDefaultsAndPersist(carrierKey);
+  openRulesEditor(carrierKey, settopId);
 }
 
 function updateOptionField(carrierKey, type, id, field, value) {
