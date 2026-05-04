@@ -415,6 +415,18 @@ html, body { overflow:hidden; }
         <div id="c-premium-members" style="display:flex;flex-direction:column;gap:6px"></div>
       </div>
 
+      <div class="tm-card" id="card-premium-single-wrap" style="display:none">
+        <div class="tm-card-title"><span class="num">💎</span>KT 프리미엄 싱글결합 (1회선)</div>
+        <div class="tm-field" style="margin-bottom:8px">
+          <label style="font-size:11px;font-weight:700;color:#1d4ed8">📱 휴대폰 요금제 선택 (77,000원 이상)</label>
+          <select id="c-prem-single-plan" style="width:100%;padding:8px 10px;border:1.5px solid #93c5fd;border-radius:8px;font-size:12px;background:#fff;margin-top:4px"></select>
+        </div>
+        <div id="c-prem-single-warn" style="display:none;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;padding:6px 10px;font-size:10px;color:#991b1b;margin-bottom:6px"></div>
+        <div style="font-size:9px;color:#64748b;line-height:1.5;background:#eff6ff;border-radius:6px;padding:6px 8px">
+          ℹ️ 인터넷 500M↑ 필수 · 1대만 결합 · 패밀리(유선) 불필요 (1인 가정 OK · 2022.2.23 폐기)
+        </div>
+      </div>
+
     </div>
 
     <!-- 📊 calculator.html 임베드 — 위쪽 "요금 계산기" 영역만 hide, 나머지 모든 .section 표시 -->
@@ -748,6 +760,18 @@ function updateSetTopInfo() {
   if (el && d.setTopName) el.textContent = d.setTopName + ' (' + fmt(d.setTop || 0) + ')';
 }
 
+function renderPremiumSingle() {
+  var sel = document.getElementById('c-prem-single-plan');
+  if (!sel) return;
+  var catalog = D.kt.bundle.premium.planCatalog;
+  var opts = catalog
+    .filter(function(p) { return p.prem; })
+    .map(function(p) { return '<option value="' + p.v + '" data-dc="' + p.dc + '">' + p.label + ' → 25% 할인 -' + p.dc.toLocaleString() + '원</option>'; })
+    .join('');
+  sel.innerHTML = opts;
+  sel.onchange = function() { if (typeof calc === 'function') calc(); };
+}
+
 function renderPremiumMembers() {
   var wrap = document.getElementById('c-premium-members');
   if (!wrap) return;
@@ -788,7 +812,7 @@ function updateBundleUI() {
     opts = '<option value="family">휴대폰 결합 (요즘가족결합) ⭐</option><option value="sk-onfamily">온가족할인 (가입년수 기반)</option><option value="home">TV만 결합 (휴대폰 없을 때)</option>';
     rangeSel.innerHTML = '';
   } else if (c === 'kt') {
-    opts = '<option value="kt-total">휴대폰 결합 (총액) ⭐</option><option value="kt-fixed">휴대폰 결합 (정액)</option><option value="kt-premium">💎 프리미엄 가족결합 (77,000원↑ 2회선+)</option><option value="home">TV만 결합 (휴대폰 없을 때)</option>';
+    opts = '<option value="kt-total">휴대폰 결합 (총액) ⭐</option><option value="kt-fixed">휴대폰 결합 (정액)</option><option value="kt-premium">💎 프리미엄 가족결합 (77K↑ · 2회선+)</option><option value="kt-premium-single">💎 프리미엄 싱글결합 (77K↑ · 1회선 · 500M↑)</option><option value="home">TV만 결합 (휴대폰 없을 때)</option>';
   } else if (c === 'lgu') {
     opts = '<option value="lgu-chweyswun">휴대폰 결합 (참쉬운) ⭐</option><option value="lgu-together">휴대폰 결합 (투게더, 고가요금제)</option><option value="home">TV만 결합 (휴대폰 없을 때)</option>';
   } else {
@@ -809,6 +833,8 @@ function updateRangeUI() {
   linesGroup.style.display = 'none';
   rangeGroup.style.display = 'none';
   if (premGroup) premGroup.style.display = 'none';
+  var premSingleHide = document.getElementById('card-premium-single-wrap');
+  if (premSingleHide) premSingleHide.style.display = 'none';
 
   var linesSel = document.getElementById('c-lines');
   var resetLines = function(html) { linesSel.innerHTML = html; };
@@ -829,6 +855,9 @@ function updateRangeUI() {
     rangeGroup.style.display = '';
   } else if (c === 'kt' && bundle === 'kt-premium') {
     if (premGroup) { premGroup.style.display = ''; renderPremiumMembers(); }
+  } else if (c === 'kt' && bundle === 'kt-premium-single') {
+    var premSingle = document.getElementById('card-premium-single-wrap');
+    if (premSingle) { premSingle.style.display = ''; renderPremiumSingle(); }
   } else if (c === 'lgu' && bundle === 'lgu-chweyswun') {
     rangeSel.innerHTML = D.lgu.bundle.chweyswun.planLabels.map(function(p, i) { return '<option value="' + i + '">휴대폰 월요금 ' + p + '</option>'; }).join('');
     rangeGroup.style.display = '';
@@ -1050,6 +1079,48 @@ function calc() {
       '<div class="calc-line total" style="margin-top:6px;padding-top:6px"><span class="l">휴대폰 할인 합계</span><span class="v" style="color:#fbbf24">-' + fmt(totalMobDc + premTotalDc) + '</span></div>' +
       '<div style="background:rgba(251,191,36,0.15);border-radius:6px;padding:8px 10px;margin-top:10px;font-size:11px;color:#fde68a">💰 총 월 절감액: ' + fmt(totalGrandDc) + ' (인터넷 5,500 + 총액 ' + fmt(totalMobDc) + ' + 프리미엄 ' + fmt(premTotalDc) + ')</div>' +
       '</div>';
+  }
+
+  if (c === 'kt' && bundleType === 'kt-premium-single') {
+    var psSel = document.getElementById('c-prem-single-plan');
+    var warnEl = document.getElementById('c-prem-single-warn');
+    var psPlanV = parseInt(psSel ? psSel.value : 0) || 0;
+    var psDc = psSel && psSel.options[psSel.selectedIndex] ? (parseInt(psSel.options[psSel.selectedIndex].dataset.dc) || 0) : 0;
+    var psSpeedOk = (sp === '500M' || sp === '1G');
+    var psPlanOk = psPlanV >= 77000;
+    var inetSoloDc = !hasTv ? 5500 : 0;
+    var psTotalDc = psDc + inetSoloDc;
+
+    if (warnEl) {
+      var warnMsgs = [];
+      if (!psSpeedOk) warnMsgs.push('⚠️ 인터넷 500M 이상 필수 (현재 ' + sp + ')');
+      if (!psPlanOk) warnMsgs.push('⚠️ 휴대폰 요금제 77,000원 이상 필수');
+      if (warnMsgs.length) { warnEl.innerHTML = warnMsgs.join('<br>'); warnEl.style.display = ''; }
+      else { warnEl.style.display = 'none'; }
+    }
+
+    html += '<div style="margin-top:6px;padding:7px 9px;background:rgba(99,102,241,0.12);border:1.5px solid #818cf8;border-radius:8px">' +
+      '<div style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:4px">💎 섹터 2 — KT 프리미엄 싱글결합 (1회선)</div>';
+    if (!psSpeedOk || !psPlanOk) {
+      html += '<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:#fca5a5">' +
+        (psSpeedOk ? '' : '⚠️ 인터넷 <b>500M 이상</b> 필수 (현재 ' + sp + ')<br>') +
+        (psPlanOk ? '' : '⚠️ 휴대폰 요금제 <b>77,000원 이상</b> 필수 (현재 ' + psPlanV.toLocaleString() + '원)') +
+        '</div>';
+    }
+    html += '<div class="calc-line"><span class="l">📱 휴대폰 요금제 (정가)</span><span class="v">' + fmt(psPlanV) + '</span></div>';
+    if (psPlanOk) {
+      var psPlanAfter = psPlanV - psDc;
+      html += '<div class="calc-line discount"><span class="l">└ 25% 할인 (휴대폰 고지서)</span><span class="v">-' + fmt(psDc) + '</span></div>';
+      html += '<div class="calc-line sub"><span class="l">→ 휴대폰 할인 후 월요금</span><span class="v" style="color:#a5b4fc;font-weight:800">' + fmt(psPlanAfter) + '</span></div>';
+    }
+    if (!hasTv) {
+      html += '<div class="calc-line discount" style="margin-top:6px"><span class="l">📡 인터넷 단독 추가 할인</span><span class="v">-' + fmt(inetSoloDc) + '</span></div>';
+    }
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#a5b4fc">💰 월 총 할인</span><span class="v" style="color:#818cf8;font-size:14px">-' + fmt(psTotalDc) + '</span></div>';
+    if (psPlanOk && psSpeedOk) {
+      html += '<div style="background:rgba(99,102,241,0.15);border-radius:6px;padding:6px 10px;margin-top:8px;font-size:10px;color:#c7d2fe;line-height:1.5">✅ 가입 조건 충족 · 1대만 결합 · 패밀리(유선) 불필요</div>';
+    }
+    html += '</div>';
   }
 
   if (c === 'lgu' && (bundleType === 'lgu-chweyswun' || bundleType === 'lgu-together')) {
