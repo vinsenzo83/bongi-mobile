@@ -424,26 +424,26 @@ var D = {
     // 각 규칙은 독립적: type='base'(기본 결합 할인) | 'promo'(출시 프로모션)
     // 새 셋톱/프로모션 출시 시 새 규칙만 추가하면 됨 (코드 변경 없음)
     settopDiscountRules: [
-      // ① 일반 '올' 시리즈 기본 결합 할인 (모든 '올' 포함 TV)
+      // ① 셋톱 요즘우리집 결합할인 (모든 '올' 시리즈 + AI 4 vision)
       {
         id: 'sk-500m-all-ai4-base',
-        name: 'AI 4 vision · 올 시리즈 기본 결합',
+        name: '요즘우리집 결합할인',
         speeds: ['500M','1G'],
         tvNameContains: '올',
         settopId: 'ai-4-vision',
         type: 'base',
-        discount: 2000,
+        discount: 2200,
         active: true
       },
-      // ② '올 플러스' 출시 프로모션 (해당 TV 한정 추가 할인)
+      // ② AI 4 vision 출시 프로모션 ('올 플러스' 한정 추가)
       {
         id: 'sk-500m-allplus-ai4-promo',
-        name: 'AI 4 vision · 올 플러스 출시 프로모션',
+        name: 'AI 4 vision 출시 프로모션',
         speeds: ['500M','1G'],
         tvNameContains: '올 플러스',
         settopId: 'ai-4-vision',
         type: 'promo',
-        discount: 2000,
+        discount: 2200,
         startDate: '2026-01-01',
         endDate: null,
         active: true
