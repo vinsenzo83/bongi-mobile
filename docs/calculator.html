@@ -1468,7 +1468,12 @@ function updateWifiFee(carrierKey, id, speed, value) {
   var item = D[carrierKey].wifiOptions.find(function(o){ return o.id === id; });
   if (!item) return;
   if (!item.fees) item.fees = {};
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  var old = item.fees[speed] || 0;
   item.fees[speed] = parseFee(value);
+  if (old !== item.fees[speed]) {
+    logEdit('WiFi', labels[carrierKey] + ' ' + (item.name || id) + ' / ' + speed + ' 요금', old, item.fees[speed]);
+  }
   resolveDefaultsAndPersist(carrierKey);
 }
 
