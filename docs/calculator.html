@@ -420,6 +420,18 @@ var D = {
       { id: 'btv-air-4', name: 'Btv Air 4세대', fee: 8800, active: true },
       { id: 'apple-tv-3', name: '애플TV 3세대', fee: 6600, active: true }
     ],
+    // 셋톱 결합 할인 규칙 (조건 매칭 시 셋톱 임대료에서 차감)
+    settopDiscountRules: [
+      {
+        id: 'sk-500m-all-ai4',
+        name: '500M + 올 시리즈 + AI 4 vision',
+        speed: '500M',
+        tvNameContains: '올',
+        settopId: 'ai-4-vision',
+        discount: 2000,
+        active: true
+      }
+    ],
     wifiOptions: [
       { id: 'giga-wifi', name: 'GIGA WiFi', fees: { '100M': 1100, '500M': 1100, '1G': 1100 }, isDefault: true, active: true },
       { id: 'giga-wifi-6', name: 'GIGA WiFi 6', fees: { '100M': 1100, '500M': 1100, '1G': 1100 }, active: true },
@@ -484,6 +496,7 @@ var D = {
       { id: 'soundbar', name: '지니TV 사운드바', fee: 8800, active: true },
       { id: 'tab4', name: '지니TV 탭4', fee: 8779, active: true }
     ],
+    settopDiscountRules: [],  // KT 셋톱 결합 할인 규칙 (없음)
     wifiOptions: [
       { id: 'wave2', name: 'KT GIGA WAVE2', fees: { '100M': 1100, '500M': 1100, '1G': 0 }, isDefault: true, active: true },
       { id: 'home-ax', name: 'GIGA WIFI 홈AX', fees: { '100M': 0, '500M': 1100, '1G': 0 }, active: true },
@@ -567,6 +580,7 @@ var D = {
       { id: 'free4-le', name: 'U+tv 프리4 LE', fee: 15705, active: true },
       { id: 'free3-le', name: 'U+tv 프리3 LE', fee: 12527, active: true }
     ],
+    settopDiscountRules: [],  // LGU+ 셋톱 결합 할인 규칙 (없음)
     wifiOptions: [
       { id: 'giga-wifi', name: '기가와이파이', fees: { '100M': 0, '500M': 0, '1G': 0 }, isDefault: true, active: true },
       { id: 'giga-wifi-6', name: '기가와이파이6', fees: { '100M': 0, '500M': 0, '1G': 0 }, active: true },
@@ -639,6 +653,23 @@ function getGiftAmount(d, sp, tvIdx) {
   if (!d.gift) return 0;
   var bucket = tvIdx > 0 ? d.gift.combo : d.gift.solo;
   return bucket ? (bucket[sp] || 0) : 0;
+}
+
+// 셋톱 결합 할인 규칙 매칭 — 조건 충족 시 셋톱 임대료에서 차감할 금액 반환
+function getSettopDiscount(carrierKey, sp, tvIdx, settopId) {
+  var d = D[carrierKey];
+  if (!d.settopDiscountRules || tvIdx === 0) return { discount: 0, rule: null };
+  var tv = d.tv[tvIdx];
+  if (!tv) return { discount: 0, rule: null };
+  for (var i = 0; i < d.settopDiscountRules.length; i++) {
+    var rule = d.settopDiscountRules[i];
+    if (!rule.active) continue;
+    if (rule.speed && rule.speed !== sp) continue;
+    if (rule.tvNameContains && tv.n.indexOf(rule.tvNameContains) === -1) continue;
+    if (rule.settopId && rule.settopId !== settopId) continue;
+    return { discount: rule.discount || 0, rule: rule };
+  }
+  return { discount: 0, rule: null };
 }
 
 function fmt(n) { return n.toLocaleString() + '원'; }
