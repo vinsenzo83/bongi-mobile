@@ -1465,7 +1465,11 @@ function hardDeleteOption(carrierKey, type, id) {
     if (next) { next.isDefault = true; }
     else { alert('기본값으로 사용할 다른 활성 항목이 없습니다. 먼저 다른 항목을 추가하세요.'); return; }
   }
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  var section = type === 'settop' ? '셋톱박스' : 'WiFi';
+  var name = arr[idx].name;
   arr.splice(idx, 1);
+  logEdit(section, labels[carrierKey] + ' 삭제', name, '-');
   resolveDefaultsAndPersist(carrierKey);
 }
 
@@ -1905,7 +1909,10 @@ function updateInstallFee(carrierKey, day, colIdx, value) {
   saveInstallFees(INSTALL_FEES);
 }
 function updateInstallColumn(carrierKey, colIdx, value) {
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  var old = INSTALL_FEES[carrierKey].columns[colIdx];
   INSTALL_FEES[carrierKey].columns[colIdx] = String(value).trim() || ('컬럼' + (colIdx+1));
+  logEdit('설치비', labels[carrierKey] + ' 컬럼명 변경', old, INSTALL_FEES[carrierKey].columns[colIdx]);
   saveInstallFees(INSTALL_FEES);
   renderInstallControls();
 }
@@ -1915,14 +1922,19 @@ function addInstallColumn(carrierKey) {
   INSTALL_FEES[carrierKey].columns.push(name.trim());
   INSTALL_FEES[carrierKey].weekday.push(0);
   INSTALL_FEES[carrierKey].weekend.push(0);
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  logEdit('설치비', labels[carrierKey] + ' 컬럼 추가', '-', name);
   saveInstallFees(INSTALL_FEES);
   renderInstallControls();
 }
 function deleteInstallColumn(carrierKey, colIdx) {
   if (!confirm('이 컬럼(' + INSTALL_FEES[carrierKey].columns[colIdx] + ')을 삭제하시겠습니까?')) return;
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  var name = INSTALL_FEES[carrierKey].columns[colIdx];
   INSTALL_FEES[carrierKey].columns.splice(colIdx, 1);
   INSTALL_FEES[carrierKey].weekday.splice(colIdx, 1);
   INSTALL_FEES[carrierKey].weekend.splice(colIdx, 1);
+  logEdit('설치비', labels[carrierKey] + ' 컬럼 삭제', name, '-');
   saveInstallFees(INSTALL_FEES);
   renderInstallControls();
 }
@@ -2026,7 +2038,10 @@ function updatePartnerCard(carrierKey, idx, field, value) {
 }
 function deletePartnerCard(carrierKey, idx) {
   if (!confirm('이 카드를 삭제하시겠습니까?')) return;
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  var card = PARTNER_CARDS[carrierKey][idx];
   PARTNER_CARDS[carrierKey].splice(idx, 1);
+  logEdit('제휴카드', labels[carrierKey] + ' 카드 삭제', card.issuer + ' / ' + card.name, '-');
   savePartnerCards(PARTNER_CARDS);
   renderCardControls();
 }
@@ -2037,6 +2052,8 @@ function addPartnerCard(carrierKey) {
   var discount = document.getElementById('new-card-discount-' + carrierKey).value.trim();
   if (!issuer || !name) { alert('카드사와 카드명을 입력하세요'); return; }
   PARTNER_CARDS[carrierKey].push({ issuer: issuer, name: name, spend: spend || '-', discount: discount || '-' });
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  logEdit('제휴카드', labels[carrierKey] + ' 카드 추가', '-', issuer + ' / ' + name);
   savePartnerCards(PARTNER_CARDS);
   renderCardControls();
 }
@@ -2221,8 +2238,8 @@ function updSktOnfamilyMatrix(r, c, val) { var n = parseInt(String(val).replace(
 function updSktOnfamilyLabel(type, idx, val) { var old = D.skt.bundle.onfamily[type][idx]; D.skt.bundle.onfamily[type][idx] = String(val); logEdit('결합할인', 'SKT 온가족할인 ' + type + ' [' + idx + ']', old, val); persistBundle('skt'); }
 
 // KT total 데이터
-function updKtRangeTotal(idx, val) { D.kt.bundle.ranges_total[idx] = String(val); persistBundle('kt'); }
-function updKtTotal(field, sp, idx, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; D.kt.bundle.total[field][sp][idx] = n; persistBundle('kt'); }
+function updKtRangeTotal(idx, val) { var old = D.kt.bundle.ranges_total[idx]; D.kt.bundle.ranges_total[idx] = String(val); logEdit('결합할인', 'KT 총액 구간 라벨 [' + idx + ']', old, val); persistBundle('kt'); }
+function updKtTotal(field, sp, idx, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; var old = D.kt.bundle.total[field][sp][idx]; D.kt.bundle.total[field][sp][idx] = n; var fl = field === 'internet' ? '인터넷' : '휴대폰'; logEdit('결합할인', 'KT 총액 ' + fl + ' ' + sp + ' / ' + (D.kt.bundle.ranges_total[idx] || '#'+idx), old, n); persistBundle('kt'); }
 function addKtTotalRange() {
   var label = prompt('새 월 요금 구간 라벨 입력 (예: 200,000원~)');
   if (!label) return;
@@ -2231,34 +2248,40 @@ function addKtTotalRange() {
     D.kt.bundle.total.internet[sp].push(0);
     D.kt.bundle.total.mobile[sp].push(0);
   });
+  logEdit('결합할인', 'KT 총액 구간 추가', '-', label);
   persistBundle('kt'); renderBundleControls();
 }
 function delKtTotalRange(idx) {
   if (!confirm('이 구간을 삭제하시겠습니까?')) return;
+  var label = D.kt.bundle.ranges_total[idx];
   D.kt.bundle.ranges_total.splice(idx, 1);
   ['100M','500M','1G'].forEach(function(sp){
     D.kt.bundle.total.internet[sp].splice(idx, 1);
     D.kt.bundle.total.mobile[sp].splice(idx, 1);
   });
+  logEdit('결합할인', 'KT 총액 구간 삭제', label, '-');
   persistBundle('kt'); renderBundleControls();
 }
 
 // KT fixed 데이터
-function updKtRangeFixed(idx, val) { D.kt.bundle.ranges_fixed[idx] = String(val); persistBundle('kt'); }
-function updKtFixed(field, idx, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; D.kt.bundle.fixed[field][idx] = n; persistBundle('kt'); }
+function updKtRangeFixed(idx, val) { var old = D.kt.bundle.ranges_fixed[idx]; D.kt.bundle.ranges_fixed[idx] = String(val); logEdit('결합할인', 'KT 정액 구간 라벨 [' + idx + ']', old, val); persistBundle('kt'); }
+function updKtFixed(field, idx, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; var old = D.kt.bundle.fixed[field][idx]; D.kt.bundle.fixed[field][idx] = n; var fl = field === 'internet' ? '인터넷' : '휴대폰'; logEdit('결합할인', 'KT 정액 ' + fl + ' / ' + (D.kt.bundle.ranges_fixed[idx] || '#'+idx), old, n); persistBundle('kt'); }
 function addKtFixedRange() {
   var label = prompt('새 월 요금 구간 라벨 입력');
   if (!label) return;
   D.kt.bundle.ranges_fixed.push(label);
   D.kt.bundle.fixed.internet.push(0);
   D.kt.bundle.fixed.mobile.push(0);
+  logEdit('결합할인', 'KT 정액 구간 추가', '-', label);
   persistBundle('kt'); renderBundleControls();
 }
 function delKtFixedRange(idx) {
   if (!confirm('이 구간을 삭제하시겠습니까?')) return;
+  var label = D.kt.bundle.ranges_fixed[idx];
   D.kt.bundle.ranges_fixed.splice(idx, 1);
   D.kt.bundle.fixed.internet.splice(idx, 1);
   D.kt.bundle.fixed.mobile.splice(idx, 1);
+  logEdit('결합할인', 'KT 정액 구간 삭제', label, '-');
   persistBundle('kt'); renderBundleControls();
 }
 
@@ -2266,9 +2289,12 @@ function delKtFixedRange(idx) {
 function updKtPrem(idx, field, val) {
   var item = D.kt.bundle.premium.planCatalog[idx];
   if (!item) return;
+  var old = item[field];
   if (field === 'v' || field === 'dc') item[field] = parseInt(String(val).replace(/[^0-9]/g,''))||0;
   else if (field === 'prem') item.prem = (val === 'true' || val === true);
   else item[field] = String(val);
+  var fieldLabels = { v: '월정액', label: '요금제명', dc: '할인액', prem: '자격' };
+  logEdit('결합할인', 'KT 프리미엄 ' + (item.label || '#'+idx) + ' / ' + (fieldLabels[field] || field), old, item[field]);
   persistBundle('kt');
 }
 function addKtPremRow() {
@@ -2280,22 +2306,25 @@ function addKtPremRow() {
     v: parseInt(String(v).replace(/[^0-9]/g,''))||0,
     label: label, dc: parseInt(String(dc).replace(/[^0-9]/g,''))||0, prem: prem
   });
+  logEdit('결합할인', 'KT 프리미엄 요금제 추가', '-', label);
   persistBundle('kt'); renderBundleControls();
 }
 function delKtPremRow(idx) {
   if (!confirm('이 요금제를 삭제하시겠습니까?')) return;
+  var label = D.kt.bundle.premium.planCatalog[idx].label;
   D.kt.bundle.premium.planCatalog.splice(idx, 1);
+  logEdit('결합할인', 'KT 프리미엄 요금제 삭제', label, '-');
   persistBundle('kt'); renderBundleControls();
 }
 
 // LGU chweyswun
-function updLguChweyInet(sp, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; D.lgu.bundle.chweyswun.internet[sp] = n; persistBundle('lgu'); }
-function updLguChweyMobile(r, c, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; D.lgu.bundle.chweyswun.mobile[r][c] = n; persistBundle('lgu'); }
-function updLguChweyLabel(idx, val) { D.lgu.bundle.chweyswun.planLabels[idx] = String(val); persistBundle('lgu'); }
+function updLguChweyInet(sp, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; var old = D.lgu.bundle.chweyswun.internet[sp]; D.lgu.bundle.chweyswun.internet[sp] = n; logEdit('결합할인', 'LGU+ 참쉬운 인터넷 ' + sp, old, n); persistBundle('lgu'); }
+function updLguChweyMobile(r, c, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; var old = D.lgu.bundle.chweyswun.mobile[r][c]; D.lgu.bundle.chweyswun.mobile[r][c] = n; var lines = (c+2) + '회선'; logEdit('결합할인', 'LGU+ 참쉬운 휴대폰 ' + (D.lgu.bundle.chweyswun.planLabels[r] || '#'+r) + ' / ' + lines, old, n); persistBundle('lgu'); }
+function updLguChweyLabel(idx, val) { var old = D.lgu.bundle.chweyswun.planLabels[idx]; D.lgu.bundle.chweyswun.planLabels[idx] = String(val); logEdit('결합할인', 'LGU+ 참쉬운 구간 라벨 [' + idx + ']', old, val); persistBundle('lgu'); }
 
 // LGU together
-function updLguTogetherInet(sp, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; D.lgu.bundle.together.internet[sp] = n; persistBundle('lgu'); }
-function updLguTogetherMobile(idx, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; D.lgu.bundle.together.mobile[idx] = n; persistBundle('lgu'); }
+function updLguTogetherInet(sp, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; var old = D.lgu.bundle.together.internet[sp]; D.lgu.bundle.together.internet[sp] = n; logEdit('결합할인', 'LGU+ 투게더 인터넷 ' + sp, old, n); persistBundle('lgu'); }
+function updLguTogetherMobile(idx, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; var old = D.lgu.bundle.together.mobile[idx]; D.lgu.bundle.together.mobile[idx] = n; var lines = (idx+2) + '회선'; logEdit('결합할인', 'LGU+ 투게더 휴대폰 ' + lines, old, n); persistBundle('lgu'); }
 
 function renderBundleControls() {
   var container = document.getElementById('bundle-controls');
@@ -2481,7 +2510,10 @@ function updateTVField(carrierKey, idx, field, value) {
 function deleteTVRow(carrierKey, idx) {
   if (idx === 0) { alert('"TV 없음" 행은 삭제할 수 없습니다.'); return; }
   if (!confirm('이 TV 상품을 삭제하시겠습니까? (사은품 카탈로그·티켓 리스트도 자동 갱신)')) return;
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  var name = D[carrierKey].tv[idx].n;
   D[carrierKey].tv.splice(idx, 1);
+  logEdit('TV 상품', labels[carrierKey] + ' 삭제', name, '-');
   persistTV(carrierKey);
   renderTVControls();
 }
@@ -2493,6 +2525,8 @@ function addTVRow(carrierKey) {
   var dc = parseInt(String(document.getElementById('new-tv-dc-' + carrierKey).value).replace(/[^0-9]/g,'')) || 0;
   if (!name || p <= 0) { alert('상품명과 기본요금을 입력하세요'); return; }
   D[carrierKey].tv.push({ n: name, ch: ch, p: p, dc: dc });
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  logEdit('TV 상품', labels[carrierKey] + ' 추가', '-', name + ' (' + p.toLocaleString() + '원)');
   persistTV(carrierKey);
   renderTVControls();
 }
