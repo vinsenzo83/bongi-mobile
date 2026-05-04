@@ -420,31 +420,32 @@ var D = {
       { id: 'btv-air-4', name: 'Btv Air 4세대', fee: 8800, active: true },
       { id: 'apple-tv-3', name: '애플TV 3세대', fee: 6600, active: true }
     ],
-    // 셋톱 결합 할인 규칙 — 조건(speed/tv/settop) + components(기본/프로모션 등 여러 할인 합산)
-    // 더 구체적인 규칙(tvNameContains 더 긴 것)을 위에 배치 → 첫 매칭 규칙의 components를 모두 합산
-    // 셋톱 출시 시 해당 settopId 규칙의 components에 type:'promo' 컴포넌트만 추가하면 됨
+    // 셋톱 결합 할인 규칙 — 매칭되는 모든 규칙의 할인을 합산
+    // 각 규칙은 독립적: type='base'(기본 결합 할인) | 'promo'(출시 프로모션)
+    // 새 셋톱/프로모션 출시 시 새 규칙만 추가하면 됨 (코드 변경 없음)
     settopDiscountRules: [
+      // ① 일반 '올' 시리즈 기본 결합 할인 (모든 '올' 포함 TV)
       {
-        id: 'sk-500m-allplus-ai4',
-        name: '500M↑ + 올 플러스 + AI 4 vision',
-        speeds: ['500M','1G'],
-        tvNameContains: '올 플러스',
-        settopId: 'ai-4-vision',
-        components: [
-          { type: 'base', name: '기본 결합 할인', discount: 2200, active: true },
-          { type: 'promo', name: 'AI 4 vision 출시 프로모션', discount: 2200, startDate: '2026-01-01', endDate: null, active: true }
-        ],
-        active: true
-      },
-      {
-        id: 'sk-500m-all-ai4',
-        name: '500M↑ + 올 시리즈 + AI 4 vision',
+        id: 'sk-500m-all-ai4-base',
+        name: 'AI 4 vision · 올 시리즈 기본 결합',
         speeds: ['500M','1G'],
         tvNameContains: '올',
         settopId: 'ai-4-vision',
-        components: [
-          { type: 'base', name: '기본 결합 할인', discount: 2000, active: true }
-        ],
+        type: 'base',
+        discount: 2000,
+        active: true
+      },
+      // ② '올 플러스' 출시 프로모션 (해당 TV 한정 추가 할인)
+      {
+        id: 'sk-500m-allplus-ai4-promo',
+        name: 'AI 4 vision · 올 플러스 출시 프로모션',
+        speeds: ['500M','1G'],
+        tvNameContains: '올 플러스',
+        settopId: 'ai-4-vision',
+        type: 'promo',
+        discount: 2000,
+        startDate: '2026-01-01',
+        endDate: null,
         active: true
       }
     ],
@@ -671,36 +672,33 @@ function getGiftAmount(d, sp, tvIdx) {
   return bucket ? (bucket[sp] || 0) : 0;
 }
 
-// 셋톱 결합 할인 규칙 매칭 — 첫 매칭 규칙의 활성 components 합산
-// 셋톱 출시 프로모션은 components 배열에 추가만 하면 됨 (코드 변경 불필요)
+// 셋톱 결합 할인 — 매칭되는 모든 규칙의 할인 합산
+// 각 규칙: type='base'(기본 결합) | 'promo'(출시 프로모션) | startDate/endDate (한정 기간)
+// 새 셋톱 출시 또는 프로모션 시 새 규칙만 추가 (코드 변경 X)
 function getSettopDiscount(carrierKey, sp, tvIdx, settopId) {
+  if (tvIdx === 0) return { discount: 0, matched: [] };
   var d = D[carrierKey];
-  if (!d.settopDiscountRules || tvIdx === 0) return { discount: 0, rule: null, components: [] };
+  if (!d.settopDiscountRules) return { discount: 0, matched: [] };
   var tv = d.tv[tvIdx];
-  if (!tv) return { discount: 0, rule: null, components: [] };
+  if (!tv) return { discount: 0, matched: [] };
   var now = new Date();
+  var matched = [];
+  var total = 0;
   for (var i = 0; i < d.settopDiscountRules.length; i++) {
     var rule = d.settopDiscountRules[i];
     if (!rule.active) continue;
+    // 기간 체크
+    if (rule.startDate) { var sd = new Date(rule.startDate); if (now < sd) continue; }
+    if (rule.endDate) { var ed = new Date(rule.endDate); if (now > ed) continue; }
+    // 조건 체크
     if (rule.speed && rule.speed !== sp) continue;
     if (rule.speeds && Array.isArray(rule.speeds) && rule.speeds.indexOf(sp) === -1) continue;
     if (rule.tvNameContains && tv.n.indexOf(rule.tvNameContains) === -1) continue;
     if (rule.settopId && rule.settopId !== settopId) continue;
-    // 매칭된 규칙의 활성 components 합산 (날짜 범위 체크)
-    var activeComps = [];
-    var total = 0;
-    var comps = rule.components || [];
-    for (var j = 0; j < comps.length; j++) {
-      var comp = comps[j];
-      if (comp.active === false) continue;
-      if (comp.startDate) { var sd = new Date(comp.startDate); if (now < sd) continue; }
-      if (comp.endDate) { var ed = new Date(comp.endDate); if (now > ed) continue; }
-      activeComps.push(comp);
-      total += (comp.discount || 0);
-    }
-    return { discount: total, rule: rule, components: activeComps };
+    matched.push(rule);
+    total += (rule.discount || 0);
   }
-  return { discount: 0, rule: null, components: [] };
+  return { discount: total, matched: matched };
 }
 
 function fmt(n) { return n.toLocaleString() + '원'; }
