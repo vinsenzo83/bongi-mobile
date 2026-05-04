@@ -407,48 +407,29 @@ var D = {
     internet: { '100M': 22000, '500M': 33000, '1G': 38500 },
     wifiCost: 1100,
     // 셋톱 옵션 (단종 시 isDefault/active 전환 → 티켓번호 영향 없음, 요금만 변경)
+    // 각 셋톱은 자체 discountRules 보유 — 새 셋톱 추가 시 규칙도 같이 들고 옴
     setTopOptions: [
-      { id: 'smart3', name: 'Smart3', fee: 4400, isDefault: true, active: true },
-      { id: 'smart3-mini', name: 'Smart3 미니', fee: 4400, active: true },
-      { id: 'uhd', name: 'UHD', fee: 4400, active: true },
-      { id: 'ai', name: 'AI', fee: 6600, active: true },
-      { id: 'ai-speaker', name: 'AI 스피커형', fee: 6600, active: true },
-      { id: 'ai-sound-max', name: 'AI Sound Max', fee: 8800, active: true },
-      { id: 'ai-4-vision', name: 'AI 4 vision', fee: 8800, active: true },
-      { id: 'ai-5', name: 'AI 5 셋톱', fee: 7700, active: true },
-      { id: 'btv-air-3', name: 'Btv Air 3세대', fee: 8800, active: true },
-      { id: 'btv-air-4', name: 'Btv Air 4세대', fee: 8800, active: true },
-      { id: 'apple-tv-3', name: '애플TV 3세대', fee: 6600, active: true }
-    ],
-    // 셋톱 결합 할인 규칙 — 매칭되는 모든 규칙의 할인을 합산
-    // 각 규칙은 독립적: type='base'(기본 결합 할인) | 'promo'(출시 프로모션)
-    // 새 셋톱/프로모션 출시 시 새 규칙만 추가하면 됨 (코드 변경 없음)
-    settopDiscountRules: [
-      // ① 셋톱 요즘우리집 결합할인 (모든 '올' 시리즈 + AI 4 vision)
+      { id: 'smart3', name: 'Smart3', fee: 4400, isDefault: true, active: true, discountRules: [] },
+      { id: 'smart3-mini', name: 'Smart3 미니', fee: 4400, active: true, discountRules: [] },
+      { id: 'uhd', name: 'UHD', fee: 4400, active: true, discountRules: [] },
+      { id: 'ai', name: 'AI', fee: 6600, active: true, discountRules: [] },
+      { id: 'ai-speaker', name: 'AI 스피커형', fee: 6600, active: true, discountRules: [] },
+      { id: 'ai-sound-max', name: 'AI Sound Max', fee: 8800, active: true, discountRules: [] },
       {
-        id: 'sk-500m-all-ai4-base',
-        name: '요즘우리집 결합할인',
-        speeds: ['500M','1G'],
-        tvNameContains: '올',
-        settopId: 'ai-4-vision',
-        type: 'base',
-        discount: 2200,
-        active: true
+        id: 'ai-4-vision', name: 'AI 4 vision', fee: 8800, active: true,
+        discountRules: [
+          // base — 모든 '올' 시리즈 + 500M↑
+          { id: 'base-all-500m', name: '요즘우리집 결합할인', type: 'base', speeds: ['500M','1G'], tvNameContains: '올', discount: 2200, active: true },
+          // promo — '올 플러스' 한정, 2026-01-01 출시
+          { id: 'promo-allplus-launch', name: 'AI 4 vision 출시 프로모션', type: 'promo', speeds: ['500M','1G'], tvNameContains: '올 플러스', discount: 2200, startDate: '2026-01-01', endDate: null, active: true }
+        ]
       },
-      // ② AI 4 vision 출시 프로모션 ('올 플러스' 한정 추가)
-      {
-        id: 'sk-500m-allplus-ai4-promo',
-        name: 'AI 4 vision 출시 프로모션',
-        speeds: ['500M','1G'],
-        tvNameContains: '올 플러스',
-        settopId: 'ai-4-vision',
-        type: 'promo',
-        discount: 2200,
-        startDate: '2026-01-01',
-        endDate: null,
-        active: true
-      }
+      { id: 'ai-5', name: 'AI 5 셋톱', fee: 7700, active: true, discountRules: [] },
+      { id: 'btv-air-3', name: 'Btv Air 3세대', fee: 8800, active: true, discountRules: [] },
+      { id: 'btv-air-4', name: 'Btv Air 4세대', fee: 8800, active: true, discountRules: [] },
+      { id: 'apple-tv-3', name: '애플TV 3세대', fee: 6600, active: true, discountRules: [] }
     ],
+    settopDiscountRules: [], // deprecated: 호환성 유지용 (각 setTopOption.discountRules 사용)
     wifiOptions: [
       { id: 'giga-wifi', name: 'GIGA WiFi', fees: { '100M': 1100, '500M': 1100, '1G': 1100 }, isDefault: true, active: true },
       { id: 'giga-wifi-6', name: 'GIGA WiFi 6', fees: { '100M': 1100, '500M': 1100, '1G': 1100 }, active: true },
@@ -506,14 +487,14 @@ var D = {
     internet: { '100M': 22000, '500M': 33000, '1G': 38500 },
     wifiPrice: { '100M': 1100, '500M': 1100, '1G': 0 },
     setTopOptions: [
-      { id: 'genie-2', name: '기가지니2', fee: 4400, isDefault: true, active: true },
-      { id: 'genie-3', name: '기가지니3', fee: 4400, active: true },
-      { id: 'genie-a', name: '기가지니A', fee: 3300, active: true },
-      { id: 'genie-4', name: '기가지니4', fee: 6600, active: true },
-      { id: 'soundbar', name: '지니TV 사운드바', fee: 8800, active: true },
-      { id: 'tab4', name: '지니TV 탭4', fee: 8779, active: true }
+      { id: 'genie-2', name: '기가지니2', fee: 4400, isDefault: true, active: true, discountRules: [] },
+      { id: 'genie-3', name: '기가지니3', fee: 4400, active: true, discountRules: [] },
+      { id: 'genie-a', name: '기가지니A', fee: 3300, active: true, discountRules: [] },
+      { id: 'genie-4', name: '기가지니4', fee: 6600, active: true, discountRules: [] },
+      { id: 'soundbar', name: '지니TV 사운드바', fee: 8800, active: true, discountRules: [] },
+      { id: 'tab4', name: '지니TV 탭4', fee: 8779, active: true, discountRules: [] }
     ],
-    settopDiscountRules: [],  // KT 셋톱 결합 할인 규칙 (없음)
+    settopDiscountRules: [],
     wifiOptions: [
       { id: 'wave2', name: 'KT GIGA WAVE2', fees: { '100M': 1100, '500M': 1100, '1G': 0 }, isDefault: true, active: true },
       { id: 'home-ax', name: 'GIGA WIFI 홈AX', fees: { '100M': 0, '500M': 1100, '1G': 0 }, active: true },
@@ -586,18 +567,18 @@ var D = {
     internet: { '100M': 22000, '500M': 33000, '1G': 38500 },
     wifiCost: 0,
     setTopOptions: [
-      { id: 'uhd4', name: '4K UHD4', fee: 4400, isDefault: true, active: true },
-      { id: 'uhd3', name: '4K UHD3', fee: 4400, active: true },
-      { id: 'high', name: '고급', fee: 3300, active: true },
-      { id: 'chromecast', name: '크롬캐스트', fee: 2750, active: true },
-      { id: 'soundbar2', name: 'U+tv 사운드바2', fee: 8800, active: true },
-      { id: 'soundbar', name: 'U+tv 사운드바', fee: 6600, active: true },
-      { id: 'free5-se', name: 'U+tv 프리5 SE', fee: 22214, active: true },
-      { id: 'free4-se', name: 'U+tv 프리4 SE', fee: 21083, active: true },
-      { id: 'free4-le', name: 'U+tv 프리4 LE', fee: 15705, active: true },
-      { id: 'free3-le', name: 'U+tv 프리3 LE', fee: 12527, active: true }
+      { id: 'uhd4', name: '4K UHD4', fee: 4400, isDefault: true, active: true, discountRules: [] },
+      { id: 'uhd3', name: '4K UHD3', fee: 4400, active: true, discountRules: [] },
+      { id: 'high', name: '고급', fee: 3300, active: true, discountRules: [] },
+      { id: 'chromecast', name: '크롬캐스트', fee: 2750, active: true, discountRules: [] },
+      { id: 'soundbar2', name: 'U+tv 사운드바2', fee: 8800, active: true, discountRules: [] },
+      { id: 'soundbar', name: 'U+tv 사운드바', fee: 6600, active: true, discountRules: [] },
+      { id: 'free5-se', name: 'U+tv 프리5 SE', fee: 22214, active: true, discountRules: [] },
+      { id: 'free4-se', name: 'U+tv 프리4 SE', fee: 21083, active: true, discountRules: [] },
+      { id: 'free4-le', name: 'U+tv 프리4 LE', fee: 15705, active: true, discountRules: [] },
+      { id: 'free3-le', name: 'U+tv 프리3 LE', fee: 12527, active: true, discountRules: [] }
     ],
-    settopDiscountRules: [],  // LGU+ 셋톱 결합 할인 규칙 (없음)
+    settopDiscountRules: [],
     wifiOptions: [
       { id: 'giga-wifi', name: '기가와이파이', fees: { '100M': 0, '500M': 0, '1G': 0 }, isDefault: true, active: true },
       { id: 'giga-wifi-6', name: '기가와이파이6', fees: { '100M': 0, '500M': 0, '1G': 0 }, active: true },
@@ -672,20 +653,23 @@ function getGiftAmount(d, sp, tvIdx) {
   return bucket ? (bucket[sp] || 0) : 0;
 }
 
-// 셋톱 결합 할인 — 매칭되는 모든 규칙의 할인 합산
-// 각 규칙: type='base'(기본 결합) | 'promo'(출시 프로모션) | startDate/endDate (한정 기간)
-// 새 셋톱 출시 또는 프로모션 시 새 규칙만 추가 (코드 변경 X)
+// 셋톱 결합 할인 — 셋톱의 discountRules에서 매칭 + 매칭되는 모든 규칙 합산
+// 각 셋톱이 자체 규칙을 가짐 → 새 셋톱 추가 시 규칙도 함께 들고 옴
+// 규칙 type: 'base'(기본 결합 할인) | 'promo'(출시 프로모션)
+// startDate/endDate로 한정 기간 자동 처리
 function getSettopDiscount(carrierKey, sp, tvIdx, settopId) {
-  if (tvIdx === 0) return { discount: 0, matched: [] };
+  if (tvIdx === 0 || !settopId) return { discount: 0, matched: [] };
   var d = D[carrierKey];
-  if (!d.settopDiscountRules) return { discount: 0, matched: [] };
+  if (!d || !d.setTopOptions) return { discount: 0, matched: [] };
   var tv = d.tv[tvIdx];
   if (!tv) return { discount: 0, matched: [] };
+  var settop = d.setTopOptions.find(function(o){ return o.id === settopId; });
+  if (!settop || !settop.discountRules) return { discount: 0, matched: [] };
   var now = new Date();
   var matched = [];
   var total = 0;
-  for (var i = 0; i < d.settopDiscountRules.length; i++) {
-    var rule = d.settopDiscountRules[i];
+  for (var i = 0; i < settop.discountRules.length; i++) {
+    var rule = settop.discountRules[i];
     if (!rule.active) continue;
     // 기간 체크
     if (rule.startDate) { var sd = new Date(rule.startDate); if (now < sd) continue; }
@@ -694,7 +678,6 @@ function getSettopDiscount(carrierKey, sp, tvIdx, settopId) {
     if (rule.speed && rule.speed !== sp) continue;
     if (rule.speeds && Array.isArray(rule.speeds) && rule.speeds.indexOf(sp) === -1) continue;
     if (rule.tvNameContains && tv.n.indexOf(rule.tvNameContains) === -1) continue;
-    if (rule.settopId && rule.settopId !== settopId) continue;
     matched.push(rule);
     total += (rule.discount || 0);
   }
