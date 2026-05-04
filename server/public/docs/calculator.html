@@ -2232,6 +2232,7 @@ function persistBundle(carrierKey) {
   ov[carrierKey].bundle = D[carrierKey].bundle;
   saveBundleOverrides(ov);
   if (typeof TICKETS !== 'undefined') TICKETS = generateTickets();
+  if (typeof renderBundleControls === 'function') renderBundleControls();
   if (typeof renderTicketList === 'function') renderTicketList();
   if (typeof calc === 'function') calc();
 }
@@ -2514,6 +2515,7 @@ function persistTV(carrierKey) {
   ov[carrierKey] = D[carrierKey].tv;
   saveTVOverrides(ov);
   TICKETS = generateTickets();
+  if (typeof renderTVControls === 'function') renderTVControls();
   if (typeof renderTicketList === 'function') renderTicketList();
   if (typeof renderGiftControls === 'function') renderGiftControls();
   if (typeof calc === 'function') calc();
