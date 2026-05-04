@@ -514,6 +514,30 @@
   <div class="note" style="background:rgba(251,191,36,0.1);border-left:3px solid #fbbf24;padding:8px 12px;margin-top:8px">
     💡 <b>예시 (자료 원본)</b> — 100M + 3×89,000원 (대표1 + 프리미엄2): 총액결합만 -28,600원 vs 프리미엄결합 <b>-53,300원</b> (약 2배 유리)
   </div>
+
+  <div class="st2" style="margin-top:20px"><span class="badge b-kt">KT</span> 💎 프리미엄 싱글결합 (1회선)</div>
+  <div class="note">
+    <b>2022.2.23부터 패밀리(유유선 결합) 필수 조건 폐기</b> → 1인 가정도 가입 가능. 휴대폰 1대 + 인터넷 500M 이상이면 결합 성립.
+  </div>
+  <table>
+    <thead><tr><th colspan="2">📋 가입 조건</th></tr></thead>
+    <tbody>
+      <tr><td><b>인터넷 속도</b></td><td>500M 이상</td></tr>
+      <tr><td><b>휴대폰 요금제</b></td><td>월 77,000원 이상</td></tr>
+      <tr><td><b>결합 회선 수</b></td><td>1대만 가능</td></tr>
+      <tr><td><b>패밀리(유선) 필수</b></td><td style="color:#16a34a;font-weight:700">불필요 (1인 가정 OK)</td></tr>
+    </tbody>
+  </table>
+  <table style="margin-top:8px">
+    <thead><tr><th colspan="2">💰 할인 혜택</th></tr></thead>
+    <tbody>
+      <tr><td><b>휴대폰 월정액</b></td><td class="discount" style="color:#16a34a;font-weight:700">25% 할인</td></tr>
+      <tr><td><b>인터넷 단독 사용 시 추가</b></td><td class="discount" style="color:#16a34a;font-weight:700">-5,500원/월</td></tr>
+    </tbody>
+  </table>
+  <div class="note" style="background:rgba(34,197,94,0.1);border-left:3px solid #16a34a;padding:8px 12px;margin-top:8px">
+    💡 <b>예시</b> — 슈퍼플랜 베이직 80,000원 요금제 → 80,000 × 25% = <b>월 20,000원 할인</b>
+  </div>
 </div>
 
 <!-- ═══ 5. 설치비 (3사) ═══ -->
@@ -700,16 +724,22 @@ var D = {
       family: {
         internet: { '100M': 4400, '500M': 11000, '1G': 13200 },
         iptv: 1100,
-        // 속도별 인당 할인 (총 할인 = 인당 × 결합 인원)
-        // 100M는 사용자 확인 대기 — 임시로 1G와 동일
-        // 인당 할인 (총 할인 = 인당 × 결합 인원)
-        // 100메가급: 1회선 3,500 / 2회선 각 3,500 / 3~5회선 총 18,000 분배
-        // 500M+: 1회선 3,500 / 2회선 각 3,500 / 3회선 각 6,000 / 4~5회선 총 24,000 분배
         mobilePerBySpeed: {
           '100M': { 1: 3500, 2: 3500, 3: 6000, 4: 4500, 5: 3600 },
           '500M': { 1: 3500, 2: 3500, 3: 6000, 4: 6000, 5: 4800 },
           '1G':   { 1: 3500, 2: 3500, 3: 6000, 4: 6000, 5: 4800 }
         }
+      },
+      // 온가족할인 — 가입년수 기반 % 할인
+      onfamily: {
+        netYrLabels:  ['인터넷 1년 미만', '인터넷 1년 이상', '인터넷 2년 이상', '인터넷 3년 이상'],
+        famYrLabels:  ['가족 10년 미만', '가족 10년 이상', '가족 20년 이상', '가족 30년 이상'],
+        matrix: [
+          [0,  0,  5,  10],
+          [0,  5,  10, 20],
+          [5,  10, 20, 30],
+          [10, 20, 30, 50]
+        ]
       }
     }
   },
@@ -838,6 +868,33 @@ var D = {
     }
   }
 };
+
+// 사은품 override (calculator.html ↔ tm.html 동기화 — localStorage 영구 저장)
+var GIFT_OVERRIDE_KEY = 'bongi-gift-overrides';
+function applyGiftOverrides() {
+  try {
+    var ov = JSON.parse(localStorage.getItem(GIFT_OVERRIDE_KEY) || '{}');
+    Object.keys(ov).forEach(function(carrier) {
+      if (!D[carrier] || !D[carrier].gift) return;
+      Object.keys(ov[carrier] || {}).forEach(function(bucket) {
+        if (!D[carrier].gift[bucket]) D[carrier].gift[bucket] = {};
+        Object.keys(ov[carrier][bucket] || {}).forEach(function(sp) {
+          D[carrier].gift[bucket][sp] = ov[carrier][bucket][sp];
+        });
+      });
+    });
+  } catch(e) {}
+}
+function saveGiftOverride(carrier, bucket, speed, value) {
+  try {
+    var ov = JSON.parse(localStorage.getItem(GIFT_OVERRIDE_KEY) || '{}');
+    if (!ov[carrier]) ov[carrier] = {};
+    if (!ov[carrier][bucket]) ov[carrier][bucket] = {};
+    ov[carrier][bucket][speed] = value;
+    localStorage.setItem(GIFT_OVERRIDE_KEY, JSON.stringify(ov));
+  } catch(e) {}
+}
+applyGiftOverrides();
 
 function getGiftAmount(d, sp, tvIdx) {
   if (!d.gift) return 0;
@@ -985,6 +1042,7 @@ function updateBundleUI() {
   var opts = '';
   if (c === 'skt') {
     opts = '<option value="family">휴대폰 결합 (요즘가족결합) ⭐</option>' +
+           '<option value="sk-onfamily">온가족할인 (가입년수 기반)</option>' +
            '<option value="home">TV만 결합 (휴대폰 없을 때)</option>';
     rangeSel.innerHTML = '';
   } else if (c === 'kt') {
@@ -1026,6 +1084,13 @@ function updateRangeUI() {
   if (c === 'skt' && bundle === 'family') {
     resetLines('<option value="1">1명 결합</option><option value="2">2명 결합</option><option value="3">3명 결합</option><option value="4">4명 결합</option><option value="5">5명 결합</option>');
     linesGroup.style.display = '';
+  } else if (c === 'skt' && bundle === 'sk-onfamily') {
+    var netLabels = D.skt.bundle.onfamily.netYrLabels;
+    var famLabels = D.skt.bundle.onfamily.famYrLabels;
+    resetLines(netLabels.map(function(l, i){ return '<option value="' + i + '">' + l + '</option>'; }).join(''));
+    rangeSel.innerHTML = famLabels.map(function(l, i){ return '<option value="' + i + '">' + l + '</option>'; }).join('');
+    linesGroup.style.display = '';
+    rangeGroup.style.display = '';
   } else if (c === 'kt' && (bundle === 'kt-total' || bundle === 'kt-fixed')) {
     var ranges = (bundle === 'kt-total')
       ? D.kt.bundle.ranges_total
@@ -1454,6 +1519,41 @@ function calc() {
       '</div>';
   }
 
+  // SKT 온가족할인 — 인터넷가입년수 × 가족 합산 가입년수 매트릭스 기반 % 할인
+  if (c === 'skt' && bundleType === 'sk-onfamily' && d.bundle && d.bundle.onfamily) {
+    var ofData = d.bundle.onfamily;
+    var netYrIdx = parseInt(document.getElementById('c-lines').value) || 0;
+    var famYrIdx = parseInt(document.getElementById('c-range').value) || 0;
+    var pct = (ofData.matrix[netYrIdx] && ofData.matrix[netYrIdx][famYrIdx]) || 0;
+
+    var netSingleWithWifi5 = netBase + (wf ? wifiForSp : 0);
+    var inetBase = hasTv ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]) : netSingleWithWifi5;
+    var onfamilyDc = Math.round(inetBase * pct / 100);
+    var inetAfterOf = inetBase - onfamilyDc;
+    var tvBaseValO = hasTv ? d.tv[ti].p : 0;
+    var tvBaseDcO = hasTv ? (d.tv[ti].dc || 0) : 0;
+    var tvAfterO = tvBaseValO - tvBaseDcO;
+    var setTopFeeO = hasTv ? (d.setTop || 0) : 0;
+    var finalInetO = inetAfterOf + tvAfterO + setTopFeeO;
+
+    html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(168,85,247,0.12);border:1.5px solid #a855f7;border-radius:8px">' +
+      '<div style="font-size:12px;color:#d8b4fe;font-weight:800;margin-bottom:8px">👨‍👩‍👧‍👦 섹터 2 — SKT 온가족할인 (' + ofData.netYrLabels[netYrIdx] + ' × ' + ofData.famYrLabels[famYrIdx] + ' → <b>' + pct + '%</b> 할인)</div>';
+    if (pct === 0) {
+      html += '<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:#fca5a5">⚠️ 이 조건은 온가족할인 적용 불가</div>';
+    }
+    html += '<div class="calc-line"><span class="l">인터넷 ' + (hasTv ? '결합가' : '단독가') + ' (' + sp + (wf ? ' + WiFi' : '') + ')</span><span class="v">' + fmt(inetBase) + '</span></div>' +
+      '<div class="calc-line discount"><span class="l">온가족할인 ' + pct + '% (인터넷에 적용)</span><span class="v">-' + fmt(onfamilyDc) + '</span></div>' +
+      '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfterOf) + '</span></div>';
+    if (hasTv) {
+      html += '<div class="calc-line" style="margin-top:6px"><span class="l">' + d.tv[ti].n.split('(')[0].trim() + '</span><span class="v">' + fmt(tvBaseValO) + '</span></div>' +
+        '<div class="calc-line discount"><span class="l">TV 결합 할인</span><span class="v">-' + fmt(tvBaseDcO) + '</span></div>' +
+        '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfterO) + '</span></div>' +
+        '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFeeO) + '</span></div>';
+    }
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#d8b4fe">✨ ' + (hasTv ? '인터넷+TV ' : '인터넷 ') + '월 실질요금</span><span class="v" style="color:#a855f7;font-size:20px">' + fmt(finalInetO) + '</span></div>' +
+      '</div>';
+  }
+
   var giftAmount = getGiftAmount(d, sp, ti);
   if (giftAmount > 0) {
     html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:6px;padding:6px 10px;margin-top:6px"><span class="l" style="color:#fbbf24">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900">' + fmt(giftAmount) + '</span></div>';
@@ -1794,6 +1894,7 @@ function updateGift(carrierKey, bucket, speed, value) {
   var old = D[carrierKey].gift[bucket][speed] || 0;
   if (old === n) return;
   D[carrierKey].gift[bucket][speed] = n;
+  saveGiftOverride(carrierKey, bucket, speed, n);  // ← localStorage 영구 저장 (tm.html 동기화)
   saveGiftHistory({
     at: nowKst(),
     carrier: carrierKey,
