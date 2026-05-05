@@ -1623,6 +1623,48 @@ document.getElementById('c-range').addEventListener('change', calc);
 
 init();
 
+// ─── 상담사 모드 (?role=agent) — 어드민 데이터 편집 영역 모두 비활성화 ───
+// 메인 .calc 영역(요금 계산기)은 계속 사용 가능, .section(어드민 패널)만 readonly
+(function applyAgentMode() {
+  var p = new URLSearchParams(window.location.search);
+  if (p.get('role') !== 'agent' && p.get('readonly') !== '1') return;
+  document.body.classList.add('agent-mode');
+  var style = document.createElement('style');
+  style.textContent =
+    '/* 상담사 모드: .section 안의 모든 편집 컨트롤 비활성화 + 추가/삭제 버튼 숨김 */' +
+    'body.agent-mode .section input,' +
+    'body.agent-mode .section select,' +
+    'body.agent-mode .section textarea,' +
+    'body.agent-mode .section [contenteditable="true"] { pointer-events:none !important; opacity:0.7 !important; background:rgba(0,0,0,0.04) !important; cursor:not-allowed !important; }' +
+    'body.agent-mode .section button,' +
+    'body.agent-mode .section .btn-add,' +
+    'body.agent-mode .section .btn-delete,' +
+    'body.agent-mode .section .btn-edit,' +
+    'body.agent-mode .section .btn-discontinue,' +
+    'body.agent-mode .section .btn-row-add,' +
+    'body.agent-mode .section .btn-row-del,' +
+    'body.agent-mode .section [data-action] { display:none !important; }' +
+    'body.agent-mode .section::before { content:"🎧 상담사 전용 — 읽기전용"; display:block; background:linear-gradient(135deg,#3617ce,#7c3aed); color:#fff; padding:6px 10px; border-radius:6px 6px 0 0; font-size:10px; font-weight:800; letter-spacing:0.04em; margin-bottom:8px; }';
+  document.head.appendChild(style);
+
+  // JS 레벨 보강: 동적으로 추가되는 contenteditable + 편집 핸들러 제거
+  function lockAdminSections() {
+    document.querySelectorAll('.section input, .section select, .section textarea').forEach(function(el){
+      el.disabled = true;
+      el.readOnly = true;
+    });
+    document.querySelectorAll('.section [contenteditable]').forEach(function(el){
+      el.removeAttribute('contenteditable');
+    });
+  }
+  lockAdminSections();
+  // 동적 렌더링 후에도 lock — MutationObserver로 .section 변경 감지
+  var observer = new MutationObserver(function(){ lockAdminSections(); });
+  document.querySelectorAll('.section').forEach(function(sec){
+    observer.observe(sec, { childList: true, subtree: true });
+  });
+})();
+
 // 기본 셋톱/WiFi 전환 함수 (모델 변경/단종 대응 시연)
 function setDefaultSetTop(carrierKey, optionId) {
   var d = D[carrierKey];
