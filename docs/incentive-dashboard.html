@@ -78,6 +78,31 @@ body.show-manager-kpi .manager-only { display:block; }
 .mgr-kpi-card .mgr-row b { color:#f8fafc; font-weight:800; }
 @media (max-width: 900px) { .mgr-kpi-grid { grid-template-columns:repeat(2, 1fr); } }
 
+/* agent-only: 상담사 전용 섹션 — 본인 KPI / 진행률 / 페널티 / 본인 영업 */
+.agent-only { display:none; }
+body.show-agent-kpi .agent-only { display:block; }
+.agent-kpi-grid { display:grid; grid-template-columns:repeat(6, 1fr); gap:12px; }
+.agent-kpi-card { background:linear-gradient(135deg,#064e3b,#0f172a); border:1.5px solid #16a34a; border-radius:12px; padding:14px 16px; position:relative; overflow:hidden; }
+.agent-kpi-card.primary { background:linear-gradient(135deg,#15803d,#064e3b); border-color:#22c55e; }
+.agent-kpi-card .label { font-size:10px; color:#86efac; font-weight:800; letter-spacing:0.04em; margin-bottom:6px; }
+.agent-kpi-card .val { font-size:22px; color:#f8fafc; font-weight:900; letter-spacing:-0.02em; line-height:1.2; }
+.agent-kpi-card.primary .val { font-size:28px; color:#bbf7d0; }
+.agent-kpi-card .sub { font-size:10px; color:#94a3b8; margin-top:4px; }
+@media (max-width: 768px) { .agent-kpi-grid { grid-template-columns:repeat(2, 1fr); } }
+
+.progress-section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:10px; padding:14px 18px; margin-top:14px; }
+.progress-bar { height:16px; background:#0f172a; border-radius:8px; overflow:hidden; border:1px solid #334155; margin:8px 0; position:relative; }
+.progress-fill { height:100%; background:linear-gradient(90deg,#3b82f6,#22c55e); transition:width 0.4s; }
+.progress-marker { position:absolute; top:-2px; bottom:-2px; width:2px; background:#fbbf24; }
+.progress-info { display:flex; justify-content:space-between; font-size:11px; color:#cbd5e1; }
+
+.penalty-banner { background:linear-gradient(135deg,#7f1d1d,#450a0a); border:1.5px solid #dc2626; color:#fef2f2; padding:14px 18px; border-radius:10px; font-size:13px; font-weight:700; margin-bottom:18px; line-height:1.6; }
+.penalty-banner b { color:#fca5a5; font-weight:900; }
+
+.agent-sales-list { width:100%; }
+.agent-sales-list th { background:#1e293b; }
+.agent-sales-list .empty { text-align:center; padding:28px; color:#64748b; font-size:12px; }
+
 /* 다크 테마 - 달력 아이콘 강제 표시 */
 input[type="date"], input[type="month"] { color-scheme: dark; }
 input[type="date"]::-webkit-calendar-picker-indicator,
@@ -204,6 +229,73 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- 상담사 전용 섹션 (agent-only) -->
+    <div id="agent-penalty-banner" class="agent-only penalty-banner" style="display:none"></div>
+    <div class="section agent-only" id="agent-kpi-section">
+      <h2>🎯 내 이번 달 누적 <span style="font-size:10px;color:#94a3b8;font-weight:400" id="agent-kpi-sub">-</span></h2>
+      <div class="agent-kpi-grid">
+        <div class="agent-kpi-card primary">
+          <div class="label">💰 총수령</div>
+          <div class="val" id="agent-total">-</div>
+          <div class="sub" id="agent-total-sub">기본급 + 인센티브 + 보너스</div>
+        </div>
+        <div class="agent-kpi-card">
+          <div class="label">🏆 등급</div>
+          <div class="val" id="agent-grade">-</div>
+          <div class="sub" id="agent-grade-sub">목표 / 적용</div>
+        </div>
+        <div class="agent-kpi-card">
+          <div class="label">📊 누적 P</div>
+          <div class="val" id="agent-points">-</div>
+          <div class="sub" id="agent-points-sub">건수: -</div>
+        </div>
+        <div class="agent-kpi-card">
+          <div class="label">⭐ 우수</div>
+          <div class="val" id="agent-premium">-</div>
+          <div class="sub" id="agent-premium-sub">건</div>
+        </div>
+        <div class="agent-kpi-card">
+          <div class="label">💵 인센티브</div>
+          <div class="val" id="agent-incentive">-</div>
+          <div class="sub" id="agent-incentive-sub">단가 -/P</div>
+        </div>
+        <div class="agent-kpi-card">
+          <div class="label">🎁 보너스</div>
+          <div class="val" id="agent-bonus">-</div>
+          <div class="sub">우수 보너스</div>
+        </div>
+      </div>
+      <!-- 등급 진행률 -->
+      <div class="progress-section">
+        <div style="font-size:12px;font-weight:700;color:#a5b4fc;margin-bottom:8px" id="agent-progress-label">등급 진행률</div>
+        <div class="progress-bar"><div class="progress-fill" id="agent-progress-fill" style="width:0%"></div></div>
+        <div class="progress-info">
+          <span id="agent-progress-current">-</span>
+          <span id="agent-progress-target">-</span>
+        </div>
+        <div style="font-size:11px;color:#fbbf24;margin-top:6px" id="agent-progress-hint">-</div>
+      </div>
+    </div>
+
+    <!-- 본인 영업 리스트 -->
+    <div class="section agent-only" id="agent-sales-section">
+      <h2>📋 내 이번 달 영업
+        <select id="agent-sales-status-filter" style="font-size:10.5px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:5px;font-weight:400">
+          <option value="">전체</option>
+          <option value="completed">계약완료</option>
+          <option value="in_progress">계약진행</option>
+          <option value="pending">계약대기</option>
+          <option value="cancelled">취소</option>
+        </select>
+      </h2>
+      <table class="agent-sales-list">
+        <thead><tr>
+          <th>계약일</th><th>상품</th><th>고객명</th><th>상태</th><th>페이백</th>
+        </tr></thead>
+        <tbody id="agent-sales-tbody"><tr><td colspan="5" class="empty">로딩 중…</td></tr></tbody>
+      </table>
     </div>
 
     <!-- 전체 KPI -->
@@ -542,8 +634,147 @@ async function loadAll() {
     if (_myAgent) renderManagerKpi(_overview, _myAgent);
     renderKpi(_overview);
     renderAgents(_overview);
+    // agent role 전용 — 본인 전용 섹션 렌더
+    if (_myRole === 'agent') loadAgentSection(month);
   } catch (e) { alert('로드 실패: ' + e.message); }
 }
+
+// ─── agent 전용 섹션 ───
+async function loadAgentSection(month) {
+  const tk = getToken(); if (!tk) return;
+  document.getElementById('agent-kpi-sub').textContent = '· ' + month;
+  try {
+    const [setRes, rulesRes, contractsRes] = await Promise.all([
+      fetch(API + '/settlement?month=' + month, { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(API + '/rules', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(API + '/contracts?month=' + month, { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]);
+    let s = setRes && setRes.settlement;
+    if (Array.isArray(s)) s = s[0] || null;
+    const rule = (rulesRes && (rulesRes.rule || (rulesRes.rules || [])[0])) || null;
+    const contracts = (contractsRes && contractsRes.contracts) || [];
+    renderAgentKpi(s, rule);
+    renderAgentSales(contracts);
+  } catch (e) { console.warn('[agent section] ', e); }
+}
+
+function renderAgentKpi(s, rule) {
+  if (!s) {
+    ['agent-total','agent-grade','agent-points','agent-premium','agent-incentive','agent-bonus'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.textContent = '-';
+    });
+    return;
+  }
+  const fmt = v => (v == null) ? '-' : Number(v).toLocaleString();
+  const g = s.grade_applied || 1;
+  const gColor = ['', '#9ca3af', '#60a5fa', '#f87171'][g] || '#9ca3af';
+  document.getElementById('agent-total').textContent = fmt(s.agent_total) + '원';
+  document.getElementById('agent-total-sub').textContent =
+    `기본 ${fmt(s.base_salary)} + 인센 ${fmt(s.incentive)} + 보너스 ${fmt(s.bonus)}` + (s.total_agent_payback_deduct > 0 ? ` − 페이백 ${fmt(s.total_agent_payback_deduct)}` : '');
+  document.getElementById('agent-grade').innerHTML =
+    `<span style="background:${gColor};color:#fff;padding:3px 12px;border-radius:6px;font-weight:900">G${g}</span>`;
+  document.getElementById('agent-grade-sub').textContent =
+    `목표 G${s.grade_target || 1} / 적용 G${g}` + (s.is_penalty ? ' (페널티)' : '');
+  document.getElementById('agent-points').textContent = (s.total_points || 0) + 'P';
+  document.getElementById('agent-points-sub').textContent = `건수 ${s.total_count || 0}건`;
+  document.getElementById('agent-premium').textContent = (s.premium_count || 0);
+  document.getElementById('agent-premium-sub').textContent = '건';
+  document.getElementById('agent-incentive').textContent = fmt(s.incentive) + '원';
+  document.getElementById('agent-incentive-sub').textContent = `단가 ${fmt(s.applied_rate || 0)}/P`;
+  document.getElementById('agent-bonus').textContent = fmt(s.bonus) + '원';
+  // 진행률
+  renderAgentProgress(s, rule);
+  // 페널티 배너
+  renderAgentPenalty(s, rule);
+}
+
+function renderAgentProgress(s, rule) {
+  const thr = (rule && rule.grade_thresholds) || { '2':{points:16,premium:5}, '3':{points:31,premium:10} };
+  const points = parseFloat(s.total_points) || 0;
+  const premium = s.premium_count || 0;
+  const g3p = parseFloat(thr['3']?.points || 31);
+  const g3pr = parseInt(thr['3']?.premium || 10);
+  const g2p = parseFloat(thr['2']?.points || 16);
+  const g2pr = parseInt(thr['2']?.premium || 5);
+  let label, currentText, targetText, hint, fillPct;
+  if (points >= g3p) {
+    label = '✨ G3 달성';
+    targetText = `G3 (${g3p}P / 우수 ${g3pr})`;
+    currentText = `${points}P / 우수 ${premium}건`;
+    fillPct = 100;
+    hint = premium >= g3pr ? '🎉 G3 페널티 없이 달성!' : `⚠️ 우수 ${g3pr - premium}건 더 필요 (페널티 발동 중)`;
+  } else if (points >= g2p) {
+    label = `📈 G3까지 +${(g3p - points).toFixed(1)}P`;
+    currentText = `${points}P / G2 (${g2p}P 시작)`;
+    targetText = `G3 ${g3p}P`;
+    fillPct = ((points - g2p) / (g3p - g2p)) * 100;
+    hint = `우수도 ${Math.max(0, g3pr - premium)}건 더 등록하면 G3 페널티 없이 도달`;
+  } else {
+    label = `📈 G2까지 +${(g2p - points).toFixed(1)}P`;
+    currentText = `${points}P / G1`;
+    targetText = `G2 ${g2p}P`;
+    fillPct = (points / g2p) * 100;
+    hint = `G2 도달 시 단가 ${(rule?.grade_rates?.['2'] || 30000).toLocaleString()}원/P 적용`;
+  }
+  document.getElementById('agent-progress-label').textContent = label;
+  document.getElementById('agent-progress-current').textContent = currentText;
+  document.getElementById('agent-progress-target').textContent = targetText;
+  document.getElementById('agent-progress-hint').textContent = hint;
+  document.getElementById('agent-progress-fill').style.width = Math.max(0, Math.min(100, fillPct)) + '%';
+}
+
+function renderAgentPenalty(s, rule) {
+  const banner = document.getElementById('agent-penalty-banner');
+  if (!banner) return;
+  if (!s.is_penalty) { banner.style.display = 'none'; return; }
+  const thr = (rule && rule.grade_thresholds) || { '2':{premium:5}, '3':{premium:10} };
+  const need = (s.grade_target === 3 ? thr['3']?.premium : thr['2']?.premium) || 0;
+  const lack = Math.max(0, need - (s.premium_count || 0));
+  banner.style.display = '';
+  banner.innerHTML = `⚠️ <b>페널티 발동</b>: 목표 G${s.grade_target} → 적용 G${s.grade_applied} <br>
+    → 우수 상품 <b>${lack}건</b> 더 등록하면 페널티 해제 (현재 ${s.premium_count || 0} / 필요 ${need})`;
+}
+
+function renderAgentSales(contracts) {
+  const tbody = document.getElementById('agent-sales-tbody');
+  if (!tbody) return;
+  const filterEl = document.getElementById('agent-sales-status-filter');
+  const filter = filterEl ? filterEl.value : '';
+  let list = Array.isArray(contracts) ? contracts.slice() : [];
+  list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  if (filter) list = list.filter(c => c.status === filter);
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">영업 없음</td></tr>'; return; }
+  const statusBadge = {
+    pending: '<span style="background:#475569;color:#fff;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800">계약대기</span>',
+    in_progress: '<span style="background:#3b82f6;color:#fff;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800">계약진행</span>',
+    completed: '<span style="background:#16a34a;color:#fff;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800">계약완료</span>',
+    cancelled: '<span style="background:#dc2626;color:#fff;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800">취소</span>',
+  };
+  const carrierBadge = (c) => {
+    const m = { kt: { label:'KT', bg:'#dc2626' }, sk: { label:'SK', bg:'#ef4444' }, skt: { label:'SK', bg:'#ef4444' }, lgu: { label:'LG U+', bg:'#a855f7' }, lg: { label:'LG U+', bg:'#a855f7' } };
+    const b = m[(c||'').toLowerCase()]; if (!b) return '';
+    return `<span style="background:${b.bg};color:#fff;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:800;margin-right:4px">${b.label}</span>`;
+  };
+  tbody.innerHTML = list.slice(0, 20).map(c => {
+    const p = c.product || {};
+    return `<tr>
+      <td>${(c.contract_date || '').slice(5) || '-'}</td>
+      <td>${carrierBadge(p.carrier)}${p.name || '-'}</td>
+      <td>${c.customer_name || '<i style="color:#64748b">-</i>'}</td>
+      <td>${statusBadge[c.status] || c.status || '-'}</td>
+      <td>${(c.add_payback || 0).toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+}
+
+// 영업 상태 필터 변경 시 즉시 재렌더 (loadAll 안 거치고)
+document.addEventListener('DOMContentLoaded', () => {
+  const filterEl = document.getElementById('agent-sales-status-filter');
+  if (filterEl) filterEl.addEventListener('change', () => {
+    const month = document.getElementById('filter-month')?.value;
+    if (month && _myRole === 'agent') loadAgentSection(month);
+  });
+});
 
 let _toastTimer;
 function showToast(msg) {
@@ -592,12 +823,12 @@ function onLoggedIn(agent, skipLoad) {
   document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
   document.getElementById('user-meta').textContent = agent.center;
   // 역할별 가시성 적용
-  document.body.classList.remove('hide-financial-mid', 'hide-financial-deep', 'show-manager-kpi');
+  document.body.classList.remove('hide-financial-mid', 'hide-financial-deep', 'show-manager-kpi', 'show-agent-kpi');
   if (agent.role === 'contract') document.body.classList.add('hide-financial-mid', 'hide-financial-deep');
   if (agent.role === 'manager') document.body.classList.add('hide-financial-deep'); // 본인 센터 financial OK, 회사이익 X
   if (agent.role === 'agent') {
-    // agent: 회사 매출/이익 모두 숨김 (다른 상담사/회사 데이터 안 보이게)
-    document.body.classList.add('hide-financial-mid', 'hide-financial-deep');
+    // agent: 회사 매출/이익 모두 숨김 + 본인 전용 섹션 표시
+    document.body.classList.add('hide-financial-mid', 'hide-financial-deep', 'show-agent-kpi');
     // 상담사 수 KPI는 본인 1명이므로 의미없음 — 숨김
     const kpiAgents = document.getElementById('kpi-agents');
     if (kpiAgents && kpiAgents.parentElement) kpiAgents.parentElement.style.display = 'none';
