@@ -2339,20 +2339,70 @@ async function incSimulate() {
 
     let html = '';
 
-    // ─── 상담사용 단순 뷰 ───
+    // ─── 상담사용 뷰 (Grade + 월 수령액 실시간) ───
     if (!isAdmin) {
+      // 현재 settlement (로그인 시) — _incMyState.settlement
+      const myS = (_incMyState && _incMyState.settlement) ? _incMyState.settlement : null;
+      const baseSalary = myS ? myS.base_salary : 2300000;
+      const currentTotal = myS ? myS.agent_total : 2300000;
+      // 추가 후 예상 (시뮬에서 받은 after_total은 base 230만 + after_inc + after_bonus)
+      // 페이백 차감 + 본인 base_salary 반영
+      const newIncentive = s.after_incentive;
+      const newBonus = s.after_bonus;
+      const newDeduct = (myS ? myS.total_agent_payback_deduct : 0) + (addPayback > 30000 ? addPayback - 30000 : 0);
+      const newAgentTotal = baseSalary + newIncentive + newBonus - newDeduct;
+      const totalDelta = newAgentTotal - currentTotal;
+      const deltaC = totalDelta > 0 ? '#16a34a' : (totalDelta < 0 ? '#dc2626' : '#6b7280');
+
+      // 매칭 상품
       html += '<div style="background:rgba(255,255,255,0.7);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:11px">';
       html += '🎯 <b>' + product.name + '</b> ' + tierEmoji + ' <b style="color:#92400e">' + product.tier + '</b>' + (product.is_premium ? '<span style="background:#dc2626;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:700">⭐ 우수상품</span>' : '');
       html += '</div>';
+
+      // ─── 현재 상태 (로그인 시) ───
+      if (myS) {
+        const grade = s.current_grade;
+        const gColor = ['', '#6b7280', '#3b82f6', '#dc2626'][grade] || '#6b7280';
+        html += '<div style="background:rgba(0,0,0,0.05);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:10.5px">';
+        html += '<div style="font-size:9.5px;color:#78350f;font-weight:700;margin-bottom:4px;letter-spacing:0.04em">📍 현재 (이번 달)</div>';
+        html += '<div style="display:grid;grid-template-columns:auto auto auto auto;gap:8px;align-items:center">';
+        html += '<div><span style="background:' + gColor + ';color:#fff;padding:2px 8px;border-radius:4px;font-weight:800">G' + grade + '</span></div>';
+        html += '<div style="font-weight:700;color:#78350f">' + currentP + 'P · 우수 ' + currentPrem + '건</div>';
+        html += '<div style="color:#6b7280">→</div>';
+        html += '<div style="font-weight:900;color:#78350f;font-size:13px">' + incFmt(currentTotal) + '</div>';
+        html += '</div>';
+        html += '</div>';
+      } else {
+        html += '<div style="background:rgba(254,243,199,0.5);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:10px;color:#92400e;text-align:center">🔐 로그인하면 본인 누적 + 월 수령액 자동 표시</div>';
+      }
+
+      // 변동 요약
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">';
-      html += '<div style="background:rgba(255,255,255,0.6);border-radius:6px;padding:8px 10px;text-align:center"><div style="font-size:9.5px;color:#78350f;font-weight:700;margin-bottom:3px">📊 포인트</div><div style="font-size:13px;font-weight:800;color:#78350f">' + currentP + 'P → <span style="color:#15803d">' + newP + 'P</span></div><div style="font-size:9.5px;color:#16a34a;margin-top:2px">+' + (newP - currentP) + 'P</div></div>';
-      html += '<div style="background:rgba(255,255,255,0.6);border-radius:6px;padding:8px 10px;text-align:center"><div style="font-size:9.5px;color:#78350f;font-weight:700;margin-bottom:3px">⭐ 우수 건수</div><div style="font-size:13px;font-weight:800;color:#78350f">' + currentPrem + ' → <span style="' + (product.is_premium ? 'color:#15803d' : 'color:#78350f') + '">' + newPrem + '</span></div><div style="font-size:9.5px;color:' + (product.is_premium ? '#16a34a' : '#9ca3af') + ';margin-top:2px">' + (product.is_premium ? '+1 (우수상품)' : '변동 없음') + '</div></div>';
+      html += '<div style="background:rgba(255,255,255,0.6);border-radius:6px;padding:8px 10px;text-align:center"><div style="font-size:9.5px;color:#78350f;font-weight:700;margin-bottom:3px">📊 포인트</div><div style="font-size:13px;font-weight:800;color:#78350f">' + currentP + ' → <span style="color:#15803d">' + newP + '</span>P</div><div style="font-size:9.5px;color:#16a34a;margin-top:2px">+' + (newP - currentP) + 'P</div></div>';
+      html += '<div style="background:rgba(255,255,255,0.6);border-radius:6px;padding:8px 10px;text-align:center"><div style="font-size:9.5px;color:#78350f;font-weight:700;margin-bottom:3px">⭐ 우수</div><div style="font-size:13px;font-weight:800;color:#78350f">' + currentPrem + ' → <span style="' + (product.is_premium ? 'color:#15803d' : 'color:#78350f') + '">' + newPrem + '</span>건</div><div style="font-size:9.5px;color:' + (product.is_premium ? '#16a34a' : '#9ca3af') + ';margin-top:2px">' + (product.is_premium ? '+1' : '변동 없음') + '</div></div>';
       html += '</div>';
-      html += '<div style="margin-top:8px;background:linear-gradient(135deg,#fff,#fef9c3);border-radius:6px;padding:10px;border:1.5px dashed ' + deltaColor + ';text-align:center">';
-      html += '<div style="font-size:10px;color:#78350f;font-weight:700;margin-bottom:3px">📈 이 한 건 추가 시 내 인센티브</div>';
-      html += '<div style="font-size:20px;font-weight:900;color:' + deltaColor + ';letter-spacing:-0.02em">' + (s.delta_total > 0 ? '+' : '') + incFmt(s.delta_total) + '</div>';
-      if (gradeUp) html += '<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">⚡ 등급 승급 — 누적 전체에 더 높은 단가 적용!</div>';
-      if (addPayback > 30000) html += '<div style="font-size:9px;color:#dc2626;margin-top:3px">⚠️ 페이백 ' + incFmt(addPayback - 30000) + ' 본인 차감</div>';
+
+      // ─── +1건 추가 후 예상 (Grade + 월 수령액) ───
+      if (myS) {
+        const newGrade = s.after_grade;
+        const ngColor = ['', '#6b7280', '#3b82f6', '#dc2626'][newGrade] || '#6b7280';
+        html += '<div style="margin-top:8px;background:' + (gradeUp ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.6)') + ';border-radius:6px;padding:8px 10px;font-size:10.5px' + (gradeUp ? ';border:1.5px solid #22c55e' : '') + '">';
+        html += '<div style="font-size:9.5px;color:' + (gradeUp ? '#15803d' : '#78350f') + ';font-weight:700;margin-bottom:4px;letter-spacing:0.04em">🚀 +1건 추가 시 (' + (gradeUp ? '⬆️ 승급!' : '예상') + ')</div>';
+        html += '<div style="display:grid;grid-template-columns:auto auto auto auto;gap:8px;align-items:center">';
+        html += '<div><span style="background:' + ngColor + ';color:#fff;padding:2px 8px;border-radius:4px;font-weight:800">G' + newGrade + '</span></div>';
+        html += '<div style="font-weight:700;color:#78350f">' + newP + 'P · 우수 ' + newPrem + '건</div>';
+        html += '<div style="color:#6b7280">→</div>';
+        html += '<div style="font-weight:900;color:' + (gradeUp ? '#15803d' : '#78350f') + ';font-size:13px">' + incFmt(newAgentTotal) + '</div>';
+        html += '</div>';
+        html += '</div>';
+      }
+
+      // ─── 델타 강조 ───
+      html += '<div style="margin-top:8px;background:linear-gradient(135deg,#fff,#fef9c3);border-radius:6px;padding:10px;border:1.5px dashed ' + deltaC + ';text-align:center">';
+      html += '<div style="font-size:10px;color:#78350f;font-weight:700;margin-bottom:3px">📈 이 한 건의 가치 (월 수령 변동)</div>';
+      html += '<div style="font-size:22px;font-weight:900;color:' + deltaC + ';letter-spacing:-0.02em">' + (totalDelta > 0 ? '+' : '') + incFmt(totalDelta) + '</div>';
+      if (gradeUp) html += '<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">⚡ Grade 승급 → 누적 P 전체 단가 소급 적용!</div>';
+      if (addPayback > 30000) html += '<div style="font-size:9px;color:#dc2626;margin-top:3px">⚠️ 페이백 ' + incFmt(addPayback - 30000) + ' 본인 차감 반영</div>';
       html += '</div>';
     }
     // ─── 관리자용 상세 뷰 ───
