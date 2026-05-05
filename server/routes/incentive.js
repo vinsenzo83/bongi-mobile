@@ -215,7 +215,8 @@ router.get('/agents', authenticateJWT, async (req, res) => {
     if (!isContractAccess(me)) {
       return res.status(403).json({ error: 'manager/contract/admin 권한 필요' });
     }
-    let q = supabase.from('incentive_agents').select('*').eq('active', true);
+    // soft delete 제외 — deleted_at IS NULL만 반환
+    let q = supabase.from('incentive_agents').select('*').eq('active', true).is('deleted_at', null);
     if (me.role === 'manager') q = q.eq('center', me.center);
     // contract는 전체 보임 (모든 센터의 계약 처리)
     const { data, error } = await q.order('hire_date');
@@ -381,12 +382,108 @@ router.get('/agents/all', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
 
+    // ?trash=1 → 휴지통 (soft delete된 행만) / 기본 → 활성 (deleted_at IS NULL)
+    const trash = req.query.trash === '1' || req.query.trash === 'true';
+    let q = supabase
+      .from('incentive_agents')
+      .select('*');
+    if (trash) {
+      q = q.not('deleted_at', 'is', null);
+    } else {
+      q = q.is('deleted_at', null);
+    }
+    const { data, error } = await q.order('hire_date', { ascending: false });
+    if (error) throw error;
+    res.json({ agents: data, count: data.length, trash });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 6.9. DELETE /api/incentive/agents/:id — soft delete / 영구 삭제 (admin)
+//      ?permanent=1 시 영구 삭제 (auth.users도 함께 제거)
+//      기본은 soft delete (deleted_at = now)
+// ═══════════════════════════════════════════════════════════════
+router.delete('/agents/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const permanent = req.query.permanent === '1' || req.query.permanent === 'true';
+
+    // 영구 삭제: incentive_agents row + auth.users 동시 제거
+    if (permanent) {
+      const { data: agent, error: selErr } = await supabase
+        .from('incentive_agents')
+        .select('user_id, name')
+        .eq('id', req.params.id)
+        .single();
+      if (selErr || !agent) return res.status(404).json({ error: '상담사 없음' });
+
+      const { error: delErr } = await supabase
+        .from('incentive_agents')
+        .delete()
+        .eq('id', req.params.id);
+      if (delErr) throw delErr;
+
+      if (agent.user_id) {
+        // auth.users는 best-effort — 실패해도 incentive_agents는 이미 삭제됨
+        await supabase.auth.admin.deleteUser(agent.user_id).catch((e) => {
+          console.warn('[incentive] auth.admin.deleteUser 실패:', e?.message);
+        });
+        invalidateAgentCache(agent.user_id);
+      }
+      return res.json({ ok: true, permanent: true, name: agent.name });
+    }
+
+    // soft delete: deleted_at + deleted_by_user_id + active=false
+    const { reason } = req.body || {};
     const { data, error } = await supabase
       .from('incentive_agents')
-      .select('*')
-      .order('hire_date', { ascending: false });
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by_user_id: req.user.id,
+        active: false,
+      })
+      .eq('id', req.params.id)
+      .select('id, name, user_id')
+      .single();
     if (error) throw error;
-    res.json({ agents: data, count: data.length });
+    if (data && data.user_id) invalidateAgentCache(data.user_id);
+    // reason은 현재 컬럼 없음 — 향후 audit 테이블 추가 시 활용. 일단 로그만 남김
+    if (reason) console.log('[incentive] soft-delete agent', data?.id, 'reason:', reason);
+    res.json({ ok: true, agent: data, soft: true });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 6.10. POST /api/incentive/agents/:id/restore — 휴지통에서 원복 (admin)
+// ═══════════════════════════════════════════════════════════════
+router.post('/agents/:id/restore', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const { data, error } = await supabase
+      .from('incentive_agents')
+      .update({
+        deleted_at: null,
+        deleted_by_user_id: null,
+        active: true,
+      })
+      .eq('id', req.params.id)
+      .select('id, name, user_id')
+      .single();
+    if (error) throw error;
+    if (data && data.user_id) invalidateAgentCache(data.user_id);
+    res.json({ ok: true, agent: data });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
@@ -424,12 +521,14 @@ router.get('/sales', authenticateJWT, async (req, res) => {
       targetAgentId = agent_id;
     }
 
+    // soft delete 제외 — 기본은 deleted_at IS NULL만 (휴지통은 /contracts?trash=1만 노출)
     const { data, error } = await supabase
       .from('incentive_sales')
       .select('*, product:incentive_products(*)')
       .eq('agent_id', targetAgentId)
       .gte('contract_date', monthStart)
       .lte('contract_date', monthEnd)
+      .is('deleted_at', null)
       .order('contract_date', { ascending: false });
     if (error) throw error;
     res.json({ sales: data, count: data.length, month: ym });
@@ -591,6 +690,110 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       .single();
     if (error) throw error;
     res.json({ sale: data });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 9.5. DELETE /api/incentive/sales/:id — 영업 삭제 (manager/admin)
+//      기본: soft delete (deleted_at = now, status='cancelled')
+//      ?permanent=1 (admin only): 영구 삭제 (DB row 제거 — 복원 불가)
+// ═══════════════════════════════════════════════════════════════
+router.delete('/sales/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+
+    const permanent = req.query.permanent === '1' || req.query.permanent === 'true';
+
+    // 영구 삭제는 admin 전용
+    if (permanent) {
+      if (!isAdmin(me)) return res.status(403).json({ error: '영구 삭제는 admin 전용' });
+      const { error: delErr } = await supabase
+        .from('incentive_sales')
+        .delete()
+        .eq('id', req.params.id);
+      if (delErr) throw delErr;
+      return res.json({ ok: true, permanent: true });
+    }
+
+    // soft delete: deleted_at + deleted_by_user_id + deleted_reason + status='cancelled'
+    const { reason } = req.body || {};
+    const { data, error } = await supabase
+      .from('incentive_sales')
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by_user_id: req.user.id,
+        deleted_reason: reason || null,
+        status: 'cancelled',
+        contract_cancelled_at: new Date().toISOString(),
+      })
+      .eq('id', req.params.id)
+      .select('id, deleted_at, deleted_reason, status')
+      .single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: '영업 없음' });
+    res.json({ ok: true, soft: true, sale: data });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 9.6. POST /api/incentive/sales/:id/restore — 휴지통에서 원복 (manager/admin)
+//      가장 최근 status timestamp를 기준으로 status 복원
+//      (모두 NULL이면 'pending'으로 복원)
+// ═══════════════════════════════════════════════════════════════
+router.post('/sales/:id/restore', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+
+    // 기존 row 조회 — status 결정용
+    const { data: existing, error: selErr } = await supabase
+      .from('incentive_sales')
+      .select('id, deleted_at, contract_pending_at, contract_in_progress_at, contract_completed_at, contract_cancelled_at')
+      .eq('id', req.params.id)
+      .single();
+    if (selErr || !existing) return res.status(404).json({ error: '영업 없음' });
+    if (!existing.deleted_at) return res.status(400).json({ error: '이미 활성 상태입니다' });
+
+    // 가장 최근 timestamp의 status로 복원
+    // 단, contract_cancelled_at은 삭제 시점에 자동 갱신되므로 제외 (실제 취소 vs 삭제 구분)
+    const candidates = [
+      { status: 'pending',     ts: existing.contract_pending_at },
+      { status: 'in_progress', ts: existing.contract_in_progress_at },
+      { status: 'completed',   ts: existing.contract_completed_at },
+    ];
+    let restoreStatus = 'pending';
+    let latest = 0;
+    candidates.forEach(({ status, ts }) => {
+      if (!ts) return;
+      const t = new Date(ts).getTime();
+      if (!Number.isNaN(t) && t > latest) {
+        latest = t;
+        restoreStatus = status;
+      }
+    });
+
+    const { data, error } = await supabase
+      .from('incentive_sales')
+      .update({
+        deleted_at: null,
+        deleted_by_user_id: null,
+        deleted_reason: null,
+        status: restoreStatus,
+      })
+      .eq('id', req.params.id)
+      .select('id, status, deleted_at')
+      .single();
+    if (error) throw error;
+    res.json({ ok: true, sale: data, restored_status: restoreStatus });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
@@ -782,18 +985,27 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
     if (!isContractAccess(me)) return res.status(403).json({ error: 'contract/manager/admin 전용' });
 
     const { month, status } = req.query;
+    const trash = req.query.trash === '1' || req.query.trash === 'true';
     const ym = month || new Date().toISOString().slice(0, 7);
     const [y, m] = ym.split('-');
     const monthStart = `${y}-${m}-01`;
     const monthEnd = new Date(parseInt(y), parseInt(m), 0).toISOString().slice(0, 10);
 
     // gzip 적용 후 quote_full_html 포함해도 페이로드 작음 (~10KB 추가) — 모달 즉시 표시
-    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at';
+    // 휴지통 모드일 때는 deleted_at/deleted_by_user_id/deleted_reason도 함께 반환
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason';
     let q = supabase
       .from('incentive_sales')
       .select(`${listCols}, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role)`)
       .gte('contract_date', monthStart)
       .lte('contract_date', monthEnd);
+
+    // 휴지통 토글 — 기본은 활성(deleted_at IS NULL), trash=1이면 삭제된 항목만
+    if (trash) {
+      q = q.not('deleted_at', 'is', null);
+    } else {
+      q = q.is('deleted_at', null);
+    }
 
     if (status) q = q.eq('status', status);
 
@@ -802,9 +1014,10 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
       q = q.eq('agent.center', me.center);
     }
 
-    const { data, error } = await q.order('contract_date', { ascending: false });
+    const orderField = trash ? 'deleted_at' : 'contract_date';
+    const { data, error } = await q.order(orderField, { ascending: false });
     if (error) throw error;
-    res.json({ contracts: data, count: data.length, month: ym });
+    res.json({ contracts: data, count: data.length, month: ym, trash });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });

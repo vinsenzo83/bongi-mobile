@@ -266,6 +266,14 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 @media (max-width: 900px) {
   .sec-grid-2, .sec-grid-3, .sec-grid-2-1, .sec-grid-1-15 { grid-template-columns: 1fr; }
 }
+
+/* 화면 크기 따라 전체 비례 자동 축소 (모든 폰트·간격 자동 조절) */
+@media (max-width: 1600px) { body { zoom: 1.0; } }
+@media (max-width: 1400px) { body { zoom: 0.95; } }
+@media (max-width: 1200px) { body { zoom: 0.90; } }
+@media (max-width: 1024px) { body { zoom: 0.85; } }
+@media (max-width: 800px)  { body { zoom: 0.78; } }
+@media (max-width: 600px)  { body { zoom: 0.70; } }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -354,13 +362,14 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         </select>
         <button id="reload-btn">🔄 새로고침</button>
         <button id="export-xlsx-btn" style="background:#16a34a;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📥 엑셀 다운로드</button>
+        <button id="trash-toggle-btn" style="background:#475569;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📁 휴지통 보기</button>
       </div>
       <div style="font-size:11px;color:#94a3b8" id="result-count">-</div>
     </div>
 
     <!-- 영업 목록 테이블 -->
     <table id="contracts-table">
-      <thead>
+      <thead id="contracts-thead">
         <tr>
           <th style="width:36px;text-align:center">#</th>
           <th style="width:8%">날짜</th>
@@ -489,6 +498,9 @@ async function fetchAgent() {
   return data.agent;
 }
 
+// ─── 휴지통 모드 (활성/삭제됨 토글) ───
+let _trashMode = false;
+
 // ─── 영업 목록 fetch ───
 async function fetchContracts() {
   const tk = getToken();
@@ -497,6 +509,7 @@ async function fetchContracts() {
   const params = new URLSearchParams();
   if (month) params.set('month', month);
   if (status) params.set('status', status);
+  if (_trashMode) params.set('trash', '1');
   const url = API + '/contracts' + (params.toString() ? '?' + params.toString() : '');
   const res = await fetch(url, { headers: { Authorization: 'Bearer ' + tk } });
   if (!res.ok) {
@@ -533,7 +546,42 @@ function renderTable(contracts) {
   const tbody = document.getElementById('contracts-tbody');
   const empty = document.getElementById('empty-msg');
   const pagDiv = document.getElementById('pagination');
-  document.getElementById('result-count').textContent = filtered.length + '건';
+  document.getElementById('result-count').textContent = filtered.length + '건' + (_trashMode ? ' (휴지통)' : '');
+
+  // 휴지통 모드 — 헤더 재구성 (삭제 메타 컬럼 3개 추가)
+  const thead = document.getElementById('contracts-thead');
+  if (thead) {
+    if (_trashMode) {
+      thead.innerHTML = `<tr>
+        <th style="width:36px;text-align:center">#</th>
+        <th style="width:7%">날짜</th>
+        <th style="width:9%">상담사</th>
+        <th style="width:14%">상품</th>
+        <th style="width:8%">고객명</th>
+        <th style="width:9%">전화</th>
+        <th style="width:11%">주소</th>
+        <th style="width:7%">페이백</th>
+        <th style="width:5%">상태</th>
+        <th style="width:11%">작업</th>
+        <th style="width:11%;color:#fca5a5">삭제 사유</th>
+        <th style="width:8%;color:#94a3b8">삭제 시각</th>
+        <th style="width:8%;color:#94a3b8">삭제자</th>
+      </tr>`;
+    } else {
+      thead.innerHTML = `<tr>
+        <th style="width:36px;text-align:center">#</th>
+        <th style="width:8%">날짜</th>
+        <th style="width:11%">상담사</th>
+        <th style="width:18%">상품 (Tier·P)</th>
+        <th style="width:10%">고객명</th>
+        <th style="width:11%">전화</th>
+        <th style="width:16%">주소</th>
+        <th style="width:9%">페이백</th>
+        <th style="width:6%">상태</th>
+        <th style="width:11%">작업</th>
+      </tr>`;
+    }
+  }
 
   if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = ''; pagDiv.style.display = 'none'; return; }
   empty.style.display = 'none';
@@ -570,6 +618,9 @@ function renderTable(contracts) {
     btn.addEventListener('click', () => { _currentPage = parseInt(btn.dataset.page); renderTable(_currentContracts); });
   });
 
+  // 휴지통 모드 — 추가 컬럼/버튼 분기
+  const trashMode = _trashMode;
+  const colSpan = trashMode ? 13 : 10;
   tbody.innerHTML = pageItems.map((c, i) => {
     const rowNum = startIdx + i + 1;
     const p = c.product || {};
@@ -578,7 +629,30 @@ function renderTable(contracts) {
     const premBadge = p.is_premium ? '<span class="prem-badge">우수</span>' : '';
     const hasAddr = c.customer_address && c.customer_address.trim();
     const addrText = hasAddr ? c.customer_address : '<i style="color:#dc2626">주소 미입력</i>';
-    return `<tr class="${c.status === 'cancelled' ? 'cancelled' : ''}" data-id="${c.id}">
+
+    // 휴지통 행 — 회색·흐림 스타일
+    const trashRowStyle = trashMode ? 'background:#1a1f2e;opacity:0.65' : '';
+    const rowCls = trashMode ? 'trash-row' : (c.status === 'cancelled' ? 'cancelled' : '');
+
+    // 액션 버튼 — 휴지통이면 [원복] [영구 삭제], 평상시 [편집] [🗑 삭제]
+    const actionsHtml = trashMode
+      ? `<button class="btn-action" data-act="restore" data-id="${c.id}" style="background:#22c55e;color:#fff">🔄 원복</button>
+         <button class="btn-action" data-act="permanent-delete" data-id="${c.id}" style="background:#7f1d1d;color:#fff;margin-left:2px">🚫 영구</button>`
+      : `<button class="btn-action btn-edit" data-act="edit" data-id="${c.id}">📝</button>
+         <button class="btn-action" data-act="soft-delete" data-id="${c.id}" style="background:#dc2626;color:#fff;margin-left:2px">🗑</button>`;
+
+    // 휴지통 모드 — 삭제 사유/시각/삭제자 추가 컬럼
+    const fmtTrashDt = c.deleted_at ? new Date(c.deleted_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '-';
+    const reasonHtml = c.deleted_reason
+      ? String(c.deleted_reason).replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      : '<i style="color:#94a3b8">-</i>';
+    const trashExtra = trashMode
+      ? `<td style="font-size:10px;color:#fca5a5;max-width:180px;word-break:break-all">${reasonHtml}</td>
+         <td style="font-size:10px;color:#94a3b8">${fmtTrashDt}</td>
+         <td style="font-size:10px;color:#cbd5e1;font-family:monospace">${c.deleted_by_user_id ? c.deleted_by_user_id.slice(0,8) + '...' : '-'}</td>`
+      : '';
+
+    return `<tr class="${rowCls}" data-id="${c.id}" style="${trashRowStyle}">
       <td style="text-align:center;color:#64748b;font-weight:700;font-size:11px">${rowNum}</td>
       <td>${(c.contract_date || '').slice(5)}</td>
       <td>${a.name || '-'}<div style="font-size:9px;color:#64748b">${a.center || ''}</div></td>
@@ -588,12 +662,11 @@ function renderTable(contracts) {
       <td style="max-width:240px;word-break:break-all;font-size:10.5px">${addrText}</td>
       <td>${(c.add_payback || 0).toLocaleString()}<div style="font-size:9px;color:#64748b">본인 -${(c.agent_payback_deduct || 0).toLocaleString()}</div></td>
       <td><span class="status status-${c.status}">${ {pending:"계약대기",in_progress:"계약진행",completed:"계약완료",cancelled:"계약취소"}[c.status] || c.status }</span></td>
-      <td>
-        <button class="btn-action btn-edit" data-act="edit" data-id="${c.id}">📝 편집</button>
-      </td>
+      <td style="white-space:nowrap">${actionsHtml}</td>
+      ${trashExtra}
     </tr>
     <tr class="detail-row" id="detail-${c.id}" style="display:none">
-      <td colspan="10" style="padding:0">
+      <td colspan="${colSpan}" style="padding:0">
         <div style="padding:14px 16px;border-top:2px solid #475569;background:linear-gradient(135deg,#1e293b,#0f172a)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <div style="font-size:13px;color:#60a5fa;font-weight:800">📝 계약 상세 정보 입력 / 수정</div>
@@ -715,6 +788,75 @@ async function handleAction(id, act) {
   }
   if (act === 'close-detail') {
     closeModal();
+    return;
+  }
+
+  // ─── 🗑 Soft delete (휴지통 이동) ───
+  if (act === 'soft-delete') {
+    if (!confirm('이 영업을 휴지통으로 이동하시겠습니까?\n(휴지통에서 복원 가능)')) return;
+    const reason = prompt('삭제 사유 (선택)\n예: 중복 등록 / 잘못 입력 / 고객 변심', '') || '';
+    try {
+      const res = await fetch(API + '/sales/' + id, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+        body: JSON.stringify({ reason: reason.trim() || null }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || '삭제 실패');
+      }
+      showToast('🗑 휴지통으로 이동했습니다');
+      await loadContracts();
+    } catch (e) {
+      alert('삭제 오류: ' + e.message);
+    }
+    return;
+  }
+
+  // ─── 🔄 휴지통에서 원복 ───
+  if (act === 'restore') {
+    if (!confirm('이 영업을 활성 상태로 복원하시겠습니까?')) return;
+    try {
+      const res = await fetch(API + '/sales/' + id + '/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || '복원 실패');
+      }
+      const data = await res.json().catch(() => ({}));
+      const statusMap = { pending:'계약대기', in_progress:'계약진행', completed:'계약완료', cancelled:'계약취소' };
+      showToast('🔄 복원 완료 — ' + (statusMap[data.restored_status] || data.restored_status || '활성'));
+      await loadContracts();
+    } catch (e) {
+      alert('복원 오류: ' + e.message);
+    }
+    return;
+  }
+
+  // ─── 🚫 영구 삭제 (admin only, 복원 불가) ───
+  if (act === 'permanent-delete') {
+    if (!confirm('⚠️ 정말 영구 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없으며, DB에서 완전히 제거됩니다.\n복원이 불가능합니다.')) return;
+    const typed = prompt('확인을 위해 "영구삭제"를 입력하세요:', '');
+    if (typed !== '영구삭제') {
+      showToast('영구 삭제 취소됨');
+      return;
+    }
+    try {
+      const res = await fetch(API + '/sales/' + id + '?permanent=1', {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + tk },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || '영구 삭제 실패');
+      }
+      showToast('🚫 영구 삭제 완료 (복원 불가)');
+      await loadContracts();
+    } catch (e) {
+      alert('영구 삭제 오류: ' + e.message);
+    }
     return;
   }
 
@@ -1216,6 +1358,27 @@ document.getElementById('page-last').addEventListener('click', () => {
 document.getElementById('page-size').addEventListener('change', () => { _currentPage = 1; renderTable(_currentContracts); });
 document.getElementById('reload-btn').addEventListener('click', loadContracts);
 
+// ─── 📁 휴지통 토글 ───
+function updateTrashButton() {
+  const btn = document.getElementById('trash-toggle-btn');
+  if (!btn) return;
+  if (_trashMode) {
+    btn.textContent = '↩️ 활성 보기';
+    btn.style.background = '#dc2626';
+  } else {
+    btn.textContent = '📁 휴지통 보기';
+    btn.style.background = '#475569';
+  }
+  // 휴지통 모드일 때 헤더에 시각 힌트
+  document.body.style.borderTop = _trashMode ? '4px solid #dc2626' : '';
+}
+document.getElementById('trash-toggle-btn').addEventListener('click', () => {
+  _trashMode = !_trashMode;
+  _currentPage = 1;
+  updateTrashButton();
+  loadContracts();
+});
+
 // ─── 엑셀 다운로드 (.xlsx) ───
 document.getElementById('export-xlsx-btn').addEventListener('click', () => {
   if (typeof XLSX === 'undefined') {
@@ -1298,16 +1461,22 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
       // ─── 메모 ───
       '메모(상담사 TM)': c.notes || '',
       '메모(계약부서)': c.contract_notes || '',
+      // ─── 삭제 메타 (휴지통 모드일 때 채워짐) ───
+      '삭제 시각': fmtDt(c.deleted_at),
+      '삭제 사유': c.deleted_reason || '',
+      '삭제자 user_id': c.deleted_by_user_id || '',
     };
   });
 
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '계약목록');
+  const sheetName = _trashMode ? '휴지통' : '계약목록';
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
   const today = new Date().toISOString().slice(0, 10);
-  XLSX.writeFile(wb, `계약목록_${today}.xlsx`);
-  showToast('📥 엑셀 다운로드 완료 (' + list.length + '건)');
+  const fileName = _trashMode ? `계약휴지통_${today}.xlsx` : `계약목록_${today}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  showToast('📥 엑셀 다운로드 완료 (' + list.length + '건' + (_trashMode ? ', 휴지통' : '') + ')');
 });
 
 init();
