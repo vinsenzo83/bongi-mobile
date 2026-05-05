@@ -33,12 +33,12 @@ aside.sidebar { width:200px; background:#1e293b; border-right:1.5px solid #33415
 .tab-btn.active { background:rgba(59,130,246,0.15); color:#60a5fa; border-left-color:#3b82f6; font-weight:800; }
 .tab-btn .icon { font-size:14px; }
 
-/* role-based 가시성 — body 클래스로 제어 */
-.tab-btn.admin-only { display:none; }
-body.is-admin .tab-btn.admin-only { display:flex; }
-.tab-btn.manager-only { display:none; }
-body.is-manager .tab-btn.manager-only,
-body.is-admin .tab-btn.manager-only { display:flex; }
+/* role-based 가시성 — data-roles 속성 기반 */
+.tab-btn[data-roles] { display:none; }
+body.role-agent    .tab-btn[data-roles~="agent"],
+body.role-manager  .tab-btn[data-roles~="manager"],
+body.role-admin    .tab-btn[data-roles~="admin"],
+body.role-contract .tab-btn[data-roles~="contract"] { display:flex; }
 
 .sidebar-divider { border-top:1px solid #334155; margin:14px 14px; }
 
@@ -82,14 +82,14 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
 
 <div class="main" id="g-main" style="display:none">
   <aside class="sidebar">
-    <button class="tab-btn active" data-src="/docs/incentive-dashboard.html"><span class="icon">📊</span> 대시보드</button>
-    <button class="tab-btn" data-src="/docs/incentive-contract.html"><span class="icon">📋</span> 계약 처리</button>
-    <button class="tab-btn admin-only manager-only" data-src="/docs/incentive-agents.html"><span class="icon">👥</span> 상담사 관리</button>
-    <button class="tab-btn admin-only" data-src="/docs/incentive-products.html"><span class="icon">📦</span> 상품 관리</button>
-    <button class="tab-btn admin-only manager-only" data-src="/docs/incentive-rules.html"><span class="icon">⚙️</span> 정책 관리</button>
+    <button class="tab-btn active" data-roles="manager admin contract" data-src="/docs/incentive-dashboard.html"><span class="icon">📊</span> 대시보드</button>
+    <button class="tab-btn" data-roles="agent manager admin contract" data-src="/docs/incentive-contract.html"><span class="icon">📋</span> 계약 처리</button>
+    <button class="tab-btn" data-roles="manager admin" data-src="/docs/incentive-agents.html"><span class="icon">👥</span> 상담사 관리</button>
+    <button class="tab-btn" data-roles="admin" data-src="/docs/incentive-products.html"><span class="icon">📦</span> 상품 관리</button>
+    <button class="tab-btn" data-roles="manager admin" data-src="/docs/incentive-rules.html"><span class="icon">⚙️</span> 정책 관리</button>
     <div class="sidebar-divider"></div>
-    <button class="tab-btn" data-src="/docs/tm-counselor.html"><span class="icon">📞</span> TM 상담</button>
-    <button class="tab-btn" data-src="/docs/calculator.html?admin=1"><span class="icon">🧮</span> 계산기</button>
+    <button class="tab-btn" data-roles="agent manager admin" data-src="/docs/tm-counselor.html"><span class="icon">📞</span> TM 상담</button>
+    <button class="tab-btn" data-roles="agent manager admin" data-src="/docs/calculator.html?admin=1"><span class="icon">🧮</span> 계산기</button>
   </aside>
   <div class="content-area">
     <div class="iframe-loading" id="g-iframe-loading">불러오는 중…</div>
@@ -181,9 +181,9 @@ function gOnLoggedIn(agent) {
   document.getElementById('g-user-info').style.display = '';
   document.getElementById('g-main').style.display = '';
   document.getElementById('g-auth-overlay').style.display = 'none';
-  // role 클래스 (admin / manager 둘 다 클래스 부여)
-  document.body.classList.toggle('is-admin', agent.role === 'admin');
-  document.body.classList.toggle('is-manager', agent.role === 'manager');
+  // role 클래스 — 정확히 1개만 (role-agent / role-manager / role-admin / role-contract)
+  ['role-agent','role-manager','role-admin','role-contract'].forEach(c => document.body.classList.remove(c));
+  document.body.classList.add('role-' + (agent.role || 'agent'));
 
   // 첫 진입: 마지막 본 메뉴 또는 첫 active 메뉴
   let initialBtn = null;
