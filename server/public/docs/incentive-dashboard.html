@@ -190,7 +190,13 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
             <span>Grade</span><b id="mgr-my-grade">-</b>
           </div>
           <div class="mgr-row">
-            <span>P</span><b id="mgr-my-points">-</b>
+            <span>P / 우수</span><b id="mgr-my-points">-</b>
+          </div>
+          <div class="mgr-row">
+            <span>인센 + 보너스</span><b id="mgr-my-incentive">-</b>
+          </div>
+          <div class="mgr-row" id="mgr-my-payback-row" style="display:none">
+            <span style="color:#fca5a5">페이백 차감</span><b id="mgr-my-payback" style="color:#fca5a5">-</b>
           </div>
         </div>
         <!-- 2. 내 센터 합계 -->
@@ -211,6 +217,9 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           <div class="mgr-label">매니징 KPI</div>
           <div class="mgr-val" id="mgr-avg-grade">-</div>
           <div class="mgr-row">
+            <span>등급 분포</span><b id="mgr-grade-dist" style="font-size:10px">-</b>
+          </div>
+          <div class="mgr-row">
             <span>페널티 인원</span><b id="mgr-penalty-count">-</b>
           </div>
           <div class="mgr-row">
@@ -229,6 +238,21 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
             <span>이익률</span><b id="mgr-center-profit-rate">-</b>
           </div>
         </div>
+      </div>
+      <!-- 본인 등급 진행률 -->
+      <div class="progress-section" style="margin-top:14px">
+        <div style="font-size:12px;font-weight:700;color:#a5b4fc;margin-bottom:8px" id="mgr-progress-label">내 등급 진행률</div>
+        <div class="progress-bar"><div class="progress-fill" id="mgr-progress-fill" style="width:0%"></div></div>
+        <div class="progress-info">
+          <span id="mgr-progress-current">-</span>
+          <span id="mgr-progress-target">-</span>
+        </div>
+        <div style="font-size:11px;color:#fbbf24;margin-top:6px" id="mgr-progress-hint">-</div>
+      </div>
+      <!-- 센터 페널티 위험 상담사 list -->
+      <div style="margin-top:14px;background:rgba(15,23,42,0.6);border:1px solid #334155;border-radius:10px;padding:12px 16px">
+        <div style="font-size:12px;font-weight:800;color:#fca5a5;margin-bottom:8px">⚠️ 페널티 위험 상담사 (우수 부족 임박)</div>
+        <div id="mgr-risk-list" style="font-size:11.5px;color:#cbd5e1">로딩 중...</div>
       </div>
     </div>
 
@@ -404,8 +428,18 @@ function renderManagerKpi(o, agent) {
 
   // 1. 내 정산
   document.getElementById('mgr-my-total').textContent = fmt(mySettlement.agent_total);
-  document.getElementById('mgr-my-grade').textContent = 'G' + (mySettlement.grade_applied || '-');
-  document.getElementById('mgr-my-points').textContent = (mySettlement.total_points || 0) + 'P';
+  const myG = mySettlement.grade_applied || '-';
+  const myRate = mySettlement.applied_rate ? ` (${(mySettlement.applied_rate).toLocaleString()}원/P)` : '';
+  document.getElementById('mgr-my-grade').textContent = 'G' + myG + myRate + (mySettlement.is_penalty ? ' ⚠️' : '');
+  document.getElementById('mgr-my-points').textContent = (mySettlement.total_points || 0) + 'P / 우수 ' + (mySettlement.premium_count || 0);
+  document.getElementById('mgr-my-incentive').textContent = fmt((mySettlement.incentive || 0) + (mySettlement.bonus || 0));
+  const myDeduct = mySettlement.total_agent_payback_deduct || 0;
+  if (myDeduct > 0) {
+    document.getElementById('mgr-my-payback-row').style.display = '';
+    document.getElementById('mgr-my-payback').textContent = '−' + fmt(myDeduct);
+  } else {
+    document.getElementById('mgr-my-payback-row').style.display = 'none';
+  }
 
   // 2. 내 센터 (manager는 이미 본인 센터만 받음, admin은 전체 → 본인 센터로 필터)
   const centerSettlements = settlements.filter(s => (s.agent || {}).center === myCenter);
@@ -431,6 +465,10 @@ function renderManagerKpi(o, agent) {
   const avgGrade = (centerAgg.gradeSum / centerN).toFixed(2);
   const premiumRate = centerAgg.count > 0 ? (centerAgg.premium / centerAgg.count * 100) : 0;
   document.getElementById('mgr-avg-grade').textContent = 'G' + avgGrade;
+  // 등급 분포
+  const dist = centerSettlements.reduce((a, s) => { const g = s.grade_applied || 1; a[g] = (a[g] || 0) + 1; return a; }, {});
+  document.getElementById('mgr-grade-dist').innerHTML =
+    `<span style="color:#9ca3af">G1 ${dist[1]||0}</span> · <span style="color:#60a5fa">G2 ${dist[2]||0}</span> · <span style="color:#f87171">G3 ${dist[3]||0}</span>`;
   document.getElementById('mgr-penalty-count').textContent = centerAgg.penalty + '명 / ' + centerSettlements.length + '명';
   document.getElementById('mgr-premium-rate').textContent = premiumRate.toFixed(1) + '%';
 
@@ -443,6 +481,86 @@ function renderManagerKpi(o, agent) {
   // 서브 텍스트
   document.getElementById('manager-kpi-sub').textContent =
     '· ' + myCenter + ' · ' + centerSettlements.length + '명 · 본인 ' + (agent.name || '');
+
+  // 5. 본인 등급 진행률 (rule은 fetch 안 했으니 default 임계값 사용)
+  renderManagerProgress(mySettlement);
+
+  // 6. 페널티 위험 상담사 list (premium 부족 임박)
+  renderManagerRiskList(centerSettlements);
+}
+
+function renderManagerProgress(s) {
+  if (!s || !s.year_month) {
+    document.getElementById('mgr-progress-fill').style.width = '0%';
+    document.getElementById('mgr-progress-current').textContent = '-';
+    document.getElementById('mgr-progress-target').textContent = '-';
+    document.getElementById('mgr-progress-hint').textContent = '본인 영업 없음';
+    return;
+  }
+  const points = parseFloat(s.total_points) || 0;
+  const premium = s.premium_count || 0;
+  const g3p = 31, g3pr = 10, g2p = 16, g2pr = 5;
+  let label, currentText, targetText, hint, fillPct;
+  if (points >= g3p) {
+    label = '✨ 본인 G3 달성';
+    currentText = `${points}P / 우수 ${premium}건`;
+    targetText = `G3 (${g3p}P / 우수 ${g3pr})`;
+    fillPct = 100;
+    hint = premium >= g3pr ? '🎉 페널티 없이 G3 적용 중' : `⚠️ 우수 ${g3pr - premium}건 더 필요 (페널티 발동)`;
+  } else if (points >= g2p) {
+    label = `📈 본인 G3까지 +${(g3p - points).toFixed(1)}P`;
+    currentText = `${points}P / G2 (${g2p}P~)`;
+    targetText = `G3 ${g3p}P`;
+    fillPct = ((points - g2p) / (g3p - g2p)) * 100;
+    hint = `우수도 ${Math.max(0, g3pr - premium)}건 더 등록 시 G3 페널티 없이 도달`;
+  } else {
+    label = `📈 본인 G2까지 +${(g2p - points).toFixed(1)}P`;
+    currentText = `${points}P / G1`;
+    targetText = `G2 ${g2p}P`;
+    fillPct = (points / g2p) * 100;
+    hint = 'G2 도달 시 단가 30,000원/P 적용';
+  }
+  document.getElementById('mgr-progress-label').textContent = label;
+  document.getElementById('mgr-progress-current').textContent = currentText;
+  document.getElementById('mgr-progress-target').textContent = targetText;
+  document.getElementById('mgr-progress-hint').textContent = hint;
+  document.getElementById('mgr-progress-fill').style.width = Math.max(0, Math.min(100, fillPct)) + '%';
+}
+
+function renderManagerRiskList(centerSettlements) {
+  const el = document.getElementById('mgr-risk-list');
+  if (!el) return;
+  // 페널티 위험: G2/G3 도달했으나 우수 부족, 또는 임박 (G2 진입 P인데 우수 0~2건 등)
+  const g2p = 16, g2pr = 5, g3p = 31, g3pr = 10;
+  const risks = (centerSettlements || []).map(s => {
+    const a = s.agent || {};
+    const points = parseFloat(s.total_points) || 0;
+    const prem = s.premium_count || 0;
+    let level = null, reason = null;
+    if (s.is_penalty) {
+      level = 'red';
+      const need = (s.grade_target === 3 ? g3pr : g2pr) - prem;
+      reason = `🚨 페널티 발동 (G${s.grade_target} 목표 → G${s.grade_applied} 적용) — 우수 ${need}건 부족`;
+    } else if (points >= g3p - 5 && prem < g3pr) {
+      level = 'orange';
+      reason = `⚠️ G3 임박 (${points}P) 인데 우수 ${prem}/${g3pr}건 — 페널티 위험`;
+    } else if (points >= g2p - 3 && points < g3p && prem < g2pr) {
+      level = 'yellow';
+      reason = `🟡 G2 임박 (${points}P) 인데 우수 ${prem}/${g2pr}건 — 페널티 위험`;
+    }
+    return level ? { name: a.name || '?', center: a.center || '', level, reason } : null;
+  }).filter(Boolean);
+  if (!risks.length) {
+    el.innerHTML = '<div style="color:#86efac">✅ 위험 상담사 없음 — 모두 정상</div>';
+    return;
+  }
+  const colorMap = { red:'#fca5a5', orange:'#fdba74', yellow:'#fde047' };
+  el.innerHTML = risks.map(r => `
+    <div style="padding:6px 8px;border-left:3px solid ${colorMap[r.level]};margin-bottom:4px;background:rgba(0,0,0,0.2);border-radius:0 4px 4px 0">
+      <b style="color:${colorMap[r.level]}">${r.name}</b>
+      <span style="color:#94a3b8;margin-left:6px">${r.reason}</span>
+    </div>
+  `).join('');
 }
 
 function renderKpi(o) {
