@@ -1008,6 +1008,42 @@ document.getElementById('logout-btn').addEventListener('click', () => { clearTok
 document.getElementById('reload-btn').addEventListener('click', loadAll);
 document.getElementById('filter-month').addEventListener('change', loadAll);
 
+// ─── Supabase Realtime — incentive_sales 변경 시 자동 갱신 ───
+const _SB_URL = 'https://dugaqvvnhsgenhmhuyju.supabase.co';
+const _SB_KEY = 'sb_publishable_bR_2f31M_GN5D2GSGYU_ng_D950eQm1';
+let _dashSbClient = null;
+let _dashSbChannel = null;
+let _dashRefreshTimer = null;
+function setupDashboardRealtime() {
+  if (typeof window.supabase === 'undefined') return;
+  if (!_dashSbClient) _dashSbClient = window.supabase.createClient(_SB_URL, _SB_KEY);
+  const tk = getToken();
+  if (!tk) {
+    if (_dashSbChannel) { _dashSbClient.removeChannel(_dashSbChannel); _dashSbChannel = null; }
+    return;
+  }
+  try { _dashSbClient.realtime.setAuth(tk); } catch(e) {}
+  if (_dashSbChannel) { _dashSbClient.removeChannel(_dashSbChannel); _dashSbChannel = null; }
+  _dashSbChannel = _dashSbClient.channel('dashboard-incentive-sales-all')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'incentive_sales' }, payload => {
+      // 디바운스 600ms — 여러 변경이 짧게 몰리면 한 번만 갱신
+      clearTimeout(_dashRefreshTimer);
+      _dashRefreshTimer = setTimeout(() => {
+        if (document.getElementById('main-area').style.display !== 'none') {
+          showToast('🔄 영업 데이터 변경 감지 — 자동 갱신');
+          loadAll();
+        }
+      }, 600);
+    })
+    .subscribe();
+}
+// 로그인 후 realtime 구독 시작
+const _origOnLoggedIn2 = onLoggedIn;
+window.onLoggedIn = function(agent, skipLoad) {
+  _origOnLoggedIn2(agent, skipLoad);
+  setupDashboardRealtime();
+};
+
 init();
 </script>
 
