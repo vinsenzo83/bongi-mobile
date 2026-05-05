@@ -347,6 +347,20 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       </div>
     </div>
 
+    <!-- admin 전용: 센터별 KPI 분리 (financial-deep로 admin만 표시) -->
+    <div class="section financial-deep">
+      <h2>🏢 센터별 KPI <span style="font-size:10px;color:#94a3b8;font-weight:400">— admin 전용</span></h2>
+      <table id="center-kpi-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>센터</th><th>인원</th><th>영업</th><th>P</th><th>우수</th>
+            <th>매출</th><th>페이백</th><th>실제 상품 마진</th><th>인센+보너스</th><th>회사 영업이익</th>
+          </tr>
+        </thead>
+        <tbody id="center-kpi-tbody"><tr><td colspan="10" style="text-align:center;color:#64748b;padding:20px">로딩 중...</td></tr></tbody>
+      </table>
+    </div>
+
     <!-- 상담사별 실적 (agent role은 위 본인 영업 리스트와 중복이라 숨김) -->
     <div class="section hide-for-agent">
       <h2>👥 상담사별 실적
@@ -591,6 +605,66 @@ function renderKpi(o) {
     `<span class="grade-pill g1">G1: ${gd[1]||0}명</span>` +
     `<span class="grade-pill g2">G2: ${gd[2]||0}명</span>` +
     `<span class="grade-pill g3">G3: ${gd[3]||0}명</span>`;
+
+  // admin 전용: 센터별 KPI 표 (financial-deep CSS로 manager 등은 자동 숨김)
+  renderCenterKpiTable(o.settlements || []);
+}
+
+function renderCenterKpiTable(settlements) {
+  const tbody = document.getElementById('center-kpi-tbody');
+  if (!tbody) return;
+  // 센터별 그룹
+  const byCenter = {};
+  settlements.forEach(s => {
+    const c = (s.agent || {}).center || '미지정';
+    if (!byCenter[c]) byCenter[c] = { name:c, count:0, sales:0, points:0, premium:0, revenue:0, payback:0, incentive:0, bonus:0, profit:0 };
+    const g = byCenter[c];
+    g.count += 1;
+    g.sales += s.total_count || 0;
+    g.points += parseFloat(s.total_points) || 0;
+    g.premium += s.premium_count || 0;
+    g.revenue += s.total_revenue || 0;
+    g.payback += s.total_payback || 0;
+    g.incentive += s.incentive || 0;
+    g.bonus += s.bonus || 0;
+    g.profit += s.company_profit || 0;
+  });
+  const fmt = v => v ? Number(v).toLocaleString() : '-';
+  const rows = Object.values(byCenter).sort((a,b) => a.name.localeCompare(b.name)).map(g => `
+    <tr>
+      <td><b>${g.name}</b></td>
+      <td>${g.count}명</td>
+      <td>${g.sales}건</td>
+      <td>${g.points.toLocaleString()}P</td>
+      <td>${g.premium}건</td>
+      <td>${fmt(g.revenue)}</td>
+      <td>${fmt(g.payback)}</td>
+      <td><b style="color:#86efac">${fmt(g.revenue - g.payback)}</b></td>
+      <td>${fmt(g.incentive + g.bonus)}</td>
+      <td style="color:${g.profit > 0 ? '#86efac' : '#fca5a5'}">${fmt(g.profit)}</td>
+    </tr>
+  `).join('');
+  // 합계 행
+  const total = Object.values(byCenter).reduce((a, g) => {
+    a.count += g.count; a.sales += g.sales; a.points += g.points; a.premium += g.premium;
+    a.revenue += g.revenue; a.payback += g.payback; a.incentive += g.incentive;
+    a.bonus += g.bonus; a.profit += g.profit;
+    return a;
+  }, { count:0, sales:0, points:0, premium:0, revenue:0, payback:0, incentive:0, bonus:0, profit:0 });
+  tbody.innerHTML = rows + (Object.keys(byCenter).length > 1 ? `
+    <tr style="background:rgba(59,130,246,0.1);font-weight:800">
+      <td>전체</td>
+      <td>${total.count}명</td>
+      <td>${total.sales}건</td>
+      <td>${total.points.toLocaleString()}P</td>
+      <td>${total.premium}건</td>
+      <td>${fmt(total.revenue)}</td>
+      <td>${fmt(total.payback)}</td>
+      <td><b style="color:#86efac">${fmt(total.revenue - total.payback)}</b></td>
+      <td>${fmt(total.incentive + total.bonus)}</td>
+      <td style="color:${total.profit > 0 ? '#86efac' : '#fca5a5'}">${fmt(total.profit)}</td>
+    </tr>
+  ` : '');
 }
 
 function renderAgents(o) {
