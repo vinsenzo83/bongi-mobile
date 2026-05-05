@@ -1154,7 +1154,13 @@ function buildTV() {
       if (dcAmount > 0) label += ' (' + Math.round(stRate*100) + '%할인 ' + ((o.fee||0) - dcAmount).toLocaleString() + '원)';
       return '<option value="' + o.id + '"' + (o.isDefault?' selected':'') + '>' + label + '</option>';
     }).join('');
-    if (prev) sel.value = prev;
+    // 이전 값이 새 통신사 옵션에 있으면 보존, 없으면 isDefault로 fallback
+    var hasPrev = prev && (d.setTopOptions || []).some(function(o){ return o.id === prev && o.active; });
+    if (hasPrev) sel.value = prev;
+    if (!sel.value) {
+      var def = (d.setTopOptions || []).find(function(o){ return o.isDefault && o.active; });
+      if (def) sel.value = def.id;
+    }
   });
 }
 
