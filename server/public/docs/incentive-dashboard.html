@@ -309,9 +309,10 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       </div>
     </div>
 
-    <!-- 본인 영업 리스트 -->
-    <div class="section agent-only" id="agent-sales-section">
+    <!-- 본인 영업 리스트 (agent + manager 모두 표시) -->
+    <div class="section agent-only manager-only" id="agent-sales-section">
       <h2>📋 내 이번 달 영업
+        <span id="agent-sales-summary" style="font-size:11px;color:#94a3b8;font-weight:400;margin-left:auto;margin-right:10px">-</span>
         <select id="agent-sales-status-filter" style="font-size:10.5px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:5px;font-weight:400">
           <option value="">전체</option>
           <option value="completed">계약완료</option>
@@ -758,8 +759,8 @@ async function loadAll() {
     if (_myAgent) renderManagerKpi(_overview, _myAgent);
     renderKpi(_overview);
     renderAgents(_overview);
-    // agent role 전용 — 본인 전용 섹션 렌더
-    if (_myRole === 'agent') loadAgentSection(month);
+    // agent + manager 모두 — 본인 영업 리스트 갱신
+    if (_myRole === 'agent' || _myRole === 'manager') loadAgentSection(month);
   } catch (e) { alert('로드 실패: ' + e.message); }
 }
 
@@ -776,9 +777,23 @@ async function loadAgentSection(month) {
     let s = setRes && setRes.settlement;
     if (Array.isArray(s)) s = s[0] || null;
     const rule = (rulesRes && (rulesRes.rule || (rulesRes.rules || [])[0])) || null;
-    const contracts = (contractsRes && contractsRes.contracts) || [];
+    let contracts = (contractsRes && contractsRes.contracts) || [];
+    // manager는 센터 전체 sale을 받으므로 본인 것만 필터
+    if (_myRole === 'manager' && _myAgent && _myAgent.id) {
+      contracts = contracts.filter(c => (c.agent_id === _myAgent.id) || ((c.agent || {}).id === _myAgent.id));
+    }
     renderAgentKpi(s, rule);
     renderAgentSales(contracts);
+    // status 카운트 요약 (모든 status 포함 — 정산은 completed만이지만 진행 현황은 전체 표시)
+    const summaryEl = document.getElementById('agent-sales-summary');
+    if (summaryEl) {
+      const cnt = contracts.reduce((a, c) => { a[c.status] = (a[c.status] || 0) + 1; return a; }, {});
+      summaryEl.innerHTML =
+        `<span style="color:#86efac">✅ 완료 ${cnt.completed || 0}</span> · ` +
+        `<span style="color:#60a5fa">🚧 진행 ${cnt.in_progress || 0}</span> · ` +
+        `<span style="color:#cbd5e1">⏰ 대기 ${cnt.pending || 0}</span> · ` +
+        `<span style="color:#fca5a5">❌ 취소 ${cnt.cancelled || 0}</span>`;
+    }
   } catch (e) { console.warn('[agent section] ', e); }
 }
 
@@ -983,8 +998,8 @@ function onLoggedIn(agent, skipLoad) {
   // manager 전용 KPI 섹션은 manager일 때만 표시 (admin은 전체 KPI에서 이미 확인 가능)
   if (agent.role === 'manager') document.body.classList.add('show-manager-kpi');
   if (!skipLoad) loadAll(); // init() 병렬 fetch에서 이미 렌더된 경우 재요청 안 함
-  // agent role 전용 섹션은 init() 병렬 fetch에 포함 안 되어있어 항상 별도 로드
-  if (agent.role === 'agent') {
+  // agent / manager 모두 본인 영업 리스트를 별도로 로드
+  if (agent.role === 'agent' || agent.role === 'manager') {
     const month = document.getElementById('filter-month').value;
     if (month) loadAgentSection(month);
   }
