@@ -52,9 +52,10 @@ app.use('/crm', express.static(join(__dirname, 'public', 'crm')));
 app.use('/dashboard', express.static(join(__dirname, 'public', 'dashboard')));
 app.use('/stores', express.static(join(__dirname, 'public', 'stores')));
 app.use('/docs', express.static(join(__dirname, '..', 'docs'), {
-  // HTML: 5분 캐시 (편집 후 빠른 반영) / 그 외 정적: 1일
+  // HTML: 매 요청 서버 확인 (ETag로 304 — 코드 변경 즉시 반영)
+  // JS/CSS/이미지: 1일 캐시
   setHeaders: (res, path) => {
-    if (path.endsWith('.html')) res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+    if (path.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, must-revalidate');
     else res.setHeader('Cache-Control', 'public, max-age=86400');
   }
 }));
