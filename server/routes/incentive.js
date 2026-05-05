@@ -273,8 +273,20 @@ router.post('/admin/create-agent', authenticateJWT, async (req, res) => {
       user_metadata: { display_name: name, role },
     });
     if (createErr) {
-      if (createErr.message && createErr.message.toLowerCase().includes('already')) {
-        return res.status(409).json({ error: '이미 존재하는 이메일' });
+      const msg = (createErr.message || '').toLowerCase();
+      // 중복 패턴 — 새 SDK / 구 SDK 모두 커버
+      if (msg.includes('already') || msg.includes('duplicate') ||
+          msg.includes('exists') || msg.includes('registered') ||
+          createErr.code === 'email_exists' || createErr.code === 'user_already_exists') {
+        return res.status(409).json({ error: '이미 존재하는 이메일입니다' });
+      }
+      // 비밀번호 정책 위반
+      if (msg.includes('password') && (msg.includes('weak') || msg.includes('short'))) {
+        return res.status(400).json({ error: '비밀번호가 너무 약합니다 (8자 이상, 영문/숫자 포함 권장)' });
+      }
+      // 이메일 형식
+      if (msg.includes('email') && (msg.includes('invalid') || msg.includes('format'))) {
+        return res.status(400).json({ error: '이메일 형식이 올바르지 않습니다' });
       }
       throw createErr;
     }
