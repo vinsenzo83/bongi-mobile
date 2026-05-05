@@ -61,7 +61,36 @@ router.patch('/products/:id', authenticateJWT, async (req, res) => {
       .from('incentive_products')
       .update(update).eq('id', req.params.id).select().single();
     if (error) throw error;
+    // 트리거가 자동으로 history INSERT — 그 row에 changed_by 정보 채움
+    try {
+      await supabase
+        .from('incentive_product_history')
+        .update({ changed_by_user_id: req.user.id, changed_by_name: me.name })
+        .eq('product_id', req.params.id)
+        .is('changed_by_user_id', null)
+        .gt('changed_at', new Date(Date.now() - 5000).toISOString());
+    } catch(e) {}
     res.json({ product: data });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/incentive/products/history — 전체 변경 이력 (admin/manager/contract)
+router.get('/products/history', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isContractAccess(me)) return res.status(403).json({ error: 'manager/contract/admin 전용' });
+
+    const { product_id, limit = 100 } = req.query;
+    let q = supabase
+      .from('incentive_product_history')
+      .select('*, product:incentive_products(name, carrier, type)')
+      .order('changed_at', { ascending: false })
+      .limit(Math.min(parseInt(limit) || 100, 500));
+    if (product_id) q = q.eq('product_id', product_id);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json({ history: data, count: data.length });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
