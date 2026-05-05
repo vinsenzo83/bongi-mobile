@@ -756,19 +756,10 @@ function openEditModal(id) {
         </div>
       </div>
 
-      ${c.quote_full_html ? `
-        <div class="quote-box">
-          <div class="quote-label">🧮 상담사 견적서 (TM 계산기 결과)</div>
-          ${c.quote_full_html}
-        </div>
-      ` : c.quote_summary ? `
-        <div class="quote-box">
-          <div class="quote-label">🧮 상담사 견적서</div>
-          <pre>${(c.quote_summary || '').replace(/</g,'&lt;')}</pre>
-        </div>
-      ` : `
-        <div class="quote-empty">⚠️ 상담사가 견적서를 등록하지 않았습니다.</div>
-      `}
+      <div id="quote-deferred-${c.id}" class="quote-box" style="min-height:60px">
+        <div class="quote-label">🧮 상담사 견적서 ${c.quote_full_html ? '(TM 계산기 결과)' : ''}</div>
+        <div style="color:#94a3b8;font-size:11px;padding:8px">불러오는 중…</div>
+      </div>
     </div>
 
     <!-- 👤 고객 정보 -->
@@ -943,6 +934,20 @@ function openEditModal(id) {
   });
 
   document.getElementById('modal-overlay').style.display = 'flex';
+
+  // 견적서를 다음 프레임에 비동기 삽입 (모달 즉시 표시 + 무거운 HTML 지연 렌더)
+  setTimeout(() => {
+    const slot = document.getElementById('quote-deferred-' + c.id);
+    if (!slot) return;
+    if (c.quote_full_html) {
+      slot.innerHTML = '<div class="quote-label">🧮 상담사 견적서 (TM 계산기 결과)</div>' + c.quote_full_html;
+    } else if (c.quote_summary) {
+      slot.innerHTML = '<div class="quote-label">🧮 상담사 견적서</div><pre>' +
+        (c.quote_summary || '').replace(/</g,'&lt;') + '</pre>';
+    } else {
+      slot.outerHTML = '<div class="quote-empty">⚠️ 상담사가 견적서를 등록하지 않았습니다.</div>';
+    }
+  }, 30);
   } catch (err) {
     console.error('[openEditModal] 렌더링 오류:', err);
     alert('모달 표시 중 오류: ' + err.message);
