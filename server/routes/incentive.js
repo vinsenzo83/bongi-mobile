@@ -493,13 +493,22 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date } = req.body || {};
+    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
       .eq('id', req.params.id)
       .single();
     if (!existing) return res.status(404).json({ error: '영업 없음' });
+
+    // Optimistic locking — 클라이언트가 expected_updated_at 보내면 일치 여부 체크
+    // (동시 PATCH 시 last-write-wins 방지. 안 보내면 기존 동작 유지 = 하위 호환)
+    if (expected_updated_at && existing.updated_at !== expected_updated_at) {
+      return res.status(409).json({
+        error: '이미 다른 사용자가 수정했습니다. 새로고침 후 다시 시도하세요.',
+        current_updated_at: existing.updated_at,
+      });
+    }
 
     // 본인 영업이거나 manager/admin만 수정 가능
     if (existing.agent_id !== me.id && !isManagerOrAdmin(me)) {
@@ -788,20 +797,30 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
 
     const ym = req.query.month || new Date().toISOString().slice(0, 7);
 
-    let agentsQ = supabase.from('incentive_agents').select('*').eq('active', true);
-    if (me.role === 'manager') agentsQ = agentsQ.eq('center', me.center);
-    const { data: agents } = await agentsQ;
-
-    // 각 상담사의 정산 (live 계산) — Promise.all로 병렬 호출 (N+1 → 1)
-    const results = await Promise.all((agents || []).map(async (a) => {
-      const { data, error } = await supabase.rpc('incentive_calc_monthly_settlement', {
-        p_agent_id: a.id,
-        p_year_month: ym,
-      });
-      if (error) return null;
-      return { agent: a, ...(data || {}) };
+    // 단일 RPC 호출 — 모든 활성 상담사 settlement을 DB 안에서 한 번에 계산
+    // (이전: N개 RPC fan-out / 현재: 1 round-trip)
+    const { data: rows, error: rpcErr } = await supabase.rpc('incentive_calc_overview', {
+      p_year_month: ym,
+      p_center: me.role === 'manager' ? me.center : null,
+    });
+    if (rpcErr) throw rpcErr;
+    // RPC 결과를 기존 응답 포맷으로 변환 (agent 중첩 객체)
+    const settlements = (rows || []).map(r => ({
+      agent: {
+        id: r.agent_id, name: r.agent_name, center: r.agent_center,
+        role: r.agent_role, user_id: r.agent_user_id,
+      },
+      total_count: r.total_count, total_points: r.total_points,
+      premium_count: r.premium_count, grade_target: r.grade_target,
+      grade_applied: r.grade_applied, is_penalty: r.is_penalty,
+      applied_rate: r.applied_rate,
+      total_revenue: r.total_revenue, total_payback: r.total_payback,
+      total_company_payback_burden: r.total_company_payback_burden,
+      total_agent_payback_deduct: r.total_agent_payback_deduct,
+      base_salary: r.base_salary, incentive: r.incentive, bonus: r.bonus,
+      agent_total: r.agent_total, company_profit: r.company_profit,
+      profit_rate: r.profit_rate, finalized_at: r.finalized_at,
     }));
-    const settlements = results.filter(Boolean);
 
     // 집계
     const totals = settlements.reduce((acc, s) => {
