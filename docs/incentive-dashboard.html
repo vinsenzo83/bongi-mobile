@@ -57,6 +57,12 @@ tr.finalized { background:rgba(22,163,74,0.06); }
 #toast.show { opacity:1; }
 @media (max-width: 768px) { .kpi-grid { grid-template-columns:repeat(2, 1fr); } table { font-size:10px; } }
 
+/* 역할별 가시성 — body의 클래스로 제어 */
+/* financial-mid: 매출, 인센티브, 총수령 — manager/admin만 (contract 숨김) */
+body.hide-financial-mid .financial-mid { display:none !important; }
+/* financial-deep: 회사 영업이익, 마진 — admin만 (manager/contract 숨김) */
+body.hide-financial-deep .financial-deep { display:none !important; }
+
 /* 다크 테마 - 달력 아이콘 강제 표시 */
 input[type="date"], input[type="month"] { color-scheme: dark; }
 input[type="date"]::-webkit-calendar-picker-indicator,
@@ -113,9 +119,9 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-label">상담사 수</div><div class="kpi-val" id="kpi-agents">-</div><div class="kpi-sub" id="kpi-agents-sub">-</div></div>
         <div class="kpi-card"><div class="kpi-label">총 영업</div><div class="kpi-val" id="kpi-sales">-</div><div class="kpi-sub" id="kpi-sales-sub">-</div></div>
-        <div class="kpi-card"><div class="kpi-label">총 매출</div><div class="kpi-val" id="kpi-revenue">-</div><div class="kpi-sub">리베이트</div></div>
-        <div class="kpi-card"><div class="kpi-label">총 인센티브</div><div class="kpi-val" id="kpi-incentive">-</div><div class="kpi-sub" id="kpi-bonus-sub">-</div></div>
-        <div class="kpi-card"><div class="kpi-label">회사 영업이익</div><div class="kpi-val" id="kpi-profit">-</div><div class="kpi-sub" id="kpi-profit-rate">-</div></div>
+        <div class="kpi-card financial-mid"><div class="kpi-label">총 매출</div><div class="kpi-val" id="kpi-revenue">-</div><div class="kpi-sub">리베이트</div></div>
+        <div class="kpi-card financial-mid"><div class="kpi-label">총 인센티브</div><div class="kpi-val" id="kpi-incentive">-</div><div class="kpi-sub" id="kpi-bonus-sub">-</div></div>
+        <div class="kpi-card financial-deep"><div class="kpi-label">회사 영업이익</div><div class="kpi-val" id="kpi-profit">-</div><div class="kpi-sub" id="kpi-profit-rate">-</div></div>
         <div class="kpi-card"><div class="kpi-label">⚠️ 페널티</div><div class="kpi-val" id="kpi-penalty">-</div><div class="kpi-sub">우수 의무 미달</div></div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
@@ -257,11 +263,11 @@ function renderAgents(o) {
         <td><span class="tier g-${s.grade_applied || 1}">G${s.grade_applied || 1}</span>${s.is_penalty ? '<span class="penalty-badge">⚠️ 페널티</span>' : ''}</td>
         <td>${s.total_count || 0}건<div style="font-size:9px;color:#64748b">우수 ${s.premium_count || 0}건</div></td>
         <td><b>${s.total_points || 0}P</b><div style="font-size:9px;color:#64748b">목표 G${s.grade_target || 1}</div></td>
-        <td>${(s.applied_rate||0).toLocaleString()}/P</td>
-        <td>${fmt(s.incentive)}<div style="font-size:9px;color:#64748b">+ ${fmt(s.bonus)}</div></td>
-        <td><b style="color:#86efac">${fmt(s.agent_total)}</b></td>
-        <td>${fmt(s.total_revenue)}</td>
-        <td style="color:${(s.company_profit||0) > 0 ? '#86efac' : '#fca5a5'}">${fmt(s.company_profit)}</td>
+        <td class="financial-mid">${(s.applied_rate||0).toLocaleString()}/P</td>
+        <td class="financial-mid">${fmt(s.incentive)}<div style="font-size:9px;color:#64748b">+ ${fmt(s.bonus)}</div></td>
+        <td class="financial-mid"><b style="color:#86efac">${fmt(s.agent_total)}</b></td>
+        <td class="financial-mid">${fmt(s.total_revenue)}</td>
+        <td class="financial-deep" style="color:${(s.company_profit||0) > 0 ? '#86efac' : '#fca5a5'}">${fmt(s.company_profit)}</td>
         <td>${finalizedBadge}</td>
         <td onclick="event.stopPropagation()">
           ${isAdmin && !isFinalized ? `<button class="btn-primary" style="padding:4px 10px;font-size:10px" onclick="finalizeOne('${a.id}', '${(a.name||'').replace(/'/g,"\\\\'")}','${month}')">📌 확정</button>` : ''}
@@ -285,13 +291,13 @@ function renderAgents(o) {
     }, {count:0, points:0, incentive:0, profit:0});
 
     return `<div class="center-section">
-      <h3>🏢 ${center} <span style="color:#94a3b8;font-weight:400;font-size:10px">· ${byCenter[center].length}명 · 영업 ${subtotal.count}건 · ${subtotal.points}P · 인센티브 ${fmt(subtotal.incentive)}</span></h3>
+      <h3>🏢 ${center} <span style="color:#94a3b8;font-weight:400;font-size:10px">· ${byCenter[center].length}명 · 영업 ${subtotal.count}건 · ${subtotal.points}P<span class="financial-mid"> · 인센티브 ${fmt(subtotal.incentive)}</span></span></h3>
       <table>
         <thead>
           <tr>
             <th>상담사</th><th>Grade</th><th>영업/우수</th><th>P</th>
-            <th>단가</th><th>인센티브</th><th>총수령</th><th>매출</th>
-            <th>회사이익</th><th>상태</th><th>작업</th>
+            <th class="financial-mid">단가</th><th class="financial-mid">인센티브</th><th class="financial-mid">총수령</th><th class="financial-mid">매출</th>
+            <th class="financial-deep">회사이익</th><th>상태</th><th>작업</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -425,6 +431,10 @@ function onLoggedIn(agent) {
   document.getElementById('user-info').style.display = '';
   document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
   document.getElementById('user-meta').textContent = agent.center;
+  // 역할별 가시성 적용
+  document.body.classList.remove('hide-financial-mid', 'hide-financial-deep');
+  if (agent.role === 'contract') document.body.classList.add('hide-financial-mid', 'hide-financial-deep');
+  if (agent.role === 'manager') document.body.classList.add('hide-financial-deep'); // 본인 센터 financial OK, 회사이익 X
   loadAll();
 }
 
