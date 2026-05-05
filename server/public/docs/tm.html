@@ -551,8 +551,7 @@ html, body { overflow:hidden; }
           <label style="font-size:10px;color:#374151">전화
             <input type="text" id="deal-phone" placeholder="010-0000-0000" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         </div>
-        <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">주소
-          <input type="text" id="deal-address" placeholder="(선택)" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
+        <div style="font-size:9px;color:#9ca3af;margin-bottom:6px;line-height:1.4">ℹ️ 주소·서류는 계약부서가 별도 진행 (TM 단계 불필요)</div>
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:8px">추가 페이백 (₩, 0~50,000)
           <input type="number" id="deal-payback" min="0" max="50000" step="1000" value="0" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         <div style="display:flex;gap:6px">
@@ -2637,7 +2636,6 @@ async function incSubmitDeal() {
 
   const name = document.getElementById('deal-name').value.trim();
   const phone = document.getElementById('deal-phone').value.trim();
-  const address = document.getElementById('deal-address').value.trim();
   const payback = parseInt(document.getElementById('deal-payback').value) || 0;
 
   if (payback < 0 || payback > 50000) {
@@ -2654,7 +2652,6 @@ async function incSubmitDeal() {
         product_id: _incLastMatchedProduct.id,
         customer_name: name || null,
         customer_phone: phone || null,
-        customer_address: address || null,
         add_payback: payback,
       })
     });
@@ -2669,7 +2666,7 @@ async function incSubmitDeal() {
     setTimeout(() => {
       document.getElementById('inc-deal-form').style.display = 'none';
       document.getElementById('inc-close-deal-btn').style.display = '';
-      ['deal-name', 'deal-phone', 'deal-address'].forEach(id => {
+      ['deal-name', 'deal-phone'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
       document.getElementById('deal-payback').value = 0;

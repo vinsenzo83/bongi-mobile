@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>계약부서 어드민 — V5</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
+
+.wrap { max-width: 1400px; margin: 0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #334155; }
+h1 { font-size:22px; color:#f8fafc; letter-spacing:-0.02em; }
+.subtitle { font-size:12px; color:#94a3b8; margin-top:4px; }
+.badge-role { padding:4px 10px; border-radius:6px; font-size:11px; font-weight:800; letter-spacing:0.04em; }
+
+.auth-box { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:16px; margin-bottom:20px; }
+.auth-box input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; width:200px; margin-right:8px; }
+.auth-box button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px; }
+.auth-box button:hover { background:#2563eb; }
+.auth-msg { font-size:11px; margin-top:6px; min-height:14px; }
+
+.toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:12px; flex-wrap:wrap; }
+.toolbar-left { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.toolbar select, .toolbar input { background:#1e293b; border:1px solid #475569; color:#e2e8f0; padding:6px 10px; border-radius:6px; font-size:12px; }
+.toolbar button { background:#3b82f6; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:700; cursor:pointer; font-size:12px; }
+
+.stats { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:20px; }
+.stat-card { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:14px; }
+.stat-label { font-size:10px; color:#94a3b8; font-weight:700; letter-spacing:0.04em; margin-bottom:4px; }
+.stat-val { font-size:22px; color:#f8fafc; font-weight:900; letter-spacing:-0.02em; }
+.stat-sub { font-size:10px; color:#64748b; margin-top:2px; }
+
+table { width:100%; border-collapse:collapse; background:#1e293b; border-radius:10px; overflow:hidden; }
+th { background:#334155; color:#f1f5f9; font-size:11px; padding:10px 8px; text-align:left; font-weight:700; letter-spacing:0.03em; border-bottom:2px solid #475569; }
+td { font-size:11.5px; color:#e2e8f0; padding:10px 8px; border-bottom:1px solid #334155; vertical-align:middle; }
+tr:hover { background:#334155; }
+tr.cancelled { opacity:0.5; }
+
+.tier { display:inline-block; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:800; letter-spacing:0.04em; }
+.tier-S { background:#fbbf24; color:#78350f; }
+.tier-A { background:#60a5fa; color:#1e3a8a; }
+.tier-B { background:#94a3b8; color:#0f172a; }
+.tier-C { background:#475569; color:#cbd5e1; }
+.prem-badge { background:#dc2626; color:#fff; padding:1px 5px; border-radius:3px; font-size:8px; margin-left:3px; }
+.status { padding:2px 6px; border-radius:4px; font-size:9px; font-weight:800; }
+.status-completed { background:#16a34a; color:#fff; }
+.status-pending { background:#f59e0b; color:#fff; }
+.status-cancelled { background:#dc2626; color:#fff; }
+
+.editable { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:4px 6px; border-radius:4px; font-size:11px; width:100%; }
+.btn-action { padding:3px 8px; border-radius:4px; border:none; cursor:pointer; font-size:10px; font-weight:700; margin-right:4px; }
+.btn-save { background:#16a34a; color:#fff; }
+.btn-cancel { background:#dc2626; color:#fff; }
+.btn-call { background:#3b82f6; color:#fff; }
+
+.empty { text-align:center; padding:60px 20px; color:#64748b; font-size:13px; }
+.has-address { color:#16a34a; }
+.no-address { color:#dc2626; font-weight:700; }
+
+@media (max-width: 768px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  table { font-size:10px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📋 계약부서 어드민 (V5)</h1>
+      <div class="subtitle">TM 상담사가 따낸 영업 → 주소·서류 입력 → 최종 계약 진행</div>
+    </div>
+    <div id="user-info" style="text-align:right;display:none">
+      <div style="font-size:13px;font-weight:800;color:#f8fafc" id="user-name">-</div>
+      <div style="font-size:10px;color:#94a3b8" id="user-meta">-</div>
+      <button id="logout-btn" style="margin-top:6px;padding:4px 10px;background:#475569;color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">로그아웃</button>
+    </div>
+  </header>
+
+  <!-- 로그인 박스 -->
+  <div class="auth-box" id="auth-box">
+    <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:#60a5fa">🔐 로그인 (manager 또는 admin 권한 필요)</div>
+    <input type="email" id="auth-email" placeholder="email" autocomplete="username">
+    <input type="password" id="auth-pass" placeholder="비밀번호" autocomplete="current-password">
+    <button id="auth-login-btn">로그인</button>
+    <div class="auth-msg" id="auth-msg"></div>
+    <div style="font-size:10px;color:#94a3b8;margin-top:8px;line-height:1.5">
+      테스트: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">manager1@bongi.test</code> / <code>admin1@bongi.test</code> (비번 <code>pass1234!</code>)
+    </div>
+  </div>
+
+  <!-- 메인 영역 (로그인 후) -->
+  <div id="main-area" style="display:none">
+    <!-- 통계 카드 -->
+    <div class="stats" id="stats">
+      <div class="stat-card"><div class="stat-label">📋 이번 달 영업</div><div class="stat-val" id="stat-total">-</div><div class="stat-sub" id="stat-completed">-</div></div>
+      <div class="stat-card"><div class="stat-label">✅ 주소 완료</div><div class="stat-val" id="stat-with-address">-</div><div class="stat-sub" id="stat-need-address">-</div></div>
+      <div class="stat-card"><div class="stat-label">⏰ 대기 (pending)</div><div class="stat-val" id="stat-pending">-</div><div class="stat-sub">처리 필요</div></div>
+      <div class="stat-card"><div class="stat-label">❌ 취소</div><div class="stat-val" id="stat-cancelled">-</div><div class="stat-sub">정산 제외</div></div>
+    </div>
+
+    <!-- 툴바 -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <label style="font-size:11px;color:#94a3b8">월</label>
+        <input type="month" id="filter-month">
+        <label style="font-size:11px;color:#94a3b8">상태</label>
+        <select id="filter-status">
+          <option value="">전체</option>
+          <option value="completed">완료</option>
+          <option value="pending">대기</option>
+          <option value="cancelled">취소</option>
+        </select>
+        <label style="font-size:11px;color:#94a3b8">주소</label>
+        <select id="filter-address">
+          <option value="">전체</option>
+          <option value="missing">주소 없음</option>
+          <option value="present">주소 있음</option>
+        </select>
+        <button id="reload-btn">🔄 새로고침</button>
+      </div>
+      <div style="font-size:11px;color:#94a3b8" id="result-count">-</div>
+    </div>
+
+    <!-- 영업 목록 테이블 -->
+    <table id="contracts-table">
+      <thead>
+        <tr>
+          <th style="width:8%">날짜</th>
+          <th style="width:11%">상담사</th>
+          <th style="width:18%">상품 (Tier·P)</th>
+          <th style="width:10%">고객명</th>
+          <th style="width:11%">전화</th>
+          <th style="width:18%">주소</th>
+          <th style="width:9%">페이백</th>
+          <th style="width:6%">상태</th>
+          <th style="width:9%">작업</th>
+        </tr>
+      </thead>
+      <tbody id="contracts-tbody"></tbody>
+    </table>
+    <div class="empty" id="empty-msg" style="display:none">조회된 영업이 없습니다.</div>
+  </div>
+</div>
+
+<script>
+const API = '/api/incentive';
+const AUTH = '/api/auth';
+const TOKEN_KEY = 'incentive-auth-token-v1';
+
+function getToken() { return localStorage.getItem(TOKEN_KEY); }
+function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
+function clearToken() { localStorage.removeItem(TOKEN_KEY); }
+
+// ─── 로그인 ───
+async function login(email, password) {
+  const res = await fetch(AUTH + '/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || '로그인 실패');
+  }
+  const data = await res.json();
+  setToken(data.access_token);
+  return data;
+}
+
+async function fetchAgent() {
+  const tk = getToken();
+  if (!tk) return null;
+  const res = await fetch(API + '/agents/me', { headers: { Authorization: 'Bearer ' + tk } });
+  if (!res.ok) { clearToken(); return null; }
+  const data = await res.json();
+  return data.agent;
+}
+
+// ─── 영업 목록 fetch ───
+async function fetchContracts() {
+  const tk = getToken();
+  const month = document.getElementById('filter-month').value;
+  const status = document.getElementById('filter-status').value;
+  const params = new URLSearchParams();
+  if (month) params.set('month', month);
+  if (status) params.set('status', status);
+  const url = API + '/contracts' + (params.toString() ? '?' + params.toString() : '');
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + tk } });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || '조회 실패');
+  }
+  const data = await res.json();
+  return data.contracts || [];
+}
+
+// ─── 렌더 ───
+function renderStats(contracts) {
+  const total = contracts.length;
+  const completed = contracts.filter(c => c.status === 'completed').length;
+  const pending = contracts.filter(c => c.status === 'pending').length;
+  const cancelled = contracts.filter(c => c.status === 'cancelled').length;
+  const withAddr = contracts.filter(c => c.status !== 'cancelled' && c.customer_address && c.customer_address.trim()).length;
+  const needAddr = contracts.filter(c => c.status !== 'cancelled' && (!c.customer_address || !c.customer_address.trim())).length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-completed').textContent = '완료 ' + completed + ' · 대기 ' + pending;
+  document.getElementById('stat-with-address').textContent = withAddr;
+  document.getElementById('stat-need-address').textContent = '⚠️ 미입력 ' + needAddr + '건';
+  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('stat-cancelled').textContent = cancelled;
+}
+
+function renderTable(contracts) {
+  const filterAddr = document.getElementById('filter-address').value;
+  let filtered = contracts;
+  if (filterAddr === 'missing') filtered = contracts.filter(c => !c.customer_address || !c.customer_address.trim());
+  if (filterAddr === 'present') filtered = contracts.filter(c => c.customer_address && c.customer_address.trim());
+
+  const tbody = document.getElementById('contracts-tbody');
+  const empty = document.getElementById('empty-msg');
+  document.getElementById('result-count').textContent = filtered.length + '건';
+
+  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(c => {
+    const p = c.product || {};
+    const a = c.agent || {};
+    const tierBadge = p.tier ? `<span class="tier tier-${p.tier}">${p.tier}</span>` : '';
+    const premBadge = p.is_premium ? '<span class="prem-badge">우수</span>' : '';
+    const addrClass = (c.customer_address && c.customer_address.trim()) ? 'has-address' : 'no-address';
+    return `<tr class="${c.status === 'cancelled' ? 'cancelled' : ''}" data-id="${c.id}">
+      <td>${c.contract_date.slice(5)}</td>
+      <td>${a.name || '-'}<div style="font-size:9px;color:#64748b">${a.center || ''}</div></td>
+      <td>${p.name || '-'} ${tierBadge}${premBadge}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P · 마진 ${(p.margin || 0).toLocaleString()}원</div></td>
+      <td>${c.customer_name ? `<input class="editable" data-field="customer_name" data-id="${c.id}" value="${c.customer_name.replace(/"/g, '&quot;')}">` : '<i style="color:#94a3b8">없음</i>'}</td>
+      <td>${c.customer_phone ? `<input class="editable" data-field="customer_phone" data-id="${c.id}" value="${c.customer_phone.replace(/"/g, '&quot;')}">` : '<i style="color:#94a3b8">없음</i>'}</td>
+      <td><input class="editable ${addrClass}" data-field="customer_address" data-id="${c.id}" value="${(c.customer_address || '').replace(/"/g, '&quot;')}" placeholder="주소 입력..."></td>
+      <td>${(c.add_payback || 0).toLocaleString()}<div style="font-size:9px;color:#64748b">본인 -${(c.agent_payback_deduct || 0).toLocaleString()}</div></td>
+      <td><span class="status status-${c.status}">${c.status}</span></td>
+      <td>
+        <button class="btn-action btn-save" data-act="save" data-id="${c.id}">💾</button>
+        ${c.status === 'completed' ? `<button class="btn-action btn-cancel" data-act="cancel" data-id="${c.id}">취소</button>` : ''}
+        ${c.status === 'pending' ? `<button class="btn-action btn-save" data-act="finalize" data-id="${c.id}">완료</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  // 행 단위 작업 핸들러
+  tbody.querySelectorAll('.btn-action').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const act = btn.dataset.act;
+      await handleAction(id, act);
+    });
+  });
+}
+
+async function handleAction(id, act) {
+  const tk = getToken();
+  let body = {};
+  if (act === 'save') {
+    // 같은 행의 input 값들 모음
+    const row = document.querySelector(`tr[data-id="${id}"]`);
+    row.querySelectorAll('.editable').forEach(inp => {
+      body[inp.dataset.field] = inp.value.trim() || null;
+    });
+  } else if (act === 'cancel') {
+    if (!confirm('이 영업을 취소하시겠습니까? 인센티브에서 제외됩니다.')) return;
+    body = { status: 'cancelled', cancellation_reason: '계약부서 취소' };
+  } else if (act === 'finalize') {
+    body = { status: 'completed' };
+  }
+
+  try {
+    const res = await fetch(API + '/sales/' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || '저장 실패');
+    }
+    await loadContracts();
+    if (act === 'save') {
+      // 작은 토스트
+      showToast('✅ 저장 완료');
+    } else if (act === 'cancel') showToast('❌ 취소 처리됨');
+    else if (act === 'finalize') showToast('✅ 완료 처리됨');
+  } catch (e) {
+    alert('오류: ' + e.message);
+  }
+}
+
+let _toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,0.4);border:1px solid #475569;z-index:9999;opacity:0;transition:opacity 0.2s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+
+async function loadContracts() {
+  try {
+    const contracts = await fetchContracts();
+    renderStats(contracts);
+    renderTable(contracts);
+  } catch (e) {
+    alert('영업 조회 실패: ' + e.message);
+  }
+}
+
+// ─── 초기화 + 이벤트 ───
+async function init() {
+  // 이번 달 default
+  const now = new Date();
+  document.getElementById('filter-month').value = now.toISOString().slice(0, 7);
+
+  // 토큰 있으면 자동 로그인
+  const tk = getToken();
+  if (tk) {
+    const agent = await fetchAgent();
+    if (agent && (agent.role === 'admin' || agent.role === 'manager')) {
+      onLoggedIn(agent);
+    } else if (agent) {
+      document.getElementById('auth-msg').textContent = '⚠️ ' + agent.role + ' 권한 — manager/admin만 접근 가능';
+      document.getElementById('auth-msg').style.color = '#fbbf24';
+      clearToken();
+    }
+  }
+}
+
+function onLoggedIn(agent) {
+  document.getElementById('auth-box').style.display = 'none';
+  document.getElementById('main-area').style.display = '';
+  document.getElementById('user-info').style.display = '';
+  document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
+  document.getElementById('user-meta').textContent = agent.center;
+  loadContracts();
+}
+
+document.getElementById('auth-login-btn').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-pass').value;
+  const msg = document.getElementById('auth-msg');
+  msg.style.color = '#dc2626';
+  msg.textContent = '';
+  if (!email || !password) { msg.textContent = '입력 필수'; return; }
+  try {
+    await login(email, password);
+    const agent = await fetchAgent();
+    if (!agent || (agent.role !== 'admin' && agent.role !== 'manager')) {
+      msg.textContent = 'manager/admin 권한 필요';
+      clearToken();
+      return;
+    }
+    onLoggedIn(agent);
+  } catch (e) {
+    msg.textContent = e.message;
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  clearToken();
+  location.reload();
+});
+
+document.getElementById('filter-month').addEventListener('change', loadContracts);
+document.getElementById('filter-status').addEventListener('change', loadContracts);
+document.getElementById('filter-address').addEventListener('change', loadContracts);
+document.getElementById('reload-btn').addEventListener('click', loadContracts);
+
+init();
+</script>
+</body>
+</html>

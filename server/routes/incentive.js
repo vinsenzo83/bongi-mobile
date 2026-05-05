@@ -268,7 +268,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, add_payback } = req.body || {};
+    const { status, cancellation_reason, notes, add_payback, customer_address, customer_name, customer_phone, installation_date } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -286,6 +286,10 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (cancellation_reason !== undefined) update.cancellation_reason = cancellation_reason;
     if (notes !== undefined) update.notes = notes;
     if (add_payback !== undefined) update.add_payback = add_payback;
+    if (customer_address !== undefined) update.customer_address = customer_address;
+    if (customer_name !== undefined) update.customer_name = customer_name;
+    if (customer_phone !== undefined) update.customer_phone = customer_phone;
+    if (installation_date !== undefined) update.installation_date = installation_date;
 
     const { data, error } = await supabase
       .from('incentive_sales')
@@ -370,6 +374,48 @@ router.post('/finalize', authenticateJWT, async (req, res) => {
       if (!error) results.push(data);
     }
     res.json({ count: results.length, settlements: results, month });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 11.5. GET /api/incentive/contracts?month=&status= — 계약부서 전체 영업 조회
+//       manager: 본인 센터 / admin: 전체
+// ═══════════════════════════════════════════════════════════════
+router.get('/contracts', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+
+    const { month, status } = req.query;
+    const ym = month || new Date().toISOString().slice(0, 7);
+    const [y, m] = ym.split('-');
+    const monthStart = `${y}-${m}-01`;
+    const monthEnd = new Date(parseInt(y), parseInt(m), 0).toISOString().slice(0, 10);
+
+    let q = supabase
+      .from('incentive_sales')
+      .select('*, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role)')
+      .gte('contract_date', monthStart)
+      .lte('contract_date', monthEnd);
+
+    if (status) q = q.eq('status', status);
+
+    // manager: 본인 센터 상담사만
+    if (me.role === 'manager') {
+      const { data: centerAgents } = await supabase
+        .from('incentive_agents')
+        .select('id')
+        .eq('center', me.center);
+      const ids = (centerAgents || []).map(a => a.id);
+      q = q.in('agent_id', ids);
+    }
+
+    const { data, error } = await q.order('contract_date', { ascending: false });
+    if (error) throw error;
+    res.json({ contracts: data, count: data.length, month: ym });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
