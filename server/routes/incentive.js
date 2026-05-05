@@ -64,7 +64,8 @@ router.get('/products', optionalAuth, async (req, res) => {
     if (error) throw error;
     res.json({ products: data, count: data.length });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -96,7 +97,10 @@ router.patch('/products/:id', authenticateJWT, async (req, res) => {
         .gt('changed_at', new Date(Date.now() - 5000).toISOString());
     } catch(e) {}
     res.json({ product: data });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
 });
 
 // GET /api/incentive/products/history — 전체 변경 이력 (admin/manager/contract)
@@ -116,7 +120,10 @@ router.get('/products/history', authenticateJWT, async (req, res) => {
     const { data, error } = await q;
     if (error) throw error;
     res.json({ history: data, count: data.length });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -135,7 +142,8 @@ router.get('/rules', optionalAuth, async (req, res) => {
     if (error) throw error;
     res.json({ rules: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -173,7 +181,8 @@ router.post('/simulate', optionalAuth, async (req, res) => {
     const result = Array.isArray(data) ? data[0] : data;
     res.json({ simulation: result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -189,7 +198,8 @@ router.get('/agents/me', authenticateJWT, async (req, res) => {
     }
     res.json({ agent });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -210,7 +220,8 @@ router.get('/agents', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ agents: data, count: data.length });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -234,7 +245,8 @@ router.post('/agents', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ agent: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -290,7 +302,8 @@ router.post('/admin/create-agent', authenticateJWT, async (req, res) => {
 
     res.json({ agent, email, password_set: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -315,7 +328,8 @@ router.patch('/agents/:id', authenticateJWT, async (req, res) => {
     if (data && data.user_id) invalidateAgentCache(data.user_id);
     res.json({ agent: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -339,7 +353,8 @@ router.post('/agents/:id/reset-password', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ ok: true, name: agent.name });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -359,7 +374,8 @@ router.get('/agents/all', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ agents: data, count: data.length });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -404,7 +420,8 @@ router.get('/sales', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ sales: data, count: data.length, month: ym });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -480,7 +497,8 @@ router.post('/sales', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ sale: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -558,7 +576,8 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ sale: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -593,7 +612,8 @@ router.get('/settlement', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ settlement: data, month: ym });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -633,7 +653,8 @@ router.post('/finalize', authenticateJWT, async (req, res) => {
     }
     res.json({ count: results.length, settlements: results, month });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -679,7 +700,8 @@ router.post('/rules', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ rules: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -707,7 +729,8 @@ router.patch('/rules/:id', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ rules: data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -727,7 +750,8 @@ router.get('/rules/all', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ rules: data, count: data.length });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -766,7 +790,8 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ contracts: data, count: data.length, month: ym });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
@@ -783,7 +808,10 @@ router.get('/sales/:id/quote', authenticateJWT, async (req, res) => {
       .single();
     if (error) return res.status(404).json({ error: '영업 없음' });
     res.json({ quote_full_html: data.quote_full_html || null, quote_summary: data.quote_summary || null });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -850,7 +878,8 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
       settlements,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
