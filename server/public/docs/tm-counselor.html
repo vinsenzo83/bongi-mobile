@@ -634,6 +634,10 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           <input type="text" id="deal-address-detail" placeholder="예: 101동 502호" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">📝 상담 메모
           <textarea id="deal-notes" rows="3" placeholder="상담 내용 / 특이사항 / 고객 요청 등" style="width:100%;padding:5px 7px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;resize:vertical;font-family:inherit"></textarea></label>
+        <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">🗂️ DB 출처 <span style="color:#dc2626">*</span>
+          <select id="deal-db-source" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;background:#fff">
+            <option value="">— 선택하세요 —</option>
+          </select></label>
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:8px">추가 페이백 (₩, 0~50,000)
           <input type="number" id="deal-payback" min="0" max="50000" step="1000" value="0" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         <div style="display:flex;gap:6px">
@@ -3029,13 +3033,14 @@ async function incFetchMyState() {
 function incApplyAuthState() {
   // 로그인 판정: 토큰 유무 기준 (settlement fetch 실패해도 등록 가능해야 함)
   const loggedIn = !!authGetToken();
-  // 누적 P / 우수 → readonly when logged in
+  // settlement 데이터를 실제로 받아왔을 때만 readonly (받지 못하면 사용자가 직접 입력 가능)
+  const hasState = !!(_incMyState && _incMyState.settlement);
   ['inc-current-p', 'inc-current-prem'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.readOnly = loggedIn;
-    el.style.background = loggedIn ? '#f3f4f6' : '#fff';
-    el.title = loggedIn ? '로그인된 상담사의 실제 누적 데이터 (자동 갱신)' : '';
+    el.readOnly = hasState;
+    el.style.background = hasState ? '#f3f4f6' : '#fff';
+    el.title = hasState ? '로그인된 상담사의 실제 누적 데이터 (자동 갱신)' : '';
   });
   // 계약 완료 버튼
   const dealBtn = document.getElementById('inc-close-deal-btn');
@@ -3181,9 +3186,16 @@ async function incSubmitDeal() {
   const addressDetail = (document.getElementById('deal-address-detail').value || '').trim() || null;
   const notes = (document.getElementById('deal-notes').value || '').trim() || null;
   const payback = parseInt(document.getElementById('deal-payback').value) || 0;
+  const dbSourceIdRaw = document.getElementById('deal-db-source')?.value || '';
+  const dbSourceId = dbSourceIdRaw ? parseInt(dbSourceIdRaw, 10) : null;
 
   if (payback < 0 || payback > 50000) {
     msg.textContent = '페이백은 0~50,000원';
+    return;
+  }
+  if (!dbSourceId) {
+    msg.textContent = '⚠️ DB 출처를 선택하세요 (어느 DB로 상담했는지)';
+    document.getElementById('deal-db-source')?.focus();
     return;
   }
 
@@ -3197,6 +3209,7 @@ async function incSubmitDeal() {
     installation_time: installationTime,
     notes: notes,
     add_payback: payback,
+    db_source_id: dbSourceId,
   });
 
   // 견적서 누락 차단 — 계약 처리에서 동일 정보 보여줘야 하므로 필수
@@ -3257,6 +3270,23 @@ function incCancelDeal() {
   document.getElementById('inc-deal-msg').textContent = '';
 }
 
+// DB 출처 fetch + select 채우기 (활성 목록만)
+async function incLoadDbSources() {
+  const token = (typeof authGetToken === 'function') ? authGetToken() : null;
+  if (!token) return;
+  try {
+    const res = await fetch(INC_API + '/db-sources', { headers: { Authorization: 'Bearer ' + token } });
+    if (!res.ok) return;
+    const { db_sources } = await res.json();
+    const sel = document.getElementById('deal-db-source');
+    if (!sel || !Array.isArray(db_sources)) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— 선택하세요 —</option>'
+      + db_sources.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    sel.value = cur;
+  } catch(e) { /* 무시 — 사용자는 입력 못 하지만 다른 흐름은 정상 */ }
+}
+
 // 이벤트 바인딩
 setTimeout(() => {
   const closeBtn = document.getElementById('inc-close-deal-btn');
@@ -3265,6 +3295,7 @@ setTimeout(() => {
   if (closeBtn) closeBtn.addEventListener('click', incCloseDeal);
   if (submitBtn) submitBtn.addEventListener('click', incSubmitDeal);
   if (cancelBtn) cancelBtn.addEventListener('click', incCancelDeal);
+  incLoadDbSources();
 
   // 📍 Daum Postcode 주소 검색
   const addrBtn = document.getElementById('deal-address-search-btn');

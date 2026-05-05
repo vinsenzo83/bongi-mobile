@@ -715,7 +715,13 @@ function renderTable(contracts) {
       <td><b>${a.name || '-'}</b></td>
       <td style="font-size:11px;color:#a5b4fc">${a.center || '-'}</td>
       <td>${dbCell}</td>
-      <td>${p.name || '-'} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P</div></td>
+      <td>${(() => {
+        const carrier = (p.carrier || '').toLowerCase();
+        const carrierMap = { kt: { label: 'KT', bg: '#dc2626' }, sk: { label: 'SK', bg: '#ef4444' }, skt: { label: 'SK', bg: '#ef4444' }, lgu: { label: 'LG U+', bg: '#a855f7' }, lg: { label: 'LG U+', bg: '#a855f7' } };
+        const cb = carrierMap[carrier];
+        const carrierBadge = cb ? `<span style="background:${cb.bg};color:#fff;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:800;margin-right:4px">${cb.label}</span>` : '';
+        return carrierBadge;
+      })()}${p.name || '-'} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P${p.speed ? ` · ${p.speed}` : ''}</div></td>
       <td>${c.customer_name || '<i style="color:#94a3b8">-</i>'}</td>
       <td>${c.customer_phone || '<i style="color:#94a3b8">-</i>'}</td>
       <td style="max-width:240px;word-break:break-all;font-size:10.5px">${addrText}</td>
