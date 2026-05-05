@@ -210,18 +210,25 @@ html, body { overflow:hidden; }
   font-size:12px; margin-bottom:8px; padding-bottom:5px;
 }
 .tm-result { padding-top:0; }
-.tm-result .calc-line { display:flex; justify-content:space-between; padding:2px 0; font-size:11.5px; line-height:1.4; }
-.tm-result .calc-line .l { color:rgba(226,232,240,0.55); }
-.tm-result .calc-line .v { font-weight:700; color:#f8fafc; }
+/* 일반 항목 — 작고 흐리게 (배경 정보) */
+.tm-result .calc-line { display:flex; justify-content:space-between; padding:2px 0; font-size:10.5px; line-height:1.4; }
+.tm-result .calc-line .l { color:rgba(226,232,240,0.5); font-weight:500; }
+.tm-result .calc-line .v { font-weight:600; color:rgba(248,250,252,0.85); }
 .tm-result .calc-line.discount .v { color:#4ade80; }
+/* 합계 — 크고 진하게 (핵심 강조) */
 .tm-result .calc-line.total {
-  border-top:1.5px solid rgba(255,255,255,0.15); margin-top:5px; padding-top:6px;
-  font-size:13.5px; font-weight:900;
+  border-top:1.5px solid rgba(255,255,255,0.18); margin-top:7px; padding-top:9px;
+  font-size:17px; font-weight:900;
 }
-.tm-result .calc-line.total .v { color:#60a5fa; }
-.tm-result .calc-line.sub { font-size:10px; padding:1px 0 1px 10px; }
-.tm-result .calc-line.sub .l { color:rgba(226,232,240,0.32); }
-.tm-result .calc-line.sub .v { color:rgba(226,232,240,0.4); font-weight:400; }
+.tm-result .calc-line.total .l { color:#f8fafc !important; font-weight:800; letter-spacing:-0.01em; }
+.tm-result .calc-line.total .v {
+  color:#60a5fa !important; font-size:19px !important; font-weight:900 !important;
+  letter-spacing:-0.02em;
+}
+/* 부가 정보 — 더 작게 */
+.tm-result .calc-line.sub { font-size:9.5px; padding:1px 0 1px 10px; }
+.tm-result .calc-line.sub .l { color:rgba(226,232,240,0.28); font-weight:400; }
+.tm-result .calc-line.sub .v { color:rgba(226,232,240,0.35); font-weight:400; }
 
 /* 정보 카드 (요금 구조 한눈에 보기) */
 .tm-info-grid { display:grid; gap:8px; margin-bottom:12px; }
@@ -1539,7 +1546,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfter) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee) + '</span></div>';
     }
-    html += multiAdd_kt.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#93c5fd">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#60a5fa;font-size:14px">' + fmt(finalInet) + '</span></div>' +
+    html += multiAdd_kt.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#93c5fd">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#60a5fa;font-size:22px">' + fmt(finalInet) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#93c5fd;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + rangeLabels[rangeIdx] + ' 구간)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
       (mobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 구간은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(mobDc) + '</span><span class="v"></span></div>') +
@@ -1615,7 +1622,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfterP) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFeeP) + '</span></div>';
     }
-    html += multiAdd_ktp.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#fde68a">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#fbbf24;font-size:14px">' + fmt(finalInetP) + '</span></div>' +
+    html += multiAdd_ktp.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#fde68a">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#fbbf24;font-size:22px">' + fmt(finalInetP) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#fde68a;font-weight:700">📱 휴대폰 고지서 별도 할인 (월)</div>' +
       '<div class="calc-line discount"><span class="l">· 총액결합 (' + totalMembers.length + '명 · 합산 ' + fmt(totalSum) + ' · ' + totalRanges[rngIdx] + ')</span><span class="v">-' + fmt(totalMobDc) + '</span></div>' +
       '<div class="calc-line discount"><span class="l">· 프리미엄 ' + premCount + '명 합산 할인</span><span class="v">-' + fmt(premTotalDc) + '</span></div>' +
@@ -1659,7 +1666,7 @@ function calc() {
     if (!hasTv && inetSoloDc > 0) {
       html += '<div style="font-size:9px;color:#94a3b8;margin-top:4px;padding-top:4px;border-top:1px dashed rgba(255,255,255,0.15)">ℹ️ 인터넷 단독 추가 할인 -' + fmt(inetSoloDc) + '은 위 섹터 1 인터넷 요금에 반영</div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#a5b4fc">💰 휴대폰 할인</span><span class="v" style="color:#818cf8;font-size:14px">-' + fmt(psDc) + '</span></div>';
+    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#a5b4fc">💰 휴대폰 할인</span><span class="v" style="color:#818cf8;font-size:22px">-' + fmt(psDc) + '</span></div>';
     if (!hasTv && inetSoloDc > 0) {
       html += '<div class="calc-line sub"><span class="l">＋ 인터넷 할인 (섹터 1)</span><span class="v">-' + fmt(inetSoloDc) + '</span></div>';
       html += '<div class="calc-line total" style="margin-top:4px"><span class="l" style="color:#a5b4fc">= 월 총 할인 합계</span><span class="v" style="color:#818cf8;font-size:13px">-' + fmt(psTotalDc) + '</span></div>';
@@ -1714,7 +1721,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfter2) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee2) + '</span></div>';
     }
-    html += multiAdd_lgu.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#f9a8d4">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#ec4899;font-size:14px">' + fmt(finalInet2) + '</span></div>' +
+    html += multiAdd_lgu.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#f9a8d4">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#ec4899;font-size:22px">' + fmt(finalInet2) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#f9a8d4;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선)</span><span class="v">-' + fmt(lguMobDc) + '</span></div>' +
       (lguMobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 조건은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(lguMobDc) + '</span><span class="v"></span></div>');
@@ -1759,7 +1766,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 할인 합계: -' + fmt(tvTotalDc) + ' · TV 실질</span><span class="v">' + fmt(tvAfterFamily) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee3) + '</span></div>';
     }
-    html += multiAdd_fam.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#86efac">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#4ade80;font-size:14px">' + fmt(finalInet3) + '</span></div>' +
+    html += multiAdd_fam.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#86efac">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#4ade80;font-size:22px">' + fmt(finalInet3) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#86efac;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines2 + '명 결합 · ' + sp + ')</span><span class="v">-' + fmt(mobDc2) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">· 인당 ' + fmt(perPerson) + '원 × ' + lines2 + '명 = 휴대폰 고지서 매월 -' + fmt(mobDc2) + '</span><span class="v"></span></div>' +
@@ -1800,12 +1807,12 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfterO) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFeeO) + '</span></div>';
     }
-    html += multiAdd_of.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#d8b4fe">✨ ' + (hasTv ? '인터넷+TV ' : '인터넷 ') + '월 실질요금</span><span class="v" style="color:#a855f7;font-size:14px">' + fmt(finalInetO) + '</span></div>' +
+    html += multiAdd_of.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#d8b4fe">✨ ' + (hasTv ? '인터넷+TV ' : '인터넷 ') + '월 실질요금</span><span class="v" style="color:#a855f7;font-size:22px">' + fmt(finalInetO) + '</span></div>' +
       '</div>';
   }
 
   var giftAmount = getGiftAmount(d, sp, ti);
-  if (giftAmount > 0) html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:5px;padding:4px 8px;margin-top:5px"><span class="l" style="color:#fbbf24;font-size:11px">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900;font-size:12px">' + fmt(giftAmount) + '</span></div>';
+  if (giftAmount > 0) html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:5px;padding:4px 8px;margin-top:5px"><span class="l" style="color:#fbbf24;font-size:14px;font-weight:800">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900;font-size:22px;letter-spacing:-0.02em">' + fmt(giftAmount) + '</span></div>';
 
   // 설치비 평일/주말 (1회) — 추가 TV 설치비 50% 할인 포함
   var installWeekday = installPrice;
