@@ -463,7 +463,8 @@ function renderManagerKpi(o, agent) {
   document.getElementById('mgr-center-incentive').textContent = fmt(centerAgg.incentive + centerAgg.bonus);
 
   // 3. 매니징 KPI
-  const avgGrade = (centerAgg.gradeSum / centerN).toFixed(2);
+  const avgGradeNum = Math.round((centerAgg.gradeSum / centerN) * 10) / 10;
+  const avgGrade = Number.isInteger(avgGradeNum) ? avgGradeNum.toString() : avgGradeNum.toFixed(1);
   const premiumRate = centerAgg.count > 0 ? (centerAgg.premium / centerAgg.count * 100) : 0;
   document.getElementById('mgr-avg-grade').textContent = 'G' + avgGrade;
   // 등급 분포
