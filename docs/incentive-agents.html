@@ -59,6 +59,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   opacity: 0.8;
 }
 </style>
+<script src="/docs/_shared/incentive-auth.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -172,54 +173,13 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 <div id="toast"></div>
 
 <script>
-const API = '/api/incentive';
-const AUTH = '/api/auth';
-const TOKEN_KEY = 'incentive-auth-token-v1';
-const getToken = () => localStorage.getItem(TOKEN_KEY);
-const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
-const clearToken = () => localStorage.removeItem(TOKEN_KEY);
-async function tryRefreshToken() {
-  const rt = localStorage.getItem('incentive-refresh-token-v1');
-  if (!rt) return false;
-  try {
-    const res = await fetch('/api/auth/refresh', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ refresh_token: rt })
-    });
-    if (!res.ok) {
-      localStorage.removeItem('incentive-refresh-token-v1');
-      return false;
-    }
-    const data = await res.json();
-    setToken(data.access_token);
-    if (data.refresh_token) localStorage.setItem('incentive-refresh-token-v1', data.refresh_token);
-    return true;
-  } catch { return false; }
-}
-
+// 공통 인증 모듈에서 가져옴: API, getToken, setToken, clearToken, login, fetchAgent, tryRefreshToken
 let _allAgents = [];
 
 function genPassword(len = 12) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
   return Array.from(crypto.getRandomValues(new Uint8Array(len)))
     .map(b => chars[b % chars.length]).join('');
-}
-
-async function login(email, password) {
-  const res = await fetch(AUTH + '/login', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({email, password})
-  });
-  if (!res.ok) throw new Error((await res.json()).error || '로그인 실패');
-  const data = await res.json(); setToken(data.access_token);
-  if (data.refresh_token) localStorage.setItem("incentive-refresh-token-v1", data.refresh_token); return data;
-}
-
-async function fetchAgent() {
-  const tk = getToken(); if (!tk) return null;
-  const res = await fetch(API + '/agents/me', {headers: {Authorization: 'Bearer ' + tk}});
-  if (!res.ok) { clearToken(); return null; }
-  return (await res.json()).agent;
 }
 
 async function fetchAllAgents() {
