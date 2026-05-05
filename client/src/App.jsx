@@ -178,12 +178,13 @@ function AppRoutes() {
         <Route index element={<W C={V5Index} />} />
         <Route path="dashboard" element={<W C={V5Dashboard} />} />
         {/* 점진 마이그레이션 — 아직 React 변환 안 된 페이지는 iframe으로 임시 wrap */}
-        {/* 사용자 보고 'TM 견적·영업 잘못 만들었다' — vanilla iframe fallback으로 임시 롤백. Phase B2에서 fix 예정 */}
-        <Route path="tm" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/tm-counselor.html" title="TM 견적·영업" /></Suspense>} />
+        {/* TM 견적·영업: Phase B2 완료(좌측 스크립트 + 3-column + 멤버) → React 복원 */}
+        <Route path="tm" element={<W C={V5TmCounselor} />} />
         <Route path="contracts" element={<W C={V5Contract} />} />
         <Route path="agents" element={<W C={V5Agents} />} />
         <Route path="products" element={<W C={V5Products} />} />
-        <Route path="calc-data" element={<W C={V5CalcData} />} />
+        {/* 사용자 보고 '데이터가 모두 누락됨' — calc-data 임시 vanilla fallback. 진단 후 React 복원 */}
+        <Route path="calc-data" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/calculator.html?admin=1" title="TM 데이터 / 요금 계산기" /></Suspense>} />
         <Route path="rules" element={<W C={V5Rules} />} />
       </Route>
     </Routes>
