@@ -687,9 +687,9 @@ function renderTable(contracts) {
               <div><div style="font-size:9px;color:#94a3b8">속도</div><div style="color:#f8fafc;font-weight:700">${p.speed || '-'}</div></div>
               <div><div style="font-size:9px;color:#94a3b8">TV 등급</div><div style="color:#f8fafc;font-weight:700">${p.tv_tier || '-'}</div></div>
               <div style="grid-column:span 2"><div style="font-size:9px;color:#94a3b8">상품명</div><div style="color:#f8fafc;font-weight:700;font-size:11.5px">${p.name || '-'}</div></div>
-              <div><div style="font-size:9px;color:#94a3b8">가중치</div><div style="color:#f8fafc;font-weight:700">${p.point_weight || '-'} P</div></div>
+              <div><div style="font-size:9px;color:#94a3b8">가중치</div><div style="color:#f8fafc;font-weight:700">${(c.point_weight_snapshot ?? p.point_weight ?? '-')}${(c.point_weight_snapshot ?? p.point_weight) != null ? ' P' : ''}</div></div>
               <div><div style="font-size:9px;color:#94a3b8">Tier</div><div>${tierBadge}${premBadge}</div></div>
-              <div style="grid-column:span 2"><div style="font-size:9px;color:#94a3b8">💰 페이백</div><div style="color:#fca5a5;font-weight:700">${(p.payback||0).toLocaleString()}원</div></div>
+              <div style="grid-column:span 2"><div style="font-size:9px;color:#94a3b8">💰 페이백 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 6px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:4px" title="등록 시점에 박제된 단가 — 이후 상품가격 변경되어도 변하지 않음">SNAPSHOT</span></div><div style="color:#fca5a5;font-weight:700">${((c.payback_snapshot ?? p.payback) || 0).toLocaleString()}원<span style="font-size:9px;color:#64748b;font-weight:500;margin-left:6px">등록 시점 단가</span></div></div>
               <div><div style="font-size:9px;color:#94a3b8">계약일</div><div style="color:#f8fafc;font-weight:700">${c.contract_date}</div></div>
               <div><div style="font-size:9px;color:#94a3b8">상담사</div><div style="color:#f8fafc;font-weight:700">${a.name || '-'}<span style="color:#94a3b8;font-weight:400"> · ${a.center || ''}</span></div></div>
             </div>
@@ -958,7 +958,7 @@ function openEditModal(id) {
           <div class="ph-meta">[${p.carrier || '-'}] ${p.type || '-'} · ${p.speed || '-'} · TV ${p.tv_tier || '없음'}</div>
           <div class="ph-name">${p.name || '-'}</div>
           <div class="ph-tags">
-            <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 8px;border-radius:4px;font-weight:700">${p.point_weight || '-'}P</span>
+            <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 8px;border-radius:4px;font-weight:700">${(c.point_weight_snapshot ?? p.point_weight ?? '-')}P</span>
             ${tierBadge}${premBadge}
             <span style="color:#64748b">·</span>
             <span>📅 ${c.contract_date}</span>
@@ -972,8 +972,8 @@ function openEditModal(id) {
             <div style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:-0.02em">${(c.monthly_fee != null && !isNaN(c.monthly_fee)) ? Number(c.monthly_fee).toLocaleString() : '-'}<span style="font-size:12px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
           </div>
           <div style="text-align:right">
-            <div class="ph-payback-label">💰 페이백</div>
-            <div class="ph-payback-val">${(p.payback||0).toLocaleString()}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+            <div class="ph-payback-label">💰 페이백 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 5px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:3px" title="등록 시점에 박제된 단가 — 이후 상품가격 변경되어도 변하지 않음">SNAPSHOT</span></div>
+            <div class="ph-payback-val">${((c.payback_snapshot ?? p.payback) || 0).toLocaleString()}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
           </div>
         </div>
       </div>
@@ -1435,8 +1435,8 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
       'TV 등급': p.tv_tier || '',
       'Tier': p.tier || '',
       '우수상품': p.is_premium ? 'Y' : 'N',
-      '가중치(P)': p.point_weight || 0,
-      '페이백 (정가)': p.payback || 0,
+      '가중치(P)': c.point_weight_snapshot ?? p.point_weight ?? 0,
+      '페이백 (등록시점)': c.payback_snapshot ?? p.payback ?? 0,
       '월 요금 (실질)': c.monthly_fee || 0,
       // ─── 견적 옵션 ───
       'TV 대수': c.tv_count || 1,

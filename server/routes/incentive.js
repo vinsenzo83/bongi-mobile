@@ -581,6 +581,16 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       targetAgentId = agent_id;
     }
 
+    // product price snapshot — 등록 시점의 단가를 박제 (이후 product 가격 변경되어도 영향 없음)
+    const { data: prodSnap, error: prodSnapErr } = await supabase
+      .from('incentive_products')
+      .select('payback, rebate, point_weight, is_premium')
+      .eq('id', product_id)
+      .single();
+    if (prodSnapErr || !prodSnap) {
+      return res.status(400).json({ error: '존재하지 않는 product_id' });
+    }
+
     const { data, error } = await supabase
       .from('incentive_sales')
       .insert({
@@ -606,6 +616,11 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         quote_summary: quote_summary || null,
         quote_full_html: quote_full_html || null,
         monthly_fee: monthly_fee || null,
+        // ── product 단가 snapshot (등록 시점) ──
+        payback_snapshot: prodSnap.payback,
+        rebate_snapshot: prodSnap.rebate,
+        point_weight_snapshot: prodSnap.point_weight,
+        is_premium_snapshot: prodSnap.is_premium,
       })
       .select('*, product:incentive_products(*)')
       .single();
@@ -626,7 +641,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at } = req.body || {};
+    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -681,6 +696,27 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (wifi_option !== undefined) update.wifi_option = wifi_option;
     if (quote_summary !== undefined) update.quote_summary = quote_summary;
     if (quote_full_html !== undefined) update.quote_full_html = quote_full_html;
+
+    // product 변경 — pending 단계에서만 허용, snapshot 재계산
+    // (계약 진행/완료 단계에서는 등록 시점 snapshot 락)
+    if (product_id !== undefined && product_id !== existing.product_id) {
+      if (existing.status !== 'pending') {
+        return res.status(400).json({ error: '계약 진행/완료된 영업은 상품 변경 불가 (등록 시점 단가 보존)' });
+      }
+      const { data: newProd, error: newProdErr } = await supabase
+        .from('incentive_products')
+        .select('payback, rebate, point_weight, is_premium')
+        .eq('id', product_id)
+        .single();
+      if (newProdErr || !newProd) {
+        return res.status(400).json({ error: '존재하지 않는 product_id' });
+      }
+      update.product_id = product_id;
+      update.payback_snapshot = newProd.payback;
+      update.rebate_snapshot = newProd.rebate;
+      update.point_weight_snapshot = newProd.point_weight;
+      update.is_premium_snapshot = newProd.is_premium;
+    }
 
     const { data, error } = await supabase
       .from('incentive_sales')
@@ -993,7 +1029,7 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
 
     // gzip 적용 후 quote_full_html 포함해도 페이로드 작음 (~10KB 추가) — 모달 즉시 표시
     // 휴지통 모드일 때는 deleted_at/deleted_by_user_id/deleted_reason도 함께 반환
-    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason';
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,point_weight_snapshot,is_premium_snapshot';
     let q = supabase
       .from('incentive_sales')
       .select(`${listCols}, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role)`)
