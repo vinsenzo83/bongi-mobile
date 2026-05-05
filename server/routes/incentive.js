@@ -867,11 +867,16 @@ router.get('/settlement', authenticateJWT, async (req, res) => {
       p_agent_id: targetAgentId,
       p_year_month: ym,
     });
-    if (error) throw error;
-    res.json({ settlement: data, month: ym });
+    if (error) {
+      console.error('[settlement RPC error]', error);
+      throw error;
+    }
+    // RPC가 single composite을 array로 반환할 수 있음 — 정규화
+    const settlement = Array.isArray(data) ? (data[0] || null) : data;
+    res.json({ settlement, month: ym });
   } catch (err) {
-    console.error('[incentive]', req.method, req.path, err);
-    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+    console.error('[incentive]', req.method, req.path, err.message || err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요', detail: err.message });
   }
 });
 

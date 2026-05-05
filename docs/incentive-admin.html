@@ -158,13 +158,7 @@ async function gFetchMyPermissions() {
 }
 
 function gApplyMenuVisibility(allowedKeys) {
-  // 빈 array/null이면 권한 fetch 실패 → fallback: 모든 메뉴 표시 (sub-page 자체 권한 가드가 막아줌)
-  const arr = Array.isArray(allowedKeys) ? allowedKeys : [];
-  if (arr.length === 0) {
-    document.querySelectorAll('.tab-btn[data-key]').forEach(btn => { btn.style.display = 'flex'; });
-    return;
-  }
-  const set = new Set(arr);
+  const set = new Set(Array.isArray(allowedKeys) ? allowedKeys : []);
   document.querySelectorAll('.tab-btn[data-key]').forEach(btn => {
     btn.style.display = set.has(btn.dataset.key) ? 'flex' : 'none';
   });

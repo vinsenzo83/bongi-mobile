@@ -3029,13 +3029,14 @@ async function incFetchMyState() {
 function incApplyAuthState() {
   // 로그인 판정: 토큰 유무 기준 (settlement fetch 실패해도 등록 가능해야 함)
   const loggedIn = !!authGetToken();
-  // 누적 P / 우수 → readonly when logged in
+  // settlement 데이터를 실제로 받아왔을 때만 readonly (받지 못하면 사용자가 직접 입력 가능)
+  const hasState = !!(_incMyState && _incMyState.settlement);
   ['inc-current-p', 'inc-current-prem'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.readOnly = loggedIn;
-    el.style.background = loggedIn ? '#f3f4f6' : '#fff';
-    el.title = loggedIn ? '로그인된 상담사의 실제 누적 데이터 (자동 갱신)' : '';
+    el.readOnly = hasState;
+    el.style.background = hasState ? '#f3f4f6' : '#fff';
+    el.title = hasState ? '로그인된 상담사의 실제 누적 데이터 (자동 갱신)' : '';
   });
   // 계약 완료 버튼
   const dealBtn = document.getElementById('inc-close-deal-btn');
