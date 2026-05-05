@@ -56,6 +56,19 @@ tr.finalized { background:rgba(22,163,74,0.06); }
 #toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:14px 24px; border-radius:10px; font-size:14px; font-weight:800; box-shadow:0 6px 24px rgba(22,163,74,0.5); z-index:99999; opacity:0; transition:opacity 0.2s; pointer-events:none; }
 #toast.show { opacity:1; }
 @media (max-width: 768px) { .kpi-grid { grid-template-columns:repeat(2, 1fr); } table { font-size:10px; } }
+
+/* 다크 테마 - 달력 아이콘 강제 표시 */
+input[type="date"], input[type="month"] { color-scheme: dark; }
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2);
+  cursor: pointer;
+  opacity: 1;
+}
+input[type="date"]:hover::-webkit-calendar-picker-indicator,
+input[type="month"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 0.8;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 </head>
