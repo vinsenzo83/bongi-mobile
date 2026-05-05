@@ -508,13 +508,6 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       </div>
 
     </div>
-
-    <!-- 📊 calculator.html 임베드 — 상담사 전용 (role=agent → 데이터 편집 비활성화) -->
-    <div id="tm-calc-doc" style="margin-top:14px;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,0.12);background:#0f172a">
-      <iframe id="calc-doc-iframe" src="/docs/calculator.html?role=agent"
-              style="width:100%;border:none;display:block;background:#0f172a;min-height:1500px"
-              scrolling="no"></iframe>
-    </div>
   </main>
 
   <!-- ═══ 우측 ═══ -->
@@ -2534,49 +2527,6 @@ setTimeout(function() {
 }, 100);
 
 syncAllCards();
-
-// iframe 안 calculator.html에서 사은품 변경 시 자동 감지 → calc/티켓 재계산
-window.addEventListener('storage', function(e) {
-  if (e.key === GIFT_OVERRIDE_KEY) {
-    applyGiftOverrides();
-    calc();
-  }
-});
-
-// 📊 calculator.html iframe 임베드 — 위쪽 "요금 계산기" 영역만 hide, 나머지 .section들만 표시
-(function setupCalcDoc(){
-  var iframe = document.getElementById('calc-doc-iframe');
-  if (!iframe) return;
-  function trimAndResize() {
-    try {
-      var doc = iframe.contentDocument;
-      if (!doc) return;
-      // .section 첫 번째 이전의 모든 형제(<h1>, .subtitle, .calc 등) 숨김
-      var sections = doc.querySelectorAll('.section');
-      if (sections.length) {
-        var first = sections[0];
-        var parent = first.parentNode;
-        var node = parent.firstElementChild;
-        while (node && node !== first) {
-          var nextNode = node.nextElementSibling;
-          node.style.display = 'none';
-          node = nextNode;
-        }
-      }
-      // body padding 제거
-      if (doc.body) { doc.body.style.paddingTop = '0'; doc.body.style.marginTop = '0'; }
-      // 높이 자동 조정
-      var h = doc.documentElement.scrollHeight;
-      iframe.style.height = (h + 24) + 'px';
-    } catch(e) { console.warn('calc-doc embed:', e); }
-  }
-  iframe.addEventListener('load', function(){
-    trimAndResize();
-    setTimeout(trimAndResize, 250);
-    setTimeout(trimAndResize, 1000);
-  });
-  window.addEventListener('resize', function(){ setTimeout(trimAndResize, 100); });
-})();
 
 // ╔════════════════════════════════════════════════════╗
 // ║  V5 인증 (Supabase Auth → JWT → API 호출)            ║
