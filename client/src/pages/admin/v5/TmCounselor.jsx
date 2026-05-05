@@ -1,22 +1,20 @@
-// V5 — TM 견적·영업 (TM Counselor) — Native React (Phase B)
+// V5 — TM 견적·영업 (TM Counselor) — Native React (Phase B + B2)
 //
 // vanilla docs/tm-counselor.html (170KB)을 React로 재구성한 컴포넌트.
 // 계산 엔진은 Phase A에서 추출한 quoteEngine.js + useQuoteEngine 훅을 그대로 사용.
 //
 // 주요 기능:
 //  - 통신사/속도/WiFi/TV/셋톱/결합/회선/구간/다중TV 카드 입력
+//  - KT 프리미엄 가족결합 5-row 멤버 입력 UI (B2)
+//  - 좌측 상담 스크립트 패널 (B2, localStorage)
 //  - 인센티브 미리보기 (POST /simulate, 본인 settlement fetch, 매칭 product 표시)
-//  - 영업 등록 (POST /sales, Daum Postcode 주소검색)
+//  - 영업 등록 (POST /sales, Daum Postcode 주소검색, quote_full_html 직렬화)
+//  - 영업 내역 상세 모달 (B2)
 //  - Realtime 구독 (incentive_sales 변경 → 자동 갱신)
 //  - 내 영업 내역 (GET /sales?month=YYYY-MM)
-//
-// TODO Phase B2:
-//  - KT 프리미엄 가족결합 5-row 멤버 입력 UI (현재 미구현)
-//  - 영업 내역 상세 모달 + 취소 기능 (목록 표시까지만 구현)
-//  - 상담 스크립트 / 메모 좌측 패널 (vanilla에 있음, B1 범위 외)
-//  - quote_full_html 전송 (현재 quote_summary + monthly_fee만 전송)
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { useV5Auth } from '../../../hooks/useV5Auth.jsx';
 import useQuoteEngine from '../../../hooks/useQuoteEngine.js';
 import { D, applyIncentivePaybackSync } from '../../../lib/quoteEngine.js';
@@ -114,9 +112,13 @@ export default function TmCounselor() {
   // 영업 내역
   const [sales, setSales] = useState([]);
   const [salesOpen, setSalesOpen] = useState(false);
+  const [selectedSale, setSelectedSale] = useState(null); // SaleDetailModal
 
   // 계약 폼
   const [showDealForm, setShowDealForm] = useState(false);
+
+  // 결과 패널 ref (HTML 직렬화용 — DealForm에서 사용)
+  // Note: ReactDOM.renderToStaticMarkup is invoked inside DealForm via prop reference.
 
   // 상품 카탈로그 로드 + payback 동기화
   useEffect(() => {
@@ -285,11 +287,22 @@ export default function TmCounselor() {
     } else if (input.bundle === 'family' || input.bundle === 'sk-onfamily') {
       if (input.lines < 1) patch({ lines: 1 });
     }
+    // KT 프리미엄 가족결합 default members (vanilla 기본값 재현)
+    if (input.bundle === 'kt-premium' && (!input.premiumMembers || input.premiumMembers.length === 0)) {
+      // 기본: 0번(대표)=8(80,000원), 1·2번=8, 3·4번=0
+      const defaults = [
+        { planIdx: 8, usePrem: false, isRep: true },
+        { planIdx: 8, usePrem: true, isRep: false },
+        { planIdx: 8, usePrem: true, isRep: false },
+      ];
+      patch({ premiumMembers: defaults });
+    }
   }, [input.bundle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={pageStyle}>
       <div style={layoutStyle}>
+        <ScriptPanel />
         <QuoteInputPanel input={input} patch={patch} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <IncentivePreview
@@ -322,11 +335,20 @@ export default function TmCounselor() {
               setOpen={setSalesOpen}
               apiCall={apiCall}
               onChanged={() => { fetchSales(); fetchMySettlement(); }}
+              onSelect={(s) => setSelectedSale(s)}
             />
           )}
         </div>
         <QuoteResultPanel quote={result} input={input} />
       </div>
+      {selectedSale && (
+        <SaleDetailModal
+          sale={selectedSale}
+          apiCall={apiCall}
+          onClose={() => setSelectedSale(null)}
+          onChanged={() => { fetchSales(); fetchMySettlement(); }}
+        />
+      )}
     </div>
   );
 }
@@ -528,10 +550,11 @@ function QuoteInputPanel({ input, patch }) {
       )}
 
       {showPremium && (
-        <Card icon="💎" title="KT 프리미엄 가족결합 (회선별)">
-          <div style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: 6, padding: '10px 12px', fontSize: 11, color: '#7f1d1d', lineHeight: 1.5 }}>
-            ⚠️ TODO Phase B2: 5-row 멤버 입력 UI 미구현. 현재는 결합 선택만 가능 (계산 결과 0건 처리). vanilla 페이지에서 사용하세요.
-          </div>
+        <Card icon="💎" title="KT 프리미엄 가족결합 (회선별)" highlight="lgu">
+          <PremiumMembers
+            members={input.premiumMembers}
+            onChange={(arr) => patch({ premiumMembers: arr })}
+          />
         </Card>
       )}
 
@@ -1165,6 +1188,14 @@ function DealForm({ matchedProduct, quote, input, addPayback, apiCall, onClose, 
     // monthly_fee — 섹터 2 우선, 없으면 섹터 1
     const monthlyFee = (quote.sectorFamily?.finalInet) || quote.sectorMain?.total || null;
 
+    // quote_full_html — React 결과 패널을 정적 HTML로 직렬화
+    let quoteFullHtml = null;
+    try {
+      quoteFullHtml = renderToStaticMarkup(<QuoteResultPanel quote={quote} input={input} />);
+    } catch (e) {
+      console.warn('[tm] quote_full_html serialization failed', e);
+    }
+
     const payload = {
       product_id: matchedProduct.id,
       customer_name: name || null,
@@ -1179,6 +1210,7 @@ function DealForm({ matchedProduct, quote, input, addPayback, apiCall, onClose, 
       additional_products: additional.length ? additional : null,
       wifi_option: (input.carrier === 'lgu' && (input.speed === '500M' || input.speed === '1G')) ? input.lguBonus : null,
       quote_summary: summary,
+      quote_full_html: quoteFullHtml,
       monthly_fee: monthlyFee,
     };
 
@@ -1269,8 +1301,9 @@ const inputCss = { width: '100%', padding: '4px 6px', border: '1px solid #d1d5db
 // ─────────────────────────────────────────────────────────────────────────────
 // 영업 내역 리스트
 // ─────────────────────────────────────────────────────────────────────────────
-function SalesList({ sales, open, setOpen, apiCall, onChanged }) {
-  const handleCancel = async (id) => {
+function SalesList({ sales, open, setOpen, apiCall, onChanged, onSelect }) {
+  const handleCancel = async (id, e) => {
+    if (e) e.stopPropagation();
     if (!confirm('이 영업을 취소하시겠습니까? (인센티브에서 제외)')) return;
     try {
       const res = await apiCall('PATCH', `/sales/${id}`, { status: 'cancelled', cancellation_reason: '본인 취소' });
@@ -1295,7 +1328,12 @@ function SalesList({ sales, open, setOpen, apiCall, onChanged }) {
             const dateShort = (s.contract_date || '').slice(5);
             const cancelled = s.status === 'cancelled';
             return (
-              <div key={s.id} style={{ borderBottom: '1px solid rgba(245,158,11,0.2)', padding: '5px 4px', fontSize: 10, opacity: cancelled ? 0.5 : 1 }}>
+              <div
+                key={s.id}
+                onClick={() => onSelect && onSelect(s)}
+                style={{ borderBottom: '1px solid rgba(245,158,11,0.2)', padding: '5px 4px', fontSize: 10, opacity: cancelled ? 0.5 : 1, cursor: 'pointer' }}
+                title="클릭하여 상세 보기"
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                   <div style={{ fontWeight: 700, color: '#374151' }}>
                     {dateShort} · {p.name || '?'}
@@ -1307,7 +1345,7 @@ function SalesList({ sales, open, setOpen, apiCall, onChanged }) {
                     {cancelled && <span style={{ background: '#dc2626', color: '#fff', padding: '1px 5px', borderRadius: 3, fontSize: 8 }}>취소</span>}
                     {s.status === 'pending' && <span style={{ background: '#f59e0b', color: '#fff', padding: '1px 5px', borderRadius: 3, fontSize: 8 }}>대기</span>}
                     {s.status === 'completed' && (
-                      <button onClick={() => handleCancel(s.id)} style={{ fontSize: 9, padding: '1px 5px', background: '#fff', border: '1px solid #dc2626', color: '#dc2626', borderRadius: 3, cursor: 'pointer' }}>취소</button>
+                      <button onClick={(e) => handleCancel(s.id, e)} style={{ fontSize: 9, padding: '1px 5px', background: '#fff', border: '1px solid #dc2626', color: '#dc2626', borderRadius: 3, cursor: 'pointer' }}>취소</button>
                     )}
                   </div>
                 </div>
@@ -1332,6 +1370,400 @@ function SalesList({ sales, open, setOpen, apiCall, onChanged }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PremiumMembers — KT 프리미엄 가족결합 5-row 멤버 입력 UI (Phase B2)
+// ─────────────────────────────────────────────────────────────────────────────
+function PremiumMembers({ members, onChange }) {
+  const catalog = D.kt.bundle.premium.planCatalog;
+  const list = Array.isArray(members) ? members : [];
+
+  const updateRow = (idx, partial) => {
+    const next = list.map((m, i) => (i === idx ? { ...m, ...partial } : m));
+    onChange(next);
+  };
+
+  const addRow = () => {
+    if (list.length >= 5) return;
+    const next = [...list, { planIdx: 0, usePrem: false, isRep: false }];
+    onChange(next);
+  };
+
+  const removeRow = (idx) => {
+    if (idx === 0) return; // 대표 회선은 삭제 불가
+    const next = list.filter((_, i) => i !== idx);
+    onChange(next);
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: 10.5, color: '#7f1d1d', marginBottom: 8, lineHeight: 1.5, background: 'rgba(220,38,38,0.06)', borderRadius: 6, padding: '6px 8px' }}>
+        ⚠️ 77,000원↑ 요금제가 <b>2회선 이상</b> 필요 · 0번 회선은 <b>대표(총액결합 고정)</b>
+      </div>
+      {list.map((m, i) => {
+        const isRep = i === 0;
+        const planIdx = m.planIdx ?? 0;
+        const plan = catalog[planIdx] || catalog[0];
+        const canPrem = !isRep && plan.prem;
+        return (
+          <div
+            key={i}
+            style={{
+              display: 'flex', gap: 6, alignItems: 'center', fontSize: 11,
+              padding: isRep ? '6px 8px' : '5px 4px',
+              marginBottom: 5,
+              background: isRep ? 'rgba(220,38,38,0.05)' : 'transparent',
+              borderRadius: 6,
+              border: isRep ? '1px solid rgba(220,38,38,0.25)' : '1px solid transparent',
+            }}
+          >
+            <div style={{ minWidth: 70, color: '#374151', fontWeight: 700 }}>
+              회선 {i + 1}
+              {isRep && <div style={{ fontSize: 9, color: '#dc2626', fontWeight: 800 }}>대표</div>}
+            </div>
+            <select
+              value={planIdx}
+              onChange={(e) => updateRow(i, { planIdx: parseInt(e.target.value, 10) })}
+              style={{ flex: 1, padding: '4px 6px', border: '1px solid #d1d5db', borderRadius: 4, fontSize: 10.5, background: '#fff' }}
+            >
+              {catalog.map((p, pi) => {
+                const hint = (!isRep && p.dc) ? ` → 프리미엄 -${p.dc.toLocaleString()}원` : '';
+                return <option key={pi} value={pi}>{p.label}{hint}</option>;
+              })}
+            </select>
+            {isRep ? (
+              <div style={{ minWidth: 76, fontSize: 9.5, color: '#dc2626', textAlign: 'right' }}>❌ 프리미엄 불가</div>
+            ) : (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 9.5, color: canPrem ? '#374151' : '#9ca3af', minWidth: 76, whiteSpace: 'nowrap', opacity: canPrem ? 1 : 0.6 }}>
+                <input
+                  type="checkbox"
+                  checked={!!m.usePrem && canPrem}
+                  disabled={!canPrem}
+                  onChange={(e) => updateRow(i, { usePrem: e.target.checked })}
+                />
+                프리미엄 적용
+              </label>
+            )}
+            {!isRep && (
+              <button
+                type="button"
+                onClick={() => removeRow(i)}
+                style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 4, color: '#64748b', cursor: 'pointer', fontSize: 11, padding: '2px 7px' }}
+                title="삭제"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        );
+      })}
+      {list.length < 5 && (
+        <button
+          type="button"
+          onClick={addRow}
+          style={{ width: '100%', padding: '5px 8px', background: '#fff', border: '1.5px dashed #cbd5e1', borderRadius: 6, color: '#475569', cursor: 'pointer', fontSize: 11, fontWeight: 700, marginTop: 4 }}
+        >
+          + 회선 추가 ({list.length}/5)
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ScriptPanel — 좌측 상담 스크립트 패널 (Phase B2)
+// ─────────────────────────────────────────────────────────────────────────────
+const SCRIPT_KEY = 'tm-scripts-v1';
+const SCRIPT_DEFAULTS = [
+  { title: '인사 & 본인확인', text: '안녕하세요, 리턴AI 상담사 ___입니다. 인터넷·TV 상담 도와드리겠습니다. 본인이신가요?' },
+  { title: '현재 상품 확인', text: '현재 어느 통신사 사용 중이신가요? 약정 만료일은 언제인가요? 가족 결합 여부도 확인.' },
+  { title: '니즈 파악', text: '인터넷 속도/TV 채널/WiFi/사은품 우선순위 파악. 가족 구성원·휴대폰 결합 여부 확인.' },
+  { title: '견적 안내', text: '오른쪽 견적표를 보고 안내드립니다. 사은품 · 설치비 함께 설명. 결합 할인 강조.' },
+  { title: '결합 혜택 강조', text: '단독 대비 월 절감액·연간 합계로 환산하여 강조. 우수상품/프리미엄 가족결합 적합 시 권유.' },
+  { title: '클로징', text: '신청 의사 확인 → 설치 일정 협의 → 필요 서류 안내 (신분증·계좌·주소).' },
+];
+
+function loadScripts() {
+  try {
+    const raw = localStorage.getItem(SCRIPT_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length) return arr;
+    }
+  } catch {}
+  return SCRIPT_DEFAULTS.slice();
+}
+
+function ScriptPanel() {
+  const [scripts, setScripts] = useState(loadScripts);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [memo, setMemo] = useState(() => {
+    try { return localStorage.getItem('tm-memo-v1') || ''; } catch { return ''; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(SCRIPT_KEY, JSON.stringify(scripts)); } catch {}
+  }, [scripts]);
+
+  useEffect(() => {
+    try { localStorage.setItem('tm-memo-v1', memo); } catch {}
+  }, [memo]);
+
+  const updateField = (idx, field, value) => {
+    setScripts((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)));
+  };
+
+  const removeStep = (idx) => {
+    setScripts((prev) => prev.filter((_, i) => i !== idx));
+    if (activeIdx === idx) setActiveIdx(0);
+  };
+
+  const addStep = () => {
+    setScripts((prev) => [...prev, { title: '새 단계', text: '내용을 입력하세요...' }]);
+  };
+
+  return (
+    <aside style={scriptPanelStyle}>
+      <h3 style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', margin: '0 0 8px', letterSpacing: '0.04em' }}>💬 상담 스크립트</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+        {scripts.map((s, idx) => {
+          const active = activeIdx === idx;
+          return (
+            <div
+              key={idx}
+              onClick={() => setActiveIdx(idx)}
+              style={{
+                background: active ? 'linear-gradient(135deg, #dbeafe, #bfdbfe)' : '#f8fafc',
+                border: active ? '1.5px solid #3b82f6' : '1px solid #e2e8f0',
+                borderRadius: 8,
+                padding: '7px 8px',
+                cursor: 'pointer',
+                transition: 'all 0.14s',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  minWidth: 18, height: 18, borderRadius: '50%', fontSize: 10, fontWeight: 800,
+                  background: active ? '#3b82f6' : '#cbd5e1', color: '#fff',
+                }}>{idx + 1}</span>
+                <input
+                  type="text"
+                  value={s.title}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => updateField(idx, 'title', e.target.value)}
+                  style={{
+                    flex: 1, fontSize: 11, fontWeight: 700,
+                    color: active ? '#1d4ed8' : '#475569',
+                    background: 'transparent', border: 'none', outline: 'none', padding: '1px 2px',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); if (confirm('이 단계를 삭제할까요?')) removeStep(idx); }}
+                  style={{ background: '#fff', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 4, cursor: 'pointer', fontSize: 11, padding: '0 6px', fontWeight: 800 }}
+                  title="단계 삭제"
+                >×</button>
+              </div>
+              <textarea
+                value={s.text}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => updateField(idx, 'text', e.target.value)}
+                rows={Math.max(2, Math.min(6, s.text.split('\n').length))}
+                style={{
+                  width: '100%', fontSize: 10.5, color: active ? '#1e293b' : '#64748b',
+                  background: 'transparent', border: 'none', outline: 'none', resize: 'vertical',
+                  fontFamily: 'inherit', lineHeight: 1.5, padding: 0, boxSizing: 'border-box',
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <button
+        type="button"
+        onClick={addStep}
+        style={{ width: '100%', padding: '6px 10px', background: '#fff', border: '1.5px dashed #cbd5e1', borderRadius: 8, fontSize: 11, fontWeight: 700, color: '#475569', cursor: 'pointer' }}
+      >+ 단계 추가</button>
+
+      <h3 style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', margin: '14px 0 6px', letterSpacing: '0.04em' }}>📝 메모</h3>
+      <textarea
+        value={memo}
+        onChange={(e) => setMemo(e.target.value)}
+        placeholder="상담 메모..."
+        rows={5}
+        style={{ width: '100%', padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 11, fontFamily: 'inherit', lineHeight: 1.5, background: '#f8fafc', color: '#0f172a', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }}
+      />
+    </aside>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SaleDetailModal — 영업 내역 상세 모달 (Phase B2)
+// ─────────────────────────────────────────────────────────────────────────────
+function SaleDetailModal({ sale, apiCall, onClose, onChanged }) {
+  const [working, setWorking] = useState(false);
+  const overlayRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  if (!sale) return null;
+  const p = sale.product || {};
+  const cancelled = sale.status === 'cancelled';
+
+  const handleCancel = async () => {
+    if (!confirm('이 영업을 취소하시겠습니까? (인센티브에서 제외)')) return;
+    try {
+      setWorking(true);
+      const res = await apiCall('PATCH', `/sales/${sale.id}`, { status: 'cancelled', cancellation_reason: '본인 취소' });
+      if (!res.ok) throw new Error('취소 실패');
+      onChanged && onChanged();
+      onClose();
+    } catch (e) { alert(e.message); }
+    finally { setWorking(false); }
+  };
+
+  return (
+    <div
+      ref={overlayRef}
+      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.7)', zIndex: 1000,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      }}
+    >
+      <div
+        style={{
+          background: '#fff', borderRadius: 14, maxWidth: 720, width: '100%',
+          maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid #e2e8f0', background: 'linear-gradient(135deg,#fef3c7,#fde68a)' }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: '#92400e' }}>📋 영업 상세</div>
+            <div style={{ fontSize: 11, color: '#78350f', marginTop: 2, fontFamily: "'SF Mono', Monaco, monospace" }}>ID {String(sale.id).slice(0, 8)}</div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ background: '#fff', border: '1px solid #94a3b8', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', fontWeight: 700 }}
+          >닫기 ×</button>
+        </div>
+        <div style={{ padding: '14px 18px', color: '#0f172a', fontSize: 12, lineHeight: 1.6 }}>
+          <ModalSection title="📅 계약 정보">
+            <ModalRow label="계약일" value={sale.contract_date || '-'} />
+            <ModalRow label="설치 희망일" value={sale.installation_date || '-'} />
+            <ModalRow label="설치 시간" value={sale.installation_time || '-'} />
+            <ModalRow label="상태" value={
+              <span style={{
+                background: cancelled ? '#dc2626' : sale.status === 'pending' ? '#f59e0b' : '#16a34a',
+                color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700,
+              }}>{cancelled ? '취소' : sale.status === 'pending' ? '대기' : '완료'}</span>
+            } />
+          </ModalSection>
+
+          <ModalSection title="👤 고객 정보">
+            <ModalRow label="고객명" value={sale.customer_name || '-'} />
+            <ModalRow label="전화" value={sale.customer_phone || '-'} />
+            <ModalRow label="주소" value={sale.customer_address || '-'} />
+            <ModalRow label="상세주소" value={sale.customer_address_detail || '-'} />
+          </ModalSection>
+
+          <ModalSection title="🎯 상품 / 인센티브">
+            <ModalRow label="상품명" value={p.name || '-'} />
+            <ModalRow label="통신사" value={p.carrier || '-'} />
+            <ModalRow label="등급" value={p.tier ? <span style={{ background: '#92400e', color: '#fff', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>{p.tier}</span> : '-'} />
+            <ModalRow label="포인트 가중치" value={p.point_weight != null ? `${p.point_weight}P` : '-'} />
+            <ModalRow label="우수상품" value={p.is_premium ? '⭐ Yes' : 'No'} />
+            <ModalRow label="추가 페이백" value={(sale.add_payback || 0).toLocaleString() + '원'} />
+            <ModalRow label="TV 대수" value={`${sale.tv_count || 1}대`} />
+            <ModalRow label="월 요금" value={sale.monthly_fee ? sale.monthly_fee.toLocaleString() + '원' : '-'} />
+          </ModalSection>
+
+          {sale.quote_summary && (
+            <ModalSection title="💰 견적 요약">
+              <pre style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '10px 12px', fontSize: 11, color: '#0f172a', whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0, lineHeight: 1.6 }}>
+                {sale.quote_summary}
+              </pre>
+            </ModalSection>
+          )}
+
+          {sale.quote_full_html && (
+            <ModalSection title="📄 견적 상세 HTML">
+              <div
+                dangerouslySetInnerHTML={{ __html: sale.quote_full_html }}
+                style={{
+                  background: 'linear-gradient(160deg, #1e293b 0%, #0f172a 60%, #020617 100%)',
+                  color: '#fff', borderRadius: 8, padding: '12px 14px', fontSize: 11.5,
+                  maxHeight: 360, overflow: 'auto',
+                }}
+              />
+            </ModalSection>
+          )}
+
+          {sale.notes && (
+            <ModalSection title="📝 상담 메모">
+              <pre style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 6, padding: '10px 12px', fontSize: 11, color: '#78350f', whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0, lineHeight: 1.6 }}>
+                {sale.notes}
+              </pre>
+            </ModalSection>
+          )}
+
+          <ModalSection title="⏱ Timestamps">
+            <ModalRow label="생성" value={sale.created_at ? new Date(sale.created_at).toLocaleString('ko-KR') : '-'} />
+            <ModalRow label="갱신" value={sale.updated_at ? new Date(sale.updated_at).toLocaleString('ko-KR') : '-'} />
+            {sale.contract_pending_at && <ModalRow label="대기 시점" value={new Date(sale.contract_pending_at).toLocaleString('ko-KR')} />}
+            {sale.contract_in_progress_at && <ModalRow label="진행 중" value={new Date(sale.contract_in_progress_at).toLocaleString('ko-KR')} />}
+            {sale.contract_completed_at && <ModalRow label="완료" value={new Date(sale.contract_completed_at).toLocaleString('ko-KR')} />}
+            {sale.contract_cancelled_at && <ModalRow label="취소" value={new Date(sale.contract_cancelled_at).toLocaleString('ko-KR')} />}
+            {sale.cancellation_reason && <ModalRow label="취소 사유" value={sale.cancellation_reason} />}
+          </ModalSection>
+        </div>
+        <div style={{ padding: '12px 18px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 8, justifyContent: 'flex-end', background: '#f8fafc' }}>
+          {!cancelled && sale.status !== 'cancelled' && (
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={working}
+              style={{ padding: '6px 14px', background: '#fff', border: '1px solid #dc2626', color: '#dc2626', borderRadius: 6, fontWeight: 700, cursor: working ? 'not-allowed' : 'pointer', fontSize: 12, opacity: working ? 0.6 : 1 }}
+            >
+              {working ? '처리 중…' : '영업 취소'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ padding: '6px 14px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 12 }}
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalSection({ title, children }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: '#475569', letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase' }}>{title}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>{children}</div>
+    </div>
+  );
+}
+
+function ModalRow({ label, value }) {
+  return (
+    <div style={{ display: 'flex', gap: 10, padding: '4px 0', borderBottom: '1px dashed #f1f5f9' }}>
+      <div style={{ minWidth: 100, color: '#64748b', fontSize: 11, fontWeight: 600 }}>{label}</div>
+      <div style={{ flex: 1, color: '#0f172a', fontSize: 11.5, wordBreak: 'break-word' }}>{value}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Styles
 // ─────────────────────────────────────────────────────────────────────────────
 const pageStyle = {
@@ -1345,7 +1777,7 @@ const pageStyle = {
 
 const layoutStyle = {
   display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr) 400px',
+  gridTemplateColumns: '260px minmax(0, 1fr) 400px',
   gap: 12,
   maxWidth: 1800,
   margin: '0 auto',
@@ -1371,4 +1803,18 @@ const resultPanelStyle = {
   top: 12,
   maxHeight: 'calc(100vh - 24px)',
   overflowY: 'auto',
+};
+
+const scriptPanelStyle = {
+  background: '#fff',
+  borderRadius: 14,
+  padding: 14,
+  color: '#0f172a',
+  fontSize: 12,
+  height: 'fit-content',
+  position: 'sticky',
+  top: 12,
+  maxHeight: 'calc(100vh - 24px)',
+  overflowY: 'auto',
+  boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.04)',
 };
