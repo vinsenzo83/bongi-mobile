@@ -851,6 +851,11 @@ function onLoggedIn(agent, skipLoad) {
   // manager 전용 KPI 섹션은 manager일 때만 표시 (admin은 전체 KPI에서 이미 확인 가능)
   if (agent.role === 'manager') document.body.classList.add('show-manager-kpi');
   if (!skipLoad) loadAll(); // init() 병렬 fetch에서 이미 렌더된 경우 재요청 안 함
+  // agent role 전용 섹션은 init() 병렬 fetch에 포함 안 되어있어 항상 별도 로드
+  if (agent.role === 'agent') {
+    const month = document.getElementById('filter-month').value;
+    if (month) loadAgentSection(month);
+  }
 }
 
 document.getElementById('auth-login-btn').addEventListener('click', async () => {
