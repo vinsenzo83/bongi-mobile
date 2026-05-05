@@ -268,7 +268,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, add_payback, customer_address, customer_name, customer_phone, installation_date } = req.body || {};
+    const { status, cancellation_reason, notes, add_payback, customer_address, customer_name, customer_phone, installation_date, resident_id, gift_received } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -290,6 +290,8 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (customer_name !== undefined) update.customer_name = customer_name;
     if (customer_phone !== undefined) update.customer_phone = customer_phone;
     if (installation_date !== undefined) update.installation_date = installation_date;
+    if (resident_id !== undefined) update.resident_id = resident_id;
+    if (gift_received !== undefined) update.gift_received = gift_received;
 
     const { data, error } = await supabase
       .from('incentive_sales')

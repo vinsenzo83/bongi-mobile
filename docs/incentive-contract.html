@@ -54,6 +54,8 @@ tr.cancelled { opacity:0.5; }
 .btn-save { background:#16a34a; color:#fff; }
 .btn-cancel { background:#dc2626; color:#fff; }
 .btn-call { background:#3b82f6; color:#fff; }
+.btn-edit { background:#3b82f6; color:#fff; }
+.detail-row td { padding: 0 !important; }
 
 .empty { text-align:center; padding:60px 20px; color:#64748b; font-size:13px; }
 .has-address { color:#16a34a; }
@@ -230,20 +232,104 @@ function renderTable(contracts) {
     const a = c.agent || {};
     const tierBadge = p.tier ? `<span class="tier tier-${p.tier}">${p.tier}</span>` : '';
     const premBadge = p.is_premium ? '<span class="prem-badge">우수</span>' : '';
-    const addrClass = (c.customer_address && c.customer_address.trim()) ? 'has-address' : 'no-address';
+    const hasAddr = c.customer_address && c.customer_address.trim();
+    const addrText = hasAddr ? c.customer_address : '<i style="color:#dc2626">주소 미입력</i>';
     return `<tr class="${c.status === 'cancelled' ? 'cancelled' : ''}" data-id="${c.id}">
       <td>${c.contract_date.slice(5)}</td>
       <td>${a.name || '-'}<div style="font-size:9px;color:#64748b">${a.center || ''}</div></td>
-      <td>${p.name || '-'} ${tierBadge}${premBadge}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P · 마진 ${(p.margin || 0).toLocaleString()}원</div></td>
-      <td>${c.customer_name ? `<input class="editable" data-field="customer_name" data-id="${c.id}" value="${c.customer_name.replace(/"/g, '&quot;')}">` : '<i style="color:#94a3b8">없음</i>'}</td>
-      <td>${c.customer_phone ? `<input class="editable" data-field="customer_phone" data-id="${c.id}" value="${c.customer_phone.replace(/"/g, '&quot;')}">` : '<i style="color:#94a3b8">없음</i>'}</td>
-      <td><input class="editable ${addrClass}" data-field="customer_address" data-id="${c.id}" value="${(c.customer_address || '').replace(/"/g, '&quot;')}" placeholder="주소 입력..."></td>
+      <td>${p.name || '-'} ${tierBadge}${premBadge}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P</div></td>
+      <td>${c.customer_name || '<i style="color:#94a3b8">-</i>'}</td>
+      <td>${c.customer_phone || '<i style="color:#94a3b8">-</i>'}</td>
+      <td style="max-width:240px;word-break:break-all;font-size:10.5px">${addrText}</td>
       <td>${(c.add_payback || 0).toLocaleString()}<div style="font-size:9px;color:#64748b">본인 -${(c.agent_payback_deduct || 0).toLocaleString()}</div></td>
       <td><span class="status status-${c.status}">${c.status}</span></td>
       <td>
-        <button class="btn-action btn-save" data-act="save" data-id="${c.id}">💾</button>
-        ${c.status === 'completed' ? `<button class="btn-action btn-cancel" data-act="cancel" data-id="${c.id}">취소</button>` : ''}
+        <button class="btn-action btn-edit" data-act="edit" data-id="${c.id}">📝</button>
         ${c.status === 'pending' ? `<button class="btn-action btn-save" data-act="finalize" data-id="${c.id}">완료</button>` : ''}
+      </td>
+    </tr>
+    <tr class="detail-row" id="detail-${c.id}" style="display:none;background:#0f172a">
+      <td colspan="9" style="padding:0">
+        <div style="padding:14px 16px;border-top:2px solid #475569;background:linear-gradient(135deg,#1e293b,#0f172a)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:13px;color:#60a5fa;font-weight:800">📝 계약 상세 정보 입력 / 수정</div>
+            <button class="btn-action" data-act="close-detail" data-id="${c.id}" style="background:#475569;color:#fff;padding:3px 10px">닫기</button>
+          </div>
+
+          <!-- 📦 상품 상세 정보 (read-only) -->
+          <div style="background:rgba(0,0,0,0.3);border:1px solid #475569;border-radius:6px;padding:10px 12px;margin-bottom:14px">
+            <div style="font-size:10.5px;color:#fbbf24;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">📦 상품 상세 정보</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px">
+              <div><div style="font-size:9px;color:#94a3b8">통신사</div><div style="color:#f8fafc;font-weight:700">${p.carrier || '-'}</div></div>
+              <div><div style="font-size:9px;color:#94a3b8">종류</div><div style="color:#f8fafc;font-weight:700">${p.type || '-'}</div></div>
+              <div><div style="font-size:9px;color:#94a3b8">속도</div><div style="color:#f8fafc;font-weight:700">${p.speed || '-'}</div></div>
+              <div><div style="font-size:9px;color:#94a3b8">TV 등급</div><div style="color:#f8fafc;font-weight:700">${p.tv_tier || '-'}</div></div>
+              <div style="grid-column:span 2"><div style="font-size:9px;color:#94a3b8">상품명</div><div style="color:#f8fafc;font-weight:700;font-size:11.5px">${p.name || '-'}</div></div>
+              <div><div style="font-size:9px;color:#94a3b8">가중치</div><div style="color:#f8fafc;font-weight:700">${p.point_weight || '-'} P</div></div>
+              <div><div style="font-size:9px;color:#94a3b8">Tier</div><div>${tierBadge}${premBadge}</div></div>
+              <div><div style="font-size:9px;color:#94a3b8">리베이트</div><div style="color:#86efac;font-weight:700">${(p.rebate||0).toLocaleString()}원</div></div>
+              <div><div style="font-size:9px;color:#94a3b8">페이백 정가</div><div style="color:#fca5a5;font-weight:700">${(p.payback||0).toLocaleString()}원</div></div>
+              <div><div style="font-size:9px;color:#94a3b8">계약일</div><div style="color:#f8fafc;font-weight:700">${c.contract_date}</div></div>
+              <div><div style="font-size:9px;color:#94a3b8">상담사</div><div style="color:#f8fafc;font-weight:700">${a.name || '-'}<span style="color:#94a3b8;font-weight:400"> · ${a.center || ''}</span></div></div>
+            </div>
+          </div>
+
+          <!-- 👤 고객 정보 -->
+          <div style="font-size:10.5px;color:#60a5fa;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">👤 고객 정보</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label style="font-size:10px;color:#94a3b8;font-weight:700">이름 *</label>
+              <input class="detail-input" data-field="customer_name" data-id="${c.id}" value="${(c.customer_name || '').replace(/"/g, '&quot;')}" placeholder="홍길동" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px">
+            </div>
+            <div>
+              <label style="font-size:10px;color:#94a3b8;font-weight:700">전화번호 *</label>
+              <input class="detail-input" data-field="customer_phone" data-id="${c.id}" value="${(c.customer_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px">
+            </div>
+            <div>
+              <label style="font-size:10px;color:#94a3b8;font-weight:700">주민번호 (선택, 최종계약시)</label>
+              <input class="detail-input" data-field="resident_id" data-id="${c.id}" value="${(c.resident_id || '').replace(/"/g, '&quot;')}" placeholder="000000-0000000" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px;letter-spacing:0.04em">
+            </div>
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:10px;color:#94a3b8;font-weight:700">설치 주소 *</label>
+            <input class="detail-input" data-field="customer_address" data-id="${c.id}" value="${(c.customer_address || '').replace(/"/g, '&quot;')}" placeholder="설치 주소 (상세 주소까지 정확히)" style="width:100%;background:#0f172a;border:1.5px solid ${hasAddr ? '#475569' : '#dc2626'};color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px">
+          </div>
+
+          <!-- 📅 설치 / 🎁 사은품 / 💰 페이백 -->
+          <div style="font-size:10.5px;color:#22c55e;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">📅 설치 · 🎁 사은품 · 💰 페이백</div>
+          <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:10px;margin-bottom:14px">
+            <div>
+              <label style="font-size:10px;color:#94a3b8;font-weight:700">설치 희망일</label>
+              <input class="detail-input" data-field="installation_date" data-id="${c.id}" type="date" value="${c.installation_date || ''}" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px">
+            </div>
+            <div>
+              <label style="font-size:10px;color:#94a3b8;font-weight:700">실제 사은품</label>
+              <input class="detail-input" data-field="gift_received" data-id="${c.id}" value="${(c.gift_received || '').replace(/"/g, '&quot;')}" placeholder="예: 현금 30만 / 다이슨 청소기 / 가전렌탈 등" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px">
+            </div>
+            <div>
+              <label style="font-size:10px;color:#94a3b8;font-weight:700">추가 페이백 (₩, 0~50,000)</label>
+              <input class="detail-input" data-field="add_payback" data-id="${c.id}" type="number" min="0" max="50000" step="1000" value="${c.add_payback || 0}" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px">
+              <div style="font-size:9px;color:#64748b;margin-top:3px;line-height:1.4">회사 ≤30,000 + 상담사 차감 30,001~50,000</div>
+            </div>
+          </div>
+
+          <!-- 📝 메모 -->
+          <div style="margin-bottom:14px">
+            <label style="font-size:10px;color:#94a3b8;font-weight:700">메모 / 비고</label>
+            <textarea class="detail-input" data-field="notes" data-id="${c.id}" rows="3" placeholder="신분증 수령 여부, 계좌, 특이사항 등 자유 기입" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px;resize:vertical;font-family:inherit">${(c.notes || '').replace(/</g, '&lt;')}</textarea>
+          </div>
+
+          <!-- 액션 버튼 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #475569;padding-top:10px">
+            <div style="font-size:9.5px;color:#64748b">
+              계약 ID ${c.id.slice(0, 8)}... · 상태 <span class="status status-${c.status}">${c.status}</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              ${c.status === 'completed' ? `<button class="btn-action btn-cancel" data-act="cancel" data-id="${c.id}" style="font-size:11px;padding:6px 14px">❌ 영업 취소</button>` : ''}
+              <button class="btn-action btn-save" data-act="save-detail" data-id="${c.id}" style="font-size:11px;padding:6px 18px">💾 모든 변경사항 저장</button>
+            </div>
+          </div>
+        </div>
       </td>
     </tr>`;
   }).join('');
@@ -260,13 +346,39 @@ function renderTable(contracts) {
 
 async function handleAction(id, act) {
   const tk = getToken();
+
+  // 상세 패널 토글
+  if (act === 'edit') {
+    const detail = document.getElementById('detail-' + id);
+    if (detail) {
+      // 다른 열려있는 패널 닫기
+      document.querySelectorAll('.detail-row').forEach(r => { if (r.id !== 'detail-' + id) r.style.display = 'none'; });
+      detail.style.display = detail.style.display === 'none' ? '' : 'none';
+    }
+    return;
+  }
+  if (act === 'close-detail') {
+    document.getElementById('detail-' + id).style.display = 'none';
+    return;
+  }
+
   let body = {};
-  if (act === 'save') {
-    // 같은 행의 input 값들 모음
-    const row = document.querySelector(`tr[data-id="${id}"]`);
-    row.querySelectorAll('.editable').forEach(inp => {
-      body[inp.dataset.field] = inp.value.trim() || null;
+  if (act === 'save-detail') {
+    // 상세 패널의 모든 input/textarea 값 수집
+    const detail = document.getElementById('detail-' + id);
+    detail.querySelectorAll('.detail-input').forEach(inp => {
+      const field = inp.dataset.field;
+      const val = inp.value.trim();
+      if (field === 'add_payback') {
+        body[field] = parseInt(val) || 0;
+      } else {
+        body[field] = val || null;
+      }
     });
+    // 검증
+    if (body.add_payback < 0 || body.add_payback > 50000) {
+      alert('추가 페이백은 0~50,000원 범위'); return;
+    }
   } else if (act === 'cancel') {
     if (!confirm('이 영업을 취소하시겠습니까? 인센티브에서 제외됩니다.')) return;
     body = { status: 'cancelled', cancellation_reason: '계약부서 취소' };
@@ -285,10 +397,8 @@ async function handleAction(id, act) {
       throw new Error(err.error || '저장 실패');
     }
     await loadContracts();
-    if (act === 'save') {
-      // 작은 토스트
-      showToast('✅ 저장 완료');
-    } else if (act === 'cancel') showToast('❌ 취소 처리됨');
+    if (act === 'save-detail') showToast('✅ 모든 변경사항 저장 완료');
+    else if (act === 'cancel') showToast('❌ 취소 처리됨');
     else if (act === 'finalize') showToast('✅ 완료 처리됨');
   } catch (e) {
     alert('오류: ' + e.message);
