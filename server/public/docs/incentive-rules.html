@@ -214,7 +214,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <div style="padding:14px 16px;font-size:12px;color:#cbd5e1;line-height:1.7">
           <ul style="margin-left:18px;line-height:1.9">
             <li><b>⏰ 계약대기 (pending)</b>: TM 등록 후 계약부서 처리 전. 정산 미반영.</li>
-            <li><b>✅ 계약완료 (completed)</b>: 정산 포함 (인센티브·보너스·매출 카운트)</li>
+            <li><b>✅ 계약완료 (completed)</b>: 정산 포함 (인센티브·보너스·영업이익 카운트)</li>
             <li><b>❌ 계약취소 (cancelled)</b>: 정산 제외. 누적 P/우수 자동 차감.</li>
           </ul>
           <p style="margin-top:8px"><b>월말 정산:</b> admin이 📊 대시보드에서 [📌 전체 정산 확정] 버튼 클릭 → monthly_settlements 테이블에 확정 저장.</p>
@@ -384,7 +384,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <div style="background:rgba(34,197,94,0.06);border:1.5px solid rgba(34,197,94,0.4);border-radius:10px;padding:14px 16px">
           <div style="font-size:12px;color:#22c55e;font-weight:800;margin-bottom:10px;letter-spacing:0.04em">🏢 회사 손익</div>
           <div style="display:flex;flex-direction:column;gap:8px;font-size:11.5px">
-            <div style="display:flex;justify-content:space-between"><span>매출 (리베이트 × 인식률)</span><b id="sim-out-net-rev" style="color:#86efac">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>인식 영업이익 (리베이트 × 인식률)</span><b id="sim-out-net-rev" style="color:#86efac">-</b></div>
             <div style="display:flex;justify-content:space-between"><span>− 페이백 정가</span><b id="sim-out-payback" style="color:#fca5a5">-</b></div>
             <div style="display:flex;justify-content:space-between"><span>− 회사 부담 추가페이백</span><b id="sim-out-burden" style="color:#fca5a5">-</b></div>
             <div style="display:flex;justify-content:space-between"><span>− 인건비 합계</span><b id="sim-out-labor" style="color:#fca5a5">-</b></div>
