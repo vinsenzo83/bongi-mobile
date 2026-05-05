@@ -1296,6 +1296,8 @@ async function init() {
       // 미리 받아놓은 contracts 즉시 활용
       if (contractsRes && contractsRes.contracts) {
         _currentContracts = contractsRes.contracts;
+        // 최근 등록 순 (created_at desc) — 새 영업이 1번
+        _currentContracts.sort((a, b) => (new Date(b.created_at || 0)) - (new Date(a.created_at || 0)));
         onLoggedIn(agent, true); // skipLoad=true (이미 데이터 있음)
         renderStats(_currentContracts);
         renderTable(_currentContracts);
