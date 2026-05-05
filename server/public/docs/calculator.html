@@ -666,12 +666,25 @@ var D = {
     tvInternetNoWifi: { '100M': 22000, '500M': 27500, '1G': 33000 },
     tvInternetWithWifi: { '100M': 22000, '500M': 27500, '1G': 33000 },
     tv: [
-      { n: 'TV 없음', ch: 0, p: 0, dc: 0 },
-      { n: 'U+tv 실속형', ch: 217, p: 15400, dc: 2200 },
-      { n: 'U+tv 기본형', ch: 223, p: 16500, dc: 2200 },
-      { n: 'U+tv 프리미엄', ch: 252, p: 18700, dc: 2200 },
-      { n: 'U+tv 프리미엄 VOD', ch: 257, p: 24200, dc: 5500 }
+      // tv2Discount: TV2/TV3 시리즈별 고정 할인 (모두 50%)
+      // mainOnly: true → TV1에서만 청약 가능 (TV2/TV3 disabled)
+      { n: 'TV 없음', ch: 0, p: 0, dc: 0, tv2Discount: 0 },
+      { n: 'U+tv 실속형', ch: 217, p: 15400, dc: 2200, tv2Discount: 7700 },
+      { n: 'U+tv 기본형', ch: 223, p: 16500, dc: 2200, tv2Discount: 8250 },
+      { n: 'U+tv 프리미엄', ch: 252, p: 18700, dc: 2200, tv2Discount: 9350 },
+      { n: 'U+tv 프리미엄 VOD', ch: 257, p: 24200, dc: 5500, tv2Discount: 0, mainOnly: true }
     ],
+    // 추가 TV 정책
+    additionalTvPolicy: {
+      maxTvCount: 3,
+      settopDiscountRate: 0,                 // LGU+: 셋톱 할인 없음
+      installDiscountRate: 0.5,              // LGU+: 추가 설치비 50% 할인
+      additionalTvInstallFee: 22000,         // LGU+ TV 추가 1대당 (weekday)
+      tv1KeepsRegularDiscount: true,
+      tv2PriceConstraint: 'leq',             // TV2 월정액 ≤ TV1
+      tv3PriceConstraint: 'leq',             // TV3도 동일
+      enabled: true
+    },
     install: { solo: 36300, combo: 56100 },
     gift: {
       solo: { '100M': 200000, '500M': 230000, '1G': 230000 },
