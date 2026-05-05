@@ -134,14 +134,52 @@
   </div>
 
   <div class="calc-row">
-    <div class="calc-group">
-      <div class="calc-label">TV 상품</div>
+    <div class="calc-group" style="flex:2">
+      <div class="calc-label">TV 상품 (TV1)</div>
       <select class="calc-select" id="c-tv"></select>
+    </div>
+    <div class="calc-group">
+      <div class="calc-label">TV 개수</div>
+      <select class="calc-select" id="c-tv-count">
+        <option value="1">1대</option>
+        <option value="2">2대</option>
+        <option value="3">3대</option>
+      </select>
     </div>
   </div>
 
   <div style="background:rgba(255,255,255,0.06);border-radius:8px;padding:8px 14px;margin-bottom:8px;font-size:11px;color:rgba(255,255,255,0.6)">
-    📺 셋톱박스: <span id="c-settop-info" style="color:#fff;font-weight:700">스마트3 (4,400원)</span> · 고정
+    📺 셋톱박스 (TV1): <span id="c-settop-info" style="color:#fff;font-weight:700">스마트3 (4,400원)</span> · 고정
+  </div>
+
+  <!-- TV2 (개수 >= 2일 때 표시) -->
+  <div id="c-tv2-group" style="display:none;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);border-radius:8px;padding:10px 14px;margin-bottom:8px">
+    <div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-bottom:6px">📺 TV2 (추가 TV)</div>
+    <div class="calc-row" style="margin-bottom:0">
+      <div class="calc-group">
+        <div class="calc-label">TV2 상품</div>
+        <select class="calc-select" id="c-tv2"></select>
+      </div>
+      <div class="calc-group">
+        <div class="calc-label">셋톱2 (50% 할인)</div>
+        <select class="calc-select" id="c-settop2"></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- TV3 (개수 >= 3일 때 표시) -->
+  <div id="c-tv3-group" style="display:none;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);border-radius:8px;padding:10px 14px;margin-bottom:8px">
+    <div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-bottom:6px">📺 TV3 (추가 TV)</div>
+    <div class="calc-row" style="margin-bottom:0">
+      <div class="calc-group">
+        <div class="calc-label">TV3 상품</div>
+        <select class="calc-select" id="c-tv3"></select>
+      </div>
+      <div class="calc-group">
+        <div class="calc-label">셋톱3 (50% 할인)</div>
+        <select class="calc-select" id="c-settop3"></select>
+      </div>
+    </div>
   </div>
 
   <div class="calc-row">
@@ -440,17 +478,26 @@ var D = {
     tvInternetNoWifi: { '100M': 19800, '500M': 27500, '1G': 33000 },
     tvInternetWithWifi: { '100M': 22000, '500M': 28600, '1G': 34100 },
     tv: [
-      { n: 'TV 없음', ch: 0, p: 0, dc: 0 },
-      { n: 'B tv 이코노미', ch: 182, p: 12100, dc: 2200 },
-      { n: 'B tv 스탠다드', ch: 236, p: 15400, dc: 2200 },
-      { n: 'B tv 올', ch: 252, p: 18700, dc: 2200 },
-      { n: 'B tv 스탠다드 플러스', ch: 222, p: 23100, dc: 2200 },
-      { n: 'B tv 올 플러스', ch: 252, p: 24200, dc: 2200 },
-      { n: 'B tv 스탠다드 넷플릭스', ch: 222, p: 27700, dc: 2200 },
-      { n: 'B tv 올 넷플릭스', ch: 222, p: 30200, dc: 2200 },
-      { n: 'B tv 스탠다드 넷플릭스 프리미엄', ch: 252, p: 30700, dc: 2200 },
-      { n: 'B tv 올 넷플릭스 프리미엄', ch: 252, p: 33200, dc: 2200 }
+      // tv2Discount: TV2/TV3 추가 시 적용되는 시리즈별 고정 할인 (기본료에서 차감)
+      { n: 'TV 없음', ch: 0, p: 0, dc: 0, tv2Discount: 0 },
+      { n: 'B tv 이코노미', ch: 182, p: 12100, dc: 2200, tv2Discount: 6050 },
+      { n: 'B tv 스탠다드', ch: 236, p: 15400, dc: 2200, tv2Discount: 7700 },
+      { n: 'B tv 올', ch: 252, p: 18700, dc: 2200, tv2Discount: 9350 },
+      { n: 'B tv 스탠다드 플러스', ch: 222, p: 23100, dc: 2200, tv2Discount: 7700 },
+      { n: 'B tv 올 플러스', ch: 252, p: 24200, dc: 2200, tv2Discount: 9350 },
+      { n: 'B tv 스탠다드 넷플릭스', ch: 222, p: 27700, dc: 2200, tv2Discount: 7700 },
+      { n: 'B tv 올 넷플릭스', ch: 222, p: 30200, dc: 2200, tv2Discount: 9350 },
+      { n: 'B tv 스탠다드 넷플릭스 프리미엄', ch: 252, p: 30700, dc: 2200, tv2Discount: 7700 },
+      { n: 'B tv 올 넷플릭스 프리미엄', ch: 252, p: 33200, dc: 2200, tv2Discount: 9350 }
     ],
+    // 추가 TV (2번째 이상) 정책 — 셋톱·설치비 50% 할인
+    additionalTvPolicy: {
+      maxTvCount: 3,                  // TV 최대 3대
+      settopDiscountRate: 0.5,        // 추가 셋톱 50% 할인
+      installDiscountRate: 0.5,       // 추가 설치비 50% 할인
+      tv1KeepsRegularDiscount: true,  // TV1은 기본 결합할인 그대로
+      enabled: true
+    },
     install: { solo: 36300, combo: 56100 },
     gift: {
       solo: { '100M': 110000, '500M': 170000, '1G': 170000 },
@@ -943,6 +990,7 @@ function init() {
   updateRangeUI();
   updateWifiUI();
   updateSetTopInfo();
+  if (typeof updateTvCountUI === 'function') updateTvCountUI();
   calc();
 }
 
@@ -986,13 +1034,23 @@ function applyCarrierFilter(target) {
 
 function buildTV() {
   var c = document.getElementById('c-carrier').value;
-  var ts = document.getElementById('c-tv');
-  ts.innerHTML = '';
-  D[c].tv.forEach(function(t, i) {
-    var o = document.createElement('option');
-    o.value = i;
-    o.textContent = t.n + (t.p ? ' — ' + fmt(t.p) : '');
-    ts.appendChild(o);
+  var d = D[c];
+  ['c-tv', 'c-tv2', 'c-tv3'].forEach(function(id){
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var prev = sel.value;
+    sel.innerHTML = d.tv.map(function(t, i){ return '<option value="' + i + '">' + (t.n || 'TV ' + i) + '</option>'; }).join('');
+    if (prev) sel.value = prev;
+  });
+  // 셋톱2/3 dropdowns
+  ['c-settop2', 'c-settop3'].forEach(function(id){
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var prev = sel.value;
+    sel.innerHTML = (d.setTopOptions || []).filter(function(o){return o.active;}).map(function(o){
+      return '<option value="' + o.id + '"' + (o.isDefault?' selected':'') + '>' + o.name + ' — ' + (o.fee||0).toLocaleString() + '원 (50%할인 ' + Math.round((o.fee||0)*0.5).toLocaleString() + '원)</option>';
+    }).join('');
+    if (prev) sel.value = prev;
   });
 }
 
@@ -1047,7 +1105,64 @@ function calc() {
     }
     html += '<div class="calc-line sub"><span class="l">→ TV 최종요금</span><span class="v">' + fmt(tvFinal) + '</span></div>';
     if (setTop > 0) {
-      html += '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTop) + '</span></div>';
+      html += '<div class="calc-line"><span class="l">📦 셋톱 기본료' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTop) + '</span></div>';
+      var defSt = d.setTopOptions ? d.setTopOptions.find(function(o){return o.isDefault && o.active;}) : null;
+      var stDcInfo = getSettopDiscount(c, sp, ti, defSt ? defSt.id : null);
+      if (stDcInfo.discount > 0) {
+        var baseSum = 0, promoSum = 0;
+        stDcInfo.matched.forEach(function(r){
+          if (r.type === 'promo') promoSum += (r.discount || 0);
+          else baseSum += (r.discount || 0);
+        });
+        if (baseSum > 0) {
+          html += '<div class="calc-line discount"><span class="l">└ 결합 할인</span><span class="v">-' + fmt(baseSum) + '</span></div>';
+          stDcInfo.matched.filter(function(r){return r.type !== 'promo';}).forEach(function(r){
+            html += '<div class="calc-line" style="font-size:9px;color:#94a3b8;padding-left:18px"><span class="l">· ' + r.name + '</span><span class="v">-' + fmt(r.discount) + '</span></div>';
+          });
+        }
+        if (promoSum > 0) {
+          html += '<div class="calc-line discount"><span class="l">└ ⏰ 프로모션</span><span class="v">-' + fmt(promoSum) + '</span></div>';
+          stDcInfo.matched.filter(function(r){return r.type === 'promo';}).forEach(function(r){
+            html += '<div class="calc-line" style="font-size:9px;color:#fbbf24;padding-left:18px"><span class="l">· ' + r.name + (r.endDate ? ' (~' + r.endDate + ')' : '') + '</span><span class="v">-' + fmt(r.discount) + '</span></div>';
+          });
+        }
+        html += '<div class="calc-line sub"><span class="l">→ 셋톱 실납</span><span class="v" style="color:#60a5fa;font-weight:700">' + fmt(setTop - stDcInfo.discount) + '</span></div>';
+        total -= stDcInfo.discount;
+      }
+    }
+    // ─── TV2/TV3 추가 (다중 TV) ───
+    var tvCountEl = document.getElementById('c-tv-count');
+    var tvCount = tvCountEl ? (parseInt(tvCountEl.value) || 1) : 1;
+    if (tvCount >= 2 && d.additionalTvPolicy && d.additionalTvPolicy.enabled) {
+      var policy = d.additionalTvPolicy;
+      [2, 3].forEach(function(n){
+        if (n > tvCount) return;
+        var tv2Sel = document.getElementById('c-tv' + n);
+        var st2Sel = document.getElementById('c-settop' + n);
+        if (!tv2Sel || !st2Sel) return;
+        var tv2Idx = parseInt(tv2Sel.value) || 0;
+        if (tv2Idx === 0) return;
+        var tv2 = d.tv[tv2Idx];
+        var tv2Base = tv2.p || 0;
+        var tv2Dc = tv2.tv2Discount || 0;
+        var tv2Final = tv2Base - tv2Dc;
+        var st2Item = (d.setTopOptions || []).find(function(o){return o.id === st2Sel.value;});
+        var st2Fee = st2Item ? (st2Item.fee || 0) : 0;
+        var st2DcAmount = Math.round(st2Fee * (policy.settopDiscountRate || 0.5));
+        var st2Final = st2Fee - st2DcAmount;
+        html += '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.15)">';
+        html += '<div style="font-size:11px;color:#a5b4fc;font-weight:700;margin-bottom:4px">📺 TV' + n + ' 추가 (' + tv2.n + ')</div>';
+        html += '<div class="calc-line"><span class="l">TV' + n + ' 기본료</span><span class="v">+' + fmt(tv2Base) + '</span></div>';
+        if (tv2Dc > 0) html += '<div class="calc-line discount"><span class="l">└ TV' + n + ' 추가 할인</span><span class="v">-' + fmt(tv2Dc) + '</span></div>';
+        html += '<div class="calc-line sub"><span class="l">→ TV' + n + ' 결합가</span><span class="v">' + fmt(tv2Final) + '</span></div>';
+        if (st2Item) {
+          html += '<div class="calc-line"><span class="l">📦 셋톱' + n + ' (' + st2Item.name + ')</span><span class="v">+' + fmt(st2Fee) + '</span></div>';
+          html += '<div class="calc-line discount"><span class="l">└ 셋톱' + n + ' 추가 50% 할인</span><span class="v">-' + fmt(st2DcAmount) + '</span></div>';
+          html += '<div class="calc-line sub"><span class="l">→ 셋톱' + n + ' 실납</span><span class="v">' + fmt(st2Final) + '</span></div>';
+        }
+        total += tv2Final + st2Final;
+        html += '</div>';
+      });
     }
     html += '<div class="calc-line total"><span class="l">월 합계</span><span class="v" style="color:#60a5fa">' + fmt(total) + '</span></div>';
     html += '</div>';
@@ -1344,7 +1459,18 @@ function calc() {
   document.getElementById('c-result').innerHTML = html;
 }
 
-document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); updateRangeUI(); updateWifiUI(); updateSetTopInfo(); calc(); });
+function updateTvCountUI() {
+  var cnt = parseInt(document.getElementById('c-tv-count').value) || 1;
+  document.getElementById('c-tv2-group').style.display = (cnt >= 2) ? '' : 'none';
+  document.getElementById('c-tv3-group').style.display = (cnt >= 3) ? '' : 'none';
+}
+
+document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); updateRangeUI(); updateWifiUI(); updateSetTopInfo(); updateTvCountUI(); calc(); });
+document.getElementById('c-tv-count').addEventListener('change', function() { updateTvCountUI(); calc(); });
+document.getElementById('c-tv2').addEventListener('change', calc);
+document.getElementById('c-tv3').addEventListener('change', calc);
+document.getElementById('c-settop2').addEventListener('change', calc);
+document.getElementById('c-settop3').addEventListener('change', calc);
 document.getElementById('c-speed').addEventListener('change', function() { updateWifiUI(); calc(); });
 document.getElementById('c-tv').addEventListener('change', calc);
 document.getElementById('c-wifi').addEventListener('change', calc);
