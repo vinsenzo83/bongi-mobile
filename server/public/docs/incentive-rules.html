@@ -66,7 +66,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
     </div>
   </header>
 
-  <div class="auth-box" id="auth-box">
+  <div class="auth-box" id="auth-box" style="display:none">
     <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:#60a5fa">🔐 admin 권한 필요</div>
     <input type="email" id="auth-email" placeholder="email" autocomplete="username">
     <input type="password" id="auth-pass" placeholder="비밀번호" autocomplete="current-password">
@@ -349,13 +349,14 @@ async function init() {
   const tk = getToken();
   if (tk) {
     const agent = await fetchAgent();
-    if (agent && agent.role === 'admin') onLoggedIn(agent);
-    else if (agent) {
+    if (agent && agent.role === 'admin') { onLoggedIn(agent); return; }
+    if (agent) {
       document.getElementById('auth-msg').textContent = '⚠️ admin 권한 필요 (현재 ' + agent.role + ')';
       document.getElementById('auth-msg').style.color = '#fbbf24';
       clearToken();
     }
   }
+  document.getElementById('auth-box').style.display = '';
 }
 
 function onLoggedIn(agent) {

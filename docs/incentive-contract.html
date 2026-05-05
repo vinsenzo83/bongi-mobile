@@ -140,7 +140,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   </header>
 
   <!-- 로그인 박스 -->
-  <div class="auth-box" id="auth-box">
+  <div class="auth-box" id="auth-box" style="display:none">
     <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:#60a5fa">🔐 로그인 (manager 또는 admin 권한 필요)</div>
     <input type="email" id="auth-email" placeholder="email" autocomplete="username">
     <input type="password" id="auth-pass" placeholder="비밀번호" autocomplete="current-password">
@@ -790,13 +790,15 @@ async function init() {
   if (tk) {
     const agent = await fetchAgent();
     if (agent && (agent.role === 'admin' || agent.role === 'manager' || agent.role === 'contract')) {
-      onLoggedIn(agent);
-    } else if (agent) {
+      onLoggedIn(agent); return;
+    }
+    if (agent) {
       document.getElementById('auth-msg').textContent = '⚠️ ' + agent.role + ' 권한 — manager/admin만 접근 가능';
       document.getElementById('auth-msg').style.color = '#fbbf24';
       clearToken();
     }
   }
+  document.getElementById('auth-box').style.display = '';
 }
 
 function onLoggedIn(agent) {
