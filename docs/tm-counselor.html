@@ -346,6 +346,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 </head>
 <body>
 
@@ -546,9 +547,16 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         </div>
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">📅 설치 희망일
           <input type="date" id="deal-install-date" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
+        <!-- 📍 설치 주소 -->
+        <label style="font-size:10px;color:#374151;display:block;margin-bottom:4px">📍 설치 주소</label>
+        <div style="display:flex;gap:4px;margin-bottom:6px">
+          <input type="text" id="deal-address" placeholder="🔍 주소 검색 클릭" readonly style="flex:1;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;background:#f9fafb;cursor:pointer">
+          <button type="button" id="deal-address-search-btn" style="padding:4px 10px;background:#3b82f6;color:#fff;border:none;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">🔍 검색</button>
+        </div>
+        <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">🏠 상세 주소 (동·호수·층)
+          <input type="text" id="deal-address-detail" placeholder="예: 101동 502호" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">📝 상담 메모
           <textarea id="deal-notes" rows="3" placeholder="상담 내용 / 특이사항 / 고객 요청 등" style="width:100%;padding:5px 7px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;resize:vertical;font-family:inherit"></textarea></label>
-        <div style="font-size:9px;color:#9ca3af;margin-bottom:6px;line-height:1.4">ℹ️ 주소·서류는 계약부서가 별도 진행 (TM 단계 불필요)</div>
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:8px">추가 페이백 (₩, 0~50,000)
           <input type="number" id="deal-payback" min="0" max="50000" step="1000" value="0" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         <div style="display:flex;gap:6px">
@@ -2920,6 +2928,8 @@ async function incSubmitDeal() {
   const name = document.getElementById('deal-name').value.trim();
   const phone = document.getElementById('deal-phone').value.trim();
   const installDate = document.getElementById('deal-install-date').value || null;
+  const address = (document.getElementById('deal-address').value || '').trim() || null;
+  const addressDetail = (document.getElementById('deal-address-detail').value || '').trim() || null;
   const notes = (document.getElementById('deal-notes').value || '').trim() || null;
   const payback = parseInt(document.getElementById('deal-payback').value) || 0;
 
@@ -2932,6 +2942,8 @@ async function incSubmitDeal() {
     product_id: _incLastMatchedProduct.id,
     customer_name: name || null,
     customer_phone: phone || null,
+    customer_address: address,
+    customer_address_detail: addressDetail,
     installation_date: installDate,
     notes: notes,
     add_payback: payback,
@@ -2971,7 +2983,7 @@ async function incSubmitDeal() {
     setTimeout(() => {
       document.getElementById('inc-deal-form').style.display = 'none';
       document.getElementById('inc-close-deal-btn').style.display = '';
-      ['deal-name', 'deal-phone', 'deal-install-date', 'deal-notes'].forEach(id => {
+      ['deal-name', 'deal-phone', 'deal-install-date', 'deal-address', 'deal-address-detail', 'deal-notes'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
       document.getElementById('deal-payback').value = 0;
@@ -3003,6 +3015,32 @@ setTimeout(() => {
   if (closeBtn) closeBtn.addEventListener('click', incCloseDeal);
   if (submitBtn) submitBtn.addEventListener('click', incSubmitDeal);
   if (cancelBtn) cancelBtn.addEventListener('click', incCancelDeal);
+
+  // 📍 Daum Postcode 주소 검색
+  const addrBtn = document.getElementById('deal-address-search-btn');
+  const addrInput = document.getElementById('deal-address');
+  function openDealAddressSearch() {
+    if (!window.daum || !window.daum.Postcode) {
+      alert('주소 검색 API 로드 중. 잠시 후 다시 시도하세요.');
+      return;
+    }
+    new window.daum.Postcode({
+      oncomplete: function(data) {
+        const fullAddr = data.address + (data.buildingName ? ' (' + data.buildingName + ')' : '');
+        if (addrInput) {
+          addrInput.value = fullAddr;
+          addrInput.style.background = '#f0fdf4';
+          addrInput.style.borderColor = '#22c55e';
+        }
+        // 검색 완료 후 상세주소로 포커스 이동
+        const detailEl = document.getElementById('deal-address-detail');
+        if (detailEl) detailEl.focus();
+      }
+    }).open();
+  }
+  if (addrBtn) addrBtn.addEventListener('click', openDealAddressSearch);
+  if (addrInput) addrInput.addEventListener('click', openDealAddressSearch);
+
   incApplyAuthState();
 }, 250);
 // ╔════════════════════════════════════════════════════╗
