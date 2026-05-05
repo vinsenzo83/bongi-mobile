@@ -313,6 +313,24 @@ function renderTable(contracts) {
             </div>
           </div>
 
+          <!-- 🚦 계약 진행 상태 + 메모 -->
+          <div style="font-size:10.5px;color:#a78bfa;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">🚦 계약 진행 상태</div>
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:10px;margin-bottom:14px">
+            <div>
+              <label style="font-size:10px;color:#94a3b8;font-weight:700">상태</label>
+              <select class="detail-input" data-field="status" data-id="${c.id}" style="width:100%;background:#0f172a;border:1.5px solid #a78bfa;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px;font-weight:700">
+                <option value="pending"${c.status === 'pending' ? ' selected' : ''}>⏰ pending — 대기 (정산 제외)</option>
+                <option value="completed"${c.status === 'completed' ? ' selected' : ''}>✅ completed — 완료 (인센티브 카운트)</option>
+                <option value="cancelled"${c.status === 'cancelled' ? ' selected' : ''}>❌ cancelled — 취소 (정산 제외)</option>
+              </select>
+              <div style="font-size:9px;color:#64748b;margin-top:3px;line-height:1.4">⚠️ pending/cancelled은 인센티브 정산에 포함되지 않음</div>
+            </div>
+            <div>
+              <label style="font-size:10px;color:#94a3b8;font-weight:700">취소 사유 (cancelled일 때)</label>
+              <input class="detail-input" data-field="cancellation_reason" data-id="${c.id}" value="${(c.cancellation_reason || '').replace(/"/g, '&quot;')}" placeholder="고객 변심 / 설치 불가 / 기타" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px">
+            </div>
+          </div>
+
           <!-- 📝 메모 -->
           <div style="margin-bottom:14px">
             <label style="font-size:10px;color:#94a3b8;font-weight:700">메모 / 비고</label>
