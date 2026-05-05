@@ -123,6 +123,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -226,6 +227,38 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 </div>
 
 <script>
+
+// ─── Daum Postcode 주소 검색 ───
+function openAddressSearch(targetSelector) {
+  if (!window.daum || !window.daum.Postcode) {
+    alert('주소 검색 API 로드 중. 잠시 후 다시 시도하세요.');
+    return;
+  }
+  new window.daum.Postcode({
+    oncomplete: function(data) {
+      const fullAddr = data.address + (data.buildingName ? ' (' + data.buildingName + ')' : '');
+      const inp = document.querySelector(targetSelector);
+      if (inp) {
+        inp.value = fullAddr;
+        inp.focus();
+        // 끝에 커서 두기 (상세 주소 입력 유도)
+        setTimeout(() => inp.setSelectionRange(inp.value.length, inp.value.length), 50);
+      }
+    },
+    width: '100%',
+    height: '100%'
+  }).open();
+}
+
+function triggerDatePicker(input) {
+  if (!input) return;
+  if (typeof input.showPicker === 'function') {
+    try { input.showPicker(); return; } catch(e) {}
+  }
+  input.focus();
+  input.click();
+}
+
 const API = '/api/incentive';
 const AUTH = '/api/auth';
 const TOKEN_KEY = 'incentive-auth-token-v1';
@@ -575,18 +608,41 @@ function openEditModal(id) {
       </div>
       <div>
         <label class="modal-field-label">설치 주소 <span style="color:#dc2626">*</span></label>
-        <input class="detail-input" data-field="customer_address" value="${(c.customer_address || '').replace(/"/g, '&quot;')}" placeholder="설치 주소 (상세 주소까지 정확히)" style="border-color:${hasAddr ? '#475569' : '#dc2626'} !important">
+        <div style="display:flex;gap:8px">
+          <input class="detail-input" data-field="customer_address" id="addr-input-${c.id}" value="${(c.customer_address || '').replace(/"/g, '&quot;')}" placeholder="주소 검색 또는 직접 입력" style="border-color:${hasAddr ? '#475569' : '#dc2626'} !important;flex:1">
+          <button type="button" onclick="openAddressSearch('#addr-input-${c.id}')" style="padding:0 18px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;white-space:nowrap">🔍 주소 검색</button>
+        </div>
+        <div class="modal-field-hint">📍 검색 후 상세 주소(동·호수)까지 직접 입력 권장</div>
       </div>
     </div>
 
     <!-- 📅 설치 / 🎁 사은품 / 💰 페이백 -->
     <div style="background:linear-gradient(135deg,rgba(34,197,94,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(34,197,94,0.3);border-radius:10px;padding:14px 18px;margin-bottom:18px">
       <div class="modal-section-title" style="background:rgba(34,197,94,0.12);color:#22c55e">📅 설치 · 🎁 사은품 · 💰 페이백</div>
-      <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
         <div>
-          <label class="modal-field-label">📅 설치 희망일</label>
-          <input class="detail-input" data-field="installation_date" type="date" value="${c.installation_date || ''}">
+          <label class="modal-field-label">📅 설치 희망일 (달력)</label>
+          <input class="detail-input" data-field="installation_date" type="date" value="${c.installation_date || ''}" id="install-date-${c.id}" onclick="triggerDatePicker(this)">
         </div>
+        <div>
+          <label class="modal-field-label">⏰ 설치 시간</label>
+          <select class="detail-input" data-field="installation_time" id="install-time-${c.id}">
+            <option value="">— 선택 —</option>
+            <option value="오전 9~10시" ${c.installation_time==='오전 9~10시'?'selected':''}>오전 9~10시</option>
+            <option value="오전 10~11시" ${c.installation_time==='오전 10~11시'?'selected':''}>오전 10~11시</option>
+            <option value="오전 11~12시" ${c.installation_time==='오전 11~12시'?'selected':''}>오전 11~12시</option>
+            <option value="오후 12~13시" ${c.installation_time==='오후 12~13시'?'selected':''}>오후 12~13시</option>
+            <option value="오후 13~14시" ${c.installation_time==='오후 13~14시'?'selected':''}>오후 13~14시</option>
+            <option value="오후 14~15시" ${c.installation_time==='오후 14~15시'?'selected':''}>오후 14~15시</option>
+            <option value="오후 15~16시" ${c.installation_time==='오후 15~16시'?'selected':''}>오후 15~16시</option>
+            <option value="오후 16~17시" ${c.installation_time==='오후 16~17시'?'selected':''}>오후 16~17시</option>
+            <option value="오후 17~18시" ${c.installation_time==='오후 17~18시'?'selected':''}>오후 17~18시</option>
+            <option value="협의" ${c.installation_time==='협의'?'selected':''}>고객과 협의</option>
+            <option value="${c.installation_time || ''}" ${c.installation_time && !['오전 9~10시','오전 10~11시','오전 11~12시','오후 12~13시','오후 13~14시','오후 14~15시','오후 15~16시','오후 16~17시','오후 17~18시','협의'].includes(c.installation_time)?'selected':''} style="display:${c.installation_time && !['오전 9~10시','오전 10~11시','오전 11~12시','오후 12~13시','오후 13~14시','오후 14~15시','오후 15~16시','오후 16~17시','오후 17~18시','협의'].includes(c.installation_time)?'block':'none'}">${c.installation_time || ''}</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
         <div>
           <label class="modal-field-label">🎁 실제 사은품</label>
           <input class="detail-input" data-field="gift_received" value="${(c.gift_received || '').replace(/"/g, '&quot;')}" placeholder="예: 현금 30만 / 다이슨 / 가전렌탈">
@@ -594,7 +650,7 @@ function openEditModal(id) {
         <div>
           <label class="modal-field-label">💰 추가 페이백 (₩)</label>
           <input class="detail-input" data-field="add_payback" type="number" min="0" max="50000" step="1000" value="${c.add_payback || 0}">
-          <div class="modal-field-hint">회사 ≤30,000 / 상담사 차감 30,001~50,000</div>
+          <div class="modal-field-hint">회사 ≤30,000 / 상담사 차감 30,001~50K</div>
         </div>
       </div>
     </div>
