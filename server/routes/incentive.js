@@ -256,6 +256,14 @@ router.post('/agents', authenticateJWT, async (req, res) => {
 // 6.5. POST /api/incentive/admin/create-agent — 신규 상담사 (auth + agent 통합)
 // ═══════════════════════════════════════════════════════════════
 router.post('/admin/create-agent', authenticateJWT, async (req, res) => {
+  // ⚠️ 임시 디버그: 실제 에러 메시지 노출 (admin 전용 라우트라 안전)
+  const adminDebug = (err) => {
+    console.error('[CREATE-AGENT-DEBUG]', err);
+    return res.status(500).json({
+      error: '디버그: ' + (err.message || String(err)),
+      code: err.code, hint: err.hint, details: err.details,
+    });
+  };
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
@@ -304,8 +312,7 @@ router.post('/admin/create-agent', authenticateJWT, async (req, res) => {
 
     res.json({ agent, email, password_set: true });
   } catch (err) {
-    console.error('[incentive]', req.method, req.path, err);
-    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+    return adminDebug(err);
   }
 });
 
