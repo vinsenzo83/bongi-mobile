@@ -660,6 +660,29 @@ function openEditModal(id) {
       </div>
     </div>
 
+    <!-- 🏦 사은품 입금 정보 -->
+    <div style="background:linear-gradient(135deg,rgba(8,145,178,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(8,145,178,0.3);border-radius:10px;padding:14px 18px;margin-bottom:18px">
+      <div class="modal-section-title" style="background:rgba(8,145,178,0.12);color:#22d3ee">🏦 사은품/페이백 입금 정보</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:14px">
+        <div>
+          <label class="modal-field-label">예금주</label>
+          <input class="detail-input" data-field="bank_account_holder" value="${(c.bank_account_holder || '').replace(/"/g, '&quot;')}" placeholder="홍길동">
+        </div>
+        <div>
+          <label class="modal-field-label">은행</label>
+          <select class="detail-input" data-field="bank_name">
+            <option value="">— 선택 —</option>
+            ${['국민은행','신한은행','우리은행','하나은행','NH농협은행','IBK기업은행','SC제일은행','카카오뱅크','토스뱅크','케이뱅크','광주은행','전북은행','새마을금고','신협','우체국','SC제일은행','수협은행','부산은행','경남은행','대구은행','제주은행','산업은행','KDB산업','외환은행'].map(b => `<option value="${b}" ${c.bank_name===b?'selected':''}>${b}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="modal-field-label">계좌번호</label>
+          <input class="detail-input" data-field="bank_account_number" value="${(c.bank_account_number || '').replace(/"/g, '&quot;')}" placeholder="000-0000-0000-00 (- 자유 입력)" style="letter-spacing:0.04em;font-family:'SF Mono',Monaco,monospace">
+        </div>
+      </div>
+      <div class="modal-field-hint">💡 현금 페이백 입금 시 사용. 사은품이 현금이 아니면 비워두세요.</div>
+    </div>
+
     <!-- 🚦 계약 진행 상태 -->
     <div style="background:linear-gradient(135deg,rgba(167,139,250,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(167,139,250,0.3);border-radius:10px;padding:14px 18px;margin-bottom:18px">
       <div class="modal-section-title" style="background:rgba(167,139,250,0.12);color:#a78bfa">🚦 계약 진행 상태</div>
