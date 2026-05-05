@@ -783,6 +783,51 @@ function getSettopDiscount(carrierKey, sp, tvIdx, settopId) {
 
 function fmt(n) { return n.toLocaleString() + '원'; }
 
+// 섹터 2 공용 — 다중 TV 추가 비용 (TV2/TV3 결합가 + 셋톱 실납) 합산 + 표시 HTML
+function getMultiTvAddon(carrierKey) {
+  var d = D[carrierKey];
+  if (!d || !d.additionalTvPolicy || !d.additionalTvPolicy.enabled) return { totalAdd: 0, html: '' };
+  var tvCntEl = document.getElementById('c-tv-count');
+  var tvCount = tvCntEl ? (parseInt(tvCntEl.value) || 1) : 1;
+  if (tvCount < 2) return { totalAdd: 0, html: '' };
+  var policy = d.additionalTvPolicy;
+  var totalAdd = 0;
+  var html = '';
+  [2, 3].forEach(function(n) {
+    if (n > tvCount) return;
+    var tv2Sel = document.getElementById('c-tv' + n);
+    var st2Sel = document.getElementById('c-settop' + n);
+    if (!tv2Sel || !st2Sel) return;
+    var tv2Idx = parseInt(tv2Sel.value) || 0;
+    if (tv2Idx === 0) return;
+    var tv2 = d.tv[tv2Idx];
+    var tv2Base = tv2.p || 0;
+    var tv2Dc = tv2.tv2Discount || 0;
+    var tv2Final = tv2Base - tv2Dc;
+    var st2Item = (d.setTopOptions || []).find(function(o){ return o.id === st2Sel.value; });
+    var st2Fee = st2Item ? (st2Item.fee || 0) : 0;
+    var st2DcAmount = Math.round(st2Fee * (policy.settopDiscountRate || 0));
+    var st2Final = st2Fee - st2DcAmount;
+    totalAdd += tv2Final + st2Final;
+    html += '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.15)">';
+    html += '<div style="font-size:11px;color:#a5b4fc;font-weight:700;margin-bottom:4px">📺 TV' + n + ' 추가 (' + tv2.n + ')</div>';
+    html += '<div class="calc-line"><span class="l">TV' + n + ' 기본료</span><span class="v">+' + fmt(tv2Base) + '</span></div>';
+    if (tv2Dc > 0) html += '<div class="calc-line discount"><span class="l">└ TV' + n + ' 추가 할인</span><span class="v">-' + fmt(tv2Dc) + '</span></div>';
+    html += '<div class="calc-line sub"><span class="l">→ TV' + n + ' 결합가</span><span class="v">' + fmt(tv2Final) + '</span></div>';
+    if (st2Item) {
+      html += '<div class="calc-line"><span class="l">📦 셋톱' + n + ' (' + st2Item.name + ')</span><span class="v">+' + fmt(st2Fee) + '</span></div>';
+      if (st2DcAmount > 0) {
+        html += '<div class="calc-line discount"><span class="l">└ 셋톱' + n + ' 추가 50% 할인</span><span class="v">-' + fmt(st2DcAmount) + '</span></div>';
+        html += '<div class="calc-line sub"><span class="l">→ 셋톱' + n + ' 실납</span><span class="v">' + fmt(st2Final) + '</span></div>';
+      }
+    }
+    html += '</div>';
+  });
+  return { totalAdd: totalAdd, html: html };
+}
+
+
+
 // 셋톱/WiFi 기본값 resolve (단종 시 isDefault/active 전환만으로 대응)
 (function resolveDefaults() {
   for (var k in D) {
@@ -1303,6 +1348,8 @@ function calc() {
     var tvAfter = tvBaseVal - tvBaseDc;
     var setTopFee = hasTv ? (d.setTop || 0) : 0;
     var finalInet = inetAfterAll + tvAfter + setTopFee;
+    var multiAdd_kt = getMultiTvAddon(c);
+    finalInet += multiAdd_kt.totalAdd;
 
     html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(59,130,246,0.12);border:1.5px solid #60a5fa;border-radius:8px">' +
       '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:8px">📊 섹터 2 — KT ' + (isTotal ? '총액' : '정액') + ' 결합할인 (월 요금 ' + rangeLabels[rangeIdx] + ' 구간) · 기본 할인과 중복</div>' +
@@ -1319,7 +1366,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfter) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee) + '</span></div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#93c5fd">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#60a5fa;font-size:20px">' + fmt(finalInet) + '</span></div>' +
+    html += multiAdd_kt.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#93c5fd">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#60a5fa;font-size:20px">' + fmt(finalInet) + '</span></div>' +
       // 무선
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#93c5fd;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + rangeLabels[rangeIdx] + ' 구간)</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
@@ -1384,6 +1431,8 @@ function calc() {
     var tvAfterP = tvBaseValP - tvBaseDcP;
     var setTopFeeP = hasTv ? (d.setTop || 0) : 0;
     var finalInetP = inetAfterPrem + tvAfterP + setTopFeeP;
+    var multiAdd_ktp = getMultiTvAddon(c);
+    finalInetP += multiAdd_ktp.totalAdd;
 
     html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(251,191,36,0.12);border:1.5px solid #fbbf24;border-radius:8px">' +
       '<div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:8px">💎 섹터 2 — KT 프리미엄 가족결합</div>';
@@ -1414,7 +1463,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfterP) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFeeP) + '</span></div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#fde68a">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#fbbf24;font-size:20px">' + fmt(finalInetP) + '</span></div>' +
+    html += multiAdd_ktp.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#fde68a">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#fbbf24;font-size:20px">' + fmt(finalInetP) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#fde68a;font-weight:700">📱 휴대폰 고지서 별도 할인 (월)</div>' +
       '<div class="calc-line discount"><span class="l">· 총액결합 (' + totalMembers.length + '명 · 합산 ' + fmt(totalSum) + ' · ' + totalRanges[rngIdx] + ')</span><span class="v">-' + fmt(totalMobDc) + '</span></div>' +
       '<div class="calc-line discount"><span class="l">· 프리미엄 ' + premCount + '명 합산 할인</span><span class="v">-' + fmt(premTotalDc) + '</span></div>' +
@@ -1448,6 +1497,8 @@ function calc() {
     var tvAfter = tvBaseVal - tvBaseDc;
     var setTopFee = hasTv ? (d.setTop || 0) : 0;
     var finalInet = inetAfter + tvAfter + setTopFee;
+    var multiAdd_lgu = getMultiTvAddon(c);
+    finalInet += multiAdd_lgu.totalAdd;
 
     html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(236,72,153,0.12);border:1.5px solid #f472b6;border-radius:8px">' +
       '<div style="font-size:12px;color:#f9a8d4;font-weight:800;margin-bottom:8px">💕 섹터 2 — LGU+ ' + (isChweyswun ? '참쉬운 가족결합' : '투게더 결합') + ' (' + lines + '회선' + (isChweyswun ? ' · ' + planLabel : '') + ')</div>';
@@ -1463,7 +1514,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfter) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee) + '</span></div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#f9a8d4">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#ec4899;font-size:20px">' + fmt(finalInet) + '</span></div>' +
+    html += multiAdd_lgu.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#f9a8d4">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#ec4899;font-size:20px">' + fmt(finalInet) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#f9a8d4;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선)</span><span class="v">-' + fmt(lguMobDc) + '</span></div>' +
       (lguMobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 조건은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(lguMobDc) + '</span><span class="v"></span></div>');
@@ -1499,6 +1550,8 @@ function calc() {
 
     var setTopFee = hasTv ? (d.setTop || 0) : 0;
     var finalInet = inetAfterFamily + tvAfterFamily + setTopFee;
+    var multiAdd_fam = getMultiTvAddon(c);
+    finalInet += multiAdd_fam.totalAdd;
 
     html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(34,197,94,0.15);border:1.5px solid #4ade80;border-radius:8px">' +
       '<div style="font-size:12px;color:#86efac;font-weight:800;margin-bottom:8px">👨‍👩‍👧 섹터 2 — 요즘가족결합 (무선결합) 적용 (' + lines + '명 결합 · ' + sp + ' 기준)</div>' +
@@ -1513,7 +1566,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 할인 합계: -' + fmt(tvTotalDc) + ' · TV 실질</span><span class="v">' + fmt(tvAfterFamily) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFee) + '</span></div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#86efac">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#4ade80;font-size:20px">' + fmt(finalInet) + '</span></div>' +
+    html += multiAdd_fam.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#86efac">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#4ade80;font-size:20px">' + fmt(finalInet) + '</span></div>' +
       // 무선
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#86efac;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '명 결합 · ' + sp + ')</span><span class="v">-' + fmt(mobDc) + '</span></div>' +
@@ -1537,6 +1590,8 @@ function calc() {
     var tvAfterO = tvBaseValO - tvBaseDcO;
     var setTopFeeO = hasTv ? (d.setTop || 0) : 0;
     var finalInetO = inetAfterOf + tvAfterO + setTopFeeO;
+    var multiAdd_of = getMultiTvAddon(c);
+    finalInetO += multiAdd_of.totalAdd;
 
     html += '<div style="margin-top:10px;padding:12px 14px;background:rgba(168,85,247,0.12);border:1.5px solid #a855f7;border-radius:8px">' +
       '<div style="font-size:12px;color:#d8b4fe;font-weight:800;margin-bottom:8px">👨‍👩‍👧‍👦 섹터 2 — SKT 온가족할인 (' + ofData.netYrLabels[netYrIdx] + ' × ' + ofData.famYrLabels[famYrIdx] + ' → <b>' + pct + '%</b> 할인)</div>';
@@ -1552,7 +1607,7 @@ function calc() {
         '<div class="calc-line sub"><span class="l">→ TV 실질</span><span class="v">' + fmt(tvAfterO) + '</span></div>' +
         '<div class="calc-line"><span class="l">셋톱박스' + (d.setTopName ? ' (' + d.setTopName + ')' : '') + '</span><span class="v">+' + fmt(setTopFeeO) + '</span></div>';
     }
-    html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#d8b4fe">✨ ' + (hasTv ? '인터넷+TV ' : '인터넷 ') + '월 실질요금</span><span class="v" style="color:#a855f7;font-size:20px">' + fmt(finalInetO) + '</span></div>' +
+    html += multiAdd_of.html + '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#d8b4fe">✨ ' + (hasTv ? '인터넷+TV ' : '인터넷 ') + '월 실질요금</span><span class="v" style="color:#a855f7;font-size:20px">' + fmt(finalInetO) + '</span></div>' +
       '</div>';
   }
 
