@@ -90,8 +90,85 @@
   .diag-formula .var { background:rgba(255,255,255,0.1); padding:3px 10px; border-radius:6px; color:#60a5fa; }
   @media(max-width:600px) { .diag-cards { grid-template-columns:1fr; } .diag-flow { flex-wrap:wrap; } }
 </style>
+
+<style>
+/* ═══ ADMIN 모드 스타일 (?admin=1 또는 통합 어드민 iframe) ═══ */
+body.admin-only .calc { display: none !important; }
+body.admin-only .section:has(.diag-cards),
+body.admin-only h1,
+body.admin-only .subtitle { display: none !important; }
+/* sticky 네비 */
+.admin-nav-bar {
+  position: sticky; top: 0;
+  background: linear-gradient(135deg, #1a2744, #0f172a);
+  border-bottom: 2px solid #475569;
+  padding: 10px 16px;
+  z-index: 100;
+  display: none;
+  flex-wrap: wrap; gap: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+body.admin-only .admin-nav-bar { display: flex; }
+.admin-nav-bar .nav-link {
+  padding: 6px 12px;
+  background: rgba(59,130,246,0.15);
+  color: #60a5fa;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 1px solid rgba(59,130,246,0.3);
+  transition: all 0.15s;
+}
+.admin-nav-bar .nav-link:hover {
+  background: rgba(59,130,246,0.3);
+  color: #fff;
+}
+.admin-nav-bar .nav-title {
+  color: #f8fafc;
+  font-weight: 800;
+  font-size: 13px;
+  margin-right: 12px;
+  padding: 6px 0;
+}
+body.admin-only .section { scroll-margin-top: 80px; }
+</style>
+<script>
+// admin 모드 감지
+(function(){
+  const url = new URL(location.href);
+  if (url.searchParams.get('admin') === '1' || url.searchParams.get('role') === 'admin-edit') {
+    document.documentElement.classList.add('admin-only-pre');
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.classList.add('admin-only');
+      // 섹션에 ID 부여
+      document.querySelectorAll('.section').forEach((s, i) => {
+        const st = s.querySelector('.st');
+        if (!st) return;
+        const m = (st.textContent || '').match(/^(\d+)\./);
+        if (m) s.id = 'sec-' + m[1];
+      });
+    });
+  }
+})();
+</script>
+
 </head>
 <body>
+<nav class="admin-nav-bar">
+  <span class="nav-title">⚡ TM 데이터 관리</span>
+  <a class="nav-link" href="#sec-1">📡 인터넷·WiFi</a>
+  <a class="nav-link" href="#sec-2">📺 TV 상품</a>
+  <a class="nav-link" href="#sec-3">📦 셋톱박스</a>
+  <a class="nav-link" href="#sec-4">🤝 결합할인</a>
+  <a class="nav-link" href="#sec-5">🔧 설치비</a>
+  <a class="nav-link" href="#sec-6">💳 제휴카드</a>
+  <a class="nav-link" href="#sec-7">💡 영업포인트</a>
+  <a class="nav-link" href="#sec-8">🎁 사은품</a>
+  <a class="nav-link" href="#sec-9">🎫 티켓</a>
+  <a class="nav-link" href="#sec-10">📜 변경이력</a>
+</nav>
+
 <div class="wrap">
 
 <h1>인터넷+TV 상품 구성 + 요금 계산기</h1>
