@@ -152,7 +152,11 @@ if (existsSync(clientDist)) {
   app.use('/reports', express.static(join(__dirname, 'public', 'reports')));
   app.use(express.static(clientDist));
   app.get('*', (req, res, next) => {
-    // API, 어드민, 정적 경로, .html 파일은 SPA가 처리하지 않음
+    // /admin/v5 는 React SPA로 처리 (V5 인센티브 어드민)
+    if (req.path.startsWith('/admin/v5')) {
+      return res.sendFile(join(clientDist, 'index.html'));
+    }
+    // API, 어드민(레거시), 정적 경로, .html 파일은 SPA가 처리하지 않음
     if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/crm') || req.path.startsWith('/dashboard') || req.path.startsWith('/docs') || req.path.startsWith('/stores') || req.path.startsWith('/reports') || req.path.endsWith('.html')) {
       return next();
     }
