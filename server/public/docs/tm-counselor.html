@@ -517,6 +517,30 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <div style="font-size:12px;font-weight:900;color:#92400e;letter-spacing:0.04em">💰 V5 인센티브 미리보기</div>
         <button type="button" id="inc-toggle" style="font-size:10px;padding:2px 6px;background:#fff;border:1px solid #f59e0b;color:#92400e;border-radius:4px;cursor:pointer">⚙️ 누적</button>
       </div>
+
+      <!-- 🎯 내 현재 상태 (로그인 시 자동 표시) -->
+      <div id="inc-my-status" style="display:none;background:linear-gradient(135deg,rgba(255,255,255,0.7),rgba(255,255,255,0.5));border:1.5px solid #d97706;border-radius:8px;padding:10px 12px;margin-bottom:8px">
+        <div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">📊 내 현재 상태 (이번 달)</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
+          <div>
+            <div style="font-size:9px;color:#78350f;margin-bottom:2px">Grade</div>
+            <div id="inc-my-grade" style="font-size:14px;font-weight:900;color:#1e293b">-</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#78350f;margin-bottom:2px">누적 P</div>
+            <div id="inc-my-points" style="font-size:14px;font-weight:900;color:#1e293b">-</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#78350f;margin-bottom:2px">우수 건수</div>
+            <div id="inc-my-premium" style="font-size:14px;font-weight:900;color:#1e293b">-</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#78350f;margin-bottom:2px">예상 수령</div>
+            <div id="inc-my-total" style="font-size:13px;font-weight:900;color:#16a34a">-</div>
+          </div>
+        </div>
+      </div>
+
       <div id="inc-input" style="display:none;background:rgba(255,255,255,0.6);border-radius:6px;padding:8px 10px;margin-bottom:8px">
         <div style="font-size:9.5px;color:#78350f;margin-bottom:4px;font-weight:700">📊 이번 달 누적 (수동 입력)</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
@@ -545,8 +569,12 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           <label style="font-size:10px;color:#374151">전화 (자동 - 입력)
             <input type="tel" id="deal-phone" inputmode="numeric" maxlength="13" placeholder="010-0000-0000" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         </div>
-        <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">📅 설치 희망일
-          <input type="date" id="deal-install-date" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+          <label style="font-size:10px;color:#374151">📅 설치 희망일
+            <input type="date" id="deal-install-date" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
+          <label style="font-size:10px;color:#374151">📡 개통완료일 (예정)
+            <input type="date" id="deal-activation-date" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
+        </div>
         <!-- 📍 설치 주소 -->
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:4px">📍 설치 주소</label>
         <div style="display:flex;gap:4px;margin-bottom:6px">
@@ -2769,6 +2797,22 @@ async function incFetchMyState() {
     if (pEl && s) pEl.value = s.total_points || 0;
     if (premEl && s) premEl.value = s.premium_count || 0;
 
+    // 🎯 내 현재 상태 카드 자동 갱신 (항상 표시)
+    const statusEl = document.getElementById('inc-my-status');
+    if (statusEl && s) {
+      statusEl.style.display = '';
+      const fmt = v => (v == null) ? '-' : Number(v).toLocaleString();
+      const g = s.grade_applied || s.grade_target || 1;
+      const gColor = ['', '#6b7280', '#3b82f6', '#dc2626'][g] || '#6b7280';
+      document.getElementById('inc-my-grade').innerHTML =
+        `<span style="background:${gColor};color:#fff;padding:2px 10px;border-radius:5px;font-weight:800">G${g}</span>`;
+      document.getElementById('inc-my-points').textContent = (s.total_points || 0) + 'P';
+      document.getElementById('inc-my-premium').textContent = (s.premium_count || 0) + '건';
+      document.getElementById('inc-my-total').textContent = fmt(s.agent_total) + '원';
+    } else if (statusEl) {
+      statusEl.style.display = 'none';
+    }
+
     // 자동 fetch 후 시뮬 갱신
     incSaveState();
     incApplyAuthState();
@@ -2928,6 +2972,7 @@ async function incSubmitDeal() {
   const name = document.getElementById('deal-name').value.trim();
   const phone = document.getElementById('deal-phone').value.trim();
   const installDate = document.getElementById('deal-install-date').value || null;
+  const activationDate = document.getElementById('deal-activation-date').value || null;
   const address = (document.getElementById('deal-address').value || '').trim() || null;
   const addressDetail = (document.getElementById('deal-address-detail').value || '').trim() || null;
   const notes = (document.getElementById('deal-notes').value || '').trim() || null;
@@ -2945,6 +2990,7 @@ async function incSubmitDeal() {
     customer_address: address,
     customer_address_detail: addressDetail,
     installation_date: installDate,
+    activation_date: activationDate,
     notes: notes,
     add_payback: payback,
   });
@@ -2983,7 +3029,7 @@ async function incSubmitDeal() {
     setTimeout(() => {
       document.getElementById('inc-deal-form').style.display = 'none';
       document.getElementById('inc-close-deal-btn').style.display = '';
-      ['deal-name', 'deal-phone', 'deal-install-date', 'deal-address', 'deal-address-detail', 'deal-notes'].forEach(id => {
+      ['deal-name', 'deal-phone', 'deal-install-date', 'deal-activation-date', 'deal-address', 'deal-address-detail', 'deal-notes'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
       document.getElementById('deal-payback').value = 0;

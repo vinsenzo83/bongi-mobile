@@ -404,6 +404,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       bank_account_number,
       contract_date,
       installation_date,
+      activation_date,
       add_payback = 0,
       notes,
       agent_id, // manager/admin이 다른 상담사 대신 입력 가능
@@ -439,6 +440,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         bank_account_number,
         contract_date: contract_date || new Date().toISOString().slice(0, 10),
         installation_date,
+        activation_date: activation_date || null,
         add_payback,
         notes,
         status: 'pending', // TM 등록 → 계약부서 처리 대기
