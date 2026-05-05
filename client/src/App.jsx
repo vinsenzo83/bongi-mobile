@@ -61,6 +61,8 @@ const V5AdminLayout = lazy(() => import('./layouts/V5AdminLayout.jsx'));
 const V5Index = lazy(() => import('./pages/admin/v5/Index.jsx'));
 const V5Dashboard = lazy(() => import('./pages/admin/v5/Dashboard.jsx'));
 const V5IframePage = lazy(() => import('./pages/admin/v5/IframePage.jsx'));
+const V5TmCounselor = lazy(() => import('./pages/admin/v5/TmCounselor.jsx'));
+const V5CalcData = lazy(() => import('./pages/admin/v5/CalcData.jsx'));
 
 const AdminFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', color: '#999', fontSize: 14 }}>
@@ -172,11 +174,11 @@ function AppRoutes() {
         <Route index element={<W C={V5Index} />} />
         <Route path="dashboard" element={<W C={V5Dashboard} />} />
         {/* 점진 마이그레이션 — 아직 React 변환 안 된 페이지는 iframe으로 임시 wrap */}
-        <Route path="tm" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/tm-counselor.html" title="TM 견적·영업" /></Suspense>} />
+        <Route path="tm" element={<W C={V5TmCounselor} />} />
         <Route path="contracts" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/incentive-contract.html" title="계약 처리" /></Suspense>} />
         <Route path="agents" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/incentive-agents.html" title="상담사 관리" /></Suspense>} />
         <Route path="products" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/incentive-products.html" title="상품 관리" /></Suspense>} />
-        <Route path="calc-data" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/calculator.html?admin=1" title="TM 데이터" /></Suspense>} />
+        <Route path="calc-data" element={<W C={V5CalcData} />} />
         <Route path="rules" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/incentive-rules.html" title="정책 관리" /></Suspense>} />
       </Route>
     </Routes>
