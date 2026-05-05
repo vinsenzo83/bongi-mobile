@@ -269,6 +269,8 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<!-- XSS 방어: 견적서 HTML 렌더링 전 sanitize -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -990,7 +992,11 @@ function openEditModal(id) {
     const slot = document.getElementById('quote-deferred-' + c.id);
     if (!slot) return;
     if (c.quote_full_html) {
-      slot.innerHTML = '<div class="quote-label">🧮 상담사 견적서 (TM 계산기 결과)</div>' + c.quote_full_html;
+      // 🛡️ XSS 방어: DOMPurify로 인라인 이벤트(onerror 등) 제거 후 렌더
+      const safeHtml = (typeof DOMPurify !== 'undefined')
+        ? DOMPurify.sanitize(c.quote_full_html, { FORBID_TAGS: ['script','iframe','object','embed','form','input','button'], FORBID_ATTR: ['onerror','onload','onclick','onmouseover','onfocus','onsubmit'] })
+        : c.quote_full_html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '');
+      slot.innerHTML = '<div class="quote-label">🧮 상담사 견적서 (TM 계산기 결과)</div>' + safeHtml;
     } else if (c.quote_summary) {
       slot.innerHTML = '<div class="quote-label">🧮 상담사 견적서</div><pre>' +
         (c.quote_summary || '').replace(/</g,'&lt;') + '</pre>';

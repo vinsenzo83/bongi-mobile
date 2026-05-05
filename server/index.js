@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -37,6 +38,7 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
 // 글로벌 미들웨어
+app.use(compression({ threshold: 1024 })); // 1KB 이상 응답 자동 gzip (HTML/JSON ~70% 감소)
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? process.env.ALLOWED_ORIGIN || 'https://bongi-mobile.com'

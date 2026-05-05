@@ -12,6 +12,8 @@ async function getCurrentIncentiveAgent(userId) {
     .select('*')
     .eq('user_id', userId)
     .single();
+  // 비활성 상담사는 무효 처리 — admin이 active=false 설정 시 토큰 즉시 차단
+  if (data && !data.active) return null;
   return data || null;
 }
 
@@ -714,22 +716,19 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
     const monthStart = `${y}-${m}-01`;
     const monthEnd = new Date(parseInt(y), parseInt(m), 0).toISOString().slice(0, 10);
 
+    // 목록은 quote_full_html 제외 (모달 열 때 단건 조회) → 응답 ~80% 감소
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at';
     let q = supabase
       .from('incentive_sales')
-      .select('*, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role)')
+      .select(`${listCols}, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role)`)
       .gte('contract_date', monthStart)
       .lte('contract_date', monthEnd);
 
     if (status) q = q.eq('status', status);
 
-    // manager: 본인 센터 상담사만
+    // manager: 본인 센터 상담사만 — 단일 nested filter로 N+1 제거
     if (me.role === 'manager') {
-      const { data: centerAgents } = await supabase
-        .from('incentive_agents')
-        .select('id')
-        .eq('center', me.center);
-      const ids = (centerAgents || []).map(a => a.id);
-      q = q.in('agent_id', ids);
+      q = q.eq('agent.center', me.center);
     }
 
     const { data, error } = await q.order('contract_date', { ascending: false });
@@ -738,6 +737,22 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// GET /api/incentive/sales/:id/quote — 모달 열 때 단건 견적서 HTML 조회
+router.get('/sales/:id/quote', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isContractAccess(me)) return res.status(403).json({ error: 'contract/manager/admin 전용' });
+    const { data, error } = await supabase
+      .from('incentive_sales')
+      .select('id, quote_full_html, quote_summary')
+      .eq('id', req.params.id)
+      .single();
+    if (error) return res.status(404).json({ error: '영업 없음' });
+    res.json({ quote_full_html: data.quote_full_html || null, quote_summary: data.quote_summary || null });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ═══════════════════════════════════════════════════════════════
