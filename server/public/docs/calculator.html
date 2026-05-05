@@ -744,6 +744,45 @@ function saveGiftOverride(carrier, bucket, speed, value) {
 }
 applyGiftOverrides();
 
+// ╔════════════════════════════════════════════════════╗
+// ║  사은품 동기화 — incentive_products.payback → D.gift ║
+// ╚════════════════════════════════════════════════════╝
+// admin이 상품 관리에서 페이백 변경 시 TM 계산기에도 자동 반영
+async function applyIncentivePaybackSync() {
+  try {
+    const res = await fetch('/api/incentive/products');
+    if (!res.ok) return;
+    const { products } = await res.json();
+    if (!products || !Array.isArray(products)) return;
+
+    const carrierMap = { 'SKT': 'skt', 'KT': 'kt', 'LGU+': 'lgu' };
+    products.forEach(p => {
+      const cKey = carrierMap[p.carrier];
+      if (!cKey || !window.D || !window.D[cKey]) return;
+      if (!window.D[cKey].gift) window.D[cKey].gift = { solo: {}, combo: {} };
+      const bucket = p.type === '단독' ? 'solo' : 'combo';
+      if (p.speed && p.payback != null) {
+        if (!window.D[cKey].gift[bucket]) window.D[cKey].gift[bucket] = {};
+        // 결합 상품 여러 개 (같은 속도) → 가장 마지막 값 적용. 보통 동일.
+        window.D[cKey].gift[bucket][p.speed] = p.payback;
+      }
+    });
+
+    // calc 다시 호출 (사은품 표시 갱신)
+    if (typeof calc === 'function') calc();
+  } catch (e) { console.warn('[gift sync]', e); }
+}
+
+// 페이지 로드 시 동기화 + 5분마다 자동 새로고침
+setTimeout(() => {
+  if (typeof D !== 'undefined') {
+    window.D = D;
+    applyIncentivePaybackSync();
+  }
+}, 1000);
+setInterval(() => { if (typeof applyIncentivePaybackSync === 'function') applyIncentivePaybackSync(); }, 5 * 60 * 1000);
+
+
 function getGiftAmount(d, sp, tvIdx) {
   if (!d.gift) return 0;
   var bucket = tvIdx > 0 ? d.gift.combo : d.gift.solo;
