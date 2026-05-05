@@ -353,6 +353,10 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           <option value="missing">주소 없음</option>
           <option value="present">주소 있음</option>
         </select>
+        <label style="font-size:11px;color:#94a3b8">DB</label>
+        <select id="filter-db-source">
+          <option value="">전체</option>
+        </select>
         <button id="reload-btn">🔄 새로고침</button>
         <button id="export-xlsx-btn" style="background:#16a34a;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📥 엑셀 다운로드</button>
         <button id="trash-toggle-btn" style="background:#475569;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📁 휴지통 보기</button>
@@ -365,17 +369,18 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       <thead id="contracts-thead">
         <tr>
           <th style="width:36px;text-align:center">#</th>
-          <th style="width:7%">계약일</th>
-          <th style="width:7%">접수</th>
-          <th style="width:9%">상담사</th>
-          <th style="width:8%">센터</th>
-          <th style="width:16%">상품 (Tier·P)</th>
-          <th style="width:9%">고객명</th>
-          <th style="width:10%">전화</th>
-          <th style="width:14%">주소</th>
-          <th style="width:7%">페이백</th>
+          <th style="width:6%">계약일</th>
+          <th style="width:6%">접수</th>
+          <th style="width:8%">상담사</th>
+          <th style="width:7%">센터</th>
+          <th style="width:7%">DB</th>
+          <th style="width:14%">상품 (Tier·P)</th>
+          <th style="width:8%">고객명</th>
+          <th style="width:9%">전화</th>
+          <th style="width:13%">주소</th>
+          <th style="width:6%">페이백</th>
           <th style="width:6%">상태</th>
-          <th style="width:9%">작업</th>
+          <th style="width:8%">작업</th>
         </tr>
       </thead>
       <tbody id="contracts-tbody"></tbody>
@@ -496,6 +501,27 @@ async function fetchAgent() {
 // ─── 휴지통 모드 (활성/삭제됨 토글) ───
 let _trashMode = false;
 
+// ─── DB 출처 (incentive_db_sources) ───
+let _dbSources = []; // 활성 DB 출처 캐시
+async function fetchDbSources() {
+  const tk = getToken();
+  if (!tk) return [];
+  try {
+    const res = await fetch(API + '/db-sources', { headers: { Authorization: 'Bearer ' + tk } });
+    if (!res.ok) return [];
+    return (await res.json()).db_sources || [];
+  } catch { return []; }
+}
+function renderDbSourceFilter() {
+  const sel = document.getElementById('filter-db-source');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">전체</option>'
+    + _dbSources.map(s => `<option value="${s.id}" style="color:${s.color||'#fff'}">${(s.name||'').replace(/</g,'&lt;')}</option>`).join('')
+    + '<option value="_none">⚪ 미지정</option>';
+  if (cur) sel.value = cur;
+}
+
 // ─── 영업 목록 fetch ───
 async function fetchContracts() {
   const tk = getToken();
@@ -534,9 +560,17 @@ function renderStats(contracts) {
 let _currentPage = 1;
 function renderTable(contracts) {
   const filterAddr = document.getElementById('filter-address').value;
+  const filterDbId = document.getElementById('filter-db-source') ? document.getElementById('filter-db-source').value : '';
   let filtered = contracts;
-  if (filterAddr === 'missing') filtered = contracts.filter(c => !c.customer_address || !c.customer_address.trim());
-  if (filterAddr === 'present') filtered = contracts.filter(c => c.customer_address && c.customer_address.trim());
+  if (filterAddr === 'missing') filtered = filtered.filter(c => !c.customer_address || !c.customer_address.trim());
+  if (filterAddr === 'present') filtered = filtered.filter(c => c.customer_address && c.customer_address.trim());
+  if (filterDbId) {
+    if (filterDbId === '_none') {
+      filtered = filtered.filter(c => !c.db_source_id);
+    } else {
+      filtered = filtered.filter(c => String(c.db_source_id) === String(filterDbId));
+    }
+  }
 
   const tbody = document.getElementById('contracts-tbody');
   const empty = document.getElementById('empty-msg');
@@ -549,35 +583,37 @@ function renderTable(contracts) {
     if (_trashMode) {
       thead.innerHTML = `<tr>
         <th style="width:36px;text-align:center">#</th>
-        <th style="width:6%">계약일</th>
-        <th style="width:6%">접수</th>
-        <th style="width:8%">상담사</th>
-        <th style="width:7%">센터</th>
-        <th style="width:13%">상품 (Tier·P)</th>
-        <th style="width:7%">고객명</th>
-        <th style="width:8%">전화</th>
-        <th style="width:11%">주소</th>
-        <th style="width:6%">페이백</th>
+        <th style="width:5%">계약일</th>
+        <th style="width:5%">접수</th>
+        <th style="width:7%">상담사</th>
+        <th style="width:6%">센터</th>
+        <th style="width:6%">DB</th>
+        <th style="width:11%">상품 (Tier·P)</th>
+        <th style="width:6%">고객명</th>
+        <th style="width:7%">전화</th>
+        <th style="width:9%">주소</th>
+        <th style="width:5%">페이백</th>
         <th style="width:5%">상태</th>
-        <th style="width:8%">작업</th>
-        <th style="width:9%;color:#fca5a5">삭제 사유</th>
-        <th style="width:7%;color:#94a3b8">삭제 시각</th>
-        <th style="width:6%;color:#94a3b8">삭제자</th>
+        <th style="width:7%">작업</th>
+        <th style="width:8%;color:#fca5a5">삭제 사유</th>
+        <th style="width:6%;color:#94a3b8">삭제 시각</th>
+        <th style="width:5%;color:#94a3b8">삭제자</th>
       </tr>`;
     } else {
       thead.innerHTML = `<tr>
         <th style="width:36px;text-align:center">#</th>
-        <th style="width:7%">계약일</th>
-        <th style="width:7%">접수</th>
-        <th style="width:9%">상담사</th>
-        <th style="width:8%">센터</th>
-        <th style="width:16%">상품 (Tier·P)</th>
-        <th style="width:9%">고객명</th>
-        <th style="width:10%">전화</th>
-        <th style="width:14%">주소</th>
-        <th style="width:7%">페이백</th>
+        <th style="width:6%">계약일</th>
+        <th style="width:6%">접수</th>
+        <th style="width:8%">상담사</th>
+        <th style="width:7%">센터</th>
+        <th style="width:7%">DB</th>
+        <th style="width:14%">상품 (Tier·P)</th>
+        <th style="width:8%">고객명</th>
+        <th style="width:9%">전화</th>
+        <th style="width:13%">주소</th>
+        <th style="width:6%">페이백</th>
         <th style="width:6%">상태</th>
-        <th style="width:9%">작업</th>
+        <th style="width:8%">작업</th>
       </tr>`;
     }
   }
@@ -619,8 +655,8 @@ function renderTable(contracts) {
 
   // 휴지통 모드 — 추가 컬럼/버튼 분기
   const trashMode = _trashMode;
-  // 컬럼 12개 (#·계약일·접수·상담사·센터·상품·고객명·전화·주소·페이백·상태·작업) + 휴지통 모드 +3
-  const colSpan = trashMode ? 15 : 12;
+  // 컬럼 13개 (#·계약일·접수·상담사·센터·DB·상품·고객명·전화·주소·페이백·상태·작업) + 휴지통 모드 +3
+  const colSpan = trashMode ? 16 : 13;
   tbody.innerHTML = pageItems.map((c, i) => {
     const rowNum = startIdx + i + 1;
     const p = c.product || {};
@@ -655,12 +691,18 @@ function renderTable(contracts) {
     // 접수 시간 (created_at) — MM/DD HH:MM
     const cAt = c.created_at ? new Date(c.created_at) : null;
     const fmtCreated = cAt ? `${String(cAt.getMonth()+1).padStart(2,'0')}/${String(cAt.getDate()).padStart(2,'0')}<div style="font-size:9px;color:#64748b">${String(cAt.getHours()).padStart(2,'0')}:${String(cAt.getMinutes()).padStart(2,'0')}</div>` : '-';
+    // DB 출처 배지 (없으면 회색 '-')
+    const dbSrc = c.db_source_id ? (_dbSources.find(x => x.id === c.db_source_id) || null) : null;
+    const dbCell = dbSrc
+      ? `<span style="background:${dbSrc.color || '#3b82f6'};color:#fff;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:800;letter-spacing:0.02em">${(dbSrc.name || '').replace(/</g,'&lt;')}</span>`
+      : '<span style="color:#64748b;font-size:10px">-</span>';
     return `<tr class="${rowCls}" data-id="${c.id}" style="${trashRowStyle}">
       <td style="text-align:center;color:#64748b;font-weight:700;font-size:11px">${rowNum}</td>
       <td>${(c.contract_date || '').slice(5)}</td>
       <td style="font-size:10.5px;color:#cbd5e1">${fmtCreated}</td>
       <td><b>${a.name || '-'}</b></td>
       <td style="font-size:11px;color:#a5b4fc">${a.center || '-'}</td>
+      <td>${dbCell}</td>
       <td>${p.name || '-'} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P</div></td>
       <td>${c.customer_name || '<i style="color:#94a3b8">-</i>'}</td>
       <td>${c.customer_phone || '<i style="color:#94a3b8">-</i>'}</td>
@@ -871,15 +913,26 @@ async function handleAction(id, act) {
     const modalBody = document.getElementById('modal-body');
     modalBody.querySelectorAll('.detail-input').forEach(inp => {
       const field = inp.dataset.field;
-      const val = inp.value.trim();
+      if (!field) return;
+      const val = (inp.value || '').trim();
       if (field === 'add_payback') {
         body[field] = parseInt(val) || 0;
+      } else if (field === 'db_source_id') {
+        body[field] = val ? parseInt(val) : null;
       } else {
         body[field] = val || null;
       }
     });
     if (body.add_payback < 0 || body.add_payback > 50000) {
       alert('추가 페이백은 0~50,000원 범위'); return;
+    }
+    // ✅ 상담완료 시 DB 출처 필수 (사용자 의도: 상담완료 시점에 어느 DB로 상담했는지 체크)
+    if (body.status === 'completed' && !body.db_source_id) {
+      alert('⚠️ 상담완료로 변경하려면 "🗂️ 콜센터 상담 DB 출처"를 반드시 선택해야 합니다.\n(어드민 > DB 출처 메뉴에서 종류를 추가/관리할 수 있습니다)');
+      // DB 출처 select에 포커스
+      const sel = document.querySelector('#modal-body select[data-field="db_source_id"]');
+      if (sel) { sel.focus(); sel.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.4)'; setTimeout(() => sel.style.boxShadow = '', 2000); }
+      return;
     }
   } else if (act === 'finalize') {
     body = { status: 'completed' };
@@ -981,6 +1034,22 @@ function openEditModal(id) {
       <div id="quote-deferred-${c.id}" class="quote-box" style="min-height:60px">
         <div class="quote-label">🧮 상담사 견적서 ${c.quote_full_html ? '(TM 계산기 결과)' : ''}</div>
         <div style="color:#94a3b8;font-size:11px;padding:8px">불러오는 중…</div>
+      </div>
+    </div>
+
+    <!-- 🗂️ 콜센터 상담 DB 출처 -->
+    <div class="sec-card acc-purple" id="db-source-section">
+      <div class="sec-title"><span class="sec-icon">🗂️</span>콜센터 상담 DB 출처
+        <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">상담완료 시 필수</span>
+      </div>
+      <div class="sec-row">
+        <label class="modal-field-label">DB 출처 — 어느 DB로 상담했는지 선택</label>
+        <select class="detail-input" data-field="db_source_id" id="db-source-select-${c.id}" style="border-color:#a78bfa !important;font-weight:700">
+          <option value="">— 선택 안 함 —</option>
+          ${_dbSources.map(s => `<option value="${s.id}" ${String(c.db_source_id) === String(s.id) ? 'selected' : ''} style="color:${s.color || '#fff'}">${(s.name||'').replace(/</g,'&lt;')}</option>`).join('')}
+        </select>
+        <div class="modal-field-hint">⚠️ 상태를 ✅ <b>계약완료</b>로 변경하려면 DB 출처를 반드시 선택해야 합니다.</div>
+        ${c.db_source_id && _dbSources.find(x => x.id === c.db_source_id) ? `<div style="margin-top:8px"><span style="background:${_dbSources.find(x => x.id === c.db_source_id).color || '#3b82f6'};color:#fff;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:800">${_dbSources.find(x => x.id === c.db_source_id).name}</span></div>` : ''}
       </div>
     </div>
 
@@ -1321,6 +1390,8 @@ function onLoggedIn(agent, skipLoad) {
   document.getElementById('user-info').style.display = '';
   document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
   document.getElementById('user-meta').textContent = agent.center;
+  // DB 출처 fetch (병렬, 실패해도 화면 정상 동작)
+  fetchDbSources().then(list => { _dbSources = list || []; renderDbSourceFilter(); if (_currentContracts && _currentContracts.length) renderTable(_currentContracts); });
   if (!skipLoad) loadContracts();
   setupRealtime();
 }
@@ -1354,6 +1425,8 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 document.getElementById('filter-month').addEventListener('change', () => { _currentPage = 1; loadContracts(); });
 document.getElementById('filter-status').addEventListener('change', () => { _currentPage = 1; loadContracts(); });
 document.getElementById('filter-address').addEventListener('change', () => { _currentPage = 1; loadContracts(); });
+const _fdb = document.getElementById('filter-db-source');
+if (_fdb) _fdb.addEventListener('change', () => { _currentPage = 1; renderTable(_currentContracts || []); });
 
 // 페이지네이션 이벤트
 document.getElementById('page-first').addEventListener('click', () => { _currentPage = 1; renderTable(_currentContracts); });
@@ -1426,6 +1499,9 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
       '상담사': a.name || '',
       '센터': a.center || '',
       '상담사 역할': a.role || '',
+      // ─── DB 출처 ───
+      'DB 출처': (c.db_source_id && _dbSources.find(x => x.id === c.db_source_id)?.name) || '',
+      'DB 출처 코드': (c.db_source_id && _dbSources.find(x => x.id === c.db_source_id)?.code) || '',
       // ─── 상품 정보 ───
       '상품 ID': p.id || '',
       '통신사': p.carrier || '',

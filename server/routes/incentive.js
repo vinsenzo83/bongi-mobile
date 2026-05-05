@@ -569,6 +569,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       quote_summary,
       quote_full_html,
       monthly_fee,
+      db_source_id,
     } = req.body || {};
 
     if (!product_id) return res.status(400).json({ error: 'product_id 필수' });
@@ -616,6 +617,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         quote_summary: quote_summary || null,
         quote_full_html: quote_full_html || null,
         monthly_fee: monthly_fee || null,
+        db_source_id: db_source_id ? parseInt(db_source_id) : null,
         // ── product 단가 snapshot (등록 시점) ──
         payback_snapshot: prodSnap.payback,
         rebate_snapshot: prodSnap.rebate,
@@ -641,7 +643,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id } = req.body || {};
+    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -696,6 +698,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (wifi_option !== undefined) update.wifi_option = wifi_option;
     if (quote_summary !== undefined) update.quote_summary = quote_summary;
     if (quote_full_html !== undefined) update.quote_full_html = quote_full_html;
+    if (db_source_id !== undefined) update.db_source_id = db_source_id ? parseInt(db_source_id) : null;
 
     // product 변경 — pending 단계에서만 허용, snapshot 재계산
     // (계약 진행/완료 단계에서는 등록 시점 snapshot 락)
@@ -1033,7 +1036,7 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
 
     // gzip 적용 후 quote_full_html 포함해도 페이로드 작음 (~10KB 추가) — 모달 즉시 표시
     // 휴지통 모드일 때는 deleted_at/deleted_by_user_id/deleted_reason도 함께 반환
-    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,point_weight_snapshot,is_premium_snapshot';
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,point_weight_snapshot,is_premium_snapshot,db_source_id';
     let q = supabase
       .from('incentive_sales')
       .select(`${listCols}, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role)`)
@@ -1448,6 +1451,120 @@ router.put('/role-permissions/:role', authenticateJWT, async (req, res) => {
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: err.message || '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 14. DB 출처 (incentive_db_sources) — 콜센터 상담 DB 종류 관리
+// ═══════════════════════════════════════════════════════════════
+
+// GET /api/incentive/db-sources — 활성 목록 (인증된 모든 user)
+router.get('/db-sources', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const { data, error } = await supabase
+      .from('incentive_db_sources')
+      .select('*')
+      .eq('active', true)
+      .order('display_order');
+    if (error) throw error;
+    res.json({ db_sources: data });
+  } catch (e) {
+    console.error('[incentive]', req.method, req.path, e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/incentive/db-sources/all — 전체 (admin) 비활성 포함
+router.get('/db-sources/all', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const { data, error } = await supabase
+      .from('incentive_db_sources')
+      .select('*')
+      .order('display_order');
+    if (error) throw error;
+    res.json({ db_sources: data });
+  } catch (e) {
+    console.error('[incentive]', req.method, req.path, e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/incentive/db-sources — 신규 등록 (admin)
+router.post('/db-sources', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const { name, code, color, display_order, notes, active } = req.body || {};
+    if (!name || !name.trim()) return res.status(400).json({ error: 'name 필수' });
+    const { data, error } = await supabase
+      .from('incentive_db_sources')
+      .insert({
+        name: name.trim(),
+        code: (code || '').trim() || null,
+        color: color || '#3b82f6',
+        display_order: parseInt(display_order) || 0,
+        notes: notes || null,
+        active: active !== false,
+        created_by_user_id: req.user.id,
+      })
+      .select().single();
+    if (error) throw error;
+    res.json({ db_source: data });
+  } catch (e) {
+    console.error('[incentive]', req.method, req.path, e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PATCH /api/incentive/db-sources/:id — 수정 (admin)
+router.patch('/db-sources/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const allowed = ['name', 'code', 'color', 'display_order', 'notes', 'active'];
+    const update = { updated_at: new Date().toISOString() };
+    for (const k of allowed) if (k in (req.body || {})) update[k] = req.body[k];
+    if (update.display_order !== undefined) update.display_order = parseInt(update.display_order) || 0;
+    if (update.name !== undefined && (!update.name || !String(update.name).trim())) {
+      return res.status(400).json({ error: 'name 비어있을 수 없음' });
+    }
+    if (typeof update.name === 'string') update.name = update.name.trim();
+    if (typeof update.code === 'string') update.code = update.code.trim() || null;
+    const { data, error } = await supabase
+      .from('incentive_db_sources')
+      .update(update)
+      .eq('id', req.params.id)
+      .select().single();
+    if (error) throw error;
+    res.json({ db_source: data });
+  } catch (e) {
+    console.error('[incentive]', req.method, req.path, e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /api/incentive/db-sources/:id — 비활성화 (admin) — soft (active=false)
+router.delete('/db-sources/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const { data, error } = await supabase
+      .from('incentive_db_sources')
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select().single();
+    if (error) throw error;
+    res.json({ db_source: data });
+  } catch (e) {
+    console.error('[incentive]', req.method, req.path, e);
+    res.status(500).json({ error: e.message });
   }
 });
 
