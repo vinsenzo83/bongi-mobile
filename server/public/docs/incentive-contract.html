@@ -66,6 +66,7 @@ tr.cancelled { opacity:0.5; }
   table { font-size:10px; }
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -591,6 +592,40 @@ async function loadContracts() {
   }
 }
 
+
+// ╔════════════════════════════════════════════════════╗
+// ║  Supabase Realtime — incentive_sales 변경 자동 감지   ║
+// ╚════════════════════════════════════════════════════╝
+const SB_URL = 'https://dugaqvvnhsgenhmhuyju.supabase.co';
+const SB_KEY = 'sb_publishable_bR_2f31M_GN5D2GSGYU_ng_D950eQm1';
+let _sbClient = null;
+let _sbChannel = null;
+
+function setupRealtime() {
+  if (typeof window.supabase === 'undefined') return;
+  if (!_sbClient) _sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+  const tk = getToken();
+  if (!tk) {
+    if (_sbChannel) { _sbClient.removeChannel(_sbChannel); _sbChannel = null; }
+    return;
+  }
+  try { _sbClient.realtime.setAuth(tk); } catch(e) {}
+  if (_sbChannel) { _sbClient.removeChannel(_sbChannel); _sbChannel = null; }
+  _sbChannel = _sbClient.channel('contract-incentive-sales-all')
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'incentive_sales'
+    }, payload => {
+      console.log('[realtime] sales 변경', payload.eventType, payload.new || payload.old);
+      // 모달이 열려있어도 백그라운드에서 갱신
+      const evt = payload.eventType === 'INSERT' ? '🆕 신규 영업 등록됨' :
+                  payload.eventType === 'UPDATE' ? '🔄 영업 정보 수정됨' : '🗑️ 영업 삭제됨';
+      showToast(evt + ' — 자동 갱신');
+      // 약간 지연 (서버 RLS 처리 후)
+      setTimeout(() => { if (document.getElementById('main-area').style.display !== 'none') loadContracts(); }, 200);
+    })
+    .subscribe();
+}
+
 // ─── 초기화 + 이벤트 ───
 async function init() {
   // 이번 달 default
@@ -618,6 +653,7 @@ function onLoggedIn(agent) {
   document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
   document.getElementById('user-meta').textContent = agent.center;
   loadContracts();
+  setupRealtime();
 }
 
 document.getElementById('auth-login-btn').addEventListener('click', async () => {

@@ -335,6 +335,7 @@ html, body { overflow:hidden; }
   .tm-result-panel { max-height:60vh; }
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 </head>
 <body>
 
@@ -2600,6 +2601,80 @@ setTimeout(() => {
   });
   authRender();
 }, 200);
+// ╔════════════════════════════════════════════════════╗
+// ║  Supabase Realtime — incentive_sales 변경 자동 감지   ║
+// ╚════════════════════════════════════════════════════╝
+const SB_URL = 'https://dugaqvvnhsgenhmhuyju.supabase.co';
+const SB_KEY = 'sb_publishable_bR_2f31M_GN5D2GSGYU_ng_D950eQm1';
+let _sbClient = null;
+let _sbChannel = null;
+
+function incInitRealtime() {
+  if (_sbClient) return _sbClient;
+  if (typeof window.supabase === 'undefined') {
+    console.warn('[realtime] supabase-js 미로드');
+    return null;
+  }
+  _sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+  return _sbClient;
+}
+
+async function incSetupRealtime() {
+  const token = (typeof authGetToken === 'function') ? authGetToken() : null;
+  const me = (typeof authGetUser === 'function') ? authGetUser() : null;
+  if (!token || !me) {
+    if (_sbChannel) { _sbClient.removeChannel(_sbChannel); _sbChannel = null; }
+    return;
+  }
+  const sb = incInitRealtime();
+  if (!sb) return;
+
+  // 인증된 토큰으로 RLS 적용
+  try { sb.realtime.setAuth(token); } catch(e) {}
+
+  if (_sbChannel) { sb.removeChannel(_sbChannel); _sbChannel = null; }
+
+  _sbChannel = sb.channel('tm-incentive-sales-' + me.id)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'incentive_sales',
+      filter: 'agent_id=eq.' + me.id
+    }, payload => {
+      console.log('[realtime] sales 변경 감지', payload.eventType, payload.new || payload.old);
+      // 본인 영업이 변경됨 → 누적 + 영업 내역 재계산
+      if (typeof incFetchMyState === 'function') incFetchMyState();
+      if (typeof incRenderSales === 'function') incRenderSales();
+      // 토스트
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0891b2;color:#fff;padding:8px 16px;border-radius:8px;font-size:11.5px;font-weight:700;z-index:99999;box-shadow:0 4px 16px rgba(8,145,178,0.4)';
+      const evtLabel = payload.eventType === 'UPDATE' ? '🔄 계약부서가 수정' :
+                       payload.eventType === 'INSERT' ? '🆕 신규 영업 등록' : '🗑️ 삭제';
+      t.textContent = evtLabel + ' — 자동 갱신됨';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    })
+    .subscribe();
+}
+
+// 로그인/로그아웃 시 Realtime 재설정
+function incRealtimeBindAuth() {
+  // authRender 호출 후마다 incSetupRealtime 보강
+  const _origAuthRender = window.authRender;
+  if (typeof _origAuthRender === 'function' && !_origAuthRender._wrapped) {
+    window.authRender = async function() {
+      await _origAuthRender.apply(this, arguments);
+      incSetupRealtime();
+    };
+    window.authRender._wrapped = true;
+  }
+}
+
+setTimeout(() => {
+  incRealtimeBindAuth();
+  incSetupRealtime(); // 페이지 로드 시 토큰 있으면 즉시 구독
+}, 600);
+
 
 // ╔════════════════════════════════════════════════════╗
 // ║  V5 인증 통합 — 본인 누적 자동 fetch + 계약 완료      ║
