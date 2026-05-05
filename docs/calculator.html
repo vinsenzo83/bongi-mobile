@@ -133,6 +133,22 @@
     <label for="c-wifi">WiFi 추가</label>
   </div>
 
+  <!-- LG U+ 500M·1G 프리미엄 안심 기본제공 옵션 -->
+  <div id="c-lgu-premium-bonus" style="display:none;background:rgba(228,9,129,0.10);border:1.5px solid rgba(228,9,129,0.4);border-radius:8px;padding:10px 14px;margin-bottom:8px">
+    <div style="font-size:11px;font-weight:700;color:#fbcfe8;margin-bottom:6px">🎁 LG U+ 500M·1G 기본제공 옵션 (무료)</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#fff;cursor:pointer">
+        <input type="radio" name="lgu-bonus" value="wifi2" checked style="cursor:pointer">
+        와이파이 2대 (0원)
+      </label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#fff;cursor:pointer">
+        <input type="radio" name="lgu-bonus" value="wifi-speaker" style="cursor:pointer">
+        와이파이 1대 + 스마트홈 스피커 (0원)
+      </label>
+    </div>
+    <div style="font-size:9px;color:rgba(251,207,232,0.7);margin-top:4px">※ 둘 중 하나 선택 · 요금 변동 없음 (혜택 표시용)</div>
+  </div>
+
   <div class="calc-row">
     <div class="calc-group" style="flex:2">
       <div class="calc-label">TV 상품 (TV1)</div>
@@ -1017,6 +1033,7 @@ function init() {
   updateWifiUI();
   updateSetTopInfo();
   if (typeof updateTvCountUI === 'function') updateTvCountUI();
+  if (typeof updateLguPremiumBonus === 'function') updateLguPremiumBonus();
   calc();
 }
 
@@ -1549,7 +1566,16 @@ function updateTvCountUI() {
   document.getElementById('c-tv3-group').style.display = (cnt >= 3) ? '' : 'none';
 }
 
-document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); updateRangeUI(); updateWifiUI(); updateSetTopInfo(); updateTvCountUI(); calc(); });
+function updateLguPremiumBonus() {
+  var c = document.getElementById('c-carrier').value;
+  var sp = document.getElementById('c-speed').value;
+  var el = document.getElementById('c-lgu-premium-bonus');
+  if (!el) return;
+  el.style.display = (c === 'lgu' && (sp === '500M' || sp === '1G')) ? '' : 'none';
+}
+
+document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); updateRangeUI(); updateWifiUI(); updateSetTopInfo(); updateTvCountUI(); updateLguPremiumBonus(); calc(); });
+document.getElementById('c-speed').addEventListener('change', updateLguPremiumBonus);
 document.getElementById('c-tv-count').addEventListener('change', function() { updateTvCountUI(); calc(); });
 document.getElementById('c-tv').addEventListener('change', function(){ buildAdditionalTvDropdowns(); calc(); });
 document.getElementById('c-tv2').addEventListener('change', calc);
