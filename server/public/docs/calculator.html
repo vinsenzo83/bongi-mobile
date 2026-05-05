@@ -131,7 +131,29 @@ body.admin-only .admin-nav-bar { display: flex; }
   margin-right: 12px;
   padding: 6px 0;
 }
-body.admin-only .section { scroll-margin-top: 80px; }
+body.admin-only .section { scroll-margin-top: 80px; margin-bottom: 8px; }
+/* 드롭다운(접힘) 형태 */
+body.admin-only .section .st {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-left: 26px;
+  transition: background 0.12s;
+  border-radius: 8px;
+}
+body.admin-only .section .st:hover { background: rgba(59,130,246,0.06); }
+body.admin-only .section .st::before {
+  content: '▼';
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: #60a5fa;
+  transition: transform 0.18s;
+}
+body.admin-only .section.sec-collapsed .st::before { transform: translateY(-50%) rotate(-90deg); }
+body.admin-only .section.sec-collapsed > *:not(.st) { display: none !important; }
 </style>
 <script>
 // admin 모드 감지
@@ -149,8 +171,20 @@ body.admin-only .section { scroll-margin-top: 80px; }
         if (m) {
           s.id = 'sec-' + m[1];
           // 8번 사은품: 어드민 → 상품 관리 페이지에서 일원화
-          if (m[1] === '8') s.style.display = 'none';
+          if (m[1] === '8') { s.style.display = 'none'; return; }
         }
+        // 카테고리별 드롭다운 — 기본 접힘 (10번 변경 이력 제외)
+        if (!m || m[1] !== '10') s.classList.add('sec-collapsed');
+        st.addEventListener('click', () => {
+          s.classList.toggle('sec-collapsed');
+        });
+      });
+      // 네비 링크 클릭 시 자동으로 펼침
+      document.querySelectorAll('.admin-nav-bar .nav-link').forEach(a => {
+        a.addEventListener('click', (e) => {
+          const target = document.querySelector(a.getAttribute('href'));
+          if (target) target.classList.remove('sec-collapsed');
+        });
       });
     });
   }
