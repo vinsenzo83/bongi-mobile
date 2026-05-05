@@ -82,7 +82,7 @@ body.show-manager-kpi .manager-only { display:block; }
 .agent-only { display:none; }
 body.show-agent-kpi .agent-only { display:block; }
 body.show-agent-kpi .hide-for-agent { display:none !important; }
-.agent-kpi-grid { display:grid; grid-template-columns:repeat(6, 1fr); gap:12px; }
+.agent-kpi-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:10px; }
 .agent-kpi-card { background:linear-gradient(135deg,#064e3b,#0f172a); border:1.5px solid #16a34a; border-radius:12px; padding:14px 16px; position:relative; overflow:hidden; }
 .agent-kpi-card.primary { background:linear-gradient(135deg,#15803d,#064e3b); border-color:#22c55e; }
 .agent-kpi-card .label { font-size:10px; color:#86efac; font-weight:800; letter-spacing:0.04em; margin-bottom:6px; }
@@ -266,6 +266,11 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           <div class="label">🎁 보너스</div>
           <div class="val" id="agent-bonus">-</div>
           <div class="sub">우수 보너스</div>
+        </div>
+        <div class="agent-kpi-card" style="background:linear-gradient(135deg,#7f1d1d,#0f172a);border-color:#dc2626">
+          <div class="label" style="color:#fca5a5">💸 페이백 차감</div>
+          <div class="val" id="agent-payback-deduct" style="color:#fca5a5">-</div>
+          <div class="sub" id="agent-payback-deduct-sub">본인 부담</div>
         </div>
       </div>
       <!-- 등급 진행률 -->
@@ -683,6 +688,14 @@ function renderAgentKpi(s, rule) {
   document.getElementById('agent-incentive').textContent = fmt(s.incentive) + '원';
   document.getElementById('agent-incentive-sub').textContent = `단가 ${fmt(s.applied_rate || 0)}/P`;
   document.getElementById('agent-bonus').textContent = fmt(s.bonus) + '원';
+  // 본인 페이백 차감
+  const deduct = s.total_agent_payback_deduct || 0;
+  const deductEl = document.getElementById('agent-payback-deduct');
+  const deductSubEl = document.getElementById('agent-payback-deduct-sub');
+  if (deductEl) deductEl.textContent = '−' + fmt(deduct) + '원';
+  if (deductSubEl) deductSubEl.textContent = (deduct > 0)
+    ? `${s.total_count}건 중 페이백 30,000↑ 건수만`
+    : '페이백 차감 없음';
   // 진행률
   renderAgentProgress(s, rule);
   // 페널티 배너
