@@ -561,6 +561,13 @@ html, body { overflow:hidden; }
         </div>
         <div id="inc-deal-msg" style="font-size:10px;margin-top:4px;min-height:14px"></div>
       </div>
+      <!-- 📋 내 영업 내역 (로그인 시) -->
+      <div id="inc-sales-section" style="display:none;margin-top:8px;border-top:1px dashed rgba(245,158,11,0.4);padding-top:8px">
+        <button type="button" id="inc-sales-toggle" style="width:100%;padding:6px;background:#fff;border:1px solid #f59e0b;color:#92400e;border-radius:6px;font-weight:700;cursor:pointer;font-size:11px">
+          📋 내 영업 내역 (이번 달) <span id="inc-sales-count">·</span> ▼
+        </button>
+        <div id="inc-sales-list" style="display:none;margin-top:6px;max-height:240px;overflow-y:auto;background:rgba(255,255,255,0.7);border-radius:6px;padding:6px"></div>
+      </div>
     </div>
   </aside>
 
@@ -2508,6 +2515,7 @@ async function authRender() {
   document.getElementById('auth-user-meta').textContent = agent.center + ' · ' + agent.id.slice(0, 8);
   // 인센티브 카드 갱신 트리거
   if (typeof incFetchMyState === 'function') incFetchMyState();
+  if (typeof incRenderSales === 'function') incRenderSales();
 }
 
 document.addEventListener('DOMContentLoaded', () => {});
@@ -2535,6 +2543,8 @@ setTimeout(() => {
     await authRender();
     if (typeof incFetchMyState === 'function') incFetchMyState();
     if (typeof incSimulate === 'function') incSimulate();
+    const sec = document.getElementById('inc-sales-section');
+    if (sec) sec.style.display = 'none';
   });
   authRender();
 }, 200);
@@ -2666,8 +2676,9 @@ async function incSubmitDeal() {
       msg.textContent = '';
     }, 1200);
 
-    // 누적 자동 갱신
+    // 누적 + 영업 내역 자동 갱신
     if (typeof incFetchMyState === 'function') incFetchMyState();
+    if (typeof incRenderSales === 'function') incRenderSales();
   } catch(e) {
     msg.textContent = '❌ ' + e.message;
   } finally {
@@ -2691,6 +2702,96 @@ setTimeout(() => {
   if (cancelBtn) cancelBtn.addEventListener('click', incCancelDeal);
   incApplyAuthState();
 }, 250);
+// ╔════════════════════════════════════════════════════╗
+// ║  내 영업 내역 (이번 달)                              ║
+// ╚════════════════════════════════════════════════════╝
+async function incFetchSales() {
+  const token = (typeof authGetToken === 'function') ? authGetToken() : null;
+  if (!token) return [];
+  const ym = new Date().toISOString().slice(0, 7);
+  try {
+    const res = await fetch(INC_API + '/sales?month=' + ym, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.sales || [];
+  } catch { return []; }
+}
+
+async function incRenderSales() {
+  const sec = document.getElementById('inc-sales-section');
+  const list = document.getElementById('inc-sales-list');
+  const cntEl = document.getElementById('inc-sales-count');
+  const token = (typeof authGetToken === 'function') ? authGetToken() : null;
+  if (!sec || !list) return;
+  if (!token) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  const sales = await incFetchSales();
+  cntEl.textContent = '· ' + sales.length + '건';
+  if (!sales.length) {
+    list.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:14px;font-size:10px">아직 영업 내역이 없습니다.</div>';
+    return;
+  }
+  list.innerHTML = sales.map(s => {
+    const p = s.product || {};
+    const dateShort = s.contract_date.slice(5); // MM-DD
+    const statusBadge = s.status === 'cancelled'
+      ? '<span style="background:#dc2626;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px">취소</span>'
+      : s.status === 'pending'
+        ? '<span style="background:#f59e0b;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px">대기</span>'
+        : '';
+    const premBadge = p.is_premium ? '<span style="background:#dc2626;color:#fff;padding:1px 4px;border-radius:3px;font-size:8px;margin-left:3px">우수</span>' : '';
+    const tierBadge = p.tier ? '<span style="background:#92400e;color:#fff;padding:1px 4px;border-radius:3px;font-size:8px;margin-left:3px">' + p.tier + '</span>' : '';
+    return '<div data-id="' + s.id + '" style="border-bottom:1px solid rgba(245,158,11,0.2);padding:5px 4px;font-size:10px' + (s.status === 'cancelled' ? ';opacity:0.5' : '') + '">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">' +
+        '<div style="font-weight:700;color:#374151">' + dateShort + ' · ' + (p.name || '?') + tierBadge + premBadge + '</div>' +
+        '<div style="display:flex;gap:4px;align-items:center">' + statusBadge +
+          (s.status === 'completed' ? '<button class="inc-sale-cancel" data-id="' + s.id + '" style="font-size:9px;padding:1px 5px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:3px;cursor:pointer">취소</button>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="color:#6b7280;font-size:9.5px">' + 
+        (s.customer_name ? '👤 ' + s.customer_name : '익명') + 
+        (s.customer_phone ? ' · ' + s.customer_phone : '') + 
+        ' · 가중치 ' + (p.point_weight || '?') + 'P' + 
+        (s.add_payback > 0 ? ' · 페이백 ' + (s.add_payback||0).toLocaleString() + '원' + (s.agent_payback_deduct > 0 ? ' (본인 -' + s.agent_payback_deduct.toLocaleString() + ')' : '') : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // 취소 버튼 핸들러
+  list.querySelectorAll('.inc-sale-cancel').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = btn.dataset.id;
+      if (!confirm('이 영업을 취소하시겠습니까? (인센티브에서 제외)')) return;
+      const tk = authGetToken();
+      try {
+        const res = await fetch(INC_API + '/sales/' + id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+          body: JSON.stringify({ status: 'cancelled', cancellation_reason: '본인 취소' })
+        });
+        if (!res.ok) throw new Error('취소 실패');
+        if (typeof incFetchMyState === 'function') incFetchMyState();
+        await incRenderSales();
+      } catch(e) { alert(e.message); }
+    });
+  });
+}
+
+// 토글
+setTimeout(() => {
+  const t = document.getElementById('inc-sales-toggle');
+  const l = document.getElementById('inc-sales-list');
+  if (t && l) {
+    t.addEventListener('click', () => {
+      l.style.display = l.style.display === 'none' ? '' : 'none';
+      t.innerHTML = '📋 내 영업 내역 (이번 달) <span id="inc-sales-count">·</span> ' + (l.style.display === 'none' ? '▼' : '▲');
+      if (l.style.display !== 'none') incRenderSales();
+    });
+  }
+}, 300);
+
 
 </script>
 
