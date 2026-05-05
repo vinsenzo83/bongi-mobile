@@ -987,8 +987,9 @@ function openEditModal(id) {
 
   document.getElementById('modal-overlay').style.display = 'flex';
 
-  // 견적서를 별도 fetch — 목록은 quote 제외해서 빠르고, 모달 열 때만 단건 조회
-  setTimeout(async () => {
+  // 견적서 즉시 렌더 — list에 quote_full_html이 포함되어 있으면 fetch 없이 바로 표시
+  // requestAnimationFrame으로 다음 paint에 추가 (모달 표시 자체는 막지 않음)
+  requestAnimationFrame(async () => {
     const slot = document.getElementById('quote-deferred-' + c.id);
     if (!slot) return;
     let qFull = c.quote_full_html;
@@ -1023,7 +1024,7 @@ function openEditModal(id) {
     } else {
       slot.outerHTML = '<div class="quote-empty">⚠️ 상담사가 견적서를 등록하지 않았습니다.</div>';
     }
-  }, 30);
+  });
   } catch (err) {
     console.error('[openEditModal] 렌더링 오류:', err);
     alert('모달 표시 중 오류: ' + err.message);

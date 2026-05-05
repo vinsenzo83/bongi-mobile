@@ -80,6 +80,13 @@ router.post('/login', authLimiter, async (req, res) => {
       profile = { role: meta.role || 'customer', display_name: meta.display_name, agent_id: null, store_id: null };
     }
 
+    // 🚀 incentive_agents 정보까지 포함 — 클라이언트가 GET /agents/me 호출 생략 가능 (-0.5~1초)
+    const { data: incentiveAgent } = await supabase
+      .from('incentive_agents')
+      .select('*')
+      .eq('user_id', data.user.id)
+      .single();
+
     res.json({
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,
@@ -91,6 +98,7 @@ router.post('/login', authLimiter, async (req, res) => {
         agentId: profile.agent_id,
         storeId: profile.store_id,
       },
+      incentive_agent: (incentiveAgent && incentiveAgent.active) ? incentiveAgent : null,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

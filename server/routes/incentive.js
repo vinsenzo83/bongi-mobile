@@ -771,8 +771,8 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
     const monthStart = `${y}-${m}-01`;
     const monthEnd = new Date(parseInt(y), parseInt(m), 0).toISOString().slice(0, 10);
 
-    // 목록은 quote_full_html 제외 (모달 열 때 단건 조회) → 응답 ~80% 감소
-    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at';
+    // gzip 적용 후 quote_full_html 포함해도 페이로드 작음 (~10KB 추가) — 모달 즉시 표시
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at';
     let q = supabase
       .from('incentive_sales')
       .select(`${listCols}, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role)`)
