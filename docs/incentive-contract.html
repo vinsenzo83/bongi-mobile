@@ -219,6 +219,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -275,6 +276,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           <option value="present">주소 있음</option>
         </select>
         <button id="reload-btn">🔄 새로고침</button>
+        <button id="export-xlsx-btn" style="background:#16a34a;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📥 엑셀 다운로드</button>
       </div>
       <div style="font-size:11px;color:#94a3b8" id="result-count">-</div>
     </div>
@@ -963,6 +965,61 @@ document.getElementById('filter-month').addEventListener('change', loadContracts
 document.getElementById('filter-status').addEventListener('change', loadContracts);
 document.getElementById('filter-address').addEventListener('change', loadContracts);
 document.getElementById('reload-btn').addEventListener('click', loadContracts);
+
+// ─── 엑셀 다운로드 (.xlsx) ───
+document.getElementById('export-xlsx-btn').addEventListener('click', () => {
+  if (typeof XLSX === 'undefined') {
+    alert('SheetJS 로드 실패. 새로고침 후 다시 시도하세요.');
+    return;
+  }
+  // 현재 필터(주소)까지 적용된 목록만 export
+  const filterAddr = document.getElementById('filter-address').value;
+  let list = _currentContracts || [];
+  if (filterAddr === 'missing') list = list.filter(c => !c.customer_address || !c.customer_address.trim());
+  if (filterAddr === 'present') list = list.filter(c => c.customer_address && c.customer_address.trim());
+
+  if (!list.length) {
+    alert('내보낼 데이터가 없습니다.');
+    return;
+  }
+
+  const STATUS_MAP = { pending: '계약대기', completed: '계약완료', cancelled: '계약취소' };
+  const rows = list.map(c => {
+    const p = c.product || {};
+    const a = c.agent || {};
+    return {
+      '날짜': c.contract_date || '',
+      '상담사': a.name || '',
+      '센터': a.center || '',
+      '통신사': p.carrier || '',
+      '상품명': p.name || '',
+      'Tier': p.tier || '',
+      '가중치(P)': p.point_weight || 0,
+      '고객명': c.customer_name || '',
+      '전화번호': c.customer_phone || '',
+      '주소': c.customer_address || '',
+      '상세주소': c.customer_address_detail || '',
+      '설치일': c.installation_date || '',
+      '설치시간': c.installation_time || '',
+      '페이백': p.payback || 0,
+      '추가페이백': c.add_payback || 0,
+      '예금주': c.bank_account_holder || '',
+      '은행': c.bank_name || '',
+      '계좌번호': c.bank_account_number || '',
+      '상태': STATUS_MAP[c.status] || c.status || '',
+      '메모(상담사)': c.notes || '',
+      '메모(계약부서)': c.contract_notes || ''
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '계약목록');
+
+  const today = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `계약목록_${today}.xlsx`);
+  showToast('📥 엑셀 다운로드 완료 (' + list.length + '건)');
+});
 
 init();
 </script>
