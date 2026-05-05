@@ -465,7 +465,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html } = req.body || {};
+    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -479,7 +479,18 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     }
 
     const update = {};
-    if (status !== undefined) update.status = status;
+    if (status !== undefined) {
+      update.status = status;
+      // status 변경 시 해당 timestamp 자동 기록
+      if (status !== existing.status) {
+        const now = new Date().toISOString();
+        if (status === 'pending') update.contract_pending_at = now;
+        else if (status === 'in_progress') update.contract_in_progress_at = now;
+        else if (status === 'completed') update.contract_completed_at = now;
+        else if (status === 'cancelled') update.contract_cancelled_at = now;
+      }
+    }
+    if (activation_date !== undefined) update.activation_date = activation_date;
     if (cancellation_reason !== undefined) update.cancellation_reason = cancellation_reason;
     if (notes !== undefined) update.notes = notes;
     if (contract_notes !== undefined) update.contract_notes = contract_notes;
