@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>상품 관리 (admin)</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: 'Pretendard Variable', sans-serif; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
+.wrap { max-width: 1500px; margin: 0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #334155; }
+h1 { font-size:22px; color:#f8fafc; letter-spacing:-0.02em; }
+.subtitle { font-size:12px; color:#94a3b8; margin-top:4px; }
+.section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:12px; padding:18px 22px; margin-bottom:20px; }
+.section h2 { font-size:14px; color:#fbbf24; font-weight:800; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center; }
+.auth-box { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:16px; margin-bottom:20px; }
+.auth-box input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; width:200px; margin-right:8px; }
+.auth-box button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px; }
+.auth-msg { font-size:11px; margin-top:6px; min-height:14px; color:#dc2626; }
+
+.kpi-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; margin-bottom:18px; }
+.kpi-card { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:14px; }
+.kpi-label { font-size:9.5px; color:#94a3b8; font-weight:700; letter-spacing:0.04em; margin-bottom:4px; }
+.kpi-val { font-size:20px; color:#f8fafc; font-weight:900; letter-spacing:-0.02em; }
+.kpi-sub { font-size:9.5px; color:#64748b; margin-top:2px; }
+
+.toolbar { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+.toolbar select, .toolbar input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:6px 10px; border-radius:6px; font-size:12px; }
+.btn-primary { background:#16a34a; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-weight:800; font-size:12px; cursor:pointer; }
+.btn-secondary { background:#475569; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer; }
+
+table { width:100%; border-collapse:collapse; background:#1e293b; border-radius:10px; overflow:hidden; }
+th { background:#334155; color:#f1f5f9; font-size:11px; padding:10px 8px; text-align:left; font-weight:700; }
+td { font-size:11.5px; color:#e2e8f0; padding:8px; border-bottom:1px solid #334155; vertical-align:middle; }
+tr:hover { background:#334155; }
+tr.inactive { opacity:0.4; }
+
+.tier { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:800; letter-spacing:0.04em; }
+.tier-S { background:#fbbf24; color:#78350f; }
+.tier-A { background:#60a5fa; color:#1e3a8a; }
+.tier-B { background:#94a3b8; color:#0f172a; }
+.tier-C { background:#475569; color:#cbd5e1; }
+.prem-badge { background:#dc2626; color:#fff; padding:1px 6px; border-radius:3px; font-size:8px; margin-left:3px; font-weight:800; }
+
+.cell-edit { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:5px 7px; border-radius:4px; font-size:11.5px; width:100%; }
+.cell-edit:focus { outline:none; border-color:#60a5fa; background:#1e293b; }
+.btn-row { padding:4px 10px; font-size:10px; font-weight:700; border:none; border-radius:4px; cursor:pointer; }
+.btn-save { background:#16a34a; color:#fff; }
+.btn-toggle { background:#f59e0b; color:#fff; }
+.changed { background:rgba(251,191,36,0.06) !important; }
+.changed td { border-bottom-color:#fbbf24 !important; }
+
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:12px 22px; border-radius:8px; font-size:13px; font-weight:800; box-shadow:0 6px 24px rgba(22,163,74,0.5); z-index:99999; opacity:0; transition:opacity 0.2s; pointer-events:none; }
+#toast.show { opacity:1; }
+@media (max-width: 768px) { .kpi-grid { grid-template-columns:repeat(2, 1fr); } table { font-size:10px; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📦 상품 관리 (V5)</h1>
+      <div class="subtitle">통신사별 상품 — 리베이트·페이백·가중치 편집 (마진/Tier 자동 재계산)</div>
+    </div>
+    <div id="user-info" style="text-align:right;display:none">
+      <div style="font-size:13px;font-weight:800;color:#f8fafc" id="user-name">-</div>
+      <button id="logout-btn" style="margin-top:6px;padding:4px 10px;background:#475569;color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">로그아웃</button>
+    </div>
+  </header>
+
+  <div class="auth-box" id="auth-box" style="display:none">
+    <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:#60a5fa">🔐 admin 권한 필요</div>
+    <input type="email" id="auth-email" placeholder="email" autocomplete="username">
+    <input type="password" id="auth-pass" placeholder="비밀번호" autocomplete="current-password">
+    <button id="auth-login-btn">로그인</button>
+    <div class="auth-msg" id="auth-msg"></div>
+  </div>
+
+  <div id="main-area" style="display:none">
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">전체 상품</div><div class="kpi-val" id="kpi-total">-</div><div class="kpi-sub" id="kpi-active">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">⭐ 우수상품 (S)</div><div class="kpi-val" id="kpi-s">-</div><div class="kpi-sub">마진 25만+</div></div>
+      <div class="kpi-card"><div class="kpi-label">A Tier</div><div class="kpi-val" id="kpi-a">-</div><div class="kpi-sub">마진 18만+</div></div>
+      <div class="kpi-card"><div class="kpi-label">B Tier</div><div class="kpi-val" id="kpi-b">-</div><div class="kpi-sub">마진 12만+</div></div>
+      <div class="kpi-card"><div class="kpi-label">⚠️ C Tier</div><div class="kpi-val" id="kpi-c">-</div><div class="kpi-sub">위험 상품</div></div>
+    </div>
+
+    <div class="section">
+      <h2>📋 상품 목록 — 인라인 편집</h2>
+      <div class="toolbar">
+        <label style="font-size:11px;color:#94a3b8">통신사</label>
+        <select id="filter-carrier"><option value="">전체</option><option value="SKT">SKT</option><option value="KT">KT</option><option value="LGU+">LGU+</option></select>
+        <label style="font-size:11px;color:#94a3b8">종류</label>
+        <select id="filter-type"><option value="">전체</option><option value="단독">단독</option><option value="결합">결합</option></select>
+        <label style="font-size:11px;color:#94a3b8">Tier</label>
+        <select id="filter-tier"><option value="">전체</option><option value="S">S (우수)</option><option value="A">A</option><option value="B">B</option><option value="C">C (위험)</option></select>
+        <input type="text" id="filter-search" placeholder="🔍 상품명 검색" style="min-width:200px">
+        <button id="reload-btn" class="btn-secondary">🔄 새로고침</button>
+        <span id="result-count" style="font-size:11px;color:#94a3b8;margin-left:auto">-</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="products-table">
+          <thead>
+            <tr>
+              <th style="width:42px">ID</th>
+              <th style="width:60px">통신사</th>
+              <th style="width:60px">종류</th>
+              <th>상품명</th>
+              <th style="width:60px">속도</th>
+              <th style="width:110px">TV 등급</th>
+              <th style="width:110px">리베이트</th>
+              <th style="width:110px">페이백</th>
+              <th style="width:75px">가중치</th>
+              <th style="width:110px">마진 (자동)</th>
+              <th style="width:75px">Tier</th>
+              <th style="width:80px">활성</th>
+              <th style="width:140px">작업</th>
+            </tr>
+          </thead>
+          <tbody id="products-tbody"></tbody>
+        </table>
+      </div>
+      <div style="font-size:10px;color:#64748b;margin-top:10px;line-height:1.5">
+        💡 리베이트·페이백·가중치 셀에 직접 입력 후 [💾 저장] 클릭. 변경 시 마진/Tier/우수상품 자동 재계산.<br>
+        ⚠️ Tier 임계값은 정책 관리(⚙️ 정책) 탭에서 변경 (현재: S=25만, A=18만, B=12만)
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api/incentive';
+const AUTH = '/api/auth';
+const TOKEN_KEY = 'incentive-auth-token-v1';
+const getToken = () => localStorage.getItem(TOKEN_KEY);
+const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
+const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+const fmt = n => (n||0).toLocaleString();
+
+let _products = [];
+
+async function login(email, password) {
+  const res = await fetch(AUTH + '/login', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({email, password})
+  });
+  if (!res.ok) throw new Error((await res.json()).error || '로그인 실패');
+  const data = await res.json();
+  setToken(data.access_token);
+  return data;
+}
+
+async function fetchAgent() {
+  const tk = getToken(); if (!tk) return null;
+  const res = await fetch(API + '/agents/me', { headers: { Authorization: 'Bearer ' + tk }});
+  if (!res.ok) { clearToken(); return null; }
+  return (await res.json()).agent;
+}
+
+async function fetchProducts() {
+  const res = await fetch(API + '/products');
+  if (!res.ok) throw new Error('상품 조회 실패');
+  return (await res.json()).products || [];
+}
+
+async function patchProduct(id, body) {
+  const tk = getToken();
+  const res = await fetch(API + '/products/' + id, {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + tk},
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error((await res.json()).error || '실패');
+  return (await res.json()).product;
+}
+
+function renderKpi() {
+  document.getElementById('kpi-total').textContent = _products.length + '개';
+  document.getElementById('kpi-active').textContent = '활성 ' + _products.filter(p => p.active).length + '개';
+  document.getElementById('kpi-s').textContent = _products.filter(p => p.tier === 'S').length + '개';
+  document.getElementById('kpi-a').textContent = _products.filter(p => p.tier === 'A').length + '개';
+  document.getElementById('kpi-b').textContent = _products.filter(p => p.tier === 'B').length + '개';
+  document.getElementById('kpi-c').textContent = _products.filter(p => p.tier === 'C').length + '개';
+}
+
+function renderTable() {
+  const carrier = document.getElementById('filter-carrier').value;
+  const type = document.getElementById('filter-type').value;
+  const tier = document.getElementById('filter-tier').value;
+  const search = document.getElementById('filter-search').value.toLowerCase().trim();
+
+  let filtered = _products;
+  if (carrier) filtered = filtered.filter(p => p.carrier === carrier);
+  if (type) filtered = filtered.filter(p => p.type === type);
+  if (tier) filtered = filtered.filter(p => p.tier === tier);
+  if (search) filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(search));
+
+  document.getElementById('result-count').textContent = filtered.length + '개';
+
+  const tbody = document.getElementById('products-tbody');
+  tbody.innerHTML = filtered.map(p => {
+    const tierClass = `tier tier-${p.tier}`;
+    const premBadge = p.is_premium ? '<span class="prem-badge">⭐</span>' : '';
+    return `<tr data-id="${p.id}" class="${p.active ? '' : 'inactive'}">
+      <td style="color:#64748b">#${p.id}</td>
+      <td><b>${p.carrier}</b></td>
+      <td>${p.type}</td>
+      <td><input class="cell-edit field-name" value="${(p.name||'').replace(/"/g,'&quot;')}" data-id="${p.id}" data-field="name" data-orig="${(p.name||'').replace(/"/g,'&quot;')}"></td>
+      <td>${p.speed || '-'}</td>
+      <td style="font-size:10px;color:#94a3b8">${p.tv_tier || '-'}</td>
+      <td><input class="cell-edit field-rebate" type="number" value="${p.rebate || 0}" min="0" step="1000" data-id="${p.id}" data-field="rebate" data-orig="${p.rebate || 0}" style="text-align:right;color:#86efac;font-weight:700"></td>
+      <td><input class="cell-edit field-payback" type="number" value="${p.payback || 0}" min="0" step="1000" data-id="${p.id}" data-field="payback" data-orig="${p.payback || 0}" style="text-align:right;color:#fca5a5;font-weight:700"></td>
+      <td><select class="cell-edit field-weight" data-id="${p.id}" data-field="point_weight" data-orig="${p.point_weight}" style="font-weight:700">
+        <option value="0.5" ${p.point_weight==0.5?'selected':''}>0.5</option>
+        <option value="1.0" ${p.point_weight==1.0?'selected':''}>1.0</option>
+        <option value="1.5" ${p.point_weight==1.5?'selected':''}>1.5</option>
+        <option value="2.0" ${p.point_weight==2.0?'selected':''}>2.0</option>
+      </select></td>
+      <td style="text-align:right;font-weight:800" id="margin-${p.id}">${fmt(p.margin)}</td>
+      <td><span class="${tierClass}" id="tier-${p.id}">${p.tier}</span>${premBadge}</td>
+      <td>${p.active ? '<span style="color:#86efac;font-weight:700">✅</span>' : '<span style="color:#94a3b8">❌</span>'}</td>
+      <td>
+        <button class="btn-row btn-save" onclick="saveRow(${p.id})">💾 저장</button>
+        <button class="btn-row btn-toggle" onclick="toggleActive(${p.id}, ${!p.active})">${p.active ? '단종' : '활성'}</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // 변경 감지 → 행 강조
+  document.querySelectorAll('.cell-edit').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const tr = inp.closest('tr');
+      const orig = inp.dataset.orig;
+      const cur = inp.value;
+      if (String(orig) !== String(cur)) tr.classList.add('changed');
+      else {
+        // 모든 필드 원래대로면 changed 제거
+        const allSame = [...tr.querySelectorAll('.cell-edit')].every(i => String(i.dataset.orig) === String(i.value));
+        if (allSame) tr.classList.remove('changed');
+      }
+    });
+  });
+}
+
+async function saveRow(id) {
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  if (!tr) return;
+  const body = {};
+  tr.querySelectorAll('.cell-edit').forEach(inp => {
+    const field = inp.dataset.field;
+    let val = inp.value;
+    if (field === 'rebate' || field === 'payback') val = parseInt(val) || 0;
+    if (field === 'point_weight') val = parseFloat(val);
+    if (String(inp.dataset.orig) !== String(val)) body[field] = val;
+  });
+  if (Object.keys(body).length === 0) { showToast('변경사항 없음'); return; }
+  try {
+    const updated = await patchProduct(id, body);
+    // 로컬 갱신
+    const idx = _products.findIndex(p => p.id === id);
+    if (idx >= 0) _products[idx] = updated;
+    showToast('✅ 저장됨 — 마진/Tier 자동 재계산');
+    renderKpi();
+    renderTable();
+  } catch (e) { alert('오류: ' + e.message); }
+}
+
+async function toggleActive(id, newVal) {
+  if (!confirm(newVal ? '이 상품을 활성화하시겠습니까?' : '⚠️ 이 상품을 단종 처리하시겠습니까?\\n(기존 영업은 영향 없음, 신규 등록만 차단)')) return;
+  try {
+    const updated = await patchProduct(id, { active: newVal });
+    const idx = _products.findIndex(p => p.id === id);
+    if (idx >= 0) _products[idx] = updated;
+    showToast(newVal ? '✅ 활성화됨' : '🚫 단종 처리됨');
+    renderKpi();
+    renderTable();
+  } catch (e) { alert('오류: ' + e.message); }
+}
+
+async function loadAll() {
+  try {
+    _products = await fetchProducts();
+    renderKpi();
+    renderTable();
+  } catch (e) { alert('로드 실패: ' + e.message); }
+}
+
+let _toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function init() {
+  const tk = getToken();
+  if (tk) {
+    const agent = await fetchAgent();
+    if (agent && agent.role === 'admin') { onLoggedIn(agent); return; }
+    if (agent) {
+      document.getElementById('auth-msg').textContent = '⚠️ admin 권한 필요 (현재 ' + agent.role + ')';
+      document.getElementById('auth-msg').style.color = '#fbbf24';
+      clearToken();
+    }
+  }
+  document.getElementById('auth-box').style.display = '';
+}
+
+function onLoggedIn(agent) {
+  document.getElementById('auth-box').style.display = 'none';
+  document.getElementById('main-area').style.display = '';
+  document.getElementById('user-info').style.display = '';
+  document.getElementById('user-name').textContent = '👤 ' + agent.name;
+  loadAll();
+}
+
+document.getElementById('auth-login-btn').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-pass').value;
+  const msg = document.getElementById('auth-msg'); msg.style.color = '#dc2626';
+  if (!email || !password) { msg.textContent = '입력 필수'; return; }
+  try {
+    await login(email, password);
+    const agent = await fetchAgent();
+    if (!agent || agent.role !== 'admin') { msg.textContent = 'admin 권한 필요'; clearToken(); return; }
+    onLoggedIn(agent);
+  } catch (e) { msg.textContent = e.message; }
+});
+document.getElementById('logout-btn').addEventListener('click', () => { clearToken(); location.reload(); });
+document.getElementById('reload-btn').addEventListener('click', loadAll);
+document.getElementById('filter-carrier').addEventListener('change', renderTable);
+document.getElementById('filter-type').addEventListener('change', renderTable);
+document.getElementById('filter-tier').addEventListener('change', renderTable);
+document.getElementById('filter-search').addEventListener('input', renderTable);
+
+init();
+</script>
+</body>
+</html>

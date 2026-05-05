@@ -47,6 +47,25 @@ router.get('/products', optionalAuth, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// 1.5. PATCH /api/incentive/products/:id — 상품 정보 수정 (admin)
+// ═══════════════════════════════════════════════════════════════
+router.patch('/products/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const allowed = ['rebate', 'payback', 'point_weight', 'name', 'active', 'speed', 'tv_tier'];
+    const update = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    const { data, error } = await supabase
+      .from('incentive_products')
+      .update(update).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json({ product: data });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // 2. GET /api/incentive/rules — 활성 V5 규칙 조회
 // ═══════════════════════════════════════════════════════════════
 router.get('/rules', optionalAuth, async (req, res) => {

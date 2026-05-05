@@ -78,6 +78,7 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
     <button class="tab-btn" data-tab="dashboard" data-roles="manager,contract,admin"><span class="icon">📊</span> 대시보드</button>
     <button class="tab-btn" data-tab="contract" data-roles="manager,contract,admin"><span class="icon">📋</span> 계약 처리</button>
     <button class="tab-btn" data-tab="agents" data-roles="admin"><span class="icon">👥</span> 상담사 관리</button>
+    <button class="tab-btn" data-tab="products" data-roles="admin"><span class="icon">📦</span> 상품 관리</button>
     <button class="tab-btn" data-tab="rules" data-roles="admin"><span class="icon">⚙️</span> 정책 관리</button>
   </aside>
 
@@ -90,6 +91,7 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
     <iframe class="tab-pane" id="pane-dashboard" data-loaded="false"></iframe>
     <iframe class="tab-pane" id="pane-contract" data-loaded="false"></iframe>
     <iframe class="tab-pane" id="pane-agents" data-loaded="false"></iframe>
+    <iframe class="tab-pane" id="pane-products" data-loaded="false"></iframe>
     <iframe class="tab-pane" id="pane-rules" data-loaded="false"></iframe>
   </div>
 </div>
@@ -121,6 +123,7 @@ const TAB_URLS = {
   dashboard: '/docs/incentive-dashboard.html',
   contract: '/docs/incentive-contract.html',
   agents: '/docs/incentive-agents.html',
+  products: '/docs/incentive-products.html',
   rules: '/docs/incentive-rules.html',
 };
 
@@ -181,7 +184,7 @@ function preloadOtherTabs(role) {
     }
   });
   // admin은 모든 탭 가능
-  if (role === 'admin') visible.length = 0, visible.push('tm', 'dashboard', 'contract', 'agents', 'rules');
+  if (role === 'admin') visible.length = 0, visible.push('tm', 'dashboard', 'contract', 'agents', 'products', 'rules');
   if (role === 'manager') visible.length = 0, visible.push('tm', 'dashboard', 'contract');
   if (role === 'contract') visible.length = 0, visible.push('dashboard', 'contract');
   if (role === 'agent') visible.length = 0, visible.push('tm');
