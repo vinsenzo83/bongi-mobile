@@ -357,6 +357,8 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <select id="filter-db-source">
           <option value="">전체</option>
         </select>
+        <label style="font-size:11px;color:#94a3b8">검색</label>
+        <input type="text" id="filter-name" placeholder="이름·전화·상담사" style="min-width:160px">
         <button id="reload-btn">🔄 새로고침</button>
         <button id="export-xlsx-btn" style="background:#16a34a;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📥 엑셀 다운로드</button>
         <button id="trash-toggle-btn" style="background:#475569;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📁 휴지통 보기</button>
@@ -561,6 +563,7 @@ let _currentPage = 1;
 function renderTable(contracts) {
   const filterAddr = document.getElementById('filter-address').value;
   const filterDbId = document.getElementById('filter-db-source') ? document.getElementById('filter-db-source').value : '';
+  const filterName = (document.getElementById('filter-name')?.value || '').trim().toLowerCase();
   let filtered = contracts;
   if (filterAddr === 'missing') filtered = filtered.filter(c => !c.customer_address || !c.customer_address.trim());
   if (filterAddr === 'present') filtered = filtered.filter(c => c.customer_address && c.customer_address.trim());
@@ -570,6 +573,14 @@ function renderTable(contracts) {
     } else {
       filtered = filtered.filter(c => String(c.db_source_id) === String(filterDbId));
     }
+  }
+  if (filterName) {
+    filtered = filtered.filter(c => {
+      const name = (c.customer_name || '').toLowerCase();
+      const phone = (c.customer_phone || '').toLowerCase();
+      const agent = ((c.agent && c.agent.name) || '').toLowerCase();
+      return name.includes(filterName) || phone.includes(filterName) || agent.includes(filterName);
+    });
   }
 
   const tbody = document.getElementById('contracts-tbody');
@@ -1425,6 +1436,20 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 document.getElementById('filter-month').addEventListener('change', () => { _currentPage = 1; loadContracts(); });
 document.getElementById('filter-status').addEventListener('change', () => { _currentPage = 1; loadContracts(); });
 document.getElementById('filter-address').addEventListener('change', () => { _currentPage = 1; loadContracts(); });
+// 이름/전화/상담사 검색 — 디바운스 250ms (서버 안 거치고 클라이언트 필터)
+{
+  const nameEl = document.getElementById('filter-name');
+  if (nameEl) {
+    let _nameTimer = null;
+    nameEl.addEventListener('input', () => {
+      clearTimeout(_nameTimer);
+      _nameTimer = setTimeout(() => {
+        _currentPage = 1;
+        if (typeof renderTable === 'function' && Array.isArray(_currentContracts)) renderTable(_currentContracts);
+      }, 250);
+    });
+  }
+}
 const _fdb = document.getElementById('filter-db-source');
 if (_fdb) _fdb.addEventListener('change', () => { _currentPage = 1; renderTable(_currentContracts || []); });
 
