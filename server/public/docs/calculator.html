@@ -145,7 +145,7 @@ body.admin-only .section { scroll-margin-top: 80px; }
       document.querySelectorAll('.section').forEach((s, i) => {
         const st = s.querySelector('.st');
         if (!st) return;
-        const m = (st.textContent || '').match(/^(\d+)\./);
+        const m = (st.textContent || '').match(/(\d+)\./);
         if (m) s.id = 'sec-' + m[1];
       });
     });
