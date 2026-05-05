@@ -434,8 +434,22 @@ async function init() {
   document.getElementById('filter-month').value = new Date().toISOString().slice(0,7);
   const tk = getToken();
   if (tk) {
-    const agent = await fetchAgent();
-    if (agent && ['manager', 'admin', 'contract'].includes(agent.role)) { onLoggedIn(agent); return; }
+    // 병렬 — agent 인증과 overview 데이터 동시 fetch (cold load -1.5~2s)
+    const month = document.getElementById('filter-month').value;
+    const [agent, overview] = await Promise.all([
+      fetchAgent(),
+      fetchOverview(month).catch(() => null),
+    ]);
+    if (agent && ['manager', 'admin', 'contract'].includes(agent.role)) {
+      onLoggedIn(agent, !!overview);
+      // 이미 받아놓은 데이터 즉시 렌더 (재요청 X)
+      if (overview) {
+        _overview = overview;
+        renderKpi(overview);
+        renderAgents(overview);
+      }
+      return;
+    }
     if (agent) {
       document.getElementById('auth-msg').textContent = '⚠️ manager/contract/admin 권한 필요 (현재 ' + agent.role + ')';
       document.getElementById('auth-msg').style.color = '#fbbf24';
@@ -445,7 +459,7 @@ async function init() {
   document.getElementById('auth-box').style.display = '';
 }
 
-function onLoggedIn(agent) {
+function onLoggedIn(agent, skipLoad) {
   _myRole = agent.role;
   document.getElementById('auth-box').style.display = 'none';
   document.getElementById('main-area').style.display = '';
@@ -456,7 +470,7 @@ function onLoggedIn(agent) {
   document.body.classList.remove('hide-financial-mid', 'hide-financial-deep');
   if (agent.role === 'contract') document.body.classList.add('hide-financial-mid', 'hide-financial-deep');
   if (agent.role === 'manager') document.body.classList.add('hide-financial-deep'); // 본인 센터 financial OK, 회사이익 X
-  loadAll();
+  if (!skipLoad) loadAll(); // init() 병렬 fetch에서 이미 렌더된 경우 재요청 안 함
 }
 
 document.getElementById('auth-login-btn').addEventListener('click', async () => {

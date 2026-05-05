@@ -1113,9 +1113,23 @@ async function init() {
   // 토큰 있으면 자동 로그인
   const tk = getToken();
   if (tk) {
-    const agent = await fetchAgent();
+    // 병렬 — agent 인증과 contracts 데이터 동시 fetch (cold load -1.5~2s)
+    const [agent, contractsRes] = await Promise.all([
+      fetchAgent(),
+      fetch(API + '/contracts?month=' + now.toISOString().slice(0,7), { headers: { Authorization: 'Bearer ' + tk }})
+        .then(r => r.ok ? r.json() : null).catch(() => null),
+    ]);
     if (agent && (agent.role === 'admin' || agent.role === 'manager' || agent.role === 'contract')) {
-      onLoggedIn(agent); return;
+      // 미리 받아놓은 contracts 즉시 활용
+      if (contractsRes && contractsRes.contracts) {
+        _currentContracts = contractsRes.contracts;
+        onLoggedIn(agent, true); // skipLoad=true (이미 데이터 있음)
+        renderStats(_currentContracts);
+        renderTable(_currentContracts);
+      } else {
+        onLoggedIn(agent);
+      }
+      return;
     }
     if (agent) {
       document.getElementById('auth-msg').textContent = '⚠️ ' + agent.role + ' 권한 — manager/admin만 접근 가능';
@@ -1126,13 +1140,13 @@ async function init() {
   document.getElementById('auth-box').style.display = '';
 }
 
-function onLoggedIn(agent) {
+function onLoggedIn(agent, skipLoad) {
   document.getElementById('auth-box').style.display = 'none';
   document.getElementById('main-area').style.display = '';
   document.getElementById('user-info').style.display = '';
   document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
   document.getElementById('user-meta').textContent = agent.center;
-  loadContracts();
+  if (!skipLoad) loadContracts();
   setupRealtime();
 }
 
