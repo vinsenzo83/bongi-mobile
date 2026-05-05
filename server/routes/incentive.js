@@ -755,15 +755,16 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
     if (me.role === 'manager') agentsQ = agentsQ.eq('center', me.center);
     const { data: agents } = await agentsQ;
 
-    // 각 상담사의 정산 (live 계산)
-    const settlements = [];
-    for (const a of agents || []) {
+    // 각 상담사의 정산 (live 계산) — Promise.all로 병렬 호출 (N+1 → 1)
+    const results = await Promise.all((agents || []).map(async (a) => {
       const { data, error } = await supabase.rpc('incentive_calc_monthly_settlement', {
         p_agent_id: a.id,
         p_year_month: ym,
       });
-      if (!error) settlements.push({ agent: a, ...data });
-    }
+      if (error) return null;
+      return { agent: a, ...(data || {}) };
+    }));
+    const settlements = results.filter(Boolean);
 
     // 집계
     const totals = settlements.reduce((acc, s) => {

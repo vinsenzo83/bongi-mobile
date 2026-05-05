@@ -51,7 +51,13 @@ app.use('/admin', express.static(join(__dirname, 'public', 'admin')));
 app.use('/crm', express.static(join(__dirname, 'public', 'crm')));
 app.use('/dashboard', express.static(join(__dirname, 'public', 'dashboard')));
 app.use('/stores', express.static(join(__dirname, 'public', 'stores')));
-app.use('/docs', express.static(join(__dirname, '..', 'docs')));
+app.use('/docs', express.static(join(__dirname, '..', 'docs'), {
+  // HTML: 5분 캐시 (편집 후 빠른 반영) / 그 외 정적: 1일
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+    else res.setHeader('Cache-Control', 'public, max-age=86400');
+  }
+}));
 app.use('/api/dashboard', dashboardRoutes);
 
 // 문서 직접 서빙 (SPA 우회)
