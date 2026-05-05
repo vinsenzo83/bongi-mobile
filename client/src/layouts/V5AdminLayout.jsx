@@ -1,8 +1,10 @@
 // V5 인센티브 어드민 — 통합 SPA Layout
-// 좌측 사이드바 + 본문 라우터
+// 좌측 사이드바 (접힘 가능, 독립 스크롤) + 본문 라우터 (독립 스크롤)
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { V5AuthProvider, useV5Auth } from '../hooks/useV5Auth.jsx';
+
+const COLLAPSE_KEY = 'v5-sidebar-collapsed';
 
 // V5 메뉴 정의 (role 기반 자동 hide)
 const V5_MENU = [
@@ -59,6 +61,11 @@ const btnStyle = { width: '100%', marginTop: 16, padding: 12, background: '#3b82
 function Layout() {
   const { agent, loading, logout } = useV5Auth();
   const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1');
+
+  useEffect(() => {
+    localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
+  }, [collapsed]);
 
   if (loading) return <div style={{ padding: 40, color: '#94a3b8' }}>인증 확인 중...</div>;
   if (!agent) return <LoginBox />;
@@ -66,42 +73,105 @@ function Layout() {
   const visibleMenu = V5_MENU.filter(m => m.roles.includes(agent.role));
   const handleLogout = () => { logout(); navigate('/admin/v5'); };
   const roleColor = agent.role === 'admin' ? '#dc2626' : agent.role === 'manager' ? '#3b82f6' : agent.role === 'contract' ? '#22c55e' : '#94a3b8';
+  const sidebarWidth = collapsed ? 60 : 230;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', color: '#e2e8f0', fontFamily: "'Pretendard Variable', sans-serif" }}>
-      {/* 사이드바 */}
-      <aside style={{ width: 230, background: '#1e293b', borderRight: '1px solid #334155', padding: '20px 14px', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ fontSize: 16, fontWeight: 900, color: '#f8fafc', marginBottom: 4 }}>V5 인센티브</div>
-        <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 20 }}>봉이모바일 어드민</div>
+    // 컨테이너 — height:100vh로 고정. 사이드바·본문이 각자 독립 스크롤
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0f172a', color: '#e2e8f0', fontFamily: "'Pretendard Variable', sans-serif" }}>
+      {/* 사이드바 — 독립 스크롤 (overflow-y:auto) + 너비 토글 애니메이션 */}
+      <aside style={{
+        width: sidebarWidth,
+        flexShrink: 0,
+        background: '#1e293b',
+        borderRight: '1px solid #334155',
+        padding: collapsed ? '14px 6px' : '20px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        transition: 'width 0.22s ease, padding 0.22s ease',
+      }}>
+        {/* 헤더 + 토글 버튼 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          {!collapsed && <div style={{ fontSize: 16, fontWeight: 900, color: '#f8fafc' }}>V5 인센티브</div>}
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            title={collapsed ? '펼치기' : '접기'}
+            style={{
+              background: 'transparent',
+              border: '1px solid #334155',
+              color: '#94a3b8',
+              padding: '4px 8px',
+              borderRadius: 5,
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 700,
+              marginLeft: collapsed ? 0 : 'auto',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#334155'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            {collapsed ? '»' : '«'}
+          </button>
+        </div>
+        {!collapsed && <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 20 }}>봉이모바일 어드민</div>}
+        {collapsed && <div style={{ height: 18 }} />}
+
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {visibleMenu.map(m => (
-            <NavLink key={m.path} to={m.path} end={m.path.endsWith('/v5')}
+            <NavLink
+              key={m.path}
+              to={m.path}
+              end={m.path.endsWith('/v5')}
+              title={collapsed ? m.label : ''}
               style={({ isActive }) => ({
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 12px', borderRadius: 7,
-                fontSize: 13, fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                gap: collapsed ? 0 : 10,
+                padding: collapsed ? '10px 0' : '10px 12px',
+                borderRadius: 7,
+                fontSize: 13,
+                fontWeight: 700,
                 color: isActive ? '#fff' : '#94a3b8',
                 background: isActive ? 'rgba(59,130,246,0.18)' : 'transparent',
                 borderLeft: isActive ? '3px solid #60a5fa' : '3px solid transparent',
                 textDecoration: 'none',
-              })}>
-              <span style={{ fontSize: 16 }}>{m.icon}</span>
-              <span>{m.label}</span>
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+              })}
+            >
+              <span style={{ fontSize: 18 }}>{m.icon}</span>
+              {!collapsed && <span>{m.label}</span>}
             </NavLink>
           ))}
         </nav>
+
         <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid #334155' }}>
-          <div style={{ fontSize: 12, color: '#cbd5e1', fontWeight: 700 }}>👤 {agent.name}</div>
-          <div style={{ fontSize: 9, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
-            <span style={{ background: roleColor, color: '#fff', padding: '1px 6px', borderRadius: 3, fontWeight: 800 }}>{agent.role}</span>
-            <span>{agent.center}</span>
-          </div>
-          <button onClick={handleLogout} style={{ marginTop: 10, width: '100%', padding: '6px 0', background: '#475569', color: '#fff', border: 'none', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>로그아웃</button>
+          {collapsed ? (
+            <button
+              onClick={handleLogout}
+              title={`👤 ${agent.name} (${agent.role}) — 로그아웃`}
+              style={{ width: '100%', padding: '8px 0', background: '#475569', color: '#fff', border: 'none', borderRadius: 5, fontSize: 14, cursor: 'pointer' }}
+            >
+              ⏻
+            </button>
+          ) : (
+            <>
+              <div style={{ fontSize: 12, color: '#cbd5e1', fontWeight: 700 }}>👤 {agent.name}</div>
+              <div style={{ fontSize: 9, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                <span style={{ background: roleColor, color: '#fff', padding: '1px 6px', borderRadius: 3, fontWeight: 800 }}>{agent.role}</span>
+                <span>{agent.center}</span>
+              </div>
+              <button onClick={handleLogout} style={{ marginTop: 10, width: '100%', padding: '6px 0', background: '#475569', color: '#fff', border: 'none', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>로그아웃</button>
+            </>
+          )}
         </div>
       </aside>
 
-      {/* 본문 */}
-      <main style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+      {/* 본문 — 독립 스크롤 */}
+      <main style={{ flex: 1, overflow: 'auto', padding: 0, minWidth: 0 }}>
         <Outlet />
       </main>
     </div>
