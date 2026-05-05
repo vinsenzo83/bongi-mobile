@@ -1151,6 +1151,60 @@ router.post('/calc-history', authenticateJWT, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// calculator.html 6종 overrides 통합 저장 (localStorage → DB Phase 2)
+// section: 'tv' / 'bundle' / 'device' / 'install' / 'card' / 'gift' / 'gift-catalog-custom'
+// ═══════════════════════════════════════════════════════════════
+const CALC_OVERRIDE_SECTIONS = ['tv','bundle','device','install','card','gift','gift-catalog-custom'];
+
+// GET /api/incentive/calc-overrides — 모든 섹션 override 조회 (모든 logged-in user)
+router.get('/calc-overrides', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const { data, error } = await supabase
+      .from('incentive_calculator_overrides')
+      .select('section, data, updated_at');
+    if (error) throw error;
+    const overrides = {};
+    (data || []).forEach(r => { overrides[r.section] = r.data; });
+    res.json({ overrides });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// PUT /api/incentive/calc-overrides/:section — 특정 섹션 override 저장 (manager/admin)
+router.put('/calc-overrides/:section', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+
+    const section = req.params.section;
+    if (!CALC_OVERRIDE_SECTIONS.includes(section)) {
+      return res.status(400).json({ error: 'invalid section' });
+    }
+    const { data: payload } = req.body || {};
+    const { data, error } = await supabase
+      .from('incentive_calculator_overrides')
+      .upsert({
+        section,
+        data: payload || (Array.isArray(payload) ? [] : {}),
+        updated_at: new Date().toISOString(),
+        updated_by_user_id: req.user.id,
+        updated_by_name: me.name,
+      }, { onConflict: 'section' })
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ override: data });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
 // GET /api/incentive/calc-history — 변경 이력 조회 (manager/contract/admin)
 router.get('/calc-history', authenticateJWT, async (req, res) => {
   try {

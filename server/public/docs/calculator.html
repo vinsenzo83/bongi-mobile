@@ -888,13 +888,16 @@ function applyGiftOverrides() {
   } catch(e) {}
 }
 function saveGiftOverride(carrier, bucket, speed, value) {
+  var ov;
   try {
-    var ov = JSON.parse(localStorage.getItem(GIFT_OVERRIDE_KEY) || '{}');
+    ov = JSON.parse(localStorage.getItem(GIFT_OVERRIDE_KEY) || '{}');
     if (!ov[carrier]) ov[carrier] = {};
     if (!ov[carrier][bucket]) ov[carrier][bucket] = {};
     ov[carrier][bucket][speed] = value;
     localStorage.setItem(GIFT_OVERRIDE_KEY, JSON.stringify(ov));
-  } catch(e) {}
+  } catch(e) { return; }
+  // syncCalcOverrideToDb는 위에서 정의되기 전에 호출될 수 있어 함수가 정의된 시점에만 호출
+  if (typeof syncCalcOverrideToDb === 'function') syncCalcOverrideToDb('gift', ov);
 }
 applyGiftOverrides();
 
@@ -2224,6 +2227,7 @@ function loadDeviceOverrides() {
 }
 function saveDeviceOverrides(obj) {
   try { localStorage.setItem(DEVICE_OVERRIDES_KEY, JSON.stringify(obj)); } catch(e) {}
+  syncCalcOverrideToDb('device', obj);
 }
 function applyDeviceOverrides() {
   var ov = loadDeviceOverrides();
@@ -2519,6 +2523,7 @@ function loadCustomCatalog() {
 }
 function saveCustomCatalog(arr) {
   try { localStorage.setItem(GIFT_CATALOG_KEY, JSON.stringify(arr)); } catch(e) {}
+  syncCalcOverrideToDb('gift-catalog-custom', arr);
 }
 function loadDeletedDefaults() {
   try { return JSON.parse(localStorage.getItem(GIFT_CATALOG_DELETED) || '[]'); } catch(e) { return []; }
@@ -2642,6 +2647,7 @@ function loadInstallFees() {
 }
 function saveInstallFees(data) {
   try { localStorage.setItem(INSTALL_FEES_KEY, JSON.stringify(data)); } catch(e) {}
+  syncCalcOverrideToDb('install', data);
 }
 
 var INSTALL_FEES = loadInstallFees();
@@ -2771,6 +2777,7 @@ function loadPartnerCards() {
 }
 function savePartnerCards(d) {
   try { localStorage.setItem(PARTNER_CARDS_KEY, JSON.stringify(d)); } catch(e) {}
+  syncCalcOverrideToDb('card', d);
 }
 
 var PARTNER_CARDS = loadPartnerCards();
@@ -2852,6 +2859,39 @@ function renderCardControls() {
 var EDIT_HISTORY_KEY = 'bongi-edit-history';
 var EDIT_HISTORY_FILTER = 'all';
 var INCENTIVE_TOKEN_KEY = 'incentive-auth-token-v1';
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 2: calculator overrides DB 통합 — section ↔ localStorage key 매핑
+// DB가 source of truth, localStorage는 캐시 (오프라인/비로그인 폴백)
+// ═══════════════════════════════════════════════════════════════
+var SECTION_TO_LS = {
+  'tv': 'bongi-tv-overrides',
+  'bundle': 'bongi-bundle-overrides',
+  'device': 'bongi-device-overrides',
+  'install': 'bongi-install-fees',
+  'card': 'bongi-partner-cards',
+  'gift': 'bongi-gift-overrides',
+  'gift-catalog-custom': 'bongi-gift-catalog-custom',
+};
+
+// PUT 디바운스 큐 — 같은 섹션 짧은 시간 다중 호출 시 마지막 페이로드만 전송
+var _calcOverridePutTimers = {};
+function syncCalcOverrideToDb(section, payload, debounceMs) {
+  var ms = (typeof debounceMs === 'number') ? debounceMs : 600;
+  if (_calcOverridePutTimers[section]) clearTimeout(_calcOverridePutTimers[section]);
+  _calcOverridePutTimers[section] = setTimeout(function(){
+    delete _calcOverridePutTimers[section];
+    try {
+      var tk = localStorage.getItem(INCENTIVE_TOKEN_KEY);
+      if (!tk) return;
+      fetch('/api/incentive/calc-overrides/' + encodeURIComponent(section), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+        body: JSON.stringify({ data: payload == null ? {} : payload }),
+      }).catch(function(e){ console.warn('[calc-overrides PUT ' + section + ']', e); });
+    } catch(e) { console.warn('[calc-overrides PUT ' + section + ']', e); }
+  }, ms);
+}
 
 // section 표시명 → DB 표준 코드 매핑 (서버 audit log 표준화)
 var SECTION_DB_CODE = {
@@ -3034,6 +3074,7 @@ function loadBundleOverrides() {
 }
 function saveBundleOverrides(obj) {
   try { localStorage.setItem(BUNDLE_OVERRIDES_KEY, JSON.stringify(obj)); } catch(e) {}
+  syncCalcOverrideToDb('bundle', obj);
 }
 function applyBundleOverrides() {
   var ov = loadBundleOverrides();
@@ -3319,6 +3360,7 @@ function loadTVOverrides() {
 }
 function saveTVOverrides(obj) {
   try { localStorage.setItem(TV_OVERRIDES_KEY, JSON.stringify(obj)); } catch(e) {}
+  syncCalcOverrideToDb('tv', obj);
 }
 
 function applyTVOverrides() {
@@ -3481,21 +3523,68 @@ function renderGiftControls() {
   html += '</tbody></table></div>';
   container.innerHTML = html;
 }
-applyDeviceOverrides();
-applyTVOverrides();
-applyBundleOverrides();
-TICKETS = generateTickets();
-renderDefaultControls();
-renderTVControls();
-renderBundleControls();
-renderInstallControls();
-renderCardControls();
-renderGiftControls();
-renderGiftHistory();
-renderEditHistory();
-// DB 변경이력 통합 (admin/manager 토큰 있을 때만 — Phase 1 마이그레이션)
-if (typeof refreshEditHistoryFromDb === 'function') refreshEditHistoryFromDb();
-if (typeof calc === 'function') calc();
+// ═══════════════════════════════════════════════════════════════
+// Phase 2: DB의 6종 overrides를 우선 fetch → localStorage 동기화
+// (모든 logged-in user 가능 — 견적 계산에 필요한 데이터)
+// 실패 시 localStorage 캐시로 폴백 (오프라인/비로그인 모드)
+// ═══════════════════════════════════════════════════════════════
+async function fetchCalcOverridesFromDb() {
+  try {
+    var tk = localStorage.getItem(INCENTIVE_TOKEN_KEY);
+    if (!tk) return false; // 비로그인 → localStorage 캐시 사용
+    var res = await fetch('/api/incentive/calc-overrides', {
+      headers: { Authorization: 'Bearer ' + tk }
+    });
+    if (!res.ok) return false;
+    var json = await res.json();
+    var overrides = (json && json.overrides) || {};
+    // localStorage 동기화 (DB가 source of truth)
+    Object.keys(SECTION_TO_LS).forEach(function(section) {
+      var lsKey = SECTION_TO_LS[section];
+      if (overrides[section] !== undefined && overrides[section] !== null) {
+        try { localStorage.setItem(lsKey, JSON.stringify(overrides[section])); } catch(e) {}
+      }
+    });
+    return true;
+  } catch (e) {
+    console.warn('[calc-overrides DB fetch]', e);
+    return false;
+  }
+}
+
+async function bootstrapCalculator() {
+  // 1) DB fetch 시도 (token 있을 때만 — 실패해도 localStorage로 폴백)
+  await fetchCalcOverridesFromDb();
+
+  // 2) localStorage → D 객체 적용
+  applyDeviceOverrides();
+  applyTVOverrides();
+  applyBundleOverrides();
+  applyGiftOverrides();
+  // install/card는 모듈 변수가 이미 페이지 로드 시 초기화되었으므로 재로드
+  if (typeof loadInstallFees === 'function') {
+    try { INSTALL_FEES = loadInstallFees(); } catch(e) {}
+  }
+  if (typeof loadPartnerCards === 'function') {
+    try { PARTNER_CARDS = loadPartnerCards(); } catch(e) {}
+  }
+
+  // 3) 렌더
+  TICKETS = generateTickets();
+  renderDefaultControls();
+  renderTVControls();
+  renderBundleControls();
+  renderInstallControls();
+  renderCardControls();
+  renderGiftControls();
+  renderGiftHistory();
+  renderEditHistory();
+  // DB 변경이력 통합 (admin/manager 토큰 있을 때만 — Phase 1 마이그레이션)
+  if (typeof refreshEditHistoryFromDb === 'function') refreshEditHistoryFromDb();
+  if (typeof calc === 'function') calc();
+}
+
+bootstrapCalculator();
 </script>
 
 </div>
