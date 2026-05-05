@@ -219,6 +219,14 @@
     </div>
   </div>
 
+  <!-- LG U+ 투게더 결합 전용: 청소년 추가 옵션 -->
+  <div id="c-together-youth" style="display:none;background:rgba(236,72,153,0.10);border:1.5px solid rgba(236,72,153,0.4);border-radius:8px;padding:10px 14px;margin-bottom:10px">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:#fff">
+      <input type="checkbox" id="c-youth-add" style="cursor:pointer">
+      <span>👶 청소년 추가 시 <strong style="color:#f9a8d4">-10,000원</strong> 추가 할인 (LG U+ 투게더 결합 한정)</span>
+    </label>
+  </div>
+
   <!-- 프리미엄 가족결합 전용 입력 -->
   <div id="c-premium-group" style="display:none;background:rgba(251,191,36,0.1);border:1.5px solid rgba(251,191,36,0.4);border-radius:8px;padding:12px 14px;margin-bottom:10px">
     <div style="font-size:11px;font-weight:800;color:#fbbf24;margin-bottom:8px">💎 프리미엄 가족결합 입력 — 회선별 요금제 선택</div>
@@ -1034,6 +1042,7 @@ function init() {
   updateSetTopInfo();
   if (typeof updateTvCountUI === 'function') updateTvCountUI();
   if (typeof updateLguPremiumBonus === 'function') updateLguPremiumBonus();
+  if (typeof updateYouthOption === 'function') updateYouthOption();
   calc();
 }
 
@@ -1457,8 +1466,16 @@ function calc() {
     html += '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l" style="color:#f9a8d4">✨ 인터넷+TV 월 실질요금</span><span class="v" style="color:#ec4899;font-size:20px">' + fmt(finalInet) + '</span></div>' +
       '<div style="border-top:1px dashed rgba(255,255,255,0.2);margin:12px 0 8px;padding-top:8px;font-size:11px;color:#f9a8d4;font-weight:700">📱 무선(휴대폰) 요금에서 별도 차감</div>' +
       '<div class="calc-line discount"><span class="l">휴대폰 할인 (' + lines + '회선)</span><span class="v">-' + fmt(lguMobDc) + '</span></div>' +
-      (lguMobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 조건은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(lguMobDc) + '</span><span class="v"></span></div>') +
-      '</div>';
+      (lguMobDc === 0 ? '<div class="calc-line sub"><span class="l">· 이 조건은 휴대폰 할인 없음</span><span class="v"></span></div>' : '<div class="calc-line sub"><span class="l">· 휴대폰 고지서에서 매월 -' + fmt(lguMobDc) + '</span><span class="v"></span></div>');
+    // 투게더 결합 + 청소년 추가 → -10,000원
+    if (!isChweyswun) {
+      var youthEl = document.getElementById('c-youth-add');
+      if (youthEl && youthEl.checked) {
+        html += '<div class="calc-line discount" style="margin-top:4px"><span class="l">└ 👶 청소년 추가 할인</span><span class="v">-' + fmt(10000) + '</span></div>';
+        html += '<div class="calc-line total" style="border-top:1px dashed rgba(255,255,255,0.2);margin-top:4px;padding-top:4px"><span class="l" style="color:#f9a8d4">휴대폰 총 할인</span><span class="v" style="color:#ec4899">-' + fmt(lguMobDc + 10000) + '</span></div>';
+      }
+    }
+    html += '</div>';
   }
 
   // 결합 종류 (SKT 요즘가족결합 — 요즘우리집결합 할인 대체)
@@ -1576,6 +1593,17 @@ function updateLguPremiumBonus() {
 
 document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); updateRangeUI(); updateWifiUI(); updateSetTopInfo(); updateTvCountUI(); updateLguPremiumBonus(); calc(); });
 document.getElementById('c-speed').addEventListener('change', updateLguPremiumBonus);
+
+function updateYouthOption() {
+  var c = document.getElementById('c-carrier').value;
+  var bundle = document.getElementById('c-bundle').value;
+  var el = document.getElementById('c-together-youth');
+  if (!el) return;
+  el.style.display = (c === 'lgu' && bundle === 'lgu-together') ? '' : 'none';
+}
+
+document.getElementById('c-bundle').addEventListener('change', function(){ updateYouthOption(); });
+document.getElementById('c-youth-add').addEventListener('change', calc);
 document.getElementById('c-tv-count').addEventListener('change', function() { updateTvCountUI(); calc(); });
 document.getElementById('c-tv').addEventListener('change', function(){ buildAdditionalTvDropdowns(); calc(); });
 document.getElementById('c-tv2').addEventListener('change', calc);
