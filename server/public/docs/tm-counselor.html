@@ -1308,6 +1308,12 @@ function calc() {
     if (wf && wifiForSp > 0) html += '<div class="calc-line"><span class="l">+ WiFi' + (d.wifiName ? ' (' + d.wifiName + ')' : '') + '</span><span class="v">+' + fmt(wifiForSp) + '</span></div>';
     if (netDiscount > 0) html += '<div class="calc-line discount"><span class="l">인터넷 결합 할인</span><span class="v">-' + fmt(netDiscount) + '</span></div>';
     html += '<div class="calc-line sub"><span class="l">→ 인터넷 결합가' + (wf ? ' (WiFi 포함)' : ' (WiFi 미포함)') + '</span><span class="v">' + fmt(netCombo) + '</span></div>';
+    // LG U+ 500M/1G 프리미엄 안심 옵션 표시
+    if (c === 'lgu' && (sp === '500M' || sp === '1G')) {
+      var lguSpkrEl = document.getElementById('c-lgu-bonus-speaker');
+      var lguBonusVal = (lguSpkrEl && lguSpkrEl.checked) ? '와이파이 1대 + 🔊 스마트홈 스피커' : '와이파이 2대';
+      html += '<div class="calc-line sub" style="background:rgba(228,9,129,0.08);border-radius:4px;padding:3px 6px;margin:3px 0;color:#fbcfe8"><span class="l">🎁 프리미엄 안심 (무료 기본제공)</span><span class="v" style="color:#f9a8d4;font-weight:700">' + lguBonusVal + '</span></div>';
+    }
     html += '<div class="calc-line"><span class="l">' + d.tv[ti].n.split('(')[0].trim() + '</span><span class="v">+' + fmt(tvBase) + '</span></div>';
     if (tvDc > 0) html += '<div class="calc-line discount"><span class="l">TV 결합 할인</span><span class="v">-' + fmt(tvDc) + '</span></div>';
     html += '<div class="calc-line sub"><span class="l">→ TV 최종요금</span><span class="v">' + fmt(tvFinal) + '</span></div>';
@@ -1392,6 +1398,12 @@ function calc() {
     var totalAfterInetDc = subTotal - inetSoloDcSec1;
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')</span><span class="v">' + fmt(netBase) + '</span></div>';
     if (wf) html += '<div class="calc-line"><span class="l">WiFi' + (d.wifiName ? ' (' + d.wifiName + ')' : '') + '</span><span class="v">+' + fmt(wifiForSp) + (wifiForSp === 0 ? ' (무료)' : '') + '</span></div>';
+    // LG U+ 500M/1G 프리미엄 안심 (단독)
+    if (c === 'lgu' && (sp === '500M' || sp === '1G')) {
+      var lguSpkrEl2 = document.getElementById('c-lgu-bonus-speaker');
+      var lguBonusVal2 = (lguSpkrEl2 && lguSpkrEl2.checked) ? '와이파이 1대 + 🔊 스마트홈 스피커' : '와이파이 2대';
+      html += '<div class="calc-line sub" style="background:rgba(228,9,129,0.08);border-radius:4px;padding:3px 6px;margin:3px 0;color:#fbcfe8"><span class="l">🎁 프리미엄 안심 (무료 기본제공)</span><span class="v" style="color:#f9a8d4;font-weight:700">' + lguBonusVal2 + '</span></div>';
+    }
     if (inetSoloDcSec1 > 0) {
       html += '<div class="calc-line sub"><span class="l">└ 소계</span><span class="v">' + fmt(subTotal) + '</span></div>';
       html += '<div class="calc-line discount"><span class="l">💎 KT 프리미엄 싱글결합 추가 할인</span><span class="v">-' + fmt(inetSoloDcSec1) + '</span></div>';
