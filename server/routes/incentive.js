@@ -1148,6 +1148,7 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
     const totals = settlements.reduce((acc, s) => {
       acc.total_revenue += s.total_revenue || 0;
       acc.total_payback += s.total_payback || 0;
+      acc.total_company_payback_burden += s.total_company_payback_burden || 0;
       acc.total_incentive += s.incentive || 0;
       acc.total_bonus += s.bonus || 0;
       acc.total_company_profit += s.company_profit || 0;
@@ -1156,10 +1157,13 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
       acc.penalty_count += s.is_penalty ? 1 : 0;
       return acc;
     }, {
-      total_revenue: 0, total_payback: 0, total_incentive: 0, total_bonus: 0,
+      total_revenue: 0, total_payback: 0, total_company_payback_burden: 0,
+      total_incentive: 0, total_bonus: 0,
       total_company_profit: 0, total_sales_count: 0, total_premium_count: 0,
       penalty_count: 0,
     });
+    // 실제 상품 마진 = 매출(리베이트) − 지급 페이백 − 회사 부담 페이백 (인건비 차감 전)
+    totals.total_product_margin = totals.total_revenue - totals.total_payback - totals.total_company_payback_burden;
 
     const grade_distribution = { 1: 0, 2: 0, 3: 0 };
     settlements.forEach(s => { grade_distribution[s.grade_applied || 1] += 1; });
