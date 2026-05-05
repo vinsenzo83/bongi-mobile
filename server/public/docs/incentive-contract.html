@@ -251,11 +251,12 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   <!-- 메인 영역 (로그인 후) -->
   <div id="main-area" style="display:none">
     <!-- 통계 카드 -->
-    <div class="stats" id="stats">
-      <div class="stat-card"><div class="stat-label">📋 이번 달 영업</div><div class="stat-val" id="stat-total">-</div><div class="stat-sub" id="stat-completed">-</div></div>
-      <div class="stat-card"><div class="stat-label">✅ 주소 완료</div><div class="stat-val" id="stat-with-address">-</div><div class="stat-sub" id="stat-need-address">-</div></div>
-      <div class="stat-card"><div class="stat-label">⏰ 계약대기</div><div class="stat-val" id="stat-pending">-</div><div class="stat-sub">처리 필요</div></div>
-      <div class="stat-card"><div class="stat-label">❌ 계약취소</div><div class="stat-val" id="stat-cancelled">-</div><div class="stat-sub">정산 제외</div></div>
+    <div class="stats" id="stats" style="grid-template-columns:repeat(5, 1fr)">
+      <div class="stat-card"><div class="stat-label">📋 이번 달 영업</div><div class="stat-val" id="stat-total">-</div><div class="stat-sub" id="stat-completed-meta">-</div></div>
+      <div class="stat-card" style="border-color:#22c55e"><div class="stat-label" style="color:#86efac">✅ 계약완료</div><div class="stat-val" id="stat-completed-val" style="color:#86efac">-</div><div class="stat-sub">인센티브 카운트</div></div>
+      <div class="stat-card" style="border-color:#3b82f6"><div class="stat-label" style="color:#60a5fa">🚧 계약진행</div><div class="stat-val" id="stat-in_progress" style="color:#60a5fa">-</div><div class="stat-sub">처리 중</div></div>
+      <div class="stat-card" style="border-color:#f59e0b"><div class="stat-label" style="color:#fbbf24">⏰ 계약대기</div><div class="stat-val" id="stat-pending" style="color:#fbbf24">-</div><div class="stat-sub">처리 필요</div></div>
+      <div class="stat-card" style="border-color:#dc2626"><div class="stat-label" style="color:#fca5a5">❌ 계약취소</div><div class="stat-val" id="stat-cancelled" style="color:#fca5a5">-</div><div class="stat-sub">정산 제외</div></div>
     </div>
 
     <!-- 툴바 -->
@@ -267,6 +268,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <select id="filter-status">
           <option value="">전체</option>
           <option value="completed">✅ 계약완료</option>
+          <option value="in_progress">🚧 계약진행</option>
           <option value="pending">⏰ 계약대기</option>
           <option value="cancelled">❌ 계약취소</option>
         </select>
@@ -286,12 +288,13 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
     <table id="contracts-table">
       <thead>
         <tr>
+          <th style="width:36px;text-align:center">#</th>
           <th style="width:8%">날짜</th>
           <th style="width:11%">상담사</th>
           <th style="width:18%">상품 (Tier·P)</th>
           <th style="width:10%">고객명</th>
           <th style="width:11%">전화</th>
-          <th style="width:18%">주소</th>
+          <th style="width:16%">주소</th>
           <th style="width:9%">페이백</th>
           <th style="width:6%">상태</th>
           <th style="width:9%">작업</th>
@@ -300,8 +303,30 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       <tbody id="contracts-tbody"></tbody>
     </table>
     <div class="empty" id="empty-msg" style="display:none">조회된 영업이 없습니다.</div>
+
+    <!-- 페이지네이션 -->
+    <div id="pagination" style="display:none;justify-content:center;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap">
+      <button id="page-first" class="page-btn" title="처음">«</button>
+      <button id="page-prev" class="page-btn" title="이전">‹</button>
+      <div id="page-numbers" style="display:flex;gap:4px"></div>
+      <button id="page-next" class="page-btn" title="다음">›</button>
+      <button id="page-last" class="page-btn" title="끝">»</button>
+      <select id="page-size" style="margin-left:12px;background:#1e293b;border:1px solid #475569;color:#e2e8f0;padding:5px 8px;border-radius:5px;font-size:11px">
+        <option value="20">20개씩</option>
+        <option value="50">50개씩</option>
+        <option value="100">100개씩</option>
+      </select>
+      <span id="page-info" style="font-size:11px;color:#94a3b8;margin-left:8px"></span>
+    </div>
   </div>
 </div>
+
+<style>
+.page-btn { background:#334155; color:#e2e8f0; border:1px solid #475569; padding:5px 11px; border-radius:5px; font-size:12px; cursor:pointer; font-weight:700; min-width:30px; }
+.page-btn:hover:not(:disabled) { background:#475569; }
+.page-btn:disabled { opacity:0.35; cursor:not-allowed; }
+.page-btn.active { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+</style>
 
 <!-- ═══ 팝업 모달 (상세 편집) ═══ -->
 <div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:9999;justify-content:center;align-items:flex-start;padding:30px 20px;overflow-y:auto">
@@ -411,18 +436,19 @@ async function fetchContracts() {
 function renderStats(contracts) {
   const total = contracts.length;
   const completed = contracts.filter(c => c.status === 'completed').length;
+  const inProgress = contracts.filter(c => c.status === 'in_progress').length;
   const pending = contracts.filter(c => c.status === 'pending').length;
   const cancelled = contracts.filter(c => c.status === 'cancelled').length;
-  const withAddr = contracts.filter(c => c.status !== 'cancelled' && c.customer_address && c.customer_address.trim()).length;
   const needAddr = contracts.filter(c => c.status !== 'cancelled' && (!c.customer_address || !c.customer_address.trim())).length;
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-completed').textContent = '완료 ' + completed + ' · 대기 ' + pending;
-  document.getElementById('stat-with-address').textContent = withAddr;
-  document.getElementById('stat-need-address').textContent = '⚠️ 미입력 ' + needAddr + '건';
-  document.getElementById('stat-pending').textContent = pending;
-  document.getElementById('stat-cancelled').textContent = cancelled;
+  document.getElementById('stat-total').textContent = total + '건';
+  document.getElementById('stat-completed-meta').textContent = needAddr ? '⚠️ 주소 미입력 ' + needAddr + '건' : '주소 모두 입력';
+  document.getElementById('stat-completed-val').textContent = completed + '건';
+  document.getElementById('stat-in_progress').textContent = inProgress + '건';
+  document.getElementById('stat-pending').textContent = pending + '건';
+  document.getElementById('stat-cancelled').textContent = cancelled + '건';
 }
 
+let _currentPage = 1;
 function renderTable(contracts) {
   const filterAddr = document.getElementById('filter-address').value;
   let filtered = contracts;
@@ -431,12 +457,46 @@ function renderTable(contracts) {
 
   const tbody = document.getElementById('contracts-tbody');
   const empty = document.getElementById('empty-msg');
+  const pagDiv = document.getElementById('pagination');
   document.getElementById('result-count').textContent = filtered.length + '건';
 
-  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = ''; pagDiv.style.display = 'none'; return; }
   empty.style.display = 'none';
 
-  tbody.innerHTML = filtered.map(c => {
+  // ─── 페이지네이션 ───
+  const pageSize = parseInt(document.getElementById('page-size').value) || 20;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  if (_currentPage > totalPages) _currentPage = totalPages;
+  if (_currentPage < 1) _currentPage = 1;
+  const startIdx = (_currentPage - 1) * pageSize;
+  const pageItems = filtered.slice(startIdx, startIdx + pageSize);
+
+  pagDiv.style.display = filtered.length > pageSize ? 'flex' : 'none';
+  document.getElementById('page-info').textContent =
+    `${startIdx + 1}~${Math.min(startIdx + pageSize, filtered.length)} / 총 ${filtered.length}건`;
+  document.getElementById('page-first').disabled = _currentPage === 1;
+  document.getElementById('page-prev').disabled = _currentPage === 1;
+  document.getElementById('page-next').disabled = _currentPage === totalPages;
+  document.getElementById('page-last').disabled = _currentPage === totalPages;
+  // 페이지 번호 렌더 (현재 ± 2)
+  const pageNums = [];
+  const start = Math.max(1, _currentPage - 2);
+  const end = Math.min(totalPages, _currentPage + 2);
+  if (start > 1) pageNums.push('1');
+  if (start > 2) pageNums.push('...');
+  for (let i = start; i <= end; i++) pageNums.push(String(i));
+  if (end < totalPages - 1) pageNums.push('...');
+  if (end < totalPages) pageNums.push(String(totalPages));
+  document.getElementById('page-numbers').innerHTML = pageNums.map(n =>
+    n === '...' ? `<span style="padding:5px 4px;color:#64748b">...</span>` :
+    `<button class="page-btn ${parseInt(n) === _currentPage ? 'active' : ''}" data-page="${n}">${n}</button>`
+  ).join('');
+  document.querySelectorAll('#page-numbers .page-btn').forEach(btn => {
+    btn.addEventListener('click', () => { _currentPage = parseInt(btn.dataset.page); renderTable(_currentContracts); });
+  });
+
+  tbody.innerHTML = pageItems.map((c, i) => {
+    const rowNum = startIdx + i + 1;
     const p = c.product || {};
     const a = c.agent || {};
     const tierBadge = p.tier ? `<span class="tier tier-${p.tier}">${p.tier}</span>` : '';
@@ -444,7 +504,8 @@ function renderTable(contracts) {
     const hasAddr = c.customer_address && c.customer_address.trim();
     const addrText = hasAddr ? c.customer_address : '<i style="color:#dc2626">주소 미입력</i>';
     return `<tr class="${c.status === 'cancelled' ? 'cancelled' : ''}" data-id="${c.id}">
-      <td>${c.contract_date.slice(5)}</td>
+      <td style="text-align:center;color:#64748b;font-weight:700;font-size:11px">${rowNum}</td>
+      <td>${(c.contract_date || '').slice(5)}</td>
       <td>${a.name || '-'}<div style="font-size:9px;color:#64748b">${a.center || ''}</div></td>
       <td>${p.name || '-'} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P</div></td>
       <td>${c.customer_name || '<i style="color:#94a3b8">-</i>'}</td>
@@ -457,7 +518,7 @@ function renderTable(contracts) {
       </td>
     </tr>
     <tr class="detail-row" id="detail-${c.id}" style="display:none">
-      <td colspan="9" style="padding:0">
+      <td colspan="10" style="padding:0">
         <div style="padding:14px 16px;border-top:2px solid #475569;background:linear-gradient(135deg,#1e293b,#0f172a)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <div style="font-size:13px;color:#60a5fa;font-weight:800">📝 계약 상세 정보 입력 / 수정</div>
@@ -629,6 +690,7 @@ async function handleAction(id, act) {
 let _currentContracts = [];
 
 function openEditModal(id) {
+  try {
   const c = _currentContracts.find(x => x.id === id);
   if (!c) { alert('계약 정보를 찾을 수 없습니다'); return; }
   const p = c.product || {};
@@ -638,7 +700,7 @@ function openEditModal(id) {
   const hasAddr = c.customer_address && c.customer_address.trim();
 
   document.getElementById('modal-subtitle').textContent =
-    `${c.contract_date} · ${a.name || '?'} (${a.center || ''}) · ID ${c.id.slice(0, 8)}...`;
+    `${c.contract_date || '-'} · ${a.name || '?'} (${a.center || ''}) · ID ${(c.id || '').slice(0, 8)}...`;
 
   // 추가 상품 / WiFi 옵션 / 견적 데이터 통합
   const additional = c.additional_products || [];
@@ -669,7 +731,7 @@ function openEditModal(id) {
         <div style="display:flex;gap:18px;align-items:center">
           <div style="text-align:right;border-right:1px solid #334155;padding-right:18px">
             <div class="ph-payback-label">💵 월 요금</div>
-            <div style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:-0.02em">${c.monthly_fee ? c.monthly_fee.toLocaleString() : '-'}<span style="font-size:12px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+            <div style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:-0.02em">${(c.monthly_fee != null && !isNaN(c.monthly_fee)) ? Number(c.monthly_fee).toLocaleString() : '-'}<span style="font-size:12px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
           </div>
           <div style="text-align:right">
             <div class="ph-payback-label">💰 페이백</div>
@@ -866,6 +928,10 @@ function openEditModal(id) {
   });
 
   document.getElementById('modal-overlay').style.display = 'flex';
+  } catch (err) {
+    console.error('[openEditModal] 렌더링 오류:', err);
+    alert('모달 표시 중 오류: ' + err.message);
+  }
 }
 
 function closeModal() {
@@ -1000,9 +1066,20 @@ document.getElementById('logout-btn').addEventListener('click', () => {
   location.reload();
 });
 
-document.getElementById('filter-month').addEventListener('change', loadContracts);
-document.getElementById('filter-status').addEventListener('change', loadContracts);
-document.getElementById('filter-address').addEventListener('change', loadContracts);
+document.getElementById('filter-month').addEventListener('change', () => { _currentPage = 1; loadContracts(); });
+document.getElementById('filter-status').addEventListener('change', () => { _currentPage = 1; loadContracts(); });
+document.getElementById('filter-address').addEventListener('change', () => { _currentPage = 1; loadContracts(); });
+
+// 페이지네이션 이벤트
+document.getElementById('page-first').addEventListener('click', () => { _currentPage = 1; renderTable(_currentContracts); });
+document.getElementById('page-prev').addEventListener('click', () => { _currentPage--; renderTable(_currentContracts); });
+document.getElementById('page-next').addEventListener('click', () => { _currentPage++; renderTable(_currentContracts); });
+document.getElementById('page-last').addEventListener('click', () => {
+  const ps = parseInt(document.getElementById('page-size').value) || 20;
+  _currentPage = Math.ceil((_currentContracts || []).length / ps) || 1;
+  renderTable(_currentContracts);
+});
+document.getElementById('page-size').addEventListener('change', () => { _currentPage = 1; renderTable(_currentContracts); });
 document.getElementById('reload-btn').addEventListener('click', loadContracts);
 
 // ─── 엑셀 다운로드 (.xlsx) ───
