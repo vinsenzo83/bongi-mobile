@@ -678,20 +678,10 @@ function renderAgentKpi(s, rule) {
   document.getElementById('agent-total-sub').textContent =
     `기본 ${fmt(s.base_salary)} + 인센 ${fmt(s.incentive)} + 보너스 ${fmt(s.bonus)}` + (s.total_agent_payback_deduct > 0 ? ` − 페이백 ${fmt(s.total_agent_payback_deduct)}` : '');
   document.getElementById('agent-grade').innerHTML =
-    `<span style="background:${gColor};color:#fff;padding:3px 12px;border-radius:6px;font-weight:900">G${g}</span>`;
-  // G1/G2/G3 단가 모두 표시, 현재 적용 등급 강조
-  const rates = (rule && rule.grade_rates) || { '1':20000, '2':30000, '3':40000 };
-  const colors = { '1':'#9ca3af', '2':'#60a5fa', '3':'#f87171' };
-  const subEl = document.getElementById('agent-grade-sub');
-  if (subEl) {
-    subEl.innerHTML = ['1','2','3'].map(n => {
-      const cur = String(g) === n;
-      const c = colors[n] || '#cbd5e1';
-      const fw = cur ? '900' : '600';
-      const op = cur ? '1' : '0.5';
-      return `<span style="color:${c};font-weight:${fw};opacity:${op};margin-right:6px">G${n} ${(rates[n]||0).toLocaleString()}원/P${cur ? '✔' : ''}</span>`;
-    }).join('');
-  }
+    `<span style="background:${gColor};color:#fff;padding:3px 12px;border-radius:6px;font-weight:900">G${g}</span>`
+    + ` <span style="font-size:12px;color:#bbf7d0;font-weight:800;margin-left:6px">${fmt(s.applied_rate || 0)}원/P</span>`;
+  document.getElementById('agent-grade-sub').textContent =
+    `목표 G${s.grade_target || 1} / 적용 G${g}` + (s.is_penalty ? ' (페널티)' : '');
   document.getElementById('agent-points').textContent = (s.total_points || 0) + 'P';
   document.getElementById('agent-points-sub').textContent = `건수 ${s.total_count || 0}건`;
   document.getElementById('agent-premium').textContent = (s.premium_count || 0);
