@@ -1017,31 +1017,69 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
   }
 
   const STATUS_MAP = { pending: '계약대기', in_progress: '계약진행', completed: '계약완료', cancelled: '계약취소' };
+  const fmtDt = v => v ? new Date(v).toLocaleString('ko-KR') : '';
+  const stripHtml = s => (s || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
   const rows = list.map(c => {
     const p = c.product || {};
     const a = c.agent || {};
+    const additional = (c.additional_products && Array.isArray(c.additional_products))
+      ? c.additional_products.map(x => `${x.position}: ${x.tv_name} (${(x.tv_price||0).toLocaleString()}원, 할인 -${(x.tv_discount||0).toLocaleString()}) + ${x.settop_name || '셋톱'} (${(x.settop_fee||0).toLocaleString()}원)`).join(' | ')
+      : '';
+    const wifiOpt = c.wifi_option === 'wifi-speaker' ? 'WiFi 1대 + 스마트홈 스피커'
+      : c.wifi_option === 'wifi2' ? 'WiFi 2대' : '';
     return {
-      '날짜': c.contract_date || '',
+      // ─── 영업 식별 ───
+      '영업ID': c.id || '',
+      '영업 등록일': fmtDt(c.created_at),
+      '마지막 변경일': fmtDt(c.updated_at),
+      '계약일': c.contract_date || '',
+      // ─── 상담사 ───
       '상담사': a.name || '',
       '센터': a.center || '',
+      '상담사 역할': a.role || '',
+      // ─── 상품 정보 ───
+      '상품 ID': p.id || '',
       '통신사': p.carrier || '',
+      '종류': p.type || '',
       '상품명': p.name || '',
+      '속도': p.speed || '',
+      'TV 등급': p.tv_tier || '',
       'Tier': p.tier || '',
+      '우수상품': p.is_premium ? 'Y' : 'N',
       '가중치(P)': p.point_weight || 0,
+      '페이백 (정가)': p.payback || 0,
+      // ─── 견적 옵션 ───
+      'TV 대수': c.tv_count || 1,
+      '추가 TV (다중)': additional,
+      'WiFi 옵션': wifiOpt,
+      '견적 요약': c.quote_summary || '',
+      '견적 상세 (텍스트)': stripHtml(c.quote_full_html),
+      // ─── 고객 ───
       '고객명': c.customer_name || '',
       '전화번호': c.customer_phone || '',
+      '주민번호': c.resident_id || '',
       '주소': c.customer_address || '',
       '상세주소': c.customer_address_detail || '',
-      '설치일': c.installation_date || '',
-      '설치시간': c.installation_time || '',
-      '페이백': p.payback || 0,
-      '추가페이백': c.add_payback || 0,
+      // ─── 설치/사은품/페이백 ───
+      '설치 희망일': c.installation_date || '',
+      '설치 시간': c.installation_time || '',
+      '개통완료일': c.activation_date || '',
+      '실제 사은품': c.gift_received || '',
+      '추가 페이백': c.add_payback || 0,
+      // ─── 입금 정보 ───
       '예금주': c.bank_account_holder || '',
       '은행': c.bank_name || '',
       '계좌번호': c.bank_account_number || '',
+      // ─── 상태 + 변경 이력 ───
       '상태': STATUS_MAP[c.status] || c.status || '',
-      '메모(상담사)': c.notes || '',
-      '메모(계약부서)': c.contract_notes || ''
+      '계약대기 시각': fmtDt(c.contract_pending_at),
+      '계약진행 시각': fmtDt(c.contract_in_progress_at),
+      '계약완료 시각': fmtDt(c.contract_completed_at),
+      '계약취소 시각': fmtDt(c.contract_cancelled_at),
+      '취소 사유': c.cancellation_reason || '',
+      // ─── 메모 ───
+      '메모(상담사 TM)': c.notes || '',
+      '메모(계약부서)': c.contract_notes || '',
     };
   });
 

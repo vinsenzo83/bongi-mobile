@@ -2865,11 +2865,13 @@ function buildSalePayload(base) {
   }
 
   // 견적 결과 HTML 통째로 (계산기의 모든 라인 — 정확한 계약 위해)
+  // calc()를 강제 호출해서 c-result를 최신 상태로 갱신
   let quoteFullHtml = null;
   try {
+    if (typeof calc === 'function') calc();
     const resultEl = document.getElementById('c-result');
-    if (resultEl) quoteFullHtml = resultEl.innerHTML;
-  } catch(e) {}
+    if (resultEl && resultEl.innerHTML.trim()) quoteFullHtml = resultEl.innerHTML;
+  } catch(e) { console.warn('[buildSalePayload] quote capture failed', e); }
 
   return Object.assign({}, base, {
     tv_count: tvCnt,
@@ -2913,19 +2915,28 @@ async function incSubmitDeal() {
     return;
   }
 
+  const payload = buildSalePayload({
+    product_id: _incLastMatchedProduct.id,
+    customer_name: name || null,
+    customer_phone: phone || null,
+    installation_date: installDate,
+    notes: notes,
+    add_payback: payback,
+  });
+
+  // 견적서 누락 차단 — 계약 처리에서 동일 정보 보여줘야 하므로 필수
+  if (!payload.quote_full_html || !payload.quote_full_html.trim()) {
+    msg.style.color = '#dc2626';
+    msg.textContent = '⚠️ 견적이 비어있습니다. 견적 카드에서 통신사·속도·TV를 선택하세요.';
+    return;
+  }
+
   try {
     submitBtn.disabled = true; submitBtn.textContent = '저장 중...';
     const res = await fetch(INC_API + '/sales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify(buildSalePayload({
-        product_id: _incLastMatchedProduct.id,
-        customer_name: name || null,
-        customer_phone: phone || null,
-        installation_date: installDate,
-        notes: notes,
-        add_payback: payback,
-      }))
+      body: JSON.stringify(payload)
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
