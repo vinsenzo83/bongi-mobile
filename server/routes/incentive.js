@@ -57,6 +57,9 @@ router.patch('/products/:id', authenticateJWT, async (req, res) => {
     const allowed = ['rebate', 'payback', 'point_weight', 'name', 'active', 'speed', 'tv_tier'];
     const update = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    if (!Object.keys(update).length) {
+      return res.status(400).json({ error: '변경할 필드가 없습니다 (allowed: ' + allowed.join(', ') + ')' });
+    }
     const { data, error } = await supabase
       .from('incentive_products')
       .update(update).eq('id', req.params.id).select().single();
