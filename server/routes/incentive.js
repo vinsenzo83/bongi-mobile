@@ -382,6 +382,100 @@ router.post('/finalize', authenticateJWT, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// 11.4. POST /api/incentive/rules — 새 정책 발행 (admin)
+// ═══════════════════════════════════════════════════════════════
+router.post('/rules', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const {
+      version, effective_from, base_salary, bonus_per_premium,
+      payback_company_limit, payback_max,
+      grade_rates, grade_thresholds, premium_margin_threshold,
+      notes, deactivate_others,
+    } = req.body || {};
+
+    if (!version || !effective_from || !grade_rates || !grade_thresholds) {
+      return res.status(400).json({ error: 'version, effective_from, grade_rates, grade_thresholds 필수' });
+    }
+
+    // 기존 active rules 비활성화 (deactivate_others=true 시)
+    if (deactivate_others) {
+      await supabase.from('incentive_rules').update({ active: false }).eq('active', true);
+    }
+
+    const { data, error } = await supabase
+      .from('incentive_rules')
+      .insert({
+        version, effective_from,
+        base_salary: base_salary || 2300000,
+        bonus_per_premium: bonus_per_premium || 10000,
+        payback_company_limit: payback_company_limit || 30000,
+        payback_max: payback_max || 50000,
+        grade_rates, grade_thresholds,
+        premium_margin_threshold: premium_margin_threshold || 250000,
+        active: true, notes,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ rules: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 11.45. PATCH /api/incentive/rules/:id — 기존 정책 수정 (admin)
+// ═══════════════════════════════════════════════════════════════
+router.patch('/rules/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const allowed = ['version', 'effective_from', 'base_salary', 'bonus_per_premium',
+      'payback_company_limit', 'payback_max', 'grade_rates', 'grade_thresholds',
+      'premium_margin_threshold', 'active', 'notes'];
+    const update = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+
+    const { data, error } = await supabase
+      .from('incentive_rules')
+      .update(update)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ rules: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 11.46. GET /api/incentive/rules/all — 모든 정책 이력 (admin)
+// ═══════════════════════════════════════════════════════════════
+router.get('/rules/all', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const { data, error } = await supabase
+      .from('incentive_rules')
+      .select('*')
+      .order('effective_from', { ascending: false });
+    if (error) throw error;
+    res.json({ rules: data, count: data.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // 11.5. GET /api/incentive/contracts?month=&status= — 계약부서 전체 영업 조회
 //       manager: 본인 센터 / admin: 전체
 // ═══════════════════════════════════════════════════════════════

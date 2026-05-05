@@ -2564,6 +2564,25 @@ async function authRender() {
     return;
   }
   authSetUser(agent);
+  // ─── 권한 가드: tm.html은 manager/admin 전용 ───
+  if (agent.role === 'agent') {
+    // 5초 카운트다운 후 자동 redirect
+    out.style.display = ''; inB.style.display = 'none';
+    let sec = 5;
+    const msgEl = document.getElementById('auth-msg');
+    msgEl.style.color = '#dc2626';
+    const countdown = () => {
+      if (sec <= 0) {
+        location.href = '/docs/tm-counselor.html';
+        return;
+      }
+      msgEl.innerHTML = `⛔ 이 페이지는 <b>관리자(manager/admin) 전용</b>입니다.<br>${sec}초 후 상담사 페이지로 이동합니다... <a href="/docs/tm-counselor.html" style="color:#3b82f6;text-decoration:underline">지금 이동</a>`;
+      sec--;
+      setTimeout(countdown, 1000);
+    };
+    countdown();
+    return;
+  }
   out.style.display = 'none'; inB.style.display = '';
   document.getElementById('auth-user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
   document.getElementById('auth-user-meta').textContent = agent.center + ' · ' + agent.id.slice(0, 8);

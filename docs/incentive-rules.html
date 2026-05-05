@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인센티브 정책 관리 (admin)</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: 'Pretendard Variable', -apple-system, sans-serif; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
+.wrap { max-width: 1200px; margin: 0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #334155; }
+h1 { font-size:22px; color:#f8fafc; letter-spacing:-0.02em; }
+.subtitle { font-size:12px; color:#94a3b8; margin-top:4px; }
+.auth-box { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:16px; margin-bottom:20px; }
+.auth-box input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; width:200px; margin-right:8px; }
+.auth-box button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px; }
+.auth-msg { font-size:11px; margin-top:6px; min-height:14px; }
+.section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:12px; padding:18px 22px; margin-bottom:20px; }
+.section h2 { font-size:15px; color:#fbbf24; font-weight:800; letter-spacing:0.04em; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #334155; }
+.row { display:grid; grid-template-columns:repeat(2, 1fr); gap:14px; margin-bottom:12px; }
+.field { display:flex; flex-direction:column; }
+.field label { font-size:11px; color:#94a3b8; font-weight:700; margin-bottom:4px; letter-spacing:0.03em; }
+.field input, .field select, .field textarea { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; font-family:inherit; }
+.field .hint { font-size:9.5px; color:#64748b; margin-top:3px; line-height:1.4; }
+.grade-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+.grade-card { background:rgba(0,0,0,0.3); border:1px solid #475569; border-radius:8px; padding:12px; }
+.grade-title { font-size:12px; color:#fbbf24; font-weight:800; margin-bottom:8px; }
+.btn-primary { background:#16a34a; color:#fff; border:none; padding:10px 22px; border-radius:8px; font-weight:800; font-size:13px; cursor:pointer; }
+.btn-secondary { background:#475569; color:#fff; border:none; padding:10px 22px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; }
+.btn-danger { background:#dc2626; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer; }
+table { width:100%; border-collapse:collapse; background:#1e293b; border-radius:10px; overflow:hidden; }
+th { background:#334155; color:#f1f5f9; font-size:11px; padding:10px 8px; text-align:left; font-weight:700; }
+td { font-size:11.5px; color:#e2e8f0; padding:10px 8px; border-bottom:1px solid #334155; }
+.active-badge { background:#16a34a; color:#fff; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:800; }
+.inactive-badge { background:#475569; color:#cbd5e1; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:800; }
+.actions-bar { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:14px 24px; border-radius:10px; font-size:14px; font-weight:800; box-shadow:0 6px 24px rgba(22,163,74,0.5); z-index:99999; opacity:0; transition:opacity 0.2s; pointer-events:none; }
+#toast.show { opacity:1; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>⚙️ 인센티브 정책 관리 (V5)</h1>
+      <div class="subtitle">기본급 · Grade 단가 · 임계값 · 우수상품 보너스 · 추가 페이백 정책 · 변경 이력</div>
+    </div>
+    <div id="user-info" style="text-align:right;display:none">
+      <div style="font-size:13px;font-weight:800;color:#f8fafc" id="user-name">-</div>
+      <button id="logout-btn" style="margin-top:6px;padding:4px 10px;background:#475569;color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">로그아웃</button>
+    </div>
+  </header>
+
+  <div class="auth-box" id="auth-box">
+    <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:#60a5fa">🔐 admin 권한 필요</div>
+    <input type="email" id="auth-email" placeholder="email" autocomplete="username">
+    <input type="password" id="auth-pass" placeholder="비밀번호" autocomplete="current-password">
+    <button id="auth-login-btn">로그인</button>
+    <div class="auth-msg" id="auth-msg"></div>
+    <div style="font-size:10px;color:#94a3b8;margin-top:8px">
+      테스트: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">admin1@bongi.test</code> / <code>pass1234!</code>
+    </div>
+  </div>
+
+  <div id="main-area" style="display:none">
+    <!-- 활성 정책 편집 -->
+    <div class="section">
+      <h2>📌 활성 정책 (현재 적용 중)</h2>
+      <div class="row">
+        <div class="field"><label>버전</label>
+          <input type="text" id="f-version" placeholder="V5">
+          <div class="hint">고유 식별자 (V5, V6 등)</div>
+        </div>
+        <div class="field"><label>적용 시작일</label>
+          <input type="date" id="f-effective">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>기본급 (₩)</label>
+          <input type="number" id="f-base-salary" min="0" step="100000">
+          <div class="hint">월 기본급</div>
+        </div>
+        <div class="field"><label>우수상품 건당 보너스 (₩)</label>
+          <input type="number" id="f-bonus" min="0" step="1000">
+          <div class="hint">마진 ≥ 임계값인 영업 1건당 추가</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>회사 페이백 부담 한도 (₩)</label>
+          <input type="number" id="f-payback-company" min="0" step="1000">
+          <div class="hint">이 금액 이하는 회사가 자동 부담</div>
+        </div>
+        <div class="field"><label>최대 페이백 (₩)</label>
+          <input type="number" id="f-payback-max" min="0" step="1000">
+          <div class="hint">초과 입력 불가 (DB CHECK 제약)</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>우수상품 마진 임계값 (₩)</label>
+          <input type="number" id="f-prem-margin" min="0" step="10000">
+          <div class="hint">이 마진 이상이면 우수상품(S Tier)</div>
+        </div>
+        <div class="field"><label>비고</label>
+          <input type="text" id="f-notes" placeholder="(선택) 변경 사유 등">
+        </div>
+      </div>
+
+      <h2 style="margin-top:18px">🎯 Grade 단가 (₩/P)</h2>
+      <div class="grade-grid">
+        <div class="grade-card">
+          <div class="grade-title">G1 (기본)</div>
+          <div class="field"><label>단가 (₩/P)</label><input type="number" id="f-rate-1" min="0" step="1000"></div>
+        </div>
+        <div class="grade-card">
+          <div class="grade-title">G2</div>
+          <div class="field"><label>단가 (₩/P)</label><input type="number" id="f-rate-2" min="0" step="1000"></div>
+          <div class="row" style="margin-top:8px;grid-template-columns:1fr 1fr">
+            <div class="field"><label>임계 P</label><input type="number" id="f-thr-2-p" min="0" step="0.5"></div>
+            <div class="field"><label>우수 의무</label><input type="number" id="f-thr-2-prem" min="0" step="1"></div>
+          </div>
+        </div>
+        <div class="grade-card">
+          <div class="grade-title">G3 (최고)</div>
+          <div class="field"><label>단가 (₩/P)</label><input type="number" id="f-rate-3" min="0" step="1000"></div>
+          <div class="row" style="margin-top:8px;grid-template-columns:1fr 1fr">
+            <div class="field"><label>임계 P</label><input type="number" id="f-thr-3-p" min="0" step="0.5"></div>
+            <div class="field"><label>우수 의무</label><input type="number" id="f-thr-3-prem" min="0" step="1"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions-bar">
+        <button id="btn-save" class="btn-primary">💾 현재 정책 수정 저장 (PATCH)</button>
+        <button id="btn-publish" class="btn-secondary">📌 새 버전으로 발행 (POST + 기존 비활성화)</button>
+      </div>
+    </div>
+
+    <!-- 정책 이력 -->
+    <div class="section">
+      <h2>📜 정책 변경 이력</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>버전</th><th>적용일</th><th>활성</th>
+            <th>기본급</th><th>G1/G2/G3</th><th>임계 P</th><th>우수 의무</th>
+            <th>보너스</th><th>페이백 (회사/최대)</th>
+            <th>비고</th><th>작업</th>
+          </tr>
+        </thead>
+        <tbody id="rules-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api/incentive';
+const AUTH = '/api/auth';
+const TOKEN_KEY = 'incentive-auth-token-v1';
+const getToken = () => localStorage.getItem(TOKEN_KEY);
+const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
+const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+
+let _activeRule = null;
+
+async function login(email, password) {
+  const res = await fetch(AUTH + '/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  if (!res.ok) throw new Error((await res.json()).error || '로그인 실패');
+  const data = await res.json();
+  setToken(data.access_token);
+  return data;
+}
+
+async function fetchAgent() {
+  const tk = getToken(); if (!tk) return null;
+  const res = await fetch(API + '/agents/me', { headers: { Authorization: 'Bearer ' + tk } });
+  if (!res.ok) { clearToken(); return null; }
+  return (await res.json()).agent;
+}
+
+async function fetchAllRules() {
+  const tk = getToken();
+  const res = await fetch(API + '/rules/all', { headers: { Authorization: 'Bearer ' + tk } });
+  if (!res.ok) throw new Error((await res.json()).error || '조회 실패');
+  return (await res.json()).rules;
+}
+
+function loadActiveToForm(r) {
+  if (!r) return;
+  document.getElementById('f-version').value = r.version || '';
+  document.getElementById('f-effective').value = (r.effective_from || '').slice(0, 10);
+  document.getElementById('f-base-salary').value = r.base_salary || 0;
+  document.getElementById('f-bonus').value = r.bonus_per_premium || 0;
+  document.getElementById('f-payback-company').value = r.payback_company_limit || 0;
+  document.getElementById('f-payback-max').value = r.payback_max || 0;
+  document.getElementById('f-prem-margin').value = r.premium_margin_threshold || 0;
+  document.getElementById('f-notes').value = r.notes || '';
+  const rates = r.grade_rates || {};
+  const thrs = r.grade_thresholds || {};
+  document.getElementById('f-rate-1').value = rates['1'] || 0;
+  document.getElementById('f-rate-2').value = rates['2'] || 0;
+  document.getElementById('f-rate-3').value = rates['3'] || 0;
+  document.getElementById('f-thr-2-p').value = (thrs['2'] || {}).points || 0;
+  document.getElementById('f-thr-2-prem').value = (thrs['2'] || {}).premium || 0;
+  document.getElementById('f-thr-3-p').value = (thrs['3'] || {}).points || 0;
+  document.getElementById('f-thr-3-prem').value = (thrs['3'] || {}).premium || 0;
+}
+
+function collectForm() {
+  return {
+    version: document.getElementById('f-version').value.trim(),
+    effective_from: document.getElementById('f-effective').value,
+    base_salary: parseInt(document.getElementById('f-base-salary').value) || 0,
+    bonus_per_premium: parseInt(document.getElementById('f-bonus').value) || 0,
+    payback_company_limit: parseInt(document.getElementById('f-payback-company').value) || 0,
+    payback_max: parseInt(document.getElementById('f-payback-max').value) || 0,
+    premium_margin_threshold: parseInt(document.getElementById('f-prem-margin').value) || 0,
+    notes: document.getElementById('f-notes').value.trim() || null,
+    grade_rates: {
+      '1': parseInt(document.getElementById('f-rate-1').value) || 0,
+      '2': parseInt(document.getElementById('f-rate-2').value) || 0,
+      '3': parseInt(document.getElementById('f-rate-3').value) || 0,
+    },
+    grade_thresholds: {
+      '2': {
+        points: parseFloat(document.getElementById('f-thr-2-p').value) || 0,
+        premium: parseInt(document.getElementById('f-thr-2-prem').value) || 0,
+      },
+      '3': {
+        points: parseFloat(document.getElementById('f-thr-3-p').value) || 0,
+        premium: parseInt(document.getElementById('f-thr-3-prem').value) || 0,
+      },
+    },
+  };
+}
+
+async function saveCurrent() {
+  if (!_activeRule) { alert('활성 정책 없음'); return; }
+  if (!confirm(`현재 정책 [${_activeRule.version}]을 수정하시겠습니까?`)) return;
+  const tk = getToken();
+  const body = collectForm();
+  try {
+    const res = await fetch(API + '/rules/' + _activeRule.id, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || '저장 실패');
+    showToast('✅ 수정 완료');
+    await loadAll();
+  } catch (e) { alert('오류: ' + e.message); }
+}
+
+async function publishNew() {
+  const body = collectForm();
+  if (!body.version) { alert('새 버전 이름 입력 필수 (예: V6)'); return; }
+  if (_activeRule && body.version === _activeRule.version) {
+    if (!confirm(`'${body.version}'은 이미 활성 정책. 새 발행 시 기존이 비활성화됩니다. 진행?`)) return;
+  } else if (!confirm(`새 정책 [${body.version}] 발행 + 기존 비활성화. 진행?`)) return;
+  body.deactivate_others = true;
+  const tk = getToken();
+  try {
+    const res = await fetch(API + '/rules', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || '발행 실패');
+    showToast('🚀 새 버전 발행 완료');
+    await loadAll();
+  } catch (e) { alert('오류: ' + e.message); }
+}
+
+async function toggleActive(id, active) {
+  if (!confirm((active ? '활성화' : '비활성화') + ' 하시겠습니까?')) return;
+  const tk = getToken();
+  try {
+    const res = await fetch(API + '/rules/' + id, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+      body: JSON.stringify({ active }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || '실패');
+    showToast(active ? '✅ 활성화됨' : '❌ 비활성화됨');
+    await loadAll();
+  } catch (e) { alert('오류: ' + e.message); }
+}
+
+function renderHistory(rules) {
+  const tbody = document.getElementById('rules-tbody');
+  tbody.innerHTML = rules.map(r => {
+    const rates = r.grade_rates || {};
+    const thrs = r.grade_thresholds || {};
+    return `<tr>
+      <td><b>${r.version}</b></td>
+      <td>${(r.effective_from||'').slice(0,10)}</td>
+      <td>${r.active ? '<span class="active-badge">활성</span>' : '<span class="inactive-badge">비활성</span>'}</td>
+      <td>${(r.base_salary||0).toLocaleString()}</td>
+      <td>${(rates['1']||0).toLocaleString()} / ${(rates['2']||0).toLocaleString()} / ${(rates['3']||0).toLocaleString()}</td>
+      <td>${(thrs['2']||{}).points||0}P / ${(thrs['3']||{}).points||0}P</td>
+      <td>${(thrs['2']||{}).premium||0} / ${(thrs['3']||{}).premium||0}건</td>
+      <td>${(r.bonus_per_premium||0).toLocaleString()}</td>
+      <td>${(r.payback_company_limit||0).toLocaleString()} / ${(r.payback_max||0).toLocaleString()}</td>
+      <td style="font-size:10px;color:#94a3b8">${r.notes||'-'}</td>
+      <td>${r.active
+        ? `<button class="btn-danger" onclick="toggleActive('${r.id}', false)">비활성화</button>`
+        : `<button class="btn-danger" style="background:#16a34a" onclick="toggleActive('${r.id}', true)">활성화</button>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadAll() {
+  try {
+    const rules = await fetchAllRules();
+    const active = rules.find(r => r.active);
+    _activeRule = active;
+    if (active) loadActiveToForm(active);
+    renderHistory(rules);
+  } catch (e) { alert('정책 로드 실패: ' + e.message); }
+}
+
+let _toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function init() {
+  const tk = getToken();
+  if (tk) {
+    const agent = await fetchAgent();
+    if (agent && agent.role === 'admin') onLoggedIn(agent);
+    else if (agent) {
+      document.getElementById('auth-msg').textContent = '⚠️ admin 권한 필요 (현재 ' + agent.role + ')';
+      document.getElementById('auth-msg').style.color = '#fbbf24';
+      clearToken();
+    }
+  }
+}
+
+function onLoggedIn(agent) {
+  document.getElementById('auth-box').style.display = 'none';
+  document.getElementById('main-area').style.display = '';
+  document.getElementById('user-info').style.display = '';
+  document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
+  loadAll();
+}
+
+document.getElementById('auth-login-btn').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-pass').value;
+  const msg = document.getElementById('auth-msg'); msg.style.color = '#dc2626';
+  if (!email || !password) { msg.textContent = '입력 필수'; return; }
+  try {
+    await login(email, password);
+    const agent = await fetchAgent();
+    if (!agent || agent.role !== 'admin') {
+      msg.textContent = 'admin 권한 필요';
+      clearToken(); return;
+    }
+    onLoggedIn(agent);
+  } catch (e) { msg.textContent = e.message; }
+});
+document.getElementById('logout-btn').addEventListener('click', () => { clearToken(); location.reload(); });
+document.getElementById('btn-save').addEventListener('click', saveCurrent);
+document.getElementById('btn-publish').addEventListener('click', publishNew);
+
+init();
+</script>
+</body>
+</html>
