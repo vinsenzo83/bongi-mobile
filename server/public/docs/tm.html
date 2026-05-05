@@ -2763,6 +2763,85 @@ function incApplyAuthState() {
   }
 }
 
+
+// ╔════════════════════════════════════════════════════╗
+// ║  견적 상세 수집 — 다중 TV / WiFi / 청소년 / 결합 등     ║
+// ╚════════════════════════════════════════════════════╝
+function buildSalePayload(base) {
+  const c = document.getElementById('c-carrier').value;
+  const sp = document.getElementById('c-speed').value;
+  const wf = document.getElementById('c-wifi').checked;
+  const ti = parseInt(document.getElementById('c-tv').value) || 0;
+  const tvCnt = parseInt(document.getElementById('c-tv-count').value) || 1;
+  const bundleType = document.getElementById('c-bundle').value;
+  const lines = parseInt(document.getElementById('c-lines').value) || 1;
+  const youthEl = document.getElementById('c-youth-add');
+  const isYouth = youthEl && youthEl.checked;
+  const lguBonusSpkr = document.getElementById('c-lgu-bonus-speaker');
+  const wifiOption = (c === 'lgu' && (sp === '500M' || sp === '1G'))
+    ? (lguBonusSpkr && lguBonusSpkr.checked ? 'wifi-speaker' : 'wifi2')
+    : null;
+
+  const d = D[c];
+  const tv1Name = (d && d.tv[ti]) ? d.tv[ti].n : null;
+
+  // 추가 상품 (TV2/TV3) 정보 수집
+  const additional = [];
+  if (tvCnt >= 2 && d && d.additionalTvPolicy && d.additionalTvPolicy.enabled) {
+    [2, 3].forEach(n => {
+      if (n > tvCnt) return;
+      const tv2Sel = document.getElementById('c-tv' + n);
+      const st2Sel = document.getElementById('c-settop' + n);
+      if (!tv2Sel || !st2Sel) return;
+      const tv2Idx = parseInt(tv2Sel.value) || 0;
+      if (tv2Idx === 0) return;
+      const tv2 = d.tv[tv2Idx];
+      const st2Item = (d.setTopOptions || []).find(o => o.id === st2Sel.value);
+      additional.push({
+        position: 'TV' + n,
+        tv_name: tv2.n,
+        tv_price: tv2.p,
+        tv_discount: tv2.tv2Discount || 0,
+        settop_id: st2Sel.value,
+        settop_name: st2Item ? st2Item.name : null,
+        settop_fee: st2Item ? st2Item.fee : 0,
+      });
+    });
+  }
+
+  const carrierName = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' }[c] || c;
+  const bundleName = {
+    'family': '요즘가족결합', 'sk-onfamily': 'SKT 온가족할인',
+    'kt-total': 'KT 총액결합', 'kt-fixed': 'KT 정액결합',
+    'kt-premium': 'KT 프리미엄 가족결합', 'kt-premium-single': 'KT 프리미엄 싱글결합',
+    'lgu-chweyswun': 'LGU+ 참쉬운', 'lgu-together': 'LGU+ 투게더',
+    'home': 'TV만 결합'
+  }[bundleType] || bundleType;
+  const tv1Disp = ti === 0 ? '인터넷 단독' : tv1Name;
+  const tvCntDisp = tvCnt > 1 ? ' (TV ' + tvCnt + '대)' : '';
+  const wifiDisp = wf ? ' + WiFi' : ' WiFi 미사용';
+  const youthDisp = isYouth ? ' + 청소년 추가' : '';
+  const linesDisp = ['family','lgu-chweyswun','lgu-together','sk-onfamily'].includes(bundleType)
+    ? ' · ' + lines + (bundleType === 'sk-onfamily' ? ' (가입년수 인덱스)' : '회선/명') : '';
+  const wifiOptDisp = wifiOption === 'wifi-speaker' ? ' · WiFi 1대 + 스마트홈 스피커'
+    : (wifiOption === 'wifi2' ? ' · WiFi 2대 (LGU+ 프리미엄 안심)' : '');
+
+  let summary = '[' + carrierName + ' ' + sp + '] ' + tv1Disp + tvCntDisp + wifiDisp + '\n'
+    + '└ ' + bundleName + linesDisp + youthDisp + wifiOptDisp;
+  if (additional.length) {
+    summary += '\n' + additional.map(a =>
+      '└ ' + a.position + ': ' + a.tv_name + ' (' + a.tv_price.toLocaleString() + '원, 할인 ' + a.tv_discount.toLocaleString() + '원) + ' + (a.settop_name || '셋톱')
+    ).join('\n');
+  }
+
+  return Object.assign({}, base, {
+    tv_count: tvCnt,
+    additional_products: additional.length ? additional : null,
+    wifi_option: wifiOption,
+    quote_summary: summary,
+  });
+}
+
 let _incLastMatchedProduct = null; // 마지막 시뮬 시 매칭된 product
 async function incCloseDeal() {
   const token = (typeof authGetToken === 'function') ? authGetToken() : null;
@@ -2801,14 +2880,14 @@ async function incSubmitDeal() {
     const res = await fetch(INC_API + '/sales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify({
+      body: JSON.stringify(buildSalePayload({
         product_id: _incLastMatchedProduct.id,
         customer_name: name || null,
         customer_phone: phone || null,
         installation_date: installDate,
         notes: notes,
         add_payback: payback,
-      })
+      }))
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -2932,19 +3011,25 @@ async function incRenderSales() {
         : '';
     const premBadge = p.is_premium ? '<span style="background:#dc2626;color:#fff;padding:1px 4px;border-radius:3px;font-size:8px;margin-left:3px">우수</span>' : '';
     const tierBadge = p.tier ? '<span style="background:#92400e;color:#fff;padding:1px 4px;border-radius:3px;font-size:8px;margin-left:3px">' + p.tier + '</span>' : '';
+    var summaryLine = s.quote_summary
+      ? '<div style="color:#92400e;font-size:9px;margin-top:2px;white-space:pre-wrap;background:rgba(245,158,11,0.08);border-radius:3px;padding:3px 5px;line-height:1.4">' + s.quote_summary.replace(/</g,"&lt;") + '</div>'
+      : '';
+    var tvCntBadge = (s.tv_count && s.tv_count > 1)
+      ? '<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ' + s.tv_count + '대</span>' : '';
     return '<div data-id="' + s.id + '" style="border-bottom:1px solid rgba(245,158,11,0.2);padding:5px 4px;font-size:10px' + (s.status === 'cancelled' ? ';opacity:0.5' : '') + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">' +
-        '<div style="font-weight:700;color:#374151">' + dateShort + ' · ' + (p.name || '?') + tierBadge + premBadge + '</div>' +
+        '<div style="font-weight:700;color:#374151">' + dateShort + ' · ' + (p.name || '?') + tierBadge + premBadge + tvCntBadge + '</div>' +
         '<div style="display:flex;gap:4px;align-items:center">' + statusBadge +
           (s.status === 'completed' ? '<button class="inc-sale-cancel" data-id="' + s.id + '" style="font-size:9px;padding:1px 5px;background:#fff;border:1px solid #dc2626;color:#dc2626;border-radius:3px;cursor:pointer">취소</button>' : '') +
         '</div>' +
       '</div>' +
-      '<div style="color:#6b7280;font-size:9.5px">' + 
-        (s.customer_name ? '👤 ' + s.customer_name : '익명') + 
-        (s.customer_phone ? ' · ' + s.customer_phone : '') + 
-        ' · 가중치 ' + (p.point_weight || '?') + 'P' + 
+      '<div style="color:#6b7280;font-size:9.5px">' +
+        (s.customer_name ? '👤 ' + s.customer_name : '익명') +
+        (s.customer_phone ? ' · ' + s.customer_phone : '') +
+        ' · 가중치 ' + (p.point_weight || '?') + 'P' +
         (s.add_payback > 0 ? ' · 페이백 ' + (s.add_payback||0).toLocaleString() + '원' + (s.agent_payback_deduct > 0 ? ' (본인 -' + s.agent_payback_deduct.toLocaleString() + ')' : '') : '') +
       '</div>' +
+      summaryLine +
     '</div>';
   }).join('');
 

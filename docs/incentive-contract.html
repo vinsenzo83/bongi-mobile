@@ -259,7 +259,7 @@ function renderTable(contracts) {
     return `<tr class="${c.status === 'cancelled' ? 'cancelled' : ''}" data-id="${c.id}">
       <td>${c.contract_date.slice(5)}</td>
       <td>${a.name || '-'}<div style="font-size:9px;color:#64748b">${a.center || ''}</div></td>
-      <td>${p.name || '-'} ${tierBadge}${premBadge}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P</div></td>
+      <td>${p.name || '-'} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P</div></td>
       <td>${c.customer_name || '<i style="color:#94a3b8">-</i>'}</td>
       <td>${c.customer_phone || '<i style="color:#94a3b8">-</i>'}</td>
       <td style="max-width:240px;word-break:break-all;font-size:10.5px">${addrText}</td>
@@ -453,8 +453,35 @@ function openEditModal(id) {
   document.getElementById('modal-subtitle').textContent =
     `${c.contract_date} · ${a.name || '?'} (${a.center || ''}) · ID ${c.id.slice(0, 8)}...`;
 
+  // 추가 상품 / WiFi 옵션 / 견적 요약 (TM 도구에서 넘어온 정보)
+  const additional = c.additional_products || [];
+  const wifiOption = c.wifi_option;
+  const tvCnt = c.tv_count || 1;
+  const wifiOptDisp = wifiOption === 'wifi-speaker' ? '와이파이 1대 + 스마트홈 스피커'
+    : wifiOption === 'wifi2' ? '와이파이 2대' : null;
+  const additionalHtml = additional.length ? `
+    <div style="background:rgba(99,102,241,0.1);border:1.5px solid rgba(99,102,241,0.4);border-radius:6px;padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:10.5px;color:#a5b4fc;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">📺 추가 TV 상품 (TV ${tvCnt}대)</div>
+      ${additional.map(a => `<div style="font-size:11px;color:#e2e8f0;margin-bottom:4px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px">
+        <b>${a.position}</b>: ${a.tv_name} <span style="color:#94a3b8">(정가 ${(a.tv_price||0).toLocaleString()}원, 시리즈할인 -${(a.tv_discount||0).toLocaleString()}원)</span>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px">└ 셋톱: ${a.settop_name || '-'} (정가 ${(a.settop_fee||0).toLocaleString()}원)</div>
+      </div>`).join('')}
+    </div>` : '';
+  const wifiOptHtml = wifiOptDisp ? `
+    <div style="background:rgba(228,9,129,0.1);border:1.5px solid rgba(228,9,129,0.4);border-radius:6px;padding:8px 12px;margin-bottom:14px;font-size:11px;color:#fbcfe8">
+      <b style="color:#f9a8d4">🎁 LG U+ 프리미엄 안심 옵션:</b> ${wifiOptDisp}
+    </div>` : '';
+  const summaryHtml = c.quote_summary ? `
+    <div style="background:rgba(0,0,0,0.4);border:1px solid #475569;border-radius:6px;padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:10px;color:#fbbf24;font-weight:800;margin-bottom:4px">📋 TM 견적 요약 (상담사 입력)</div>
+      <pre style="font-size:11px;color:#e2e8f0;white-space:pre-wrap;font-family:inherit;line-height:1.5;margin:0">${(c.quote_summary || '').replace(/</g,'&lt;')}</pre>
+    </div>` : '';
+
   // 바디 — 기존 detail row 내용 그대로
   document.getElementById('modal-body').innerHTML = `
+    ${summaryHtml}
+    ${additionalHtml}
+    ${wifiOptHtml}
     <!-- 📦 상품 상세 정보 (read-only) -->
     <div style="background:rgba(0,0,0,0.3);border:1px solid #475569;border-radius:6px;padding:10px 12px;margin-bottom:14px">
       <div style="font-size:10.5px;color:#fbbf24;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">📦 상품 상세 정보</div>

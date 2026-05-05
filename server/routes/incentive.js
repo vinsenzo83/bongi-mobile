@@ -224,6 +224,10 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       add_payback = 0,
       notes,
       agent_id, // manager/admin이 다른 상담사 대신 입력 가능
+      tv_count,
+      additional_products,
+      wifi_option,
+      quote_summary,
     } = req.body || {};
 
     if (!product_id) return res.status(400).json({ error: 'product_id 필수' });
@@ -249,6 +253,10 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         add_payback,
         notes,
         status: 'completed',
+        tv_count: tv_count || 1,
+        additional_products: additional_products || null,
+        wifi_option: wifi_option || null,
+        quote_summary: quote_summary || null,
       })
       .select('*, product:incentive_products(*)')
       .single();
@@ -268,7 +276,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, add_payback, customer_address, customer_name, customer_phone, installation_date, resident_id, gift_received } = req.body || {};
+    const { status, cancellation_reason, notes, add_payback, customer_address, customer_name, customer_phone, installation_date, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -292,6 +300,10 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (installation_date !== undefined) update.installation_date = installation_date;
     if (resident_id !== undefined) update.resident_id = resident_id;
     if (gift_received !== undefined) update.gift_received = gift_received;
+    if (tv_count !== undefined) update.tv_count = tv_count;
+    if (additional_products !== undefined) update.additional_products = additional_products;
+    if (wifi_option !== undefined) update.wifi_option = wifi_option;
+    if (quote_summary !== undefined) update.quote_summary = quote_summary;
 
     const { data, error } = await supabase
       .from('incentive_sales')
