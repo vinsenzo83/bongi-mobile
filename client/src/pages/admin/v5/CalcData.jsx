@@ -1,41 +1,78 @@
-// V5 — 요금 계산기 (TM 데이터 / Calc Data)
-// 점진 마이그레이션 경계: 본문은 docs/calculator.html (196KB vanilla)을 iframe으로 임시 wrap.
-// 어드민 데이터 편집 모드 (?admin=1) — manager / admin 만 접근 허용.
+// V5 어드민 — 요금 계산기 데이터 편집 (Phase C)
+// vanilla docs/calculator.html?admin=1 의 9개 섹션을 native React로 구현.
+// localStorage 키는 vanilla와 동일 — 양쪽 fallback 호환 보존.
 //
-// 사이드바에서도 role 기반으로 hide 되지만, URL 직접 접근 시도에 대비해 본 컴포넌트에서도 가드.
-import { useEffect, useRef } from 'react';
+// role 가드: manager / admin 만 접근 허용.
+import { useEffect, useMemo, useState } from 'react';
 import { useV5Auth } from '../../../hooks/useV5Auth.jsx';
+import { applyAllOverrides } from './calc/store.js';
+
+import CategoryNav from './calc/CategoryNav.jsx';
+import InternetSection from './calc/InternetSection.jsx';
+import TvSection from './calc/TvSection.jsx';
+import SettopSection from './calc/SettopSection.jsx';
+import BundleSection from './calc/BundleSection.jsx';
+import InstallSection from './calc/InstallSection.jsx';
+import CardSection from './calc/CardSection.jsx';
+import SalesPointsSection from './calc/SalesPointsSection.jsx';
+import GiftsSection from './calc/GiftsSection.jsx';
+import TicketsSection from './calc/TicketsSection.jsx';
+import HistorySection from './calc/HistorySection.jsx';
+
+const NAV_ITEMS = [
+  { id: 'sec-1',  label: '📡 인터넷·WiFi' },
+  { id: 'sec-2',  label: '📺 TV 상품' },
+  { id: 'sec-3',  label: '📦 셋톱박스' },
+  { id: 'sec-4',  label: '🤝 결합할인' },
+  { id: 'sec-5',  label: '🔧 설치비' },
+  { id: 'sec-6',  label: '💳 제휴카드' },
+  { id: 'sec-7',  label: '💡 영업포인트' },
+  { id: 'sec-8',  label: '🎁 사은품' },
+  { id: 'sec-9',  label: '🎫 티켓' },
+  { id: 'sec-10', label: '📜 변경이력' },
+];
 
 export default function CalcData() {
-  const { agent, getToken } = useV5Auth();
-  const iframeRef = useRef(null);
-
-  // role 가드 — manager / admin 만 접근 허용
+  const { agent } = useV5Auth();
   const role = agent?.role;
   const allowed = role === 'admin' || role === 'manager';
 
-  // iframe 로드 시점에 토큰/에이전트 정보를 postMessage로 전달
-  const handleLoad = () => {
-    try {
-      const win = iframeRef.current?.contentWindow;
-      if (!win) return;
-      win.postMessage({
-        type: 'v5/auth-context',
-        token: getToken?.(),
-        agent: agent ? { id: agent.id, name: agent.name, role: agent.role, center: agent.center } : null,
-      }, window.location.origin);
-    } catch { /* same-origin이면 안전 — 무시 */ }
+  // 페이지 진입 시 1회 — 모든 localStorage override 적용
+  useEffect(() => {
+    if (!allowed) return;
+    applyAllOverrides();
+  }, [allowed]);
+
+  // 섹션 펼침/접힘 상태 (기본 모두 접힘 — vanilla와 동일)
+  const [openSections, setOpenSections] = useState(() => ({
+    'sec-1': false,
+    'sec-2': false,
+    'sec-3': false,
+    'sec-4': false,
+    'sec-5': false,
+    'sec-6': false,
+    'sec-7': false,
+    'sec-8': false,
+    'sec-9': false,
+    'sec-10': false,
+  }));
+
+  // 데이터 변경 시 다른 read-only 섹션(티켓·이력)이 재계산하도록 트리거
+  const [refreshKey, setRefreshKey] = useState(0);
+  const onChange = () => setRefreshKey((k) => k + 1);
+
+  const toggle = (id) => {
+    setOpenSections((s) => ({ ...s, [id]: !s[id] }));
   };
 
-  // iframe → 부모 메시지 리스너 (확장 포인트)
-  useEffect(() => {
-    const onMessage = (e) => {
-      if (e.origin !== window.location.origin) return;
-      // 추후 'v5/calc-data-saved' 같은 이벤트 처리 가능
-    };
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, []);
+  const jumpTo = (id) => {
+    // 해당 섹션 펼치고 스크롤
+    setOpenSections((s) => ({ ...s, [id]: true }));
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
 
   if (!allowed) {
     return (
@@ -49,17 +86,64 @@ export default function CalcData() {
     );
   }
 
-  // ?admin=1 — 어드민 편집 모드, embed=1 — 임베드 모드 시그널 (vanilla 측 미구현이라도 무해)
-  const src = '/docs/calculator.html?admin=1&embed=1';
-
   return (
-    <div style={{ height: 'calc(100vh - 0px)', margin: -24 }}>
-      <iframe
-        ref={iframeRef}
-        src={src}
-        title="요금 계산기 데이터 편집"
-        onLoad={handleLoad}
-        style={{ width: '100%', height: '100%', border: 'none', background: '#0f172a', display: 'block' }}
+    <div style={{ color: '#e2e8f0', minHeight: '100vh' }}>
+      <CategoryNav items={NAV_ITEMS} onJump={jumpTo} />
+
+      <div style={{ marginBottom: 14 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 900, color: '#f8fafc', marginBottom: 4 }}>🧮 TM 데이터 관리 (요금 계산기)</h1>
+        <div style={{ fontSize: 12, color: '#94a3b8' }}>
+          SKT · KT · LGU+ 3사 · 통합 어드민 · 변경 즉시 calc()·티켓 리스트에 반영 · localStorage 영구 저장
+        </div>
+      </div>
+
+      <InternetSection
+        open={openSections['sec-1']}
+        onToggle={() => toggle('sec-1')}
+        onChange={onChange}
+      />
+      <TvSection
+        open={openSections['sec-2']}
+        onToggle={() => toggle('sec-2')}
+        onChange={onChange}
+      />
+      <SettopSection
+        open={openSections['sec-3']}
+        onToggle={() => toggle('sec-3')}
+        onChange={onChange}
+      />
+      <BundleSection
+        open={openSections['sec-4']}
+        onToggle={() => toggle('sec-4')}
+        onChange={onChange}
+      />
+      <InstallSection
+        open={openSections['sec-5']}
+        onToggle={() => toggle('sec-5')}
+        onChange={onChange}
+      />
+      <CardSection
+        open={openSections['sec-6']}
+        onToggle={() => toggle('sec-6')}
+        onChange={onChange}
+      />
+      <SalesPointsSection
+        open={openSections['sec-7']}
+        onToggle={() => toggle('sec-7')}
+      />
+      <GiftsSection
+        open={openSections['sec-8']}
+        onToggle={() => toggle('sec-8')}
+      />
+      <TicketsSection
+        open={openSections['sec-9']}
+        onToggle={() => toggle('sec-9')}
+        refreshKey={refreshKey}
+      />
+      <HistorySection
+        open={openSections['sec-10']}
+        onToggle={() => toggle('sec-10')}
+        refreshKey={refreshKey}
       />
     </div>
   );
