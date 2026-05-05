@@ -239,8 +239,8 @@ function renderAgents(o) {
       const finalizedBadge = isFinalized
         ? `<span class="finalized-badge">확정</span>`
         : `<span class="pending-badge">미확정</span>`;
-      return `<tr class="${cls}">
-        <td><b>${a.name}</b><div style="font-size:9px;color:#64748b">${a.role}</div></td>
+      return `<tr class="${cls} agent-row" data-agent-id="${a.id}" data-agent-name="${(a.name||'').replace(/"/g,'&quot;')}" style="cursor:pointer">
+        <td><b>${a.name}</b> <span style="color:#60a5fa;font-size:9px;margin-left:4px" class="expand-arrow">▶</span><div style="font-size:9px;color:#64748b">${a.role}</div></td>
         <td><span class="tier g-${s.grade_applied || 1}">G${s.grade_applied || 1}</span>${s.is_penalty ? '<span class="penalty-badge">⚠️ 페널티</span>' : ''}</td>
         <td>${s.total_count || 0}건<div style="font-size:9px;color:#64748b">우수 ${s.premium_count || 0}건</div></td>
         <td><b>${s.total_points || 0}P</b><div style="font-size:9px;color:#64748b">목표 G${s.grade_target || 1}</div></td>
@@ -250,8 +250,16 @@ function renderAgents(o) {
         <td>${fmt(s.total_revenue)}</td>
         <td style="color:${(s.company_profit||0) > 0 ? '#86efac' : '#fca5a5'}">${fmt(s.company_profit)}</td>
         <td>${finalizedBadge}</td>
-        <td>
+        <td onclick="event.stopPropagation()">
           ${isAdmin && !isFinalized ? `<button class="btn-primary" style="padding:4px 10px;font-size:10px" onclick="finalizeOne('${a.id}', '${(a.name||'').replace(/'/g,"\\\\'")}','${month}')">📌 확정</button>` : ''}
+        </td>
+      </tr>
+      <tr class="agent-detail-row" id="detail-${a.id}" style="display:none;background:#0f172a">
+        <td colspan="11" style="padding:0">
+          <div style="padding:14px 18px;border-top:2px solid #475569;background:linear-gradient(135deg,#0f172a,#1e293b)">
+            <div style="font-size:11.5px;color:#a5b4fc;font-weight:800;margin-bottom:8px">📋 ${a.name} 계약 상세 (이번 달)</div>
+            <div id="agent-sales-${a.id}" style="font-size:10.5px;color:#94a3b8">로딩 중...</div>
+          </div>
         </td>
       </tr>`;
     }).join('');
@@ -280,8 +288,89 @@ function renderAgents(o) {
 
   document.getElementById('centers-wrap').innerHTML = html || '<div style="text-align:center;padding:40px;color:#64748b">조회된 데이터 없음</div>';
 
+  // 행 클릭 시 상세 펼침
+  document.querySelectorAll('.agent-row').forEach(row => {
+    row.addEventListener('click', () => toggleAgentDetail(row.dataset.agentId, row.dataset.agentName));
+  });
+
   // admin만 일괄 정산 버튼 표시
   document.getElementById('finalize-all-btn').style.display = isAdmin ? '' : 'none';
+}
+
+async function fetchAgentSales(agentId, month) {
+  const tk = getToken();
+  const res = await fetch(API + '/sales?agent_id=' + agentId + '&month=' + month, {
+    headers: { Authorization: 'Bearer ' + tk }
+  });
+  if (!res.ok) throw new Error((await res.json()).error || '실패');
+  return (await res.json()).sales || [];
+}
+
+async function toggleAgentDetail(agentId, agentName) {
+  const detail = document.getElementById('detail-' + agentId);
+  const row = document.querySelector(`.agent-row[data-agent-id="${agentId}"]`);
+  const arrow = row ? row.querySelector('.expand-arrow') : null;
+  if (!detail) return;
+
+  if (detail.style.display !== 'none') {
+    detail.style.display = 'none';
+    if (arrow) arrow.textContent = '▶';
+    return;
+  }
+
+  // 다른 열린 패널 닫기
+  document.querySelectorAll('.agent-detail-row').forEach(r => { if (r.id !== 'detail-' + agentId) r.style.display = 'none'; });
+  document.querySelectorAll('.expand-arrow').forEach(a => { if (a !== arrow) a.textContent = '▶'; });
+
+  detail.style.display = '';
+  if (arrow) arrow.textContent = '▼';
+
+  const month = document.getElementById('filter-month').value;
+  const container = document.getElementById('agent-sales-' + agentId);
+  container.innerHTML = '로딩 중...';
+  try {
+    const sales = await fetchAgentSales(agentId, month);
+    if (!sales.length) {
+      container.innerHTML = '<div style="text-align:center;padding:14px;color:#64748b">계약 없음</div>';
+      return;
+    }
+    container.innerHTML = '<table style="background:transparent"><thead><tr>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">날짜</th>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">상품</th>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">P</th>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">우수</th>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">고객</th>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">전화</th>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">주소</th>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">설치일</th>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">페이백</th>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">사은품</th>'
+      + '<th style="background:rgba(0,0,0,0.3);padding:6px;font-size:10px">상태</th>'
+      + '</tr></thead><tbody>'
+      + sales.map(s => {
+          const p = s.product || {};
+          const tierBadge = p.tier ? `<span class="tier g-${ {S:'3',A:'2',B:'1',C:'1'}[p.tier] || '1' }" style="background:${ {S:'#fbbf24',A:'#60a5fa',B:'#94a3b8',C:'#475569'}[p.tier] || '#475569' }">${p.tier}</span>` : '';
+          const tvCntBadge = (s.tv_count && s.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 4px;border-radius:3px;font-size:8px;margin-left:3px">TV${s.tv_count}</span>` : '';
+          const wifiBadge = s.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 4px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : '';
+          const status = `<span class="${s.status === 'cancelled' ? 'inactive-badge' : (s.status === 'pending' ? 'penalty-badge' : 'finalized-badge')}">${s.status}</span>`;
+          return `<tr style="${s.status === 'cancelled' ? 'opacity:0.5' : ''}">
+            <td style="padding:5px 6px;font-size:10.5px">${(s.contract_date||'').slice(5)}</td>
+            <td style="padding:5px 6px;font-size:10.5px"><b>${p.name||'-'}</b> ${tierBadge}${tvCntBadge}${wifiBadge}<div style="font-size:9px;color:#64748b">${p.point_weight||'?'}P · ${p.is_premium ? '⭐ 우수' : ''}</div></td>
+            <td style="padding:5px 6px;font-size:10.5px;text-align:center"><b>${p.point_weight||0}</b></td>
+            <td style="padding:5px 6px;font-size:10.5px;text-align:center">${p.is_premium ? '⭐' : '-'}</td>
+            <td style="padding:5px 6px;font-size:10px">${s.customer_name || '<i style="color:#64748b">-</i>'}</td>
+            <td style="padding:5px 6px;font-size:10px">${s.customer_phone || '<i style="color:#64748b">-</i>'}</td>
+            <td style="padding:5px 6px;font-size:9.5px;max-width:200px;word-break:break-all">${s.customer_address || '<i style="color:#dc2626">미입력</i>'}</td>
+            <td style="padding:5px 6px;font-size:10px">${s.installation_date || '<i style="color:#64748b">-</i>'}</td>
+            <td style="padding:5px 6px;font-size:10px;text-align:right">${(s.add_payback||0).toLocaleString()}</td>
+            <td style="padding:5px 6px;font-size:10px">${s.gift_received || '<i style="color:#64748b">-</i>'}</td>
+            <td style="padding:5px 6px;font-size:10px">${status}</td>
+          </tr>${s.quote_summary ? `<tr><td colspan="11" style="padding:3px 6px 8px;font-size:9.5px;color:#92400e;background:rgba(245,158,11,0.06);white-space:pre-wrap;line-height:1.4">└ ${s.quote_summary.replace(/</g,'&lt;')}</td></tr>` : ''}`;
+        }).join('')
+      + '</tbody></table>';
+  } catch (e) {
+    container.innerHTML = '<div style="color:#dc2626;padding:14px">조회 실패: ' + e.message + '</div>';
+  }
 }
 
 async function loadAll() {
