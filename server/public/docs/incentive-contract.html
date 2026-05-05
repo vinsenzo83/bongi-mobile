@@ -272,6 +272,29 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 <!-- XSS 방어: 견적서 HTML 렌더링 전 sanitize -->
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+// iframe 안에서 로드된 경우 (통합 어드민의 sub-page) — 자체 로그인/사용자정보 박스 숨김
+// 부모창의 토큰을 그대로 사용 (같은 origin localStorage 공유)
+(function(){
+  if (window !== window.parent) {
+    document.documentElement.classList.add('embedded-mode');
+    var style = document.createElement('style');
+    style.textContent = `
+      body.embedded-mode-body #auth-box,
+      .embedded-mode #auth-box,
+      .embedded-mode header #user-info,
+      .embedded-mode header h1,
+      .embedded-mode header .subtitle,
+      .embedded-mode header { display: none !important; }
+      .embedded-mode .wrap { padding: 0 !important; max-width: none !important; }
+    `;
+    document.head.appendChild(style);
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.classList.add('embedded-mode-body');
+    });
+  }
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
