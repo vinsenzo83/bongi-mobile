@@ -542,51 +542,60 @@ function openEditModal(id) {
   document.getElementById('modal-subtitle').textContent =
     `${c.contract_date} · ${a.name || '?'} (${a.center || ''}) · ID ${c.id.slice(0, 8)}...`;
 
-  // 추가 상품 / WiFi 옵션 / 견적 요약 (TM 도구에서 넘어온 정보)
+  // 추가 상품 / WiFi 옵션 / 견적 데이터 통합
   const additional = c.additional_products || [];
   const wifiOption = c.wifi_option;
   const tvCnt = c.tv_count || 1;
-  const wifiOptDisp = wifiOption === 'wifi-speaker' ? '와이파이 1대 + 스마트홈 스피커'
+  const wifiOptDisp = wifiOption === 'wifi-speaker' ? '🔊 와이파이 1대 + 스마트홈 스피커'
     : wifiOption === 'wifi2' ? '와이파이 2대' : null;
-  const additionalHtml = additional.length ? `
-    <div style="background:rgba(99,102,241,0.1);border:1.5px solid rgba(99,102,241,0.4);border-radius:6px;padding:10px 12px;margin-bottom:14px">
-      <div style="font-size:10.5px;color:#a5b4fc;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">📺 추가 TV 상품 (TV ${tvCnt}대)</div>
-      ${additional.map(a => `<div style="font-size:11px;color:#e2e8f0;margin-bottom:4px;padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:4px">
-        <b>${a.position}</b>: ${a.tv_name} <span style="color:#94a3b8">(정가 ${(a.tv_price||0).toLocaleString()}원, 시리즈할인 -${(a.tv_discount||0).toLocaleString()}원)</span>
-        <div style="font-size:10px;color:#94a3b8;margin-top:2px">└ 셋톱: ${a.settop_name || '-'} (정가 ${(a.settop_fee||0).toLocaleString()}원)</div>
-      </div>`).join('')}
-    </div>` : '';
-  const wifiOptHtml = wifiOptDisp ? `
-    <div style="background:rgba(228,9,129,0.1);border:1.5px solid rgba(228,9,129,0.4);border-radius:6px;padding:8px 12px;margin-bottom:14px;font-size:11px;color:#fbcfe8">
-      <b style="color:#f9a8d4">🎁 LG U+ 프리미엄 안심 옵션:</b> ${wifiOptDisp}
-    </div>` : '';
-  const summaryHtml = c.quote_summary ? `
-    <div style="background:rgba(0,0,0,0.4);border:1px solid #475569;border-radius:6px;padding:10px 12px;margin-bottom:14px">
-      <div style="font-size:10px;color:#fbbf24;font-weight:800;margin-bottom:4px">📋 TM 견적 요약 (상담사 입력)</div>
-      <pre style="font-size:11px;color:#e2e8f0;white-space:pre-wrap;font-family:inherit;line-height:1.5;margin:0">${(c.quote_summary || '').replace(/</g,'&lt;')}</pre>
-    </div>` : '';
 
-  // 바디 — 가독성 강화
+  // 바디 — 통합 상품 정보 카드
   document.getElementById('modal-body').innerHTML = `
-    ${summaryHtml}
-    ${additionalHtml}
-    ${wifiOptHtml}
+    <!-- 📦 계약 상품 정보 (통합) -->
+    <div style="background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(0,0,0,0.3));border:1.5px solid rgba(251,191,36,0.3);border-radius:10px;padding:16px 20px;margin-bottom:18px">
+      <div class="modal-section-title" style="background:rgba(251,191,36,0.12);color:#fbbf24">📦 계약 상품 정보</div>
 
-    <!-- 📦 상품 상세 정보 -->
-    <div style="background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(0,0,0,0.3));border:1.5px solid rgba(251,191,36,0.3);border-radius:10px;padding:14px 18px;margin-bottom:18px">
-      <div class="modal-section-title" style="background:rgba(251,191,36,0.12);color:#fbbf24">📦 상품 상세 정보</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px 14px;font-size:13px">
-        <div><div style="font-size:11px;color:#94a3b8;margin-bottom:2px">통신사</div><div style="color:#f8fafc;font-weight:700;font-size:14px">${p.carrier || '-'}</div></div>
-        <div><div style="font-size:11px;color:#94a3b8;margin-bottom:2px">종류</div><div style="color:#f8fafc;font-weight:700;font-size:14px">${p.type || '-'}</div></div>
-        <div><div style="font-size:11px;color:#94a3b8;margin-bottom:2px">속도</div><div style="color:#f8fafc;font-weight:700;font-size:14px">${p.speed || '-'}</div></div>
-        <div><div style="font-size:11px;color:#94a3b8;margin-bottom:2px">TV 등급</div><div style="color:#f8fafc;font-weight:700;font-size:14px">${p.tv_tier || '-'}</div></div>
-        <div style="grid-column:span 2"><div style="font-size:11px;color:#94a3b8;margin-bottom:2px">상품명</div><div style="color:#f8fafc;font-weight:800;font-size:14px">${p.name || '-'}</div></div>
-        <div><div style="font-size:11px;color:#94a3b8;margin-bottom:2px">가중치 / Tier</div><div style="color:#f8fafc;font-weight:800;font-size:14px">${p.point_weight || '-'}P ${tierBadge}${premBadge}</div></div>
-        <div><div style="font-size:11px;color:#94a3b8;margin-bottom:2px">계약일</div><div style="color:#f8fafc;font-weight:700;font-size:14px">${c.contract_date}</div></div>
-        <div><div style="font-size:11px;color:#94a3b8;margin-bottom:2px">리베이트</div><div style="color:#86efac;font-weight:800;font-size:14px">${(p.rebate||0).toLocaleString()}원</div></div>
-        <div><div style="font-size:11px;color:#94a3b8;margin-bottom:2px">페이백 정가</div><div style="color:#fca5a5;font-weight:800;font-size:14px">${(p.payback||0).toLocaleString()}원</div></div>
-        <div style="grid-column:span 2"><div style="font-size:11px;color:#94a3b8;margin-bottom:2px">상담사</div><div style="color:#f8fafc;font-weight:700;font-size:14px">${a.name || '-'} <span style="color:#94a3b8;font-weight:400">· ${a.center || ''}</span></div></div>
+      <!-- 메인 상품 헤더 -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #334155">
+        <div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">[${p.carrier || '-'}] ${p.type || '-'} · ${p.speed || '-'} · TV: ${p.tv_tier || '없음'}</div>
+          <div style="font-size:16px;color:#f8fafc;font-weight:900;letter-spacing:-0.01em">${p.name || '-'}</div>
+          <div style="font-size:11px;color:#cbd5e1;margin-top:4px">가중치 <b>${p.point_weight || '-'}P</b> · ${tierBadge}${premBadge} · 계약일 ${c.contract_date} · ${a.name || '-'} (${a.center || ''})</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:#94a3b8">리베이트 / 페이백</div>
+          <div style="font-size:14px;font-weight:800;color:#86efac">${(p.rebate||0).toLocaleString()}<span style="color:#94a3b8;font-size:11px;font-weight:400"> · -</span><span style="color:#fca5a5">${(p.payback||0).toLocaleString()}</span></div>
+        </div>
       </div>
+
+      <!-- 다중 TV / WiFi / 결합 옵션 (모두 한 곳에) -->
+      ${(additional.length || wifiOptDisp || c.quote_summary) ? `
+      <div style="display:grid;grid-template-columns:${additional.length && wifiOptDisp ? '1fr 1fr' : '1fr'};gap:12px">
+        ${additional.length ? `
+          <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);border-radius:6px;padding:10px 12px">
+            <div style="font-size:11px;color:#a5b4fc;font-weight:700;margin-bottom:6px">📺 추가 TV (총 ${tvCnt}대)</div>
+            ${additional.map(x => `<div style="font-size:11.5px;color:#e2e8f0;margin-bottom:5px;line-height:1.5">
+              <b>${x.position}</b>: ${x.tv_name} <span style="color:#94a3b8">(${(x.tv_price||0).toLocaleString()}원, 할인 -${(x.tv_discount||0).toLocaleString()})</span>
+              <div style="font-size:10px;color:#94a3b8">└ 셋톱: ${x.settop_name || '-'} (${(x.settop_fee||0).toLocaleString()}원)</div>
+            </div>`).join('')}
+          </div>
+        ` : ''}
+        ${wifiOptDisp ? `
+          <div style="background:rgba(228,9,129,0.08);border:1px solid rgba(228,9,129,0.3);border-radius:6px;padding:10px 12px">
+            <div style="font-size:11px;color:#fbcfe8;font-weight:700;margin-bottom:6px">🎁 LG U+ 프리미엄 안심 옵션 (무료)</div>
+            <div style="font-size:13px;color:#f8fafc;font-weight:700">${wifiOptDisp}</div>
+          </div>
+        ` : ''}
+      </div>
+      ` : ''}
+
+      <!-- TM 견적 요약 (전체) — 작게 -->
+      ${c.quote_summary ? `
+        <details style="margin-top:12px">
+          <summary style="cursor:pointer;font-size:10.5px;color:#94a3b8;font-weight:700;padding:6px 10px;background:rgba(0,0,0,0.3);border-radius:4px">📋 TM 견적 요약 (상담사 입력 원본) — 펼치기</summary>
+          <pre style="margin-top:6px;background:rgba(0,0,0,0.4);border:1px solid #334155;border-radius:6px;padding:10px 12px;font-size:11px;color:#e2e8f0;white-space:pre-wrap;font-family:inherit;line-height:1.5">${(c.quote_summary || '').replace(/</g,'&lt;')}</pre>
+        </details>
+      ` : ''}
     </div>
 
     <!-- 👤 고객 정보 -->
