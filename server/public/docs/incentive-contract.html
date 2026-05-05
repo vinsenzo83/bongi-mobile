@@ -372,13 +372,15 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       <thead id="contracts-thead">
         <tr>
           <th style="width:36px;text-align:center">#</th>
-          <th style="width:8%">날짜</th>
-          <th style="width:11%">상담사</th>
-          <th style="width:18%">상품 (Tier·P)</th>
-          <th style="width:10%">고객명</th>
-          <th style="width:11%">전화</th>
-          <th style="width:16%">주소</th>
-          <th style="width:9%">페이백</th>
+          <th style="width:7%">계약일</th>
+          <th style="width:7%">접수</th>
+          <th style="width:9%">상담사</th>
+          <th style="width:8%">센터</th>
+          <th style="width:16%">상품 (Tier·P)</th>
+          <th style="width:9%">고객명</th>
+          <th style="width:10%">전화</th>
+          <th style="width:14%">주소</th>
+          <th style="width:7%">페이백</th>
           <th style="width:6%">상태</th>
           <th style="width:9%">작업</th>
         </tr>
@@ -620,7 +622,8 @@ function renderTable(contracts) {
 
   // 휴지통 모드 — 추가 컬럼/버튼 분기
   const trashMode = _trashMode;
-  const colSpan = trashMode ? 13 : 10;
+  // 컬럼 12개 (#·계약일·접수·상담사·센터·상품·고객명·전화·주소·페이백·상태·작업) + 휴지통 모드 +3
+  const colSpan = trashMode ? 15 : 12;
   tbody.innerHTML = pageItems.map((c, i) => {
     const rowNum = startIdx + i + 1;
     const p = c.product || {};
@@ -652,10 +655,15 @@ function renderTable(contracts) {
          <td style="font-size:10px;color:#cbd5e1;font-family:monospace">${c.deleted_by_user_id ? c.deleted_by_user_id.slice(0,8) + '...' : '-'}</td>`
       : '';
 
+    // 접수 시간 (created_at) — MM/DD HH:MM
+    const cAt = c.created_at ? new Date(c.created_at) : null;
+    const fmtCreated = cAt ? `${String(cAt.getMonth()+1).padStart(2,'0')}/${String(cAt.getDate()).padStart(2,'0')}<div style="font-size:9px;color:#64748b">${String(cAt.getHours()).padStart(2,'0')}:${String(cAt.getMinutes()).padStart(2,'0')}</div>` : '-';
     return `<tr class="${rowCls}" data-id="${c.id}" style="${trashRowStyle}">
       <td style="text-align:center;color:#64748b;font-weight:700;font-size:11px">${rowNum}</td>
       <td>${(c.contract_date || '').slice(5)}</td>
-      <td>${a.name || '-'}<div style="font-size:9px;color:#64748b">${a.center || ''}</div></td>
+      <td style="font-size:10.5px;color:#cbd5e1">${fmtCreated}</td>
+      <td><b>${a.name || '-'}</b></td>
+      <td style="font-size:11px;color:#a5b4fc">${a.center || '-'}</td>
       <td>${p.name || '-'} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P</div></td>
       <td>${c.customer_name || '<i style="color:#94a3b8">-</i>'}</td>
       <td>${c.customer_phone || '<i style="color:#94a3b8">-</i>'}</td>
@@ -1228,6 +1236,8 @@ function showToast(msg) {
 async function loadContracts() {
   try {
     const contracts = await fetchContracts();
+    // 최근 등록 순 (created_at desc) — 새 영업이 위로
+    contracts.sort((a, b) => (new Date(b.created_at || 0)) - (new Date(a.created_at || 0)));
     _currentContracts = contracts; // 모달에서 사용
     renderStats(contracts);
     renderTable(contracts);

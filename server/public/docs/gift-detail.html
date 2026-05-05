@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>사은품 상세 | 봉이모바일</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://images.samsung.com">
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+    background: #fafaf7;
+    color: #0a0a0a;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    background: #fff;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 40px rgba(0,0,0,0.04);
+  }
+
+  img { display: block; max-width: 100%; height: auto; }
+
+  /* ===== TOP NAV ===== */
+  .topnav {
+    position: sticky;
+    top: 0;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #ececec;
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background: #f5f5f0;
+    color: #0a0a0a;
+    text-decoration: none;
+    font-size: 18px; font-weight: 700;
+  }
+  .topnav-title {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-right: 36px;
+  }
+
+  /* ===== HERO ===== */
+  .detail-hero {
+    background: linear-gradient(180deg, #f4f1ea 0%, #fafaf7 100%);
+    padding: 20px 16px 36px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .detail-hero::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, #FFD60A 0%, transparent 70%);
+    opacity: 0.18;
+    pointer-events: none;
+  }
+  .detail-hero.featured {
+    background: linear-gradient(180deg, #FFFDF0 0%, #fafaf7 100%);
+  }
+  .detail-eyebrow {
+    display: inline-block;
+    background: #0a0a0a;
+    color: #FFD60A;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 5px 12px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+    letter-spacing: 0.5px;
+  }
+  /* ===== HERO GALLERY ===== */
+  .hero-gallery {
+    width: 100%;
+    margin: 0 -16px 24px;
+    position: relative;
+    z-index: 1;
+  }
+  .gallery-track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  .gallery-track::-webkit-scrollbar { display: none; }
+  .gallery-slide {
+    flex-shrink: 0;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    scroll-snap-align: start;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 24px;
+  }
+  .gallery-slide img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 24px 36px rgba(0,0,0,0.12));
+  }
+  .gallery-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .gallery-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.18);
+    transition: width 0.3s, background 0.3s;
+  }
+  .gallery-dot.active {
+    background: #0a0a0a;
+    width: 22px;
+    border-radius: 3px;
+  }
+  .gallery-counter {
+    position: absolute;
+    top: 12px;
+    right: 24px;
+    background: rgba(10,10,10,0.65);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 2;
+  }
+  .detail-brand-tag {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    color: #888;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .detail-name {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -1.2px;
+    line-height: 1.25;
+    margin-bottom: 10px;
+    color: #0a0a0a;
+  }
+  .detail-tagline {
+    font-size: 14px;
+    color: #555;
+    letter-spacing: -0.2px;
+    line-height: 1.6;
+    white-space: pre-line;
+  }
+  .free-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 22px;
+    padding: 10px 18px;
+    background: #0a0a0a;
+    color: #FFD60A;
+    font-size: 13px;
+    font-weight: 800;
+    border-radius: 999px;
+    letter-spacing: -0.2px;
+  }
+  .free-badge::before {
+    content: '🎁';
+    font-size: 14px;
+  }
+  .hero-official-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 12px 22px;
+    background: #fff;
+    color: #0a0a0a;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 999px;
+    border: 1.5px solid #0a0a0a;
+    text-decoration: none;
+    letter-spacing: -0.2px;
+    margin-left: 8px;
+    transition: transform 0.15s;
+  }
+  .hero-official-link:active {
+    transform: scale(0.97);
+  }
+
+  /* ===== SECTION ===== */
+  section { padding: 40px 24px; border-bottom: 1px solid #ececec; }
+  section:last-of-type { border-bottom: none; }
+
+  .section-eyebrow {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #c2410c;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+  .section-desc {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 22px;
+    letter-spacing: -0.2px;
+    line-height: 1.6;
+  }
+
+  /* ===== HIGHLIGHTS (Big visual cards) ===== */
+  .highlights {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .highlight {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    color: #fff;
+    border-radius: 18px;
+    padding: 26px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .highlight::before {
+    content: attr(data-num);
+    position: absolute;
+    bottom: -30px; right: -10px;
+    font-size: 140px;
+    font-weight: 900;
+    color: rgba(255, 214, 10, 0.12);
+    line-height: 1;
+    letter-spacing: -8px;
+  }
+  .highlight h3 {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.6px;
+    line-height: 1.3;
+    margin-bottom: 8px;
+    color: #FFD60A;
+    position: relative; z-index: 1;
+  }
+  .highlight p {
+    font-size: 13px;
+    color: #c8c8c0;
+    line-height: 1.65;
+    letter-spacing: -0.2px;
+    position: relative; z-index: 1;
+  }
+
+  /* ===== FEATURES ===== */
+  .features {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .feature {
+    background: #fafaf7;
+    border: 1px solid #ececec;
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .feature-icon {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    background: #FFD60A;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .feature-body h3 {
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 3px;
+  }
+  .feature-body p {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.55;
+    letter-spacing: -0.2px;
+  }
+
+  /* ===== SPECS TABLE ===== */
+  .specs {
+    background: #fafaf7;
+    border: 1px solid #ececec;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .spec-row {
+    display: flex;
+    padding: 13px 18px;
+    border-bottom: 1px solid #ececec;
+    font-size: 13px;
+  }
+  .spec-row:last-child { border-bottom: none; }
+  .spec-key {
+    flex: 0 0 38%;
+    color: #888;
+    font-weight: 500;
+    letter-spacing: -0.2px;
+  }
+  .spec-val {
+    flex: 1;
+    color: #0a0a0a;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    line-height: 1.5;
+  }
+
+  /* ===== WHO ===== */
+  .who-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .who-card {
+    background: #fafaf7;
+    border: 1px solid #ececec;
+    border-radius: 14px;
+    padding: 18px 16px;
+    text-align: center;
+  }
+  .who-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .who-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+  }
+  .who-desc {
+    font-size: 11px;
+    color: #666;
+    line-height: 1.5;
+    letter-spacing: -0.1px;
+  }
+
+  /* ===== COLOR OPTIONS ===== */
+  .colors {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .color-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    border-radius: 12px;
+    background: #fafaf7;
+    border: 1px solid #ececec;
+    flex: 1;
+    min-width: 80px;
+  }
+  .color-circle {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.06);
+    box-shadow: inset 0 -3px 6px rgba(0,0,0,0.05);
+  }
+  .color-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    letter-spacing: -0.2px;
+  }
+
+  /* ===== OFFICIAL LINK ===== */
+  .official-link {
+    margin-top: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #555;
+    text-decoration: none;
+    padding: 12px 16px;
+    border: 1px solid #ececec;
+    border-radius: 10px;
+    background: #fff;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+  .official-link:active { transform: scale(0.97); }
+
+  /* ===== NOTICE ===== */
+  .notice {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    color: #fff;
+    padding: 32px 24px;
+  }
+  .notice .section-eyebrow { color: #FFD60A; }
+  .notice .section-title { color: #fff; }
+  .notice ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 16px;
+  }
+  .notice li {
+    font-size: 12px;
+    color: #c8c8c0;
+    line-height: 1.7;
+    letter-spacing: -0.1px;
+    padding-left: 14px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .notice li::before {
+    content: '·';
+    position: absolute;
+    left: 4px;
+    color: #FFD60A;
+    font-weight: 800;
+  }
+
+  /* ===== CTA Section ===== */
+  .cta-block {
+    background: linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f97316 100%);
+    color: #fff;
+    text-align: center;
+    padding: 40px 24px;
+  }
+  .cta-block h2 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+  .cta-block p {
+    font-size: 13px;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 22px;
+    letter-spacing: -0.2px;
+  }
+  .cta-block .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 26px;
+    background: #fff;
+    color: #c2410c;
+    font-weight: 800;
+    font-size: 14px;
+    border-radius: 999px;
+    text-decoration: none;
+    letter-spacing: -0.2px;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+  }
+
+  /* ===== sticky bottom ===== */
+  .sticky-cta {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #0a0a0a;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    z-index: 50;
+    display: flex;
+    gap: 8px;
+    border-top: 1px solid #1f1f1f;
+  }
+  .sticky-cta .inner {
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+  .sticky-cta .btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 14px;
+    text-align: center;
+    text-decoration: none;
+    letter-spacing: -0.3px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .sticky-cta .back-link {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    flex: 0.7;
+  }
+  .sticky-cta .apply {
+    background: #FFD60A;
+    color: #0a0a0a;
+    flex: 1.3;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Top Nav -->
+  <div class="topnav">
+    <a href="promotion-movingstyle.html" class="back-btn">←</a>
+    <div class="topnav-title">사은품 상세</div>
+  </div>
+
+  <!-- Hero -->
+  <section class="detail-hero" id="hero">
+    <span class="detail-eyebrow" id="eyebrow">★ 봉이 사은품</span>
+    <div class="hero-gallery">
+      <div class="gallery-counter" id="counter">1 / 1</div>
+      <div class="gallery-track" id="track"></div>
+      <div class="gallery-dots" id="dots"></div>
+    </div>
+    <div class="detail-brand-tag" id="brand"></div>
+    <h1 class="detail-name" id="name"></h1>
+    <p class="detail-tagline" id="tagline"></p>
+    <div class="free-badge">유심개통 시 100% 무상</div>
+    <a href="#" id="hero-official" class="hero-official-link" target="_blank" rel="noopener">
+      🔗 삼성 공식 페이지에서 자세히 보기
+    </a>
+  </section>
+
+  <!-- Highlights -->
+  <section>
+    <div class="section-eyebrow">HIGHLIGHTS</div>
+    <h2 class="section-title">왜 이 제품인가</h2>
+    <p class="section-desc">한 줄로 끝낼 수 없는, 진짜 가치 포인트.</p>
+    <div class="highlights" id="highlights"></div>
+  </section>
+
+  <!-- Features -->
+  <section>
+    <div class="section-eyebrow">KEY FEATURES</div>
+    <h2 class="section-title">핵심 기능</h2>
+    <div class="features" id="features"></div>
+  </section>
+
+  <!-- Color Options (optional) -->
+  <section id="color-section" style="display:none">
+    <div class="section-eyebrow">COLORS</div>
+    <h2 class="section-title">색상 옵션</h2>
+    <p class="section-desc">취향에 맞춰 선택 가능 (가입 시 협의).</p>
+    <div class="colors" id="colors"></div>
+  </section>
+
+  <!-- Who -->
+  <section>
+    <div class="section-eyebrow">FOR YOU</div>
+    <h2 class="section-title">이런 분께 추천</h2>
+    <div class="who-grid" id="who"></div>
+  </section>
+
+  <!-- Specs -->
+  <section>
+    <div class="section-eyebrow">SPECIFICATIONS</div>
+    <h2 class="section-title">상세 스펙</h2>
+    <div class="specs" id="specs"></div>
+    <a href="#" id="official" class="official-link" target="_blank" rel="noopener">
+      🔗 삼성 공식 페이지에서 보기
+    </a>
+  </section>
+
+  <!-- Notice -->
+  <section class="notice">
+    <div class="section-eyebrow">NOTICE</div>
+    <h2 class="section-title">사은품 지급 안내</h2>
+    <ul>
+      <li>유심개통 + 사은품 1종 선택 시 100% 무상 증정</li>
+      <li>고객 추가 부담 없음 · 봉이모바일이 전액 지원</li>
+      <li>개통 완료 후 7일 이내 자택 배송</li>
+      <li>통신 약정 기간 내 해지 시 통신사 약정금이 부과될 수 있음</li>
+      <li>사은품은 1인 1회 한정 · 6종 중 택 1</li>
+      <li>제품 색상은 재고 상황에 따라 변경될 수 있음</li>
+    </ul>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-block">
+    <h2>이 사은품으로<br>지금 바로 신청</h2>
+    <p>상담사가 직접 안내해드립니다 · 평일 09:00 - 19:00</p>
+    <a href="apply.html" class="btn">신청서 작성 →</a>
+    <p style="margin-top:18px; font-size:11px; color:rgba(255,255,255,0.7); display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
+      <a href="https://bong2mobile.com/" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.9); text-decoration:underline;">봉이모바일 →</a>
+      <a href="https://1taphone.com/" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.9); text-decoration:underline;">일타폰 →</a>
+    </p>
+  </section>
+
+</div>
+
+<!-- Sticky bottom -->
+<div class="sticky-cta">
+  <div class="inner">
+    <a href="apply.html" class="btn apply">📝 신청서 작성하기</a>
+    <a href="tel:1555-6356" class="btn back-link">📞 전화상담하기</a>
+  </div>
+</div>
+
+<script>
+const PRODUCTS = {
+  'movingstyle-27': {
+    featured: true,
+    eyebrow: '★ 추천 사은품',
+    brand: 'SAMSUNG · MOVINGSTYLE',
+    name: '무빙스타일 M5 라이트 27"',
+    tagline: '이동은 가볍게, 활용은 무한하게.\n2025 신형 스마트모니터 + 무빙스탠드 라이트 패키지.',
+    gallery: [
+      'https://images.samsung.com/kdp/goods/2025/07/16/f29965a3-c6ea-4e95-816d-ae0e6ba6e03e.png',
+      'https://images.samsung.com/kdp/goods/2025/08/05/261e2053-73e9-46ff-b374-dcbe6fdf85b8.png',
+      'https://images.samsung.com/kdp/goods/2025/08/05/7db44cc9-6a1f-40aa-839b-399e8ba79dd7.png',
+      'https://images.samsung.com/kdp/goods/2025/08/05/965e01da-7878-49a1-b504-2edd0d3daf77.png',
+      'https://images.samsung.com/kdp/goods/2025/08/27/19c77f71-80eb-470d-a11b-0db283828534.png',
+      'https://images.samsung.com/kdp/goods/2025/08/27/7773223f-a512-41da-8306-b7c0ca3ad7d0.png',
+      'https://images.samsung.com/kdp/goods/2025/08/27/e68b24c4-e6df-4987-b821-16e64a7f24a5.png'
+    ],
+    official: 'https://www.samsung.com/sec/moving_style/all-moving_style/buy/?modelCode=LS27FM503E-1WE',
+    colors: [
+      ['웜 화이트', '#F5EFE6'],
+      ['화이트', '#FAFAFA'],
+      ['블랙', '#1A1A1A']
+    ],
+    highlights: [
+      ['공간 따라 움직이는 TV', '거실에서 침실로, 주방에서 발코니로. 4개의 휠로 끌고 다니는 스마트 디스플레이.'],
+      ['PC 없이도 콘텐츠 가득', '넷플릭스·디즈니+·유튜브·삼성 TV 플러스가 내장. 켜자마자 시청 시작.'],
+      ['게이밍 허브 내장', '콘솔 없이 클라우드 게임. Xbox Game Pass + GeForce NOW로 PS5급 게임을 모니터에서.']
+    ],
+    features: [
+      ['📺', '스마트 TV 앱 내장', '넷플릭스·유튜브·디즈니+·삼성 TV 플러스 모두 PC 없이 바로 시청.'],
+      ['🎮', '게이밍 허브', '클라우드 게임 플레이. Xbox Game Pass, GeForce NOW 지원.'],
+      ['🛞', '무빙스탠드 라이트', '4개의 휠로 자유 이동. 높이 조절 + PIVOT 90° + TILT.'],
+      ['🔌', '풀 포트 연결', 'USB-C, HDMI, USB-A 다중 포트.'],
+      ['🔒', '삼성 Knox 보안', '데이터 암호화 + 다층 보안.']
+    ],
+    who: [
+      ['👨‍👩‍👧', '신혼·1인가구', 'TV 따로 안 사고 모니터 겸용으로'],
+      ['🎮', '게이머', '콘솔 없이도 클라우드 게임'],
+      ['🏠', '자취생', '좁은 공간에 이동 가능한 TV'],
+      ['💼', '재택근무자', '낮엔 모니터, 밤엔 TV']
+    ],
+    specs: [
+      ['모델', 'LS27FM503E-1WE / -1MB / -1BE'],
+      ['화면 크기', '68.6cm (27인치)'],
+      ['해상도', 'FHD 1920 × 1080'],
+      ['타입', '스마트모니터 + 무빙스탠드 라이트'],
+      ['색상', '웜 화이트 / 화이트 / 블랙'],
+      ['연결단자', 'USB-C, HDMI, USB-A'],
+      ['스마트 기능', '삼성 TV 플러스, 게이밍 허브, 화면 미러링, Knox 보안'],
+      ['스탠드', 'ELEVATION (높이 조정), PIVOT (90°), TILT (기울기)'],
+      ['패키지', '본체 + 무빙스탠드 + 리모컨 + 전원케이블']
+    ]
+  },
+
+  'cooker-22': {
+    featured: false,
+    eyebrow: '🍳 BEST VALUE',
+    brand: 'SAMSUNG · BESPOKE',
+    name: '비스포크 큐커 멀티 22L',
+    tagline: '1대 4역.\n에어프라이어 + 그릴 + 전자레인지 + 토스터를 하나로.',
+    gallery: [
+      'https://images.samsung.com/kdp/goods/2024/12/30/667489f8-e9b8-4f9e-8422-8fb10a4e0bfc.png',
+      'https://images.samsung.com/kdp/goods/2024/12/30/271da25c-2c82-4e77-a2ba-edece9e85876.png',
+      'https://images.samsung.com/kdp/goods/2024/12/30/28011687-46b7-4e9a-84de-2d11304264a9.png',
+      'https://images.samsung.com/kdp/goods/2024/12/30/2f4932e2-d7ff-443e-aef6-969eca598b13.png',
+      'https://images.samsung.com/kdp/goods/2024/12/30/8b95f899-f779-4b3a-ac14-84f6387e2c07.png',
+      'https://images.samsung.com/kdp/goods/2024/12/30/8d682fcb-e6a6-4aac-ace6-3820f3ea665a.png',
+      'https://images.samsung.com/kdp/goods/2024/12/30/ad2e55e2-2de2-4f65-bdc2-beb5433c6bc8.png'
+    ],
+    official: 'https://www.samsung.com/sec/qooker-multi-ovens/qooker-mo22a7797cw2-d2c/MO22A7797CW2/',
+    colors: [
+      ['글램 화이트', '#F5F5F0'],
+      ['글램 썬 옐로우', '#F2D26B'],
+      ['글램 베이지', '#E8DCC8']
+    ],
+    highlights: [
+      ['요리 4가지를 한 번에', '그릴 위 3개 + 전자레인지 1개. 5분에 메인+사이드+디저트까지.'],
+      ['바코드만 스캔하면 끝', 'CJ·삼립 등 밀키트 바코드 스캔하면 자동 조리. 시간/온도 고민 NO.'],
+      ['셰프가 만든 레시피 내장', '전문 셰프 개발 자동 메뉴. 누구나 셰프급 요리.']
+    ],
+    features: [
+      ['🍳', '멀티쿡 (4가지 동시)', '그릴 위 3 + 전자레인지 1. 한 번에 풀세트 식사 완성.'],
+      ['📷', '스캔쿡', '밀키트 바코드 스캔 → 자동 조리. CJ 12종 + 삼립 4종 제휴.'],
+      ['👨‍🍳', '셰프쿡', '전문 셰프 개발 레시피. 자동 시간·온도.'],
+      ['📱', '스마트싱스 + 빅스비', '앱·음성으로 원격 제어.'],
+      ['🌽', '에어프라이 + 그릴', '기름 없이 바삭. 그릴플레이트 포함.']
+    ],
+    who: [
+      ['👨‍🍳', '요리 좋아하는 분', '한 번에 다양한 메뉴'],
+      ['👫', '신혼부부', '주방 첫 가전으로'],
+      ['🍱', '바쁜 직장인', '밀키트 스캔쿡 5분'],
+      ['👨‍👩‍👧‍👦', '가족 식사', '4가지 동시 조리']
+    ],
+    specs: [
+      ['모델', 'MO22A7797CW2'],
+      ['용량', '22L'],
+      ['색상', '글램 화이트 / 글램 썬 옐로우 / 글램 베이지'],
+      ['주요 기능', '에어프라이어, 그릴, 전자레인지, 토스터'],
+      ['특화', '멀티쿡, 스캔쿡, 셰프쿡'],
+      ['스마트', 'SmartThings 앱, 빅스비 음성'],
+      ['평점', '4.9 / 5.0 (204건 리뷰)']
+    ]
+  },
+
+  'cooker-oven-32': {
+    featured: false,
+    eyebrow: '🔥 PRO',
+    brand: 'SAMSUNG · BESPOKE',
+    name: '비스포크 큐커 오븐 32L',
+    tagline: '오븐 하나로 베이킹부터 에어프라이까지.\n62가지 자동 메뉴.',
+    gallery: [
+      'https://images.samsung.com/kdp/goods/2022/07/06/eb84a151-1d1b-45ba-85b3-6df024df15e9.png',
+      'https://images.samsung.com/kdp/goods/2022/07/06/075e715c-ff40-4cfa-b14a-8a770fd92a9c.png',
+      'https://images.samsung.com/kdp/goods/2022/07/06/7786d804-def2-4287-a285-ea20338bdc35.png',
+      'https://images.samsung.com/kdp/goods/2022/07/06/7fb9c37e-6833-4ae9-9619-937fa7075177.png',
+      'https://images.samsung.com/kdp/goods/2022/07/06/861dbe67-8b2e-4296-bbf2-b05701339f92.png',
+      'https://images.samsung.com/kdp/goods/2022/07/06/db3d4235-3311-4ff6-b039-7a9e1f210e88.png',
+      'https://images.samsung.com/kdp/goods/2022/07/06/db81ab92-b47b-4cec-88e4-bf07396a5e89.png',
+      'https://images.samsung.com/kdp/goods/2022/07/06/e3ffb94e-da18-4112-8711-f7c2e2f88d8b.png'
+    ],
+    official: 'https://www.samsung.com/sec/cooking-appliances/microwave-oven-convection-mc32b7388ce-d2c/MC32B7388CE/',
+    colors: [
+      ['글램 화이트', '#F5F5F0'],
+      ['차콜', '#3A3A3A'],
+      ['베이지 핑크', '#EBC8C0']
+    ],
+    highlights: [
+      ['홈 베이킹부터 에어프라이까지', '오븐·전자레인지·그릴·에어프라이가 한 대에. 주방 공간 확 절약.'],
+      ['62가지 자동 메뉴', '메뉴별 자동 온도·시간 세팅. 초보도 실패 없는 조리.'],
+      ['듀얼 가열 시스템', '후면 열풍 + 상단 듀얼 그릴 히터. 빠르고 균일한 조리.']
+    ],
+    features: [
+      ['🔥', '듀얼 가열', '후면 열풍 + 상단 듀얼 그릴 히터.'],
+      ['🍞', '4-in-1', '오븐·전자레인지·그릴·에어프라이.'],
+      ['📋', '62가지 자동메뉴', '메뉴별 자동 온도·시간 세팅.'],
+      ['📷', '바코드 스캔쿡', 'CJ 12개, 삼립 4개 제휴.'],
+      ['📱', '스마트싱스 + 빅스비', '음성으로 켜고 끄고 모니터링.']
+    ],
+    who: [
+      ['🍰', '베이킹 입문자', '쿠키·빵·케이크 자동 메뉴'],
+      ['👫', '신혼부부', '주방 메인 가전'],
+      ['🍗', '에어프라이 좋아하는 분', '큰 용량 32L'],
+      ['🥘', '요리 다양하게', '찜·발효·건조까지']
+    ],
+    specs: [
+      ['모델', 'MC32B7388CE'],
+      ['용량', '32L 대용량'],
+      ['색상', '글램 화이트 / 차콜 / 베이지 핑크 등 4종'],
+      ['소재', '글라스 외관'],
+      ['가열방식', '후면 열풍 + 듀얼 그릴 히터'],
+      ['자동메뉴', '62종'],
+      ['주요 기능', '오븐, 전자레인지, 그릴, 에어프라이, 찜, 건조, 발효, 해동, 보온'],
+      ['스마트', 'SmartThings, 빅스비, 바코드 스캔쿡']
+    ]
+  },
+
+  'vacuum-jet-150': {
+    featured: false,
+    eyebrow: '🧹 LIGHTWEIGHT',
+    brand: 'SAMSUNG · 제트',
+    name: '제트 150W 무선청소기',
+    tagline: '150W 초강력 흡입력 + 2.4kg 초경량.\n5단계 필터로 미세먼지 99.999% 차단.',
+    gallery: [
+      'https://images.samsung.com/kdp/goods/2022/10/21/8eeeee1d-15e2-44b2-8967-c151798978fe.png',
+      'https://images.samsung.com/kdp/goods/2022/10/21/0c0c1682-60cb-4c5d-a32d-37d78edb57f2.png',
+      'https://images.samsung.com/kdp/goods/2022/10/21/45eb2903-c5c4-4b50-a6ae-066d94276704.png',
+      'https://images.samsung.com/kdp/goods/2022/10/21/805c2da8-ad22-4c47-b81f-338d8a85e9b8.png',
+      'https://images.samsung.com/kdp/goods/2022/10/21/d9969acc-521e-4f04-8a44-915d844b3a00.png'
+    ],
+    official: 'https://www.samsung.com/sec/business/vacuum-cleaners/vs15a6031n5/VS15A6031N5/',
+    highlights: [
+      ['초강력 150W 흡입', '미세먼지·진드기·반려동물 털까지 한 번에. 카펫 깊은 곳도 깨끗.'],
+      ['초경량 2.4kg', '여성도 손목 부담 없이 한 손 청소. 좌우 방향 전환도 부드럽게.'],
+      ['5단계 필터링', '99.999% 미세먼지 배출 차단. 모든 필터 물세척 OK.']
+    ],
+    features: [
+      ['💨', '150W 초강력 흡입', '미세먼지·반려동물 털까지 한 번에.'],
+      ['⏱️', '최대 40분 사용', '일반 40분 / 강력 20분 / 초강력 5분.'],
+      ['🪶', '2.4kg 초경량', '손목 부담 없이 편하게.'],
+      ['🔬', '5단계 필터링', '99.999% 미세먼지 차단. 물세척 OK.'],
+      ['🔋', '5년 사용 배터리', '3.5시간 충전. 70% 성능 유지 (2년 무상보증).']
+    ],
+    who: [
+      ['🧹', '주부', '매일 가볍게 청소'],
+      ['👵', '시니어', '가벼워서 부담 X'],
+      ['🐶', '반려동물 가구', '털 흡입 강력'],
+      ['🏠', '자취생', '한 손 청소 OK']
+    ],
+    specs: [
+      ['모델', 'VS15A6031N5'],
+      ['색상', '코타 블랙'],
+      ['타입', '무선 스틱형 (분리형)'],
+      ['흡입력', '최대 150W'],
+      ['사용시간', '일반 40분 / 강력 20분 / 초강력 5분'],
+      ['무게', '2.434kg'],
+      ['먼지통', '0.8L'],
+      ['충전시간', '3.5시간'],
+      ['필터', '5단계 워셔블 헤파'],
+      ['구성', '본체, 터보 액션 브러시, 틈새 브러시, 2-in-1 스테이션'],
+      ['보증', '배터리 2년 무상보증']
+    ]
+  },
+
+  'speaker-aura-studio-5': {
+    featured: false,
+    eyebrow: '🎵 PREMIUM AUDIO',
+    brand: 'HARMAN KARDON',
+    name: 'AURA STUDIO 5',
+    tagline: '360° 사운드와 무드 라이트의 정점.\n3-Way + 6 풀레인지 + 트위터 + 서브우퍼.',
+    gallery: [
+      'https://images.samsung.com/kdp/goods/2025/10/23/ce53c8fc-5c22-4769-bec9-7d63c56581ee.png',
+      'https://images.samsung.com/kdp/goods/2025/10/23/2eabb805-a8a8-41d8-a699-72f7c1d9b5f9.png',
+      'https://images.samsung.com/kdp/goods/2025/10/23/655361aa-c027-4872-82d9-1f7b70652b61.png',
+      'https://images.samsung.com/kdp/goods/2025/10/23/97e95760-fd18-4895-9d29-207976805a9e.png',
+      'https://images.samsung.com/kdp/goods/2025/10/24/feb51d96-a9b2-412a-aabc-8ec3e7d3e6f5.png'
+    ],
+    official: 'https://www.samsung.com/sec/harman-life-style-audio/hk-speaker-auras5-d2c/HKAURAS5BLKAS/',
+    highlights: [
+      ['음악과 함께 빛나는 무드 라이트', '360° 다이나믹 앰비언트. 음악과 동기화되는 색상·패턴.'],
+      ['3-Way 사운드 시스템', '서브우퍼(저음) + 트위터(고음) + 6 풀레인지로 풍부한 입체 음향.'],
+      ['Auracast 멀티룸', '집 전체에 동시 음악 재생. 최대 65m 범위, 무한 동기화.']
+    ],
+    features: [
+      ['🔊', '3-Way 사운드', '서브우퍼 + 트위터 + 6 풀레인지.'],
+      ['💡', '360° 무드 라이트', '음악과 동기화. 색상·패턴 커스터마이즈.'],
+      ['📡', 'Auracast 멀티룸', '여러 스피커 무한 동기화. 최대 65m.'],
+      ['📱', '듀얼 디바이스 연결', '두 대 모바일 동시 연결. 스테레오 페어링도.'],
+      ['🎛️', '전용 앱', 'Harman Kardon One 앱으로 EQ·조명·업데이트.']
+    ],
+    who: [
+      ['🎶', '음악 마니아', '프리미엄 음질'],
+      ['🍷', '홈파티 좋아하는 분', '무드 라이트 + 사운드'],
+      ['🎁', '인테리어 포인트', '거실 중앙에 두기 좋은 디자인'],
+      ['📱', '스마트 가전 좋아하는 분', '앱으로 정밀 제어']
+    ],
+    specs: [
+      ['모델', 'HKAURAS5BLKAS'],
+      ['색상', '블랙'],
+      ['사운드', '3-Way (서브우퍼 + 트위터 + 6 풀레인지)'],
+      ['특허기술', 'Constant Sound Field Technology™'],
+      ['무드라이트', '360° 다이나믹 앰비언트'],
+      ['연결', '블루투스 (듀얼 디바이스)'],
+      ['멀티룸', 'Auracast™ (최대 65m)'],
+      ['앱', 'Harman Kardon One (Android 9+ / iOS 14+)']
+    ]
+  },
+
+  'monitor-m5-32': {
+    featured: false,
+    eyebrow: '💻 SMART MONITOR',
+    brand: 'SAMSUNG',
+    name: '2025 스마트모니터 M5 32"',
+    tagline: 'PC 없이도 콘텐츠 가득.\nFHD + 스마트허브 + 클라우드 게임.',
+    gallery: [
+      'https://images.samsung.com/kdp/goods/2025/09/05/1443f069-1dd6-40e7-baf0-e8c28e1206ce.png',
+      'https://images.samsung.com/kdp/goods/2025/07/14/2c73f247-6290-4546-96fa-0d98915f65ba.png',
+      'https://images.samsung.com/kdp/goods/2025/07/14/4ba7ca78-69de-4ae5-a277-932817844806.png',
+      'https://images.samsung.com/kdp/goods/2025/07/14/b2ec05b2-6210-47cb-b128-5b08e51adcb7.png',
+      'https://images.samsung.com/kdp/goods/2025/07/14/b3faada3-952a-4ce0-b02a-5635297631a2.png',
+      'https://images.samsung.com/kdp/goods/2025/07/14/d14c5848-adaf-4683-a9c3-e85f3c779ebf.png',
+      'https://images.samsung.com/kdp/goods/2025/09/05/0927a7af-6c6f-4e53-8593-0aa4bb07f722.png',
+      'https://images.samsung.com/kdp/goods/2025/09/05/f29dab80-bc5b-46d2-a0d5-7c577f76ca83.png'
+    ],
+    official: 'https://www.samsung.com/sec/monitors/smart-m50f-d2c/LS32FM503EKXKR/',
+    colors: [
+      ['웜 화이트', '#F5EFE6']
+    ],
+    highlights: [
+      ['모니터+TV+게임기 한 대', '책상 위 32" 큰 화면. PC 없이도 콘텐츠 즐기기.'],
+      ['게이밍 허브 내장', '콘솔 없이 클라우드 게임 플레이. Xbox Game Pass + GeForce NOW.'],
+      ['삼성 TV 플러스 무료 채널', '100여 개 채널 무료 시청. TV 없이도 TV처럼.']
+    ],
+    features: [
+      ['📺', '스마트 TV 허브', '넷플릭스·디즈니+·유튜브 내장.'],
+      ['🎮', '클라우드 게이밍', 'Xbox Game Pass + GeForce NOW.'],
+      ['🆓', '삼성 TV 플러스', '무료 채널 100여 개.'],
+      ['🔌', '풀 포트 연결', 'USB-C + HDMI + USB-A.'],
+      ['📲', '화면 미러링', '스마트폰 화면 확장.']
+    ],
+    who: [
+      ['💼', '재택근무자', '큰 모니터 + 휴식엔 TV'],
+      ['🎮', '게이머', 'PC 없이 클라우드 게임'],
+      ['🏠', '자취생', 'TV 따로 살 필요 X'],
+      ['🎓', '학생', '강의 + 콘텐츠 한 화면']
+    ],
+    specs: [
+      ['모델', 'LS32FM503EKXKR'],
+      ['화면 크기', '80.1cm (32인치)'],
+      ['해상도', 'FHD 1920 × 1080'],
+      ['색상', '웜 화이트'],
+      ['스마트 기능', '삼성 TV 플러스, 게이밍 허브, Knox'],
+      ['연결단자', 'USB-C, HDMI, USB-A'],
+      ['오디오', '실시간 콘텐츠 분석 사운드 최적화'],
+      ['미러링', '무선 화면 미러링'],
+      ['평점', '4.7 / 5.0 (134건)']
+    ]
+  }
+};
+
+const params = new URLSearchParams(location.search);
+const id = params.get('id') || 'movingstyle-27';
+const p = PRODUCTS[id] || PRODUCTS['movingstyle-27'];
+
+document.title = `${p.name} | 봉이모바일 사은품`;
+document.getElementById('hero').classList.toggle('featured', !!p.featured);
+document.getElementById('eyebrow').textContent = p.eyebrow || '★ 봉이 사은품';
+document.getElementById('brand').textContent = p.brand;
+document.getElementById('name').textContent = p.name;
+document.getElementById('tagline').textContent = p.tagline;
+document.getElementById('official').href = p.official;
+document.getElementById('hero-official').href = p.official;
+
+// === Single Hero Image ===
+const track = document.getElementById('track');
+const dots = document.getElementById('dots');
+const counter = document.getElementById('counter');
+const mainImg = (p.gallery && p.gallery[0]) || p.image;
+const slide = document.createElement('div');
+slide.className = 'gallery-slide';
+slide.innerHTML = `<img src="${mainImg}" alt="${p.name}" loading="eager">`;
+track.appendChild(slide);
+// Hide dots & counter for single image
+dots.style.display = 'none';
+counter.style.display = 'none';
+
+const highlightsEl = document.getElementById('highlights');
+highlightsEl.innerHTML = p.highlights.map((h, i) => `
+  <div class="highlight" data-num="${i + 1}">
+    <h3>${h[0]}</h3>
+    <p>${h[1]}</p>
+  </div>
+`).join('');
+
+const featEl = document.getElementById('features');
+featEl.innerHTML = p.features.map(([icon, title, desc]) => `
+  <div class="feature">
+    <div class="feature-icon">${icon}</div>
+    <div class="feature-body">
+      <h3>${title}</h3>
+      <p>${desc}</p>
+    </div>
+  </div>
+`).join('');
+
+const whoEl = document.getElementById('who');
+whoEl.innerHTML = p.who.map(([icon, name, desc]) => `
+  <div class="who-card">
+    <div class="who-icon">${icon}</div>
+    <div class="who-name">${name}</div>
+    <div class="who-desc">${desc}</div>
+  </div>
+`).join('');
+
+if (p.colors && p.colors.length > 1) {
+  document.getElementById('color-section').style.display = 'block';
+  const colorsEl = document.getElementById('colors');
+  colorsEl.innerHTML = p.colors.map(([name, hex]) => `
+    <div class="color-chip">
+      <div class="color-circle" style="background:${hex}"></div>
+      <div class="color-name">${name}</div>
+    </div>
+  `).join('');
+}
+
+const specsEl = document.getElementById('specs');
+specsEl.innerHTML = p.specs.map(([k, v]) => `
+  <div class="spec-row">
+    <div class="spec-key">${k}</div>
+    <div class="spec-val">${v}</div>
+  </div>
+`).join('');
+</script>
+
+</body>
+</html>
