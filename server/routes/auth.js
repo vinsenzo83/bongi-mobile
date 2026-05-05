@@ -87,6 +87,17 @@ router.post('/login', authLimiter, async (req, res) => {
       .eq('user_id', data.user.id)
       .single();
 
+    // 🚀 role_permissions menus도 동봉 — 통합 어드민 사이드바 fetch 1회 생략 (-300~400ms)
+    let menus = null;
+    if (incentiveAgent && incentiveAgent.active && incentiveAgent.role) {
+      const { data: perm } = await supabase
+        .from('incentive_role_permissions')
+        .select('menus')
+        .eq('role', incentiveAgent.role)
+        .single();
+      menus = perm?.menus || [];
+    }
+
     res.json({
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,
@@ -99,6 +110,7 @@ router.post('/login', authLimiter, async (req, res) => {
         storeId: profile.store_id,
       },
       incentive_agent: (incentiveAgent && incentiveAgent.active) ? incentiveAgent : null,
+      role_menus: menus,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

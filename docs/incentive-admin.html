@@ -118,9 +118,10 @@ const G_AUTH = '/api/auth';
 const G_TOKEN_KEY = 'incentive-auth-token-v1';
 const G_REFRESH_KEY = 'incentive-refresh-token-v1';
 const G_LAST_TAB_KEY = 'incentive-admin-last-tab';
+const G_MENUS_CACHE_KEY = 'incentive-admin-my-menus-v1';
 const gGetToken = () => localStorage.getItem(G_TOKEN_KEY);
 const gSetToken = (t) => localStorage.setItem(G_TOKEN_KEY, t);
-const gClearToken = () => { localStorage.removeItem(G_TOKEN_KEY); localStorage.removeItem(G_REFRESH_KEY); };
+const gClearToken = () => { localStorage.removeItem(G_TOKEN_KEY); localStorage.removeItem(G_REFRESH_KEY); localStorage.removeItem(G_MENUS_CACHE_KEY); };
 window.G_currentAgent = null;
 
 async function gLogin(email, password) {
@@ -132,6 +133,10 @@ async function gLogin(email, password) {
   const data = await res.json();
   gSetToken(data.access_token);
   if (data.refresh_token) localStorage.setItem(G_REFRESH_KEY, data.refresh_token);
+  // 로그인 응답에 동봉된 role_menus 즉시 캐싱 (사이드바 fetch round-trip 1회 절약)
+  if (Array.isArray(data.role_menus)) {
+    try { localStorage.setItem(G_MENUS_CACHE_KEY, JSON.stringify(data.role_menus)); } catch(e) {}
+  }
   return data;
 }
 
@@ -196,9 +201,20 @@ async function gOnLoggedIn(agent) {
   document.getElementById('g-main').style.display = '';
   document.getElementById('g-auth-overlay').style.display = 'none';
 
-  // DB-driven 메뉴 가시성: 내 role의 menus 조회 후 적용
-  const allowedMenus = await gFetchMyPermissions();
-  gApplyMenuVisibility(allowedMenus);
+  // DB-driven 메뉴 가시성: 캐시 즉시 적용 → 백그라운드 갱신
+  let cached = [];
+  try { cached = JSON.parse(localStorage.getItem(G_MENUS_CACHE_KEY) || '[]'); } catch(e) {}
+  if (cached.length) gApplyMenuVisibility(cached);
+  // 백그라운드 fetch — 변경됐으면 갱신
+  gFetchMyPermissions().then(menus => {
+    if (Array.isArray(menus) && menus.length) {
+      try { localStorage.setItem(G_MENUS_CACHE_KEY, JSON.stringify(menus)); } catch(e) {}
+      // 캐시와 다르면 갱신
+      if (JSON.stringify(menus) !== JSON.stringify(cached)) gApplyMenuVisibility(menus);
+    }
+  });
+  const allowedMenus = cached.length ? cached : await gFetchMyPermissions();
+  if (!cached.length) gApplyMenuVisibility(allowedMenus);
 
   // 첫 진입: 마지막 본 메뉴 또는 첫 가시 메뉴
   let initialBtn = null;
