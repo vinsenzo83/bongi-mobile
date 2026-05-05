@@ -1582,7 +1582,11 @@ function renderDefaultControls() {
             var typeBg = r.type === 'promo' ? '#fef3c7' : '#dbeafe';
             var typeClr = r.type === 'promo' ? '#92400e' : '#1d4ed8';
             var typeIcon = r.type === 'promo' ? '⏰' : '·';
-            return '<div style="display:inline-block;margin:2px;padding:2px 6px;background:' + typeBg + ';color:' + typeClr + ';border-radius:3px;font-size:9px;font-weight:600">' + typeIcon + ' ' + r.name + ' -' + (r.discount||0).toLocaleString() + '</div>';
+            var cond = [];
+            if (r.speeds && r.speeds.length) cond.push(r.speeds.join('·'));
+            if (r.tvNameContains) cond.push('"' + r.tvNameContains + '"');
+            var condStr = cond.length ? ' [' + cond.join(' + ') + ']' : '';
+            return '<div style="display:block;margin:2px 0;padding:3px 6px;background:' + typeBg + ';color:' + typeClr + ';border-radius:3px;font-size:9px;font-weight:600">' + typeIcon + ' ' + r.name + condStr + ' → -' + (r.discount||0).toLocaleString() + '원</div>';
           }).join('');
         }
         ruleSummary += '<button onclick="openRulesEditor(\'' + key + '\', \'' + o.id + '\')" style="margin-left:4px;padding:2px 6px;font-size:9px;border:1px dashed #6366f1;background:#fff;color:#6366f1;border-radius:3px;cursor:pointer">⚙ 편집</button>';
