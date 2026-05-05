@@ -255,6 +255,25 @@ router.post('/agents', authenticateJWT, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // 6.5. POST /api/incentive/admin/create-agent — 신규 상담사 (auth + agent 통합)
 // ═══════════════════════════════════════════════════════════════
+// 임시 디버그: 환경변수 키 형식 확인 (admin 전용)
+router.get('/admin/debug-keys', authenticateJWT, async (req, res) => {
+  const me = await getCurrentIncentiveAgent(req.user.id);
+  if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+  const sk = process.env.SUPABASE_SERVICE_KEY || '';
+  const ak = process.env.SUPABASE_ANON_KEY || '';
+  const skType = sk.startsWith('sb_secret_') ? 'sb_secret_*' :
+    sk.startsWith('sb_publishable_') ? '⚠️ publishable (잘못됨)' :
+    sk.startsWith('eyJ') ? 'JWT (구 format)' : '미설정 또는 unknown';
+  const akType = ak.startsWith('sb_publishable_') ? 'sb_publishable_*' :
+    ak.startsWith('sb_secret_') ? '⚠️ secret (위치 잘못)' :
+    ak.startsWith('eyJ') ? 'JWT (구 format)' : '미설정 또는 unknown';
+  res.json({
+    SUPABASE_SERVICE_KEY: { set: !!sk, length: sk.length, prefix: sk.slice(0, 15), type: skType },
+    SUPABASE_ANON_KEY: { set: !!ak, length: ak.length, prefix: ak.slice(0, 15), type: akType },
+    SUPABASE_URL: process.env.SUPABASE_URL,
+  });
+});
+
 router.post('/admin/create-agent', authenticateJWT, async (req, res) => {
   // ⚠️ 임시 디버그: 실제 에러 메시지 노출 (admin 전용 라우트라 안전)
   const adminDebug = (err) => {
