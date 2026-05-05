@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>역할별 메뉴 권한 관리 (admin)</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: 'Pretendard Variable', -apple-system, sans-serif; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
+.wrap { max-width: 1100px; margin: 0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #334155; }
+h1 { font-size:22px; color:#f8fafc; letter-spacing:-0.02em; }
+.subtitle { font-size:12px; color:#94a3b8; margin-top:4px; }
+.auth-box { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:16px; margin-bottom:20px; }
+.auth-box input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; width:200px; margin-right:8px; }
+.auth-box button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px; }
+.auth-msg { font-size:11px; margin-top:6px; min-height:14px; color:#dc2626; }
+.section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:12px; padding:18px 22px; margin-bottom:20px; }
+.section h2 { font-size:15px; color:#fbbf24; font-weight:800; letter-spacing:0.04em; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #334155; }
+
+table.matrix { width:100%; border-collapse:collapse; background:#1e293b; border-radius:10px; overflow:hidden; }
+table.matrix th { background:#334155; color:#f1f5f9; font-size:12px; padding:11px 8px; text-align:center; font-weight:800; letter-spacing:0.03em; }
+table.matrix th:first-child { text-align:left; padding-left:18px; min-width:200px; }
+table.matrix td { font-size:12.5px; color:#e2e8f0; padding:11px 8px; border-bottom:1px solid #334155; text-align:center; }
+table.matrix td:first-child { text-align:left; padding-left:18px; font-weight:700; color:#f8fafc; }
+table.matrix tbody tr:hover { background:rgba(59,130,246,0.06); }
+table.matrix tbody tr.dirty { background:rgba(251,191,36,0.08); }
+table.matrix tbody tr.dirty:hover { background:rgba(251,191,36,0.14); }
+
+.role-col { font-size:11px; }
+.role-col .role-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:800; }
+.role-col .role-agent { background:#3b82f6; color:#fff; }
+.role-col .role-manager { background:#16a34a; color:#fff; }
+.role-col .role-admin { background:#dc2626; color:#fff; }
+.role-col .role-contract { background:#8b5cf6; color:#fff; }
+
+input[type="checkbox"] {
+  width:18px; height:18px; cursor:pointer; accent-color:#3b82f6;
+}
+input[type="checkbox"]:disabled {
+  cursor:not-allowed; opacity:0.55;
+}
+.lock-hint { font-size:9.5px; color:#94a3b8; margin-top:2px; display:block; }
+
+.actions-bar { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; align-items:center; }
+.actions-bar .info { flex:1; font-size:11px; color:#94a3b8; }
+.actions-bar .info b { color:#fbbf24; }
+
+.btn-primary { background:#16a34a; color:#fff; border:none; padding:10px 22px; border-radius:8px; font-weight:800; font-size:13px; cursor:pointer; }
+.btn-primary:disabled { background:#334155; color:#64748b; cursor:not-allowed; }
+.btn-primary:not(:disabled):hover { background:#15803d; }
+.btn-secondary { background:#475569; color:#fff; border:none; padding:10px 22px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; }
+.btn-secondary:hover { background:#64748b; }
+
+.notice { background:rgba(96,165,250,0.06); border-left:3px solid #60a5fa; padding:10px 14px; margin-bottom:14px; font-size:11.5px; color:#cbd5e1; border-radius:4px; line-height:1.7; }
+.notice b { color:#60a5fa; }
+.notice code { background:#0f172a; padding:1px 5px; border-radius:3px; font-size:10.5px; color:#fbbf24; }
+
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:14px 24px; border-radius:10px; font-size:14px; font-weight:800; box-shadow:0 6px 24px rgba(22,163,74,0.5); z-index:99999; opacity:0; transition:opacity 0.2s; pointer-events:none; }
+#toast.show { opacity:1; }
+#toast.error { background:#dc2626; box-shadow:0 6px 24px rgba(220,38,38,0.5); }
+
+.deny-screen { display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:60vh; gap:14px; color:#fca5a5; }
+.deny-screen .big { font-size:48px; }
+.deny-screen .msg { font-size:14px; color:#cbd5e1; font-weight:700; }
+.deny-screen .hint { font-size:12px; color:#94a3b8; }
+</style>
+<script src="/docs/_shared/incentive-auth.js"></script>
+<script>
+// iframe embedded-mode 감지: 부모 어드민의 헤더/auth-box 숨김
+(function(){
+  if (window !== window.parent) {
+    document.documentElement.classList.add('embedded-mode');
+    var style = document.createElement('style');
+    style.textContent = `
+      .embedded-mode body { padding: 16px !important; }
+      .embedded-mode #auth-box,
+      .embedded-mode header #user-info,
+      .embedded-mode header h1,
+      .embedded-mode header .subtitle,
+      .embedded-mode header { display: none !important; }
+      .embedded-mode .wrap { padding: 0 !important; max-width: none !important; }
+    `;
+    document.head.appendChild(style);
+  }
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🔐 역할별 메뉴 권한 관리</h1>
+      <div class="subtitle">role마다 사이드바에 어떤 메뉴가 보이는지 동적으로 편집</div>
+    </div>
+    <div id="user-info" style="text-align:right;display:none">
+      <div style="font-size:13px;font-weight:800;color:#f8fafc" id="user-name">-</div>
+      <button id="logout-btn" style="margin-top:6px;padding:4px 10px;background:#475569;color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">로그아웃</button>
+    </div>
+  </header>
+
+  <div class="auth-box" id="auth-box" style="display:none">
+    <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:#60a5fa">🔐 admin 권한 필요</div>
+    <input type="email" id="auth-email" placeholder="email" autocomplete="username">
+    <input type="password" id="auth-pass" placeholder="비밀번호" autocomplete="current-password">
+    <button id="auth-login-btn">로그인</button>
+    <div class="auth-msg" id="auth-msg"></div>
+    <div style="font-size:10px;color:#94a3b8;margin-top:8px">
+      테스트: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">admin1@bongi.test</code> / <code>pass1234!</code>
+    </div>
+  </div>
+
+  <div id="deny-area" class="deny-screen" style="display:none">
+    <div class="big">⛔</div>
+    <div class="msg">권한이 없습니다</div>
+    <div class="hint">이 화면은 admin 전용입니다. 일반 매니저/상담사/계약 권한으로는 접근할 수 없습니다.</div>
+  </div>
+
+  <div id="main-area" style="display:none">
+    <div class="section">
+      <h2>📋 메뉴 권한 매트릭스</h2>
+
+      <div class="notice">
+        <b>사용법.</b> 각 셀의 체크박스를 토글해서 role마다 사이드바에 보일 메뉴를 결정합니다.<br>
+        변경하면 해당 role 행이 <b>주황색</b>으로 강조되고, [💾 저장] 버튼이 활성화됩니다.<br>
+        admin 행의 <code>🔐 권한 관리</code>·<code>👥 상담사 관리</code>는 자기 자신 lockout 방지를 위해 항상 체크 상태로 잠겨 있습니다.<br>
+        다른 role의 권한을 바꾼 뒤에는 해당 role 사용자가 새로고침하면 새 메뉴 구성이 반영됩니다.
+      </div>
+
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>메뉴 / role</th>
+            <th class="role-col"><span class="role-badge role-agent">agent</span></th>
+            <th class="role-col"><span class="role-badge role-manager">manager</span></th>
+            <th class="role-col"><span class="role-badge role-admin">admin</span></th>
+            <th class="role-col"><span class="role-badge role-contract">contract</span></th>
+          </tr>
+        </thead>
+        <tbody id="matrix-tbody">
+          <!-- JS 렌더 -->
+        </tbody>
+      </table>
+
+      <div class="actions-bar">
+        <div class="info" id="dirty-info">변경 없음</div>
+        <button id="btn-reset" class="btn-secondary" type="button">🔄 기본값 복원</button>
+        <button id="btn-save" class="btn-primary" type="button" disabled>💾 변경 저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══ 상수 ═══
+const MENUS = [
+  { key: 'dashboard',    label: '📊 대시보드' },
+  { key: 'contract',     label: '📋 계약 처리' },
+  { key: 'agents',       label: '👥 상담사 관리' },
+  { key: 'products',     label: '📦 상품 관리' },
+  { key: 'rules',        label: '⚙️ 정책 관리' },
+  { key: 'tm-counselor', label: '📞 TM 상담' },
+  { key: 'tm-data',      label: '🧮 TM 데이터 관리' },
+  { key: 'permissions',  label: '🔐 권한 관리' },
+];
+const ROLES = ['agent', 'manager', 'admin', 'contract'];
+// admin 락다운 방지: admin row에서 항상 강제 체크
+const ADMIN_REQUIRED = new Set(['permissions', 'agents']);
+// 기본값 (DB 시드와 동일)
+const DEFAULTS = {
+  agent:    ['tm-counselor'],
+  manager:  ['dashboard', 'contract', 'tm-counselor', 'tm-data'],
+  admin:    ['dashboard', 'contract', 'agents', 'products', 'rules', 'tm-counselor', 'tm-data', 'permissions'],
+  contract: ['dashboard', 'contract'],
+};
+
+// ═══ 상태 ═══
+// _state[role] = Set<menuKey>
+let _state = {};
+// _initialState[role] = Set<menuKey> — fetch 직후 스냅샷 (dirty 비교용)
+let _initialState = {};
+
+// ═══ 유틸 ═══
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', !!isError);
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function setEqual(a, b) {
+  if (a.size !== b.size) return false;
+  for (const x of a) if (!b.has(x)) return false;
+  return true;
+}
+
+function dirtyRoles() {
+  return ROLES.filter(role => !setEqual(_state[role] || new Set(), _initialState[role] || new Set()));
+}
+
+function refreshDirtyUI() {
+  const dirty = dirtyRoles();
+  ROLES.forEach(role => {
+    const tr = document.querySelector(`tr[data-row-role="${role}"]`);
+    if (tr) tr.classList.toggle('dirty', dirty.includes(role));
+  });
+  const info = document.getElementById('dirty-info');
+  const btn = document.getElementById('btn-save');
+  if (dirty.length === 0) {
+    info.innerHTML = '변경 없음';
+    btn.disabled = true;
+  } else {
+    info.innerHTML = `<b>${dirty.length}개 role 변경됨</b>: ${dirty.join(', ')}`;
+    btn.disabled = false;
+  }
+}
+
+// ═══ 매트릭스 렌더 ═══
+function renderMatrix() {
+  const tbody = document.getElementById('matrix-tbody');
+  tbody.innerHTML = '';
+  MENUS.forEach(menu => {
+    const tr = document.createElement('tr');
+    tr.dataset.menuKey = menu.key;
+    const tdLabel = document.createElement('td');
+    tdLabel.textContent = menu.label;
+    tr.appendChild(tdLabel);
+
+    ROLES.forEach(role => {
+      const td = document.createElement('td');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.dataset.role = role;
+      cb.dataset.menu = menu.key;
+      cb.checked = (_state[role] || new Set()).has(menu.key);
+
+      // admin 락다운: admin row의 permissions/agents는 강제 체크 + 잠김
+      if (role === 'admin' && ADMIN_REQUIRED.has(menu.key)) {
+        cb.checked = true;
+        cb.disabled = true;
+        cb.title = '자기 자신 lockout 방지 — admin은 이 메뉴를 제거할 수 없음';
+        const lock = document.createElement('span');
+        lock.className = 'lock-hint';
+        lock.textContent = '🔒 잠김';
+        td.appendChild(cb);
+        td.appendChild(lock);
+      } else {
+        td.appendChild(cb);
+      }
+
+      cb.addEventListener('change', onCheckboxChange);
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  // role 단위로 dirty 표시하기 위해 각 role별 가상 row 식별자 추가 (실제로는 td 단위로 색칠)
+  // 단순화: dirty UI는 role별 셀을 묶지 않고, info 텍스트에 표시
+  // 추가로 role 헤더 옆 동그라미 indicator도 좋겠지만 일단 info만으로 표시
+  // role row 식별을 위해 rendering 시 추가 wrapping 안함; 대신 dirty 셀 표시
+  applyCellDirtyVisuals();
+}
+
+function onCheckboxChange(e) {
+  const role = e.target.dataset.role;
+  const menu = e.target.dataset.menu;
+  if (!_state[role]) _state[role] = new Set();
+  if (e.target.checked) _state[role].add(menu);
+  else _state[role].delete(menu);
+  applyCellDirtyVisuals();
+  refreshDirtyUI();
+}
+
+// dirty 행 강조: role 단위로 컬럼 셀 배경 변경
+function applyCellDirtyVisuals() {
+  const dirty = new Set(dirtyRoles());
+  document.querySelectorAll('#matrix-tbody td').forEach((td, idx) => {
+    // first cell is label, role cells are next 4 (agent, manager, admin, contract)
+    const cb = td.querySelector('input[type="checkbox"]');
+    if (!cb) {
+      td.style.background = '';
+      return;
+    }
+    const role = cb.dataset.role;
+    if (dirty.has(role)) {
+      td.style.background = 'rgba(251,191,36,0.10)';
+    } else {
+      td.style.background = '';
+    }
+  });
+}
+
+// ═══ API 호출 ═══
+async function loadAll() {
+  const tk = getToken();
+  const res = await fetch(API + '/role-permissions', { headers: { Authorization: 'Bearer ' + tk } });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error || '권한 매트릭스 조회 실패');
+  }
+  const { permissions } = await res.json();
+  // 기본값으로 채운 뒤 DB값 덮어쓰기 (DB에 없는 role 대비)
+  _state = {};
+  ROLES.forEach(r => { _state[r] = new Set(DEFAULTS[r] || []); });
+  (permissions || []).forEach(row => {
+    if (ROLES.includes(row.role)) {
+      _state[row.role] = new Set(row.menus || []);
+    }
+  });
+  // admin 강제 보장
+  ADMIN_REQUIRED.forEach(k => _state.admin.add(k));
+  // 초기 스냅샷
+  _initialState = {};
+  ROLES.forEach(r => { _initialState[r] = new Set(_state[r]); });
+  renderMatrix();
+  refreshDirtyUI();
+}
+
+async function saveDirty() {
+  const dirty = dirtyRoles();
+  if (dirty.length === 0) return;
+  const tk = getToken();
+  const errors = [];
+  let ok = 0;
+  for (const role of dirty) {
+    const menus = Array.from(_state[role]).sort();
+    try {
+      const res = await fetch(API + '/role-permissions/' + role, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+        body: JSON.stringify({ menus }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        errors.push(`${role}: ${e.error || res.status}`);
+      } else {
+        ok++;
+        _initialState[role] = new Set(_state[role]);
+      }
+    } catch (err) {
+      errors.push(`${role}: ${err.message}`);
+    }
+  }
+  if (errors.length === 0) {
+    showToast(`✅ ${ok}개 role 권한 저장 완료 — 해당 role 사용자가 새로고침하면 반영됩니다`);
+  } else {
+    showToast(`⚠️ ${ok}개 성공 / ${errors.length}개 실패: ${errors.join(' | ')}`, true);
+  }
+  refreshDirtyUI();
+  applyCellDirtyVisuals();
+}
+
+function resetToDefaults() {
+  if (!confirm('모든 role을 기본값으로 복원합니다 (저장 전까지 DB 미반영). 계속할까요?')) return;
+  ROLES.forEach(r => { _state[r] = new Set(DEFAULTS[r] || []); });
+  ADMIN_REQUIRED.forEach(k => _state.admin.add(k));
+  renderMatrix();
+  refreshDirtyUI();
+  showToast('🔄 기본값으로 복원 — 저장 버튼 눌러 DB 반영');
+}
+
+// ═══ 인증 + 진입 ═══
+async function init() {
+  const tk = getToken();
+  if (!tk) {
+    document.getElementById('auth-box').style.display = '';
+    return;
+  }
+  const agent = await fetchAgent();
+  if (!agent) {
+    document.getElementById('auth-box').style.display = '';
+    return;
+  }
+  document.getElementById('user-name').textContent = '👤 ' + (agent.name || '-') + ' (' + agent.role + ')';
+  document.getElementById('user-info').style.display = '';
+  if (agent.role !== 'admin') {
+    document.getElementById('deny-area').style.display = '';
+    return;
+  }
+  try {
+    await loadAll();
+    document.getElementById('main-area').style.display = '';
+  } catch (e) {
+    showToast('⚠️ ' + e.message, true);
+    document.getElementById('deny-area').style.display = '';
+  }
+}
+
+document.getElementById('auth-login-btn').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  const msg = document.getElementById('auth-msg');
+  msg.textContent = '';
+  if (!email || !pass) { msg.textContent = '이메일/비밀번호 입력'; return; }
+  try {
+    await login(email, pass);
+    document.getElementById('auth-box').style.display = 'none';
+    init();
+  } catch (e) { msg.textContent = e.message; }
+});
+document.getElementById('auth-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('auth-login-btn').click();
+});
+document.getElementById('logout-btn').addEventListener('click', () => {
+  clearToken();
+  location.reload();
+});
+document.getElementById('btn-save').addEventListener('click', saveDirty);
+document.getElementById('btn-reset').addEventListener('click', resetToDefaults);
+
+init();
+</script>
+</body>
+</html>

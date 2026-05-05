@@ -1310,6 +1310,90 @@ router.get('/tm/memos', authenticateJWT, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// Role 권한 매트릭스 (incentive_role_permissions)
+// ═══════════════════════════════════════════════════════════════
+
+// GET /api/incentive/role-permissions — 모든 role 권한 매트릭스 (admin 전용)
+router.get('/role-permissions', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const { data, error } = await supabase
+      .from('incentive_role_permissions')
+      .select('role, menus, updated_at, updated_by_user_id')
+      .order('role');
+    if (error) throw error;
+    res.json({ permissions: data });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: err.message || '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// GET /api/incentive/role-permissions/me — 내 role 메뉴 (모든 인증 사용자)
+router.get('/role-permissions/me', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+    const { data, error } = await supabase
+      .from('incentive_role_permissions')
+      .select('menus')
+      .eq('role', me.role)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    res.json({ role: me.role, menus: (data && data.menus) || [] });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: err.message || '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// PUT /api/incentive/role-permissions/:role — role 권한 수정 (admin 전용)
+router.put('/role-permissions/:role', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const role = req.params.role;
+    if (!['agent', 'manager', 'admin', 'contract'].includes(role)) {
+      return res.status(400).json({ error: '유효하지 않은 role' });
+    }
+    const { menus } = req.body || {};
+    if (!Array.isArray(menus)) {
+      return res.status(400).json({ error: 'menus 배열 필수' });
+    }
+    // admin role 락다운 방지: admin은 최소 'permissions','agents' 보장
+    if (role === 'admin') {
+      const required = ['permissions', 'agents'];
+      for (const r of required) {
+        if (!menus.includes(r)) {
+          return res.status(400).json({
+            error: `admin role은 '${r}' 메뉴를 제거할 수 없습니다 (자기 자신 lockout 방지)`,
+          });
+        }
+      }
+    }
+    const { data, error } = await supabase
+      .from('incentive_role_permissions')
+      .upsert({
+        role,
+        menus,
+        updated_at: new Date().toISOString(),
+        updated_by_user_id: req.user.id,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ permission: data });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: err.message || '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
 // PUT /api/incentive/tm/memos — 본인 메모/draft 저장
 router.put('/tm/memos', authenticateJWT, async (req, res) => {
   try {

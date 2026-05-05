@@ -122,7 +122,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   <header>
     <div>
       <h1>📊 인센티브 대시보드</h1>
-      <div class="subtitle">상담사별 실적 모니터링 · 정산 확정 (admin)</div>
+      <div class="subtitle">상담사별 실적 모니터링</div>
     </div>
     <div id="user-info" style="text-align:right;display:none">
       <div style="font-size:13px;font-weight:800;color:#f8fafc" id="user-name">-</div>
@@ -149,7 +149,6 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       <input type="month" id="filter-month">
       <button id="reload-btn" class="btn-secondary">🔄 새로고침</button>
       <span id="result-count" style="font-size:11px;color:#94a3b8;margin-left:auto">-</span>
-      <button id="finalize-all-btn" class="btn-primary" style="display:none">📌 전체 정산 확정 (admin)</button>
     </div>
 
     <!-- 팀장 전용 KPI (manager만 표시) -->
@@ -295,35 +294,6 @@ async function fetchOverview(month) {
   return await res.json();
 }
 
-async function finalizeAll(month) {
-  if (!confirm(`⚠️ ${month} 모든 활성 상담사의 정산을 확정하시겠습니까?\\n\\n확정 후엔 monthly_settlements에 저장되며, 영업 데이터 변경되어도 finalized된 정산은 유지됩니다.`)) return;
-  const tk = getToken();
-  try {
-    const res = await fetch(API + '/finalize', {
-      method: 'POST', headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + tk},
-      body: JSON.stringify({month})
-    });
-    if (!res.ok) throw new Error((await res.json()).error || '확정 실패');
-    const data = await res.json();
-    showToast(`✅ ${data.count}명 정산 확정 완료`);
-    await loadAll();
-  } catch (e) { alert('오류: ' + e.message); }
-}
-
-async function finalizeOne(agentId, agentName, month) {
-  if (!confirm(`'${agentName}'의 ${month} 정산을 확정하시겠습니까?`)) return;
-  const tk = getToken();
-  try {
-    const res = await fetch(API + '/finalize', {
-      method: 'POST', headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + tk},
-      body: JSON.stringify({month, agent_id: agentId})
-    });
-    if (!res.ok) throw new Error((await res.json()).error || '실패');
-    showToast(`✅ '${agentName}' 정산 확정`);
-    await loadAll();
-  } catch (e) { alert('오류: ' + e.message); }
-}
-
 function renderManagerKpi(o, agent) {
   // manager 또는 admin이 본인 데이터 확인용으로 활용
   if (_myRole !== 'manager' && _myRole !== 'admin') return;
@@ -419,11 +389,7 @@ function renderAgents(o) {
   const html = Object.keys(byCenter).sort().map(center => {
     const rows = byCenter[center].map(s => {
       const a = s.agent || {};
-      const isFinalized = !!s.finalized_at;
-      const cls = isFinalized ? 'finalized' : (s.is_penalty ? 'penalty' : '');
-      const finalizedBadge = isFinalized
-        ? `<span class="finalized-badge">확정</span>`
-        : `<span class="pending-badge">미확정</span>`;
+      const cls = s.is_penalty ? 'penalty' : '';
       return `<tr class="${cls} agent-row" data-agent-id="${a.id}" data-agent-name="${(a.name||'').replace(/"/g,'&quot;')}" style="cursor:pointer">
         <td><b>${a.name}</b> <span style="color:#60a5fa;font-size:9px;margin-left:4px" class="expand-arrow">▶</span><div style="font-size:9px;color:#64748b">${a.role}</div></td>
         <td><span class="tier g-${s.grade_applied || 1}">G${s.grade_applied || 1}</span>${s.is_penalty ? '<span class="penalty-badge">⚠️ 페널티</span>' : ''}</td>
@@ -435,13 +401,9 @@ function renderAgents(o) {
         <td class="financial-mid"><b style="color:#86efac">${fmt(s.agent_total)}</b></td>
         <td class="financial-mid">${fmt(s.total_revenue)}</td>
         <td class="financial-deep" style="color:${(s.company_profit||0) > 0 ? '#86efac' : '#fca5a5'}">${fmt(s.company_profit)}</td>
-        <td>${finalizedBadge}</td>
-        <td onclick="event.stopPropagation()">
-          ${isAdmin && !isFinalized ? `<button class="btn-primary" style="padding:4px 10px;font-size:10px" onclick="finalizeOne('${a.id}', '${(a.name||'').replace(/'/g,"\\\\'")}','${month}')">📌 확정</button>` : ''}
-        </td>
       </tr>
       <tr class="agent-detail-row" id="detail-${a.id}" style="display:none;background:#0f172a">
-        <td colspan="12" style="padding:0">
+        <td colspan="10" style="padding:0">
           <div style="padding:14px 18px;border-top:2px solid #475569;background:linear-gradient(135deg,#0f172a,#1e293b)">
             <div style="font-size:11.5px;color:#a5b4fc;font-weight:800;margin-bottom:8px">📋 ${a.name} 계약 상세 (이번 달)</div>
             <div id="agent-sales-${a.id}" style="font-size:10.5px;color:#94a3b8">로딩 중...</div>
@@ -464,7 +426,7 @@ function renderAgents(o) {
           <tr>
             <th>상담사</th><th>Grade</th><th>영업/우수</th><th>P</th>
             <th class="financial-mid">단가</th><th class="financial-mid">기본급</th><th class="financial-mid">인센티브</th><th class="financial-mid">총수령</th><th class="financial-mid">매출</th>
-            <th class="financial-deep">회사이익</th><th>상태</th><th>작업</th>
+            <th class="financial-deep">회사이익</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -478,9 +440,6 @@ function renderAgents(o) {
   document.querySelectorAll('.agent-row').forEach(row => {
     row.addEventListener('click', () => toggleAgentDetail(row.dataset.agentId, row.dataset.agentName));
   });
-
-  // admin만 일괄 정산 버튼 표시
-  document.getElementById('finalize-all-btn').style.display = isAdmin ? '' : 'none';
 }
 
 async function fetchAgentSales(agentId, month) {
@@ -657,9 +616,6 @@ document.getElementById('auth-login-btn').addEventListener('click', async () => 
 document.getElementById('logout-btn').addEventListener('click', () => { clearToken(); location.reload(); });
 document.getElementById('reload-btn').addEventListener('click', loadAll);
 document.getElementById('filter-month').addEventListener('change', loadAll);
-document.getElementById('finalize-all-btn').addEventListener('click', () => {
-  finalizeAll(document.getElementById('filter-month').value);
-});
 
 init();
 </script>
