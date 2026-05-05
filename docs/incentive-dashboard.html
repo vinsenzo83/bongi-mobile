@@ -335,7 +335,6 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-label">상담사 수</div><div class="kpi-val" id="kpi-agents">-</div><div class="kpi-sub" id="kpi-agents-sub">-</div></div>
         <div class="kpi-card"><div class="kpi-label">총 영업</div><div class="kpi-val" id="kpi-sales">-</div><div class="kpi-sub" id="kpi-sales-sub">-</div></div>
-        <div class="kpi-card financial-mid"><div class="kpi-label">총 매출</div><div class="kpi-val" id="kpi-revenue">-</div><div class="kpi-sub">리베이트</div></div>
         <div class="kpi-card financial-mid"><div class="kpi-label">실제 상품 마진</div><div class="kpi-val" id="kpi-product-margin">-</div><div class="kpi-sub">매출 − 페이백</div></div>
         <div class="kpi-card financial-mid"><div class="kpi-label">총 인센티브</div><div class="kpi-val" id="kpi-incentive">-</div><div class="kpi-sub" id="kpi-bonus-sub">-</div></div>
         <div class="kpi-card financial-deep"><div class="kpi-label">회사 영업이익</div><div class="kpi-val" id="kpi-profit">-</div><div class="kpi-sub" id="kpi-profit-rate">-</div></div>
@@ -354,10 +353,10 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <thead>
           <tr>
             <th>센터</th><th>인원</th><th>영업</th><th>P</th><th>우수</th>
-            <th>매출</th><th>페이백</th><th>실제 상품 마진</th><th>인센+보너스</th><th>회사 영업이익</th>
+            <th>페이백</th><th>실제 상품 마진</th><th>인센+보너스</th><th>회사 영업이익</th>
           </tr>
         </thead>
-        <tbody id="center-kpi-tbody"><tr><td colspan="10" style="text-align:center;color:#64748b;padding:20px">로딩 중...</td></tr></tbody>
+        <tbody id="center-kpi-tbody"><tr><td colspan="9" style="text-align:center;color:#64748b;padding:20px">로딩 중...</td></tr></tbody>
       </table>
     </div>
 
@@ -587,7 +586,6 @@ function renderKpi(o) {
   document.getElementById('kpi-agents-sub').textContent = '활성';
   document.getElementById('kpi-sales').textContent = (t.total_sales_count || 0) + '건';
   document.getElementById('kpi-sales-sub').textContent = '우수 ' + (t.total_premium_count || 0) + '건';
-  document.getElementById('kpi-revenue').textContent = fmt(t.total_revenue);
   // 실제 상품 마진 = 매출 − 페이백
   const productMargin = (t.total_revenue || 0) - (t.total_payback || 0);
   document.getElementById('kpi-product-margin').textContent = fmt(productMargin);
@@ -637,7 +635,6 @@ function renderCenterKpiTable(settlements) {
       <td>${g.sales}건</td>
       <td>${g.points.toLocaleString()}P</td>
       <td>${g.premium}건</td>
-      <td>${fmt(g.revenue)}</td>
       <td>${fmt(g.payback)}</td>
       <td><b style="color:#86efac">${fmt(g.revenue - g.payback)}</b></td>
       <td>${fmt(g.incentive + g.bonus)}</td>
@@ -658,7 +655,6 @@ function renderCenterKpiTable(settlements) {
       <td>${total.sales}건</td>
       <td>${total.points.toLocaleString()}P</td>
       <td>${total.premium}건</td>
-      <td>${fmt(total.revenue)}</td>
       <td>${fmt(total.payback)}</td>
       <td><b style="color:#86efac">${fmt(total.revenue - total.payback)}</b></td>
       <td>${fmt(total.incentive + total.bonus)}</td>
@@ -697,7 +693,7 @@ function renderAgents(o) {
         <td class="financial-mid"><span style="color:#cbd5e1">${fmt(s.base_salary)}</span></td>
         <td class="financial-mid">${fmt(s.incentive)}<div style="font-size:9px;color:#64748b">+ ${fmt(s.bonus)}</div></td>
         <td class="financial-mid"><b style="color:#86efac">${fmt(s.agent_total)}</b></td>
-        <td class="financial-mid">${fmt(s.total_revenue)}</td>
+        <td class="financial-mid">${fmt((s.total_revenue || 0) - (s.total_payback || 0))}</td>
         <td class="financial-deep" style="color:${(s.company_profit||0) > 0 ? '#86efac' : '#fca5a5'}">${fmt(s.company_profit)}</td>
       </tr>
       <tr class="agent-detail-row" id="detail-${a.id}" style="display:none;background:#0f172a">
@@ -723,7 +719,7 @@ function renderAgents(o) {
         <thead>
           <tr>
             <th>상담사</th><th>Grade</th><th>영업/우수</th><th>P</th>
-            <th class="financial-mid">단가</th><th class="financial-mid">기본급</th><th class="financial-mid">인센티브</th><th class="financial-mid">총수령</th><th class="financial-mid">매출</th>
+            <th class="financial-mid">단가</th><th class="financial-mid">기본급</th><th class="financial-mid">인센티브</th><th class="financial-mid">총수령</th><th class="financial-mid">영업이익</th>
             <th class="financial-deep">회사이익</th>
           </tr>
         </thead>
