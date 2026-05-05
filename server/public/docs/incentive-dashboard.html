@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인센티브 대시보드 — manager / admin</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: 'Pretendard Variable', sans-serif; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
+.wrap { max-width: 1500px; margin: 0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #334155; }
+h1 { font-size:22px; color:#f8fafc; letter-spacing:-0.02em; }
+.subtitle { font-size:12px; color:#94a3b8; margin-top:4px; }
+.section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:12px; padding:18px 22px; margin-bottom:20px; }
+.section h2 { font-size:14px; color:#fbbf24; font-weight:800; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center; }
+.auth-box { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:16px; margin-bottom:20px; }
+.auth-box input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; width:200px; margin-right:8px; }
+.auth-box button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px; }
+.auth-msg { font-size:11px; margin-top:6px; min-height:14px; }
+.toolbar { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+.toolbar select, .toolbar input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:6px 10px; border-radius:6px; font-size:12px; }
+.btn-primary { background:#16a34a; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-weight:800; font-size:12px; cursor:pointer; }
+.btn-secondary { background:#475569; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer; }
+.btn-danger { background:#dc2626; color:#fff; border:none; padding:6px 12px; border-radius:5px; font-size:10.5px; font-weight:700; cursor:pointer; }
+
+.kpi-grid { display:grid; grid-template-columns:repeat(6, 1fr); gap:10px; margin-bottom:18px; }
+.kpi-card { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:14px; }
+.kpi-label { font-size:9.5px; color:#94a3b8; font-weight:700; letter-spacing:0.04em; margin-bottom:4px; }
+.kpi-val { font-size:18px; color:#f8fafc; font-weight:900; letter-spacing:-0.02em; }
+.kpi-sub { font-size:9.5px; color:#64748b; margin-top:2px; }
+
+.grade-dist { display:flex; gap:8px; }
+.grade-pill { padding:8px 14px; border-radius:8px; font-size:11px; font-weight:800; }
+.grade-pill.g1 { background:rgba(107,114,128,0.2); color:#9ca3af; }
+.grade-pill.g2 { background:rgba(59,130,246,0.2); color:#60a5fa; }
+.grade-pill.g3 { background:rgba(220,38,38,0.2); color:#f87171; }
+
+table { width:100%; border-collapse:collapse; background:#1e293b; border-radius:10px; overflow:hidden; }
+th { background:#334155; color:#f1f5f9; font-size:11px; padding:10px 8px; text-align:left; font-weight:700; }
+td { font-size:11.5px; color:#e2e8f0; padding:10px 8px; border-bottom:1px solid #334155; vertical-align:middle; }
+tr:hover { background:#334155; }
+tr.penalty { background:rgba(220,38,38,0.06); }
+tr.finalized { background:rgba(22,163,74,0.06); }
+.tier { display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:800; }
+.g-1 { background:#6b7280; color:#fff; }
+.g-2 { background:#3b82f6; color:#fff; }
+.g-3 { background:#dc2626; color:#fff; }
+.penalty-badge { background:#f59e0b; color:#fff; padding:1px 6px; border-radius:3px; font-size:9px; font-weight:800; margin-left:4px; }
+.finalized-badge { background:#16a34a; color:#fff; padding:1px 7px; border-radius:3px; font-size:9px; font-weight:800; }
+.pending-badge { background:#475569; color:#cbd5e1; padding:1px 7px; border-radius:3px; font-size:9px; font-weight:800; }
+
+.center-section { background:rgba(0,0,0,0.2); border-radius:8px; padding:12px; margin-bottom:14px; }
+.center-section h3 { font-size:12px; color:#a5b4fc; font-weight:800; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid #334155; }
+
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:14px 24px; border-radius:10px; font-size:14px; font-weight:800; box-shadow:0 6px 24px rgba(22,163,74,0.5); z-index:99999; opacity:0; transition:opacity 0.2s; pointer-events:none; }
+#toast.show { opacity:1; }
+@media (max-width: 768px) { .kpi-grid { grid-template-columns:repeat(2, 1fr); } table { font-size:10px; } }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📊 인센티브 대시보드</h1>
+      <div class="subtitle">상담사별 실적 모니터링 · 정산 확정 (admin)</div>
+    </div>
+    <div id="user-info" style="text-align:right;display:none">
+      <div style="font-size:13px;font-weight:800;color:#f8fafc" id="user-name">-</div>
+      <div style="font-size:10px;color:#94a3b8" id="user-meta">-</div>
+      <button id="logout-btn" style="margin-top:6px;padding:4px 10px;background:#475569;color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">로그아웃</button>
+    </div>
+  </header>
+
+  <div class="auth-box" id="auth-box">
+    <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:#60a5fa">🔐 manager 또는 admin 권한 필요</div>
+    <input type="email" id="auth-email" placeholder="email" autocomplete="username">
+    <input type="password" id="auth-pass" placeholder="비밀번호" autocomplete="current-password">
+    <button id="auth-login-btn">로그인</button>
+    <div class="auth-msg" id="auth-msg"></div>
+    <div style="font-size:10px;color:#94a3b8;margin-top:8px">
+      테스트: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">manager1@bongi.test</code> / <code>admin1@bongi.test</code> (비번 <code>pass1234!</code>)
+    </div>
+  </div>
+
+  <div id="main-area" style="display:none">
+    <!-- 툴바 -->
+    <div class="toolbar">
+      <label style="font-size:11px;color:#94a3b8">📅 정산 월</label>
+      <input type="month" id="filter-month">
+      <button id="reload-btn" class="btn-secondary">🔄 새로고침</button>
+      <span id="result-count" style="font-size:11px;color:#94a3b8;margin-left:auto">-</span>
+      <button id="finalize-all-btn" class="btn-primary" style="display:none">📌 전체 정산 확정 (admin)</button>
+    </div>
+
+    <!-- 전체 KPI -->
+    <div class="section">
+      <h2>📈 이번 달 전체 KPI</h2>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">상담사 수</div><div class="kpi-val" id="kpi-agents">-</div><div class="kpi-sub" id="kpi-agents-sub">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">총 영업</div><div class="kpi-val" id="kpi-sales">-</div><div class="kpi-sub" id="kpi-sales-sub">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">총 매출</div><div class="kpi-val" id="kpi-revenue">-</div><div class="kpi-sub">리베이트</div></div>
+        <div class="kpi-card"><div class="kpi-label">총 인센티브</div><div class="kpi-val" id="kpi-incentive">-</div><div class="kpi-sub" id="kpi-bonus-sub">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">회사 영업이익</div><div class="kpi-val" id="kpi-profit">-</div><div class="kpi-sub" id="kpi-profit-rate">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">⚠️ 페널티</div><div class="kpi-val" id="kpi-penalty">-</div><div class="kpi-sub">우수 의무 미달</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <div style="font-size:11px;color:#94a3b8">Grade 분포</div>
+        <div class="grade-dist" id="grade-dist"></div>
+      </div>
+    </div>
+
+    <!-- 상담사별 실적 -->
+    <div class="section">
+      <h2>👥 상담사별 실적
+        <span style="font-size:10px;color:#94a3b8;font-weight:400" id="section-sub"></span>
+      </h2>
+      <div id="centers-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api/incentive';
+const AUTH = '/api/auth';
+const TOKEN_KEY = 'incentive-auth-token-v1';
+const getToken = () => localStorage.getItem(TOKEN_KEY);
+const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
+const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+const fmt = n => (n||0).toLocaleString() + '원';
+
+let _myRole = null;
+let _overview = null;
+
+async function login(email, password) {
+  const res = await fetch(AUTH + '/login', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({email, password})
+  });
+  if (!res.ok) throw new Error((await res.json()).error || '로그인 실패');
+  const data = await res.json();
+  setToken(data.access_token);
+  return data;
+}
+
+async function fetchAgent() {
+  const tk = getToken(); if (!tk) return null;
+  const res = await fetch(API + '/agents/me', {headers: {Authorization: 'Bearer ' + tk}});
+  if (!res.ok) { clearToken(); return null; }
+  return (await res.json()).agent;
+}
+
+async function fetchOverview(month) {
+  const tk = getToken();
+  const res = await fetch(API + '/manager/overview?month=' + month, {
+    headers: {Authorization: 'Bearer ' + tk}
+  });
+  if (!res.ok) throw new Error((await res.json()).error || '조회 실패');
+  return await res.json();
+}
+
+async function finalizeAll(month) {
+  if (!confirm(`⚠️ ${month} 모든 활성 상담사의 정산을 확정하시겠습니까?\\n\\n확정 후엔 monthly_settlements에 저장되며, 영업 데이터 변경되어도 finalized된 정산은 유지됩니다.`)) return;
+  const tk = getToken();
+  try {
+    const res = await fetch(API + '/finalize', {
+      method: 'POST', headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + tk},
+      body: JSON.stringify({month})
+    });
+    if (!res.ok) throw new Error((await res.json()).error || '확정 실패');
+    const data = await res.json();
+    showToast(`✅ ${data.count}명 정산 확정 완료`);
+    await loadAll();
+  } catch (e) { alert('오류: ' + e.message); }
+}
+
+async function finalizeOne(agentId, agentName, month) {
+  if (!confirm(`'${agentName}'의 ${month} 정산을 확정하시겠습니까?`)) return;
+  const tk = getToken();
+  try {
+    const res = await fetch(API + '/finalize', {
+      method: 'POST', headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + tk},
+      body: JSON.stringify({month, agent_id: agentId})
+    });
+    if (!res.ok) throw new Error((await res.json()).error || '실패');
+    showToast(`✅ '${agentName}' 정산 확정`);
+    await loadAll();
+  } catch (e) { alert('오류: ' + e.message); }
+}
+
+function renderKpi(o) {
+  const t = o.totals || {};
+  document.getElementById('kpi-agents').textContent = o.agents_count + '명';
+  document.getElementById('kpi-agents-sub').textContent = '활성';
+  document.getElementById('kpi-sales').textContent = (t.total_sales_count || 0) + '건';
+  document.getElementById('kpi-sales-sub').textContent = '우수 ' + (t.total_premium_count || 0) + '건';
+  document.getElementById('kpi-revenue').textContent = fmt(t.total_revenue);
+  document.getElementById('kpi-incentive').textContent = fmt(t.total_incentive);
+  document.getElementById('kpi-bonus-sub').textContent = '+ 보너스 ' + fmt(t.total_bonus);
+  const profit = t.total_company_profit || 0;
+  document.getElementById('kpi-profit').textContent = fmt(profit);
+  const rate = t.total_revenue > 0 ? (profit / t.total_revenue * 100) : 0;
+  document.getElementById('kpi-profit-rate').textContent = '영업이익률 ' + rate.toFixed(1) + '%';
+  document.getElementById('kpi-penalty').textContent = (t.penalty_count || 0) + '명';
+
+  // Grade 분포
+  const gd = o.grade_distribution || {1:0,2:0,3:0};
+  document.getElementById('grade-dist').innerHTML =
+    `<span class="grade-pill g1">G1: ${gd[1]||0}명</span>` +
+    `<span class="grade-pill g2">G2: ${gd[2]||0}명</span>` +
+    `<span class="grade-pill g3">G3: ${gd[3]||0}명</span>`;
+}
+
+function renderAgents(o) {
+  const settlements = o.settlements || [];
+  document.getElementById('result-count').textContent = settlements.length + '명';
+  document.getElementById('section-sub').textContent =
+    _myRole === 'admin' ? '(전체 센터)' : '(본인 센터만)';
+
+  // 센터별 그룹
+  const byCenter = {};
+  settlements.forEach(s => {
+    const center = (s.agent || {}).center || '-';
+    if (!byCenter[center]) byCenter[center] = [];
+    byCenter[center].push(s);
+  });
+
+  const month = document.getElementById('filter-month').value;
+  const isAdmin = _myRole === 'admin';
+
+  const html = Object.keys(byCenter).sort().map(center => {
+    const rows = byCenter[center].map(s => {
+      const a = s.agent || {};
+      const isFinalized = !!s.finalized_at;
+      const cls = isFinalized ? 'finalized' : (s.is_penalty ? 'penalty' : '');
+      const finalizedBadge = isFinalized
+        ? `<span class="finalized-badge">확정</span>`
+        : `<span class="pending-badge">미확정</span>`;
+      return `<tr class="${cls}">
+        <td><b>${a.name}</b><div style="font-size:9px;color:#64748b">${a.role}</div></td>
+        <td><span class="tier g-${s.grade_applied || 1}">G${s.grade_applied || 1}</span>${s.is_penalty ? '<span class="penalty-badge">⚠️ 페널티</span>' : ''}</td>
+        <td>${s.total_count || 0}건<div style="font-size:9px;color:#64748b">우수 ${s.premium_count || 0}건</div></td>
+        <td><b>${s.total_points || 0}P</b><div style="font-size:9px;color:#64748b">목표 G${s.grade_target || 1}</div></td>
+        <td>${(s.applied_rate||0).toLocaleString()}/P</td>
+        <td>${fmt(s.incentive)}<div style="font-size:9px;color:#64748b">+ ${fmt(s.bonus)}</div></td>
+        <td><b style="color:#86efac">${fmt(s.agent_total)}</b></td>
+        <td>${fmt(s.total_revenue)}</td>
+        <td style="color:${(s.company_profit||0) > 0 ? '#86efac' : '#fca5a5'}">${fmt(s.company_profit)}</td>
+        <td>${finalizedBadge}</td>
+        <td>
+          ${isAdmin && !isFinalized ? `<button class="btn-primary" style="padding:4px 10px;font-size:10px" onclick="finalizeOne('${a.id}', '${(a.name||'').replace(/'/g,"\\\\'")}','${month}')">📌 확정</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+    const subtotal = byCenter[center].reduce((acc, s) => {
+      acc.count += s.total_count || 0;
+      acc.points += parseFloat(s.total_points) || 0;
+      acc.incentive += s.incentive || 0;
+      acc.profit += s.company_profit || 0;
+      return acc;
+    }, {count:0, points:0, incentive:0, profit:0});
+
+    return `<div class="center-section">
+      <h3>🏢 ${center} <span style="color:#94a3b8;font-weight:400;font-size:10px">· ${byCenter[center].length}명 · 영업 ${subtotal.count}건 · ${subtotal.points}P · 인센티브 ${fmt(subtotal.incentive)}</span></h3>
+      <table>
+        <thead>
+          <tr>
+            <th>상담사</th><th>Grade</th><th>영업/우수</th><th>P</th>
+            <th>단가</th><th>인센티브</th><th>총수령</th><th>매출</th>
+            <th>회사이익</th><th>상태</th><th>작업</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  document.getElementById('centers-wrap').innerHTML = html || '<div style="text-align:center;padding:40px;color:#64748b">조회된 데이터 없음</div>';
+
+  // admin만 일괄 정산 버튼 표시
+  document.getElementById('finalize-all-btn').style.display = isAdmin ? '' : 'none';
+}
+
+async function loadAll() {
+  const month = document.getElementById('filter-month').value;
+  if (!month) return;
+  try {
+    _overview = await fetchOverview(month);
+    renderKpi(_overview);
+    renderAgents(_overview);
+  } catch (e) { alert('로드 실패: ' + e.message); }
+}
+
+let _toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function init() {
+  document.getElementById('filter-month').value = new Date().toISOString().slice(0,7);
+  const tk = getToken();
+  if (tk) {
+    const agent = await fetchAgent();
+    if (agent && (agent.role === 'manager' || agent.role === 'admin')) onLoggedIn(agent);
+    else if (agent) {
+      document.getElementById('auth-msg').textContent = '⚠️ manager/admin 권한 필요 (현재 ' + agent.role + ')';
+      document.getElementById('auth-msg').style.color = '#fbbf24';
+      clearToken();
+    }
+  }
+}
+
+function onLoggedIn(agent) {
+  _myRole = agent.role;
+  document.getElementById('auth-box').style.display = 'none';
+  document.getElementById('main-area').style.display = '';
+  document.getElementById('user-info').style.display = '';
+  document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
+  document.getElementById('user-meta').textContent = agent.center;
+  loadAll();
+}
+
+document.getElementById('auth-login-btn').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-pass').value;
+  const msg = document.getElementById('auth-msg'); msg.style.color = '#dc2626';
+  if (!email || !password) { msg.textContent = '입력 필수'; return; }
+  try {
+    await login(email, password);
+    const agent = await fetchAgent();
+    if (!agent || (agent.role !== 'manager' && agent.role !== 'admin')) {
+      msg.textContent = 'manager/admin 권한 필요'; clearToken(); return;
+    }
+    onLoggedIn(agent);
+  } catch (e) { msg.textContent = e.message; }
+});
+document.getElementById('logout-btn').addEventListener('click', () => { clearToken(); location.reload(); });
+document.getElementById('reload-btn').addEventListener('click', loadAll);
+document.getElementById('filter-month').addEventListener('change', loadAll);
+document.getElementById('finalize-all-btn').addEventListener('click', () => {
+  finalizeAll(document.getElementById('filter-month').value);
+});
+
+init();
+</script>
+</body>
+</html>
