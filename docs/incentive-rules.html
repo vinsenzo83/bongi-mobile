@@ -272,6 +272,155 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       </div>
     </div>
 
+    <!-- 🧪 영업이익 시뮬레이터 (기획서 기반) -->
+    <div class="section">
+      <h2>🧪 영업이익 시뮬레이터 — 회사 마진 / 인센티브 분리</h2>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:12px">
+        💡 V5 기획서 공식 그대로 — 정책·영업 가정 조정 시 회사 영업이익과 상담사 수령액 즉시 계산.
+        추후 정책 변경 사전 영향 평가에 사용.
+      </div>
+
+      <!-- 빠른 프리셋 -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+        <button type="button" class="btn-secondary sim-preset" data-preset="g3" style="background:#16a34a">📈 시나리오 1: G3 정상 (기획서)</button>
+        <button type="button" class="btn-secondary sim-preset" data-preset="g3penalty" style="background:#dc2626">⚠️ 시나리오 2: G3→G2 페널티</button>
+        <button type="button" class="btn-secondary sim-preset" data-preset="bep" style="background:#3b82f6">📊 시나리오 6: BEP·이익률</button>
+        <button type="button" class="btn-secondary sim-preset" data-preset="current" style="background:#7c3aed">🔍 현재 운영 추정</button>
+      </div>
+
+      <!-- 입력 영역 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+        <!-- 영업 가정 -->
+        <div style="background:rgba(59,130,246,0.06);border:1.5px solid rgba(59,130,246,0.3);border-radius:8px;padding:14px 16px">
+          <div style="font-size:12px;color:#60a5fa;font-weight:800;margin-bottom:10px;letter-spacing:0.04em">📊 영업 가정 (per 상담사 1명)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px">
+            <label>상담사 수
+              <input id="sim-agents" type="number" min="1" value="1" class="sim-input">
+            </label>
+            <label>월 영업/명
+              <input id="sim-sales" type="number" min="0" value="30" class="sim-input">
+            </label>
+            <label>평균 가중치 P (1.0~1.5)
+              <input id="sim-weight" type="number" min="0.5" max="2" step="0.1" value="1.5" class="sim-input">
+            </label>
+            <label>우수상품 비율 (%)
+              <input id="sim-premium-pct" type="number" min="0" max="100" value="100" class="sim-input">
+            </label>
+            <label>평균 리베이트 (₩)
+              <input id="sim-rebate" type="number" min="0" step="10000" value="924000" class="sim-input">
+            </label>
+            <label>평균 페이백 정가 (₩)
+              <input id="sim-payback" type="number" min="0" step="10000" value="430000" class="sim-input">
+            </label>
+            <label>추가 페이백/건 (₩, 0~50K)
+              <input id="sim-add-payback" type="number" min="0" max="50000" step="1000" value="50000" class="sim-input">
+            </label>
+            <label>매출 인식률 (예: 0.9)
+              <input id="sim-tax-rate" type="number" min="0.5" max="1" step="0.01" value="0.9" class="sim-input">
+            </label>
+          </div>
+        </div>
+
+        <!-- 정책 파라미터 -->
+        <div style="background:rgba(167,139,250,0.06);border:1.5px solid rgba(167,139,250,0.3);border-radius:8px;padding:14px 16px">
+          <div style="font-size:12px;color:#a78bfa;font-weight:800;margin-bottom:10px;letter-spacing:0.04em">⚙️ 정책 파라미터 (변경 시뮬)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px">
+            <label>기본급 (₩)
+              <input id="sim-base" type="number" min="0" step="100000" value="2300000" class="sim-input">
+            </label>
+            <label>우수 보너스/건 (₩)
+              <input id="sim-bonus" type="number" min="0" step="1000" value="10000" class="sim-input">
+            </label>
+            <label>G1 단가 (₩/P)
+              <input id="sim-rate-g1" type="number" min="0" step="1000" value="20000" class="sim-input">
+            </label>
+            <label>G2 단가 (₩/P)
+              <input id="sim-rate-g2" type="number" min="0" step="1000" value="30000" class="sim-input">
+            </label>
+            <label>G3 단가 (₩/P)
+              <input id="sim-rate-g3" type="number" min="0" step="1000" value="40000" class="sim-input">
+            </label>
+            <label>회사 페이백 한도 (₩)
+              <input id="sim-cap" type="number" min="0" step="5000" value="30000" class="sim-input">
+            </label>
+            <label>G2 임계 P
+              <input id="sim-th-g2" type="number" min="0" step="1" value="16" class="sim-input">
+            </label>
+            <label>G3 임계 P
+              <input id="sim-th-g3" type="number" min="0" step="1" value="31" class="sim-input">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 결과 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+        <!-- 회사 -->
+        <div style="background:rgba(34,197,94,0.06);border:1.5px solid rgba(34,197,94,0.4);border-radius:10px;padding:14px 16px">
+          <div style="font-size:12px;color:#22c55e;font-weight:800;margin-bottom:10px;letter-spacing:0.04em">🏢 회사 손익</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:11.5px">
+            <div style="display:flex;justify-content:space-between"><span>매출 (리베이트 × 인식률)</span><b id="sim-out-net-rev" style="color:#86efac">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>− 페이백 정가</span><b id="sim-out-payback" style="color:#fca5a5">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>− 회사 부담 추가페이백</span><b id="sim-out-burden" style="color:#fca5a5">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>− 인건비 합계</span><b id="sim-out-labor" style="color:#fca5a5">-</b></div>
+            <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1.5px solid #475569;font-size:14px">
+              <span style="font-weight:800">🟢 영업이익</span>
+              <b id="sim-out-profit" style="color:#22c55e;font-size:18px;font-weight:900">-</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
+              <span>이익률</span><b id="sim-out-profit-rate">-</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
+              <span>건당 회사 마진</span><b id="sim-out-per-deal">-</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- 상담사 -->
+        <div style="background:rgba(251,191,36,0.06);border:1.5px solid rgba(251,191,36,0.4);border-radius:10px;padding:14px 16px">
+          <div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:10px;letter-spacing:0.04em">👤 상담사 수령 (per 1명)</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:11.5px">
+            <div style="display:flex;justify-content:space-between"><span>+ 기본급</span><b id="sim-out-base" style="color:#86efac">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>+ 인센티브 (P × 단가)</span><b id="sim-out-inc" style="color:#86efac">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>+ 우수 보너스</span><b id="sim-out-bonus" style="color:#86efac">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>− 본인 페이백 차감</span><b id="sim-out-deduct" style="color:#fca5a5">-</b></div>
+            <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1.5px solid #475569;font-size:14px">
+              <span style="font-weight:800">💰 총 수령</span>
+              <b id="sim-out-agent-total" style="color:#fbbf24;font-size:18px;font-weight:900">-</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
+              <span>적용 Grade</span><b id="sim-out-grade">-</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
+              <span>건당 평균 수령</span><b id="sim-out-per-agent-deal">-</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- 메트릭 -->
+        <div style="background:rgba(99,102,241,0.06);border:1.5px solid rgba(99,102,241,0.4);border-radius:10px;padding:14px 16px">
+          <div style="font-size:12px;color:#818cf8;font-weight:800;margin-bottom:10px;letter-spacing:0.04em">📐 산출 지표</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:11.5px">
+            <div style="display:flex;justify-content:space-between"><span>총 영업 건수</span><b id="sim-out-total-deals">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>총 P</span><b id="sim-out-total-p">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>우수 건수</span><b id="sim-out-prem-count">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>페널티?</span><b id="sim-out-penalty">-</b></div>
+            <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1.5px solid #475569">
+              <span>BEP (영업 건수)</span><b id="sim-out-bep" style="color:#fbbf24">-</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
+              <span>= 인건비 ÷ 건당 마진</span><span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <style>
+        .sim-input { display:block; width:100%; margin-top:4px; padding:6px 8px; background:#0f172a; border:1px solid #475569; color:#e2e8f0; border-radius:5px; font-size:11.5px; }
+        .sim-input:focus { outline:none; border-color:#60a5fa; background:#1e293b; }
+        label { color:#cbd5e1; font-weight:600; }
+      </style>
+    </div>
+
     <!-- 정책 이력 -->
     <div class="section">
       <h2>📜 정책 변경 이력</h2>
@@ -525,6 +674,119 @@ document.getElementById('auth-login-btn').addEventListener('click', async () => 
 document.getElementById('logout-btn').addEventListener('click', () => { clearToken(); location.reload(); });
 document.getElementById('btn-save').addEventListener('click', saveCurrent);
 document.getElementById('btn-publish').addEventListener('click', publishNew);
+
+// ═══ 영업이익 시뮬레이터 ═══
+const SIM_PRESETS = {
+  g3: { agents:1, sales:30, weight:1.5, prem_pct:100, rebate:924000, payback:430000, add_payback:50000 },
+  g3penalty: { agents:1, sales:21, weight:1.5, prem_pct:0, rebate:660000, payback:400000, add_payback:0 },
+  bep: { agents:1, sales:30, weight:1.5, prem_pct:100, rebate:924000, payback:430000, add_payback:50000 },
+  current: { agents:9, sales:1, weight:1.4, prem_pct:25, rebate:776000, payback:376000, add_payback:5000 },
+};
+
+function simFmt(n) { return (n||0).toLocaleString('ko-KR') + '원'; }
+
+function runSimulation() {
+  const v = id => parseFloat(document.getElementById(id).value) || 0;
+  // 입력
+  const agents = Math.max(1, v('sim-agents'));
+  const sales = v('sim-sales');
+  const weight = v('sim-weight');
+  const premPct = v('sim-premium-pct') / 100;
+  const rebate = v('sim-rebate');
+  const payback = v('sim-payback');
+  const addPayback = v('sim-add-payback');
+  const taxRate = v('sim-tax-rate');
+  const baseSalary = v('sim-base');
+  const bonus = v('sim-bonus');
+  const rateG1 = v('sim-rate-g1');
+  const rateG2 = v('sim-rate-g2');
+  const rateG3 = v('sim-rate-g3');
+  const cap = v('sim-cap');
+  const thG2 = v('sim-th-g2');
+  const thG3 = v('sim-th-g3');
+
+  // per agent 계산
+  const totalP = sales * weight;
+  const premCount = Math.round(sales * premPct);
+  // Grade 결정 (P 기준)
+  let gradeTarget = 1;
+  if (totalP >= thG3) gradeTarget = 3;
+  else if (totalP >= thG2) gradeTarget = 2;
+  // 페널티 — 우수 의무 (G2: 5건, G3: 10건)
+  let gradeApplied = gradeTarget;
+  let isPenalty = false;
+  if (gradeTarget === 3 && premCount < 10) { gradeApplied = 2; isPenalty = true; }
+  if (gradeApplied === 2 && premCount < 5) { gradeApplied = Math.min(gradeApplied, 1); isPenalty = true; }
+  const appliedRate = gradeApplied === 3 ? rateG3 : (gradeApplied === 2 ? rateG2 : rateG1);
+
+  // 인센티브
+  const incentive = totalP * appliedRate;
+  const bonusTotal = premCount * bonus;
+  const companyBurden = Math.min(addPayback, cap) * sales;
+  const agentDeduct = Math.max(0, addPayback - cap) * sales;
+  const agentTotal = baseSalary + incentive + bonusTotal - agentDeduct;
+
+  // 회사 손익 (1명 기준 → × agents)
+  const totalRev = rebate * sales * agents;
+  const totalPayback = payback * sales * agents;
+  const totalBurden = companyBurden * agents;
+  const totalLabor = (baseSalary + incentive + bonusTotal) * agents;
+  const netRevenue = totalRev * taxRate;
+  const profit = netRevenue - totalPayback - totalBurden - totalLabor;
+  const profitRate = totalRev > 0 ? (profit / totalRev * 100) : 0;
+  const totalDeals = sales * agents;
+  const perDealMargin = totalDeals > 0 ? (profit / totalDeals) : 0;
+  // BEP — 인건비 / 건당 마진(인건비 제외 회사 단위 마진)
+  const perDealCompanyMargin = (rebate * taxRate) - payback - Math.min(addPayback, cap);
+  const labor1 = baseSalary; // 1명 기본급만 비교
+  const bepDeals = perDealCompanyMargin > 0 ? Math.ceil(labor1 / perDealCompanyMargin) : null;
+
+  // 출력
+  const set = (id, val) => { document.getElementById(id).textContent = val; };
+  set('sim-out-net-rev', '+' + simFmt(netRevenue));
+  set('sim-out-payback', '-' + simFmt(totalPayback));
+  set('sim-out-burden', '-' + simFmt(totalBurden));
+  set('sim-out-labor', '-' + simFmt(totalLabor));
+  set('sim-out-profit', (profit >= 0 ? '+' : '') + simFmt(profit));
+  document.getElementById('sim-out-profit').style.color = profit >= 0 ? '#22c55e' : '#fca5a5';
+  set('sim-out-profit-rate', profitRate.toFixed(1) + '%');
+  set('sim-out-per-deal', simFmt(Math.round(perDealMargin)));
+
+  set('sim-out-base', '+' + simFmt(baseSalary));
+  set('sim-out-inc', '+' + simFmt(incentive));
+  set('sim-out-bonus', '+' + simFmt(bonusTotal));
+  set('sim-out-deduct', '-' + simFmt(agentDeduct));
+  set('sim-out-agent-total', simFmt(agentTotal));
+  const gradeColor = ['','#6b7280','#3b82f6','#dc2626'][gradeApplied] || '#6b7280';
+  document.getElementById('sim-out-grade').innerHTML =
+    `<span style="background:${gradeColor};color:#fff;padding:1px 8px;border-radius:4px">G${gradeApplied}</span>` +
+    (isPenalty ? ` <span style="color:#fbbf24;font-size:9.5px">⚠️ 페널티</span>` : '');
+  set('sim-out-per-agent-deal', sales > 0 ? simFmt(Math.round(agentTotal / sales)) : '-');
+
+  set('sim-out-total-deals', totalDeals + '건');
+  set('sim-out-total-p', (totalP * agents).toFixed(1) + 'P');
+  set('sim-out-prem-count', (premCount * agents) + '건');
+  set('sim-out-penalty', isPenalty ? '⚠️ 발동' : '없음');
+  set('sim-out-bep', bepDeals != null ? bepDeals + '건/명' : '계산불가');
+}
+
+// 입력 변경 시 실시간 갱신
+document.querySelectorAll('.sim-input').forEach(inp => inp.addEventListener('input', runSimulation));
+// 프리셋 버튼
+document.querySelectorAll('.sim-preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = SIM_PRESETS[btn.dataset.preset];
+    if (!p) return;
+    Object.entries(p).forEach(([k, val]) => {
+      const id = 'sim-' + k.replace(/_/g, '-');
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+    runSimulation();
+  });
+});
+// 초기 실행
+setTimeout(runSimulation, 200);
 
 init();
 </script>
