@@ -903,7 +903,7 @@ async function applyIncentivePaybackSync() {
   } catch (e) { console.warn('[gift sync]', e); }
 }
 
-// 페이지 로드 시 동기화 + 5분마다 자동 새로고침
+// 페이지 로드 시 동기화 + 5분마다 자동 새로고침 (안전망)
 setTimeout(() => {
   if (typeof D !== 'undefined') {
     window.D = D;
@@ -911,6 +911,22 @@ setTimeout(() => {
   }
 }, 1000);
 setInterval(() => { if (typeof applyIncentivePaybackSync === 'function') applyIncentivePaybackSync(); }, 5 * 60 * 1000);
+
+// ─── BroadcastChannel: 같은 브라우저의 상품 관리 탭에서 변경 → 즉시 반영 ───
+try {
+  const _bc = new BroadcastChannel('incentive-products');
+  _bc.onmessage = (ev) => {
+    if (!ev.data || ev.data.type !== 'product-updated') return;
+    console.log('[products bc] 변경 감지', ev.data);
+    applyIncentivePaybackSync();
+    // 토스트
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7c3aed;color:#fff;padding:8px 16px;border-radius:8px;font-size:11.5px;font-weight:700;z-index:99999;box-shadow:0 4px 16px rgba(124,58,237,0.4)';
+    t.textContent = '🔄 상품 데이터 업데이트됨';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  };
+} catch (e) { console.warn('[products bc] 미지원', e); }
 
 
 function getGiftAmount(d, sp, tvIdx) {
@@ -2674,6 +2690,19 @@ async function incSetupRealtime() {
       t.textContent = evtLabel + ' — 자동 갱신됨';
       document.body.appendChild(t);
       setTimeout(() => t.remove(), 3000);
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'incentive_products'
+    }, payload => {
+      console.log('[realtime] products 변경 감지', payload.new);
+      if (typeof applyIncentivePaybackSync === 'function') applyIncentivePaybackSync();
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7c3aed;color:#fff;padding:8px 16px;border-radius:8px;font-size:11.5px;font-weight:700;z-index:99999;box-shadow:0 4px 16px rgba(124,58,237,0.4)';
+      t.textContent = '🔄 상품 데이터 업데이트됨';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2500);
     })
     .subscribe();
 }

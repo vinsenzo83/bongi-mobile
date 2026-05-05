@@ -180,7 +180,13 @@ async function patchProduct(id, body) {
     body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error((await res.json()).error || '실패');
-  return (await res.json()).product;
+  const product = (await res.json()).product;
+  try {
+    const ch = new BroadcastChannel('incentive-products');
+    ch.postMessage({ type: 'product-updated', id, fields: Object.keys(body) });
+    ch.close();
+  } catch (e) {}
+  return product;
 }
 
 function renderKpi() {
