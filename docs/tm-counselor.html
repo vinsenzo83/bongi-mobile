@@ -1608,6 +1608,12 @@ function calc() {
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi3) + '</span></div>' +
       '<div class="calc-line discount"><span class="l">' + (isChweyswun ? '참쉬운' : '투게더') + ' 인터넷 할인 (기본 TV결합 할인 대체)</span><span class="v">-' + fmt(lguInetDc) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfter) + '</span></div>';
+    // LG U+ 500M/1G 프리미엄 안심 옵션 (섹터 2)
+    if (sp === '500M' || sp === '1G') {
+      var lguSpkrEl3 = document.getElementById('c-lgu-bonus-speaker');
+      var lguBonusVal3 = (lguSpkrEl3 && lguSpkrEl3.checked) ? '와이파이 1대 + 🔊 스마트홈 스피커' : '와이파이 2대';
+      html += '<div class="calc-line sub" style="background:rgba(228,9,129,0.12);border-radius:4px;padding:3px 6px;margin:3px 0;color:#fbcfe8"><span class="l">🎁 프리미엄 안심 (무료 기본제공)</span><span class="v" style="color:#f9a8d4;font-weight:700">' + lguBonusVal3 + '</span></div>';
+    }
     if (hasTv) {
       html += '<div class="calc-line" style="margin-top:6px"><span class="l">' + d.tv[ti].n.split('(')[0].trim() + '</span><span class="v">' + fmt(tvBaseVal2) + '</span></div>' +
         '<div class="calc-line discount"><span class="l">TV 결합 할인</span><span class="v">-' + fmt(tvBaseDc2) + '</span></div>' +
