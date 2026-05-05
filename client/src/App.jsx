@@ -176,16 +176,16 @@ function AppRoutes() {
       {/* V5 인센티브 어드민 — 통합 SPA (React 마이그레이션) */}
       <Route path="/admin/v5" element={<Suspense fallback={<AdminFallback />}><V5AdminLayout /></Suspense>}>
         <Route index element={<W C={V5Index} />} />
-        <Route path="dashboard" element={<W C={V5Dashboard} />} />
-        {/* 점진 마이그레이션 — 아직 React 변환 안 된 페이지는 iframe으로 임시 wrap */}
-        {/* TM 견적·영업: Phase B2 완료(좌측 스크립트 + 3-column + 멤버) → React 복원 */}
-        <Route path="tm" element={<W C={V5TmCounselor} />} />
-        <Route path="contracts" element={<W C={V5Contract} />} />
-        <Route path="agents" element={<W C={V5Agents} />} />
-        <Route path="products" element={<W C={V5Products} />} />
-        {/* 사용자 보고 '데이터가 모두 누락됨' — calc-data 임시 vanilla fallback. 진단 후 React 복원 */}
-        <Route path="calc-data" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/calculator.html?admin=1" title="TM 데이터 / 요금 계산기" /></Suspense>} />
-        <Route path="rules" element={<W C={V5Rules} />} />
+        {/* 사용자 요청: '기존 화면 그대로 구현' — 모든 페이지 vanilla iframe으로 통일.
+            React는 라우팅·사이드바·인증·라우트 가드만. 페이지 내용은 100% vanilla HTML 안정 버전.
+            (변환된 React 컴포넌트는 코드에 남겨두되 라우트 미사용) */}
+        <Route path="dashboard" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/incentive-dashboard.html" title="대시보드" /></Suspense>} />
+        <Route path="tm" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/tm-counselor.html" title="TM 견적·영업" /></Suspense>} />
+        <Route path="contracts" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/incentive-contract.html" title="계약 처리" /></Suspense>} />
+        <Route path="agents" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/incentive-agents.html" title="상담사 관리" /></Suspense>} />
+        <Route path="products" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/incentive-products.html" title="상품 관리" /></Suspense>} />
+        <Route path="calc-data" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/calculator.html?admin=1" title="TM 데이터" /></Suspense>} />
+        <Route path="rules" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/incentive-rules.html" title="정책 관리" /></Suspense>} />
       </Route>
     </Routes>
   );
