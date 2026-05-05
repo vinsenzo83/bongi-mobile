@@ -409,9 +409,9 @@ async function init() {
   const tk = getToken();
   if (tk) {
     const agent = await fetchAgent();
-    if (agent && (agent.role === 'manager' || agent.role === 'admin')) onLoggedIn(agent);
+    if (agent && ['manager', 'admin', 'contract'].includes(agent.role)) onLoggedIn(agent);
     else if (agent) {
-      document.getElementById('auth-msg').textContent = '⚠️ manager/admin 권한 필요 (현재 ' + agent.role + ')';
+      document.getElementById('auth-msg').textContent = '⚠️ manager/contract/admin 권한 필요 (현재 ' + agent.role + ')';
       document.getElementById('auth-msg').style.color = '#fbbf24';
       clearToken();
     }
@@ -436,8 +436,8 @@ document.getElementById('auth-login-btn').addEventListener('click', async () => 
   try {
     await login(email, password);
     const agent = await fetchAgent();
-    if (!agent || (agent.role !== 'manager' && agent.role !== 'admin')) {
-      msg.textContent = 'manager/admin 권한 필요'; clearToken(); return;
+    if (!agent || !['manager','admin','contract'].includes(agent.role)) {
+      msg.textContent = 'manager/contract/admin 권한 필요'; clearToken(); return;
     }
     onLoggedIn(agent);
   } catch (e) { msg.textContent = e.message; }

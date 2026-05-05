@@ -38,6 +38,7 @@ tr.inactive { opacity:0.5; }
 .role-badge { padding:2px 7px; border-radius:4px; font-size:9px; font-weight:800; letter-spacing:0.03em; }
 .role-agent { background:#3b82f6; color:#fff; }
 .role-manager { background:#16a34a; color:#fff; }
+.role-contract { background:#0891b2; color:#fff; }
 .role-admin { background:#dc2626; color:#fff; }
 .active-badge { background:#16a34a; color:#fff; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:800; }
 .inactive-badge { background:#475569; color:#cbd5e1; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:800; }
@@ -113,8 +114,9 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <div class="field"><label>역할</label>
           <select id="new-role">
             <option value="agent">agent — 상담사 (본인 영업만)</option>
-            <option value="manager">manager — 센터장 (센터 전체 조회)</option>
-            <option value="admin">admin — 본사 (전체 + 정책 편집)</option>
+            <option value="manager">manager — 상담사팀장 (본인 센터)</option>
+            <option value="contract">contract — 계약관리담당자 (계약 처리)</option>
+            <option value="admin">admin — 총 관리자 (전체 + 정책)</option>
           </select>
           <div class="hint">변경은 발급 후에도 가능</div>
         </div>
@@ -141,9 +143,10 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <label style="font-size:11px;color:#94a3b8">필터:</label>
         <select id="filter-role" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:5px 9px;border-radius:5px;font-size:11px">
           <option value="">전체 역할</option>
-          <option value="agent">agent</option>
-          <option value="manager">manager</option>
-          <option value="admin">admin</option>
+          <option value="agent">agent (상담사)</option>
+          <option value="manager">manager (팀장)</option>
+          <option value="contract">contract (계약담당)</option>
+          <option value="admin">admin (관리자)</option>
         </select>
         <select id="filter-active" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:5px 9px;border-radius:5px;font-size:11px">
           <option value="">전체 상태</option>
@@ -291,9 +294,10 @@ function openEditAgent(id) {
           </div>
           <div class="field"><label>역할</label>
             <select id="e-role">
-              <option value="agent" ${a.role==='agent'?'selected':''}>agent</option>
-              <option value="manager" ${a.role==='manager'?'selected':''}>manager</option>
-              <option value="admin" ${a.role==='admin'?'selected':''}>admin</option>
+              <option value="agent" ${a.role==='agent'?'selected':''}>agent (상담사)</option>
+              <option value="manager" ${a.role==='manager'?'selected':''}>manager (상담사팀장)</option>
+              <option value="contract" ${a.role==='contract'?'selected':''}>contract (계약관리담당자)</option>
+              <option value="admin" ${a.role==='admin'?'selected':''}>admin (총 관리자)</option>
             </select>
           </div>
         </div>

@@ -18,6 +18,7 @@ body { font-family: 'Pretendard Variable', sans-serif; background:#0f172a; color
 .role-badge { padding:2px 8px; border-radius:4px; font-size:10px; font-weight:800; }
 .role-agent { background:#3b82f6; color:#fff; }
 .role-manager { background:#16a34a; color:#fff; }
+.role-contract { background:#0891b2; color:#fff; }
 .role-admin { background:#dc2626; color:#fff; }
 .top-bar button { background:#475569; color:#fff; border:none; padding:5px 11px; border-radius:5px; cursor:pointer; font-size:11px; font-weight:700; }
 .main { flex:1; display:flex; min-height:0; }
@@ -29,6 +30,7 @@ aside.sidebar { width:200px; background:#1e293b; border-right:1.5px solid #33415
 .tab-btn[data-roles] { display:none; }
 body.role-agent .tab-btn[data-roles*="agent"] { display:flex; }
 body.role-manager .tab-btn[data-roles*="manager"] { display:flex; }
+body.role-contract .tab-btn[data-roles*="contract"] { display:flex; }
 body.role-admin .tab-btn[data-roles*="admin"] { display:flex; }
 .sidebar-divider { border-top:1px solid #334155; margin:14px 14px; }
 .sidebar-link { color:#94a3b8; padding:8px 18px; text-decoration:none; font-size:11px; }
@@ -62,8 +64,8 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
 <div class="main" id="main" style="display:none">
   <aside class="sidebar">
     <button class="tab-btn" data-tab="tm" data-roles="agent,manager,admin"><span class="icon">📞</span> TM 견적·영업</button>
-    <button class="tab-btn" data-tab="dashboard" data-roles="manager,admin"><span class="icon">📊</span> 대시보드</button>
-    <button class="tab-btn" data-tab="contract" data-roles="manager,admin"><span class="icon">📋</span> 계약 처리</button>
+    <button class="tab-btn" data-tab="dashboard" data-roles="manager,contract,admin"><span class="icon">📊</span> 대시보드</button>
+    <button class="tab-btn" data-tab="contract" data-roles="manager,contract,admin"><span class="icon">📋</span> 계약 처리</button>
     <button class="tab-btn" data-tab="agents" data-roles="admin"><span class="icon">👥</span> 상담사 관리</button>
     <button class="tab-btn" data-tab="rules" data-roles="admin"><span class="icon">⚙️</span> 정책 관리</button>
     <div class="sidebar-divider"></div>
@@ -87,7 +89,7 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
     <button id="auth-login-btn">로그인</button>
     <div class="auth-msg" id="auth-msg"></div>
     <div class="auth-hint">
-      모든 권한 (agent / manager / admin) 로그인 가능. 권한별로 다른 메뉴 노출.<br>
+      4개 역할 (agent / manager / contract / admin) 로그인 가능. 권한별로 다른 메뉴 노출.<br>
       테스트: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">agent1</code> / <code>manager1</code> / <code>admin1</code> @bongi.test (비번 <code>pass1234!</code>)
     </div>
   </div>
@@ -112,6 +114,7 @@ const TAB_URLS = {
 const DEFAULT_TAB = {
   agent: 'tm',
   manager: 'dashboard',
+  contract: 'contract',
   admin: 'dashboard',
 };
 
@@ -157,10 +160,10 @@ function onLoggedIn(agent) {
   document.getElementById('user-info').style.display = '';
   document.getElementById('main').style.display = '';
   document.getElementById('auth-overlay').style.display = 'none';
-  document.body.classList.remove('role-agent', 'role-manager', 'role-admin');
+  document.body.classList.remove('role-agent', 'role-manager', 'role-contract', 'role-admin');
   document.body.classList.add('role-' + agent.role);
-  // admin은 manager 메뉴도 보이게, manager는 agent 메뉴도 보이게 (계층)
-  if (agent.role === 'admin') document.body.classList.add('role-manager', 'role-agent');
+  // 권한 계층: admin > manager > agent / contract는 별도(계약+대시보드)
+  if (agent.role === 'admin') document.body.classList.add('role-manager', 'role-contract', 'role-agent');
   if (agent.role === 'manager') document.body.classList.add('role-agent');
   switchTab(DEFAULT_TAB[agent.role] || 'tm');
 }

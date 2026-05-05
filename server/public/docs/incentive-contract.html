@@ -676,7 +676,7 @@ async function init() {
   const tk = getToken();
   if (tk) {
     const agent = await fetchAgent();
-    if (agent && (agent.role === 'admin' || agent.role === 'manager')) {
+    if (agent && (agent.role === 'admin' || agent.role === 'manager' || agent.role === 'contract')) {
       onLoggedIn(agent);
     } else if (agent) {
       document.getElementById('auth-msg').textContent = '⚠️ ' + agent.role + ' 권한 — manager/admin만 접근 가능';
@@ -706,8 +706,8 @@ document.getElementById('auth-login-btn').addEventListener('click', async () => 
   try {
     await login(email, password);
     const agent = await fetchAgent();
-    if (!agent || (agent.role !== 'admin' && agent.role !== 'manager')) {
-      msg.textContent = 'manager/admin 권한 필요';
+    if (!agent || !['admin','manager','contract'].includes(agent.role)) {
+      msg.textContent = 'manager/contract/admin 권한 필요';
       clearToken();
       return;
     }

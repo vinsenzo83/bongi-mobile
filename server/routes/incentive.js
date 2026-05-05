@@ -22,6 +22,10 @@ function isManagerOrAdmin(agent) {
 function isAdmin(agent) {
   return agent && agent.role === 'admin';
 }
+// 계약 처리 권한: contract / manager / admin
+function isContractAccess(agent) {
+  return agent && (agent.role === 'contract' || agent.role === 'manager' || agent.role === 'admin');
+}
 
 // ═══════════════════════════════════════════════════════════════
 // 1. GET /api/incentive/products — 상품 카탈로그 (모두 조회 가능)
@@ -123,11 +127,12 @@ router.get('/agents', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!isManagerOrAdmin(me)) {
-      return res.status(403).json({ error: 'manager/admin 권한 필요' });
+    if (!isContractAccess(me)) {
+      return res.status(403).json({ error: 'manager/contract/admin 권한 필요' });
     }
     let q = supabase.from('incentive_agents').select('*').eq('active', true);
     if (me.role === 'manager') q = q.eq('center', me.center);
+    // contract는 전체 보임 (모든 센터의 계약 처리)
     const { data, error } = await q.order('hire_date');
     if (error) throw error;
     res.json({ agents: data, count: data.length });
@@ -618,7 +623,7 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+    if (!isContractAccess(me)) return res.status(403).json({ error: 'contract/manager/admin 전용' });
 
     const { month, status } = req.query;
     const ym = month || new Date().toISOString().slice(0, 7);
@@ -659,7 +664,7 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+    if (!isContractAccess(me)) return res.status(403).json({ error: 'contract/manager/admin 전용' });
 
     const ym = req.query.month || new Date().toISOString().slice(0, 7);
 

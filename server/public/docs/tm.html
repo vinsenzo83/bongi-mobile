@@ -2593,7 +2593,7 @@ async function authRender() {
   }
   authSetUser(agent);
   // ─── 권한 가드: tm.html은 manager/admin 전용 ───
-  if (agent.role === 'agent') {
+  if (agent.role === 'agent' || agent.role === 'contract') {
     // 5초 카운트다운 후 자동 redirect
     out.style.display = ''; inB.style.display = 'none';
     let sec = 5;
