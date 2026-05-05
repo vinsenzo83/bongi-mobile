@@ -21,6 +21,7 @@ import cashRoutes from './routes/cash.js';
 import cacheRoutes from './routes/cache.js';
 import adminPlatformRoutes from './routes/admin-platform.js';
 import specialPromoRoutes from './routes/special-promo.js';
+import incentiveRoutes from './routes/incentive.js';
 import { sanitizeBody } from './middleware/sanitize.js';
 import { basicAuth } from './middleware/basicAuth.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -101,6 +102,9 @@ app.use('/api/alarms', optionalAuth, alarmRoutes);
 
 // ── 어드민 API (인증 없이 접근 — 어드민 HTML 정적 파일용) ──
 app.use('/api/admin/platform', adminPlatformRoutes);
+
+// ── V5 인센티브 (라우터 내부에서 authenticateJWT/optionalAuth 자체 처리) ──
+app.use('/api/incentive', incentiveRoutes);
 
 // ── 인증 필요 (agent 이상) ──
 app.use('/api/crm', authenticateJWT, requireMinRole('agent'), crmRoutes);

@@ -1,0 +1,435 @@
+import { Router } from 'express';
+import { supabase } from '../db/supabase.js';
+import { authenticateJWT, optionalAuth } from '../middleware/auth.js';
+
+const router = Router();
+
+// ─── 헬퍼: req.user → incentive_agents.id 매핑 ───
+async function getCurrentIncentiveAgent(userId) {
+  if (!userId) return null;
+  const { data } = await supabase
+    .from('incentive_agents')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+  return data || null;
+}
+
+// ─── 헬퍼: role 권한 체크 ───
+function isManagerOrAdmin(agent) {
+  return agent && (agent.role === 'manager' || agent.role === 'admin');
+}
+function isAdmin(agent) {
+  return agent && agent.role === 'admin';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 1. GET /api/incentive/products — 상품 카탈로그 (모두 조회 가능)
+// ═══════════════════════════════════════════════════════════════
+router.get('/products', optionalAuth, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const { carrier, tier, premium_only } = req.query;
+    let q = supabase.from('incentive_products').select('*').eq('active', true);
+    if (carrier) q = q.eq('carrier', carrier);
+    if (tier) q = q.eq('tier', tier);
+    if (premium_only === 'true') q = q.eq('is_premium', true);
+    const { data, error } = await q.order('id');
+    if (error) throw error;
+    res.json({ products: data, count: data.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 2. GET /api/incentive/rules — 활성 V5 규칙 조회
+// ═══════════════════════════════════════════════════════════════
+router.get('/rules', optionalAuth, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const { data, error } = await supabase
+      .from('incentive_rules')
+      .select('*')
+      .eq('active', true)
+      .order('effective_from', { ascending: false })
+      .limit(1)
+      .single();
+    if (error) throw error;
+    res.json({ rules: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 3. POST /api/incentive/simulate — 시뮬레이션 (인증 불필요)
+//    body: { current_points, current_premium, add_product_id, add_qty, add_payback }
+// ═══════════════════════════════════════════════════════════════
+router.post('/simulate', optionalAuth, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const {
+      current_points = 0,
+      current_premium = 0,
+      add_product_id,
+      add_qty = 1,
+      add_payback = 0,
+    } = req.body || {};
+
+    if (!add_product_id) {
+      return res.status(400).json({ error: 'add_product_id 필수' });
+    }
+    if (add_payback < 0 || add_payback > 50000) {
+      return res.status(400).json({ error: '추가 페이백은 0~50,000원' });
+    }
+
+    const { data, error } = await supabase.rpc('incentive_simulate_addition', {
+      p_current_points: Number(current_points),
+      p_current_premium: parseInt(current_premium) || 0,
+      p_add_product_id: parseInt(add_product_id),
+      p_add_qty: parseInt(add_qty) || 1,
+      p_add_payback: parseInt(add_payback) || 0,
+    });
+    if (error) throw error;
+    // RPC가 TABLE 반환이므로 배열에서 첫 번째 row 추출
+    const result = Array.isArray(data) ? data[0] : data;
+    res.json({ simulation: result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 4. GET /api/incentive/agents/me — 내 incentive_agent 정보
+// ═══════════════════════════════════════════════════════════════
+router.get('/agents/me', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const agent = await getCurrentIncentiveAgent(req.user.id);
+    if (!agent) {
+      return res.status(404).json({ error: 'incentive_agent 미등록' });
+    }
+    res.json({ agent });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 5. GET /api/incentive/agents — 상담사 목록 (manager/admin)
+// ═══════════════════════════════════════════════════════════════
+router.get('/agents', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) {
+      return res.status(403).json({ error: 'manager/admin 권한 필요' });
+    }
+    let q = supabase.from('incentive_agents').select('*').eq('active', true);
+    if (me.role === 'manager') q = q.eq('center', me.center);
+    const { data, error } = await q.order('hire_date');
+    if (error) throw error;
+    res.json({ agents: data, count: data.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 6. POST /api/incentive/agents — 상담사 등록 (admin)
+// ═══════════════════════════════════════════════════════════════
+router.post('/agents', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const { user_id, name, center, role = 'agent', hire_date, base_salary = 2300000 } = req.body || {};
+    if (!name || !center) return res.status(400).json({ error: 'name, center 필수' });
+
+    const { data, error } = await supabase
+      .from('incentive_agents')
+      .insert({ user_id, name, center, role, hire_date: hire_date || new Date().toISOString().slice(0, 10), base_salary, active: true })
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ agent: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 7. GET /api/incentive/sales?month=YYYY-MM — 영업 조회
+// ═══════════════════════════════════════════════════════════════
+router.get('/sales', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+
+    const { month, agent_id } = req.query;
+    const ym = month || new Date().toISOString().slice(0, 7);
+    const [y, m] = ym.split('-');
+    const monthStart = `${y}-${m}-01`;
+    const monthEnd = new Date(parseInt(y), parseInt(m), 0).toISOString().slice(0, 10);
+
+    let targetAgentId = me.id;
+    if (agent_id && isManagerOrAdmin(me)) {
+      // 매니저는 본인 센터, 어드민은 모두
+      if (me.role === 'manager') {
+        const { data: target } = await supabase
+          .from('incentive_agents')
+          .select('center')
+          .eq('id', agent_id)
+          .single();
+        if (!target || target.center !== me.center) {
+          return res.status(403).json({ error: '센터 외 상담사 조회 불가' });
+        }
+      }
+      targetAgentId = agent_id;
+    }
+
+    const { data, error } = await supabase
+      .from('incentive_sales')
+      .select('*, product:incentive_products(*)')
+      .eq('agent_id', targetAgentId)
+      .gte('contract_date', monthStart)
+      .lte('contract_date', monthEnd)
+      .order('contract_date', { ascending: false });
+    if (error) throw error;
+    res.json({ sales: data, count: data.length, month: ym });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 8. POST /api/incentive/sales — 영업 추가
+// ═══════════════════════════════════════════════════════════════
+router.post('/sales', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+
+    const {
+      product_id,
+      customer_name,
+      customer_phone,
+      customer_address,
+      contract_date,
+      installation_date,
+      add_payback = 0,
+      notes,
+      agent_id, // manager/admin이 다른 상담사 대신 입력 가능
+    } = req.body || {};
+
+    if (!product_id) return res.status(400).json({ error: 'product_id 필수' });
+    if (add_payback < 0 || add_payback > 50000) {
+      return res.status(400).json({ error: '추가 페이백은 0~50,000원' });
+    }
+
+    let targetAgentId = me.id;
+    if (agent_id && isManagerOrAdmin(me) && agent_id !== me.id) {
+      targetAgentId = agent_id;
+    }
+
+    const { data, error } = await supabase
+      .from('incentive_sales')
+      .insert({
+        agent_id: targetAgentId,
+        product_id,
+        customer_name,
+        customer_phone,
+        customer_address,
+        contract_date: contract_date || new Date().toISOString().slice(0, 10),
+        installation_date,
+        add_payback,
+        notes,
+        status: 'completed',
+      })
+      .select('*, product:incentive_products(*)')
+      .single();
+    if (error) throw error;
+    res.json({ sale: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 9. PATCH /api/incentive/sales/:id — 영업 취소/수정
+// ═══════════════════════════════════════════════════════════════
+router.patch('/sales/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+
+    const { status, cancellation_reason, notes, add_payback } = req.body || {};
+    const { data: existing } = await supabase
+      .from('incentive_sales')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    if (!existing) return res.status(404).json({ error: '영업 없음' });
+
+    // 본인 영업이거나 manager/admin만 수정 가능
+    if (existing.agent_id !== me.id && !isManagerOrAdmin(me)) {
+      return res.status(403).json({ error: '본인 영업만 수정 가능' });
+    }
+
+    const update = {};
+    if (status !== undefined) update.status = status;
+    if (cancellation_reason !== undefined) update.cancellation_reason = cancellation_reason;
+    if (notes !== undefined) update.notes = notes;
+    if (add_payback !== undefined) update.add_payback = add_payback;
+
+    const { data, error } = await supabase
+      .from('incentive_sales')
+      .update(update)
+      .eq('id', req.params.id)
+      .select('*, product:incentive_products(*)')
+      .single();
+    if (error) throw error;
+    res.json({ sale: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 10. GET /api/incentive/settlement?month=YYYY-MM — 월별 정산 (live)
+// ═══════════════════════════════════════════════════════════════
+router.get('/settlement', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+
+    const { month, agent_id } = req.query;
+    const ym = month || new Date().toISOString().slice(0, 7);
+
+    let targetAgentId = me.id;
+    if (agent_id && isManagerOrAdmin(me)) {
+      if (me.role === 'manager') {
+        const { data: target } = await supabase
+          .from('incentive_agents').select('center').eq('id', agent_id).single();
+        if (!target || target.center !== me.center) {
+          return res.status(403).json({ error: '센터 외 상담사 조회 불가' });
+        }
+      }
+      targetAgentId = agent_id;
+    }
+
+    const { data, error } = await supabase.rpc('incentive_calc_monthly_settlement', {
+      p_agent_id: targetAgentId,
+      p_year_month: ym,
+    });
+    if (error) throw error;
+    res.json({ settlement: data, month: ym });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 11. POST /api/incentive/finalize — 월말 정산 확정 (admin)
+// ═══════════════════════════════════════════════════════════════
+router.post('/finalize', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const { month, agent_id } = req.body || {};
+    if (!month) return res.status(400).json({ error: 'month 필수 (YYYY-MM)' });
+
+    if (agent_id) {
+      const { data, error } = await supabase.rpc('incentive_finalize_monthly_settlement', {
+        p_agent_id: agent_id,
+        p_year_month: month,
+        p_finalized_by: me.id,
+      });
+      if (error) throw error;
+      return res.json({ settlement: data, month });
+    }
+
+    // 전체 활성 상담사 일괄 정산
+    const { data: agents } = await supabase
+      .from('incentive_agents').select('id').eq('active', true);
+    const results = [];
+    for (const a of agents || []) {
+      const { data, error } = await supabase.rpc('incentive_finalize_monthly_settlement', {
+        p_agent_id: a.id,
+        p_year_month: month,
+        p_finalized_by: me.id,
+      });
+      if (!error) results.push(data);
+    }
+    res.json({ count: results.length, settlements: results, month });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 12. GET /api/incentive/manager/overview?month=YYYY-MM — 관리자 대시보드
+// ═══════════════════════════════════════════════════════════════
+router.get('/manager/overview', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+
+    const ym = req.query.month || new Date().toISOString().slice(0, 7);
+
+    let agentsQ = supabase.from('incentive_agents').select('*').eq('active', true);
+    if (me.role === 'manager') agentsQ = agentsQ.eq('center', me.center);
+    const { data: agents } = await agentsQ;
+
+    // 각 상담사의 정산 (live 계산)
+    const settlements = [];
+    for (const a of agents || []) {
+      const { data, error } = await supabase.rpc('incentive_calc_monthly_settlement', {
+        p_agent_id: a.id,
+        p_year_month: ym,
+      });
+      if (!error) settlements.push({ agent: a, ...data });
+    }
+
+    // 집계
+    const totals = settlements.reduce((acc, s) => {
+      acc.total_revenue += s.total_revenue || 0;
+      acc.total_payback += s.total_payback || 0;
+      acc.total_incentive += s.incentive || 0;
+      acc.total_bonus += s.bonus || 0;
+      acc.total_company_profit += s.company_profit || 0;
+      acc.total_sales_count += s.total_count || 0;
+      acc.total_premium_count += s.premium_count || 0;
+      acc.penalty_count += s.is_penalty ? 1 : 0;
+      return acc;
+    }, {
+      total_revenue: 0, total_payback: 0, total_incentive: 0, total_bonus: 0,
+      total_company_profit: 0, total_sales_count: 0, total_premium_count: 0,
+      penalty_count: 0,
+    });
+
+    const grade_distribution = { 1: 0, 2: 0, 3: 0 };
+    settlements.forEach(s => { grade_distribution[s.grade_applied || 1] += 1; });
+
+    res.json({
+      month: ym,
+      agents_count: settlements.length,
+      totals,
+      grade_distribution,
+      settlements,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+export default router;
