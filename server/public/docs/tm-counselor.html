@@ -2672,7 +2672,10 @@ let _incLastMatchedProduct = null; // 마지막 시뮬 시 매칭된 product
 async function incCloseDeal() {
   const token = (typeof authGetToken === 'function') ? authGetToken() : null;
   if (!token) { alert('로그인 필요'); return; }
-  if (!_incLastMatchedProduct) { alert('견적 매칭된 상품이 없습니다'); return; }
+  if (!_incLastMatchedProduct) {
+    alert('⚠️ 견적 매칭된 상품이 없습니다.\n\n견적 카드에서 통신사·속도·TV를 먼저 선택하고 잠시 후 다시 시도하세요.');
+    return;
+  }
   const form = document.getElementById('inc-deal-form');
   if (form) form.style.display = '';
   const btn = document.getElementById('inc-close-deal-btn');
@@ -2713,7 +2716,16 @@ async function incSubmitDeal() {
       throw new Error(err.error || '저장 실패');
     }
     msg.style.color = '#16a34a';
-    msg.textContent = '✅ 계약 등록 완료! 누적 갱신 중...';
+    const dat = await res.json();
+    const saleId = dat.sale ? dat.sale.id.slice(0, 8) : '?';
+    msg.innerHTML = '✅ 계약 등록 완료! ID ' + saleId + ' · 누적 갱신 중...';
+
+    // 글로벌 토스트 (4초간 큰 알림)
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;top:30px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:14px 24px;border-radius:10px;font-size:14px;font-weight:800;box-shadow:0 6px 24px rgba(22,163,74,0.5);z-index:99999;letter-spacing:-0.01em';
+    toast.textContent = '✅ 계약 등록 완료 · 영업 내역에 추가됨 (ID ' + saleId + ')';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
 
     // 폼 닫기 + 입력 초기화
     setTimeout(() => {
@@ -2724,13 +2736,14 @@ async function incSubmitDeal() {
       });
       document.getElementById('deal-payback').value = 0;
       msg.textContent = '';
-    }, 1200);
+    }, 2500);
 
     // 누적 + 영업 내역 자동 갱신
     if (typeof incFetchMyState === 'function') incFetchMyState();
     if (typeof incRenderSales === 'function') incRenderSales();
   } catch(e) {
     msg.textContent = '❌ ' + e.message;
+    alert('❌ 계약 등록 실패\n\n' + e.message);
   } finally {
     submitBtn.disabled = false; submitBtn.textContent = '✅ 등록';
   }
