@@ -491,11 +491,12 @@ function renderManagerKpi(o, agent) {
 }
 
 function renderManagerProgress(s) {
-  if (!s || !s.year_month) {
+  // settlement은 있되 영업 0건이면 P=0으로 그대로 진행 (year_month는 manager/overview에서 None일 수 있음)
+  if (!s || s.total_count === undefined) {
     document.getElementById('mgr-progress-fill').style.width = '0%';
     document.getElementById('mgr-progress-current').textContent = '-';
     document.getElementById('mgr-progress-target').textContent = '-';
-    document.getElementById('mgr-progress-hint').textContent = '본인 영업 없음';
+    document.getElementById('mgr-progress-hint').textContent = '본인 정산 데이터 없음';
     return;
   }
   const points = parseFloat(s.total_points) || 0;
