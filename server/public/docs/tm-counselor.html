@@ -2064,12 +2064,17 @@ document.addEventListener('click', function(e) {
 // ╚════════════════════════════════════════════════════╝
 
 var SCRIPT_KEY = 'tm-scripts-v1';
+var TM_AUTH_TOKEN_KEY = 'incentive-auth-token-v1';   // V5 인증 토큰 키
 var SCRIPT_DEFAULTS = [
   { title: '인사 & 본인확인', text: '안녕하세요, 리턴AI 상담사 ___입니다. 인터넷·TV 상담 도와드리겠습니다. 본인이신가요?' },
   { title: '현재 상품 확인', text: '현재 어느 통신사 사용 중이신가요? 약정 만료일은 언제인가요? 가족 결합 여부도 확인.' },
   { title: '견적 안내', text: '오른쪽 견적표를 보고 안내드립니다. 사은품 · 설치비 함께 설명. 결합 할인 강조.' },
   { title: '클로징', text: '신청 의사 확인 → 설치 일정 협의 → 필요 서류 안내 (신분증·계좌·주소).' }
 ];
+
+function tmGetAuthToken() {
+  try { return localStorage.getItem(TM_AUTH_TOKEN_KEY); } catch(e) { return null; }
+}
 
 function loadScripts() {
   try {
@@ -2082,7 +2087,8 @@ function loadScripts() {
   return SCRIPT_DEFAULTS.slice();
 }
 
-function saveScripts() {
+// 현재 화면에서 스크립트 array 추출
+function collectScriptsFromDom() {
   var steps = document.querySelectorAll('#tm-scripts .tm-script-step');
   var arr = [];
   steps.forEach(function(step){
@@ -2091,7 +2097,60 @@ function saveScripts() {
       text: step.querySelector('.tm-script-step-text').textContent.trim()
     });
   });
+  return arr;
+}
+
+function saveScripts() {
+  var arr = collectScriptsFromDom();
   try { localStorage.setItem(SCRIPT_KEY, JSON.stringify(arr)); } catch(e) {}
+  // DB sync (manager/admin only — 서버에서 권한 체크. 비로그인/agent는 403 무시)
+  scheduleSaveScriptsToDb();
+}
+
+// DB 동기화 (debounced 600ms)
+var _scriptDbSaveTimer = null;
+function scheduleSaveScriptsToDb() {
+  clearTimeout(_scriptDbSaveTimer);
+  _scriptDbSaveTimer = setTimeout(saveScriptsToDb, 600);
+}
+async function saveScriptsToDb() {
+  var tk = tmGetAuthToken();
+  if (!tk) return; // 비로그인은 localStorage만
+  try {
+    var steps = collectScriptsFromDom();
+    var res = await fetch('/api/incentive/tm/scripts', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+      body: JSON.stringify({ steps: steps })
+    });
+    if (!res.ok && res.status !== 403) {
+      // 403 (agent role) 은 정상 (편집 권한 없음) — 조용히 무시
+      console.warn('[scripts DB sync] HTTP ' + res.status);
+    }
+  } catch (e) {
+    console.warn('[scripts DB sync]', e);
+  }
+}
+
+// DB 우선 로드 → 화면 갱신 (mount 시 1회)
+async function loadScriptsFromDb() {
+  var tk = tmGetAuthToken();
+  if (!tk) return; // 비로그인은 localStorage 그대로
+  try {
+    var res = await fetch('/api/incentive/tm/scripts', {
+      headers: { Authorization: 'Bearer ' + tk }
+    });
+    if (!res.ok) return;
+    var data = await res.json();
+    if (!data || !Array.isArray(data.scripts) || !data.scripts.length) return;
+    // localStorage 동기화
+    try { localStorage.setItem(SCRIPT_KEY, JSON.stringify(data.scripts)); } catch(e) {}
+    // 화면 다시 그리기 (편집 중이 아니면)
+    var anyEditing = !!document.querySelector('#tm-scripts .tm-script-step-title:focus, #tm-scripts .tm-script-step-text:focus');
+    if (!anyEditing) renderAllScripts();
+  } catch (e) {
+    console.warn('[scripts DB load]', e);
+  }
 }
 
 function escapeHtml(s) {
@@ -2128,6 +2187,8 @@ function renumberSteps() {
 }
 
 renderAllScripts();
+// DB 우선 로드 (비동기 — 토큰 있을 때만, 화면 mount 후 갱신)
+loadScriptsFromDb();
 
 // active 토글 (번호 배지 클릭 시) + 일반 클릭으로도 active
 document.getElementById('tm-scripts').addEventListener('click', function(e){
@@ -2190,6 +2251,65 @@ function loadMemos() {
 }
 function saveMemoList(list) {
   try { localStorage.setItem(MEMO_LIST_KEY, JSON.stringify(list)); } catch(e) {}
+  scheduleSaveMemosToDb();
+}
+
+// 메모 DB 동기화 (debounced 600ms — 추가/편집/삭제)
+var _memoDbSaveTimer = null;
+function scheduleSaveMemosToDb() {
+  clearTimeout(_memoDbSaveTimer);
+  _memoDbSaveTimer = setTimeout(function(){ saveMemosToDb({ includeMemos: true }); }, 600);
+}
+// draft DB 동기화 (debounced 1초 — 작성 중 텍스트)
+var _memoDraftDbTimer = null;
+function scheduleSaveDraftToDb() {
+  clearTimeout(_memoDraftDbTimer);
+  _memoDraftDbTimer = setTimeout(function(){ saveMemosToDb({ includeDraft: true }); }, 1000);
+}
+async function saveMemosToDb(opts) {
+  var tk = tmGetAuthToken();
+  if (!tk) return; // 비로그인 → localStorage만
+  opts = opts || {};
+  var body = {};
+  if (opts.includeMemos) body.memos = loadMemos();
+  if (opts.includeDraft) body.draft = (memoEl && memoEl.value) || '';
+  if (Object.keys(body).length === 0) return;
+  try {
+    var res = await fetch('/api/incentive/tm/memos', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) console.warn('[memos DB sync] HTTP ' + res.status);
+  } catch (e) {
+    console.warn('[memos DB sync]', e);
+  }
+}
+// DB 우선 로드 (mount 시 1회) — 본인 메모/draft 불러오기
+async function loadMemosFromDb() {
+  var tk = tmGetAuthToken();
+  if (!tk) return; // 비로그인은 localStorage 그대로
+  try {
+    var res = await fetch('/api/incentive/tm/memos', {
+      headers: { Authorization: 'Bearer ' + tk }
+    });
+    if (!res.ok) return;
+    var data = await res.json();
+    if (!data) return;
+    if (Array.isArray(data.memos)) {
+      try { localStorage.setItem(MEMO_LIST_KEY, JSON.stringify(data.memos)); } catch(e) {}
+    }
+    if (typeof data.draft === 'string') {
+      try { localStorage.setItem(MEMO_DRAFT_KEY, data.draft); } catch(e) {}
+      // 사용자가 입력 중이 아닐 때만 textarea 갱신
+      if (memoEl && document.activeElement !== memoEl && !memoEl.value) {
+        memoEl.value = data.draft;
+      }
+    }
+    renderMemoList();
+  } catch (e) {
+    console.warn('[memos DB load]', e);
+  }
 }
 function memoTimeNow() {
   var d = new Date();
@@ -2251,6 +2371,7 @@ function saveCurrentMemo() {
   editingMemoId = null;
   memoEl.value = '';
   try { localStorage.removeItem(MEMO_DRAFT_KEY); } catch(e) {}
+  scheduleSaveDraftToDb();   // draft="" 도 DB에 반영
   renderMemoList();
 }
 
@@ -2259,6 +2380,7 @@ function newMemo() {
   editingMemoId = null;
   memoEl.value = '';
   try { localStorage.removeItem(MEMO_DRAFT_KEY); } catch(e) {}
+  scheduleSaveDraftToDb();   // draft="" 도 DB에 반영
   memoEl.focus();
   renderMemoList();
 }
@@ -2296,6 +2418,7 @@ memoEl.addEventListener('input', function(){
   clearTimeout(_memoDraftTimer);
   _memoDraftTimer = setTimeout(function(){
     try { localStorage.setItem(MEMO_DRAFT_KEY, memoEl.value); } catch(e) {}
+    scheduleSaveDraftToDb();   // draft DB 동기화 (1초 추가 debounce)
   }, 300);
 });
 window.addEventListener('beforeunload', function(){
@@ -2315,6 +2438,8 @@ memoListEl.addEventListener('click', function(e){
 });
 
 renderMemoList();
+// DB 우선 로드 (비동기 — 토큰 있을 때만, 화면 mount 후 갱신)
+loadMemosFromDb();
 
 // 단계 추가
 document.getElementById('tm-script-add').addEventListener('click', function(){
@@ -2691,6 +2816,9 @@ async function authRender() {
   // 인센티브 카드 갱신 트리거
   if (typeof incFetchMyState === 'function') incFetchMyState();
   if (typeof incRenderSales === 'function') incRenderSales();
+  // TM 스크립트/메모 DB 동기화 (Phase 3)
+  if (typeof loadScriptsFromDb === 'function') loadScriptsFromDb();
+  if (typeof loadMemosFromDb === 'function') loadMemosFromDb();
 }
 
 document.addEventListener('DOMContentLoaded', () => {});

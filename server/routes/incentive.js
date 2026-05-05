@@ -1229,4 +1229,121 @@ router.get('/calc-history', authenticateJWT, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// TM 상담 도구 (tm-counselor.html) — Phase 3
+// 1) tm/scripts: 회사 공통 상담 스크립트 (singleton id=1, manager/admin 편집)
+// 2) tm/memos:   개인 메모 (PK=user_id, 본인만)
+// ═══════════════════════════════════════════════════════════════
+
+// GET /api/incentive/tm/scripts — 모든 로그인 사용자 조회
+router.get('/tm/scripts', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const { data, error } = await supabase
+      .from('incentive_tm_scripts')
+      .select('steps, updated_at, updated_by_name')
+      .eq('id', 1)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    res.json({
+      scripts: (data && data.steps) || [],
+      updated_at: data?.updated_at || null,
+      updated_by: data?.updated_by_name || null,
+    });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// PUT /api/incentive/tm/scripts — manager/admin 전용
+router.put('/tm/scripts', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+
+    const { steps } = req.body || {};
+    if (!Array.isArray(steps)) return res.status(400).json({ error: 'steps 배열 필수' });
+
+    const { data, error } = await supabase
+      .from('incentive_tm_scripts')
+      .upsert({
+        id: 1,
+        steps,
+        updated_at: new Date().toISOString(),
+        updated_by_user_id: req.user.id,
+        updated_by_name: me.name,
+      }, { onConflict: 'id' })
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({
+      scripts: data.steps,
+      updated_at: data.updated_at,
+      updated_by: data.updated_by_name,
+    });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// GET /api/incentive/tm/memos — 본인 메모 조회
+router.get('/tm/memos', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const { data, error } = await supabase
+      .from('incentive_tm_memos')
+      .select('memos, draft, updated_at')
+      .eq('user_id', req.user.id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    res.json({
+      memos: (data && data.memos) || [],
+      draft: (data && data.draft) || '',
+      updated_at: data?.updated_at || null,
+    });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// PUT /api/incentive/tm/memos — 본인 메모/draft 저장
+router.put('/tm/memos', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const { memos, draft } = req.body || {};
+    if (memos !== undefined && !Array.isArray(memos)) {
+      return res.status(400).json({ error: 'memos는 배열이어야 합니다' });
+    }
+    if (draft !== undefined && typeof draft !== 'string') {
+      return res.status(400).json({ error: 'draft는 문자열이어야 합니다' });
+    }
+
+    const update = {
+      user_id: req.user.id,
+      updated_at: new Date().toISOString(),
+    };
+    if (memos !== undefined) update.memos = memos;
+    if (draft !== undefined) update.draft = draft;
+
+    const { data, error } = await supabase
+      .from('incentive_tm_memos')
+      .upsert(update, { onConflict: 'user_id' })
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({
+      memos: data.memos || [],
+      draft: data.draft || '',
+      updated_at: data.updated_at,
+    });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
 export default router;
