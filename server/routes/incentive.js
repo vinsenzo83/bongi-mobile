@@ -366,6 +366,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       customer_name,
       customer_phone,
       customer_address,
+      customer_address_detail,
       contract_date,
       installation_date,
       add_payback = 0,
@@ -395,11 +396,12 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         customer_name,
         customer_phone,
         customer_address,
+        customer_address_detail,
         contract_date: contract_date || new Date().toISOString().slice(0, 10),
         installation_date,
         add_payback,
         notes,
-        status: 'completed',
+        status: 'pending', // TM 등록 → 계약부서 처리 대기
         tv_count: tv_count || 1,
         additional_products: additional_products || null,
         wifi_option: wifi_option || null,
@@ -423,7 +425,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary } = req.body || {};
+    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -443,6 +445,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (contract_notes !== undefined) update.contract_notes = contract_notes;
     if (add_payback !== undefined) update.add_payback = add_payback;
     if (customer_address !== undefined) update.customer_address = customer_address;
+    if (customer_address_detail !== undefined) update.customer_address_detail = customer_address_detail;
     if (customer_name !== undefined) update.customer_name = customer_name;
     if (customer_phone !== undefined) update.customer_phone = customer_phone;
     if (installation_date !== undefined) update.installation_date = installation_date;

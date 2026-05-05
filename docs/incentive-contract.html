@@ -607,12 +607,17 @@ function openEditModal(id) {
         </div>
       </div>
       <div>
-        <label class="modal-field-label">설치 주소 <span style="color:#dc2626">*</span></label>
+        <label class="modal-field-label">📍 설치 주소 (기본) <span style="color:#dc2626">*</span></label>
         <div style="display:flex;gap:8px">
-          <input class="detail-input" data-field="customer_address" id="addr-input-${c.id}" value="${(c.customer_address || '').replace(/"/g, '&quot;')}" placeholder="주소 검색 또는 직접 입력" style="border-color:${hasAddr ? '#475569' : '#dc2626'} !important;flex:1">
+          <input class="detail-input" data-field="customer_address" id="addr-input-${c.id}" value="${(c.customer_address || '').replace(/"/g, '&quot;')}" placeholder="주소 검색 또는 직접 입력" style="border-color:${hasAddr ? '#475569' : '#dc2626'} !important;flex:1" readonly>
           <button type="button" onclick="openAddressSearch('#addr-input-${c.id}')" style="padding:0 18px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;white-space:nowrap">🔍 주소 검색</button>
         </div>
-        <div class="modal-field-hint">📍 검색 후 상세 주소(동·호수)까지 직접 입력 권장</div>
+        <div class="modal-field-hint">📍 우편번호 검색으로 자동 입력</div>
+      </div>
+      <div style="margin-top:12px">
+        <label class="modal-field-label">🏠 상세 주소 (동·호수·층) <span style="color:#dc2626">*</span></label>
+        <input class="detail-input" data-field="customer_address_detail" value="${(c.customer_address_detail || '').replace(/"/g, '&quot;')}" placeholder="예: 101동 502호, 3층 사무실, 지하 1층 카페 옆">
+        <div class="modal-field-hint">⚠️ 설치 기사 방문에 필수 — 정확하게 입력</div>
       </div>
     </div>
 
