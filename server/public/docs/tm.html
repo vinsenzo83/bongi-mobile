@@ -549,9 +549,11 @@ html, body { overflow:hidden; }
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
           <label style="font-size:10px;color:#374151">고객명
             <input type="text" id="deal-name" placeholder="홍길동" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
-          <label style="font-size:10px;color:#374151">전화
-            <input type="text" id="deal-phone" placeholder="010-0000-0000" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
+          <label style="font-size:10px;color:#374151">전화 (자동 - 입력)
+            <input type="tel" id="deal-phone" inputmode="numeric" maxlength="13" placeholder="010-0000-0000" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         </div>
+        <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">📅 설치 희망일
+          <input type="date" id="deal-install-date" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         <div style="font-size:9px;color:#9ca3af;margin-bottom:6px;line-height:1.4">ℹ️ 주소·서류는 계약부서가 별도 진행 (TM 단계 불필요)</div>
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:8px">추가 페이백 (₩, 0~50,000)
           <input type="number" id="deal-payback" min="0" max="50000" step="1000" value="0" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
@@ -2764,6 +2766,7 @@ async function incSubmitDeal() {
 
   const name = document.getElementById('deal-name').value.trim();
   const phone = document.getElementById('deal-phone').value.trim();
+  const installDate = document.getElementById('deal-install-date').value || null;
   const payback = parseInt(document.getElementById('deal-payback').value) || 0;
 
   if (payback < 0 || payback > 50000) {
@@ -2780,6 +2783,7 @@ async function incSubmitDeal() {
         product_id: _incLastMatchedProduct.id,
         customer_name: name || null,
         customer_phone: phone || null,
+        installation_date: installDate,
         add_payback: payback,
       })
     });
@@ -2803,7 +2807,7 @@ async function incSubmitDeal() {
     setTimeout(() => {
       document.getElementById('inc-deal-form').style.display = 'none';
       document.getElementById('inc-close-deal-btn').style.display = '';
-      ['deal-name', 'deal-phone'].forEach(id => {
+      ['deal-name', 'deal-phone', 'deal-install-date'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
       document.getElementById('deal-payback').value = 0;
@@ -2837,6 +2841,33 @@ setTimeout(() => {
   if (cancelBtn) cancelBtn.addEventListener('click', incCancelDeal);
   incApplyAuthState();
 }, 250);
+// ╔════════════════════════════════════════════════════╗
+// ║  전화번호 자동 - 포맷 (010-XXXX-XXXX)                ║
+// ╚════════════════════════════════════════════════════╝
+function formatPhoneAuto(v) {
+  const d = (v || '').replace(/\D/g, '').slice(0, 11);
+  if (d.length < 4) return d;
+  if (d.length < 8) return d.slice(0, 3) + '-' + d.slice(3);
+  // 010-XXXX-XXXX (11자리) 또는 02-XXXX-XXXX 등
+  if (d.startsWith('02')) {
+    if (d.length <= 9) return d.slice(0, 2) + '-' + d.slice(2, 5) + (d.length > 5 ? '-' + d.slice(5) : '');
+    return d.slice(0, 2) + '-' + d.slice(2, 6) + '-' + d.slice(6);
+  }
+  return d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7);
+}
+
+setTimeout(() => {
+  const ph = document.getElementById('deal-phone');
+  if (ph) {
+    ph.addEventListener('input', (e) => {
+      const cursorEnd = e.target.selectionEnd;
+      const before = e.target.value;
+      e.target.value = formatPhoneAuto(before);
+      // 커서 위치 보정 (간단)
+    });
+  }
+}, 350);
+
 // ╔════════════════════════════════════════════════════╗
 // ║  내 영업 내역 (이번 달)                              ║
 // ╚════════════════════════════════════════════════════╝
