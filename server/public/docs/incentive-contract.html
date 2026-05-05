@@ -157,8 +157,8 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
     <div class="stats" id="stats">
       <div class="stat-card"><div class="stat-label">📋 이번 달 영업</div><div class="stat-val" id="stat-total">-</div><div class="stat-sub" id="stat-completed">-</div></div>
       <div class="stat-card"><div class="stat-label">✅ 주소 완료</div><div class="stat-val" id="stat-with-address">-</div><div class="stat-sub" id="stat-need-address">-</div></div>
-      <div class="stat-card"><div class="stat-label">⏰ 대기 (pending)</div><div class="stat-val" id="stat-pending">-</div><div class="stat-sub">처리 필요</div></div>
-      <div class="stat-card"><div class="stat-label">❌ 취소</div><div class="stat-val" id="stat-cancelled">-</div><div class="stat-sub">정산 제외</div></div>
+      <div class="stat-card"><div class="stat-label">⏰ 계약대기</div><div class="stat-val" id="stat-pending">-</div><div class="stat-sub">처리 필요</div></div>
+      <div class="stat-card"><div class="stat-label">❌ 계약취소</div><div class="stat-val" id="stat-cancelled">-</div><div class="stat-sub">정산 제외</div></div>
     </div>
 
     <!-- 툴바 -->
@@ -169,9 +169,9 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <label style="font-size:11px;color:#94a3b8">상태</label>
         <select id="filter-status">
           <option value="">전체</option>
-          <option value="completed">완료</option>
-          <option value="pending">대기</option>
-          <option value="cancelled">취소</option>
+          <option value="completed">✅ 계약완료</option>
+          <option value="pending">⏰ 계약대기</option>
+          <option value="cancelled">❌ 계약취소</option>
         </select>
         <label style="font-size:11px;color:#94a3b8">주소</label>
         <select id="filter-address">
@@ -353,7 +353,7 @@ function renderTable(contracts) {
       <td>${c.customer_phone || '<i style="color:#94a3b8">-</i>'}</td>
       <td style="max-width:240px;word-break:break-all;font-size:10.5px">${addrText}</td>
       <td>${(c.add_payback || 0).toLocaleString()}<div style="font-size:9px;color:#64748b">본인 -${(c.agent_payback_deduct || 0).toLocaleString()}</div></td>
-      <td><span class="status status-${c.status}">${c.status}</span></td>
+      <td><span class="status status-${c.status}">${ {pending:"계약대기",completed:"계약완료",cancelled:"계약취소"}[c.status] || c.status }</span></td>
       <td>
         <button class="btn-action btn-edit" data-act="edit" data-id="${c.id}">📝 편집</button>
       </td>
@@ -429,9 +429,9 @@ function renderTable(contracts) {
             <div>
               <label style="font-size:10px;color:#94a3b8;font-weight:700">상태</label>
               <select class="detail-input" data-field="status" data-id="${c.id}" style="width:100%;background:#0f172a;border:1.5px solid #a78bfa;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px;font-weight:700">
-                <option value="pending"${c.status === 'pending' ? ' selected' : ''}>⏰ pending — 대기 (정산 제외)</option>
-                <option value="completed"${c.status === 'completed' ? ' selected' : ''}>✅ completed — 완료 (인센티브 카운트)</option>
-                <option value="cancelled"${c.status === 'cancelled' ? ' selected' : ''}>❌ cancelled — 취소 (정산 제외)</option>
+                <option value="pending"${c.status === 'pending' ? ' selected' : ''}>⏰ 계약대기 (정산 제외)</option>
+                <option value="completed"${c.status === 'completed' ? ' selected' : ''}>✅ 계약완료 (인센티브 카운트)</option>
+                <option value="cancelled"${c.status === 'cancelled' ? ' selected' : ''}>❌ 계약취소 (정산 제외)</option>
               </select>
               <div style="font-size:9px;color:#64748b;margin-top:3px;line-height:1.4">⚠️ pending/cancelled은 인센티브 정산에 포함되지 않음</div>
             </div>
@@ -450,7 +450,7 @@ function renderTable(contracts) {
           <!-- 액션 버튼 -->
           <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #475569;padding-top:10px">
             <div style="font-size:9.5px;color:#64748b">
-              계약 ID ${c.id.slice(0, 8)}... · 상태 <span class="status status-${c.status}">${c.status}</span>
+              계약 ID ${c.id.slice(0, 8)}... · 상태 <span class="status status-${c.status}">${ {pending:"계약대기",completed:"계약완료",cancelled:"계약취소"}[c.status] || c.status }</span>
             </div>
             <div style="display:flex;gap:8px">
               ${c.status === 'completed' ? `<button class="btn-action btn-cancel" data-act="cancel" data-id="${c.id}" style="font-size:11px;padding:6px 14px">❌ 영업 취소</button>` : ''}
@@ -520,8 +520,8 @@ async function handleAction(id, act) {
     }
     await loadContracts();
     if (act === 'save-detail') { showToast('✅ 모든 변경사항 저장 완료'); closeModal(); }
-    else if (act === 'cancel') { showToast('❌ 취소 처리됨'); closeModal(); }
-    else if (act === 'finalize') { showToast('✅ 완료 처리됨'); closeModal(); }
+    else if (act === 'cancel') { showToast('❌ 계약취소 처리됨'); closeModal(); }
+    else if (act === 'finalize') { showToast('✅ 계약완료로 변경'); closeModal(); }
   } catch (e) {
     alert('오류: ' + e.message);
   }
@@ -662,11 +662,11 @@ function openEditModal(id) {
         <div>
           <label class="modal-field-label">상태</label>
           <select class="detail-input" data-field="status" style="border-color:#a78bfa !important;font-weight:700">
-            <option value="pending"${c.status === 'pending' ? ' selected' : ''}>⏰ pending — 대기 (정산 제외)</option>
-            <option value="completed"${c.status === 'completed' ? ' selected' : ''}>✅ completed — 완료 (인센티브 카운트)</option>
-            <option value="cancelled"${c.status === 'cancelled' ? ' selected' : ''}>❌ cancelled — 취소 (정산 제외)</option>
+            <option value="pending"${c.status === 'pending' ? ' selected' : ''}>⏰ 계약대기 (정산 제외)</option>
+            <option value="completed"${c.status === 'completed' ? ' selected' : ''}>✅ 계약완료 (인센티브 카운트)</option>
+            <option value="cancelled"${c.status === 'cancelled' ? ' selected' : ''}>❌ 계약취소 (정산 제외)</option>
           </select>
-          <div class="modal-field-hint">⚠️ pending / cancelled은 인센티브 정산에서 제외</div>
+          <div class="modal-field-hint">⚠️ 계약대기 / 계약취소는 인센티브 정산에서 제외</div>
         </div>
         <div>
           <label class="modal-field-label">취소 사유 (cancelled일 때)</label>
@@ -692,7 +692,7 @@ function openEditModal(id) {
 
   // 푸터
   document.getElementById('modal-footer-info').innerHTML =
-    `상태 <span class="status status-${c.status}">${c.status}</span> · 계약일 ${c.contract_date}`;
+    `상태 <span class="status status-${c.status}">${ {pending:"계약대기",completed:"계약완료",cancelled:"계약취소"}[c.status] || c.status }</span> · 계약일 ${c.contract_date}`;
   document.getElementById('modal-footer-actions').innerHTML = `
     <button class="btn-action btn-cancel" data-act="cancel" data-id="${c.id}" style="font-size:12px;padding:8px 16px">❌ 영업 취소</button>
     <button class="btn-action btn-save" data-act="save-detail" data-id="${c.id}" style="font-size:12px;padding:8px 22px">💾 모든 변경사항 저장</button>
