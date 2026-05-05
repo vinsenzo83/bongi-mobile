@@ -1112,4 +1112,67 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// calculator.html 변경 이력 (localStorage → DB 마이그레이션 Phase 1)
+// 섹션 예: '1·인터넷', '2·TV', '4·결합', '5·설치비', '6·제휴카드', '8·사은품'
+// ═══════════════════════════════════════════════════════════════
+
+// POST /api/incentive/calc-history — 변경 이력 기록 (manager/admin)
+router.post('/calc-history', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+
+    const { section, action, field, before_value, after_value, notes } = req.body || {};
+    if (!section || !action) {
+      return res.status(400).json({ error: 'section, action 필수' });
+    }
+
+    const { data, error } = await supabase
+      .from('incentive_calculator_history')
+      .insert({
+        section,
+        action,
+        field: field || null,
+        before_value: before_value != null ? String(before_value) : null,
+        after_value: after_value != null ? String(after_value) : null,
+        changed_by_user_id: req.user.id,
+        changed_by_name: me.name,
+        notes: notes || null,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ entry: data });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// GET /api/incentive/calc-history — 변경 이력 조회 (manager/contract/admin)
+router.get('/calc-history', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isContractAccess(me)) return res.status(403).json({ error: 'manager/contract/admin 전용' });
+
+    const { section, limit = 100 } = req.query;
+    let q = supabase
+      .from('incentive_calculator_history')
+      .select('*')
+      .order('changed_at', { ascending: false })
+      .limit(Math.min(parseInt(limit) || 100, 500));
+    if (section) q = q.eq('section', section);
+
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json({ history: data, count: data.length });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
 export default router;

@@ -2851,9 +2851,22 @@ function renderCardControls() {
 
 var EDIT_HISTORY_KEY = 'bongi-edit-history';
 var EDIT_HISTORY_FILTER = 'all';
+var INCENTIVE_TOKEN_KEY = 'incentive-auth-token-v1';
+
+// section 표시명 → DB 표준 코드 매핑 (서버 audit log 표준화)
+var SECTION_DB_CODE = {
+  'WiFi': '1·인터넷',
+  'TV 상품': '2·TV',
+  '셋톱박스': '2·TV',
+  '결합할인': '4·결합',
+  '설치비': '5·설치비',
+  '제휴카드': '6·제휴카드',
+  '사은품': '8·사은품',
+};
 
 function logEdit(section, label, from, to) {
   if (from === to) return;
+  // localStorage 저장 (오프라인 폴백 / 캐시)
   try {
     var hist = JSON.parse(localStorage.getItem(EDIT_HISTORY_KEY) || '[]');
     hist.unshift({
@@ -2865,12 +2878,35 @@ function logEdit(section, label, from, to) {
     });
     if (hist.length > 500) hist = hist.slice(0, 500);
     localStorage.setItem(EDIT_HISTORY_KEY, JSON.stringify(hist));
-    if (typeof renderEditHistory === 'function') renderEditHistory();
   } catch(e) {}
+
+  // DB에도 기록 (admin/manager 토큰 있을 때만)
+  try {
+    var tk = localStorage.getItem(INCENTIVE_TOKEN_KEY);
+    if (tk) {
+      var dbSection = SECTION_DB_CODE[section] || section;
+      fetch('/api/incentive/calc-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+        body: JSON.stringify({
+          section: dbSection,
+          action: 'edit',
+          field: label,
+          before_value: from,
+          after_value: to,
+        }),
+      }).then(function(r){
+        // 기록 성공 시 화면 갱신 (DB 기준 최신)
+        if (r && r.ok && typeof renderEditHistory === 'function') renderEditHistory();
+      }).catch(function(e){ console.warn('[calc-history DB log]', e); });
+    }
+  } catch(e) { console.warn('[calc-history DB log]', e); }
+
+  if (typeof renderEditHistory === 'function') renderEditHistory();
 }
 
 function clearEditHistory() {
-  if (!confirm('전체 변경 이력을 모두 삭제하시겠습니까?')) return;
+  if (!confirm('전체 변경 이력을 모두 삭제하시겠습니까? (로컬 캐시만 초기화 — DB 이력은 보존)')) return;
   try { localStorage.setItem(EDIT_HISTORY_KEY, '[]'); } catch(e) {}
   renderEditHistory();
 }
@@ -2878,6 +2914,53 @@ function clearEditHistory() {
 function setHistoryFilter(filter) {
   EDIT_HISTORY_FILTER = filter;
   renderEditHistory();
+}
+
+// DB → UI 변환 (incentive_calculator_history row → 통합 hist 항목)
+function _calcHistoryFromDb(rows) {
+  if (!Array.isArray(rows)) return [];
+  // DB 표준 코드 → UI 섹션명 (역매핑)
+  var dbToUi = {
+    '1·인터넷': 'WiFi',
+    '2·TV': 'TV 상품',
+    '4·결합': '결합할인',
+    '5·설치비': '설치비',
+    '6·제휴카드': '제휴카드',
+    '8·사은품': '사은품',
+  };
+  return rows.map(function(r){
+    return {
+      at: r.changed_at,
+      section: dbToUi[r.section] || r.section,
+      label: r.field || r.action || '',
+      from: r.before_value,
+      to: r.after_value,
+      _by: r.changed_by_name || '',
+      _notes: r.notes || '',
+      _action: r.action || '',
+      _src: 'db',
+    };
+  });
+}
+
+// DB에서 변경 이력 비동기 fetch → localStorage 캐시 → render 갱신
+function refreshEditHistoryFromDb() {
+  try {
+    var tk = localStorage.getItem(INCENTIVE_TOKEN_KEY);
+    if (!tk) return; // 비로그인 시 localStorage 그대로 사용
+    fetch('/api/incentive/calc-history?limit=500', {
+      headers: { Authorization: 'Bearer ' + tk }
+    }).then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(j){
+      if (!j || !Array.isArray(j.history)) return;
+      var unified = _calcHistoryFromDb(j.history);
+      // localStorage에 캐시 (오프라인 백업) — DB가 source of truth
+      try { localStorage.setItem(EDIT_HISTORY_KEY, JSON.stringify(unified.slice(0, 500))); } catch(e) {}
+      if (typeof renderEditHistory === 'function') renderEditHistory();
+    }).catch(function(e){ console.warn('[calc-history DB fetch]', e); });
+  } catch(e) { console.warn('[calc-history DB fetch]', e); }
 }
 
 function renderEditHistory() {
@@ -2892,6 +2975,11 @@ function renderEditHistory() {
   var sections = ['all','TV 상품','셋톱박스','WiFi','결합할인','설치비','제휴카드','사은품'];
   var sectionLabel = { all: '전체', 'TV 상품': '2번 TV 상품', '셋톱박스': '3번 셋톱', 'WiFi': '1번 WiFi', '결합할인': '4번 결합할인', '설치비': '5번 설치비', '제휴카드': '6번 제휴카드', '사은품': '8번 사은품' };
 
+  var hasToken = false;
+  try { hasToken = !!localStorage.getItem(INCENTIVE_TOKEN_KEY); } catch(e) {}
+  var hasDbRows = hist.some(function(h){ return h && h._src === 'db'; });
+  var sourceLabel = hasDbRows ? 'DB 통합' : (hasToken ? 'DB 로딩 중…' : '로컬 캐시');
+
   var html = '';
   // 필터 + 액션 바
   html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">';
@@ -2901,7 +2989,9 @@ function renderEditHistory() {
   });
   html += '</select>';
   html += '<span style="font-size:11px;color:#666">총 ' + hist.length + '건 (최대 500건 보존)</span>';
-  html += '<button type="button" onclick="clearEditHistory()" style="margin-left:auto;padding:4px 10px;border:1px solid #dc2626;background:#fff;color:#dc2626;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">↻ 이력 초기화</button>';
+  html += '<span style="font-size:10px;color:' + (hasDbRows ? '#16a34a' : '#999') + ';font-weight:700">[' + sourceLabel + ']</span>';
+  html += '<button type="button" onclick="refreshEditHistoryFromDb()" style="padding:4px 10px;border:1px solid #1a2744;background:#fff;color:#1a2744;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">↻ DB 새로고침</button>';
+  html += '<button type="button" onclick="clearEditHistory()" style="margin-left:auto;padding:4px 10px;border:1px solid #dc2626;background:#fff;color:#dc2626;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">↻ 캐시 초기화</button>';
   html += '</div>';
 
   if (hist.length === 0) {
@@ -2913,19 +3003,23 @@ function renderEditHistory() {
   var sectionColor = { 'TV 상품': '#3b82f6', '셋톱박스': '#0891b2', 'WiFi': '#7c3aed', '결합할인': '#fbbf24', '설치비': '#10b981', '제휴카드': '#dc2626', '사은품': '#f59e0b' };
 
   html += '<div style="overflow-x:auto;border:1px solid #e5e7eb;border-radius:8px;max-height:500px;overflow-y:auto">';
-  html += '<table style="margin:0;font-size:11px"><thead style="position:sticky;top:0;background:#1a2744"><tr><th style="width:130px">시각</th><th style="width:100px">섹션</th><th>변경 항목</th><th style="width:100px;text-align:right">변경 전</th><th style="width:100px;text-align:right">변경 후</th></tr></thead><tbody>';
+  html += '<table style="margin:0;font-size:11px"><thead style="position:sticky;top:0;background:#1a2744"><tr><th style="width:130px">시각</th><th style="width:90px">섹션</th><th>변경 항목</th><th style="width:90px;text-align:right">이전</th><th style="width:90px;text-align:right">이후</th><th style="width:80px">변경자</th><th style="width:120px">메모</th></tr></thead><tbody>';
   hist.slice(0, 100).forEach(function(h) {
     var dt = new Date(h.at);
     var t = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0') + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0') + ':' + String(dt.getSeconds()).padStart(2,'0');
     var clr = sectionColor[h.section] || '#666';
-    var fromStr = (typeof h.from === 'number') ? h.from.toLocaleString() : String(h.from);
-    var toStr = (typeof h.to === 'number') ? h.to.toLocaleString() : String(h.to);
+    var fromStr = (typeof h.from === 'number') ? h.from.toLocaleString() : (h.from == null ? '-' : String(h.from));
+    var toStr = (typeof h.to === 'number') ? h.to.toLocaleString() : (h.to == null ? '-' : String(h.to));
+    var by = h._by ? String(h._by) : '';
+    var notes = h._notes ? String(h._notes) : '';
     html += '<tr>' +
       '<td style="font-family:monospace;font-size:10px">' + t + '</td>' +
       '<td><span style="display:inline-block;padding:2px 7px;border-radius:4px;background:' + clr + '22;color:' + clr + ';font-size:10px;font-weight:700">' + h.section + '</span></td>' +
-      '<td>' + h.label + '</td>' +
+      '<td>' + (h.label || '') + '</td>' +
       '<td style="text-align:right;color:#dc2626">' + fromStr + '</td>' +
       '<td style="text-align:right;color:#16a34a;font-weight:700">' + toStr + '</td>' +
+      '<td style="font-size:10px;color:#475569">' + by + '</td>' +
+      '<td style="font-size:10px;color:#94a3b8">' + notes + '</td>' +
       '</tr>';
   });
   html += '</tbody></table></div>';
@@ -3399,6 +3493,8 @@ renderCardControls();
 renderGiftControls();
 renderGiftHistory();
 renderEditHistory();
+// DB 변경이력 통합 (admin/manager 토큰 있을 때만 — Phase 1 마이그레이션)
+if (typeof refreshEditHistoryFromDb === 'function') refreshEditHistoryFromDb();
 if (typeof calc === 'function') calc();
 </script>
 
