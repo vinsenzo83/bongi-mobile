@@ -144,7 +144,9 @@ async function gLogin(email, password) {
 async function gFetchAgent() {
   const tk = gGetToken(); if (!tk) return null;
   const res = await fetch(G_API + '/agents/me', {headers: {Authorization: 'Bearer ' + tk}});
-  if (!res.ok) { gClearToken(); return null; }
+  if (res.status === 401) { gClearToken(); return null; }
+  // 500/503 일시 에러는 토큰 보존 — 사용자 자동 로그아웃 방지
+  if (!res.ok) return null;
   return (await res.json()).agent;
 }
 
