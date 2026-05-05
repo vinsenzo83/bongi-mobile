@@ -1,5 +1,6 @@
 // V5 어드민 — 3. 셋톱박스 섹션
 // 통신사별 셋톱 모델 (모델명 / 월 임대료 / 기본 / 활성 / 삭제) + 추가
+// Phase C2: 셋톱 할인 규칙(discountRules) 편집 모달 연동
 import { useState } from 'react';
 import { D } from '../../../../lib/quoteEngine.js';
 import {
@@ -8,11 +9,13 @@ import {
 } from './styles.js';
 import { logEdit, persistDevices, resetDevices } from './store.js';
 import SectionShell from './SectionShell.jsx';
+import SettopRulesEditor from './SettopRulesEditor.jsx';
 
 const labelMap = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' };
 
 export default function SettopSection({ open, onToggle, onChange }) {
   const [, force] = useState(0);
+  const [editor, setEditor] = useState(null); // { carrier, settopId } | null
   const refresh = () => { force((t) => t + 1); onChange && onChange(); };
 
   const updateName = (carrier, idx, val) => {
@@ -120,10 +123,22 @@ export default function SettopSection({ open, onToggle, onChange }) {
                         }}
                         style={numInputStyle} />
                     </td>
-                    <td style={{ ...tdStyle, fontSize: 11, color: '#94a3b8' }}>
-                      {opt.discountRules && opt.discountRules.length > 0
-                        ? `${opt.discountRules.length}개 (TODO Phase C2)`
-                        : <span style={{ color: '#64748b' }}>없음</span>}
+                    <td style={{ ...tdStyle, fontSize: 11 }}>
+                      <button
+                        type="button"
+                        onClick={() => setEditor({ carrier: c.key, settopId: opt.id })}
+                        style={{
+                          background: opt.discountRules && opt.discountRules.length > 0 ? '#0e7490' : 'transparent',
+                          color: opt.discountRules && opt.discountRules.length > 0 ? '#cffafe' : '#94a3b8',
+                          border: '1px solid #475569',
+                          padding: '4px 10px', borderRadius: 5,
+                          fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                        }}
+                      >
+                        {opt.discountRules && opt.discountRules.length > 0
+                          ? `${opt.discountRules.length}개 ⚙`
+                          : '+ 규칙 추가'}
+                      </button>
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
                       <input type="checkbox" checked={!!opt.active} onChange={() => toggleActive(c.key, idx)} />
@@ -138,6 +153,15 @@ export default function SettopSection({ open, onToggle, onChange }) {
           </div>
         </div>
       ))}
+
+      {editor && (
+        <SettopRulesEditor
+          carrier={editor.carrier}
+          settopId={editor.settopId}
+          onClose={() => setEditor(null)}
+          onChange={refresh}
+        />
+      )}
     </SectionShell>
   );
 }

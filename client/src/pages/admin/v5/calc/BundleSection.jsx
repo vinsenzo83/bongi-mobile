@@ -1,15 +1,14 @@
 // V5 어드민 — 4. 결합 할인 섹션
 // SKT: 요즘가족결합 + 온가족할인
-// KT: 총액 / 정액 / 프리미엄 (planCatalog)
-// LGU+: 참쉬운 / 투게더
+// KT: 총액 / 정액 / 프리미엄 (planCatalog) — Phase C2: 행 추가/삭제 지원
+// LGU+: 참쉬운 / 투게더 — Phase C2: planLabels 추가/삭제 지원
 //
 // vanilla docs/calculator.html 의 BUNDLE_OVERRIDES_KEY 와 동일 구조 사용.
-// 일부 세부 편집(KT 프리미엄 plan 추가/삭제, 라벨 추가)은 // TODO Phase C2 마커.
 import { useState } from 'react';
 import { D } from '../../../../lib/quoteEngine.js';
 import {
   badge, subTitleStyle, tableStyle, thStyle, tdStyle,
-  inputStyle, numInputStyle,
+  inputStyle, numInputStyle, btnSuccess, btnDanger,
 } from './styles.js';
 import { logEdit, persistBundle, resetBundle } from './store.js';
 import SectionShell from './SectionShell.jsx';
@@ -194,6 +193,78 @@ function KtBundles({ refresh }) {
     persistBundle('kt'); refresh();
   };
 
+  // ─── 총액결합 구간 add/delete ───
+  const addTotalRange = () => {
+    const label = prompt('새 월 요금 구간 라벨 입력 (예: 200,000원 이상)');
+    if (!label) return;
+    total.ranges_total.push(String(label));
+    SPEEDS.forEach((sp) => {
+      total.total.internet[sp].push(0);
+      total.total.mobile[sp].push(0);
+    });
+    logEdit('결합할인', 'KT 총액 구간 추가', '-', label);
+    persistBundle('kt'); refresh();
+  };
+  const delTotalRange = (idx) => {
+    if (total.ranges_total.length <= 1) { alert('최소 1개 구간 유지 필요'); return; }
+    if (!confirm(`구간 [${total.ranges_total[idx]}] 삭제?`)) return;
+    const label = total.ranges_total[idx];
+    total.ranges_total.splice(idx, 1);
+    SPEEDS.forEach((sp) => {
+      total.total.internet[sp].splice(idx, 1);
+      total.total.mobile[sp].splice(idx, 1);
+    });
+    logEdit('결합할인', 'KT 총액 구간 삭제', label, '-');
+    persistBundle('kt'); refresh();
+  };
+
+  // ─── 정액결합 구간 add/delete ───
+  const addFixedRange = () => {
+    const label = prompt('새 월 요금 구간 라벨 입력');
+    if (!label) return;
+    total.ranges_fixed.push(String(label));
+    total.fixed.internet.push(0);
+    total.fixed.mobile.push(0);
+    logEdit('결합할인', 'KT 정액 구간 추가', '-', label);
+    persistBundle('kt'); refresh();
+  };
+  const delFixedRange = (idx) => {
+    if (total.ranges_fixed.length <= 1) { alert('최소 1개 구간 유지 필요'); return; }
+    if (!confirm(`구간 [${total.ranges_fixed[idx]}] 삭제?`)) return;
+    const label = total.ranges_fixed[idx];
+    total.ranges_fixed.splice(idx, 1);
+    total.fixed.internet.splice(idx, 1);
+    total.fixed.mobile.splice(idx, 1);
+    logEdit('결합할인', 'KT 정액 구간 삭제', label, '-');
+    persistBundle('kt'); refresh();
+  };
+
+  // ─── 프리미엄 카탈로그 add/delete ───
+  const addPremRow = () => {
+    const v = prompt('월정액 (원, 예: 77000)');
+    if (v == null) return;
+    const label = prompt('요금제명 (예: 77,000원 (5G 슈퍼플랜))');
+    if (!label) return;
+    const dc = prompt('할인액 (원, 0 가능)') || '0';
+    const prem = confirm('프리미엄 자격 가능? (확인=가능, 취소=불가)');
+    total.premium.planCatalog.push({
+      v: num(v),
+      label: String(label),
+      dc: num(dc),
+      prem: !!prem,
+    });
+    logEdit('결합할인', 'KT 프리미엄 요금제 추가', '-', label);
+    persistBundle('kt'); refresh();
+  };
+  const delPremRow = (idx) => {
+    if (total.premium.planCatalog.length <= 1) { alert('최소 1개 요금제 유지 필요'); return; }
+    const item = total.premium.planCatalog[idx];
+    if (!confirm(`[${item.label}] 삭제?`)) return;
+    total.premium.planCatalog.splice(idx, 1);
+    logEdit('결합할인', 'KT 프리미엄 요금제 삭제', item.label, '-');
+    persistBundle('kt'); refresh();
+  };
+
   return (
     <div style={{ marginTop: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -201,42 +272,60 @@ function KtBundles({ refresh }) {
         <span style={subTitleStyle}>총액 / 정액 / 프리미엄</span>
       </div>
 
-      <div style={subTitleStyle}>① 총액결합 — 월 요금 합산 구간 × 속도</div>
+      <div style={{ ...subTitleStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>① 총액결합 — 월 요금 합산 구간 × 속도</span>
+        <button type="button" onClick={addTotalRange} style={{ ...btnSuccess, fontSize: 11, padding: '4px 10px' }}>+ 구간 추가</button>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>구간 라벨</th>
+              <th style={thStyle}>인터넷 100M</th>
+              <th style={thStyle}>500M</th>
+              <th style={thStyle}>1G</th>
+              <th style={thStyle}>휴대폰 100M</th>
+              <th style={thStyle}>500M</th>
+              <th style={thStyle}>1G</th>
+              <th style={{ ...thStyle, width: 50 }}>관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {total.ranges_total.map((label, idx) => (
+              <tr key={idx}>
+                <td style={tdStyle}>
+                  <input type="text" defaultValue={label}
+                    onBlur={(e) => updTotalRangeLabel(idx, e.target.value)}
+                    style={{ ...inputStyle, width: 130 }} />
+                </td>
+                {SPEEDS.map((sp) => (
+                  <td key={'i' + sp} style={tdStyle}><NumCell value={total.total.internet[sp][idx]} onChange={(v) => updTotal('internet', sp, idx, v)} color="#fca5a5" /></td>
+                ))}
+                {SPEEDS.map((sp) => (
+                  <td key={'m' + sp} style={tdStyle}><NumCell value={total.total.mobile[sp][idx]} onChange={(v) => updTotal('mobile', sp, idx, v)} color="#fca5a5" /></td>
+                ))}
+                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                  <button type="button" onClick={() => delTotalRange(idx)} style={btnDanger}>🗑</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ ...subTitleStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>② 정액결합 — 휴대폰 요금 구간</span>
+        <button type="button" onClick={addFixedRange} style={{ ...btnSuccess, fontSize: 11, padding: '4px 10px' }}>+ 구간 추가</button>
+      </div>
       <table style={tableStyle}>
         <thead>
           <tr>
-            <th style={thStyle}>구간 라벨</th>
-            <th style={thStyle}>인터넷 100M</th>
-            <th style={thStyle}>500M</th>
-            <th style={thStyle}>1G</th>
-            <th style={thStyle}>휴대폰 100M</th>
-            <th style={thStyle}>500M</th>
-            <th style={thStyle}>1G</th>
+            <th style={thStyle}>구간</th>
+            <th style={thStyle}>인터넷 할인</th>
+            <th style={thStyle}>휴대폰 할인</th>
+            <th style={{ ...thStyle, width: 50 }}>관리</th>
           </tr>
         </thead>
-        <tbody>
-          {total.ranges_total.map((label, idx) => (
-            <tr key={idx}>
-              <td style={tdStyle}>
-                <input type="text" defaultValue={label}
-                  onBlur={(e) => updTotalRangeLabel(idx, e.target.value)}
-                  style={{ ...inputStyle, width: 130 }} />
-              </td>
-              {SPEEDS.map((sp) => (
-                <td key={'i' + sp} style={tdStyle}><NumCell value={total.total.internet[sp][idx]} onChange={(v) => updTotal('internet', sp, idx, v)} color="#fca5a5" /></td>
-              ))}
-              {SPEEDS.map((sp) => (
-                <td key={'m' + sp} style={tdStyle}><NumCell value={total.total.mobile[sp][idx]} onChange={(v) => updTotal('mobile', sp, idx, v)} color="#fca5a5" /></td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>※ 구간 추가/삭제는 // TODO Phase C2</div>
-
-      <div style={subTitleStyle}>② 정액결합 — 휴대폰 요금 구간</div>
-      <table style={tableStyle}>
-        <thead><tr><th style={thStyle}>구간</th><th style={thStyle}>인터넷 할인</th><th style={thStyle}>휴대폰 할인</th></tr></thead>
         <tbody>
           {total.ranges_fixed.map((label, idx) => (
             <tr key={idx}>
@@ -247,12 +336,18 @@ function KtBundles({ refresh }) {
               </td>
               <td style={tdStyle}><NumCell value={total.fixed.internet[idx]} onChange={(v) => updFixed('internet', idx, v)} color="#fca5a5" /></td>
               <td style={tdStyle}><NumCell value={total.fixed.mobile[idx]} onChange={(v) => updFixed('mobile', idx, v)} color="#fca5a5" /></td>
+              <td style={{ ...tdStyle, textAlign: 'center' }}>
+                <button type="button" onClick={() => delFixedRange(idx)} style={btnDanger}>🗑</button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <div style={subTitleStyle}>③ 프리미엄 가족결합 — 요금제 카탈로그</div>
+      <div style={{ ...subTitleStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>③ 프리미엄 가족결합 — 요금제 카탈로그</span>
+        <button type="button" onClick={addPremRow} style={{ ...btnSuccess, fontSize: 11, padding: '4px 10px' }}>+ 요금제 추가</button>
+      </div>
       <div style={{ marginBottom: 8, fontSize: 11, color: '#94a3b8' }}>
         고정 인터넷 할인: <NumCell value={total.premium.internet} onChange={updPremFixedInet} color="#fca5a5" /> 원
       </div>
@@ -264,6 +359,7 @@ function KtBundles({ refresh }) {
               <th style={thStyle}>요금제명</th>
               <th style={{ ...thStyle, width: 100 }}>자격</th>
               <th style={{ ...thStyle, width: 110 }}>할인액</th>
+              <th style={{ ...thStyle, width: 50 }}>관리</th>
             </tr>
           </thead>
           <tbody>
@@ -284,12 +380,14 @@ function KtBundles({ refresh }) {
                   </select>
                 </td>
                 <td style={tdStyle}><NumCell value={p.dc} onChange={(v) => updPremItem(idx, 'dc', v)} color="#fca5a5" /></td>
+                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                  <button type="button" onClick={() => delPremRow(idx)} style={btnDanger}>🗑</button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>※ 행 추가/삭제는 // TODO Phase C2</div>
     </div>
   );
 }
@@ -309,7 +407,8 @@ function LguBundles({ refresh }) {
   };
   const updCwMobile = (planIdx, lineIdx, val) => {
     const n = num(val);
-    const old = cw.mobile[planIdx][lineIdx];
+    if (!cw.mobile[planIdx]) cw.mobile[planIdx] = [0, 0, 0];
+    const old = cw.mobile[planIdx][lineIdx] || 0;
     if (old === n) return;
     cw.mobile[planIdx][lineIdx] = n;
     logEdit('결합할인', `LGU+ 참쉬운 휴대폰 [${planIdx},${lineIdx}]`, old, n);
@@ -329,6 +428,31 @@ function LguBundles({ refresh }) {
     if (old === n) return;
     tg.mobile[idx] = n;
     logEdit('결합할인', `LGU+ 투게더 휴대폰 ${idx + 2}회선`, old, n);
+    persistBundle('lgu'); refresh();
+  };
+
+  // ─── 참쉬운 plan 라벨 add/edit/delete ───
+  const updCwLabel = (idx, val) => {
+    const old = cw.planLabels[idx];
+    cw.planLabels[idx] = String(val);
+    logEdit('결합할인', `LGU+ 참쉬운 구간 라벨 [${idx}]`, old, val);
+    persistBundle('lgu'); refresh();
+  };
+  const addCwPlan = () => {
+    const label = prompt('새 요금제 구간 라벨 (예: 95,000원 이상)');
+    if (!label) return;
+    cw.planLabels.push(String(label));
+    cw.mobile.push([0, 0, 0]);  // [2회선, 3회선, 4회선] 기본값
+    logEdit('결합할인', 'LGU+ 참쉬운 구간 추가', '-', label);
+    persistBundle('lgu'); refresh();
+  };
+  const delCwPlan = (idx) => {
+    if (cw.planLabels.length <= 1) { alert('최소 1개 구간 유지 필요'); return; }
+    const label = cw.planLabels[idx];
+    if (!confirm(`구간 [${label}] 삭제?`)) return;
+    cw.planLabels.splice(idx, 1);
+    cw.mobile.splice(idx, 1);
+    logEdit('결합할인', 'LGU+ 참쉬운 구간 삭제', label, '-');
     persistBundle('lgu'); refresh();
   };
 
@@ -354,23 +478,34 @@ function LguBundles({ refresh }) {
         </tbody>
       </table>
 
-      <div style={subTitleStyle}>② 참쉬운 — 휴대폰 1인당 할인 (요금제 × 회선수)</div>
+      <div style={{ ...subTitleStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>② 참쉬운 — 휴대폰 1인당 할인 (요금제 × 회선수)</span>
+        <button type="button" onClick={addCwPlan} style={{ ...btnSuccess, fontSize: 11, padding: '4px 10px' }}>+ 요금제 구간 추가</button>
+      </div>
       <table style={tableStyle}>
         <thead>
           <tr>
-            <th style={thStyle}>요금제</th>
+            <th style={thStyle}>요금제 구간</th>
             {lineLabels.map((l) => <th key={l} style={thStyle}>{l}</th>)}
+            <th style={{ ...thStyle, width: 50 }}>관리</th>
           </tr>
         </thead>
         <tbody>
           {cw.planLabels.map((label, pIdx) => (
             <tr key={pIdx}>
-              <td style={tdStyle}>{label}</td>
+              <td style={tdStyle}>
+                <input type="text" defaultValue={label}
+                  onBlur={(e) => updCwLabel(pIdx, e.target.value)}
+                  style={{ ...inputStyle, width: 150 }} />
+              </td>
               {lineLabels.map((_, lIdx) => (
                 <td key={lIdx} style={tdStyle}>
-                  <NumCell value={cw.mobile[pIdx][lIdx]} onChange={(v) => updCwMobile(pIdx, lIdx, v)} color="#fca5a5" />
+                  <NumCell value={(cw.mobile[pIdx] && cw.mobile[pIdx][lIdx]) || 0} onChange={(v) => updCwMobile(pIdx, lIdx, v)} color="#fca5a5" />
                 </td>
               ))}
+              <td style={{ ...tdStyle, textAlign: 'center' }}>
+                <button type="button" onClick={() => delCwPlan(pIdx)} style={btnDanger}>🗑</button>
+              </td>
             </tr>
           ))}
         </tbody>
