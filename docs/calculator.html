@@ -1102,9 +1102,18 @@ function buildAdditionalTvDropdowns() {
     var validIdx = [];
     var allOpts = d.tv.map(function(t, i){
       var disabled = false;
-      if (i > 0 && constraint === 'leq' && tv1Price > 0 && t.p > tv1Price) disabled = true;
+      var note = '';
+      // 가격 제약
+      if (i > 0 && constraint === 'leq' && tv1Price > 0 && t.p > tv1Price) {
+        disabled = true;
+        note = ' (TV1보다 비싸 선택 불가)';
+      }
+      // 메인 회선 전용 (mainOnly = TV1에서만 청약 가능)
+      if (i > 0 && t.mainOnly) {
+        disabled = true;
+        note = ' (메인 회선만 청약 가능)';
+      }
       if (!disabled) validIdx.push(i);
-      var note = disabled ? ' (TV1보다 비싸 선택 불가)' : '';
       return '<option value="' + i + '"' + (disabled ? ' disabled' : '') + '>' + (t.n || 'TV ' + i) + (t.p ? ' (' + t.p.toLocaleString() + '원)' : '') + note + '</option>';
     }).join('');
     sel.innerHTML = allOpts;
