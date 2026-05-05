@@ -204,6 +204,55 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   font-family: inherit;
   line-height: 1.6;
 }
+
+/* ═══ 모달 내 견적서(quote_full_html) — TM 계산기와 동일하게 가독성 강화 ═══ */
+/* 인라인 style의 font-size를 .v는 inherit, 전체적으로 clamp 적용 */
+.quote-box .calc-line {
+  display: flex; justify-content: space-between;
+  padding: 3px 0; line-height: 1.5;
+  font-size: clamp(12px, 0.95vw, 14px) !important;
+}
+.quote-box .calc-line .l { color: rgba(226,232,240,0.7) !important; font-weight: 500 !important; font-size: inherit !important; }
+.quote-box .calc-line .v { font-weight: 700 !important; color: #f8fafc !important; font-size: inherit !important; }
+.quote-box .calc-line.discount .v { color: #4ade80 !important; }
+/* 합계 — 강조 */
+.quote-box .calc-line.total {
+  border-top: 1.5px solid rgba(255,255,255,0.2) !important;
+  margin-top: 9px !important; padding-top: 11px !important;
+  font-size: clamp(17px, 1.5vw, 22px) !important;
+  font-weight: 900 !important;
+}
+.quote-box .calc-line.total .l { color: #f8fafc !important; font-weight: 800 !important; }
+.quote-box .calc-line.total .v {
+  font-size: clamp(19px, 1.7vw, 26px) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
+}
+/* 부가 정보 (→ 결합가, └ 추가 할인) */
+.quote-box .calc-line.sub {
+  font-size: clamp(10.5px, 0.85vw, 12.5px) !important;
+  padding: 2px 0 2px 12px !important;
+}
+.quote-box .calc-line.sub .l { color: rgba(226,232,240,0.45) !important; font-weight: 500 !important; }
+.quote-box .calc-line.sub .v { color: rgba(226,232,240,0.55) !important; font-weight: 500 !important; }
+/* 🎁 현금 사은품 — class.gift (신규) + background:rgba(251,191,36 (옛 데이터) 둘 다 매치 */
+.quote-box .calc-line.gift,
+.quote-box .calc-line[style*="rgba(251,191,36"] {
+  padding: 6px 10px !important;
+}
+.quote-box .calc-line.gift .l,
+.quote-box .calc-line[style*="rgba(251,191,36"] .l {
+  font-size: clamp(13px, 1.1vw, 16px) !important;
+  font-weight: 800 !important;
+  color: #fbbf24 !important;
+}
+.quote-box .calc-line.gift .v,
+.quote-box .calc-line[style*="rgba(251,191,36"] .v {
+  font-size: clamp(19px, 1.7vw, 26px) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
+  color: #fbbf24 !important;
+}
 .quote-empty {
   padding: 24px;
   background: rgba(0,0,0,0.25);
