@@ -2867,10 +2867,22 @@ function buildSalePayload(base) {
   // 견적 결과 HTML 통째로 (계산기의 모든 라인 — 정확한 계약 위해)
   // calc()를 강제 호출해서 c-result를 최신 상태로 갱신
   let quoteFullHtml = null;
+  let monthlyFee = null;
   try {
     if (typeof calc === 'function') calc();
     const resultEl = document.getElementById('c-result');
-    if (resultEl && resultEl.innerHTML.trim()) quoteFullHtml = resultEl.innerHTML;
+    if (resultEl && resultEl.innerHTML.trim()) {
+      quoteFullHtml = resultEl.innerHTML;
+      // 월 실질요금 / 월 합계 패턴 추출
+      const patterns = [
+        /월\s*실질요금[\s\S]*?<span[^>]*class="v"[^>]*>\s*([\d,]+)/,
+        /월\s*합계[\s\S]*?<span[^>]*class="v"[^>]*>\s*([\d,]+)/,
+      ];
+      for (const re of patterns) {
+        const m = quoteFullHtml.match(re);
+        if (m) { monthlyFee = parseInt(m[1].replace(/,/g, '')) || null; break; }
+      }
+    }
   } catch(e) { console.warn('[buildSalePayload] quote capture failed', e); }
 
   return Object.assign({}, base, {
@@ -2879,6 +2891,7 @@ function buildSalePayload(base) {
     wifi_option: wifiOption,
     quote_summary: summary,
     quote_full_html: quoteFullHtml,
+    monthly_fee: monthlyFee,
   });
 }
 

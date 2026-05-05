@@ -412,6 +412,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       wifi_option,
       quote_summary,
       quote_full_html,
+      monthly_fee,
     } = req.body || {};
 
     if (!product_id) return res.status(400).json({ error: 'product_id 필수' });
@@ -446,6 +447,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         wifi_option: wifi_option || null,
         quote_summary: quote_summary || null,
         quote_full_html: quote_full_html || null,
+        monthly_fee: monthly_fee || null,
       })
       .select('*, product:incentive_products(*)')
       .single();

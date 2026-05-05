@@ -666,9 +666,15 @@ function openEditModal(id) {
             <span>👤 ${a.name || '-'} <span style="color:#94a3b8">${a.center || ''}</span></span>
           </div>
         </div>
-        <div style="text-align:right">
-          <div class="ph-payback-label">💰 페이백</div>
-          <div class="ph-payback-val">${(p.payback||0).toLocaleString()}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+        <div style="display:flex;gap:18px;align-items:center">
+          <div style="text-align:right;border-right:1px solid #334155;padding-right:18px">
+            <div class="ph-payback-label">💵 월 요금</div>
+            <div style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:-0.02em">${c.monthly_fee ? c.monthly_fee.toLocaleString() : '-'}<span style="font-size:12px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+          </div>
+          <div style="text-align:right">
+            <div class="ph-payback-label">💰 페이백</div>
+            <div class="ph-payback-val">${(p.payback||0).toLocaleString()}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+          </div>
         </div>
       </div>
 
@@ -1048,6 +1054,7 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
       '우수상품': p.is_premium ? 'Y' : 'N',
       '가중치(P)': p.point_weight || 0,
       '페이백 (정가)': p.payback || 0,
+      '월 요금 (실질)': c.monthly_fee || 0,
       // ─── 견적 옵션 ───
       'TV 대수': c.tv_count || 1,
       '추가 TV (다중)': additional,
