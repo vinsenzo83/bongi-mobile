@@ -612,7 +612,6 @@ function renderTable(contracts) {
               계약 ID ${c.id.slice(0, 8)}... · 상태 <span class="status status-${c.status}">${ {pending:"계약대기",in_progress:"계약진행",completed:"계약완료",cancelled:"계약취소"}[c.status] || c.status }</span>
             </div>
             <div style="display:flex;gap:8px">
-              ${c.status === 'completed' ? `<button class="btn-action btn-cancel" data-act="cancel" data-id="${c.id}" style="font-size:11px;padding:6px 14px">❌ 영업 취소</button>` : ''}
               <button class="btn-action btn-save" data-act="save-detail" data-id="${c.id}" style="font-size:11px;padding:6px 18px">💾 모든 변경사항 저장</button>
             </div>
           </div>
@@ -660,9 +659,6 @@ async function handleAction(id, act) {
     if (body.add_payback < 0 || body.add_payback > 50000) {
       alert('추가 페이백은 0~50,000원 범위'); return;
     }
-  } else if (act === 'cancel') {
-    if (!confirm('이 영업을 취소하시겠습니까? 인센티브에서 제외됩니다.')) return;
-    body = { status: 'cancelled', cancellation_reason: '계약부서 취소' };
   } else if (act === 'finalize') {
     body = { status: 'completed' };
   }
@@ -679,7 +675,6 @@ async function handleAction(id, act) {
     }
     await loadContracts();
     if (act === 'save-detail') { showToast('✅ 모든 변경사항 저장 완료'); closeModal(); }
-    else if (act === 'cancel') { showToast('❌ 계약취소 처리됨'); closeModal(); }
     else if (act === 'finalize') { showToast('✅ 계약완료로 변경'); closeModal(); }
   } catch (e) {
     alert('오류: ' + e.message);
@@ -940,7 +935,6 @@ function openEditModal(id) {
   document.getElementById('modal-footer-info').innerHTML =
     `상태 <span class="status status-${c.status}">${ {pending:"계약대기",in_progress:"계약진행",completed:"계약완료",cancelled:"계약취소"}[c.status] || c.status }</span> · 계약일 ${c.contract_date}`;
   document.getElementById('modal-footer-actions').innerHTML = `
-    <button class="btn-action btn-cancel" data-act="cancel" data-id="${c.id}" style="font-size:12px;padding:8px 16px">❌ 영업 취소</button>
     <button class="btn-action btn-save" data-act="save-detail" data-id="${c.id}" style="font-size:12px;padding:8px 22px">💾 모든 변경사항 저장</button>
   `;
   // 푸터 버튼 핸들러
