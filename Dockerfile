@@ -10,18 +10,22 @@ RUN apt-get update && apt-get install -y \
   libdbus-1-3 libexpat1 libnspr4 libatomic1 \
   && rm -rf /var/lib/apt/lists/*
 
-# package.json 복사 + 의존성 설치
+# package.json 복사 + 의존성 설치 (root + client + server, Vite 등 빌드용 devDeps 필수)
 COPY package*.json ./
 COPY client/package*.json ./client/
 COPY server/package*.json ./server/
 
-RUN npm install --omit=dev || npm install
+RUN npm install
+RUN cd client && npm install
+RUN cd server && npm install
 
 # 소스 복사 + 빌드
 COPY . .
 
-RUN npm run build || true
-RUN mkdir -p server/public/docs && cp docs/*.html server/public/docs/ || true
+# 빌드 실패 시 deploy 중단 (|| true 제거 — 옛날 버전이 silent 실패로 client/dist 누락됐었음)
+RUN npm run build
+RUN mkdir -p server/public/docs && cp docs/*.html server/public/docs/ 2>/dev/null || true
+RUN ls -la client/dist/ | head -10 && echo "✅ client/dist 빌드 확인"
 
 ENV NODE_ENV=production
 ENV PORT=3001
