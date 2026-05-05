@@ -562,7 +562,7 @@ async function init() {
       fetchAgent(),
       fetchOverview(month).catch(() => null),
     ]);
-    if (agent && ['manager', 'admin', 'contract'].includes(agent.role)) {
+    if (agent && ['agent', 'manager', 'admin', 'contract'].includes(agent.role)) {
       onLoggedIn(agent, !!overview);
       // 이미 받아놓은 데이터 즉시 렌더 (재요청 X)
       if (overview) {
@@ -574,7 +574,7 @@ async function init() {
       return;
     }
     if (agent) {
-      document.getElementById('auth-msg').textContent = '⚠️ manager/contract/admin 권한 필요 (현재 ' + agent.role + ')';
+      document.getElementById('auth-msg').textContent = '⚠️ 권한 필요 (현재 ' + agent.role + ')';
       document.getElementById('auth-msg').style.color = '#fbbf24';
       clearToken();
     }
@@ -594,6 +594,27 @@ function onLoggedIn(agent, skipLoad) {
   document.body.classList.remove('hide-financial-mid', 'hide-financial-deep', 'show-manager-kpi');
   if (agent.role === 'contract') document.body.classList.add('hide-financial-mid', 'hide-financial-deep');
   if (agent.role === 'manager') document.body.classList.add('hide-financial-deep'); // 본인 센터 financial OK, 회사이익 X
+  if (agent.role === 'agent') {
+    // agent: 회사 매출/이익 모두 숨김 (다른 상담사/회사 데이터 안 보이게)
+    document.body.classList.add('hide-financial-mid', 'hide-financial-deep');
+    // 상담사 수 KPI는 본인 1명이므로 의미없음 — 숨김
+    const kpiAgents = document.getElementById('kpi-agents');
+    if (kpiAgents && kpiAgents.parentElement) kpiAgents.parentElement.style.display = 'none';
+    // 페널티 KPI도 본인만 의미있음 — 그대로 둠 (본인이 페널티면 1, 아니면 0)
+    // 헤더 subtitle 동적 변경
+    const subtitleEl = document.querySelector('.subtitle');
+    if (subtitleEl) subtitleEl.textContent = '본인 실적 누적 — ' + agent.name;
+    // 섹션 제목 변경
+    const sectionH2 = document.querySelectorAll('.section h2');
+    sectionH2.forEach(h => {
+      if (h.textContent.includes('이번 달 전체 KPI')) {
+        h.firstChild && (h.firstChild.textContent = '📈 이번 달 본인 누적 ');
+      }
+      if (h.textContent.includes('상담사별 실적')) {
+        h.firstChild && (h.firstChild.textContent = '📋 본인 실적 ');
+      }
+    });
+  }
   // manager 전용 KPI 섹션은 manager일 때만 표시 (admin은 전체 KPI에서 이미 확인 가능)
   if (agent.role === 'manager') document.body.classList.add('show-manager-kpi');
   if (!skipLoad) loadAll(); // init() 병렬 fetch에서 이미 렌더된 경우 재요청 안 함
@@ -607,8 +628,8 @@ document.getElementById('auth-login-btn').addEventListener('click', async () => 
   try {
     await login(email, password);
     const agent = await fetchAgent();
-    if (!agent || !['manager','admin','contract'].includes(agent.role)) {
-      msg.textContent = 'manager/contract/admin 권한 필요'; clearToken(); return;
+    if (!agent || !['agent','manager','admin','contract'].includes(agent.role)) {
+      msg.textContent = '권한 필요'; clearToken(); return;
     }
     onLoggedIn(agent);
   } catch (e) { msg.textContent = e.message; }

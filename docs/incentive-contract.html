@@ -1292,7 +1292,7 @@ async function init() {
       fetch(API + '/contracts?month=' + now.toISOString().slice(0,7), { headers: { Authorization: 'Bearer ' + tk }})
         .then(r => r.ok ? r.json() : null).catch(() => null),
     ]);
-    if (agent && (agent.role === 'admin' || agent.role === 'manager' || agent.role === 'contract')) {
+    if (agent && ['agent', 'admin', 'manager', 'contract'].includes(agent.role)) {
       // 미리 받아놓은 contracts 즉시 활용
       if (contractsRes && contractsRes.contracts) {
         _currentContracts = contractsRes.contracts;
@@ -1307,7 +1307,7 @@ async function init() {
       return;
     }
     if (agent) {
-      document.getElementById('auth-msg').textContent = '⚠️ ' + agent.role + ' 권한 — manager/admin만 접근 가능';
+      document.getElementById('auth-msg').textContent = '⚠️ ' + agent.role + ' 권한 — 접근 불가';
       document.getElementById('auth-msg').style.color = '#fbbf24';
       clearToken();
     }
@@ -1335,8 +1335,8 @@ document.getElementById('auth-login-btn').addEventListener('click', async () => 
   try {
     await login(email, password);
     const agent = await fetchAgent();
-    if (!agent || !['admin','manager','contract'].includes(agent.role)) {
-      msg.textContent = 'manager/contract/admin 권한 필요';
+    if (!agent || !['agent','admin','manager','contract'].includes(agent.role)) {
+      msg.textContent = '권한 필요';
       clearToken();
       return;
     }

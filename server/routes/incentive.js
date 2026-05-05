@@ -1018,7 +1018,11 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!isContractAccess(me)) return res.status(403).json({ error: 'contract/manager/admin 전용' });
+    // agent: 본인 sale만 조회 가능 / contract·manager·admin: 기존 정책 유지
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+    if (me.role !== 'agent' && !isContractAccess(me)) {
+      return res.status(403).json({ error: 'contract/manager/admin 전용' });
+    }
 
     const { month, status } = req.query;
     const trash = req.query.trash === '1' || req.query.trash === 'true';
@@ -1045,8 +1049,10 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
 
     if (status) q = q.eq('status', status);
 
-    // manager: 본인 센터 상담사만 — 단일 nested filter로 N+1 제거
-    if (me.role === 'manager') {
+    // agent: 본인 sale만 / manager: 본인 센터 상담사만
+    if (me.role === 'agent') {
+      q = q.eq('agent_id', me.id);
+    } else if (me.role === 'manager') {
       q = q.eq('agent.center', me.center);
     }
 
@@ -1065,13 +1071,20 @@ router.get('/sales/:id/quote', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!isContractAccess(me)) return res.status(403).json({ error: 'contract/manager/admin 전용' });
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+    if (me.role !== 'agent' && !isContractAccess(me)) {
+      return res.status(403).json({ error: 'contract/manager/admin 전용' });
+    }
     const { data, error } = await supabase
       .from('incentive_sales')
-      .select('id, quote_full_html, quote_summary')
+      .select('id, agent_id, quote_full_html, quote_summary')
       .eq('id', req.params.id)
       .single();
     if (error) return res.status(404).json({ error: '영업 없음' });
+    // agent는 본인 sale만 조회 가능
+    if (me.role === 'agent' && data.agent_id !== me.id) {
+      return res.status(403).json({ error: '본인 sale만 조회 가능' });
+    }
     res.json({ quote_full_html: data.quote_full_html || null, quote_summary: data.quote_summary || null });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
@@ -1086,7 +1099,11 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!isContractAccess(me)) return res.status(403).json({ error: 'contract/manager/admin 전용' });
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+    // agent: 본인 row만 / contract·manager·admin: 기존 정책
+    if (me.role !== 'agent' && !isContractAccess(me)) {
+      return res.status(403).json({ error: 'contract/manager/admin 전용' });
+    }
 
     const ym = req.query.month || new Date().toISOString().slice(0, 7);
 
@@ -1097,8 +1114,12 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
       p_center: me.role === 'manager' ? me.center : null,
     });
     if (rpcErr) throw rpcErr;
+    // agent role: 본인 row만 필터 (서버에서 강제 — 다른 상담사 데이터 차단)
+    const filteredRows = me.role === 'agent'
+      ? (rows || []).filter(r => r.agent_id === me.id)
+      : (rows || []);
     // RPC 결과를 기존 응답 포맷으로 변환 (agent 중첩 객체)
-    const settlements = (rows || []).map(r => ({
+    const settlements = filteredRows.map(r => ({
       agent: {
         id: r.agent_id, name: r.agent_name, center: r.agent_center,
         role: r.agent_role, user_id: r.agent_user_id,
