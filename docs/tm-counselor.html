@@ -557,6 +557,8 @@ html, body { overflow:hidden; }
         </div>
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">📅 설치 희망일
           <input type="date" id="deal-install-date" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
+        <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">📝 상담 메모
+          <textarea id="deal-notes" rows="3" placeholder="상담 내용 / 특이사항 / 고객 요청 등" style="width:100%;padding:5px 7px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;resize:vertical;font-family:inherit"></textarea></label>
         <div style="font-size:9px;color:#9ca3af;margin-bottom:6px;line-height:1.4">ℹ️ 주소·서류는 계약부서가 별도 진행 (TM 단계 불필요)</div>
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:8px">추가 페이백 (₩, 0~50,000)
           <input type="number" id="deal-payback" min="0" max="50000" step="1000" value="0" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
@@ -2770,6 +2772,7 @@ async function incSubmitDeal() {
   const name = document.getElementById('deal-name').value.trim();
   const phone = document.getElementById('deal-phone').value.trim();
   const installDate = document.getElementById('deal-install-date').value || null;
+  const notes = (document.getElementById('deal-notes').value || '').trim() || null;
   const payback = parseInt(document.getElementById('deal-payback').value) || 0;
 
   if (payback < 0 || payback > 50000) {
@@ -2787,6 +2790,7 @@ async function incSubmitDeal() {
         customer_name: name || null,
         customer_phone: phone || null,
         installation_date: installDate,
+        notes: notes,
         add_payback: payback,
       })
     });
@@ -2810,7 +2814,7 @@ async function incSubmitDeal() {
     setTimeout(() => {
       document.getElementById('inc-deal-form').style.display = 'none';
       document.getElementById('inc-close-deal-btn').style.display = '';
-      ['deal-name', 'deal-phone', 'deal-install-date'].forEach(id => {
+      ['deal-name', 'deal-phone', 'deal-install-date', 'deal-notes'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
       document.getElementById('deal-payback').value = 0;
