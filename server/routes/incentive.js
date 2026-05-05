@@ -273,10 +273,15 @@ router.get('/admin/debug-keys', authenticateJWT, async (req, res) => {
     }
     return '⚠️ unknown format';
   };
+  // SUPABASE_ 시작하는 모든 환경변수 (이름만 — 값 노출 X)
+  const allSupabaseEnvs = Object.keys(process.env)
+    .filter(k => k.toUpperCase().includes('SUPABASE') || k.toUpperCase().includes('SECRET') || k.toUpperCase().includes('SERVICE'))
+    .map(k => ({ name: k, length: (process.env[k] || '').length, prefix: (process.env[k] || '').slice(0, 15) }));
   res.json({
     SUPABASE_SERVICE_KEY: { length: sk.length, prefix: sk.slice(0, 20), judge: judge(sk) },
     SUPABASE_ANON_KEY: { length: ak.length, prefix: ak.slice(0, 20), judge: judge(ak) },
     keys_same: sk === ak ? '⚠️ 두 변수 값이 동일함 (잘못)' : '서로 다름 (정상)',
+    all_supabase_envs: allSupabaseEnvs,
   });
 });
 
