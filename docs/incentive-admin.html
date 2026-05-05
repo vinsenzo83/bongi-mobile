@@ -38,6 +38,17 @@ body.role-admin .tab-btn[data-roles*="admin"] { display:flex; }
 .content { flex:1; min-width:0; background:#0f172a; position:relative; }
 iframe.tab-pane { width:100%; height:100%; border:none; background:#0f172a; display:none; }
 iframe.tab-pane.active { display:block; }
+.loading-spinner {
+  position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
+  background:rgba(15,23,42,0.95); z-index:5; gap:12px;
+}
+.loading-spinner.show { display:flex; }
+.loading-spinner .spinner {
+  width:40px; height:40px; border:3px solid #334155; border-top-color:#60a5fa;
+  border-radius:50%; animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-spinner .text { color:#94a3b8; font-size:12px; font-weight:700; }
 .auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.95); display:flex; justify-content:center; align-items:center; z-index:9999; }
 .auth-box { background:linear-gradient(135deg,#1e293b,#334155); border:1.5px solid #475569; border-radius:12px; padding:24px 28px; width:380px; box-shadow:0 20px 60px rgba(0,0,0,0.6); }
 .auth-box h2 { font-size:16px; color:#60a5fa; font-weight:800; margin-bottom:14px; }
@@ -71,6 +82,10 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
   </aside>
 
   <div class="content">
+    <div class="loading-spinner" id="loading-spinner">
+      <div class="spinner"></div>
+      <div class="text">탭 로딩 중...</div>
+    </div>
     <iframe class="tab-pane" id="pane-tm" data-loaded="false"></iframe>
     <iframe class="tab-pane" id="pane-dashboard" data-loaded="false"></iframe>
     <iframe class="tab-pane" id="pane-contract" data-loaded="false"></iframe>
@@ -134,10 +149,17 @@ async function fetchAgent() {
   return (await res.json()).agent;
 }
 
-function loadTabIframe(tabName) {
+function loadTabIframe(tabName, showSpinner = false) {
   const pane = document.getElementById('pane-' + tabName);
   if (!pane) return;
   if (pane.dataset.loaded === 'false') {
+    if (showSpinner) {
+      const sp = document.getElementById('loading-spinner');
+      if (sp) sp.classList.add('show');
+      pane.addEventListener('load', () => {
+        if (sp) setTimeout(() => sp.classList.remove('show'), 200);
+      }, { once: true });
+    }
     pane.src = TAB_URLS[tabName];
     pane.dataset.loaded = 'true';
   }
@@ -146,7 +168,32 @@ function loadTabIframe(tabName) {
 function switchTab(tabName) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + tabName));
-  loadTabIframe(tabName);
+  loadTabIframe(tabName, true);
+}
+
+// 로그인 후 다른 탭 백그라운드 사전 로드 (보이지 않게)
+function preloadOtherTabs(role) {
+  const visible = [];
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const roles = b.getAttribute('data-roles') || '';
+    if (roles.includes(role) || (role === 'admin') || (role === 'manager' && roles.includes('agent'))) {
+      visible.push(b.dataset.tab);
+    }
+  });
+  // admin은 모든 탭 가능
+  if (role === 'admin') visible.length = 0, visible.push('tm', 'dashboard', 'contract', 'agents', 'rules');
+  if (role === 'manager') visible.length = 0, visible.push('tm', 'dashboard', 'contract');
+  if (role === 'contract') visible.length = 0, visible.push('dashboard', 'contract');
+  if (role === 'agent') visible.length = 0, visible.push('tm');
+
+  // 활성 탭 외 다른 탭들을 차례로 (1초 간격) 사전 로드
+  let delay = 1500;
+  for (const tab of visible) {
+    const pane = document.getElementById('pane-' + tab);
+    if (!pane || pane.dataset.loaded !== 'false') continue;
+    setTimeout(() => loadTabIframe(tab, false), delay);
+    delay += 800;
+  }
 }
 
 function onLoggedIn(agent) {
@@ -164,6 +211,8 @@ function onLoggedIn(agent) {
   if (agent.role === 'admin') document.body.classList.add('role-manager', 'role-contract', 'role-agent');
   if (agent.role === 'manager') document.body.classList.add('role-agent');
   switchTab(DEFAULT_TAB[agent.role] || 'tm');
+  // 백그라운드 사전 로드 — 활성 탭 로드 후 시작
+  setTimeout(() => preloadOtherTabs(agent.role), 1500);
 }
 
 async function init() {
