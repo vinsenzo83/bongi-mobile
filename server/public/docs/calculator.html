@@ -492,10 +492,11 @@ var D = {
     ],
     // 추가 TV (2번째 이상) 정책 — 셋톱·설치비 50% 할인
     additionalTvPolicy: {
-      maxTvCount: 3,                  // TV 최대 3대
-      settopDiscountRate: 0.5,        // 추가 셋톱 50% 할인
-      installDiscountRate: 0.5,       // 추가 설치비 50% 할인
-      tv1KeepsRegularDiscount: true,  // TV1은 기본 결합할인 그대로
+      maxTvCount: 3,                       // TV 최대 3대
+      settopDiscountRate: 0.5,             // 추가 셋톱 50% 할인
+      installDiscountRate: 0.5,            // 추가 설치비 50% 할인
+      additionalTvInstallFee: 17600,       // TV 추가 1대당 설치비 (정가)
+      tv1KeepsRegularDiscount: true,       // TV1은 기본 결합할인 그대로
       enabled: true
     },
     install: { solo: 36300, combo: 56100 },
@@ -1455,7 +1456,20 @@ function calc() {
   if (giftAmount > 0) {
     html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:6px;padding:6px 10px;margin-top:6px"><span class="l" style="color:#fbbf24">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900">' + fmt(giftAmount) + '</span></div>';
   }
-  html += '<div class="calc-line"><span class="l">설치비 (1회)</span><span class="v">' + fmt(installPrice) + '</span></div>';
+  // 설치비 — 본 설치비 + 추가 TV 설치비 (50% 할인)
+  html += '<div class="calc-line" style="margin-top:6px"><span class="l">🔧 설치비 (1회 · 본 인터넷+TV)</span><span class="v">' + fmt(installPrice) + '</span></div>';
+  var tvCntForInstall = (function(){var el=document.getElementById('c-tv-count'); return el?(parseInt(el.value)||1):1;})();
+  if (tvCntForInstall >= 2 && d.additionalTvPolicy && d.additionalTvPolicy.enabled) {
+    var addBaseFee = d.additionalTvPolicy.additionalTvInstallFee || 17600;
+    var addRate = d.additionalTvPolicy.installDiscountRate || 0.5;
+    var addPerTv = Math.round(addBaseFee * (1 - addRate));
+    var addCount = tvCntForInstall - 1;
+    var addTotal = addPerTv * addCount;
+    html += '<div class="calc-line"><span class="l">└ 추가 TV 설치비 (' + addCount + '대 × ' + addBaseFee.toLocaleString() + '원)</span><span class="v">+' + fmt(addBaseFee * addCount) + '</span></div>';
+    html += '<div class="calc-line discount"><span class="l">└ 추가 TV 설치비 50% 할인</span><span class="v">-' + fmt(addBaseFee * addCount - addTotal) + '</span></div>';
+    html += '<div class="calc-line sub"><span class="l">→ 추가 설치비 실납</span><span class="v">' + fmt(addTotal) + '</span></div>';
+    html += '<div class="calc-line total" style="border-top:1px dashed rgba(255,255,255,0.2);margin-top:4px;padding-top:4px"><span class="l">설치비 총 합계</span><span class="v">' + fmt(installPrice + addTotal) + '</span></div>';
+  }
   document.getElementById('c-result').innerHTML = html;
 }
 
