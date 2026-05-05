@@ -121,6 +121,101 @@ input[type="date"]:hover::-webkit-calendar-picker-indicator,
 input[type="month"]:hover::-webkit-calendar-picker-indicator {
   opacity: 0.8;
 }
+
+/* ═══ 모달 통일 카드 시스템 ═══ */
+.sec-card {
+  background: linear-gradient(180deg, rgba(30,41,59,0.5), rgba(15,23,42,0.6));
+  border: 1px solid #334155;
+  border-left: 4px solid var(--acc, #60a5fa);
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+}
+.sec-card.acc-yellow { --acc: #fbbf24; }
+.sec-card.acc-blue   { --acc: #60a5fa; }
+.sec-card.acc-green  { --acc: #22c55e; }
+.sec-card.acc-cyan   { --acc: #22d3ee; }
+.sec-card.acc-purple { --acc: #a78bfa; }
+.sec-card.acc-slate  { --acc: #94a3b8; }
+.sec-card .sec-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.02em;
+}
+.sec-card .sec-title .sec-icon {
+  font-size: 18px;
+  color: var(--acc);
+}
+.sec-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sec-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.sec-grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.sec-grid-1-15 { display: grid; grid-template-columns: 1fr 1.5fr; gap: 16px; }
+.sec-row + .sec-row { margin-top: 14px; }
+
+/* 상품 정보 헤더 */
+.product-header {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 16px;
+  padding: 14px 18px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+.product-header .ph-meta { font-size: 11px; color: #94a3b8; margin-bottom: 4px; letter-spacing: 0.02em; }
+.product-header .ph-name { font-size: 17px; color: #f8fafc; font-weight: 900; letter-spacing: -0.01em; }
+.product-header .ph-tags { font-size: 11px; color: #cbd5e1; margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.product-header .ph-payback-label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+.product-header .ph-payback-val { font-size: 22px; font-weight: 900; color: #fca5a5; letter-spacing: -0.02em; }
+
+/* 견적서 박스 */
+.quote-box {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+.quote-box .quote-label {
+  font-size: 11px;
+  color: #fbbf24;
+  font-weight: 800;
+  margin-bottom: 12px;
+  letter-spacing: 0.04em;
+  display: flex; align-items: center; gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #334155;
+}
+.quote-box pre {
+  margin: 0;
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #e2e8f0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  line-height: 1.6;
+}
+.quote-empty {
+  padding: 24px;
+  background: rgba(0,0,0,0.25);
+  border: 1.5px dashed #475569;
+  border-radius: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .sec-grid-2, .sec-grid-3, .sec-grid-2-1, .sec-grid-1-15 { grid-template-columns: 1fr; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -550,43 +645,48 @@ function openEditModal(id) {
 
   // 바디 — 통합 상품 정보 카드
   document.getElementById('modal-body').innerHTML = `
-    <!-- 📦 계약 상품 정보 (통합) -->
-    <div style="background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(0,0,0,0.3));border:1.5px solid rgba(251,191,36,0.3);border-radius:10px;padding:16px 20px;margin-bottom:18px">
-      <div class="modal-section-title" style="background:rgba(251,191,36,0.12);color:#fbbf24">📦 계약 상품 정보</div>
+    <!-- 📦 계약 상품 정보 -->
+    <div class="sec-card acc-yellow">
+      <div class="sec-title"><span class="sec-icon">📦</span>계약 상품 정보</div>
 
-      <!-- 메인 상품 헤더 -->
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #334155">
-        <div>
-          <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">[${p.carrier || '-'}] ${p.type || '-'} · ${p.speed || '-'} · TV: ${p.tv_tier || '없음'}</div>
-          <div style="font-size:16px;color:#f8fafc;font-weight:900;letter-spacing:-0.01em">${p.name || '-'}</div>
-          <div style="font-size:11px;color:#cbd5e1;margin-top:4px">가중치 <b>${p.point_weight || '-'}P</b> · ${tierBadge}${premBadge} · 계약일 ${c.contract_date} · ${a.name || '-'} (${a.center || ''})</div>
+      <div class="product-header">
+        <div style="flex:1;min-width:280px">
+          <div class="ph-meta">[${p.carrier || '-'}] ${p.type || '-'} · ${p.speed || '-'} · TV ${p.tv_tier || '없음'}</div>
+          <div class="ph-name">${p.name || '-'}</div>
+          <div class="ph-tags">
+            <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 8px;border-radius:4px;font-weight:700">${p.point_weight || '-'}P</span>
+            ${tierBadge}${premBadge}
+            <span style="color:#64748b">·</span>
+            <span>📅 ${c.contract_date}</span>
+            <span style="color:#64748b">·</span>
+            <span>👤 ${a.name || '-'} <span style="color:#94a3b8">${a.center || ''}</span></span>
+          </div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:11px;color:#94a3b8">💰 페이백</div>
-          <div style="font-size:16px;font-weight:900;color:#fca5a5">${(p.payback||0).toLocaleString()}원</div>
+          <div class="ph-payback-label">💰 페이백</div>
+          <div class="ph-payback-val">${(p.payback||0).toLocaleString()}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
         </div>
       </div>
 
-      <!-- 🧮 상담 견적서 (TM 계산기 결과 그대로) -->
       ${c.quote_full_html ? `
-        <div style="margin-top:8px;background:#0f172a;border:1.5px solid #475569;border-radius:8px;padding:16px;color:#e2e8f0">
-          <div style="font-size:11px;color:#fbbf24;font-weight:800;margin-bottom:10px;letter-spacing:0.04em">🧮 상담사 견적서 (TM 계산기)</div>
+        <div class="quote-box">
+          <div class="quote-label">🧮 상담사 견적서 (TM 계산기 결과)</div>
           ${c.quote_full_html}
         </div>
       ` : c.quote_summary ? `
-        <div style="margin-top:8px;background:#0f172a;border:1.5px solid #475569;border-radius:8px;padding:14px;color:#e2e8f0">
-          <div style="font-size:11px;color:#fbbf24;font-weight:800;margin-bottom:8px">🧮 상담사 견적서</div>
-          <pre style="margin:0;background:rgba(0,0,0,0.3);border-radius:6px;padding:10px 12px;font-size:11.5px;color:#e2e8f0;white-space:pre-wrap;font-family:inherit;line-height:1.6">${(c.quote_summary || '').replace(/</g,'&lt;')}</pre>
+        <div class="quote-box">
+          <div class="quote-label">🧮 상담사 견적서</div>
+          <pre>${(c.quote_summary || '').replace(/</g,'&lt;')}</pre>
         </div>
       ` : `
-        <div style="margin-top:8px;padding:12px;background:rgba(0,0,0,0.3);border:1px dashed #475569;border-radius:6px;color:#94a3b8;font-size:11px;text-align:center">⚠️ 상담사가 견적서를 등록하지 않았습니다.</div>
+        <div class="quote-empty">⚠️ 상담사가 견적서를 등록하지 않았습니다.</div>
       `}
     </div>
 
     <!-- 👤 고객 정보 -->
-    <div style="background:linear-gradient(135deg,rgba(96,165,250,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(96,165,250,0.3);border-radius:10px;padding:14px 18px;margin-bottom:18px">
-      <div class="modal-section-title" style="background:rgba(96,165,250,0.12);color:#60a5fa">👤 고객 정보</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+    <div class="sec-card acc-blue">
+      <div class="sec-title"><span class="sec-icon">👤</span>고객 정보</div>
+      <div class="sec-grid-3 sec-row">
         <div>
           <label class="modal-field-label">이름 <span style="color:#dc2626">*</span></label>
           <input class="detail-input" data-field="customer_name" value="${(c.customer_name || '').replace(/"/g, '&quot;')}" placeholder="홍길동">
@@ -600,7 +700,7 @@ function openEditModal(id) {
           <input class="detail-input" data-field="resident_id" value="${(c.resident_id || '').replace(/"/g, '&quot;')}" placeholder="000000-0000000" style="letter-spacing:0.04em">
         </div>
       </div>
-      <div>
+      <div class="sec-row">
         <label class="modal-field-label">📍 설치 주소 (기본) <span style="color:#dc2626">*</span></label>
         <div style="display:flex;gap:8px">
           <input class="detail-input" data-field="customer_address" id="addr-input-${c.id}" value="${(c.customer_address || '').replace(/"/g, '&quot;')}" placeholder="주소 검색 또는 직접 입력" style="border-color:${hasAddr ? '#475569' : '#dc2626'} !important;flex:1" readonly>
@@ -608,7 +708,7 @@ function openEditModal(id) {
         </div>
         <div class="modal-field-hint">📍 우편번호 검색으로 자동 입력</div>
       </div>
-      <div style="margin-top:12px">
+      <div class="sec-row">
         <label class="modal-field-label">🏠 상세 주소 (동·호수·층) <span style="color:#dc2626">*</span></label>
         <input class="detail-input" data-field="customer_address_detail" value="${(c.customer_address_detail || '').replace(/"/g, '&quot;')}" placeholder="예: 101동 502호, 3층 사무실, 지하 1층 카페 옆">
         <div class="modal-field-hint">⚠️ 설치 기사 방문에 필수 — 정확하게 입력</div>
@@ -616,9 +716,9 @@ function openEditModal(id) {
     </div>
 
     <!-- 📅 설치 / 🎁 사은품 / 💰 페이백 -->
-    <div style="background:linear-gradient(135deg,rgba(34,197,94,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(34,197,94,0.3);border-radius:10px;padding:14px 18px;margin-bottom:18px">
-      <div class="modal-section-title" style="background:rgba(34,197,94,0.12);color:#22c55e">📅 설치 · 🎁 사은품 · 💰 페이백</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div class="sec-card acc-green">
+      <div class="sec-title"><span class="sec-icon">📅</span>설치 · 사은품 · 페이백</div>
+      <div class="sec-grid-2 sec-row">
         <div>
           <label class="modal-field-label">📅 설치 희망일 (달력)</label>
           <input class="detail-input" data-field="installation_date" type="date" value="${c.installation_date || ''}" id="install-date-${c.id}" onclick="triggerDatePicker(this)">
@@ -655,9 +755,9 @@ function openEditModal(id) {
     </div>
 
     <!-- 🏦 사은품 입금 정보 -->
-    <div style="background:linear-gradient(135deg,rgba(8,145,178,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(8,145,178,0.3);border-radius:10px;padding:14px 18px;margin-bottom:18px">
-      <div class="modal-section-title" style="background:rgba(8,145,178,0.12);color:#22d3ee">🏦 사은품/페이백 입금 정보</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:14px">
+    <div class="sec-card acc-cyan">
+      <div class="sec-title"><span class="sec-icon">🏦</span>사은품/페이백 입금 정보</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:16px">
         <div>
           <label class="modal-field-label">예금주</label>
           <input class="detail-input" data-field="bank_account_holder" value="${(c.bank_account_holder || '').replace(/"/g, '&quot;')}" placeholder="홍길동">
@@ -678,9 +778,9 @@ function openEditModal(id) {
     </div>
 
     <!-- 🚦 계약 진행 상태 -->
-    <div style="background:linear-gradient(135deg,rgba(167,139,250,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(167,139,250,0.3);border-radius:10px;padding:14px 18px;margin-bottom:18px">
-      <div class="modal-section-title" style="background:rgba(167,139,250,0.12);color:#a78bfa">🚦 계약 진행 상태</div>
-      <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:14px">
+    <div class="sec-card acc-purple">
+      <div class="sec-title"><span class="sec-icon">🚦</span>계약 진행 상태</div>
+      <div class="sec-grid-1-15">
         <div>
           <label class="modal-field-label">상태</label>
           <select class="detail-input" data-field="status" style="border-color:#a78bfa !important;font-weight:700">
@@ -697,17 +797,17 @@ function openEditModal(id) {
       </div>
     </div>
 
-    <!-- 📝 메모 — TM 상담 메모 (read-only) + 계약부서 메모 (editable) -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:6px">
-      <div style="background:linear-gradient(135deg,rgba(245,158,11,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(245,158,11,0.3);border-radius:10px;padding:14px 18px">
-        <div class="modal-section-title" style="background:rgba(245,158,11,0.12);color:#fbbf24">📞 TM 상담 메모 (상담사 작성)</div>
-        ${c.notes ? `<div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px 12px;font-size:13px;color:#e2e8f0;white-space:pre-wrap;line-height:1.5;min-height:80px">${(c.notes || '').replace(/</g, '&lt;')}</div>` : `<div style="padding:10px;color:#64748b;font-size:12px;text-align:center;background:#0f172a;border:1px dashed #334155;border-radius:6px;min-height:80px;display:flex;align-items:center;justify-content:center">상담사가 작성한 메모 없음</div>`}
-        <div class="modal-field-hint">읽기 전용 · 상담사가 등록 시 작성</div>
+    <!-- 📝 메모 -->
+    <div class="sec-grid-2">
+      <div class="sec-card acc-yellow" style="margin-bottom:0">
+        <div class="sec-title"><span class="sec-icon">📞</span>TM 상담 메모 <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">읽기 전용</span></div>
+        ${c.notes
+          ? `<div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:12px 14px;font-size:13px;color:#e2e8f0;white-space:pre-wrap;line-height:1.6;min-height:90px">${(c.notes || '').replace(/</g, '&lt;')}</div>`
+          : `<div style="padding:24px;color:#64748b;font-size:12px;text-align:center;background:rgba(0,0,0,0.25);border:1px dashed #475569;border-radius:6px;min-height:90px;display:flex;align-items:center;justify-content:center">상담사가 작성한 메모 없음</div>`}
       </div>
-      <div style="background:linear-gradient(135deg,rgba(96,165,250,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(96,165,250,0.3);border-radius:10px;padding:14px 18px">
-        <div class="modal-section-title" style="background:rgba(96,165,250,0.12);color:#60a5fa">📋 계약부서 메모 (행정 처리)</div>
-        <textarea class="detail-input" data-field="contract_notes" rows="4" placeholder="신분증 수령 여부, 계좌번호, 설치 일정 협의 결과, 고객 변심 사유 등">${(c.contract_notes || '').replace(/</g, '&lt;')}</textarea>
-        <div class="modal-field-hint">편집 가능 · 계약부서 작성</div>
+      <div class="sec-card acc-blue" style="margin-bottom:0">
+        <div class="sec-title"><span class="sec-icon">📋</span>계약부서 메모 <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">편집 가능</span></div>
+        <textarea class="detail-input" data-field="contract_notes" rows="5" placeholder="신분증 수령 여부, 계좌번호, 설치 일정 협의 결과, 고객 변심 사유 등">${(c.contract_notes || '').replace(/</g, '&lt;')}</textarea>
       </div>
     </div>
   `;
