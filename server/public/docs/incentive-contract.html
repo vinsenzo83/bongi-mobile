@@ -402,6 +402,7 @@ async function login(email, password) {
   }
   const data = await res.json();
   setToken(data.access_token);
+  if (data.refresh_token) localStorage.setItem("incentive-refresh-token-v1", data.refresh_token);
   return data;
 }
 

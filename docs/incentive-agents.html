@@ -178,6 +178,24 @@ const TOKEN_KEY = 'incentive-auth-token-v1';
 const getToken = () => localStorage.getItem(TOKEN_KEY);
 const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
 const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+async function tryRefreshToken() {
+  const rt = localStorage.getItem('incentive-refresh-token-v1');
+  if (!rt) return false;
+  try {
+    const res = await fetch('/api/auth/refresh', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ refresh_token: rt })
+    });
+    if (!res.ok) {
+      localStorage.removeItem('incentive-refresh-token-v1');
+      return false;
+    }
+    const data = await res.json();
+    setToken(data.access_token);
+    if (data.refresh_token) localStorage.setItem('incentive-refresh-token-v1', data.refresh_token);
+    return true;
+  } catch { return false; }
+}
 
 let _allAgents = [];
 
@@ -193,7 +211,8 @@ async function login(email, password) {
     body: JSON.stringify({email, password})
   });
   if (!res.ok) throw new Error((await res.json()).error || '로그인 실패');
-  const data = await res.json(); setToken(data.access_token); return data;
+  const data = await res.json(); setToken(data.access_token);
+  if (data.refresh_token) localStorage.setItem("incentive-refresh-token-v1", data.refresh_token); return data;
 }
 
 async function fetchAgent() {

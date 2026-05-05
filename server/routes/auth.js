@@ -97,6 +97,24 @@ router.post('/login', authLimiter, async (req, res) => {
   }
 });
 
+// refresh_token으로 access_token 재발급 (세션 자동 연장)
+router.post('/refresh', async (req, res) => {
+  const { refresh_token } = req.body || {};
+  if (!refresh_token) return res.status(400).json({ error: 'refresh_token 필수' });
+  try {
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token });
+    if (error || !data?.session) {
+      return res.status(401).json({ error: '세션 만료. 다시 로그인하세요.' });
+    }
+    res.json({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    });
+  } catch (e) {
+    res.status(401).json({ error: '세션 갱신 실패: ' + e.message });
+  }
+});
+
 // 소셜 로그인 후 프로필 확인/생성
 router.post('/social-profile', authenticateJWT, async (req, res) => {
   try {
