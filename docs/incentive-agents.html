@@ -65,13 +65,6 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   opacity: 0.8;
 }
 
-/* 화면 크기 따라 전체 비례 자동 축소 (모든 폰트·간격 자동 조절) */
-@media (max-width: 1600px) { body { zoom: 1.0; } }
-@media (max-width: 1400px) { body { zoom: 0.95; } }
-@media (max-width: 1200px) { body { zoom: 0.90; } }
-@media (max-width: 1024px) { body { zoom: 0.85; } }
-@media (max-width: 800px)  { body { zoom: 0.78; } }
-@media (max-width: 600px)  { body { zoom: 0.70; } }
 </style>
 <script src="/docs/_shared/incentive-auth.js"></script>
 <script>
@@ -200,7 +193,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <thead>
           <tr>
             <th>이름</th><th>센터</th><th>역할</th><th>입사일</th>
-            <th>기본급</th><th>활성</th><th>이번달 P</th><th>작업</th>
+            <th>기본급</th><th>활성</th><th>계약</th><th>P</th><th>Grade</th><th>인센티브</th><th>보너스</th><th>총수령</th><th>작업</th>
           </tr>
         </thead>
         <tbody id="agents-tbody"></tbody>
@@ -453,7 +446,7 @@ function renderAgents(agents) {
   const tbody = document.getElementById('agents-tbody');
   if (!filtered.length) {
     const emptyMsg = _trashMode ? '휴지통이 비어있습니다' : '없음';
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:#64748b">${emptyMsg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:30px;color:#64748b">${emptyMsg}</td></tr>`;
     return;
   }
 
@@ -468,9 +461,16 @@ function renderAgents(agents) {
     const statusCell = _trashMode
       ? '<span style="background:#7c3aed;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:800">삭제됨</span>'
       : (a.active ? '<span class="active-badge">활성</span>' : '<span class="inactive-badge">비활성</span>');
-    const pointsCell = _trashMode
-      ? '<span style="color:#64748b">-</span>'
-      : `<span id="p-${a.id}">로딩...</span>`;
+    // 6개 실적 컬럼 — 휴지통 모드는 모두 '-'
+    const dashStat = '<span style="color:#64748b">-</span>';
+    const statCells = _trashMode
+      ? `<td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td>`
+      : `<td id="stat-count-${a.id}" style="font-size:11px;text-align:right">…</td>
+         <td id="stat-p-${a.id}" style="font-size:11px;text-align:right">…</td>
+         <td id="stat-grade-${a.id}" style="font-size:11px">…</td>
+         <td id="stat-inc-${a.id}" style="font-size:11px;text-align:right">…</td>
+         <td id="stat-bonus-${a.id}" style="font-size:11px;text-align:right;color:#cbd5e1">…</td>
+         <td id="stat-total-${a.id}" style="font-size:12px;text-align:right;color:#86efac;font-weight:800">…</td>`;
 
     let actions;
     if (_trashMode) {
@@ -492,9 +492,9 @@ function renderAgents(agents) {
       <td>${a.center || '-'}</td>
       <td><span class="role-badge role-${a.role}">${a.role}</span></td>
       <td>${dateCell}</td>
-      <td>${(a.base_salary||0).toLocaleString()}</td>
+      <td style="text-align:right">${(a.base_salary||0).toLocaleString()}</td>
       <td>${statusCell}</td>
-      <td style="font-size:10px;color:#94a3b8">${pointsCell}</td>
+      ${statCells}
       <td>${actions}</td>
     </tr>`;
   }).join('');
@@ -502,20 +502,27 @@ function renderAgents(agents) {
   // 휴지통 모드는 정산 조회 생략
   if (_trashMode) return;
 
-  // 각 상담사의 이번 달 P 비동기 로드
+  // 각 상담사의 이번 달 실적 비동기 로드 (계약·P·Grade·인센티브·보너스·총수령)
   const ym = new Date().toISOString().slice(0,7);
+  const fmtMoney = (v) => (v == null) ? '-' : Number(v).toLocaleString();
   filtered.forEach(async a => {
     try {
       const tk = getToken();
       const res = await fetch(API + '/settlement?agent_id=' + a.id + '&month=' + ym, {
         headers: {Authorization: 'Bearer ' + tk}
       });
-      if (res.ok) {
-        const data = await res.json();
-        const s = data.settlement;
-        const el = document.getElementById('p-' + a.id);
-        if (el && s) el.innerHTML = `${s.total_points || 0}P · 우수 ${s.premium_count || 0}<div style="font-size:9px">G${s.grade_applied || 1}${s.is_penalty ? ' ⚠️' : ''}</div>`;
-      }
+      if (!res.ok) return;
+      const data = await res.json();
+      const s = data.settlement;
+      if (!s) return;
+      const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+      set(`stat-count-${a.id}`, `<b>${s.total_count || 0}</b>건<div style="font-size:9px;color:#64748b">우수 ${s.premium_count || 0}</div>`);
+      set(`stat-p-${a.id}`, `<b>${s.total_points || 0}</b>P`);
+      const gColor = ['','#6b7280','#3b82f6','#dc2626'][s.grade_applied || 1] || '#6b7280';
+      set(`stat-grade-${a.id}`, `<span style="background:${gColor};color:#fff;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:800">G${s.grade_applied || 1}</span>${s.is_penalty ? '<div style="font-size:9px;color:#fbbf24;margin-top:2px">⚠️ 페널티</div>' : ''}`);
+      set(`stat-inc-${a.id}`, fmtMoney(s.incentive));
+      set(`stat-bonus-${a.id}`, fmtMoney(s.bonus));
+      set(`stat-total-${a.id}`, fmtMoney(s.agent_total) + '원');
     } catch {}
   });
 }
