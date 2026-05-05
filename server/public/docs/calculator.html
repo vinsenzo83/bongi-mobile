@@ -555,13 +555,25 @@ var D = {
     tvInternetNoWifi: { '100M': 22000, '500M': 27500, '1G': 33000 },
     tvInternetWithWifi: { '100M': 23100, '500M': 28600, '1G': 33000 },
     tv: [
-      { n: 'TV 없음', ch: 0, p: 0, dc: 0 },
-      { n: '지니TV 베이직', ch: 238, p: 14740, dc: 2640 },
-      { n: '지니TV 라이트', ch: 240, p: 15840, dc: 2640 },
-      { n: '지니TV 에센스', ch: 263, p: 20240, dc: 3740 },
-      { n: '지니TV 모든G', ch: 250, p: 21340, dc: 4400 },
-      { n: '지니TV 디즈니+모든G', ch: 250, p: 28100, dc: 6600 }
+      // tv2Discount: TV2/TV3 추가 시 적용되는 시리즈별 고정 할인
+      { n: 'TV 없음', ch: 0, p: 0, dc: 0, tv2Discount: 0 },
+      { n: '지니TV 베이직', ch: 238, p: 14740, dc: 2640, tv2Discount: 7370 },
+      { n: '지니TV 라이트', ch: 240, p: 15840, dc: 2640, tv2Discount: 7920 },
+      { n: '지니TV 에센스', ch: 263, p: 20240, dc: 3740, tv2Discount: 11440 },
+      { n: '지니TV 모든G', ch: 250, p: 21340, dc: 4400, tv2Discount: 0 },
+      { n: '지니TV 디즈니+모든G', ch: 250, p: 28100, dc: 6600, tv2Discount: 0 }
     ],
+    // 추가 TV (2번째 이상) 정책
+    additionalTvPolicy: {
+      maxTvCount: 3,                         // TV 최대 3대
+      settopDiscountRate: 0,                 // KT: 셋톱 할인 없음 (정가)
+      installDiscountRate: 0,                // KT: 추가 설치비 할인 없음
+      additionalTvInstallFee: 15400,         // TV 추가 1대당 설치비 (KT 기준)
+      tv1KeepsRegularDiscount: true,
+      tv2PriceConstraint: 'leq',             // ⚠️ TV2 월정액 ≤ TV1 (KT 제약)
+      tv3PriceConstraint: 'leq',             // TV3도 동일 (TV1 기준)
+      enabled: true
+    },
     install: { solo: 36000, combo: 56200 },
     gift: {
       solo: { '100M': 90000, '500M': 140000, '1G': 140000 },
@@ -1036,22 +1048,58 @@ function applyCarrierFilter(target) {
 function buildTV() {
   var c = document.getElementById('c-carrier').value;
   var d = D[c];
-  ['c-tv', 'c-tv2', 'c-tv3'].forEach(function(id){
-    var sel = document.getElementById(id);
-    if (!sel) return;
-    var prev = sel.value;
-    sel.innerHTML = d.tv.map(function(t, i){ return '<option value="' + i + '">' + (t.n || 'TV ' + i) + '</option>'; }).join('');
-    if (prev) sel.value = prev;
-  });
+  // TV1: 모든 상품 표시
+  var tv1Sel = document.getElementById('c-tv');
+  if (tv1Sel) {
+    var prev1 = tv1Sel.value;
+    tv1Sel.innerHTML = d.tv.map(function(t, i){ return '<option value="' + i + '">' + (t.n || 'TV ' + i) + '</option>'; }).join('');
+    if (prev1) tv1Sel.value = prev1;
+  }
+  // TV2/TV3: 가격 제약 적용
+  buildAdditionalTvDropdowns();
   // 셋톱2/3 dropdowns
+  var policy = d.additionalTvPolicy || {};
+  var stRate = policy.settopDiscountRate || 0;
   ['c-settop2', 'c-settop3'].forEach(function(id){
     var sel = document.getElementById(id);
     if (!sel) return;
     var prev = sel.value;
     sel.innerHTML = (d.setTopOptions || []).filter(function(o){return o.active;}).map(function(o){
-      return '<option value="' + o.id + '"' + (o.isDefault?' selected':'') + '>' + o.name + ' — ' + (o.fee||0).toLocaleString() + '원 (50%할인 ' + Math.round((o.fee||0)*0.5).toLocaleString() + '원)</option>';
+      var dcAmount = Math.round((o.fee||0) * stRate);
+      var label = o.name + ' — ' + (o.fee||0).toLocaleString() + '원';
+      if (dcAmount > 0) label += ' (' + Math.round(stRate*100) + '%할인 ' + ((o.fee||0) - dcAmount).toLocaleString() + '원)';
+      return '<option value="' + o.id + '"' + (o.isDefault?' selected':'') + '>' + label + '</option>';
     }).join('');
     if (prev) sel.value = prev;
+  });
+}
+
+// TV2/TV3 dropdown 갱신 (가격 제약 반영)
+function buildAdditionalTvDropdowns() {
+  var c = document.getElementById('c-carrier').value;
+  var d = D[c];
+  var tv1Idx = parseInt(document.getElementById('c-tv').value) || 0;
+  var tv1Price = d.tv[tv1Idx] ? (d.tv[tv1Idx].p || 0) : 0;
+  var policy = d.additionalTvPolicy || {};
+  ['c-tv2', 'c-tv3'].forEach(function(id, idx) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var prev = sel.value;
+    var constraint = (idx === 0) ? policy.tv2PriceConstraint : policy.tv3PriceConstraint;
+    var validIdx = [];
+    var allOpts = d.tv.map(function(t, i){
+      var disabled = false;
+      if (i > 0 && constraint === 'leq' && tv1Price > 0 && t.p > tv1Price) disabled = true;
+      if (!disabled) validIdx.push(i);
+      var note = disabled ? ' (TV1보다 비싸 선택 불가)' : '';
+      return '<option value="' + i + '"' + (disabled ? ' disabled' : '') + '>' + (t.n || 'TV ' + i) + (t.p ? ' (' + t.p.toLocaleString() + '원)' : '') + note + '</option>';
+    }).join('');
+    sel.innerHTML = allOpts;
+    if (prev && validIdx.indexOf(parseInt(prev)) !== -1) {
+      sel.value = prev;
+    } else {
+      sel.value = '0';
+    }
   });
 }
 
@@ -1481,6 +1529,7 @@ function updateTvCountUI() {
 
 document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); updateRangeUI(); updateWifiUI(); updateSetTopInfo(); updateTvCountUI(); calc(); });
 document.getElementById('c-tv-count').addEventListener('change', function() { updateTvCountUI(); calc(); });
+document.getElementById('c-tv').addEventListener('change', function(){ buildAdditionalTvDropdowns(); calc(); });
 document.getElementById('c-tv2').addEventListener('change', calc);
 document.getElementById('c-tv3').addEventListener('change', calc);
 document.getElementById('c-settop2').addEventListener('change', calc);
