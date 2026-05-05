@@ -28,7 +28,9 @@ async function getCurrentIncentiveAgent(userId) {
     const oldest = _agentCache.keys().next().value;
     _agentCache.delete(oldest);
   }
-  _agentCache.set(userId, { data: result, expiresAt: now + AGENT_CACHE_TTL });
+  // 성공 결과만 60초 캐시 / null은 5초만 (일시 Supabase 지연 시 60초 락 방지)
+  const ttl = result ? AGENT_CACHE_TTL : 5_000;
+  _agentCache.set(userId, { data: result, expiresAt: now + ttl });
   return result;
 }
 
