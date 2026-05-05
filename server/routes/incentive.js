@@ -255,6 +255,31 @@ router.post('/agents', authenticateJWT, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // 6.5. POST /api/incentive/admin/create-agent — 신규 상담사 (auth + agent 통합)
 // ═══════════════════════════════════════════════════════════════
+// 임시 디버그 — 환경변수 키 형식 확인
+router.get('/admin/debug-keys', authenticateJWT, async (req, res) => {
+  const me = await getCurrentIncentiveAgent(req.user.id);
+  if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+  const sk = process.env.SUPABASE_SERVICE_KEY || '';
+  const ak = process.env.SUPABASE_ANON_KEY || '';
+  const judge = (k) => {
+    if (!k) return '⚠️ 미설정';
+    if (k.startsWith('sb_secret_')) return '✅ sb_secret (정상 service)';
+    if (k.startsWith('sb_publishable_')) return '⚠️ publishable (anon 자리에 와야)';
+    if (k.startsWith('eyJ')) {
+      try {
+        const payload = JSON.parse(Buffer.from(k.split('.')[1], 'base64').toString());
+        return `JWT — role: ${payload.role || 'unknown'}`;
+      } catch { return 'JWT (parse 실패)'; }
+    }
+    return '⚠️ unknown format';
+  };
+  res.json({
+    SUPABASE_SERVICE_KEY: { length: sk.length, prefix: sk.slice(0, 20), judge: judge(sk) },
+    SUPABASE_ANON_KEY: { length: ak.length, prefix: ak.slice(0, 20), judge: judge(ak) },
+    keys_same: sk === ak ? '⚠️ 두 변수 값이 동일함 (잘못)' : '서로 다름 (정상)',
+  });
+});
+
 router.post('/admin/create-agent', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
