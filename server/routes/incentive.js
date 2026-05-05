@@ -255,36 +255,6 @@ router.post('/agents', authenticateJWT, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // 6.5. POST /api/incentive/admin/create-agent — 신규 상담사 (auth + agent 통합)
 // ═══════════════════════════════════════════════════════════════
-// 임시 디버그 — 환경변수 키 형식 확인
-router.get('/admin/debug-keys', authenticateJWT, async (req, res) => {
-  const me = await getCurrentIncentiveAgent(req.user.id);
-  if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
-  const sk = process.env.SUPABASE_SERVICE_KEY || '';
-  const ak = process.env.SUPABASE_ANON_KEY || '';
-  const judge = (k) => {
-    if (!k) return '⚠️ 미설정';
-    if (k.startsWith('sb_secret_')) return '✅ sb_secret (정상 service)';
-    if (k.startsWith('sb_publishable_')) return '⚠️ publishable (anon 자리에 와야)';
-    if (k.startsWith('eyJ')) {
-      try {
-        const payload = JSON.parse(Buffer.from(k.split('.')[1], 'base64').toString());
-        return `JWT — role: ${payload.role || 'unknown'}`;
-      } catch { return 'JWT (parse 실패)'; }
-    }
-    return '⚠️ unknown format';
-  };
-  // SUPABASE_ 시작하는 모든 환경변수 (이름만 — 값 노출 X)
-  const allSupabaseEnvs = Object.keys(process.env)
-    .filter(k => k.toUpperCase().includes('SUPABASE') || k.toUpperCase().includes('SECRET') || k.toUpperCase().includes('SERVICE'))
-    .map(k => ({ name: k, length: (process.env[k] || '').length, prefix: (process.env[k] || '').slice(0, 15) }));
-  res.json({
-    SUPABASE_SERVICE_KEY: { length: sk.length, prefix: sk.slice(0, 20), judge: judge(sk) },
-    SUPABASE_ANON_KEY: { length: ak.length, prefix: ak.slice(0, 20), judge: judge(ak) },
-    keys_same: sk === ak ? '⚠️ 두 변수 값이 동일함 (잘못)' : '서로 다름 (정상)',
-    all_supabase_envs: allSupabaseEnvs,
-  });
-});
-
 router.post('/admin/create-agent', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
@@ -346,13 +316,8 @@ router.post('/admin/create-agent', authenticateJWT, async (req, res) => {
 
     res.json({ agent, email, password_set: true });
   } catch (err) {
-    // ⚠️ 임시 디버그 — 진단 후 다시 generic으로 복원 예정 (admin 전용 라우트라 안전)
-    console.error('[CREATE-AGENT-DEBUG]', err);
-    res.status(500).json({
-      error: '디버그: ' + (err.message || String(err)),
-      code: err.code, hint: err.hint, details: err.details,
-      step: err.__step || 'unknown',
-    });
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
 
