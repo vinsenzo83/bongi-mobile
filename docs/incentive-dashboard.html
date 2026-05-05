@@ -678,7 +678,8 @@ function renderAgentKpi(s, rule) {
   document.getElementById('agent-total-sub').textContent =
     `기본 ${fmt(s.base_salary)} + 인센 ${fmt(s.incentive)} + 보너스 ${fmt(s.bonus)}` + (s.total_agent_payback_deduct > 0 ? ` − 페이백 ${fmt(s.total_agent_payback_deduct)}` : '');
   document.getElementById('agent-grade').innerHTML =
-    `<span style="background:${gColor};color:#fff;padding:3px 12px;border-radius:6px;font-weight:900">G${g}</span>`;
+    `<span style="background:${gColor};color:#fff;padding:3px 12px;border-radius:6px;font-weight:900">G${g}</span>`
+    + ` <span style="font-size:11px;color:#cbd5e1;margin-left:6px">${fmt(s.applied_rate || 0)}원/P</span>`;
   document.getElementById('agent-grade-sub').textContent =
     `목표 G${s.grade_target || 1} / 적용 G${g}` + (s.is_penalty ? ' (페널티)' : '');
   document.getElementById('agent-points').textContent = (s.total_points || 0) + 'P';
