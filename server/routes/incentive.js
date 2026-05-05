@@ -379,6 +379,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       additional_products,
       wifi_option,
       quote_summary,
+      quote_full_html,
     } = req.body || {};
 
     if (!product_id) return res.status(400).json({ error: 'product_id 필수' });
@@ -412,6 +413,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         additional_products: additional_products || null,
         wifi_option: wifi_option || null,
         quote_summary: quote_summary || null,
+        quote_full_html: quote_full_html || null,
       })
       .select('*, product:incentive_products(*)')
       .single();
@@ -431,7 +433,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary } = req.body || {};
+    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -465,6 +467,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (additional_products !== undefined) update.additional_products = additional_products;
     if (wifi_option !== undefined) update.wifi_option = wifi_option;
     if (quote_summary !== undefined) update.quote_summary = quote_summary;
+    if (quote_full_html !== undefined) update.quote_full_html = quote_full_html;
 
     const { data, error } = await supabase
       .from('incentive_sales')

@@ -2862,11 +2862,19 @@ function buildSalePayload(base) {
     ).join('\n');
   }
 
+  // 견적 결과 HTML 통째로 (계산기의 모든 라인 — 정확한 계약 위해)
+  let quoteFullHtml = null;
+  try {
+    const resultEl = document.getElementById('c-result');
+    if (resultEl) quoteFullHtml = resultEl.innerHTML;
+  } catch(e) {}
+
   return Object.assign({}, base, {
     tv_count: tvCnt,
     additional_products: additional.length ? additional : null,
     wifi_option: wifiOption,
     quote_summary: summary,
+    quote_full_html: quoteFullHtml,
   });
 }
 
