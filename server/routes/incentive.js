@@ -304,8 +304,13 @@ router.post('/admin/create-agent', authenticateJWT, async (req, res) => {
 
     res.json({ agent, email, password_set: true });
   } catch (err) {
-    console.error('[incentive]', req.method, req.path, err);
-    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+    // ⚠️ 임시 디버그 — 진단 후 다시 generic으로 복원 예정 (admin 전용 라우트라 안전)
+    console.error('[CREATE-AGENT-DEBUG]', err);
+    res.status(500).json({
+      error: '디버그: ' + (err.message || String(err)),
+      code: err.code, hint: err.hint, details: err.details,
+      step: err.__step || 'unknown',
+    });
   }
 });
 
