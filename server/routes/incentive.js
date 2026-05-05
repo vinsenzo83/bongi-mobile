@@ -51,6 +51,28 @@ function isContractAccess(agent) {
   return agent && (agent.role === 'contract' || agent.role === 'manager' || agent.role === 'admin');
 }
 
+// ─── Sales 변경 감사 로그 ───
+async function logSaleHistory({ sale_id, action, before, after, user_id, user_name, user_role, reason }) {
+  if (!supabase) return;
+  try {
+    let changed_fields = null;
+    if (action === 'UPDATE' && before && after) {
+      changed_fields = Object.keys(after).filter(k => k !== 'updated_at' && JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+      if (changed_fields.length === 0) return; // 실제 변경 없으면 skip
+    }
+    await supabase.from('incentive_sales_history').insert({
+      sale_id, action,
+      changed_by_user_id: user_id || null,
+      changed_by_name: user_name || null,
+      changed_by_role: user_role || null,
+      before_data: before || null,
+      after_data: after || null,
+      changed_fields,
+      reason: reason || null,
+    });
+  } catch (e) { console.warn('[sales history]', e.message); }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 1. GET /api/incentive/products — 상품 카탈로그 (모두 조회 가능)
 // ═══════════════════════════════════════════════════════════════
@@ -627,6 +649,8 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       .select('*, product:incentive_products(*)')
       .single();
     if (error) throw error;
+    // 변경 감사 로그
+    logSaleHistory({ sale_id: data.id, action: 'INSERT', before: null, after: data, user_id: req.user.id, user_name: me.name, user_role: me.role });
     res.json({ sale: data });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
@@ -728,6 +752,8 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       .select('*, product:incentive_products(*)')
       .single();
     if (error) throw error;
+    // 변경 감사 로그
+    logSaleHistory({ sale_id: data.id, action: 'UPDATE', before: existing, after: data, user_id: req.user.id, user_name: me.name, user_role: me.role });
     res.json({ sale: data });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
@@ -775,6 +801,8 @@ router.delete('/sales/:id', authenticateJWT, async (req, res) => {
       .single();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: '영업 없음' });
+    // 변경 감사 로그
+    logSaleHistory({ sale_id: data.id, action: 'DELETE', before: null, after: data, user_id: req.user.id, user_name: me.name, user_role: me.role, reason: req.body?.reason });
     res.json({ ok: true, soft: true, sale: data });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
@@ -832,6 +860,8 @@ router.post('/sales/:id/restore', authenticateJWT, async (req, res) => {
       .select('id, status, deleted_at')
       .single();
     if (error) throw error;
+    // 변경 감사 로그
+    logSaleHistory({ sale_id: data.id, action: 'RESTORE', before: existing, after: data, user_id: req.user.id, user_name: me.name, user_role: me.role });
     res.json({ ok: true, sale: data, restored_status: restoreStatus });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
@@ -1445,6 +1475,12 @@ router.put('/role-permissions/:role', authenticateJWT, async (req, res) => {
         }
       }
     }
+    // 변경 전 menus 조회 (감사 로그용)
+    const { data: prev } = await supabase
+      .from('incentive_role_permissions')
+      .select('menus').eq('role', role).single();
+    const beforeMenus = (prev && prev.menus) || [];
+
     const { data, error } = await supabase
       .from('incentive_role_permissions')
       .upsert({
@@ -1456,6 +1492,25 @@ router.put('/role-permissions/:role', authenticateJWT, async (req, res) => {
       .select()
       .single();
     if (error) throw error;
+
+    // 변경 감사 로그
+    try {
+      const beforeSet = new Set(beforeMenus);
+      const afterSet = new Set(menus);
+      const added = menus.filter(x => !beforeSet.has(x));
+      const removed = beforeMenus.filter(x => !afterSet.has(x));
+      if (added.length || removed.length) {
+        await supabase.from('incentive_role_permissions_history').insert({
+          role,
+          changed_by_user_id: req.user.id,
+          changed_by_name: me.name,
+          before_menus: beforeMenus,
+          after_menus: menus,
+          added: added.length ? added : null,
+          removed: removed.length ? removed : null,
+        });
+      }
+    } catch (e) { console.warn('[perm history]', e.message); }
     res.json({ permission: data });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
@@ -1610,6 +1665,69 @@ router.put('/tm/memos', authenticateJWT, async (req, res) => {
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 변경 감사 로그 조회 (manager/admin)
+// ═══════════════════════════════════════════════════════════════
+
+// GET /api/incentive/sales/:id/history — 특정 sale 변경 이력
+router.get('/sales/:id/history', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isContractAccess(me)) return res.status(403).json({ error: 'contract/manager/admin 전용' });
+    const { data, error } = await supabase
+      .from('incentive_sales_history')
+      .select('*')
+      .eq('sale_id', req.params.id)
+      .order('changed_at', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    res.json({ history: data });
+  } catch (e) {
+    console.error('[incentive]', req.method, req.path, e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/incentive/sales-history — 전체 sales 변경 이력 (admin/manager)
+router.get('/sales-history', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const { data, error } = await supabase
+      .from('incentive_sales_history')
+      .select('*')
+      .order('changed_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    res.json({ history: data });
+  } catch (e) {
+    console.error('[incentive]', req.method, req.path, e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/incentive/role-permissions/history — 권한 매트릭스 변경 이력 (admin)
+router.get('/role-permissions/history', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const { data, error } = await supabase
+      .from('incentive_role_permissions_history')
+      .select('*')
+      .order('changed_at', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    res.json({ history: data });
+  } catch (e) {
+    console.error('[incentive]', req.method, req.path, e);
+    res.status(500).json({ error: e.message });
   }
 });
 

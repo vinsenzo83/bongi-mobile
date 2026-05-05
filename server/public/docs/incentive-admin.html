@@ -72,9 +72,25 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
       <div class="user-name" id="g-user-name">-</div>
       <div class="user-meta"><span class="role-badge" id="g-role-badge">-</span> · <span id="g-user-center">-</span></div>
     </div>
+    <button id="g-changepw-btn" style="background:#0891b2;margin-right:4px">🔐 비번변경</button>
     <button id="g-logout-btn">로그아웃</button>
   </div>
 </header>
+
+<!-- 비밀번호 변경 모달 -->
+<div id="g-pw-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:99998;justify-content:center;align-items:center">
+  <div style="background:linear-gradient(135deg,#1e293b,#334155);border:1.5px solid #475569;border-radius:12px;padding:24px 28px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+    <h2 style="font-size:16px;color:#60a5fa;font-weight:800;margin-bottom:14px">🔐 비밀번호 변경</h2>
+    <input type="password" id="g-pw-current" placeholder="현재 비밀번호" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:10px 12px;border-radius:6px;font-size:13px;margin-bottom:8px">
+    <input type="password" id="g-pw-new" placeholder="새 비밀번호 (8자 이상)" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:10px 12px;border-radius:6px;font-size:13px;margin-bottom:8px">
+    <input type="password" id="g-pw-confirm" placeholder="새 비밀번호 확인" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:10px 12px;border-radius:6px;font-size:13px;margin-bottom:8px">
+    <div id="g-pw-msg" style="font-size:11px;min-height:16px;color:#dc2626;margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px">
+      <button id="g-pw-cancel" style="flex:1;background:#475569;color:#fff;border:none;padding:10px;border-radius:6px;font-weight:700;cursor:pointer">취소</button>
+      <button id="g-pw-submit" style="flex:1;background:#3b82f6;color:#fff;border:none;padding:10px;border-radius:6px;font-weight:800;cursor:pointer">변경</button>
+    </div>
+  </div>
+</div>
 
 <div class="main" id="g-main" style="display:none">
   <aside class="sidebar">
@@ -268,6 +284,46 @@ document.getElementById('g-auth-pass').addEventListener('keydown', e => {
 document.getElementById('g-logout-btn').addEventListener('click', () => {
   gClearToken();
   location.reload();
+});
+
+// 비밀번호 변경 모달
+document.getElementById('g-changepw-btn').addEventListener('click', () => {
+  document.getElementById('g-pw-modal').style.display = 'flex';
+  document.getElementById('g-pw-current').value = '';
+  document.getElementById('g-pw-new').value = '';
+  document.getElementById('g-pw-confirm').value = '';
+  document.getElementById('g-pw-msg').textContent = '';
+  setTimeout(() => document.getElementById('g-pw-current').focus(), 50);
+});
+document.getElementById('g-pw-cancel').addEventListener('click', () => {
+  document.getElementById('g-pw-modal').style.display = 'none';
+});
+document.getElementById('g-pw-submit').addEventListener('click', async () => {
+  const cur = document.getElementById('g-pw-current').value;
+  const nw = document.getElementById('g-pw-new').value;
+  const cf = document.getElementById('g-pw-confirm').value;
+  const msg = document.getElementById('g-pw-msg');
+  msg.style.color = '#dc2626';
+  if (!cur || !nw || !cf) { msg.textContent = '모두 입력하세요'; return; }
+  if (nw.length < 8) { msg.textContent = '새 비밀번호는 8자 이상'; return; }
+  if (nw !== cf) { msg.textContent = '새 비밀번호 확인 불일치'; return; }
+  if (cur === nw) { msg.textContent = '새 비밀번호가 현재와 동일'; return; }
+  const tk = gGetToken();
+  try {
+    const res = await fetch(G_AUTH + '/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+      body: JSON.stringify({ current_password: cur, new_password: nw }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { msg.textContent = data.error || '변경 실패'; return; }
+    msg.style.color = '#16a34a';
+    msg.textContent = '✅ 변경 완료';
+    setTimeout(() => {
+      document.getElementById('g-pw-modal').style.display = 'none';
+      gShowToast('🔐 비밀번호 변경 완료');
+    }, 800);
+  } catch (e) { msg.textContent = e.message; }
 });
 
 // 사이드바 메뉴 바인딩

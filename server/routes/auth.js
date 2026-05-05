@@ -192,4 +192,34 @@ router.get('/me', authenticateJWT, (req, res) => {
   res.json({ user: req.user });
 });
 
+// 본인 비밀번호 변경 — 현재 비번 검증 후 새 비번으로 업데이트
+router.post('/change-password', authenticateJWT, async (req, res) => {
+  try {
+    const { current_password, new_password } = req.body || {};
+    if (!current_password || !new_password) {
+      return res.status(400).json({ error: '현재/새 비밀번호 필수' });
+    }
+    if (new_password.length < 8) {
+      return res.status(400).json({ error: '새 비밀번호는 8자 이상' });
+    }
+    if (current_password === new_password) {
+      return res.status(400).json({ error: '새 비밀번호가 현재와 동일' });
+    }
+
+    // 현재 비번 검증 — 본인 이메일로 재로그인 시도
+    const email = req.user.email;
+    const { error: signinErr } = await supabase.auth.signInWithPassword({ email, password: current_password });
+    if (signinErr) return res.status(400).json({ error: '현재 비밀번호가 올바르지 않습니다' });
+
+    // 새 비번으로 업데이트
+    const { error: updErr } = await supabase.auth.admin.updateUserById(req.user.id, { password: new_password });
+    if (updErr) throw updErr;
+
+    res.json({ ok: true, message: '비밀번호가 변경되었습니다. 다음 로그인부터 새 비밀번호를 사용하세요.' });
+  } catch (e) {
+    console.error('[change-password]', e);
+    res.status(500).json({ error: e.message || '변경 실패' });
+  }
+});
+
 export default router;
