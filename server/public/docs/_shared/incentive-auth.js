@@ -50,7 +50,8 @@ async function fetchAgent() {
     if (await tryRefreshToken()) return fetchAgent();
     clearToken(); return null;
   }
-  if (!res.ok) { clearToken(); return null; }
+  // 500/503 등 일시 에러는 토큰 보존 (부모 세션 보호) — null 반환만
+  if (!res.ok) return null;
   return (await res.json()).agent;
 }
 

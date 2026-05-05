@@ -2809,7 +2809,11 @@ async function authFetchIncentiveAgent() {
     const res = await fetch('/api/incentive/agents/me', {
       headers: { Authorization: 'Bearer ' + token }
     });
-    if (res.status === 401) { authClearToken(); return null; }
+    // iframe 안 (embedded-mode)이면 401이어도 토큰 삭제 안 함 — 부모가 세션 관리
+    if (res.status === 401) {
+      if (window === window.parent) authClearToken();
+      return null;
+    }
     if (!res.ok) return null;
     const data = await res.json();
     return data.agent || null;
@@ -3023,7 +3027,8 @@ async function incFetchMyState() {
 }
 
 function incApplyAuthState() {
-  const loggedIn = !!_incMyState;
+  // 로그인 판정: 토큰 유무 기준 (settlement fetch 실패해도 등록 가능해야 함)
+  const loggedIn = !!authGetToken();
   // 누적 P / 우수 → readonly when logged in
   ['inc-current-p', 'inc-current-prem'].forEach(id => {
     const el = document.getElementById(id);
