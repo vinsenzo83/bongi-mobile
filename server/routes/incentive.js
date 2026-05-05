@@ -404,7 +404,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, add_payback, customer_address, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary } = req.body || {};
+    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -421,6 +421,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (status !== undefined) update.status = status;
     if (cancellation_reason !== undefined) update.cancellation_reason = cancellation_reason;
     if (notes !== undefined) update.notes = notes;
+    if (contract_notes !== undefined) update.contract_notes = contract_notes;
     if (add_payback !== undefined) update.add_payback = add_payback;
     if (customer_address !== undefined) update.customer_address = customer_address;
     if (customer_name !== undefined) update.customer_name = customer_name;

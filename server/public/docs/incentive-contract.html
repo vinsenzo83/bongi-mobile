@@ -675,10 +675,18 @@ function openEditModal(id) {
       </div>
     </div>
 
-    <!-- 📝 메모 -->
-    <div style="background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(0,0,0,0.3));border:1.5px solid #475569;border-radius:10px;padding:14px 18px;margin-bottom:6px">
-      <div class="modal-section-title" style="background:rgba(255,255,255,0.05);color:#cbd5e1">📝 메모 / 비고</div>
-      <textarea class="detail-input" data-field="notes" rows="4" placeholder="신분증 수령 여부, 계좌번호, 고객 특이사항, 추가 설명 등 자유 기입">${(c.notes || '').replace(/</g, '&lt;')}</textarea>
+    <!-- 📝 메모 — TM 상담 메모 (read-only) + 계약부서 메모 (editable) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:6px">
+      <div style="background:linear-gradient(135deg,rgba(245,158,11,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(245,158,11,0.3);border-radius:10px;padding:14px 18px">
+        <div class="modal-section-title" style="background:rgba(245,158,11,0.12);color:#fbbf24">📞 TM 상담 메모 (상담사 작성)</div>
+        ${c.notes ? `<div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px 12px;font-size:13px;color:#e2e8f0;white-space:pre-wrap;line-height:1.5;min-height:80px">${(c.notes || '').replace(/</g, '&lt;')}</div>` : `<div style="padding:10px;color:#64748b;font-size:12px;text-align:center;background:#0f172a;border:1px dashed #334155;border-radius:6px;min-height:80px;display:flex;align-items:center;justify-content:center">상담사가 작성한 메모 없음</div>`}
+        <div class="modal-field-hint">읽기 전용 · 상담사가 등록 시 작성</div>
+      </div>
+      <div style="background:linear-gradient(135deg,rgba(96,165,250,0.06),rgba(0,0,0,0.3));border:1.5px solid rgba(96,165,250,0.3);border-radius:10px;padding:14px 18px">
+        <div class="modal-section-title" style="background:rgba(96,165,250,0.12);color:#60a5fa">📋 계약부서 메모 (행정 처리)</div>
+        <textarea class="detail-input" data-field="contract_notes" rows="4" placeholder="신분증 수령 여부, 계좌번호, 설치 일정 협의 결과, 고객 변심 사유 등">${(c.contract_notes || '').replace(/</g, '&lt;')}</textarea>
+        <div class="modal-field-hint">편집 가능 · 계약부서 작성</div>
+      </div>
     </div>
   `;
 
