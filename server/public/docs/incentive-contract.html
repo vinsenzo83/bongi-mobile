@@ -987,19 +987,39 @@ function openEditModal(id) {
 
   document.getElementById('modal-overlay').style.display = 'flex';
 
-  // 견적서를 다음 프레임에 비동기 삽입 (모달 즉시 표시 + 무거운 HTML 지연 렌더)
-  setTimeout(() => {
+  // 견적서를 별도 fetch — 목록은 quote 제외해서 빠르고, 모달 열 때만 단건 조회
+  setTimeout(async () => {
     const slot = document.getElementById('quote-deferred-' + c.id);
     if (!slot) return;
-    if (c.quote_full_html) {
+    let qFull = c.quote_full_html;
+    let qSum = c.quote_summary;
+    // 캐시 또는 단건 fetch
+    if (!qFull && !c._quote_fetched) {
+      try {
+        const tk = getToken();
+        const res = await fetch(API + '/sales/' + c.id + '/quote', {
+          headers: { Authorization: 'Bearer ' + tk }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          qFull = unescapeHtml(data.quote_full_html);
+          qSum = unescapeHtml(data.quote_summary || qSum);
+          // 캐시 (모달 다시 열 때 재요청 안 하도록)
+          c.quote_full_html = qFull;
+          c.quote_summary = qSum;
+          c._quote_fetched = true;
+        }
+      } catch (e) { console.warn('[quote fetch]', e); }
+    }
+    if (qFull) {
       // 🛡️ XSS 방어: DOMPurify로 인라인 이벤트(onerror 등) 제거 후 렌더
       const safeHtml = (typeof DOMPurify !== 'undefined')
-        ? DOMPurify.sanitize(c.quote_full_html, { FORBID_TAGS: ['script','iframe','object','embed','form','input','button'], FORBID_ATTR: ['onerror','onload','onclick','onmouseover','onfocus','onsubmit'] })
-        : c.quote_full_html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '');
+        ? DOMPurify.sanitize(qFull, { FORBID_TAGS: ['script','iframe','object','embed','form','input','button'], FORBID_ATTR: ['onerror','onload','onclick','onmouseover','onfocus','onsubmit'] })
+        : qFull.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '');
       slot.innerHTML = '<div class="quote-label">🧮 상담사 견적서 (TM 계산기 결과)</div>' + safeHtml;
-    } else if (c.quote_summary) {
+    } else if (qSum) {
       slot.innerHTML = '<div class="quote-label">🧮 상담사 견적서</div><pre>' +
-        (c.quote_summary || '').replace(/</g,'&lt;') + '</pre>';
+        (qSum || '').replace(/</g,'&lt;') + '</pre>';
     } else {
       slot.outerHTML = '<div class="quote-empty">⚠️ 상담사가 견적서를 등록하지 않았습니다.</div>';
     }

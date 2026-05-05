@@ -5,16 +5,36 @@ import { authenticateJWT, optionalAuth } from '../middleware/auth.js';
 const router = Router();
 
 // ─── 헬퍼: req.user → incentive_agents.id 매핑 ───
+// 60초 in-memory LRU 캐시 (Supabase 매 round-trip 절감)
+const _agentCache = new Map();
+const AGENT_CACHE_TTL = 60_000;
+
 async function getCurrentIncentiveAgent(userId) {
   if (!userId) return null;
+  const cached = _agentCache.get(userId);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) return cached.data;
+
   const { data } = await supabase
     .from('incentive_agents')
     .select('*')
     .eq('user_id', userId)
     .single();
   // 비활성 상담사는 무효 처리 — admin이 active=false 설정 시 토큰 즉시 차단
-  if (data && !data.active) return null;
-  return data || null;
+  const result = (data && data.active) ? data : null;
+
+  // LRU 크기 관리 (최대 500 사용자)
+  if (_agentCache.size >= 500) {
+    const oldest = _agentCache.keys().next().value;
+    _agentCache.delete(oldest);
+  }
+  _agentCache.set(userId, { data: result, expiresAt: now + AGENT_CACHE_TTL });
+  return result;
+}
+
+// 상담사 정보 변경 시 캐시 무효화 (PATCH /agents 등에서 호출)
+function invalidateAgentCache(userId) {
+  if (userId) _agentCache.delete(userId);
 }
 
 // ─── 헬퍼: role 권한 체크 ───
@@ -291,6 +311,8 @@ router.patch('/agents/:id', authenticateJWT, async (req, res) => {
       .from('incentive_agents')
       .update(update).eq('id', req.params.id).select().single();
     if (error) throw error;
+    // 변경 즉시 반영 — 캐시 무효화
+    if (data && data.user_id) invalidateAgentCache(data.user_id);
     res.json({ agent: data });
   } catch (err) {
     res.status(500).json({ error: err.message });
