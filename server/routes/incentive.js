@@ -161,6 +161,129 @@ router.post('/agents', authenticateJWT, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// 6.5. POST /api/incentive/admin/create-agent — 신규 상담사 (auth + agent 통합)
+// ═══════════════════════════════════════════════════════════════
+router.post('/admin/create-agent', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const { email, password, name, center, role = 'agent', base_salary = 2300000, hire_date } = req.body || {};
+    if (!email || !password || !name || !center) {
+      return res.status(400).json({ error: 'email, password, name, center 필수' });
+    }
+    if (password.length < 8) return res.status(400).json({ error: '비밀번호 8자 이상' });
+
+    // 1. auth.users 생성
+    const { data: created, error: createErr } = await supabase.auth.admin.createUser({
+      email, password, email_confirm: true,
+      user_metadata: { display_name: name, role },
+    });
+    if (createErr) {
+      if (createErr.message && createErr.message.toLowerCase().includes('already')) {
+        return res.status(409).json({ error: '이미 존재하는 이메일' });
+      }
+      throw createErr;
+    }
+    const userId = created.user.id;
+
+    // 2. bongi_user_profiles
+    await supabase.from('bongi_user_profiles').upsert(
+      { id: userId, role: ['admin','manager','agent'].includes(role) ? role : 'agent', display_name: name },
+      { onConflict: 'id' }
+    );
+
+    // 3. incentive_agents
+    const { data: agent, error: agentErr } = await supabase
+      .from('incentive_agents')
+      .insert({
+        user_id: userId, name, center, role,
+        hire_date: hire_date || new Date().toISOString().slice(0, 10),
+        base_salary, active: true,
+      })
+      .select()
+      .single();
+    if (agentErr) {
+      // rollback: auth.users 삭제
+      await supabase.auth.admin.deleteUser(userId).catch(() => {});
+      throw agentErr;
+    }
+
+    res.json({ agent, email, password_set: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 6.6. PATCH /api/incentive/agents/:id — 상담사 정보 수정 (admin)
+// ═══════════════════════════════════════════════════════════════
+router.patch('/agents/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const allowed = ['name', 'center', 'role', 'base_salary', 'active', 'hire_date'];
+    const update = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+
+    const { data, error } = await supabase
+      .from('incentive_agents')
+      .update(update).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json({ agent: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 6.7. POST /api/incentive/agents/:id/reset-password — 비밀번호 재설정 (admin)
+// ═══════════════════════════════════════════════════════════════
+router.post('/agents/:id/reset-password', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const { password } = req.body || {};
+    if (!password || password.length < 8) return res.status(400).json({ error: '비밀번호 8자 이상' });
+
+    const { data: agent } = await supabase
+      .from('incentive_agents').select('user_id, name').eq('id', req.params.id).single();
+    if (!agent || !agent.user_id) return res.status(404).json({ error: '상담사 또는 user_id 없음' });
+
+    const { error } = await supabase.auth.admin.updateUserById(agent.user_id, { password });
+    if (error) throw error;
+    res.json({ ok: true, name: agent.name });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 6.8. GET /api/incentive/agents/all — 전체 상담사 (비활성 포함, admin)
+// ═══════════════════════════════════════════════════════════════
+router.get('/agents/all', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const { data, error } = await supabase
+      .from('incentive_agents')
+      .select('*')
+      .order('hire_date', { ascending: false });
+    if (error) throw error;
+    res.json({ agents: data, count: data.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // 7. GET /api/incentive/sales?month=YYYY-MM — 영업 조회
 // ═══════════════════════════════════════════════════════════════
 router.get('/sales', authenticateJWT, async (req, res) => {

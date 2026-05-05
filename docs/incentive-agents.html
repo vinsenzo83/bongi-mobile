@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>상담사 관리 (admin)</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: 'Pretendard Variable', sans-serif; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
+.wrap { max-width: 1300px; margin: 0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #334155; }
+h1 { font-size:22px; color:#f8fafc; letter-spacing:-0.02em; }
+.subtitle { font-size:12px; color:#94a3b8; margin-top:4px; }
+.section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:12px; padding:18px 22px; margin-bottom:20px; }
+.section h2 { font-size:14px; color:#fbbf24; font-weight:800; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #334155; }
+.auth-box { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:16px; margin-bottom:20px; }
+.auth-box input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; width:200px; margin-right:8px; }
+.auth-box button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px; }
+.auth-msg { font-size:11px; margin-top:6px; min-height:14px; }
+.row { display:grid; gap:10px; margin-bottom:10px; }
+.row.cols-3 { grid-template-columns:repeat(3, 1fr); }
+.row.cols-4 { grid-template-columns:repeat(4, 1fr); }
+.field { display:flex; flex-direction:column; }
+.field label { font-size:10px; color:#94a3b8; font-weight:700; margin-bottom:3px; letter-spacing:0.03em; }
+.field input, .field select { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:7px 9px; border-radius:5px; font-size:12px; }
+.field .hint { font-size:9px; color:#64748b; margin-top:2px; }
+.btn-primary { background:#16a34a; color:#fff; border:none; padding:10px 22px; border-radius:8px; font-weight:800; font-size:13px; cursor:pointer; }
+.btn-secondary { background:#475569; color:#fff; border:none; padding:7px 14px; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer; }
+.btn-danger { background:#dc2626; color:#fff; border:none; padding:5px 11px; border-radius:5px; font-size:10.5px; font-weight:700; cursor:pointer; margin-right:4px; }
+.btn-warn { background:#f59e0b; color:#fff; border:none; padding:5px 11px; border-radius:5px; font-size:10.5px; font-weight:700; cursor:pointer; margin-right:4px; }
+.btn-ok { background:#16a34a; color:#fff; border:none; padding:5px 11px; border-radius:5px; font-size:10.5px; font-weight:700; cursor:pointer; margin-right:4px; }
+table { width:100%; border-collapse:collapse; background:#1e293b; border-radius:10px; overflow:hidden; }
+th { background:#334155; color:#f1f5f9; font-size:11px; padding:10px 8px; text-align:left; font-weight:700; }
+td { font-size:11.5px; color:#e2e8f0; padding:10px 8px; border-bottom:1px solid #334155; vertical-align:middle; }
+tr:hover { background:#334155; }
+tr.inactive { opacity:0.5; }
+.role-badge { padding:2px 7px; border-radius:4px; font-size:9px; font-weight:800; letter-spacing:0.03em; }
+.role-agent { background:#3b82f6; color:#fff; }
+.role-manager { background:#16a34a; color:#fff; }
+.role-admin { background:#dc2626; color:#fff; }
+.active-badge { background:#16a34a; color:#fff; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:800; }
+.inactive-badge { background:#475569; color:#cbd5e1; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:800; }
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:14px 24px; border-radius:10px; font-size:14px; font-weight:800; box-shadow:0 6px 24px rgba(22,163,74,0.5); z-index:99999; opacity:0; transition:opacity 0.2s; pointer-events:none; }
+#toast.show { opacity:1; }
+.cred-box { background:rgba(22,163,74,0.1); border:1.5px solid #22c55e; border-radius:8px; padding:12px 14px; margin-top:10px; font-size:12px; color:#86efac; font-family:'SF Mono', Monaco, monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>👥 상담사 관리 (V5)</h1>
+      <div class="subtitle">신규 계정 발급 · 비밀번호 재설정 · 권한 변경 · 활성/비활성</div>
+    </div>
+    <div id="user-info" style="text-align:right;display:none">
+      <div style="font-size:13px;font-weight:800;color:#f8fafc" id="user-name">-</div>
+      <button id="logout-btn" style="margin-top:6px;padding:4px 10px;background:#475569;color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">로그아웃</button>
+    </div>
+  </header>
+
+  <div class="auth-box" id="auth-box">
+    <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:#60a5fa">🔐 admin 권한 필요</div>
+    <input type="email" id="auth-email" placeholder="email" autocomplete="username">
+    <input type="password" id="auth-pass" placeholder="비밀번호" autocomplete="current-password">
+    <button id="auth-login-btn">로그인</button>
+    <div class="auth-msg" id="auth-msg"></div>
+    <div style="font-size:10px;color:#94a3b8;margin-top:8px">
+      테스트: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">admin1@bongi.test</code> / <code>pass1234!</code>
+    </div>
+  </div>
+
+  <div id="main-area" style="display:none">
+    <!-- 신규 상담사 발급 -->
+    <div class="section">
+      <h2>➕ 신규 상담사 발급</h2>
+      <div class="row cols-3">
+        <div class="field"><label>이메일 *</label>
+          <input type="email" id="new-email" placeholder="agent@bongi.test">
+          <div class="hint">로그인 ID로 사용</div>
+        </div>
+        <div class="field"><label>비밀번호 * (8자+)</label>
+          <input type="text" id="new-password" placeholder="자동 생성하려면 비워두세요" autocomplete="off">
+          <div class="hint">발급 후 본인이 변경 가능</div>
+        </div>
+        <div class="field"><label>이름 *</label>
+          <input type="text" id="new-name" placeholder="홍길동">
+        </div>
+      </div>
+      <div class="row cols-4">
+        <div class="field"><label>센터 *</label>
+          <input type="text" id="new-center" placeholder="광주센터" list="centers-list">
+          <datalist id="centers-list"></datalist>
+        </div>
+        <div class="field"><label>역할</label>
+          <select id="new-role">
+            <option value="agent">agent (상담사)</option>
+            <option value="manager">manager (센터장)</option>
+            <option value="admin">admin (본사)</option>
+          </select>
+        </div>
+        <div class="field"><label>기본급 (₩)</label>
+          <input type="number" id="new-base-salary" value="2300000" min="0" step="100000">
+        </div>
+        <div class="field"><label>입사일</label>
+          <input type="date" id="new-hire-date">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <div style="font-size:9.5px;color:#94a3b8">계정 발급 후 이메일과 비밀번호를 본인에게 전달하세요. 첫 로그인 후 비밀번호 변경 권장.</div>
+        <button id="btn-create" class="btn-primary">➕ 발급</button>
+      </div>
+      <div id="cred-result"></div>
+    </div>
+
+    <!-- 상담사 목록 -->
+    <div class="section">
+      <h2>📋 전체 상담사 목록</h2>
+      <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center">
+        <label style="font-size:11px;color:#94a3b8">필터:</label>
+        <select id="filter-role" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:5px 9px;border-radius:5px;font-size:11px">
+          <option value="">전체 역할</option>
+          <option value="agent">agent</option>
+          <option value="manager">manager</option>
+          <option value="admin">admin</option>
+        </select>
+        <select id="filter-active" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:5px 9px;border-radius:5px;font-size:11px">
+          <option value="">전체 상태</option>
+          <option value="true">활성</option>
+          <option value="false">비활성</option>
+        </select>
+        <button id="reload-btn" class="btn-secondary">🔄 새로고침</button>
+        <span id="result-count" style="font-size:11px;color:#94a3b8;margin-left:auto">-</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>이름</th><th>센터</th><th>역할</th><th>입사일</th>
+            <th>기본급</th><th>활성</th><th>이번달 P</th><th>작업</th>
+          </tr>
+        </thead>
+        <tbody id="agents-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api/incentive';
+const AUTH = '/api/auth';
+const TOKEN_KEY = 'incentive-auth-token-v1';
+const getToken = () => localStorage.getItem(TOKEN_KEY);
+const setToken = (t) => localStorage.setItem(TOKEN_KEY, t);
+const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+
+let _allAgents = [];
+
+function genPassword(len = 12) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+  return Array.from(crypto.getRandomValues(new Uint8Array(len)))
+    .map(b => chars[b % chars.length]).join('');
+}
+
+async function login(email, password) {
+  const res = await fetch(AUTH + '/login', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({email, password})
+  });
+  if (!res.ok) throw new Error((await res.json()).error || '로그인 실패');
+  const data = await res.json(); setToken(data.access_token); return data;
+}
+
+async function fetchAgent() {
+  const tk = getToken(); if (!tk) return null;
+  const res = await fetch(API + '/agents/me', {headers: {Authorization: 'Bearer ' + tk}});
+  if (!res.ok) { clearToken(); return null; }
+  return (await res.json()).agent;
+}
+
+async function fetchAllAgents() {
+  const tk = getToken();
+  const res = await fetch(API + '/agents/all', {headers: {Authorization: 'Bearer ' + tk}});
+  if (!res.ok) throw new Error((await res.json()).error || '조회 실패');
+  return (await res.json()).agents;
+}
+
+async function createAgent() {
+  const email = document.getElementById('new-email').value.trim();
+  let password = document.getElementById('new-password').value;
+  const name = document.getElementById('new-name').value.trim();
+  const center = document.getElementById('new-center').value.trim();
+  const role = document.getElementById('new-role').value;
+  const base_salary = parseInt(document.getElementById('new-base-salary').value) || 2300000;
+  const hire_date = document.getElementById('new-hire-date').value || null;
+
+  if (!email || !name || !center) { alert('이메일/이름/센터 필수'); return; }
+  if (!password) password = genPassword();
+  if (password.length < 8) { alert('비밀번호 8자 이상'); return; }
+
+  if (!confirm(`계정 발급:\n${email} (${name}, ${role}, ${center})\n비밀번호: ${password}\n\n진행?`)) return;
+
+  const tk = getToken();
+  try {
+    const res = await fetch(API + '/admin/create-agent', {
+      method: 'POST', headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + tk},
+      body: JSON.stringify({email, password, name, center, role, base_salary, hire_date})
+    });
+    if (!res.ok) throw new Error((await res.json()).error || '발급 실패');
+
+    document.getElementById('cred-result').innerHTML = `
+      <div class="cred-box">
+        <div style="font-weight:800;margin-bottom:6px;color:#22c55e">✅ 계정 발급 완료 — 본인에게 안전하게 전달하세요</div>
+        <div>📧 이메일: <b>${email}</b></div>
+        <div>🔑 비밀번호: <b>${password}</b></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:6px">⚠️ 이 비밀번호는 한 번만 표시됩니다. 잊지 말고 복사하세요.</div>
+      </div>`;
+
+    // 폼 초기화
+    ['new-email','new-name','new-password'].forEach(id => document.getElementById(id).value = '');
+
+    showToast('✅ 계정 발급 완료');
+    await loadAll();
+  } catch (e) { alert('오류: ' + e.message); }
+}
+
+async function resetPassword(id, name) {
+  const newPw = prompt(`'${name}' 비밀번호 재설정 — 새 비밀번호 (8자+):`, genPassword());
+  if (!newPw || newPw.length < 8) return;
+  const tk = getToken();
+  try {
+    const res = await fetch(API + '/agents/' + id + '/reset-password', {
+      method: 'POST', headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + tk},
+      body: JSON.stringify({password: newPw})
+    });
+    if (!res.ok) throw new Error((await res.json()).error || '실패');
+    alert(`✅ '${name}' 비밀번호 재설정 완료\n\n새 비밀번호: ${newPw}\n(본인에게 전달하세요)`);
+    showToast('🔑 비밀번호 변경됨');
+  } catch (e) { alert('오류: ' + e.message); }
+}
+
+async function patchAgent(id, body, msg) {
+  const tk = getToken();
+  try {
+    const res = await fetch(API + '/agents/' + id, {
+      method: 'PATCH', headers: {'Content-Type':'application/json', Authorization: 'Bearer ' + tk},
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error((await res.json()).error || '실패');
+    showToast(msg);
+    await loadAll();
+  } catch (e) { alert('오류: ' + e.message); }
+}
+
+function renderAgents(agents) {
+  const role = document.getElementById('filter-role').value;
+  const active = document.getElementById('filter-active').value;
+  let filtered = agents;
+  if (role) filtered = filtered.filter(a => a.role === role);
+  if (active) filtered = filtered.filter(a => String(a.active) === active);
+
+  document.getElementById('result-count').textContent = filtered.length + '명';
+
+  const tbody = document.getElementById('agents-tbody');
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#64748b">없음</td></tr>'; return; }
+
+  tbody.innerHTML = filtered.map(a => `<tr class="${a.active ? '' : 'inactive'}" data-id="${a.id}">
+    <td><b>${a.name}</b><div style="font-size:9px;color:#64748b">${a.id.slice(0,8)}</div></td>
+    <td>${a.center || '-'}</td>
+    <td><span class="role-badge role-${a.role}">${a.role}</span></td>
+    <td>${(a.hire_date||'-').slice(0,10)}</td>
+    <td>${(a.base_salary||0).toLocaleString()}</td>
+    <td>${a.active ? '<span class="active-badge">활성</span>' : '<span class="inactive-badge">비활성</span>'}</td>
+    <td style="font-size:10px;color:#94a3b8" id="p-${a.id}">로딩...</td>
+    <td>
+      <button class="btn-secondary" onclick="resetPassword('${a.id}', '${a.name.replace(/'/g, "\\'")}')">🔑 비번</button>
+      <select onchange="patchAgent('${a.id}', {role: this.value}, '✅ 역할 변경')" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:3px 6px;border-radius:4px;font-size:10px">
+        <option value="agent" ${a.role==='agent'?'selected':''}>agent</option>
+        <option value="manager" ${a.role==='manager'?'selected':''}>manager</option>
+        <option value="admin" ${a.role==='admin'?'selected':''}>admin</option>
+      </select>
+      ${a.active
+        ? `<button class="btn-warn" onclick="patchAgent('${a.id}', {active: false}, '❌ 비활성화됨')">비활성</button>`
+        : `<button class="btn-ok" onclick="patchAgent('${a.id}', {active: true}, '✅ 활성화됨')">활성화</button>`}
+    </td>
+  </tr>`).join('');
+
+  // 각 상담사의 이번 달 P 비동기 로드
+  const ym = new Date().toISOString().slice(0,7);
+  filtered.forEach(async a => {
+    try {
+      const tk = getToken();
+      const res = await fetch(API + '/settlement?agent_id=' + a.id + '&month=' + ym, {
+        headers: {Authorization: 'Bearer ' + tk}
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const s = data.settlement;
+        const el = document.getElementById('p-' + a.id);
+        if (el && s) el.innerHTML = `${s.total_points || 0}P · 우수 ${s.premium_count || 0}<div style="font-size:9px">G${s.grade_applied || 1}${s.is_penalty ? ' ⚠️' : ''}</div>`;
+      }
+    } catch {}
+  });
+}
+
+async function loadAll() {
+  try {
+    _allAgents = await fetchAllAgents();
+    // 센터 datalist
+    const centers = [...new Set(_allAgents.map(a => a.center).filter(Boolean))];
+    document.getElementById('centers-list').innerHTML =
+      centers.map(c => `<option value="${c}">`).join('');
+    renderAgents(_allAgents);
+  } catch (e) { alert('로드 실패: ' + e.message); }
+}
+
+let _toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function init() {
+  document.getElementById('new-hire-date').value = new Date().toISOString().slice(0,10);
+  const tk = getToken();
+  if (tk) {
+    const agent = await fetchAgent();
+    if (agent && agent.role === 'admin') onLoggedIn(agent);
+    else if (agent) {
+      document.getElementById('auth-msg').textContent = '⚠️ admin 권한 필요 (현재 ' + agent.role + ')';
+      document.getElementById('auth-msg').style.color = '#fbbf24';
+      clearToken();
+    }
+  }
+}
+
+function onLoggedIn(agent) {
+  document.getElementById('auth-box').style.display = 'none';
+  document.getElementById('main-area').style.display = '';
+  document.getElementById('user-info').style.display = '';
+  document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
+  loadAll();
+}
+
+document.getElementById('auth-login-btn').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-pass').value;
+  const msg = document.getElementById('auth-msg'); msg.style.color = '#dc2626';
+  if (!email || !password) { msg.textContent = '입력 필수'; return; }
+  try {
+    await login(email, password);
+    const agent = await fetchAgent();
+    if (!agent || agent.role !== 'admin') { msg.textContent = 'admin 권한 필요'; clearToken(); return; }
+    onLoggedIn(agent);
+  } catch (e) { msg.textContent = e.message; }
+});
+document.getElementById('logout-btn').addEventListener('click', () => { clearToken(); location.reload(); });
+document.getElementById('btn-create').addEventListener('click', createAgent);
+document.getElementById('reload-btn').addEventListener('click', loadAll);
+document.getElementById('filter-role').addEventListener('change', () => renderAgents(_allAgents));
+document.getElementById('filter-active').addEventListener('change', () => renderAgents(_allAgents));
+
+init();
+</script>
+</body>
+</html>
