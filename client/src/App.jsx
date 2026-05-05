@@ -178,7 +178,8 @@ function AppRoutes() {
         <Route index element={<W C={V5Index} />} />
         <Route path="dashboard" element={<W C={V5Dashboard} />} />
         {/* 점진 마이그레이션 — 아직 React 변환 안 된 페이지는 iframe으로 임시 wrap */}
-        <Route path="tm" element={<W C={V5TmCounselor} />} />
+        {/* 사용자 보고 'TM 견적·영업 잘못 만들었다' — vanilla iframe fallback으로 임시 롤백. Phase B2에서 fix 예정 */}
+        <Route path="tm" element={<Suspense fallback={<AdminFallback />}><V5IframePage src="/docs/tm-counselor.html" title="TM 견적·영업" /></Suspense>} />
         <Route path="contracts" element={<W C={V5Contract} />} />
         <Route path="agents" element={<W C={V5Agents} />} />
         <Route path="products" element={<W C={V5Products} />} />
