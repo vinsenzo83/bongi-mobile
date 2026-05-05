@@ -62,6 +62,21 @@ tr.finalized { background:rgba(22,163,74,0.06); }
 body.hide-financial-mid .financial-mid { display:none !important; }
 /* financial-deep: 회사 영업이익, 마진 — admin만 (manager/contract 숨김) */
 body.hide-financial-deep .financial-deep { display:none !important; }
+/* manager-only: 팀장 전용 KPI 섹션 — manager(admin도 본인 데이터로 미리보기) */
+.manager-only { display:none; }
+body.show-manager-kpi .manager-only { display:block; }
+
+/* 팀장 전용 KPI 카드 — 강조 색상 */
+.mgr-kpi-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
+.mgr-kpi-card { background:linear-gradient(135deg,#1e3a8a,#1e293b); border:1px solid #3b82f6; border-radius:12px; padding:16px; position:relative; overflow:hidden; }
+.mgr-kpi-card::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; background:#60a5fa; }
+.mgr-kpi-card .mgr-icon { font-size:20px; margin-bottom:6px; }
+.mgr-kpi-card .mgr-label { font-size:10px; color:#93c5fd; font-weight:800; letter-spacing:0.04em; margin-bottom:6px; }
+.mgr-kpi-card .mgr-val { font-size:20px; color:#f8fafc; font-weight:900; letter-spacing:-0.02em; line-height:1.2; }
+.mgr-kpi-card .mgr-sub { font-size:10px; color:#94a3b8; margin-top:4px; line-height:1.4; }
+.mgr-kpi-card .mgr-row { display:flex; justify-content:space-between; align-items:baseline; margin-top:4px; font-size:10.5px; color:#cbd5e1; }
+.mgr-kpi-card .mgr-row b { color:#f8fafc; font-weight:800; }
+@media (max-width: 900px) { .mgr-kpi-grid { grid-template-columns:repeat(2, 1fr); } }
 
 /* 다크 테마 - 달력 아이콘 강제 표시 */
 input[type="date"], input[type="month"] { color-scheme: dark; }
@@ -111,6 +126,61 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       <button id="reload-btn" class="btn-secondary">🔄 새로고침</button>
       <span id="result-count" style="font-size:11px;color:#94a3b8;margin-left:auto">-</span>
       <button id="finalize-all-btn" class="btn-primary" style="display:none">📌 전체 정산 확정 (admin)</button>
+    </div>
+
+    <!-- 팀장 전용 KPI (manager만 표시) -->
+    <div class="section manager-only" id="manager-kpi-section">
+      <h2>👨‍💼 팀장 전용 KPI <span style="font-size:10px;color:#94a3b8;font-weight:400" id="manager-kpi-sub">-</span></h2>
+      <div class="mgr-kpi-grid">
+        <!-- 1. 내 정산 -->
+        <div class="mgr-kpi-card">
+          <div class="mgr-icon">👤</div>
+          <div class="mgr-label">내 정산 (본인)</div>
+          <div class="mgr-val" id="mgr-my-total">-</div>
+          <div class="mgr-row">
+            <span>Grade</span><b id="mgr-my-grade">-</b>
+          </div>
+          <div class="mgr-row">
+            <span>P</span><b id="mgr-my-points">-</b>
+          </div>
+        </div>
+        <!-- 2. 내 센터 합계 -->
+        <div class="mgr-kpi-card">
+          <div class="mgr-icon">🏢</div>
+          <div class="mgr-label">내 센터 합계</div>
+          <div class="mgr-val" id="mgr-center-sales">-</div>
+          <div class="mgr-row">
+            <span>P 합계</span><b id="mgr-center-points">-</b>
+          </div>
+          <div class="mgr-row">
+            <span>인센티브 합계</span><b id="mgr-center-incentive">-</b>
+          </div>
+        </div>
+        <!-- 3. 매니징 KPI -->
+        <div class="mgr-kpi-card">
+          <div class="mgr-icon">📊</div>
+          <div class="mgr-label">매니징 KPI</div>
+          <div class="mgr-val" id="mgr-avg-grade">-</div>
+          <div class="mgr-row">
+            <span>페널티 인원</span><b id="mgr-penalty-count">-</b>
+          </div>
+          <div class="mgr-row">
+            <span>우수 평균 비율</span><b id="mgr-premium-rate">-</b>
+          </div>
+        </div>
+        <!-- 4. 센터 영업이익 (admin만 — financial-deep) -->
+        <div class="mgr-kpi-card financial-deep">
+          <div class="mgr-icon">💰</div>
+          <div class="mgr-label">센터 영업이익</div>
+          <div class="mgr-val" id="mgr-center-profit">-</div>
+          <div class="mgr-row">
+            <span>매출</span><b id="mgr-center-revenue">-</b>
+          </div>
+          <div class="mgr-row">
+            <span>이익률</span><b id="mgr-center-profit-rate">-</b>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 전체 KPI -->
@@ -170,6 +240,7 @@ async function tryRefreshToken() {
 const fmt = n => (n||0).toLocaleString() + '원';
 
 let _myRole = null;
+let _myAgent = null;
 let _overview = null;
 
 async function login(email, password) {
@@ -227,6 +298,58 @@ async function finalizeOne(agentId, agentName, month) {
     showToast(`✅ '${agentName}' 정산 확정`);
     await loadAll();
   } catch (e) { alert('오류: ' + e.message); }
+}
+
+function renderManagerKpi(o, agent) {
+  // manager 또는 admin이 본인 데이터 확인용으로 활용
+  if (_myRole !== 'manager' && _myRole !== 'admin') return;
+  const settlements = o.settlements || [];
+  const myCenter = agent.center;
+
+  // 본인 settlement 찾기 (user_id 매칭)
+  const mySettlement = settlements.find(s => (s.agent || {}).user_id === agent.user_id) || {};
+
+  // 1. 내 정산
+  document.getElementById('mgr-my-total').textContent = fmt(mySettlement.agent_total);
+  document.getElementById('mgr-my-grade').textContent = 'G' + (mySettlement.grade_applied || '-');
+  document.getElementById('mgr-my-points').textContent = (mySettlement.total_points || 0) + 'P';
+
+  // 2. 내 센터 (manager는 이미 본인 센터만 받음, admin은 전체 → 본인 센터로 필터)
+  const centerSettlements = settlements.filter(s => (s.agent || {}).center === myCenter);
+  const centerAgg = centerSettlements.reduce((acc, s) => {
+    acc.count += s.total_count || 0;
+    acc.points += parseFloat(s.total_points) || 0;
+    acc.incentive += s.incentive || 0;
+    acc.bonus += s.bonus || 0;
+    acc.revenue += s.total_revenue || 0;
+    acc.profit += s.company_profit || 0;
+    acc.premium += s.premium_count || 0;
+    acc.gradeSum += s.grade_applied || 1;
+    acc.penalty += s.is_penalty ? 1 : 0;
+    return acc;
+  }, { count:0, points:0, incentive:0, bonus:0, revenue:0, profit:0, premium:0, gradeSum:0, penalty:0 });
+  const centerN = centerSettlements.length || 1;
+
+  document.getElementById('mgr-center-sales').textContent = centerAgg.count + '건';
+  document.getElementById('mgr-center-points').textContent = centerAgg.points.toLocaleString() + 'P';
+  document.getElementById('mgr-center-incentive').textContent = fmt(centerAgg.incentive + centerAgg.bonus);
+
+  // 3. 매니징 KPI
+  const avgGrade = (centerAgg.gradeSum / centerN).toFixed(2);
+  const premiumRate = centerAgg.count > 0 ? (centerAgg.premium / centerAgg.count * 100) : 0;
+  document.getElementById('mgr-avg-grade').textContent = 'G' + avgGrade;
+  document.getElementById('mgr-penalty-count').textContent = centerAgg.penalty + '명 / ' + centerSettlements.length + '명';
+  document.getElementById('mgr-premium-rate').textContent = premiumRate.toFixed(1) + '%';
+
+  // 4. 센터 영업이익 (admin만 financial-deep CSS로 보임)
+  document.getElementById('mgr-center-profit').textContent = fmt(centerAgg.profit);
+  document.getElementById('mgr-center-revenue').textContent = fmt(centerAgg.revenue);
+  const profitRate = centerAgg.revenue > 0 ? (centerAgg.profit / centerAgg.revenue * 100) : 0;
+  document.getElementById('mgr-center-profit-rate').textContent = profitRate.toFixed(1) + '%';
+
+  // 서브 텍스트
+  document.getElementById('manager-kpi-sub').textContent =
+    '· ' + myCenter + ' · ' + centerSettlements.length + '명 · 본인 ' + (agent.name || '');
 }
 
 function renderKpi(o) {
@@ -417,6 +540,7 @@ async function loadAll() {
   if (!month) return;
   try {
     _overview = await fetchOverview(month);
+    if (_myAgent) renderManagerKpi(_overview, _myAgent);
     renderKpi(_overview);
     renderAgents(_overview);
   } catch (e) { alert('로드 실패: ' + e.message); }
@@ -445,6 +569,7 @@ async function init() {
       // 이미 받아놓은 데이터 즉시 렌더 (재요청 X)
       if (overview) {
         _overview = overview;
+        renderManagerKpi(overview, agent);
         renderKpi(overview);
         renderAgents(overview);
       }
@@ -461,15 +586,18 @@ async function init() {
 
 function onLoggedIn(agent, skipLoad) {
   _myRole = agent.role;
+  _myAgent = agent;
   document.getElementById('auth-box').style.display = 'none';
   document.getElementById('main-area').style.display = '';
   document.getElementById('user-info').style.display = '';
   document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
   document.getElementById('user-meta').textContent = agent.center;
   // 역할별 가시성 적용
-  document.body.classList.remove('hide-financial-mid', 'hide-financial-deep');
+  document.body.classList.remove('hide-financial-mid', 'hide-financial-deep', 'show-manager-kpi');
   if (agent.role === 'contract') document.body.classList.add('hide-financial-mid', 'hide-financial-deep');
   if (agent.role === 'manager') document.body.classList.add('hide-financial-deep'); // 본인 센터 financial OK, 회사이익 X
+  // manager 전용 KPI 섹션은 manager일 때만 표시 (admin은 전체 KPI에서 이미 확인 가능)
+  if (agent.role === 'manager') document.body.classList.add('show-manager-kpi');
   if (!skipLoad) loadAll(); // init() 병렬 fetch에서 이미 렌더된 경우 재요청 안 함
 }
 
