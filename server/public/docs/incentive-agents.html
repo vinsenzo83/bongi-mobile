@@ -386,5 +386,43 @@ document.getElementById('filter-active').addEventListener('change', () => render
 
 init();
 </script>
+
+<!-- 🧭 네비게이션 (manager/admin 전용) -->
+<div id="admin-nav" style="display:none;position:fixed;top:10px;right:10px;background:rgba(15,23,42,0.95);backdrop-filter:blur(8px);border:1.5px solid #475569;border-radius:10px;padding:6px 8px;z-index:9998;box-shadow:0 4px 16px rgba(0,0,0,0.4);font-size:11px">
+  <div style="font-size:9px;color:#94a3b8;margin-bottom:4px;font-weight:700;letter-spacing:0.04em">🧭 빠른 이동</div>
+  <a href="/docs/tm.html" style="display:inline-block;padding:4px 8px;margin:1px;background:#3b82f6;color:#fff;text-decoration:none;border-radius:4px;font-weight:700;font-size:10px">TM</a>
+  <a href="/docs/incentive-contract.html" style="display:inline-block;padding:4px 8px;margin:1px;background:#0891b2;color:#fff;text-decoration:none;border-radius:4px;font-weight:700;font-size:10px">계약부서</a>
+  <a href="/docs/incentive-dashboard.html" style="display:inline-block;padding:4px 8px;margin:1px;background:#16a34a;color:#fff;text-decoration:none;border-radius:4px;font-weight:700;font-size:10px">대시보드</a>
+  <a href="/docs/incentive-rules.html" id="nav-rules" style="display:none;padding:4px 8px;margin:1px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:4px;font-weight:700;font-size:10px">정책</a>
+  <a href="/docs/incentive-agents.html" id="nav-agents" style="display:none;padding:4px 8px;margin:1px;background:#dc2626;color:#fff;text-decoration:none;border-radius:4px;font-weight:700;font-size:10px">계정</a>
+</div>
+<script>
+// 로그인 후 권한별로 nav 표시
+(function navInit() {
+  const TOKEN = 'incentive-auth-token-v1';
+  async function checkAndShow() {
+    const tk = localStorage.getItem(TOKEN);
+    if (!tk) return;
+    try {
+      const res = await fetch('/api/incentive/agents/me', { headers: { Authorization: 'Bearer ' + tk } });
+      if (!res.ok) return;
+      const { agent } = await res.json();
+      if (!agent) return;
+      if (agent.role === 'manager' || agent.role === 'admin') {
+        const navEl = document.getElementById('admin-nav');
+        if (navEl) navEl.style.display = '';
+      }
+      if (agent.role === 'admin') {
+        const r = document.getElementById('nav-rules'); if (r) r.style.display = 'inline-block';
+        const a = document.getElementById('nav-agents'); if (a) a.style.display = 'inline-block';
+      }
+    } catch {}
+  }
+  setTimeout(checkAndShow, 800);
+  // 로그인 후 재확인
+  setInterval(checkAndShow, 5000);
+})();
+</script>
+
 </body>
 </html>
