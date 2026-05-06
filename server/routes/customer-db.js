@@ -698,6 +698,62 @@ router.get('/export/csv', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// 8-5. POST /recall — DB 회수 (admin·manager)
+//   body: { agent_id, status_filter?, days_inactive?, reason } 또는 { customer_ids[], reason }
+//   동작: assigned_agent_id·assigned_center 모두 NULL → 미배정 풀 복귀
+// ═══════════════════════════════════════════════════════════════
+router.post('/recall', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || (me.role !== 'admin' && me.role !== 'manager')) return res.status(403).json({ error: 'admin·manager 전용' });
+    const { agent_id, customer_ids, status_filter, days_inactive, reason } = req.body || {};
+    if (!reason || String(reason).trim().length < 3) return res.status(400).json({ error: '회수 사유 필수 (3자 이상)' });
+
+    let q = supabase.from('incentive_customer_db').update({
+      assigned_agent_id: null, assigned_center: null, center_assigned_at: null,
+      updated_at: new Date().toISOString(),
+    }).is('deleted_at', null).eq('archived', false).neq('call_status', 'converted'); // 전환된 건 회수 X
+
+    if (Array.isArray(customer_ids) && customer_ids.length) {
+      // 개별 회수
+      if (customer_ids.length > 1000) return res.status(400).json({ error: '한 번에 최대 1000건' });
+      q = q.in('id', customer_ids);
+      // manager는 본인 센터 콜만
+      if (me.role === 'manager') {
+        const { data: members } = await supabase.from('incentive_agents').select('id').eq('center', me.center);
+        q = q.in('assigned_agent_id', (members || []).map(x => x.id));
+      }
+    } else if (agent_id) {
+      // 상담사 단위 회수
+      if (me.role === 'manager') {
+        const { data: target } = await supabase.from('incentive_agents').select('center').eq('id', agent_id).single();
+        if (!target || target.center !== me.center) return res.status(403).json({ error: '본인 센터 상담사만' });
+      }
+      q = q.eq('assigned_agent_id', agent_id);
+      if (status_filter) q = q.eq('call_status', status_filter);
+      if (days_inactive > 0) {
+        const cutoff = new Date(Date.now() - parseInt(days_inactive) * 86400000).toISOString();
+        // 마지막 통화 N일 이전 또는 한 번도 통화 안 한 콜
+        q = q.or(`last_contacted_at.lt.${cutoff},last_contacted_at.is.null`);
+      }
+    } else {
+      return res.status(400).json({ error: 'agent_id 또는 customer_ids 필요' });
+    }
+
+    const { data, error } = await q.select('id');
+    if (error) throw error;
+    const recalled = (data || []).length;
+
+    logAccess({
+      user_id: req.user.id, action: 'recall', ip: req.ip, ua: req.get('user-agent'),
+      metadata: { count: recalled, agent_id, customer_ids: customer_ids?.length, status_filter, days_inactive, reason: String(reason).slice(0, 200) },
+    });
+
+    res.json({ recalled, message: `${recalled.toLocaleString()}건 풀로 복귀` });
+  } catch (e) { console.error('[recall]', e); res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // 9-1. POST /api/customer-db/distribute-to-center — 센터별 일괄 배정 (admin)
 //   body: { allocations: [{center, count}], batch_id (선택) }
 // ═══════════════════════════════════════════════════════════════
