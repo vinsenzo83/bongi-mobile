@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>상담사 인센티브 안내서 — 봉이모바일 V5</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: 'Pretendard Variable', sans-serif; background:#f8fafc; color:#0f172a; padding:30px; max-width:920px; margin:0 auto; line-height:1.6; }
+h1 { font-size:26px; color:#0f172a; margin-bottom:6px; letter-spacing:-0.02em; }
+.sub { color:#475569; font-size:13px; margin-bottom:24px; padding-bottom:16px; border-bottom:2px solid #1e293b; }
+h2 { font-size:17px; color:#0f172a; margin:24px 0 10px; padding:6px 12px; background:#dbeafe; border-left:5px solid #2563eb; }
+h3 { font-size:14px; color:#1e293b; margin:14px 0 8px; }
+p, li { font-size:13px; color:#1e293b; }
+ul { margin:8px 0 8px 18px; }
+ul li { margin:5px 0; }
+.formula { background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:12px 16px; font-family:monospace; font-size:13px; color:#0f172a; margin:10px 0; line-height:1.9; }
+.formula b { color:#dc2626; }
+table { width:100%; border-collapse:collapse; margin:10px 0 14px; }
+th, td { padding:8px 10px; border:1px solid #cbd5e1; font-size:12.5px; text-align:left; }
+th { background:#1e293b; color:#fff; font-weight:700; }
+tr:nth-child(even) td { background:#f8fafc; }
+.highlight { background:#fef3c7; padding:1px 6px; border-radius:3px; font-weight:700; color:#7c2d12; }
+.example { background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:14px 18px; margin:10px 0; }
+.example .total { font-size:16px; font-weight:800; color:#15803d; border-top:2px solid #15803d; padding-top:8px; margin-top:8px; display:flex; justify-content:space-between; }
+.example .row { display:flex; justify-content:space-between; padding:3px 0; font-size:12.5px; }
+.example .row.minus { color:#dc2626; }
+.tip { background:#fef9c3; border-left:4px solid #ca8a04; padding:10px 14px; margin:10px 0; font-size:12.5px; }
+.print-bar { position:sticky; top:10px; background:#1e293b; color:#fff; padding:12px 18px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+.print-bar button { background:#2563eb; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px; }
+@media print {
+  .print-bar { display:none; }
+  body { padding:15mm; background:#fff; max-width:none; font-size:11px; }
+  h1 { font-size:20px; } h2 { font-size:14px; page-break-after:avoid; }
+  .example { break-inside:avoid; } table { break-inside:avoid; }
+}
+@page { size: A4; margin: 12mm; }
+</style>
+</head>
+<body>
+<div class="print-bar">
+  <span>📄 상담사 인센티브 안내서 (V5)</span>
+  <button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
+</div>
+
+<h1>👤 상담사 인센티브 안내서</h1>
+<div class="sub">봉이모바일 V5 정책 · <span id="ver">-</span></div>
+
+<h2>① 기본급</h2>
+<p>매월 고정 지급, 영업 실적과 무관. 기본급은 <span class="highlight" id="base-salary">2,300,000원</span> (상담사별로 다를 수 있음 — 본인 급여명세서 확인).</p>
+
+<h2>② 등급 체계 — 누적 가중치 P 기준</h2>
+<table>
+  <thead><tr><th>등급</th><th>도달 조건</th><th>P당 단가</th><th>페널티 조건</th></tr></thead>
+  <tbody>
+    <tr><td><b>G1</b></td><td>P 0 ~ 15</td><td><span id="g1-rate">20,000원</span></td><td>없음</td></tr>
+    <tr><td><b>G2</b></td><td>P <span id="g2-pt">16</span> 이상 + 우수 <span id="g2-pr">5</span>건</td><td><span id="g2-rate">30,000원</span></td><td>우수 미달 → G1 단가 적용</td></tr>
+    <tr><td><b>G3</b></td><td>P <span id="g3-pt">31</span> 이상 + 우수 <span id="g3-pr">10</span>건</td><td><span id="g3-rate">40,000원</span></td><td>우수 미달 → G2 단가 적용</td></tr>
+  </tbody>
+</table>
+<div class="tip">⚠️ <b>페널티</b>: 등급 P는 도달했지만 우수 상품 의무를 채우지 못하면 한 단계 낮은 등급의 단가가 적용됩니다.</div>
+
+<h2>③ 우수 상품 보너스</h2>
+<ul>
+  <li>우수 상품 1건당 <span class="highlight"><span id="bonus-per">10,000</span>원</span> 추가 보너스</li>
+  <li>우수 = 회사 마진 임계값 이상 (admin이 상품별 지정)</li>
+  <li>등급업 + 페널티 해제에 모두 활용</li>
+</ul>
+
+<h2>④ 가중치 (Point) — 상품별 환산</h2>
+<table>
+  <thead><tr><th>상품 예시</th><th>가중치</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td>일반 인터넷 (500M)</td><td><b>1.0 P</b></td><td>기본 단위</td></tr>
+    <tr><td>인터넷 1G + TV 결합</td><td><b>1.5 P</b></td><td>고가 결합 우대</td></tr>
+    <tr><td>프리미엄 결합</td><td><b>2.0 P</b></td><td>최상위 상품</td></tr>
+  </tbody>
+</table>
+<p style="font-size:11.5px;color:#64748b;font-style:italic">정확한 가중치는 상품별 admin 설정 — 견적 시 자동 계산</p>
+
+<h2>⑤ 월 수령액 계산식</h2>
+<div class="formula">
+  <b>월 수령액</b> =<br>
+  &nbsp;&nbsp;기본급<br>
+  &nbsp;&nbsp;+ 인센티브 = (누적 P) × (등급 단가)<br>
+  &nbsp;&nbsp;+ 보너스 = (우수 건수) × <span id="formula-bonus">10,000</span><br>
+  &nbsp;&nbsp;− 본인 페이백 부담 (페이백 30,000원 초과분)
+</div>
+
+<h2>⑥ 계산 예시 (G2 달성)</h2>
+<div class="example">
+  <div style="font-size:12px;color:#64748b;margin-bottom:8px">조건: 영업 12건 / 누적 20P / 우수 5건 / G2 페널티 없음</div>
+  <div class="row"><span>기본급</span><span>2,300,000원</span></div>
+  <div class="row"><span>인센티브 (20P × 30,000)</span><span>+ 600,000</span></div>
+  <div class="row"><span>우수 보너스 (5건 × 10,000)</span><span>+ 50,000</span></div>
+  <div class="row minus"><span>본인 페이백 (50,000원 1건 → 본인 부담 20,000)</span><span>− 20,000</span></div>
+  <div class="total"><span>총 수령액</span><span>2,930,000원</span></div>
+</div>
+
+<h2>⑦ 페이백 부담 규칙</h2>
+<table>
+  <thead><tr><th>구간</th><th>부담 주체</th><th>비고</th></tr></thead>
+  <tbody>
+    <tr><td>0 ~ <span id="pb-co">30,000</span>원</td><td><b style="color:#15803d">회사 부담</b></td><td>회사가 전액 처리</td></tr>
+    <tr><td><span id="pb-co2">30,000</span> ~ <span id="pb-max">50,000</span>원</td><td><b style="color:#dc2626">상담사 부담</b></td><td>초과분만큼 본인 인센티브에서 차감</td></tr>
+    <tr><td><span id="pb-max2">50,000</span>원 초과</td><td colspan="2"><b style="color:#ca8a04">등록 불가</b> — admin 승인 필요</td></tr>
+  </tbody>
+</table>
+<div class="tip">💡 <b>예시</b>: 페이백 50,000원 영업 1건 → 회사 30,000원 부담, 본인 <b style="color:#dc2626">20,000원 차감</b></div>
+
+<h2>⑧ 등급업 전략</h2>
+<ul>
+  <li><b>G1 → G2</b>: 16P 도달 + 우수 5건 → 단가 +50% (20k → 30k)</li>
+  <li><b>G2 → G3</b>: 31P 도달 + 우수 10건 → 단가 추가 +33% (30k → 40k)</li>
+  <li><b>페널티 회피</b>: P는 도달했지만 우수 부족 시 손해 큼 — 우수 등록 우선</li>
+  <li><b>실시간 시뮬레이터</b>: TM 상담 페이지에서 견적 1건 추가 시 등급 변화 확인</li>
+</ul>
+
+<h2>⑨ 정산 시점 · 영업 상태</h2>
+<table>
+  <thead><tr><th>상태</th><th>정산 포함</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td>⏰ 계약대기 (pending)</td><td>❌</td><td>TM 등록 직후 — 계약부서 처리 대기</td></tr>
+    <tr><td>🚧 계약진행 (in_progress)</td><td>❌</td><td>계약서 작성 중</td></tr>
+    <tr><td>✅ <b>계약완료 (completed)</b></td><td>✅</td><td>인센티브·보너스·P 모두 카운트</td></tr>
+    <tr><td>❌ 취소 (cancelled)</td><td>❌</td><td>고객 변심·설치 불가 등</td></tr>
+  </tbody>
+</table>
+<div class="tip">⚡ <b>실시간 갱신</b>: 계약처리 부서가 'completed'로 바꾸면 본인 대시보드에 즉시 반영</div>
+
+<div style="text-align:center;margin-top:30px;padding-top:14px;border-top:1px solid #cbd5e1;font-size:11px;color:#64748b">
+  봉이모바일 인센티브 정책 V5 · 마지막 업데이트 <span id="effective">-</span> · 본 안내서는 정책 변경 시 자동 갱신
+</div>
+
+<script>
+const fmt = n => Number(n || 0).toLocaleString();
+async function loadRules() {
+  try {
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    const headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    const res = await fetch('/api/incentive/rules', { headers });
+    if (!res.ok) return;
+    const r = (await res.json()).rule || (await res.json()).rules || {};
+    if (r.base_salary) document.getElementById('base-salary').textContent = fmt(r.base_salary) + '원';
+    const rates = r.grade_rates || { '1':20000, '2':30000, '3':40000 };
+    document.getElementById('g1-rate').textContent = fmt(rates['1']) + '원';
+    document.getElementById('g2-rate').textContent = fmt(rates['2']) + '원';
+    document.getElementById('g3-rate').textContent = fmt(rates['3']) + '원';
+    const thr = r.grade_thresholds || { '2':{points:16,premium:5}, '3':{points:31,premium:10} };
+    document.getElementById('g2-pt').textContent = thr['2']?.points || 16;
+    document.getElementById('g2-pr').textContent = thr['2']?.premium || 5;
+    document.getElementById('g3-pt').textContent = thr['3']?.points || 31;
+    document.getElementById('g3-pr').textContent = thr['3']?.premium || 10;
+    if (r.bonus_per_premium) {
+      document.getElementById('bonus-per').textContent = fmt(r.bonus_per_premium);
+      document.getElementById('formula-bonus').textContent = fmt(r.bonus_per_premium);
+    }
+    if (r.payback_company_limit) {
+      const v = fmt(r.payback_company_limit);
+      document.getElementById('pb-co').textContent = v;
+      document.getElementById('pb-co2').textContent = v;
+    }
+    if (r.payback_max) {
+      const v = fmt(r.payback_max);
+      document.getElementById('pb-max').textContent = v;
+      document.getElementById('pb-max2').textContent = v;
+    }
+    if (r.version) document.getElementById('ver').textContent = '정책 ' + r.version;
+    if (r.effective_from) document.getElementById('effective').textContent = r.effective_from;
+  } catch (e) {}
+}
+loadRules();
+</script>
+</body>
+</html>
