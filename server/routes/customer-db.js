@@ -853,7 +853,7 @@ router.post('/requests', async (req, res) => {
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(401).json({ error: 'unauthenticated' });
-    if (me.role !== 'agent') return res.status(403).json({ error: '상담사만 요청 가능' });
+    if (me.role !== 'agent' && me.role !== 'manager') return res.status(403).json({ error: '상담사·매니저만 요청 가능' });
     const requested_count = Math.min(parseInt(req.body?.requested_count) || 50, 500);
     const reason = (req.body?.reason || '').trim().slice(0, 500);
     if (requested_count < 1) return res.status(400).json({ error: '요청 수량은 1 이상' });
