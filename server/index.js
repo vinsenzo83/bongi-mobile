@@ -39,6 +39,8 @@ const PORT = process.env.PORT || 3001;
 
 // 글로벌 미들웨어
 app.use(compression({ threshold: 1024 })); // 1KB 이상 응답 자동 gzip (HTML/JSON ~70% 감소)
+// Express ETag 강력 활성화 — JSON 응답에 ETag → If-None-Match 시 304 (body 0byte)
+app.set('etag', 'strong');
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? process.env.ALLOWED_ORIGIN || 'https://bongi-mobile.com'
@@ -54,11 +56,27 @@ app.use('/crm', express.static(join(__dirname, 'public', 'crm')));
 app.use('/dashboard', express.static(join(__dirname, 'public', 'dashboard')));
 app.use('/stores', express.static(join(__dirname, 'public', 'stores')));
 app.use('/docs', express.static(join(__dirname, '..', 'docs'), {
-  // HTML: 매 요청 서버 확인 (ETag로 304 — 코드 변경 즉시 반영)
-  // JS/CSS/이미지: 1일 캐시
+  etag: true,
+  lastModified: true,
   setHeaders: (res, path) => {
-    if (path.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, must-revalidate');
-    else res.setHeader('Cache-Control', 'public, max-age=86400');
+    if (path.endsWith('.html')) {
+      // HTML: stale-while-revalidate — 30s 즉시, 백그라운드 갱신
+      res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=86400');
+    } else if (/\.(woff2?|ttf|otf)$/i.test(path)) {
+      // 폰트: 1년 immutable
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (/\.(png|jpe?g|webp|svg|ico|gif)$/i.test(path)) {
+      // 이미지: 30일
+      res.setHeader('Cache-Control', 'public, max-age=2592000');
+    } else if (/\.(docx|pdf|xlsx)$/i.test(path)) {
+      // 문서: 1주일
+      res.setHeader('Cache-Control', 'public, max-age=604800');
+    } else if (/\.(js|css)$/i.test(path)) {
+      // JS/CSS: 1일 + revalidate
+      res.setHeader('Cache-Control', 'public, max-age=86400, must-revalidate');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
   }
 }));
 app.use('/api/dashboard', dashboardRoutes);
