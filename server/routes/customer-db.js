@@ -241,8 +241,10 @@ router.get('/', async (req, res) => {
 
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     const offset = parseInt(req.query.offset) || 0;
-    let q = supabase.from('incentive_customer_db').select('*, db_source:incentive_db_sources(name, color)', { count: 'exact' })
-      .is('deleted_at', null);
+    let q = supabase.from('incentive_customer_db').select(
+      '*, db_source:incentive_db_sources(name, color), assigned_agent:incentive_agents!incentive_customer_db_assigned_agent_id_fkey(id, name, center)',
+      { count: 'exact' }
+    ).is('deleted_at', null);
     // archived 토글 — ?archived=true 면 archived만, 미지정이면 active만
     if (req.query.archived === 'true') q = q.eq('archived', true);
     else q = q.eq('archived', false);

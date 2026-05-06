@@ -129,7 +129,7 @@ tr.row-callback:hover { background:rgba(251,191,36,0.14); }
     <div class="section">
       <h2>📋 콜 큐 <span id="cust-total" style="font-weight:400;color:#94a3b8">-</span></h2>
       <table>
-        <thead><tr>
+        <thead><tr id="cust-thead">
           <th>우선</th><th>이름</th><th>전화</th><th>지역</th><th>통신사</th>
           <th>출처</th><th>상태</th><th>이전</th><th>📝 메모</th><th>다음</th>
         </tr></thead>
@@ -220,6 +220,14 @@ async function init() {
     document.getElementById('user-info').style.display = '';
     document.getElementById('main').style.display = '';
     window._myAgent = me;
+    // admin 전용 칼럼 추가 (팀·상담사)
+    if (me.role === 'admin') {
+      const thead = document.getElementById('cust-thead');
+      if (thead && !thead.dataset.adminCols) {
+        thead.insertAdjacentHTML('beforeend', '<th>팀</th><th>상담사</th>');
+        thead.dataset.adminCols = '1';
+      }
+    }
     loadDbSources();
     loadStats();
     loadCustomers();
@@ -331,8 +339,9 @@ async function loadCustomers() {
   document.getElementById('page-info').textContent = `${Math.min(_state.offset+1, _state.total)}~${Math.min(_state.offset+_state.limit, _state.total)} / ${_state.total.toLocaleString()}`;
 
   const tbody = document.getElementById('cust-tbody');
+  const cspan = window._myAgent?.role === 'admin' ? 12 : 10;
   if (!d.customers.length) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:50px">
+    tbody.innerHTML = `<tr><td colspan="${cspan}" style="text-align:center;padding:50px">
       <div style="font-size:50px;margin-bottom:10px">🎉</div>
       <div style="font-size:16px;color:#86efac;font-weight:800;margin-bottom:6px">모든 콜 처리 완료!</div>
       <div style="font-size:12px;color:#94a3b8;margin-bottom:14px">잔여 콜이 없습니다. admin에 추가 분배 요청하거나 풀에서 직접 받으세요.</div>
@@ -350,6 +359,7 @@ async function loadCustomers() {
     converted: { txt:'🎉 계약완료', cls:'b-converted', priority:4 },
   };
 
+  const isAdmin = window._myAgent?.role === 'admin';
   tbody.innerHTML = d.customers.map((c) => {
     const sm = statusMap[c.call_status] || { txt: c.call_status, cls:'b-pending', priority:3 };
     const src = c.db_source || {};
@@ -361,6 +371,10 @@ async function loadCustomers() {
     const noteRaw = (c.notes || '').trim();
     const noteEsc = noteRaw.replace(/[<>&"]/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
     const notePreview = noteRaw ? (noteRaw.length > 30 ? noteEsc.slice(0,30)+'…' : noteEsc) : '<i style="color:#64748b">-</i>';
+    const a = c.assigned_agent || {};
+    const adminCols = isAdmin
+      ? `<td style="font-size:10.5px;color:#cbd5e1">${esc(a.center)||'<i style=\"color:#64748b\">미배정</i>'}</td><td style="font-size:10.5px;color:#cbd5e1"><b>${esc(a.name)||'<i style=\"color:#64748b\">미배정</i>'}</b></td>`
+      : '';
     return `<tr class="row-call ${isToday?'row-callback':''}" onclick="openCallScreen('${c.id}','${(c.name||'').replace(/['"<>&]/g,'')}')">
       <td class="${pCls}">${pIcon}</td>
       <td><b>${esc(c.name)}</b>${c.age?' · '+esc(c.age):''}${c.gender?' · '+esc(c.gender):''}</td>
@@ -372,6 +386,7 @@ async function loadCustomers() {
       <td style="font-size:10.5px;color:#94a3b8">${c.call_count||0}회</td>
       <td style="font-size:10.5px;color:#cbd5e1;max-width:180px" title="${noteEsc}">${notePreview}</td>
       <td style="font-size:10.5px;color:${isToday?'#fde047':'#94a3b8'}">${next}</td>
+      ${adminCols}
     </tr>`;
   }).join('');
 }
