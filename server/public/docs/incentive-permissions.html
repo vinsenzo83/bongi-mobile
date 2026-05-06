@@ -162,8 +162,10 @@ const MENUS = [
   { key: 'agents',       label: '👥 상담사 관리' },
   { key: 'products',     label: '📦 상품 관리' },
   { key: 'rules',        label: '⚙️ 정책 관리' },
+  { key: 'db-sources',   label: '🗂️ DB 출처' },
   { key: 'tm-counselor', label: '📞 TM 상담' },
   { key: 'tm-data',      label: '🧮 TM 데이터 관리' },
+  { key: 'guide',        label: '📖 급여 안내' },
   { key: 'permissions',  label: '🔐 권한 관리' },
 ];
 const ROLES = ['agent', 'manager', 'admin', 'contract'];
@@ -171,10 +173,10 @@ const ROLES = ['agent', 'manager', 'admin', 'contract'];
 const ADMIN_REQUIRED = new Set(['permissions', 'agents']);
 // 기본값 (DB 시드와 동일)
 const DEFAULTS = {
-  agent:    ['tm-counselor'],
-  manager:  ['dashboard', 'contract', 'tm-counselor', 'tm-data'],
-  admin:    ['dashboard', 'contract', 'agents', 'products', 'rules', 'tm-counselor', 'tm-data', 'permissions'],
-  contract: ['dashboard', 'contract'],
+  agent:    ['dashboard', 'tm-counselor', 'guide'],
+  manager:  ['dashboard', 'contract', 'tm-counselor', 'tm-data', 'guide'],
+  admin:    ['dashboard', 'contract', 'agents', 'products', 'rules', 'db-sources', 'tm-counselor', 'tm-data', 'permissions', 'guide'],
+  contract: ['dashboard', 'contract', 'guide'],
 };
 
 // ═══ 상태 ═══
