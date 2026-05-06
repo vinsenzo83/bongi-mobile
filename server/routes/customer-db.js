@@ -755,7 +755,11 @@ router.post('/recall', async (req, res) => {
 
     logAccess({
       user_id: req.user.id, action: 'recall', ip: req.ip, ua: req.get('user-agent'),
-      metadata: { count: recalled, agent_id, customer_ids: customer_ids?.length, status_filter, days_inactive, reason: String(reason).slice(0, 200) },
+      metadata: {
+        count: recalled, agent_id, status_filter, days_inactive,
+        customer_ids: Array.isArray(customer_ids) ? customer_ids.slice(0, 1000) : null, // 감사 추적용 — 회수된 콜 ID 자체
+        reason: String(reason).slice(0, 500),
+      },
     });
 
     res.json({ recalled, message: `${recalled.toLocaleString()}건 풀로 복귀` });
