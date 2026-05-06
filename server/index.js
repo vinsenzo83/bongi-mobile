@@ -222,13 +222,9 @@ app.get('/api/rental', (req, res) => {
 // 봉이 어드민 정적 파일 서빙 (리턴AI 고객 SPA 제거 — admin 서브도메인 전용)
 app.use('/docs', express.static(join(__dirname, 'public', 'docs')));
 app.use('/reports', express.static(join(__dirname, 'public', 'reports')));
-// root → 봉이 어드민 (catch-all)
-app.get('/', (req, res) => res.redirect(302, '/docs/incentive-admin.html'));
-app.get('*', (req, res, next) => {
-  // API·어드민 정적 경로 외엔 모두 어드민으로
-  if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/docs') || req.path.startsWith('/reports') || req.path.endsWith('.html')) return next();
-  res.redirect(302, '/docs/incentive-admin.html');
-});
+// root → 어드민 직접 서빙 (redirect 안 함 — URL 그대로 유지)
+const ADMIN_HTML = join(__dirname, 'public', 'docs', 'incentive-admin.html');
+app.get('/', (req, res) => res.sendFile(ADMIN_HTML));
 
 // 전역 에러 핸들러
 app.use(errorHandler);
