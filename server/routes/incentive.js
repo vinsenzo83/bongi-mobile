@@ -2137,6 +2137,14 @@ router.delete('/goals/:id(\\d+)', authenticateJWT, async (req, res) => {
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me || (me.role !== 'admin' && me.role !== 'manager')) return res.status(403).json({ error: 'admin·manager 전용' });
+    // manager는 본인 센터 상담사 목표만 삭제
+    if (me.role === 'manager') {
+      const { data: goal } = await supabase.from('incentive_monthly_goals')
+        .select('agent_id, agent:incentive_agents!incentive_monthly_goals_agent_id_fkey(center)')
+        .eq('id', req.params.id).single();
+      if (!goal) return res.status(404).json({ error: '목표 없음' });
+      if (goal.agent?.center !== me.center) return res.status(403).json({ error: '본인 센터 상담사만' });
+    }
     const { error } = await supabase.from('incentive_monthly_goals').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ ok: true });
