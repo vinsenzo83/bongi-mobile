@@ -219,33 +219,16 @@ app.get('/api/rental', (req, res) => {
   res.json({ count: items.length, items });
 });
 
-// 프로덕션: 클라이언트 정적 파일 서빙
-const clientDist = join(__dirname, '..', 'client', 'dist');
-if (existsSync(clientDist)) {
-  // admin·dev-admin 서브도메인은 root → 인센티브 어드민으로 redirect
-  app.get('/', (req, res, next) => {
-    const host = req.hostname || '';
-    if (host.startsWith('admin.') || host.startsWith('dev-admin.')) {
-      return res.redirect(302, '/docs/incentive-admin.html');
-    }
-    next();
-  });
-  // /docs, /reports 등은 서버 정적 파일 우선 (SPA보다 먼저)
-  app.use('/docs', express.static(join(__dirname, 'public', 'docs')));
-  app.use('/reports', express.static(join(__dirname, 'public', 'reports')));
-  app.use(express.static(clientDist));
-  app.get('*', (req, res, next) => {
-    // /admin/v5 는 React SPA로 처리 (V5 인센티브 어드민)
-    if (req.path.startsWith('/admin/v5')) {
-      return res.sendFile(join(clientDist, 'index.html'));
-    }
-    // API, 어드민(레거시), 정적 경로, .html 파일은 SPA가 처리하지 않음
-    if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/crm') || req.path.startsWith('/dashboard') || req.path.startsWith('/docs') || req.path.startsWith('/stores') || req.path.startsWith('/reports') || req.path.endsWith('.html')) {
-      return next();
-    }
-    res.sendFile(join(clientDist, 'index.html'));
-  });
-}
+// 봉이 어드민 정적 파일 서빙 (리턴AI 고객 SPA 제거 — admin 서브도메인 전용)
+app.use('/docs', express.static(join(__dirname, 'public', 'docs')));
+app.use('/reports', express.static(join(__dirname, 'public', 'reports')));
+// root → 봉이 어드민 (catch-all)
+app.get('/', (req, res) => res.redirect(302, '/docs/incentive-admin.html'));
+app.get('*', (req, res, next) => {
+  // API·어드민 정적 경로 외엔 모두 어드민으로
+  if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/docs') || req.path.startsWith('/reports') || req.path.endsWith('.html')) return next();
+  res.redirect(302, '/docs/incentive-admin.html');
+});
 
 // 전역 에러 핸들러
 app.use(errorHandler);

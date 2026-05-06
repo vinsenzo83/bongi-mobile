@@ -8,7 +8,6 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
-    "postinstall": "cd client && npm install",
     "build": "cd client && npm run build && cd .. && npm run sync:docs",
     "sync:docs": "mkdir -p server/public/docs && cp docs/*.html server/public/docs/",
     "start": "cd server && node index.js",
