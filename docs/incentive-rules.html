@@ -293,34 +293,118 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 
       <!-- 🏢 팀장(manager) 인센티브 V5.1 정책 -->
       <div class="section" style="background:linear-gradient(135deg,#1e3a8a,#0f172a);border:1.5px solid #3b82f6;margin-top:18px">
-        <h2 style="color:#93c5fd">🏢 팀장 인센티브 V5.1 (manager role)</h2>
+        <h2 style="color:#93c5fd;display:flex;justify-content:space-between;align-items:center">
+          <span>🏢 팀장 인센티브 V5.1 (manager role)</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(0,0,0,0.3);padding:6px 14px;border-radius:8px">
+            <input type="checkbox" id="f-mgr-enabled" style="width:18px;height:18px;cursor:pointer">
+            <span id="f-mgr-enabled-label" style="color:#fbbf24">활성</span>
+          </label>
+        </h2>
         <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.6">
-          본인 영업은 V5(agent와 동일) 적용 + <b style="color:#fbbf24">팀 오버라이드</b> 추가. 페널티는 오버라이드에만 적용.
+          본인 영업은 V5(agent와 동일) 적용 + <b style="color:#fbbf24">팀 오버라이드</b> 추가. 페널티는 오버라이드에만 적용.<br>
+          <span style="color:#94a3b8">⚙️ 비활성 시 팀장은 본인 영업 V5 정책만 적용 (오버라이드 0원)</span>
         </div>
         <div class="row" style="grid-template-columns:repeat(4, 1fr);gap:10px">
           <div class="field">
             <label>팀 오버라이드율 (0~1)</label>
             <input type="number" id="f-mgr-override" min="0" max="1" step="0.01" placeholder="0.12">
-            <div style="font-size:10px;color:#94a3b8;margin-top:3px">팀원 인센·보너스 합계 × 이 비율</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
+              <b style="color:#cbd5e1">팀원 인센+보너스 합계 × 이 비율</b><br>
+              예: 0.12 = 12%. 팀원 인센 100만원 → 12만원 raw 오버라이드<br>
+              <span style="color:#fbbf24">↑ 올리면 팀장 인센티브 증가 / 회사 부담 ↑</span>
+            </div>
           </div>
           <div class="field">
             <label>본인 영업 의무 건수</label>
             <input type="number" id="f-mgr-obligation" min="0" step="1" placeholder="20">
-            <div style="font-size:10px;color:#94a3b8;margin-top:3px">미달 시 페널티 발동</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
+              <b style="color:#cbd5e1">월 본인 'completed' 영업 최소 의무</b><br>
+              이상 → 100% / 미달 → 페널티 발동<br>
+              <span style="color:#fbbf24">↑ 올리면 페널티 발동 빈번 (압박 강화)</span>
+            </div>
           </div>
           <div class="field">
             <label>부분 페널티 임계 (50%)</label>
             <input type="number" id="f-mgr-partial" min="0" step="1" placeholder="10">
-            <div style="font-size:10px;color:#94a3b8;margin-top:3px">이 건수~의무-1 → 오버라이드 50%</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
+              <b style="color:#cbd5e1">"절반은 받을 수 있는 최소 영업 건수"</b><br>
+              이 건수 ~ 의무-1 → 50% 차감<br>
+              미만 → 0% (전액 미지급)<br>
+              <span style="color:#fbbf24">↑ 올리면 안전망 좁아짐 (0% 발동 빈번)</span>
+            </div>
           </div>
           <div class="field">
             <label>팀 영업이익률 임계 (0~1)</label>
             <input type="number" id="f-mgr-profit-rate" min="0" max="1" step="0.01" placeholder="0.20">
-            <div style="font-size:10px;color:#94a3b8;margin-top:3px">(매출-페이백)/매출 미달 시 0%</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
+              <b style="color:#cbd5e1">(팀 매출 − 팀 페이백) ÷ 팀 매출</b><br>
+              미달 시 본인 영업 무관하게 0% 강제<br>
+              <span style="color:#fbbf24">팀이 페이백 과다 시 팀장 책임 압박</span>
+            </div>
           </div>
         </div>
-        <div style="font-size:11px;color:#fde047;margin-top:10px;padding:8px 12px;background:rgba(251,191,36,0.08);border-radius:6px">
-          💡 페널티 매트릭스: 본인 영업 ≥ 의무 → 100% / 부분임계~의무-1 → 50% / 부분임계 미만 또는 팀이익률 미달 → 0%
+
+        <!-- 페널티 매트릭스 시각화 (입력값 실시간 반영) -->
+        <div style="margin-top:14px">
+          <div style="font-size:11px;color:#fde047;font-weight:800;margin-bottom:6px">📋 페널티 계수 매트릭스 (입력값 실시간 반영)</div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead>
+              <tr style="background:#0f172a;color:#fbbf24">
+                <th style="padding:6px 10px;border:1px solid #334155;text-align:left">본인 영업 (completed)</th>
+                <th style="padding:6px 10px;border:1px solid #334155">팀 영업이익률</th>
+                <th style="padding:6px 10px;border:1px solid #334155">계수</th>
+                <th style="padding:6px 10px;border:1px solid #334155">결과</th>
+              </tr>
+            </thead>
+            <tbody style="color:#cbd5e1">
+              <tr><td style="padding:5px 10px;border:1px solid #334155">≥ <b id="mtx-oblig-1">20</b>건</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center">≥ <b id="mtx-pr-1">20</b>%</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center;color:#86efac;font-weight:800">100%</td><td style="padding:5px 10px;border:1px solid #334155">정상 지급</td></tr>
+              <tr><td style="padding:5px 10px;border:1px solid #334155">≥ <b id="mtx-oblig-2">20</b>건</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center">&lt; <b id="mtx-pr-2">20</b>%</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center;color:#fca5a5;font-weight:800">0%</td><td style="padding:5px 10px;border:1px solid #334155">팀 부진 → 미지급</td></tr>
+              <tr><td style="padding:5px 10px;border:1px solid #334155"><b id="mtx-partial-1">10</b> ~ <b id="mtx-oblig-m1">19</b>건</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center">≥ <b id="mtx-pr-3">20</b>%</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center;color:#fbbf24;font-weight:800">50%</td><td style="padding:5px 10px;border:1px solid #334155">절반 차감</td></tr>
+              <tr><td style="padding:5px 10px;border:1px solid #334155"><b id="mtx-partial-2">10</b> ~ <b id="mtx-oblig-m2">19</b>건</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center">&lt; <b id="mtx-pr-4">20</b>%</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center;color:#fca5a5;font-weight:800">0%</td><td style="padding:5px 10px;border:1px solid #334155">두 페널티 동시 → 미지급</td></tr>
+              <tr><td style="padding:5px 10px;border:1px solid #334155">&lt; <b id="mtx-partial-3">10</b>건</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center">(무관)</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center;color:#fca5a5;font-weight:800">0%</td><td style="padding:5px 10px;border:1px solid #334155">본인 영업 부족 → 미지급</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 🧮 라이브 시뮬레이터 -->
+        <div style="margin-top:14px;padding:14px 16px;background:linear-gradient(135deg,#064e3b,#0f172a);border:1.5px solid #16a34a;border-radius:10px">
+          <div style="font-size:12px;color:#bbf7d0;font-weight:800;margin-bottom:10px">🧮 라이브 시뮬레이터 — 가상 데이터로 오버라이드 계산</div>
+          <div class="row" style="grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+            <div class="field">
+              <label style="font-size:10.5px;color:#86efac">팀원 인센·보너스 합계</label>
+              <input type="number" id="sim-team-inc" min="0" step="10000" value="800000" style="font-size:12px">
+            </div>
+            <div class="field">
+              <label style="font-size:10.5px;color:#86efac">본인 영업 건수</label>
+              <input type="number" id="sim-my-cnt" min="0" step="1" value="22" style="font-size:12px">
+            </div>
+            <div class="field">
+              <label style="font-size:10.5px;color:#86efac">팀 영업이익률 (%)</label>
+              <input type="number" id="sim-team-pr" min="0" max="100" step="1" value="28" style="font-size:12px">
+            </div>
+          </div>
+          <div id="sim-result" style="background:rgba(0,0,0,0.4);padding:10px 14px;border-radius:6px;font-size:12px;color:#e2e8f0;line-height:1.8;font-family:monospace">
+            -
+          </div>
+        </div>
+
+        <!-- 면제 안내 -->
+        <div style="margin-top:14px;padding:10px 14px;background:rgba(8,145,178,0.1);border:1px solid rgba(8,145,178,0.4);border-radius:6px;font-size:11px;color:#67e8f9;line-height:1.6">
+          <b style="color:#22d3ee">🛡 페널티 면제 (admin 승인)</b><br>
+          • <b>신입 OJT</b>: 신규 팀장 인계 기간 — 의무 건수 미달 정상 면제<br>
+          • <b>시스템 장애</b>: 회사 측 사유로 영업 불가 (장애 일수 보상)<br>
+          • <b>경조사</b>: 본인·가족 사유로 영업 부재 (경조 휴가 기간)<br>
+          → 면제 부여 시 페널티 무시 + <b>오버라이드 100% 지급</b><br>
+          → 적용 위치: <b>대시보드 → 🏢 팀장 인센티브 V5.1 관리 → [면제] 버튼</b>
+        </div>
+
+        <!-- 적용 흐름 -->
+        <div style="margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:6px;font-size:11px;color:#86efac;line-height:1.6">
+          <b style="color:#bbf7d0">⚙️ 정책 변경 적용 시점</b><br>
+          • 위 4개 수치 수정 + [💾 저장] → <b>즉시 DB 반영</b><br>
+          • 다음 settlement 호출부터 새 정책 적용 (Realtime 자동 갱신)<br>
+          • 정책 변경 이력은 <code>incentive_rules</code> notes 컬럼에 기록 권장<br>
+          • 비활성 토글 ON/OFF: 즉시 모든 manager 오버라이드 0원 (또는 정상)으로 전환
         </div>
       </div>
 
@@ -534,6 +618,66 @@ function loadActiveToForm(r) {
   document.getElementById('f-mgr-obligation').value = (r.manager_obligation_count != null) ? r.manager_obligation_count : 20;
   document.getElementById('f-mgr-partial').value = (r.manager_penalty_partial_min != null) ? r.manager_penalty_partial_min : 10;
   document.getElementById('f-mgr-profit-rate').value = (r.manager_team_profit_rate_min != null) ? r.manager_team_profit_rate_min : 0.20;
+  document.getElementById('f-mgr-enabled').checked = (r.manager_v51_enabled !== false);
+  updateMgrUi();
+}
+
+function updateMgrUi() {
+  const ov = parseFloat(document.getElementById('f-mgr-override').value) || 0;
+  const oblig = parseInt(document.getElementById('f-mgr-obligation').value) || 0;
+  const partial = parseInt(document.getElementById('f-mgr-partial').value) || 0;
+  const pr = parseFloat(document.getElementById('f-mgr-profit-rate').value) || 0;
+  const enabled = document.getElementById('f-mgr-enabled').checked;
+  // 토글 라벨
+  const labelEl = document.getElementById('f-mgr-enabled-label');
+  if (labelEl) {
+    labelEl.textContent = enabled ? '활성' : '비활성';
+    labelEl.style.color = enabled ? '#86efac' : '#fca5a5';
+  }
+  // 매트릭스
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('mtx-oblig-1', oblig); set('mtx-oblig-2', oblig);
+  set('mtx-oblig-m1', oblig - 1); set('mtx-oblig-m2', oblig - 1);
+  set('mtx-partial-1', partial); set('mtx-partial-2', partial); set('mtx-partial-3', partial);
+  const prPct = (pr * 100).toFixed(0);
+  set('mtx-pr-1', prPct); set('mtx-pr-2', prPct); set('mtx-pr-3', prPct); set('mtx-pr-4', prPct);
+  // 시뮬레이터 재계산
+  runSim();
+}
+
+function runSim() {
+  const ov = parseFloat(document.getElementById('f-mgr-override').value) || 0;
+  const oblig = parseInt(document.getElementById('f-mgr-obligation').value) || 0;
+  const partial = parseInt(document.getElementById('f-mgr-partial').value) || 0;
+  const prMin = parseFloat(document.getElementById('f-mgr-profit-rate').value) || 0;
+  const enabled = document.getElementById('f-mgr-enabled').checked;
+  const teamInc = parseInt(document.getElementById('sim-team-inc').value) || 0;
+  const myCnt = parseInt(document.getElementById('sim-my-cnt').value) || 0;
+  const teamPr = (parseFloat(document.getElementById('sim-team-pr').value) || 0) / 100;
+  const fmt = n => Math.round(n).toLocaleString();
+  const resEl = document.getElementById('sim-result');
+  if (!enabled) {
+    resEl.innerHTML = '<span style="color:#fca5a5">⚠️ V5.1 비활성 — 오버라이드 계산 안 됨 (0원)</span>';
+    return;
+  }
+  const raw = teamInc * ov;
+  let factor = 1, reason = '정상 지급 (의무 충족 + 팀 이익률 충족)', color = '#86efac';
+  if (myCnt < partial) {
+    factor = 0; reason = `본인 영업 ${myCnt}건 < 부분임계 ${partial}건 → 미지급`; color = '#fca5a5';
+  } else if (myCnt < oblig) {
+    if (teamPr < prMin) { factor = 0; reason = `본인 영업 ${myCnt}건 (의무 ${oblig} 미달) + 팀 이익률 미달 → 미지급`; color = '#fca5a5'; }
+    else { factor = 0.5; reason = `본인 영업 ${myCnt}건 (의무 ${oblig} 미달) → 50% 차감`; color = '#fbbf24'; }
+  } else {
+    if (teamPr < prMin) { factor = 0; reason = `팀 영업이익률 ${(teamPr*100).toFixed(1)}% < ${(prMin*100).toFixed(0)}% → 미지급`; color = '#fca5a5'; }
+  }
+  const final = Math.round(raw * factor);
+  resEl.innerHTML = `
+    <div>① 팀원 인센·보너스 합계: <b>${fmt(teamInc)}</b>원</div>
+    <div>② 오버라이드 raw: ${fmt(teamInc)} × ${(ov*100).toFixed(0)}% = <b>${fmt(raw)}</b>원</div>
+    <div>③ 페널티 계수: <b style="color:${color}">${(factor*100).toFixed(0)}%</b> ← ${reason}</div>
+    <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #334155">
+      ④ <b>최종 오버라이드 = ${fmt(raw)} × ${(factor*100).toFixed(0)}% = <span style="color:${color};font-size:14px">${fmt(final)}</span>원</b>
+    </div>`;
 }
 
 function collectForm() {
@@ -566,8 +710,20 @@ function collectForm() {
     manager_obligation_count: parseInt(document.getElementById('f-mgr-obligation').value) || 0,
     manager_penalty_partial_min: parseInt(document.getElementById('f-mgr-partial').value) || 0,
     manager_team_profit_rate_min: parseFloat(document.getElementById('f-mgr-profit-rate').value) || 0,
+    manager_v51_enabled: !!document.getElementById('f-mgr-enabled').checked,
   };
 }
+
+// 입력 이벤트 → 매트릭스/시뮬레이터 실시간 반영
+['f-mgr-override','f-mgr-obligation','f-mgr-partial','f-mgr-profit-rate','f-mgr-enabled'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', updateMgrUi);
+  if (el) el.addEventListener('change', updateMgrUi);
+});
+['sim-team-inc','sim-my-cnt','sim-team-pr'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', runSim);
+});
 
 async function saveCurrent() {
   if (!_activeRule) { alert('활성 정책 없음'); return; }

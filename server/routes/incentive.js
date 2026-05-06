@@ -1037,7 +1037,8 @@ router.patch('/rules/:id', authenticateJWT, async (req, res) => {
       'payback_company_limit', 'payback_max', 'grade_rates', 'grade_thresholds',
       'premium_margin_threshold', 'active', 'notes',
       'manager_override_rate', 'manager_obligation_count',
-      'manager_penalty_partial_min', 'manager_team_profit_rate_min'];
+      'manager_penalty_partial_min', 'manager_team_profit_rate_min',
+      'manager_v51_enabled'];
     const update = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
 
