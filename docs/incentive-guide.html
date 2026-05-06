@@ -62,8 +62,28 @@ td { font-size:12px; color:#e2e8f0; padding:10px 12px; border-bottom:1px solid #
 <div class="wrap">
   <header>
     <h1>💵 봉이 인센티브 급여 안내</h1>
-    <div class="subtitle">상담사 포인트 제도 · 급여 체계 한눈 정리</div>
+    <div class="subtitle">상담사 · 팀장 급여 체계 정리 (V5.1)</div>
   </header>
+
+  <!-- role 분리 안내 -->
+  <div class="section" style="background:linear-gradient(135deg,#0c4a6e,#0f172a);border:1.5px solid #0891b2">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="background:rgba(0,0,0,0.3);padding:12px 16px;border-radius:10px;border-left:4px solid #3b82f6">
+        <div style="font-size:13px;font-weight:800;color:#93c5fd;margin-bottom:6px">👤 상담사 (agent)</div>
+        <div style="font-size:11.5px;color:#cbd5e1;line-height:1.7">
+          <b>본인 영업 인센티브만</b> (V5 정책)<br>
+          → 등급 P × 단가 + 우수 보너스 − 페이백
+        </div>
+      </div>
+      <div style="background:rgba(0,0,0,0.3);padding:12px 16px;border-radius:10px;border-left:4px solid #fbbf24">
+        <div style="font-size:13px;font-weight:800;color:#fde047;margin-bottom:6px">🏢 팀장 (manager)</div>
+        <div style="font-size:11.5px;color:#cbd5e1;line-height:1.7">
+          <b>본인 영업 V5</b> + <b>팀 오버라이드 V5.1</b><br>
+          → 본인 인센티브 + (팀원 인센 × <span id="hint-override-rate">12</span>%) − 페널티
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- 1. 기본급 -->
   <div class="section">
@@ -192,6 +212,92 @@ td { font-size:12px; color:#e2e8f0; padding:10px 12px; border-bottom:1px solid #
     </div>
   </div>
 
+  <!-- 🏢 팀장 전용 정책 -->
+  <div class="section" style="background:linear-gradient(135deg,#7c2d12,#1e293b);border:2px solid #fbbf24;margin-top:28px">
+    <h2 style="color:#fde047;font-size:17px">🏢 팀장(manager) 추가 정책 — V5.1</h2>
+    <div style="font-size:12px;color:#fde68a;margin-bottom:16px;line-height:1.7;padding:10px 14px;background:rgba(0,0,0,0.3);border-radius:8px">
+      <b>팀장은 위 ①~⑨ (상담사 정책)을 본인 영업에 그대로 적용</b>받고, 추가로 아래 <b>팀 오버라이드</b>를 받습니다.<br>
+      페널티는 <b>오버라이드에만 적용</b>되며, 본인 인센티브는 영향 없습니다.
+    </div>
+
+    <!-- A. 팀 오버라이드 -->
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:8px">Ⓐ 팀 오버라이드 (Team Override)</h2>
+    <div class="formula-box" style="background:#0a0f1c;margin-bottom:14px">
+      <span class="total">팀 오버라이드</span> =<br>
+      &nbsp;&nbsp;<span class="var">팀원 인센·보너스 합계</span> × <span class="num" id="mgr-rate">12</span>%<br>
+      &nbsp;&nbsp;× <span class="var" style="color:#fca5a5">페널티 계수</span> (0% / 50% / 100%)
+    </div>
+    <ul class="bonus-list" style="margin-bottom:8px">
+      <li>• <b>팀원 정의</b>: 같은 센터의 <b>role=agent + active</b> 상담사 (본인은 제외)</li>
+      <li>• <b>합계 기준</b>: 각 팀원의 (인센티브 + 우수 보너스) — 본인 인센티브는 산정 제외</li>
+      <li>• <b>지급 시점</b>: 팀원이 영업을 'completed' 상태로 등록 → 즉시 반영</li>
+    </ul>
+
+    <!-- B. 페널티 매트릭스 -->
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓑ 페널티 매트릭스</h2>
+    <table>
+      <thead><tr><th>본인 영업 (completed)</th><th>팀 영업이익률</th><th>페널티 계수</th><th>오버라이드 지급</th></tr></thead>
+      <tbody>
+        <tr><td>≥ <span id="mgr-oblig">20</span>건 (의무 충족)</td><td>≥ <span id="mgr-prmin">20</span>%</td><td><b style="color:#86efac">100%</b></td><td>정상 지급</td></tr>
+        <tr><td>≥ 의무 건수</td><td>&lt; <span id="mgr-prmin2">20</span>%</td><td><b style="color:#fca5a5">0%</b></td><td>미지급</td></tr>
+        <tr><td><span id="mgr-partial">10</span> ~ 의무-1 건</td><td>≥ 임계</td><td><b style="color:#fbbf24">50%</b></td><td>절반 차감</td></tr>
+        <tr><td>10 ~ 의무-1 건</td><td>&lt; 임계</td><td><b style="color:#fca5a5">0%</b></td><td>미지급</td></tr>
+        <tr><td>&lt; <span id="mgr-partial2">10</span>건</td><td>(무관)</td><td><b style="color:#fca5a5">0%</b></td><td>미지급</td></tr>
+      </tbody>
+    </table>
+
+    <!-- C. 팀 영업이익률 -->
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓒ 팀 영업이익률 정의</h2>
+    <div class="formula-box" style="background:#0a0f1c">
+      <span class="total">팀 영업이익률</span> =<br>
+      &nbsp;&nbsp;(<span class="var">팀 매출</span> − <span class="var" style="color:#fca5a5">팀 페이백</span>) ÷ <span class="var">팀 매출</span><br>
+      &nbsp;&nbsp;※ 팀원 5명 매출·페이백 합계 기준 (본인 제외)<br>
+      &nbsp;&nbsp;※ <span class="num" id="mgr-prmin3">20</span>% 미달 시 오버라이드 0%
+    </div>
+
+    <!-- D. 면제 조건 -->
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓓ 페널티 면제 조건</h2>
+    <ul class="bonus-list">
+      <li>🛡 <b>신입 OJT</b>: 신규 팀장 인계 기간</li>
+      <li>🛡 <b>시스템 장애</b>: 회사 측 사유로 영업 불가</li>
+      <li>🛡 <b>경조사</b>: 본인·가족 사유로 영업 부재</li>
+      <li style="color:#94a3b8">※ admin 승인 후 해당 월에만 적용 — 면제 시 페널티 무시 + 오버라이드 100% 지급</li>
+    </ul>
+
+    <!-- E. KPI 보너스 -->
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓔ KPI 보너스</h2>
+    <div class="tip-box">없음 (V5.1) — 향후 정책 변경 시 별도 공지</div>
+
+    <!-- F. 계산 예시 -->
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓕ 계산 예시</h2>
+    <div style="font-size:12px;color:#fde68a;margin-bottom:8px">조건: 본인 영업 22건 / 본인 G2 (20P, 우수 5건) / 팀원 5명 인센 합계 800,000원 / 팀 영업이익률 28%</div>
+    <div class="example-row"><div class="label">본인 기본급</div><div class="calc">incentive_agents.base_salary</div><div class="val">2,800,000</div></div>
+    <div class="example-row"><div class="label">본인 인센티브</div><div class="calc">20P × 30,000</div><div class="val">+ 600,000</div></div>
+    <div class="example-row"><div class="label">본인 보너스</div><div class="calc">5건 × 10,000</div><div class="val">+ 50,000</div></div>
+    <div class="example-row"><div class="label">🏢 팀 오버라이드</div><div class="calc">800,000 × 12% × 100% (의무 충족)</div><div class="val" style="color:#fde047">+ 96,000</div></div>
+    <div class="example-row"><div class="label">본인 페이백</div><div class="calc">없음</div><div class="val">− 0</div></div>
+    <div class="example-row last"><div class="label">총 수령액</div><div class="calc"></div><div class="val">3,546,000원</div></div>
+
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓕ-2 페널티 발동 예시 (본인 영업 부족)</h2>
+    <div style="font-size:12px;color:#fde68a;margin-bottom:8px">조건: 본인 영업 12건 (의무 20 미달, 부분임계 10 충족) / 팀원 인센 합계 800,000원 / 팀 이익률 28%</div>
+    <div class="example-row"><div class="label">본인 기본급+인센</div><div class="calc">정상</div><div class="val">3,450,000</div></div>
+    <div class="example-row"><div class="label">🏢 팀 오버라이드</div><div class="calc">800,000 × 12% × 50% (부분 페널티)</div><div class="val" style="color:#fbbf24">+ 48,000</div></div>
+    <div class="example-row last"><div class="label">총 수령액</div><div class="calc"></div><div class="val">3,498,000원</div></div>
+
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓕ-3 미지급 예시 (본인 영업 < 10건)</h2>
+    <div style="font-size:12px;color:#fde68a;margin-bottom:8px">조건: 본인 영업 5건 (10건 미만) / 팀원 인센 1,000,000원</div>
+    <div class="example-row"><div class="label">본인 기본급+인센</div><div class="calc">정상</div><div class="val">3,000,000</div></div>
+    <div class="example-row"><div class="label">🏢 팀 오버라이드</div><div class="calc">1,000,000 × 12% × 0% — 미지급</div><div class="val" style="color:#fca5a5">+ 0</div></div>
+    <div class="example-row last"><div class="label">총 수령액</div><div class="calc"></div><div class="val">3,000,000원</div></div>
+
+    <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.4);border-radius:8px;padding:12px 16px;margin-top:18px;font-size:12px;color:#fde047;line-height:1.7">
+      💡 <b>팀장 행동 가이드</b><br>
+      • 본인 영업 의무(<span id="mgr-oblig2">20</span>건) 우선 달성 → 페널티 회피<br>
+      • 팀원 매출 ↑ + 페이백 ↓ 코칭으로 팀 이익률 <span id="mgr-prmin4">20</span>% 이상 유지<br>
+      • 본인 영업 부족 시 부분 페널티 (50% 차감) → 오버라이드 손실 큼
+    </div>
+  </div>
+
   <div style="text-align:center;font-size:11px;color:#64748b;margin-top:20px;padding:14px">
     <span id="rules-version">정책 버전 V5</span> · 마지막 업데이트 <span id="rules-effective">-</span>
   </div>
@@ -242,6 +348,24 @@ async function loadRules() {
       document.getElementById('payback-max').textContent = v;
       document.getElementById('payback-max2').textContent = v;
     }
+    // 🏢 팀장 V5.1 정책 (manager_*)
+    const ovRate = (r.manager_override_rate != null) ? r.manager_override_rate : 0.12;
+    const oblig = (r.manager_obligation_count != null) ? r.manager_obligation_count : 20;
+    const partial = (r.manager_penalty_partial_min != null) ? r.manager_penalty_partial_min : 10;
+    const prMin = (r.manager_team_profit_rate_min != null) ? r.manager_team_profit_rate_min : 0.20;
+    const ovPct = (parseFloat(ovRate) * 100).toFixed(0);
+    const prPct = (parseFloat(prMin) * 100).toFixed(0);
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setText('hint-override-rate', ovPct);
+    setText('mgr-rate', ovPct);
+    setText('mgr-oblig', oblig);
+    setText('mgr-oblig2', oblig);
+    setText('mgr-partial', partial);
+    setText('mgr-partial2', partial);
+    setText('mgr-prmin', prPct);
+    setText('mgr-prmin2', prPct);
+    setText('mgr-prmin3', prPct);
+    setText('mgr-prmin4', prPct);
     // 버전
     if (r.version) document.getElementById('rules-version').textContent = '정책 버전 ' + r.version;
     if (r.effective_from) document.getElementById('rules-effective').textContent = r.effective_from;
