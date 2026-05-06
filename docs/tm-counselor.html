@@ -573,7 +573,7 @@ async function initQueueSide() {
     const r = await fetch('/api/incentive/agents/me', { headers: { Authorization: 'Bearer ' + tk } });
     if (!r.ok) return;
     const me = (await r.json()).agent;
-    if (!me || (me.role !== 'agent' && me.role !== 'manager')) return;
+    if (!me || (me.role !== 'agent' && me.role !== 'manager' && me.role !== 'admin')) return;
     document.body.classList.add('queue-side-active');
     // 접힘 상태 복원
     if (localStorage.getItem('cq-side-collapsed') === '1') {
