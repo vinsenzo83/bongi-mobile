@@ -1740,6 +1740,29 @@ router.get('/sales-history', authenticateJWT, async (req, res) => {
   }
 });
 
+// GET /api/incentive/manager-overrides?month=YYYY-MM — 모든 manager의 V5.1 오버라이드 (admin)
+router.get('/manager-overrides', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const ym = req.query.month || new Date().toISOString().slice(0, 7);
+    const { data: managers } = await supabase
+      .from('incentive_agents')
+      .select('id, name, center, base_salary, user_id')
+      .eq('role', 'manager').eq('active', true);
+    const out = [];
+    for (const m of (managers || [])) {
+      const { data, error } = await supabase.rpc('incentive_calc_manager_override', {
+        p_agent_id: m.id, p_year_month: ym,
+      });
+      if (error) continue;
+      const ov = Array.isArray(data) ? (data[0] || null) : data;
+      out.push({ agent: m, override: ov });
+    }
+    res.json({ month: ym, managers: out });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ═══════════════════════════════════════════════════════════════
 // V5.1 Manager 면제 관리
 // ═══════════════════════════════════════════════════════════════

@@ -365,6 +365,21 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       </div>
     </div>
 
+    <!-- admin 전용: 팀장 인센티브 V5.1 관리 -->
+    <div class="section financial-deep">
+      <h2>🏢 팀장 인센티브 V5.1 관리 <span style="font-size:10px;color:#94a3b8;font-weight:400">— admin 전용 (오버라이드·페널티·면제)</span></h2>
+      <table id="mgr-list-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>센터</th><th>팀장</th><th>본인 영업</th><th>팀 인센 합계</th>
+            <th>오버라이드(정상)</th><th>페널티</th><th>최종 지급</th><th>팀 이익률</th><th>상태</th><th>면제</th>
+          </tr>
+        </thead>
+        <tbody id="mgr-list-tbody"><tr><td colspan="10" style="text-align:center;color:#64748b;padding:20px">로딩 중...</td></tr></tbody>
+      </table>
+      <div style="font-size:10.5px;color:#94a3b8;margin-top:10px">💡 면제 토글 클릭 → 사유 입력 → 즉시 오버라이드 100% 지급으로 전환</div>
+    </div>
+
     <!-- admin 전용: 센터별 KPI 분리 (financial-deep로 admin만 표시) -->
     <div class="section financial-deep">
       <h2>🏢 센터별 KPI <span style="font-size:10px;color:#94a3b8;font-weight:400">— admin 전용</span></h2>
@@ -660,6 +675,85 @@ function renderKpi(o) {
 
   // admin 전용: 센터별 KPI 표 (financial-deep CSS로 manager 등은 자동 숨김)
   renderCenterKpiTable(o.settlements || []);
+  // admin 전용: 팀장 인센티브 관리 표
+  if (_myRole === 'admin') loadManagerOverridesList();
+}
+
+async function loadManagerOverridesList() {
+  const tbody = document.getElementById('mgr-list-tbody');
+  if (!tbody) return;
+  const tk = getToken(); if (!tk) return;
+  const month = document.getElementById('filter-month').value;
+  try {
+    const res = await fetch(API + '/manager-overrides?month=' + month, { headers: { Authorization: 'Bearer ' + tk }});
+    if (!res.ok) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#fca5a5;padding:20px">로드 실패</td></tr>'; return; }
+    const { managers } = await res.json();
+    if (!Array.isArray(managers) || !managers.length) {
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:20px">활성 팀장 없음</td></tr>';
+      return;
+    }
+    const fmt = v => Number(v || 0).toLocaleString();
+    tbody.innerHTML = managers.map(({ agent, override: o }) => {
+      if (!o) return '';
+      const factor = parseFloat(o.penalty_factor) || 0;
+      const status = o.exempted
+        ? '<span style="background:#0891b2;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800">🛡 면제</span>'
+        : (factor >= 1 ? '<span style="background:#16a34a;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800">✅ 정상</span>'
+          : (factor > 0 ? '<span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800">⚠️ 50%</span>'
+            : '<span style="background:#dc2626;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800">🚨 미지급</span>'));
+      const exemptBtn = o.exempted
+        ? `<button class="btn-danger" data-act="unexempt" data-aid="${agent.id}" style="background:#dc2626;color:#fff;border:none;padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer">해제</button>`
+        : `<button class="btn-secondary" data-act="exempt" data-aid="${agent.id}" data-name="${agent.name}" style="background:#0891b2;color:#fff;border:none;padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer">면제</button>`;
+      const prVal = (parseFloat(o.team_profit_rate) * 100).toFixed(1);
+      return `<tr>
+        <td><b style="color:#a5b4fc">${agent.center || '-'}</b></td>
+        <td><b>${agent.name}</b></td>
+        <td>${o.my_completed_count}건<div style="font-size:9px;color:#64748b">의무 ${o.obligation_count}</div></td>
+        <td>${fmt(o.team_incentive_sum)}<div style="font-size:9px;color:#64748b">팀원 ${o.team_count}명</div></td>
+        <td>${fmt(o.override_raw)}</td>
+        <td><b style="color:${factor >= 1 ? '#86efac' : (factor > 0 ? '#fbbf24' : '#fca5a5')}">${(factor * 100).toFixed(0)}%</b></td>
+        <td><b style="color:#86efac">${fmt(o.override_final)}</b></td>
+        <td>${prVal}%<div style="font-size:9px;color:#64748b">임계 ${(parseFloat(o.team_profit_rate_min)*100).toFixed(0)}%</div></td>
+        <td>${status}<div style="font-size:9px;color:#94a3b8;margin-top:2px;max-width:200px;white-space:normal">${o.penalty_reason || ''}</div></td>
+        <td>${exemptBtn}</td>
+      </tr>`;
+    }).join('');
+    // 면제 토글 이벤트
+    tbody.querySelectorAll('button[data-act]').forEach(btn => {
+      btn.addEventListener('click', async (ev) => {
+        const act = btn.dataset.act;
+        const aid = btn.dataset.aid;
+        const name = btn.dataset.name || '';
+        if (act === 'exempt') {
+          const reason = prompt(`${name} 매니저의 ${month} 면제 사유 (예: OJT, 시스템 장애, 경조사)`);
+          if (!reason) return;
+          const r = await fetch(API + '/manager-exemptions', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', Authorization:'Bearer ' + tk },
+            body: JSON.stringify({ agent_id: aid, year_month: month, reason }),
+          });
+          if (!r.ok) { alert('면제 실패: ' + (await r.text())); return; }
+          showToast('🛡 면제 부여 완료');
+          loadManagerOverridesList();
+        } else if (act === 'unexempt') {
+          if (!confirm('면제를 해제하시겠습니까? (페널티 다시 발동될 수 있음)')) return;
+          // 해당 agent × month 면제 row 찾기
+          const r1 = await fetch(API + '/manager-exemptions?month=' + month + '&agent_id=' + aid, { headers: { Authorization:'Bearer ' + tk }});
+          const data = await r1.json();
+          const ex = (data.exemptions || [])[0];
+          if (!ex) { alert('면제 정보 없음'); return; }
+          const r = await fetch(API + '/manager-exemptions/' + ex.id, {
+            method: 'DELETE', headers: { Authorization:'Bearer ' + tk },
+          });
+          if (!r.ok) { alert('해제 실패'); return; }
+          showToast('🚫 면제 해제 완료');
+          loadManagerOverridesList();
+        }
+      });
+    });
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#fca5a5;padding:20px">' + e.message + '</td></tr>';
+  }
 }
 
 function renderCenterKpiTable(settlements) {
