@@ -2055,4 +2055,92 @@ router.get('/role-permissions/history', authenticateJWT, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// 🎯 월간 목표 (incentive_monthly_goals)
+// ═══════════════════════════════════════════════════════════════
+
+// GET /goals?ym=2026-05[&agent_id=...]
+router.get('/goals', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+    const ym = req.query.ym || new Date().toISOString().slice(0, 7);
+    let q = supabase.from('incentive_monthly_goals')
+      .select('*, agent:incentive_agents!incentive_monthly_goals_agent_id_fkey(id, name, role, center)')
+      .eq('ym', ym);
+    if (me.role === 'agent') q = q.eq('agent_id', me.id);
+    else if (me.role === 'manager') {
+      const { data: members } = await supabase.from('incentive_agents').select('id').eq('center', me.center).eq('active', true);
+      q = q.in('agent_id', (members || []).map(x => x.id));
+    }
+    if (req.query.agent_id) q = q.eq('agent_id', req.query.agent_id);
+    const { data, error } = await q;
+    if (error) throw error;
+
+    const ymStart = ym + '-01';
+    const next = new Date(ymStart); next.setMonth(next.getMonth() + 1);
+    const ymEnd = next.toISOString().slice(0, 10);
+
+    const goals = await Promise.all((data || []).map(async (g) => {
+      const aid = g.agent_id;
+      const [callsResp, convResp, salesResp] = await Promise.all([
+        supabase.from('incentive_call_log').select('id', { count:'exact', head:true })
+          .eq('agent_id', aid).gte('called_at', ymStart).lt('called_at', ymEnd),
+        supabase.from('incentive_customer_db').select('id', { count:'exact', head:true })
+          .eq('assigned_agent_id', aid).eq('call_status', 'converted').gte('updated_at', ymStart).lt('updated_at', ymEnd),
+        supabase.from('incentive_sales').select('points').eq('agent_id', aid).eq('ym', ym),
+      ]);
+      const points = (salesResp.data || []).reduce((s, r) => s + (Number(r.points) || 0), 0);
+      const callsActual = callsResp.count || 0;
+      const convActual = convResp.count || 0;
+      return {
+        ...g,
+        actual: { calls: callsActual, conversions: convActual, points },
+        progress: {
+          calls: g.target_calls > 0 ? Math.round(callsActual / g.target_calls * 100) : 0,
+          conversions: g.target_conversions > 0 ? Math.round(convActual / g.target_conversions * 100) : 0,
+          points: g.target_points > 0 ? Math.round(points / g.target_points * 100) : 0,
+        },
+      };
+    }));
+    res.json({ ym, goals });
+  } catch (e) { console.error('[goals list]', e); res.status(500).json({ error: e.message }); }
+});
+
+// POST /goals — upsert (manager·admin)
+router.post('/goals', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || (me.role !== 'admin' && me.role !== 'manager')) return res.status(403).json({ error: 'admin·manager 전용' });
+    const { agent_id, ym, target_calls = 0, target_conversions = 0, target_points = 0, notes } = req.body || {};
+    if (!agent_id || !ym) return res.status(400).json({ error: 'agent_id, ym 필수' });
+    if (!/^[0-9]{4}-[0-9]{2}$/.test(ym)) return res.status(400).json({ error: 'ym 형식 YYYY-MM' });
+    if (me.role === 'manager') {
+      const { data: target } = await supabase.from('incentive_agents').select('center').eq('id', agent_id).single();
+      if (!target || target.center !== me.center) return res.status(403).json({ error: '본인 센터 상담사만' });
+    }
+    const { data, error } = await supabase.from('incentive_monthly_goals').upsert({
+      agent_id, ym,
+      target_calls: parseInt(target_calls) || 0,
+      target_conversions: parseInt(target_conversions) || 0,
+      target_points: parseFloat(target_points) || 0,
+      notes: (notes || '').slice(0, 500),
+      created_by: req.user.id, updated_at: new Date().toISOString(),
+    }, { onConflict: 'agent_id,ym' }).select().single();
+    if (error) throw error;
+    res.json({ goal: data });
+  } catch (e) { console.error('[goals upsert]', e); res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /goals/:id
+router.delete('/goals/:id(\\d+)', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || (me.role !== 'admin' && me.role !== 'manager')) return res.status(403).json({ error: 'admin·manager 전용' });
+    const { error } = await supabase.from('incentive_monthly_goals').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;
