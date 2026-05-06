@@ -162,10 +162,19 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
     <input type="text" id="g-auth-totp" placeholder="🔑 2FA 코드 (활성 사용자만)" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="display:none;letter-spacing:0.3em;text-align:center;font-family:monospace;font-size:14px">
     <button id="g-auth-login-btn">로그인</button>
     <div class="auth-msg" id="g-auth-msg"></div>
-    <div class="auth-hint">
+    <div class="auth-hint" id="g-auth-hint">
       manager / admin / agent / contract 권한.<br>
-      테스트: <code>manager1@bongi.test</code> / <code>admin1@bongi.test</code> / <code>agent1@bongi.test</code> (비번 <code>pass1234!</code>)
+      <span id="g-auth-hint-accounts"></span>
     </div>
+    <script>
+      (function() {
+        const isDev = location.hostname.includes('dev-admin') || location.hostname.includes('staging');
+        const domain = isDev ? 'bongi.dev' : 'bongi.test';
+        const envLabel = isDev ? '데브' : '라이브';
+        document.getElementById('g-auth-hint-accounts').innerHTML =
+          `<b>${envLabel}</b> 테스트: <code>admin1@${domain}</code> / <code>manager1@${domain}</code> / <code>agent1@${domain}</code> (비번 <code>pass1234!</code>)`;
+      })();
+    </script>
   </div>
 </div>
 
