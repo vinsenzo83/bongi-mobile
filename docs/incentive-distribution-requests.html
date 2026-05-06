@@ -302,7 +302,7 @@ async function submitRequest() {
   showToast(`📨 ${count}건 요청 제출됨`);
   loadRequests();
   // 부모(통합 어드민)에 배지 갱신 신호
-  try { window.parent.postMessage({ type:'distribution-request-updated' }, '*'); } catch {}
+  try { window.parent.postMessage({ type:'distribution-request-updated' }, location.origin); } catch {}
 }
 
 function openApproveModal(id, requested) {
@@ -328,7 +328,7 @@ async function confirmApprove() {
   closeApproveModal();
   showToast(`✅ ${d.distributed}건 분배 완료`);
   loadRequests();
-  try { window.parent.postMessage({ type:'distribution-request-updated' }, '*'); } catch {}
+  try { window.parent.postMessage({ type:'distribution-request-updated' }, location.origin); } catch {}
 }
 
 function openRejectModal(id) {
@@ -353,7 +353,7 @@ async function confirmReject() {
   closeRejectModal();
   showToast('❌ 거부됨');
   loadRequests();
-  try { window.parent.postMessage({ type:'distribution-request-updated' }, '*'); } catch {}
+  try { window.parent.postMessage({ type:'distribution-request-updated' }, location.origin); } catch {}
 }
 
 async function cancelReq(id) {
@@ -362,7 +362,7 @@ async function cancelReq(id) {
   if (!r.ok) { const d = await r.json(); showToast('❌ ' + (d.error || r.status), false); return; }
   showToast('🚫 취소됨');
   loadRequests();
-  try { window.parent.postMessage({ type:'distribution-request-updated' }, '*'); } catch {}
+  try { window.parent.postMessage({ type:'distribution-request-updated' }, location.origin); } catch {}
 }
 
 init();

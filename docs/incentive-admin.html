@@ -440,7 +440,7 @@ function gLoadTab(btn) {
     loading.style.display = 'none';
     // query만 다르면 iframe 안에 postMessage로 통보 (재로드 X)
     if (src.includes('?')) {
-      try { iframe.contentWindow.postMessage({ type:'iframe-navigate', src }, '*'); } catch(e) {}
+      try { iframe.contentWindow.postMessage({ type:'iframe-navigate', src }, location.origin); } catch(e) {}
     }
     return;
   }
