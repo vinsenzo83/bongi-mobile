@@ -55,6 +55,30 @@ async function fetchAgent() {
   return (await res.json()).agent;
 }
 
+// 🚀 GET 캐싱 — 5분 (settlement/rules/contracts 등 자주 읽히는 데이터)
+const _apiCache = new Map();
+const _CACHE_TTL = 5 * 60 * 1000;
+async function apiGetCached(path, ttl) {
+  const key = path;
+  const now = Date.now();
+  const ttlMs = ttl != null ? ttl : _CACHE_TTL;
+  const c = _apiCache.get(key);
+  if (c && c.expiresAt > now) return c.data;
+  const tk = getToken();
+  const res = await fetch(API + path, { headers: { Authorization: 'Bearer ' + tk }});
+  if (res.status === 401 && await tryRefreshToken()) {
+    return apiGetCached(path, ttl);
+  }
+  if (!res.ok) return null;
+  const data = await res.json();
+  _apiCache.set(key, { data, expiresAt: now + ttlMs });
+  return data;
+}
+function apiCacheInvalidate(prefix) {
+  if (!prefix) { _apiCache.clear(); return; }
+  for (const k of Array.from(_apiCache.keys())) if (k.startsWith(prefix)) _apiCache.delete(k);
+}
+
 // API 호출 헬퍼 — 401 시 자동 refresh + 재시도
 async function apiCall(method, path, body) {
   const tk = getToken();

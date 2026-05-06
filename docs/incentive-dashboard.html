@@ -1070,10 +1070,14 @@ async function loadAgentSection(month) {
   const tk = getToken(); if (!tk) return;
   document.getElementById('agent-kpi-sub').textContent = '· ' + month;
   try {
+    // 🚀 캐싱 적용 (apiGetCached 함수가 5분 LRU)
     const [setRes, rulesRes, contractsRes] = await Promise.all([
-      fetch(API + '/settlement?month=' + month, { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(API + '/rules', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(API + '/contracts?month=' + month, { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.ok ? r.json() : null).catch(() => null),
+      typeof apiGetCached === 'function' ? apiGetCached('/settlement?month=' + month, 60000)
+        : fetch(API + '/settlement?month=' + month, { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.ok ? r.json() : null).catch(() => null),
+      typeof apiGetCached === 'function' ? apiGetCached('/rules', 5 * 60 * 1000)
+        : fetch(API + '/rules', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.ok ? r.json() : null).catch(() => null),
+      typeof apiGetCached === 'function' ? apiGetCached('/contracts?month=' + month, 30000)
+        : fetch(API + '/contracts?month=' + month, { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.ok ? r.json() : null).catch(() => null),
     ]);
     let s = setRes && setRes.settlement;
     if (Array.isArray(s)) s = s[0] || null;
@@ -1344,7 +1348,8 @@ function setupDashboardRealtime() {
   if (_dashSbChannel) { _dashSbClient.removeChannel(_dashSbChannel); _dashSbChannel = null; }
   _dashSbChannel = _dashSbClient.channel('dashboard-incentive-sales-all')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'incentive_sales' }, payload => {
-      // 디바운스 600ms — 여러 변경이 짧게 몰리면 한 번만 갱신
+      // 캐시 무효화 + 디바운스 600ms 갱신
+      if (typeof apiCacheInvalidate === 'function') apiCacheInvalidate('/');
       clearTimeout(_dashRefreshTimer);
       _dashRefreshTimer = setTimeout(() => {
         if (document.getElementById('main-area').style.display !== 'none') {

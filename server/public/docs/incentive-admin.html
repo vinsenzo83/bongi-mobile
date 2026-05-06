@@ -242,23 +242,37 @@ function gShowToast(msg) {
   window._gToastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// ─── iframe 전환 ───
+// ─── iframe 전환 (keep-alive: 한번 로드한 메뉴는 숨겨서 보존) ───
+const _iframePool = new Map(); // src → iframe element
 function gLoadTab(btn) {
   if (!btn) return;
   const src = btn.dataset.src;
   if (!src) return;
-  // 캐시 무효화
-  const sep = src.includes('?') ? '&' : '?';
-  const fullSrc = src + sep + '_t=' + Date.now();
-  const iframe = document.getElementById('g-iframe');
+  const container = document.querySelector('.content-area');
   const loading = document.getElementById('g-iframe-loading');
-  loading.style.display = 'flex';
-  iframe.onload = () => { loading.style.display = 'none'; };
-  iframe.src = fullSrc;
   // active 표시
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
-  // persistence
   try { localStorage.setItem(G_LAST_TAB_KEY, src); } catch(e) {}
+  // 모든 풀 iframe 숨김
+  _iframePool.forEach(f => { f.style.display = 'none'; });
+  // 이미 로드한 iframe 재사용
+  let iframe = _iframePool.get(src);
+  if (iframe) {
+    iframe.style.display = 'block';
+    loading.style.display = 'none';
+    return;
+  }
+  // 신규 — 첫 로드만 fresh fetch
+  iframe = document.createElement('iframe');
+  iframe.style.cssText = 'width:100%;height:100%;border:none;background:#0f172a;display:block';
+  iframe.src = src + (src.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  loading.style.display = 'flex';
+  iframe.onload = () => { loading.style.display = 'none'; };
+  container.appendChild(iframe);
+  _iframePool.set(src, iframe);
+  // 기존 단일 iframe 숨김 (legacy)
+  const legacy = document.getElementById('g-iframe');
+  if (legacy && legacy !== iframe) legacy.style.display = 'none';
 }
 
 async function gOnLoggedIn(agent) {
