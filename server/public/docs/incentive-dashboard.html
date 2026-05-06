@@ -239,6 +239,25 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           </div>
         </div>
       </div>
+      <!-- 🏢 V5.1 팀 오버라이드 카드 (manager 전용) -->
+      <div id="mgr-override-section" style="display:none;margin-top:14px;background:linear-gradient(135deg,#1e3a8a,#0f172a);border:1.5px solid #3b82f6;border-radius:10px;padding:14px 18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:800;color:#93c5fd">🏢 V5.1 팀 오버라이드</div>
+          <span id="mgr-override-status" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;font-size:11.5px">
+          <div><div style="color:#94a3b8;font-size:10px">팀 인센 합계 (본인 제외)</div><b id="mgr-ov-team-sum" style="color:#f8fafc;font-size:14px">-</b></div>
+          <div><div style="color:#94a3b8;font-size:10px">오버라이드 (정상)</div><b id="mgr-ov-raw" style="color:#f8fafc;font-size:14px">-</b></div>
+          <div><div style="color:#94a3b8;font-size:10px">페널티 계수</div><b id="mgr-ov-factor" style="color:#fbbf24;font-size:14px">-</b></div>
+          <div><div style="color:#86efac;font-size:10px">최종 지급</div><b id="mgr-ov-final" style="color:#bbf7d0;font-size:16px">-</b></div>
+        </div>
+        <div style="font-size:10.5px;color:#cbd5e1;margin-top:8px;padding-top:8px;border-top:1px solid #334155;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span>본인 영업 <b id="mgr-ov-mycnt">-</b>건 / 의무 <span id="mgr-ov-oblig">-</span></span>
+          <span>팀 영업이익률 <b id="mgr-ov-pr">-</b> / 임계 <span id="mgr-ov-prmin">-</span></span>
+          <span id="mgr-ov-reason" style="color:#fde047"></span>
+        </div>
+      </div>
+
       <!-- 본인 등급 진행률 -->
       <div class="progress-section" style="margin-top:14px">
         <div style="font-size:12px;font-weight:700;color:#a5b4fc;margin-bottom:8px" id="mgr-progress-label">내 등급 진행률</div>
@@ -503,6 +522,41 @@ function renderManagerKpi(o, agent) {
 
   // 6. 페널티 위험 상담사 list (premium 부족 임박)
   renderManagerRiskList(centerSettlements);
+}
+
+function renderManagerOverride(ov) {
+  const sec = document.getElementById('mgr-override-section');
+  if (!sec) return;
+  sec.style.display = '';
+  const fmt = v => Number(v || 0).toLocaleString();
+  document.getElementById('mgr-ov-team-sum').textContent = fmt(ov.team_incentive_sum) + '원';
+  document.getElementById('mgr-ov-raw').textContent = fmt(ov.override_raw) + '원';
+  document.getElementById('mgr-ov-final').textContent = fmt(ov.override_final) + '원';
+  const factor = parseFloat(ov.penalty_factor) || 0;
+  const factorEl = document.getElementById('mgr-ov-factor');
+  factorEl.textContent = (factor * 100).toFixed(0) + '%';
+  factorEl.style.color = factor >= 1 ? '#86efac' : (factor > 0 ? '#fbbf24' : '#fca5a5');
+  document.getElementById('mgr-ov-mycnt').textContent = ov.my_completed_count;
+  document.getElementById('mgr-ov-oblig').textContent = ov.obligation_count + '건';
+  const prVal = (parseFloat(ov.team_profit_rate) * 100).toFixed(1);
+  document.getElementById('mgr-ov-pr').textContent = prVal + '%';
+  document.getElementById('mgr-ov-prmin').textContent = (parseFloat(ov.team_profit_rate_min) * 100).toFixed(0) + '%';
+  document.getElementById('mgr-ov-reason').textContent = ov.penalty_reason || '';
+  // 상태 배지
+  const statusEl = document.getElementById('mgr-override-status');
+  if (ov.exempted) {
+    statusEl.textContent = '🛡 면제';
+    statusEl.style.background = '#0891b2'; statusEl.style.color = '#fff';
+  } else if (factor >= 1) {
+    statusEl.textContent = '✅ 정상';
+    statusEl.style.background = '#16a34a'; statusEl.style.color = '#fff';
+  } else if (factor > 0) {
+    statusEl.textContent = '⚠️ 부분 페널티';
+    statusEl.style.background = '#f59e0b'; statusEl.style.color = '#fff';
+  } else {
+    statusEl.textContent = '🚨 미지급';
+    statusEl.style.background = '#dc2626'; statusEl.style.color = '#fff';
+  }
 }
 
 function renderManagerProgress(s) {
@@ -852,7 +906,9 @@ async function loadAgentSection(month) {
     ]);
     let s = setRes && setRes.settlement;
     if (Array.isArray(s)) s = s[0] || null;
+    const ov = setRes && setRes.manager_override; // V5.1 팀장 오버라이드
     const rule = (rulesRes && (rulesRes.rule || (rulesRes.rules || [])[0])) || null;
+    if (_myRole === 'manager' && ov) renderManagerOverride(ov);
     let contracts = (contractsRes && contractsRes.contracts) || [];
     // manager는 센터 전체 sale을 받으므로 본인 것만 필터
     if (_myRole === 'manager' && _myAgent && _myAgent.id) {

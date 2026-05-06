@@ -903,7 +903,27 @@ router.get('/settlement', authenticateJWT, async (req, res) => {
     }
     // RPC가 single composite을 array로 반환할 수 있음 — 정규화
     const settlement = Array.isArray(data) ? (data[0] || null) : data;
-    res.json({ settlement, month: ym });
+
+    // 🏢 manager 전용: V5.1 팀 오버라이드 계산
+    let manager_override = null;
+    const { data: targetAgent } = await supabase
+      .from('incentive_agents').select('role').eq('id', targetAgentId).single();
+    if (targetAgent && targetAgent.role === 'manager') {
+      const { data: ovRows, error: ovErr } = await supabase.rpc('incentive_calc_manager_override', {
+        p_agent_id: targetAgentId,
+        p_year_month: ym,
+      });
+      if (!ovErr) {
+        manager_override = Array.isArray(ovRows) ? (ovRows[0] || null) : ovRows;
+        // settlement.agent_total에 override_final 더함
+        if (settlement && manager_override) {
+          settlement.manager_override_amount = manager_override.override_final || 0;
+          settlement.agent_total = (settlement.agent_total || 0) + (manager_override.override_final || 0);
+        }
+      }
+    }
+
+    res.json({ settlement, manager_override, month: ym });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err.message || err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요', detail: err.message });
@@ -1718,6 +1738,54 @@ router.get('/sales-history', authenticateJWT, async (req, res) => {
     console.error('[incentive]', req.method, req.path, e);
     res.status(500).json({ error: e.message });
   }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// V5.1 Manager 면제 관리
+// ═══════════════════════════════════════════════════════════════
+
+// GET /api/incentive/manager-exemptions?month=YYYY-MM — admin 조회
+router.get('/manager-exemptions', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    let q = supabase.from('incentive_manager_exemptions').select('*');
+    if (req.query.month) q = q.eq('year_month', req.query.month);
+    if (req.query.agent_id) q = q.eq('agent_id', req.query.agent_id);
+    const { data, error } = await q.order('granted_at', { ascending: false }).limit(200);
+    if (error) throw error;
+    res.json({ exemptions: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/incentive/manager-exemptions — 면제 부여 (admin)
+router.post('/manager-exemptions', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const { agent_id, year_month, reason, notes } = req.body || {};
+    if (!agent_id || !year_month || !reason) {
+      return res.status(400).json({ error: 'agent_id, year_month, reason 필수' });
+    }
+    const { data, error } = await supabase.from('incentive_manager_exemptions').upsert({
+      agent_id, year_month, reason, notes: notes || null,
+      granted_by_user_id: req.user.id, granted_by_name: me.name,
+      granted_at: new Date().toISOString(),
+    }, { onConflict: 'agent_id,year_month' }).select().single();
+    if (error) throw error;
+    res.json({ exemption: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/incentive/manager-exemptions/:id — 면제 해제 (admin)
+router.delete('/manager-exemptions/:id', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const { error } = await supabase.from('incentive_manager_exemptions').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // GET /api/incentive/role-permissions/history — 권한 매트릭스 변경 이력 (admin)
