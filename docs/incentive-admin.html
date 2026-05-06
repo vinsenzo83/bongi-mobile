@@ -169,10 +169,9 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
     <script>
       (function() {
         const isDev = location.hostname.includes('dev-admin') || location.hostname.includes('staging');
-        const domain = isDev ? 'bongi.dev' : 'bongi.test';
-        const envLabel = isDev ? '데브' : '라이브';
+        const envLabel = isDev ? '🧪 데브 (라이브 데이터 클론)' : '🟢 라이브';
         document.getElementById('g-auth-hint-accounts').innerHTML =
-          `<b>${envLabel}</b> 테스트: <code>admin1@${domain}</code> / <code>manager1@${domain}</code> / <code>agent1@${domain}</code> (비번 <code>pass1234!</code>)`;
+          `<b>${envLabel}</b><br>테스트: <code>admin1@bongi.test</code> / <code>manager1@bongi.test</code> / <code>agent1@bongi.test</code> (비번 <code>pass1234!</code>)`;
       })();
     </script>
   </div>
