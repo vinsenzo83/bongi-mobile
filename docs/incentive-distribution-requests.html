@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📥 콜 분배 요청</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+html { height:100%; }
+body { height:100vh; overflow-y:auto; font-family: 'Pretendard Variable', sans-serif; background:#0f172a; color:#e2e8f0; padding:18px 18px 80px; margin:0; }
+.wrap { max-width:1200px; margin:0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #334155; }
+h1 { font-size:20px; color:#f8fafc; }
+.subtitle { font-size:11px; color:#94a3b8; margin-top:3px; }
+
+.kpi-row { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:14px; }
+.kpi { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:10px; padding:12px 14px; }
+.kpi .label { font-size:10px; color:#94a3b8; font-weight:700; }
+.kpi .val { font-size:22px; color:#f8fafc; font-weight:900; margin-top:3px; }
+.kpi.warn { background:linear-gradient(135deg,#7c2d12,#0f172a); border-color:#fbbf24; }
+.kpi.warn .val { color:#fde047; }
+.kpi.success { background:linear-gradient(135deg,#14532d,#0f172a); border-color:#22c55e; }
+.kpi.success .val { color:#86efac; }
+.kpi.error { background:linear-gradient(135deg,#7f1d1d,#0f172a); border-color:#dc2626; }
+.kpi.error .val { color:#fca5a5; }
+
+.toolbar { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+.toolbar select, .toolbar input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 12px; border-radius:6px; font-size:12px; font-family:inherit; }
+.toolbar button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:12px; }
+.toolbar button.success { background:#16a34a; }
+.toolbar button.muted { background:#475569; }
+
+.section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:10px; padding:0; margin-bottom:14px; overflow:hidden; }
+.section h2 { font-size:13px; color:#fbbf24; font-weight:800; padding:12px 18px; border-bottom:1px solid #334155; }
+
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { background:#1e3a8a; color:#bfdbfe; padding:10px 12px; text-align:left; font-weight:800; font-size:11.5px; }
+td { padding:10px 12px; border-bottom:1px solid #1e293b; vertical-align:top; }
+tr:hover td { background:rgba(59,130,246,0.05); }
+
+.badge { padding:3px 8px; border-radius:4px; font-size:10.5px; font-weight:800; color:#fff; display:inline-block; }
+.b-pending { background:#fbbf24; color:#0f172a; }
+.b-approved { background:#22c55e; }
+.b-rejected { background:#dc2626; }
+.b-cancelled { background:#64748b; }
+
+.btn-sm { background:#3b82f6; color:#fff; border:none; padding:5px 12px; border-radius:5px; font-size:11px; font-weight:700; cursor:pointer; margin-right:4px; }
+.btn-sm.success { background:#22c55e; }
+.btn-sm.danger { background:#dc2626; }
+.btn-sm.muted { background:#475569; }
+
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:14px 24px; border-radius:10px; font-weight:800; z-index:99999; opacity:0; transition:opacity 0.2s; }
+#toast.show { opacity:1; }
+
+.empty { text-align:center; padding:50px 20px; color:#64748b; font-size:13px; }
+
+/* 모달 */
+.modal-bg { position:fixed; inset:0; background:rgba(15,23,42,0.7); z-index:99998; display:none; justify-content:center; align-items:center; }
+.modal-bg.show { display:flex; }
+.modal-box { background:#1e293b; border:1.5px solid #475569; border-radius:14px; padding:22px 26px; width:440px; max-width:92vw; color:#fff; box-shadow:0 20px 60px rgba(0,0,0,0.6); }
+.modal-box h3 { font-size:15px; font-weight:800; margin-bottom:14px; }
+.modal-box label { font-size:12px; color:#cbd5e1; display:block; margin-bottom:10px; }
+.modal-box input, .modal-box textarea { width:100%; background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; margin-top:4px; font-family:inherit; }
+.modal-box textarea { resize:vertical; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
+</style>
+<script>
+(function(){
+  if (window !== window.parent) {
+    document.documentElement.classList.add('embedded-mode');
+    var s = document.createElement('style');
+    s.textContent = '.embedded-mode header { display:none !important; } body { padding-top:14px !important; }';
+    document.head.appendChild(s);
+  }
+})();
+</script>
+<script src="/docs/_security.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📥 콜 분배 요청</h1>
+      <div class="subtitle" id="subtitle">role 자동 감지</div>
+    </div>
+    <div id="user-info" style="font-size:12px;color:#cbd5e1"><span id="user-name">-</span></div>
+  </header>
+
+  <div id="main" style="display:none">
+    <div class="kpi-row">
+      <div class="kpi warn"><div class="label">⏳ 대기</div><div class="val" id="kpi-pending">0</div></div>
+      <div class="kpi success"><div class="label">✅ 승인</div><div class="val" id="kpi-approved">0</div></div>
+      <div class="kpi error"><div class="label">❌ 거부</div><div class="val" id="kpi-rejected">0</div></div>
+      <div class="kpi"><div class="label">🚫 취소</div><div class="val" id="kpi-cancelled">0</div></div>
+    </div>
+
+    <div class="toolbar">
+      <select id="f-status">
+        <option value="">전체 상태</option>
+        <option value="pending" selected>⏳ 대기만</option>
+        <option value="approved">✅ 승인</option>
+        <option value="rejected">❌ 거부</option>
+        <option value="cancelled">🚫 취소</option>
+      </select>
+      <button class="muted" onclick="loadRequests()">🔄 새로고침</button>
+      <button class="success" id="btn-new-req" onclick="openRequestModal()" style="display:none">➕ 새 요청 만들기</button>
+      <span id="auto-poll" style="margin-left:auto;font-size:10.5px;color:#64748b">⏱ 30초마다 자동 갱신</span>
+    </div>
+
+    <div class="section">
+      <h2 id="section-title">목록 <span id="list-count" style="font-weight:400;color:#94a3b8"></span></h2>
+      <div id="list-body">
+        <div class="empty">로딩 중...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 새 요청 모달 (agent·manager) -->
+<div id="req-modal" class="modal-bg" onclick="if(event.target===this)closeRequestModal()">
+  <div class="modal-box">
+    <h3 style="color:#22c55e">📥 콜 분배 요청</h3>
+    <label>요청 건수
+      <input type="number" id="req-count" min="10" max="500" step="10" value="50">
+    </label>
+    <label>사유 (선택)
+      <textarea id="req-reason" rows="3" placeholder="예: 잔여 콜 부족 · 컨버전 활동 추가 필요"></textarea>
+    </label>
+    <div class="modal-actions">
+      <button class="btn-sm muted" onclick="closeRequestModal()">취소</button>
+      <button class="btn-sm success" onclick="submitRequest()">📨 요청 제출</button>
+    </div>
+  </div>
+</div>
+
+<!-- 거부 사유 모달 -->
+<div id="reject-modal" class="modal-bg" onclick="if(event.target===this)closeRejectModal()">
+  <div class="modal-box">
+    <h3 style="color:#f87171">❌ 거부 사유</h3>
+    <label>사유 (필수)
+      <textarea id="reject-note" rows="3" placeholder="예: 현재 본인 잔여 콜 충분 · 다음 주 재요청"></textarea>
+    </label>
+    <div class="modal-actions">
+      <button class="btn-sm muted" onclick="closeRejectModal()">취소</button>
+      <button class="btn-sm danger" onclick="confirmReject()">❌ 거부</button>
+    </div>
+  </div>
+</div>
+
+<!-- 승인 건수 모달 -->
+<div id="approve-modal" class="modal-bg" onclick="if(event.target===this)closeApproveModal()">
+  <div class="modal-box">
+    <h3 style="color:#22c55e">✅ 승인</h3>
+    <div id="approve-info" style="font-size:12px;color:#cbd5e1;margin-bottom:10px"></div>
+    <label>분배 건수 (요청한 만큼 그대로면 비워두기)
+      <input type="number" id="approve-count" min="1" max="1000" placeholder="요청 그대로 분배">
+    </label>
+    <div class="modal-actions">
+      <button class="btn-sm muted" onclick="closeApproveModal()">취소</button>
+      <button class="btn-sm success" onclick="confirmApprove()">✅ 승인 + 분배</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const CDB = '/api/customer-db';
+const TK_KEY = 'incentive-auth-token-v1';
+const tk = () => localStorage.getItem(TK_KEY);
+async function fetchAuth(url, opts = {}) {
+  return fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + tk() }});
+}
+const esc = (s) => String(s ?? '').replace(/[<>&"']/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[ch]));
+function showToast(m, ok=true) { const t=document.getElementById('toast'); t.style.background=ok?'#16a34a':'#dc2626'; t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2500); }
+
+let _reqState = { selectedId: null };
+
+async function init() {
+  if (!tk()) { document.body.innerHTML = '<div class="empty">로그인 필요</div>'; return; }
+  try {
+    const r = await fetchAuth('/api/incentive/agents/me');
+    if (!r.ok) { document.body.innerHTML = '<div class="empty">인증 실패 — 다시 로그인</div>'; return; }
+    const me = (await r.json()).agent;
+    window._myAgent = me;
+    document.getElementById('user-name').textContent = me.name + ' (' + me.role + ')';
+    document.getElementById('main').style.display = '';
+    const sub = me.role === 'admin' ? '전사 모든 분배 요청 관리' : (me.role === 'manager' ? '본인 센터 분배 요청 관리 + 본인 분량 요청' : '본인 분배 요청 이력');
+    document.getElementById('subtitle').textContent = sub;
+    // agent·manager는 새 요청 가능
+    if (me.role !== 'admin') document.getElementById('btn-new-req').style.display = '';
+    loadRequests();
+    if (window._reqTimer) clearInterval(window._reqTimer);
+    window._reqTimer = setInterval(loadRequests, 30000);
+  } catch (e) {
+    document.body.innerHTML = '<div class="empty">오류: ' + e.message + '</div>';
+  }
+}
+
+async function loadRequests() {
+  const status = document.getElementById('f-status').value;
+  const params = new URLSearchParams({ limit: 100 });
+  if (status) params.set('status', status);
+  const r = await fetchAuth(CDB + '/requests?' + params);
+  if (!r.ok) {
+    document.getElementById('list-body').innerHTML = `<div class="empty" style="color:#f87171">조회 실패: ${r.status}</div>`;
+    return;
+  }
+  const d = await r.json();
+  const reqs = d.requests || [];
+
+  // KPI 카운트 (status 필터 없는 전체로 카운트하려면 별도 호출 — 여기선 현재 응답 기반)
+  const cntAll = await fetchAuth(CDB + '/requests?limit=200');
+  if (cntAll.ok) {
+    const all = (await cntAll.json()).requests || [];
+    const cnt = { pending:0, approved:0, rejected:0, cancelled:0 };
+    all.forEach(r => { if (cnt[r.status] !== undefined) cnt[r.status]++; });
+    document.getElementById('kpi-pending').textContent = cnt.pending;
+    document.getElementById('kpi-approved').textContent = cnt.approved;
+    document.getElementById('kpi-rejected').textContent = cnt.rejected;
+    document.getElementById('kpi-cancelled').textContent = cnt.cancelled;
+  }
+
+  document.getElementById('list-count').textContent = `· ${reqs.length}건`;
+  const me = window._myAgent;
+  const isApprover = me.role === 'manager' || me.role === 'admin';
+  document.getElementById('section-title').firstChild.textContent =
+    me.role === 'admin' ? '📋 전사 요청 ' : (me.role === 'manager' ? '📋 본인 센터 요청 ' : '📋 본인 요청 ');
+
+  if (!reqs.length) {
+    document.getElementById('list-body').innerHTML = '<div class="empty">조건에 맞는 요청이 없습니다</div>';
+    return;
+  }
+
+  const STATUS = {
+    pending:   { txt:'⏳ 대기', cls:'b-pending' },
+    approved:  { txt:'✅ 승인', cls:'b-approved' },
+    rejected:  { txt:'❌ 거부', cls:'b-rejected' },
+    cancelled: { txt:'🚫 취소', cls:'b-cancelled' },
+  };
+
+  const rows = reqs.map(rq => {
+    const st = STATUS[rq.status] || { txt: rq.status, cls:'b-cancelled' };
+    const dt = new Date(rq.created_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const decidedDt = rq.decided_at ? new Date(rq.decided_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+    const isMine = rq.agent_id === me.id;
+    let actCell = '<td style="color:#64748b;text-align:center">-</td>';
+    if (rq.status === 'pending') {
+      if (isApprover && rq.agent_id !== me.id) {
+        actCell = `<td>
+          <button class="btn-sm success" onclick="openApproveModal(${rq.id}, ${rq.requested_count})">승인</button>
+          <button class="btn-sm danger" onclick="openRejectModal(${rq.id})">거부</button>
+        </td>`;
+      } else if (isMine) {
+        actCell = `<td><button class="btn-sm muted" onclick="cancelReq(${rq.id})">취소</button></td>`;
+      } else {
+        actCell = '<td style="color:#64748b;text-align:center">-</td>';
+      }
+    }
+    return `<tr>
+      <td><b>${esc(rq.agent?.name)||'-'}</b> <span style="color:#94a3b8;font-size:10.5px">(${esc(rq.agent?.role)||'-'})</span></td>
+      <td style="text-align:center">${esc(rq.center)||'-'}</td>
+      <td style="text-align:center;font-weight:800;color:#bfdbfe">${rq.requested_count|0}</td>
+      <td style="color:#cbd5e1;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(rq.reason)||''}">${rq.reason ? esc(rq.reason) : '<i style="color:#64748b">-</i>'}</td>
+      <td style="text-align:center"><span class="badge ${st.cls}">${st.txt}</span>${rq.decided_note ? `<div style="font-size:10px;color:#94a3b8;margin-top:3px;font-style:italic" title="${esc(rq.decided_note)}">💬 ${esc(rq.decided_note.length>20?rq.decided_note.slice(0,20)+'…':rq.decided_note)}</div>` : ''}</td>
+      <td style="text-align:center">${rq.distributed_count > 0 ? '<b style="color:#86efac">'+rq.distributed_count+'</b>건' : '-'}</td>
+      <td style="font-size:10.5px;color:#94a3b8">${dt}</td>
+      <td style="font-size:10.5px;color:#94a3b8">${decidedDt || '-'}</td>
+      ${actCell}
+    </tr>`;
+  }).join('');
+
+  document.getElementById('list-body').innerHTML = `<table>
+    <thead><tr>
+      <th>요청자</th><th>센터</th><th>요청</th><th>사유</th><th>상태</th><th>분배</th><th>요청 시각</th><th>처리 시각</th><th>액션</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+document.getElementById('f-status').addEventListener('change', loadRequests);
+
+function openRequestModal() {
+  document.getElementById('req-count').value = 50;
+  document.getElementById('req-reason').value = '';
+  document.getElementById('req-modal').classList.add('show');
+  setTimeout(() => document.getElementById('req-count').focus(), 50);
+}
+function closeRequestModal() { document.getElementById('req-modal').classList.remove('show'); }
+
+async function submitRequest() {
+  const count = parseInt(document.getElementById('req-count').value) || 50;
+  const reason = document.getElementById('req-reason').value.trim();
+  const r = await fetchAuth(CDB + '/requests', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ requested_count: count, reason })
+  });
+  const d = await r.json();
+  if (!r.ok) { showToast('❌ ' + (d.error || r.status), false); return; }
+  closeRequestModal();
+  showToast(`📨 ${count}건 요청 제출됨`);
+  loadRequests();
+  // 부모(통합 어드민)에 배지 갱신 신호
+  try { window.parent.postMessage({ type:'distribution-request-updated' }, '*'); } catch {}
+}
+
+function openApproveModal(id, requested) {
+  _reqState.selectedId = id;
+  document.getElementById('approve-info').innerHTML = `요청 건수: <b style="color:#bfdbfe">${requested}건</b>`;
+  document.getElementById('approve-count').value = '';
+  document.getElementById('approve-count').placeholder = `요청 그대로(${requested}건) 분배`;
+  document.getElementById('approve-modal').classList.add('show');
+  setTimeout(() => document.getElementById('approve-count').focus(), 50);
+}
+function closeApproveModal() { document.getElementById('approve-modal').classList.remove('show'); _reqState.selectedId = null; }
+
+async function confirmApprove() {
+  const id = _reqState.selectedId;
+  if (!id) return;
+  const grant = parseInt(document.getElementById('approve-count').value);
+  const r = await fetchAuth(CDB + `/requests/${id}/approve`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ grant_count: grant > 0 ? grant : undefined })
+  });
+  const d = await r.json();
+  if (!r.ok) { showToast('❌ ' + (d.error || r.status), false); return; }
+  closeApproveModal();
+  showToast(`✅ ${d.distributed}건 분배 완료`);
+  loadRequests();
+  try { window.parent.postMessage({ type:'distribution-request-updated' }, '*'); } catch {}
+}
+
+function openRejectModal(id) {
+  _reqState.selectedId = id;
+  document.getElementById('reject-note').value = '';
+  document.getElementById('reject-modal').classList.add('show');
+  setTimeout(() => document.getElementById('reject-note').focus(), 50);
+}
+function closeRejectModal() { document.getElementById('reject-modal').classList.remove('show'); _reqState.selectedId = null; }
+
+async function confirmReject() {
+  const id = _reqState.selectedId;
+  if (!id) return;
+  const note = document.getElementById('reject-note').value.trim();
+  if (!note) { showToast('거부 사유 필수', false); return; }
+  const r = await fetchAuth(CDB + `/requests/${id}/reject`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ note })
+  });
+  const d = await r.json();
+  if (!r.ok) { showToast('❌ ' + (d.error || r.status), false); return; }
+  closeRejectModal();
+  showToast('❌ 거부됨');
+  loadRequests();
+  try { window.parent.postMessage({ type:'distribution-request-updated' }, '*'); } catch {}
+}
+
+async function cancelReq(id) {
+  if (!confirm('요청을 취소하시겠습니까?')) return;
+  const r = await fetchAuth(CDB + `/requests/${id}/cancel`, { method:'POST' });
+  if (!r.ok) { const d = await r.json(); showToast('❌ ' + (d.error || r.status), false); return; }
+  showToast('🚫 취소됨');
+  loadRequests();
+  try { window.parent.postMessage({ type:'distribution-request-updated' }, '*'); } catch {}
+}
+
+init();
+</script>
+</body>
+</html>

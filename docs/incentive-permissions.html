@@ -172,6 +172,7 @@ const MENUS = [
   { key: 'settlements',  label: '💰 월별 정산' },
   { key: 'manual',       label: '📚 사용 매뉴얼' },
   { key: 'call-list',    label: '📋 내 콜 리스트' },
+  { key: 'distribution-requests', label: '📥 분배 요청' },
   { key: 'tm-counselor', label: '📞 TM 상담' },
   { key: 'tm-data',      label: '🧮 TM 데이터 관리' },
   { key: 'guide',        label: '📖 급여 안내' },
@@ -182,9 +183,9 @@ const ROLES = ['agent', 'manager', 'admin', 'contract'];
 const ADMIN_REQUIRED = new Set(['permissions', 'agents']);
 // 기본값 (DB 시드와 동일)
 const DEFAULTS = {
-  agent:    ['dashboard', 'tm-counselor', 'guide'],
-  manager:  ['dashboard', 'contract', 'tm-counselor', 'tm-data', 'guide'],
-  admin:    ['dashboard', 'contract', 'agents', 'products', 'rules', 'db-sources', 'tm-counselor', 'tm-data', 'permissions', 'guide'],
+  agent:    ['dashboard', 'tm-counselor', 'guide', 'call-list', 'distribution-requests'],
+  manager:  ['dashboard', 'contract', 'tm-counselor', 'tm-data', 'guide', 'call-list', 'distribution-requests'],
+  admin:    ['dashboard', 'contract', 'agents', 'products', 'rules', 'db-sources', 'tm-counselor', 'tm-data', 'permissions', 'guide', 'call-list', 'distribution-requests', 'customer-db', 'call-stats', 'settlements'],
   contract: ['dashboard', 'contract', 'guide'],
 };
 
