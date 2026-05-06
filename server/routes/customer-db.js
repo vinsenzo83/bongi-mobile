@@ -632,32 +632,41 @@ router.get('/stats/aging', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// 8-3. GET /stats/daily — 일별 import + 처리 건수 (최근 N일)
+// 8-3. GET /stats/daily — 일별 import + 처리 건수 (최근 N일, KST 기준)
 // ═══════════════════════════════════════════════════════════════
 router.get('/stats/daily', async (req, res) => {
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
     const days = Math.min(parseInt(req.query.days) || 30, 90);
-    const start = new Date(Date.now() - days * 86400000); start.setHours(0,0,0,0);
-    // import 일별
+    // KST(+09:00) 기준 자정 — 한국 운영 시간 정렬용
+    const KST_OFFSET_MS = 9 * 3600 * 1000;
+    const kstNow = new Date(Date.now() + KST_OFFSET_MS);
+    const kstMidnightToday = new Date(Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), kstNow.getUTCDate()));
+    const startKstMidnight = new Date(kstMidnightToday.getTime() - (days - 1) * 86400000);
+    // 실제 UTC start = KST 자정 - 9시간
+    const startUtc = new Date(startKstMidnight.getTime() - KST_OFFSET_MS);
+
     const { data: imported } = await supabase.from('incentive_customer_db')
       .select('imported_at, call_status, last_contacted_at')
-      .is('deleted_at', null).gte('imported_at', start.toISOString());
+      .is('deleted_at', null).gte('imported_at', startUtc.toISOString());
+
+    const toKstDate = (iso) => iso ? new Date(new Date(iso).getTime() + KST_OFFSET_MS).toISOString().slice(0, 10) : null;
+
     const buckets = {};
     for (let i = 0; i < days; i++) {
-      const d = new Date(start.getTime() + i * 86400000);
-      const key = d.toISOString().slice(0, 10);
+      const d = new Date(startKstMidnight.getTime() + i * 86400000);
+      const key = d.toISOString().slice(0, 10); // KST 기준 날짜
       buckets[key] = { date: key, imported: 0, called: 0, converted: 0 };
     }
     (imported || []).forEach(r => {
-      const k = (r.imported_at || '').slice(0, 10);
-      if (buckets[k]) buckets[k].imported++;
-      const lk = (r.last_contacted_at || '').slice(0, 10);
+      const k = toKstDate(r.imported_at);
+      if (k && buckets[k]) buckets[k].imported++;
+      const lk = toKstDate(r.last_contacted_at);
       if (lk && buckets[lk]) buckets[lk].called++;
       if (r.call_status === 'converted' && lk && buckets[lk]) buckets[lk].converted++;
     });
-    res.json({ days, buckets: Object.values(buckets) });
+    res.json({ days, buckets: Object.values(buckets), tz: 'Asia/Seoul' });
   } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
 });
 

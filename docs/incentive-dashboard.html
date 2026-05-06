@@ -1416,9 +1416,10 @@ async function refreshRealtimeCallActivity() {
     }
     // 오늘 전환 — daily 라우트로 (admin) 또는 stats.by_status.converted (manager는 본인 센터)
     if (role === 'admin') {
-      const today = new Date().toISOString().slice(0, 10);
+      // KST 기준 오늘 (서버 daily도 KST 기준 bucket 생성)
+      const kstToday = new Date(Date.now() + 9*3600000).toISOString().slice(0, 10);
       const dr = await fetch(`/api/customer-db/stats/daily?days=2`, { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.ok ? r.json() : null);
-      const todayBucket = dr?.buckets?.find(b => b.date === today);
+      const todayBucket = dr?.buckets?.find(b => b.date === kstToday);
       const elct = document.getElementById('rt-converted-today');
       if (elct) elct.textContent = fmt(todayBucket?.converted || 0);
     } else {
