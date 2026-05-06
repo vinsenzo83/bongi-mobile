@@ -52,7 +52,7 @@ router.post('/signup', authLimiter, async (req, res) => {
 
 // 로그인
 router.post('/login', authLimiter, async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, totp_code } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: '이메일과 비밀번호를 입력해주세요' });
@@ -61,6 +61,27 @@ router.post('/login', authLimiter, async (req, res) => {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다' });
+
+    // 🆕 2FA — incentive_agents에 totp_enabled=true면 totp_code 검증
+    {
+      const { data: agentRow } = await supabase
+        .from('incentive_agents')
+        .select('totp_enabled, totp_secret')
+        .eq('user_id', data.user.id).single();
+      if (agentRow?.totp_enabled && agentRow?.totp_secret) {
+        if (!totp_code) {
+          // 토큰 발급 X — 클라이언트가 totp_code 입력 받아 다시 호출하도록 신호
+          await supabase.auth.signOut();
+          return res.status(202).json({ totp_required: true });
+        }
+        const { authenticator } = await import('otplib');
+        authenticator.options = { window: 1 }; // 30초 슬롯 ±1
+        if (!authenticator.check(String(totp_code).trim(), agentRow.totp_secret)) {
+          await supabase.auth.signOut();
+          return res.status(401).json({ error: '2FA 코드가 올바르지 않습니다' });
+        }
+      }
+    }
 
     // FIX #5: 프로필 존재 확인 + 자동 생성
     let { data: profile } = await supabase
@@ -220,6 +241,76 @@ router.post('/change-password', authenticateJWT, async (req, res) => {
     console.error('[change-password]', e);
     res.status(500).json({ error: e.message || '변경 실패' });
   }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 2FA (TOTP) — 활성화 흐름: setup → verify → enabled
+// ═══════════════════════════════════════════════════════════════
+router.post('/2fa/setup', authenticateJWT, async (req, res) => {
+  try {
+    const { authenticator } = await import('otplib');
+    const QRCode = (await import('qrcode')).default;
+    const { data: agent } = await supabase.from('incentive_agents')
+      .select('id, name, totp_enabled').eq('user_id', req.user.id).single();
+    if (!agent) return res.status(403).json({ error: 'incentive_agent 미등록' });
+    if (agent.totp_enabled) return res.status(400).json({ error: '이미 2FA 활성화됨' });
+
+    const secret = authenticator.generateSecret();
+    const otpauth = authenticator.keyuri(agent.name || req.user.email, '봉이모바일', secret);
+    const qr = await QRCode.toDataURL(otpauth);
+
+    // 임시 저장 — verify 통과 시 totp_enabled=true 처리 (verify에서 함께 update)
+    await supabase.from('incentive_agents').update({ totp_secret: secret }).eq('id', agent.id);
+    res.json({ secret, qr_data_url: qr, otpauth });
+  } catch (e) { console.error('[2fa setup]', e); res.status(500).json({ error: '2FA 설정 실패' }); }
+});
+
+router.post('/2fa/verify', authenticateJWT, async (req, res) => {
+  try {
+    const { code } = req.body || {};
+    if (!code) return res.status(400).json({ error: '코드 입력' });
+    const { authenticator } = await import('otplib');
+    authenticator.options = { window: 1 };
+    const { data: agent } = await supabase.from('incentive_agents')
+      .select('id, totp_secret, totp_enabled').eq('user_id', req.user.id).single();
+    if (!agent?.totp_secret) return res.status(400).json({ error: 'setup 먼저 실행' });
+    if (!authenticator.check(String(code).trim(), agent.totp_secret))
+      return res.status(401).json({ error: '코드 불일치' });
+    await supabase.from('incentive_agents').update({
+      totp_enabled: true, totp_enabled_at: new Date().toISOString(),
+    }).eq('id', agent.id);
+    res.json({ ok: true });
+  } catch (e) { console.error('[2fa verify]', e); res.status(500).json({ error: '검증 실패' }); }
+});
+
+router.post('/2fa/disable', authenticateJWT, async (req, res) => {
+  try {
+    const { code } = req.body || {};
+    const { authenticator } = await import('otplib');
+    authenticator.options = { window: 1 };
+    const { data: agent } = await supabase.from('incentive_agents')
+      .select('id, totp_secret, totp_enabled').eq('user_id', req.user.id).single();
+    if (!agent?.totp_enabled) return res.status(400).json({ error: '2FA 비활성 상태' });
+    if (!code || !authenticator.check(String(code).trim(), agent.totp_secret))
+      return res.status(401).json({ error: '코드 검증 필요' });
+    await supabase.from('incentive_agents').update({
+      totp_enabled: false, totp_secret: null, totp_enabled_at: null,
+    }).eq('id', agent.id);
+    res.json({ ok: true });
+  } catch (e) { console.error('[2fa disable]', e); res.status(500).json({ error: '해제 실패' }); }
+});
+
+router.get('/2fa/status', authenticateJWT, async (req, res) => {
+  try {
+    const { data: agent } = await supabase.from('incentive_agents')
+      .select('totp_enabled, totp_enabled_at, role').eq('user_id', req.user.id).single();
+    res.json({
+      enabled: !!agent?.totp_enabled,
+      enabled_at: agent?.totp_enabled_at || null,
+      role: agent?.role,
+      recommended: agent?.role === 'admin',
+    });
+  } catch (e) { res.status(500).json({ error: '조회 실패' }); }
 });
 
 export default router;

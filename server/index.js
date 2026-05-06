@@ -15,6 +15,8 @@ import aiRoutes from './routes/ai.js';
 import mockRoutes from './routes/mock.js';
 import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboard.js';
+import customerDbRoutes from './routes/customer-db.js';
+import { ipAllowlist } from './middleware/ipAllowlist.js';
 import chatRoutes from './routes/chat.js';
 import alarmRoutes from './routes/alarms.js';
 import referralRoutes from './routes/referrals.js';
@@ -36,6 +38,30 @@ dotenv.config({ path: join(__dirname, '..', '.env') });
 const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
+
+// 보안 헤더 (CSP / X-Frame / 등) — HTML 응답에 한정
+app.use((req, res, next) => {
+  // HTML/문서 페이지에만 적용 (API JSON·정적 자산 영향 X)
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  // CSP — 봉이 어드민·고객 사이트 공통
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://t1.daumcdn.net",
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://*.googleapis.com",
+    "img-src 'self' data: https:",
+    "font-src 'self' https://cdn.jsdelivr.net data:",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    "frame-src 'self'",
+    "frame-ancestors 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ');
+  res.setHeader('Content-Security-Policy', csp);
+  next();
+});
 
 // 글로벌 미들웨어
 app.use(compression({ threshold: 1024 })); // 1KB 이상 응답 자동 gzip (HTML/JSON ~70% 감소)
@@ -132,15 +158,46 @@ app.use('/api/admin/platform', adminPlatformRoutes);
 
 // ── V5 인센티브 (라우터 내부에서 authenticateJWT/optionalAuth 자체 처리) ──
 app.use('/api/incentive', incentiveRoutes);
+app.use('/api/customer-db', ipAllowlist, authenticateJWT, customerDbRoutes);
 
 // ── 인증 필요 (agent 이상) ──
 app.use('/api/crm', authenticateJWT, requireMinRole('agent'), crmRoutes);
 app.use('/api/cti', authenticateJWT, requireMinRole('agent'), ctiRoutes);
 app.use('/api/cache', authenticateJWT, requireMinRole('agent'), cacheRoutes);
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: '리턴AI API' });
+import { supabase as _hcSb } from './db/supabase.js';
+app.get('/api/health', async (req, res) => {
+  const t0 = Date.now();
+  const checks = { server: 'ok', uptime_s: Math.round(process.uptime()), node_env: process.env.NODE_ENV || 'development' };
+  try {
+    if (_hcSb) {
+      const { count, error } = await _hcSb.from('incentive_agents').select('id', { count:'exact', head:true });
+      checks.supabase = error ? `error: ${error.message}` : 'ok';
+      checks.agents_count = count ?? null;
+    } else {
+      checks.supabase = 'not configured';
+    }
+  } catch (e) { checks.supabase = 'error: ' + e.message; }
+  checks.env_supabase_url = !!process.env.SUPABASE_URL;
+  checks.env_service_key = !!(process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY);
+  checks.cors = process.env.CORS_ORIGIN || 'default';
+  checks.duration_ms = Date.now() - t0;
+  const ok = checks.supabase === 'ok' && checks.env_supabase_url && checks.env_service_key;
+  res.status(ok ? 200 : 503).json({ status: ok ? 'ok' : 'degraded', service: '리턴AI API', ...checks });
 });
+
+// 운영 환경 가드 — production일 때만 추가 보안 확인
+{
+  const env = process.env.NODE_ENV;
+  if (env === 'production') console.log('🔐 운영(라이브) 모드 — error sanitize / SW 활성 / 보안 헤더 적용');
+  else if (env === 'staging') console.log('🧪 데브(스테이징) 모드 — 라이브와 동일 보안 + 별도 Supabase');
+  else console.log('🛠 개발(로컬) 모드 — error 메시지 그대로 노출 / SW 비활성');
+}
+
+// 데브/라이브 모두 sanitize·CSP·보안 헤더 적용 (개발만 완화)
+if (process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
+  process.env.NODE_ENV_TIGHT = 'true'; // 후속 코드에서 개발 모드 추가 완화 막기
+}
 
 // 렌탈 상품 상세 API
 import { readFileSync } from 'fs';
@@ -193,6 +250,22 @@ cron.schedule('0 9 * * *', () => {
   console.log('⏰ 공시지원금 크롤링 시작 (09:00 KST)');
   crawlSubsidy().catch(e => console.error('크롤링 에러:', e.message));
 }, { timezone: 'Asia/Seoul' });
+
+// customer-db retention (매일 03:00 KST) — converted/rejected 자동 archive, archived 자동 soft-delete, soft-delete 자동 purge
+import { runRetentionJob } from './jobs/customer-db-retention.js';
+cron.schedule('0 3 * * *', () => {
+  console.log('⏰ customer-db retention 시작 (03:00 KST)');
+  runRetentionJob().catch(e => console.error('retention 에러:', e.message));
+}, { timezone: 'Asia/Seoul' });
+
+// customer-db 자동 재배정 (매일 04:00 KST) — 미컨택 7일/저활성 14일 → 풀 복귀
+import { runRedistributionJob } from './jobs/customer-db-redistribution.js';
+cron.schedule('0 4 * * *', () => {
+  console.log('⏰ customer-db 자동 재배정 시작 (04:00 KST)');
+  runRedistributionJob().catch(e => console.error('redistribution 에러:', e.message));
+}, { timezone: 'Asia/Seoul' });
+
+// 정산은 RPC `incentive_calc_monthly_settlement(agent_id, ym)` 즉시 계산 — cron 불필요
 
 app.listen(PORT, () => {
   console.log(`리턴AI 서버 실행: http://localhost:${PORT}`);

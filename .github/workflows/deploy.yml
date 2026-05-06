@@ -1,0 +1,34 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, develop]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set environment by branch
+        id: env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "name=라이브" >> $GITHUB_OUTPUT
+            echo "service=${{ secrets.RAILWAY_SERVICE_LIVE }}" >> $GITHUB_OUTPUT
+          else
+            echo "name=데브" >> $GITHUB_OUTPUT
+            echo "service=${{ secrets.RAILWAY_SERVICE_DEV }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        run: railway up --service ${{ steps.env.outputs.service }} --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Notify
+        if: always()
+        run: echo "✅ ${{ steps.env.outputs.name }} 배포 — ${{ job.status }}"

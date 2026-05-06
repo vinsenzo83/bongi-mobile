@@ -146,6 +146,9 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   }
 })();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/docs/_security.js" defer></script>
+<style>body.role-agent .admin-only { display:none !important; }</style>
 </head>
 <body>
 <div class="wrap">
@@ -1374,7 +1377,142 @@ window.onLoggedIn = function(agent, skipLoad) {
 init();
 </script>
 
+<!-- 📊 차트 섹션 (V5 Phase 2) -->
+<section style="margin-top:24px;padding:18px;background:linear-gradient(135deg,#0f172a,#1e293b);border:1px solid #334155;border-radius:12px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <h2 style="font-size:16px;color:#f8fafc;font-weight:800;letter-spacing:-0.02em">📊 매출 차트</h2>
+    <select id="ch-months" onchange="loadCharts()" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 10px;border-radius:5px;font-size:11.5px">
+      <option value="3">최근 3개월</option>
+      <option value="6" selected>최근 6개월</option>
+      <option value="12">최근 12개월</option>
+    </select>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px"><h3 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">📈 월별 매출 추이</h3><div style="position:relative;height:240px"><canvas id="ch-month"></canvas></div></div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px"><h3 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">📋 상태별 분포</h3><div style="position:relative;height:240px"><canvas id="ch-status"></canvas></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px"><h3 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">🏆 상품 TOP 10</h3><div style="position:relative;height:280px"><canvas id="ch-product"></canvas></div></div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px"><h3 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">🗂️ DB 출처별</h3><div style="position:relative;height:280px"><canvas id="ch-source"></canvas></div></div>
+  </div>
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px">
+    <h3 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">🥇 상담사 ROI TOP 10</h3>
+    <div id="agent-roi-table" style="font-size:11.5px"></div>
+  </div>
+</section>
 
+<script>
+let _charts = {};
+function makeChart(id, type, data, opt = {}) {
+  if (_charts[id]) _charts[id].destroy();
+  Chart.defaults.color = '#cbd5e1';
+  Chart.defaults.font.family = "'Pretendard Variable', sans-serif";
+  _charts[id] = new Chart(document.getElementById(id), {
+    type, data,
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 10.5 } } } },
+      scales: type === 'bar' || type === 'line' ? {
+        x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', font: { size: 10 } }, beginAtZero: true },
+      } : undefined,
+      ...opt,
+    },
+  });
+}
+
+async function loadCharts() {
+  const tk = localStorage.getItem('incentive-auth-token-v1');
+  if (!tk) return;
+  const months = document.getElementById('ch-months').value;
+  const r = await fetch('/api/incentive/dashboard/timeseries?months=' + months, { headers: { Authorization: 'Bearer ' + tk }});
+  if (!r.ok) return;
+  const d = await r.json();
+
+  const STATUS_KO = { pending:'대기', in_progress:'진행', completed:'완료', cancelled:'취소', failed:'실패', activated:'개통완료' };
+  const STATUS_COLOR = { pending:'#fbbf24', in_progress:'#3b82f6', completed:'#22c55e', cancelled:'#dc2626', failed:'#7f1d1d', activated:'#10b981' };
+
+  // 1. 월별 매출 추이
+  makeChart('ch-month', 'bar', {
+    labels: d.by_month.map(m => m.month.slice(2).replace('-', '/')),
+    datasets: [
+      { label: '계약 수', data: d.by_month.map(m=>m.count), backgroundColor: 'rgba(59,130,246,0.7)', yAxisID:'y' },
+      { label: '총 인센티브 (만원)', data: d.by_month.map(m => Math.round(m.total/10000)), type:'line', borderColor:'#22c55e', backgroundColor:'#22c55e', tension: 0.3, yAxisID: 'y1' },
+    ],
+  }, {
+    scales: {
+      x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } },
+      y: { position:'left', grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color:'#94a3b8' }, beginAtZero:true, title: { display:true, text:'건수', color:'#94a3b8', font:{size:10} } },
+      y1: { position:'right', grid: { display:false }, ticks: { color:'#22c55e', callback: v => v + '만' }, beginAtZero:true, title: { display:true, text:'인센티브', color:'#22c55e', font:{size:10} } },
+    },
+  });
+
+  // 2. 상태 분포 (도넛)
+  makeChart('ch-status', 'doughnut', {
+    labels: d.by_status.map(s => STATUS_KO[s.status] || s.status),
+    datasets: [{
+      data: d.by_status.map(s => s.count),
+      backgroundColor: d.by_status.map(s => STATUS_COLOR[s.status] || '#64748b'),
+      borderColor: '#1e293b', borderWidth: 2,
+    }],
+  });
+
+  // 3. 상품 TOP 10
+  makeChart('ch-product', 'bar', {
+    labels: d.top_products.map(p => p.name.length > 18 ? p.name.slice(0,18)+'…' : p.name),
+    datasets: [{ label: '계약 수', data: d.top_products.map(p=>p.count), backgroundColor: 'rgba(139,92,246,0.7)' }],
+  }, { indexAxis: 'y', plugins: { legend: { display: false } } });
+
+  // 4. DB 출처별
+  makeChart('ch-source', 'bar', {
+    labels: d.by_source.map(s => s.name),
+    datasets: [{ label: '계약 수', data: d.by_source.map(s=>s.count), backgroundColor: d.by_source.map(s => s.color || '#475569') }],
+  }, { plugins: { legend: { display: false } } });
+
+  // 5. 상담사 ROI 표 — V5 정식 (incentive_calc_overview RPC)
+  const totalAll = d.top_agents.reduce((a,b)=>a+(b.agent_total||0),0) || 1;
+  const escA = (s) => String(s ?? '').replace(/[<>&]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+  const periodLbl = d.roi_period ? ` <span style="font-weight:400;color:#94a3b8;font-size:11px">(${d.roi_period} 정산 기준)</span>` : '';
+  const titleEl = document.querySelector('#agent-roi-table').previousElementSibling;
+  if (titleEl && titleEl.tagName === 'H3' && !titleEl.dataset.upd) { titleEl.innerHTML = '🥇 상담사 ROI TOP 10' + periodLbl; titleEl.dataset.upd='1'; }
+  document.getElementById('agent-roi-table').innerHTML = d.top_agents.length
+    ? `<table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#0f172a;color:#94a3b8">
+          <th style="padding:6px;text-align:left">순위</th>
+          <th style="padding:6px;text-align:left">상담사</th>
+          <th style="padding:6px">센터</th>
+          <th style="padding:6px;text-align:right">계약</th>
+          <th style="padding:6px;text-align:right">P</th>
+          <th style="padding:6px;text-align:right">우수</th>
+          <th style="padding:6px">Grade</th>
+          <th style="padding:6px;text-align:right">인센티브</th>
+          <th style="padding:6px;text-align:right">보너스</th>
+          <th style="padding:6px;text-align:right">최종 지급액</th>
+          <th style="padding:6px">분포</th>
+        </tr></thead>
+        <tbody>${d.top_agents.map((a,i) => {
+          const pct = ((a.agent_total||0)/totalAll*100).toFixed(0);
+          const gradeBg = a.grade_applied===3 ? '#22c55e' : a.grade_applied===2 ? '#3b82f6' : '#475569';
+          const penalty = a.is_penalty ? ` <span style="color:#f87171;font-size:9px">▼</span>` : '';
+          return `<tr style="border-bottom:1px solid #334155">
+            <td style="padding:6px">${i+1}</td>
+            <td style="padding:6px"><b style="color:#f8fafc">${escA(a.name)}</b></td>
+            <td style="padding:6px;text-align:center">${escA(a.center)||'-'}</td>
+            <td style="padding:6px;text-align:right">${a.count}</td>
+            <td style="padding:6px;text-align:right;color:#a5b4fc">${(Number(a.points||0)).toFixed(1)}P</td>
+            <td style="padding:6px;text-align:right;color:#fbbf24">${a.premium_count||0}</td>
+            <td style="padding:6px;text-align:center"><span style="background:${gradeBg};color:#fff;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:800">G${a.grade_applied||1}</span>${penalty}</td>
+            <td style="padding:6px;text-align:right;color:#22c55e">${(a.incentive||0).toLocaleString()}</td>
+            <td style="padding:6px;text-align:right;color:#fbbf24">${(a.bonus||0).toLocaleString()}</td>
+            <td style="padding:6px;text-align:right;color:#22c55e;font-weight:900">${(a.agent_total||0).toLocaleString()}원</td>
+            <td style="padding:6px"><div style="background:rgba(34,197,94,0.2);height:8px;border-radius:4px;overflow:hidden"><div style="background:#22c55e;height:100%;width:${pct}%"></div></div></td>
+          </tr>`;
+        }).join('')}</tbody></table>`
+    : '<div style="padding:30px;text-align:center;color:#64748b">정산 데이터 없음 (' + (d.roi_period || '전월') + ')</div>';
+}
+
+setTimeout(loadCharts, 800);
+</script>
 
 </body>
 </html>

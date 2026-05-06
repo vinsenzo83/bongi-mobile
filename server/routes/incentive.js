@@ -4,6 +4,10 @@ import { authenticateJWT, optionalAuth } from '../middleware/auth.js';
 
 const router = Router();
 
+// 운영 환경에선 내부 에러 메시지 노출 안 함 (DB 스키마/쿼리 누출 방지)
+const _isProd = process.env.NODE_ENV === 'production';
+const sanitizeErr = (e) => _isProd ? '서버 오류 — 잠시 후 다시 시도하세요' : (e?.message || '서버 오류');
+
 // ─── 헬퍼: req.user → incentive_agents.id 매핑 ───
 // 60초 in-memory LRU 캐시 (Supabase 매 round-trip 절감)
 const _agentCache = new Map();
@@ -513,6 +517,173 @@ router.post('/agents/:id/restore', authenticateJWT, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// 정산 수정 요청 (agent → admin)
+// ═══════════════════════════════════════════════════════════════
+router.post('/corrections', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+    const { period, reason } = req.body || {};
+    if (!period || !reason) return res.status(400).json({ error: 'period, reason 필수' });
+    const reasonTrim = String(reason).trim().slice(0, 1000);
+    if (!reasonTrim) return res.status(400).json({ error: '사유 입력' });
+    const { data, error } = await supabase.from('incentive_settlement_corrections')
+      .insert({ agent_id: me.id, period, reason: reasonTrim, status: 'pending' })
+      .select('*').single();
+    if (error) {
+      if (error.code === '23505') return res.status(409).json({ error: '해당 월 대기 중 요청이 있습니다' });
+      throw error;
+    }
+    res.json({ correction: data });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+router.get('/corrections', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+    let q = supabase.from('incentive_settlement_corrections')
+      .select('*, agent:incentive_agents!incentive_settlement_corrections_agent_id_fkey(id,name,role,center), resolver:incentive_agents!incentive_settlement_corrections_resolved_by_fkey(id,name,role)')
+      .order('created_at', { ascending: false }).limit(parseInt(req.query.limit) || 100);
+    if (me.role === 'agent') q = q.eq('agent_id', me.id);
+    else if (me.role === 'manager') {
+      const { data: members } = await supabase.from('incentive_agents').select('id').eq('center', me.center);
+      q = q.in('agent_id', (members || []).map(m => m.id));
+    }
+    if (req.query.status) q = q.eq('status', req.query.status);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json({ corrections: data || [] });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+router.post('/corrections/:id(\\d+)/resolve', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const note = String(req.body?.note || '').trim().slice(0, 1000);
+    const { data, error } = await supabase.from('incentive_settlement_corrections')
+      .update({ status: 'resolved', resolved_by: me.id, resolved_at: new Date().toISOString(), resolved_note: note, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select('*').single();
+    if (error) throw error;
+    res.json({ correction: data });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+router.post('/corrections/:id(\\d+)/reject', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const note = String(req.body?.note || '').trim().slice(0, 1000);
+    const { data, error } = await supabase.from('incentive_settlement_corrections')
+      .update({ status: 'rejected', resolved_by: me.id, resolved_at: new Date().toISOString(), resolved_note: note, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select('*').single();
+    if (error) throw error;
+    res.json({ correction: data });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// (정산 라우트는 정식 GET /settlement (단건) + GET /manager/overview (전체) + POST /finalize 사용)
+
+// ═══════════════════════════════════════════════════════════════
+// 6.5 GET /api/incentive/dashboard/timeseries — 대시보드 차트 데이터
+//   (지난 N개월 매출 추이, 상태 분포, 상품 TOP, 상담사 ROI, DB 출처 ROI)
+// ═══════════════════════════════════════════════════════════════
+router.get('/dashboard/timeseries', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+    const months = Math.min(parseInt(req.query.months) || 6, 12);
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+    const startStr = startDate.toISOString().slice(0,10);
+
+    let q = supabase.from('incentive_sales')
+      .select('id, agent_id, product_id, contract_date, status, payback_snapshot, rebate_snapshot, add_payback, db_source_id, product:incentive_products(name), db_source:incentive_db_sources(name,color), agent:incentive_agents(name,role,center)')
+      .gte('contract_date', startStr).is('deleted_at', null);
+    if (me.role === 'agent') q = q.eq('agent_id', me.id);
+    else if (me.role === 'manager') {
+      const { data: members } = await supabase.from('incentive_agents').select('id').eq('center', me.center).eq('active', true);
+      const ids = (members || []).map(x => x.id);
+      if (!ids.length) return res.json({ months, by_month: [], by_status: [], top_products: [], top_agents: [], by_source: [] });
+      q = q.in('agent_id', ids);
+    }
+    q = q.limit(20000);
+    const { data: sales, error } = await q;
+    if (error) throw error;
+
+    const byMonth = {}, byStatus = {}, byProduct = {}, byAgent = {}, bySource = {};
+    for (const s of sales || []) {
+      const ym = (s.contract_date || '').slice(0,7);
+      const payback = (s.payback_snapshot || 0) + (s.add_payback || 0);
+      const rebate = s.rebate_snapshot || 0;
+      const total = payback + rebate;
+      byMonth[ym] = byMonth[ym] || { month: ym, count: 0, payback: 0, rebate: 0, total: 0 };
+      byMonth[ym].count++; byMonth[ym].payback += payback; byMonth[ym].rebate += rebate; byMonth[ym].total += total;
+      const st = s.status || 'unknown';
+      byStatus[st] = (byStatus[st] || 0) + 1;
+      const pn = s.product?.name || '미상';
+      byProduct[pn] = byProduct[pn] || { name: pn, count: 0, total: 0 };
+      byProduct[pn].count++; byProduct[pn].total += total;
+      const an = s.agent?.name || '-';
+      byAgent[s.agent_id] = byAgent[s.agent_id] || { id: s.agent_id, name: an, role: s.agent?.role, center: s.agent?.center, count: 0, total: 0 };
+      byAgent[s.agent_id].count++; byAgent[s.agent_id].total += total;
+      const sn = s.db_source?.name || '미지정';
+      bySource[sn] = bySource[sn] || { name: sn, color: s.db_source?.color || '#475569', count: 0, total: 0 };
+      bySource[sn].count++; bySource[sn].total += total;
+    }
+
+    // 월 시퀀스 채움 (빈 월도 0)
+    const fullMonths = [];
+    for (let i = months - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const ym = d.toISOString().slice(0,7);
+      fullMonths.push(byMonth[ym] || { month: ym, count: 0, payback: 0, rebate: 0, total: 0 });
+    }
+
+    // 🆕 상담사 ROI — V5 정식 RPC `incentive_calc_overview` (이번 달 진행 중 정산)
+    // KST 기준 YYYY-MM 정확 계산 (toISOString UTC 변환 회피)
+    const kst = new Date(Date.now() + 9 * 3600_000);
+    const roiYm = `${kst.getUTCFullYear()}-${String(kst.getUTCMonth()+1).padStart(2,'0')}`;
+    let topAgents = [];
+    try {
+      const center = me.role === 'manager' ? me.center : null;
+      const { data: ovRows } = await supabase.rpc('incentive_calc_overview', { p_year_month: roiYm, p_center: center });
+      const filtered = me.role === 'agent' ? (ovRows || []).filter(r => r.agent_id === me.id) : (ovRows || []);
+      topAgents = filtered.map(r => ({
+        id: r.agent_id,
+        name: r.agent_name,
+        role: r.agent_role,
+        center: r.agent_center,
+        count: r.total_count || 0,
+        points: Number(r.total_points || 0),
+        premium_count: r.premium_count || 0,
+        grade_applied: r.grade_applied || 1,
+        is_penalty: !!r.is_penalty,
+        incentive: r.incentive || 0,
+        bonus: r.bonus || 0,
+        agent_total: r.agent_total || 0,  // 최종 상담사 지급액 (V5 정식)
+      })).sort((a,b) => b.agent_total - a.agent_total).slice(0, 10);
+    } catch (e) { console.warn('[top_agents RPC]', e.message); }
+
+    res.json({
+      months,
+      total_sales: (sales || []).length,
+      roi_period: roiYm,
+      by_month: fullMonths,
+      by_status: Object.entries(byStatus).map(([status, count]) => ({ status, count })),
+      top_products: Object.values(byProduct).sort((a,b) => b.count - a.count).slice(0, 10),
+      top_agents: topAgents,
+      by_source: Object.values(bySource).sort((a,b) => b.count - a.count),
+    });
+  } catch (e) {
+    console.error('[dashboard/timeseries]', e);
+    res.status(500).json({ error: sanitizeErr(e) });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // 7. GET /api/incentive/sales?month=YYYY-MM — 영업 조회
 // ═══════════════════════════════════════════════════════════════
 router.get('/sales', authenticateJWT, async (req, res) => {
@@ -651,7 +822,38 @@ router.post('/sales', authenticateJWT, async (req, res) => {
     if (error) throw error;
     // 변경 감사 로그
     logSaleHistory({ sale_id: data.id, action: 'INSERT', before: null, after: data, user_id: req.user.id, user_name: me.name, user_role: me.role });
-    res.json({ sale: data });
+
+    // 🆕 customer-db 자동 변환 — 동일 phone customer 있으면 converted 처리 (콜 모드 진입 여부 무관)
+    let convertedCustomerIds = [];
+    if (customer_phone) {
+      try {
+        const raw = String(customer_phone).trim();
+        const num = raw.replace(/[^0-9]/g, '');
+        const fmt = num.length === 11 ? `${num.slice(0,3)}-${num.slice(3,7)}-${num.slice(7)}` : raw;
+        const { data: matched } = await supabase.from('incentive_customer_db')
+          .select('id')
+          .or(`phone.eq.${raw},phone.eq.${num},phone.eq.${fmt}`)
+          .is('deleted_at', null)
+          .neq('call_status', 'converted')
+          .limit(5);
+        if (matched && matched.length) {
+          const ids = matched.map(c => c.id);
+          convertedCustomerIds = ids;
+          const nowIso = new Date().toISOString();
+          await supabase.from('incentive_customer_db').update({
+            call_status: 'converted',
+            converted_sale_id: data.id,
+            last_contacted_at: nowIso,
+            updated_at: nowIso,
+          }).in('id', ids);
+          await supabase.from('incentive_customer_call_log').insert(
+            ids.map(id => ({ customer_id: id, agent_id: targetAgentId, result:'converted', notes:`자동 변환 (sale ${data.id})` }))
+          );
+        }
+      } catch (e) { console.warn('[customer-db auto-convert]', e); }
+    }
+
+    res.json({ sale: data, converted_customer_ids: convertedCustomerIds });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
@@ -666,6 +868,8 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+    // agent는 계약 수정 불가 (read-only) — 등록만 가능, 수정/취소는 매니저에게 요청
+    if (me.role === 'agent') return res.status(403).json({ error: '상담원은 계약 수정 불가 — 매니저에게 요청' });
 
     const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id } = req.body || {};
     const { data: existing } = await supabase
@@ -754,6 +958,26 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (error) throw error;
     // 변경 감사 로그
     logSaleHistory({ sale_id: data.id, action: 'UPDATE', before: existing, after: data, user_id: req.user.id, user_name: me.name, user_role: me.role });
+
+    // 🆕 sale 취소/실패 시 customer-db 자동 되돌림 — 콜 큐로 복귀
+    if (status && status !== existing.status && (status === 'cancelled' || status === 'failed')) {
+      try {
+        const { data: linked } = await supabase.from('incentive_customer_db')
+          .select('id, call_status').eq('converted_sale_id', data.id).is('deleted_at', null);
+        if (linked?.length) {
+          const ids = linked.map(c => c.id);
+          await supabase.from('incentive_customer_db').update({
+            call_status: 'callback', // 재컨택 필요 상태로 복귀
+            converted_sale_id: null,
+            updated_at: new Date().toISOString(),
+          }).in('id', ids);
+          await supabase.from('incentive_customer_call_log').insert(
+            ids.map(id => ({ customer_id: id, agent_id: existing.agent_id, result:'callback', notes:`sale ${data.id} ${status} → 콜 큐 복귀` }))
+          );
+        }
+      } catch (e) { console.warn('[customer-db sale-revert]', e); }
+    }
+
     res.json({ sale: data });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
@@ -1564,7 +1788,7 @@ router.get('/db-sources', authenticateJWT, async (req, res) => {
     res.json({ db_sources: data });
   } catch (e) {
     console.error('[incentive]', req.method, req.path, e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: sanitizeErr(e) });
   }
 });
 
@@ -1582,7 +1806,7 @@ router.get('/db-sources/all', authenticateJWT, async (req, res) => {
     res.json({ db_sources: data });
   } catch (e) {
     console.error('[incentive]', req.method, req.path, e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: sanitizeErr(e) });
   }
 });
 
@@ -1610,7 +1834,7 @@ router.post('/db-sources', authenticateJWT, async (req, res) => {
     res.json({ db_source: data });
   } catch (e) {
     console.error('[incentive]', req.method, req.path, e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: sanitizeErr(e) });
   }
 });
 
@@ -1638,7 +1862,7 @@ router.patch('/db-sources/:id', authenticateJWT, async (req, res) => {
     res.json({ db_source: data });
   } catch (e) {
     console.error('[incentive]', req.method, req.path, e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: sanitizeErr(e) });
   }
 });
 
@@ -1657,7 +1881,7 @@ router.delete('/db-sources/:id', authenticateJWT, async (req, res) => {
     res.json({ db_source: data });
   } catch (e) {
     console.error('[incentive]', req.method, req.path, e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: sanitizeErr(e) });
   }
 });
 
@@ -1717,7 +1941,7 @@ router.get('/sales/:id/history', authenticateJWT, async (req, res) => {
     res.json({ history: data });
   } catch (e) {
     console.error('[incentive]', req.method, req.path, e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: sanitizeErr(e) });
   }
 });
 
@@ -1737,7 +1961,7 @@ router.get('/sales-history', authenticateJWT, async (req, res) => {
     res.json({ history: data });
   } catch (e) {
     console.error('[incentive]', req.method, req.path, e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: sanitizeErr(e) });
   }
 });
 
@@ -1761,7 +1985,7 @@ router.get('/manager-overrides', authenticateJWT, async (req, res) => {
       out.push({ agent: m, override: ov });
     }
     res.json({ month: ym, managers: out });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -1779,7 +2003,7 @@ router.get('/manager-exemptions', authenticateJWT, async (req, res) => {
     const { data, error } = await q.order('granted_at', { ascending: false }).limit(200);
     if (error) throw error;
     res.json({ exemptions: data });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
 });
 
 // POST /api/incentive/manager-exemptions — 면제 부여 (admin)
@@ -1798,7 +2022,7 @@ router.post('/manager-exemptions', authenticateJWT, async (req, res) => {
     }, { onConflict: 'agent_id,year_month' }).select().single();
     if (error) throw error;
     res.json({ exemption: data });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
 });
 
 // DELETE /api/incentive/manager-exemptions/:id — 면제 해제 (admin)
@@ -1809,7 +2033,7 @@ router.delete('/manager-exemptions/:id', authenticateJWT, async (req, res) => {
     const { error } = await supabase.from('incentive_manager_exemptions').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
 });
 
 // GET /api/incentive/role-permissions/history — 권한 매트릭스 변경 이력 (admin)
@@ -1827,7 +2051,7 @@ router.get('/role-permissions/history', authenticateJWT, async (req, res) => {
     res.json({ history: data });
   } catch (e) {
     console.error('[incentive]', req.method, req.path, e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: sanitizeErr(e) });
   }
 });
 

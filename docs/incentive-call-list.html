@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://dugaqvvnhsgenhmhuyju.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="https://dugaqvvnhsgenhmhuyju.supabase.co">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📋 내 콜 리스트</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+html { height:100%; }
+body { height:100vh; overflow-y:auto; font-family: 'Pretendard Variable', sans-serif; background:#0f172a; color:#e2e8f0; padding:18px 18px 80px; margin:0; }
+.wrap { max-width:1400px; margin:0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #334155; }
+h1 { font-size:20px; color:#f8fafc; }
+.subtitle { font-size:11px; color:#94a3b8; margin-top:3px; }
+
+.kpi-row { display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; margin-bottom:14px; }
+.kpi { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:10px; padding:12px 14px; }
+.kpi .label { font-size:10px; color:#94a3b8; font-weight:700; }
+.kpi .val { font-size:22px; color:#f8fafc; font-weight:900; margin-top:3px; }
+.kpi.highlight { background:linear-gradient(135deg,#1e3a8a,#0f172a); border-color:#3b82f6; }
+.kpi.highlight .val { color:#bfdbfe; }
+.kpi.warn { background:linear-gradient(135deg,#7c2d12,#0f172a); border-color:#fbbf24; }
+.kpi.warn .val { color:#fde047; }
+
+.toolbar { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
+.toolbar input, .toolbar select { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 12px; border-radius:6px; font-size:12px; font-family:inherit; }
+.toolbar button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:12px; }
+
+.section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:10px; padding:0; margin-bottom:14px; overflow:hidden; }
+.section h2 { font-size:13px; color:#fbbf24; font-weight:800; padding:12px 18px; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center; }
+
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { background:#1e3a8a; color:#bfdbfe; padding:10px 12px; text-align:left; font-weight:800; font-size:11.5px; }
+td { padding:10px 12px; border-bottom:1px solid #1e293b; }
+tr.row-call { cursor:pointer; transition:background 0.15s; }
+tr.row-call:hover { background:rgba(59,130,246,0.1); }
+tr.row-callback { background:rgba(251,191,36,0.06); }
+tr.row-callback:hover { background:rgba(251,191,36,0.14); }
+
+.badge { padding:2px 7px; border-radius:4px; font-size:10px; font-weight:800; color:#fff; }
+.b-pending { background:#475569; }
+.b-callback { background:#3b82f6; }
+.b-no_answer { background:#64748b; }
+.b-rejected { background:#dc2626; }
+.b-converted { background:#16a34a; }
+.b-contacted { background:#22c55e; }
+
+.priority-1 { color:#fde047; font-weight:800; }
+.priority-2 { color:#86efac; }
+.priority-3 { color:#94a3b8; }
+
+.auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.95); display:flex; justify-content:center; align-items:center; z-index:9999; }
+.auth-box { background:linear-gradient(135deg,#1e293b,#334155); border:1.5px solid #475569; border-radius:12px; padding:24px 28px; width:380px; }
+.auth-box input { width:100%; background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:10px 12px; border-radius:6px; font-size:13px; margin-bottom:8px; }
+.auth-box button { width:100%; background:#3b82f6; color:#fff; border:none; padding:11px; border-radius:6px; font-weight:800; cursor:pointer; }
+
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:14px 24px; border-radius:10px; font-weight:800; z-index:99999; opacity:0; transition:opacity 0.2s; }
+#toast.show { opacity:1; }
+</style>
+<script>
+(function(){
+  if (window !== window.parent) {
+    document.documentElement.classList.add('embedded-mode');
+    var s = document.createElement('style');
+    s.textContent = '.embedded-mode header { display:none !important; } body { padding-top:14px !important; }';
+    document.head.appendChild(s);
+  }
+})();
+</script>
+<script src="/docs/_security.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📋 내 콜 리스트</h1>
+      <div class="subtitle">우선순위 자동 정렬 · callback → 신규 → 재시도</div>
+    </div>
+    <div id="user-info" style="display:none;font-size:12px;color:#cbd5e1">
+      <span id="user-name">-</span>
+    </div>
+  </header>
+
+  <div id="main" style="display:none">
+    <!-- 팀장 분배 섹션 (manager 전용, 본인 센터 미분배 있을 때만 표시) -->
+    <div id="mgr-distribute" class="section" style="display:none;margin-bottom:14px">
+      <h2>🎯 팀 분배 — 우리 센터 미분배 콜</h2>
+      <div style="font-size:11.5px;color:#cbd5e1;margin:0 18px 12px">
+        admin이 우리 센터에 배정한 콜을 팀원에게 재분배합니다.
+      </div>
+      <div style="padding:0 18px 14px">
+        <div id="mgr-team-pool" style="background:rgba(251,191,36,0.1);border:1px solid #fbbf24;padding:10px 14px;border-radius:8px;margin-bottom:10px;font-size:12px;color:#fde047">📦 우리 센터 미분배: <b id="mgr-pool-count">-</b>건</div>
+        <div id="mgr-team-agents" style="background:rgba(0,0,0,0.3);border:1px solid #334155;border-radius:6px;padding:10px;margin-bottom:10px"></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <label style="font-size:11.5px;color:#cbd5e1">1인당 max</label>
+          <input type="number" id="mgr-max" min="0" max="10000" step="50" value="100" style="width:100px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 10px;border-radius:5px;font-size:12px">
+          <button onclick="executeMgrDistribute()" style="background:#16a34a;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:800;cursor:pointer;font-size:12px">🎯 팀원 분배</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-row" id="kpi-row">
+      <div class="kpi"><div class="label">📋 전체</div><div class="val" id="kpi-total">-</div></div>
+      <div class="kpi warn"><div class="label">🔔 오늘 콜백</div><div class="val" id="kpi-callback">0</div></div>
+      <div class="kpi"><div class="label">⏰ 미연락</div><div class="val" id="kpi-pending">-</div></div>
+      <div class="kpi"><div class="label">📵 부재 (재시도)</div><div class="val" id="kpi-no_answer">-</div></div>
+      <div class="kpi highlight"><div class="label">🎉 전환</div><div class="val" id="kpi-converted">-</div></div>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="이름·전화 검색" style="flex:1">
+      <select id="f-status">
+        <option value="">우선순위 자동 정렬</option>
+        <option value="pending">⏰ 미연락만</option>
+        <option value="callback">📞 콜백만</option>
+        <option value="no_answer">📵 부재만</option>
+        <option value="rejected">❌ 거절만</option>
+        <option value="converted">🎉 계약완료</option>
+      </select>
+      <button onclick="loadCustomers()">🔄 새로고침</button>
+      <button onclick="openRequestModal()" style="background:#16a34a;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📥 콜 분배 요청</button>
+      <button onclick="loadMyRequests()" style="background:#475569;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px" id="btn-my-requests">📋 내 요청</button>
+    </div>
+
+    <div class="section">
+      <h2>📋 콜 큐 <span id="cust-total" style="font-weight:400;color:#94a3b8">-</span></h2>
+      <table>
+        <thead><tr>
+          <th>우선</th><th>이름</th><th>전화</th><th>지역</th><th>통신사</th>
+          <th>출처</th><th>상태</th><th>이전</th><th>📝 메모</th><th>다음</th>
+        </tr></thead>
+        <tbody id="cust-tbody"><tr><td colspan="10" style="text-align:center;padding:20px;color:#64748b">로딩 중...</td></tr></tbody>
+      </table>
+      <div style="display:flex;gap:8px;justify-content:center;padding:12px">
+        <button onclick="prevPage()" style="background:#475569;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:11px">← 이전</button>
+        <span id="page-info" style="padding:6px 12px;font-size:11.5px;color:#94a3b8">-</span>
+        <button onclick="nextPage()" style="background:#475569;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:11px">다음 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 분배 요청 모달 (agent) -->
+<div id="req-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99999;justify-content:center;align-items:center" onclick="if(event.target===this)closeRequestModal()">
+  <div style="background:#1e293b;border:1.5px solid #475569;border-radius:14px;padding:22px 26px;width:440px;max-width:92vw;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+    <h3 style="font-size:15px;color:#22c55e;font-weight:800;margin-bottom:14px">📥 콜 분배 요청</h3>
+    <label style="font-size:12px;color:#cbd5e1;display:block;margin-bottom:10px">요청 건수
+      <input type="number" id="req-count" min="10" max="500" step="10" value="50" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:13px;margin-top:4px;font-family:inherit">
+    </label>
+    <label style="font-size:12px;color:#cbd5e1;display:block;margin-bottom:14px">사유 (선택)
+      <textarea id="req-reason" rows="3" placeholder="예: 잔여 콜 부족 · 컨버전 활동 추가 필요" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12px;margin-top:4px;font-family:inherit;resize:vertical"></textarea>
+    </label>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" onclick="closeRequestModal()" style="background:#475569;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px">취소</button>
+      <button type="button" onclick="submitRequest()" style="background:#22c55e;color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:800">📨 요청 제출</button>
+    </div>
+  </div>
+</div>
+
+<!-- 분배 요청 list 모달 (agent: 본인 요청 / manager: 본인 센터 요청) -->
+<div id="req-list-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99999;justify-content:center;align-items:center" onclick="if(event.target===this)closeRequestList()">
+  <div style="background:#1e293b;border:1.5px solid #475569;border-radius:14px;padding:20px 24px;width:760px;max-width:94vw;max-height:80vh;overflow-y:auto;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 id="req-list-title" style="font-size:15px;color:#60a5fa;font-weight:800">📋 분배 요청</h3>
+      <button onclick="closeRequestList()" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px">닫기</button>
+    </div>
+    <div id="req-list-body" style="font-size:12px"></div>
+  </div>
+</div>
+
+<div id="auth-overlay" class="auth-overlay" style="display:none">
+  <div class="auth-box">
+    <h2 style="font-size:15px;color:#60a5fa;font-weight:800;margin-bottom:12px">🔐 상담사 로그인</h2>
+    <input type="email" id="auth-email" placeholder="email">
+    <input type="password" id="auth-pass" placeholder="비밀번호">
+    <button onclick="login()">로그인</button>
+    <div id="auth-msg" style="color:#dc2626;font-size:11px;margin-top:6px;min-height:14px"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api/incentive';
+const CDB = '/api/customer-db';
+const TK_KEY = 'incentive-auth-token-v1';
+const tk = () => localStorage.getItem(TK_KEY);
+async function fetchAuth(url, opts = {}) {
+  return fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + tk() }});
+}
+// HTML escape — 사용자 입력값을 innerHTML에 넣을 때 사용
+const esc = (s) => String(s ?? '').replace(/[<>&"']/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[ch]));
+let _state = { offset:0, limit:50, total:0, dbSources:[] };
+
+function showToast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2500); }
+
+async function login() {
+  const email = document.getElementById('auth-email').value;
+  const pw = document.getElementById('auth-pass').value;
+  try {
+    const r = await fetch('/api/auth/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+    if(!r.ok) throw new Error((await r.json()).error);
+    const d = await r.json();
+    localStorage.setItem(TK_KEY, d.access_token);
+    location.reload();
+  } catch(e) { document.getElementById('auth-msg').textContent = e.message; }
+}
+
+async function init() {
+  if (!tk()) { document.getElementById('auth-overlay').style.display = ''; return; }
+  try {
+    const r = await fetchAuth(API + '/agents/me');
+    if (!r.ok) { document.getElementById('auth-overlay').style.display = ''; return; }
+    const me = (await r.json()).agent;
+    document.getElementById('user-name').textContent = me.name + ' (' + me.role + ')';
+    document.getElementById('user-info').style.display = '';
+    document.getElementById('main').style.display = '';
+    window._myAgent = me;
+    loadDbSources();
+    loadStats();
+    loadCustomers();
+    if (me.role === 'manager') loadMgrDistribute();
+    setTimeout(checkCallbackDue, 1500);
+    // manager/admin: pending 요청 자동 체크 (배지)
+    if (me.role === 'manager' || me.role === 'admin') {
+      document.getElementById('btn-my-requests').textContent = '📋 분배 요청';
+      checkPendingRequests();
+      if (window._pendReqTimer) clearInterval(window._pendReqTimer);
+      window._pendReqTimer = setInterval(checkPendingRequests, 60000);
+    }
+    // agent: 본인 요청 결과 변경 감지 → 푸시 알림
+    if (me.role === 'agent') {
+      checkMyRequestUpdates();
+      if (window._myReqTimer) clearInterval(window._myReqTimer);
+      window._myReqTimer = setInterval(checkMyRequestUpdates, 30000);
+    }
+  } catch (e) { document.getElementById('auth-overlay').style.display = ''; }
+}
+
+// 🆕 콜백 도래 알림 + 30분 전 사전 알림 (브라우저 Notification + 사운드)
+let _lastNotifiedIds = new Set();
+async function checkCallbackDue() {
+  if (!tk()) return; // 인증 전 무의미한 fetch 방지
+  try {
+    const r = await fetchAuth(CDB + '?status=callback&limit=100');
+    if (!r.ok) return;
+    const d = await r.json();
+    const now = new Date();
+    const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
+    const endOfDay = new Date(now); endOfDay.setHours(23,59,59,999);
+    const SOON_MS = 30 * 60_000;
+    const due = []; const overdue = []; const soon = [];
+    (d.customers || []).forEach(c => {
+      if (!c.callback_at) return;
+      const t = new Date(c.callback_at);
+      if (t < now && t >= startOfDay) overdue.push(c);
+      else if (t >= now && t <= endOfDay) {
+        due.push(c);
+        if (t - now <= SOON_MS) soon.push(c);
+      }
+    });
+    // (자동 토스트 제거 — KPI 카드의 '🔔 오늘 콜백'으로 표시 + 30분 전 push 알림만 유지)
+    // 30분 이내 도래 + 아직 알림 안 보낸 customer만 push
+    soon.forEach(c => {
+      if (_lastNotifiedIds.has(c.id)) return;
+      _lastNotifiedIds.add(c.id);
+      pushNotify(`📞 콜백 30분 전 — ${c.name}`, `${new Date(c.callback_at).toLocaleString('ko-KR',{hour:'2-digit',minute:'2-digit'})} · ${c.phone}`);
+    });
+  } catch (e) { console.warn('[checkCallbackDue]', e); }
+}
+
+function pushNotify(title, body) {
+  // 브라우저 알림 (권한 있을 때만)
+  if ('Notification' in window) {
+    if (Notification.permission === 'granted') {
+      try { new Notification(title, { body, icon: '/logo192.png', tag: 'callback-' + title }); } catch {}
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }
+  // 사운드 (Web Audio beep)
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880; g.gain.value = 0.08;
+    o.start(); o.stop(ctx.currentTime + 0.18);
+  } catch {}
+  // 부모 창에도 알림 (통합 어드민 iframe인 경우)
+  try { window.parent.postMessage({ type:'callback-notify', title, body }, '*'); } catch {}
+}
+
+// 1분마다 콜백 도래 체크 (keep-alive iframe 재진입 누수 방지 — 기존 인터벌 클리어)
+if (window._cbDueTimer) clearInterval(window._cbDueTimer);
+window._cbDueTimer = setInterval(checkCallbackDue, 60_000);
+
+async function loadDbSources() {
+  const r = await fetchAuth(API + '/db-sources');
+  if (!r.ok) return;
+  const d = await r.json();
+  _state.dbSources = d.db_sources || [];
+}
+
+async function loadStats() {
+  const r = await fetchAuth(CDB + '/stats/summary');
+  if (!r.ok) return;
+  const d = await r.json();
+  document.getElementById('kpi-total').textContent = (d.total_active || 0).toLocaleString();
+  document.getElementById('kpi-pending').textContent = ((d.by_status||{}).pending || 0).toLocaleString();
+  document.getElementById('kpi-no_answer').textContent = ((d.by_status||{}).no_answer || 0).toLocaleString();
+  document.getElementById('kpi-converted').textContent = ((d.by_status||{}).converted || 0).toLocaleString();
+  document.getElementById('kpi-callback').textContent = ((d.by_status||{}).callback || 0).toLocaleString();
+}
+
+async function loadCustomers() {
+  const params = new URLSearchParams({ limit: _state.limit, offset: _state.offset, sort:'priority' });
+  const q = document.getElementById('search').value.trim();
+  const status = document.getElementById('f-status').value;
+  if (q) params.set('q', q);
+  if (status) params.set('status', status);
+
+  const r = await fetchAuth(CDB + '?' + params);
+  if (!r.ok) return;
+  const d = await r.json();
+  _state.total = d.count || 0;
+  document.getElementById('cust-total').textContent = `· ${_state.total.toLocaleString()}건`;
+  document.getElementById('page-info').textContent = `${Math.min(_state.offset+1, _state.total)}~${Math.min(_state.offset+_state.limit, _state.total)} / ${_state.total.toLocaleString()}`;
+
+  const tbody = document.getElementById('cust-tbody');
+  if (!d.customers.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:50px">
+      <div style="font-size:50px;margin-bottom:10px">🎉</div>
+      <div style="font-size:16px;color:#86efac;font-weight:800;margin-bottom:6px">모든 콜 처리 완료!</div>
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:14px">잔여 콜이 없습니다. admin에 추가 분배 요청하거나 풀에서 직접 받으세요.</div>
+      <button onclick="openRequestModal()" style="background:#16a34a;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px">📥 매니저에게 분배 요청</button>
+    </td></tr>`;
+    return;
+  }
+
+  const statusMap = {
+    pending: { txt:'⏰ 미연락', cls:'b-pending', priority:2 },
+    contacted: { txt:'✅ 연락됨', cls:'b-contacted', priority:3 },
+    callback: { txt:'📞 콜백', cls:'b-callback', priority:1 },
+    no_answer: { txt:'📵 부재', cls:'b-no_answer', priority:2 },
+    rejected: { txt:'❌ 거절', cls:'b-rejected', priority:3 },
+    converted: { txt:'🎉 계약완료', cls:'b-converted', priority:4 },
+  };
+
+  tbody.innerHTML = d.customers.map((c) => {
+    const sm = statusMap[c.call_status] || { txt: c.call_status, cls:'b-pending', priority:3 };
+    const src = c.db_source || {};
+    const cb = c.callback_at ? new Date(c.callback_at) : null;
+    const isToday = cb && cb.toDateString() === new Date().toDateString();
+    const next = cb ? `${cb.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}` : (c.next_retry_at ? new Date(c.next_retry_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-');
+    const pCls = sm.priority === 1 ? 'priority-1' : sm.priority === 2 ? 'priority-2' : 'priority-3';
+    const pIcon = sm.priority === 1 ? '🔥' : sm.priority === 2 ? '✨' : '·';
+    const noteRaw = (c.notes || '').trim();
+    const noteEsc = noteRaw.replace(/[<>&"]/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
+    const notePreview = noteRaw ? (noteRaw.length > 30 ? noteEsc.slice(0,30)+'…' : noteEsc) : '<i style="color:#64748b">-</i>';
+    return `<tr class="row-call ${isToday?'row-callback':''}" onclick="openCallScreen('${c.id}','${(c.name||'').replace(/['"<>&]/g,'')}')">
+      <td class="${pCls}">${pIcon}</td>
+      <td><b>${esc(c.name)}</b>${c.age?' · '+esc(c.age):''}${c.gender?' · '+esc(c.gender):''}</td>
+      <td style="font-family:monospace;color:#cbd5e1">${esc(c.phone)}</td>
+      <td>${esc(c.region)||'-'}</td>
+      <td>${c.carrier?esc(c.carrier):'<i style="color:#64748b">-</i>'}</td>
+      <td><span style="background:${esc(src.color)||'#475569'};color:#fff;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700">${esc(src.name)||'-'}</span></td>
+      <td><span class="badge ${sm.cls}">${sm.txt}</span></td>
+      <td style="font-size:10.5px;color:#94a3b8">${c.call_count||0}회</td>
+      <td style="font-size:10.5px;color:#cbd5e1;max-width:180px" title="${noteEsc}">${notePreview}</td>
+      <td style="font-size:10.5px;color:${isToday?'#fde047':'#94a3b8'}">${next}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openCallScreen(customerId, name) {
+  if (window.parent && window.parent !== window) {
+    // 통합 어드민 안에서는 부모에 메뉴 전환 + customer_id 전달
+    window.parent.postMessage({ type:'open-call-screen', customer_id: customerId, name }, '*');
+  } else {
+    // 단독 페이지로 접속한 경우만 직접 이동
+    location.href = '/docs/tm-counselor.html?customer_id=' + encodeURIComponent(customerId);
+  }
+}
+
+function prevPage() { if (_state.offset > 0) { _state.offset = Math.max(0, _state.offset - _state.limit); loadCustomers(); } }
+function nextPage() { if (_state.offset + _state.limit < _state.total) { _state.offset += _state.limit; loadCustomers(); } }
+
+document.getElementById('search').addEventListener('keydown', e => { if (e.key === 'Enter') loadCustomers(); });
+document.getElementById('f-status').addEventListener('change', loadCustomers);
+
+async function autoRefill() {
+  const r = await fetchAuth(CDB + '/auto-refill', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ threshold: 30, refill_size: 50 }),
+  });
+  const d = await r.json();
+  if (!r.ok) { showAlertModal('❌ 오류', d.error || '요청 실패', 'error'); return; }
+  if (d.refilled > 0) {
+    showAlertModal('📥 콜 추가 받음', `${d.refilled}건이 본인 분배에 추가되었습니다.\n현재 잔여 ${d.current}건`, 'success');
+  } else if ((d.center_pool || 0) > 0) {
+    showAlertModal('⏳ 매니저 분배 대기', `본인 센터에 <b>${d.center_pool}건</b> 미분배 상태입니다.\n매니저에게 본인 분배를 요청하세요.`, 'warn');
+  } else if ((d.global_pool || 0) > 0) {
+    showAlertModal('🏢 센터 분배 대기', `전사 미배정 풀에 <b>${d.global_pool}건</b>이 있습니다.\nadmin에게 본인 센터(${window._myAgent?.center || '-'}) 분배를 요청하세요.`, 'warn');
+  } else if (d.message === '잔여 콜 충분') {
+    showAlertModal('✅ 추가 필요 없음', `현재 잔여 ${d.current || 0}건으로 충분합니다.`, 'info');
+  } else {
+    showAlertModal('🚫 풀 비어있음', d.message || '풀이 완전히 비었습니다 — admin에게 신규 import를 요청하세요.', 'error');
+  }
+  loadStats();
+  loadCustomers();
+}
+
+// 🆕 안내 팝업 (info/success/warn/error)
+function showAlertModal(title, body, kind = 'info') {
+  let modal = document.getElementById('alert-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'alert-modal';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99998;justify-content:center;align-items:center';
+    modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+    modal.innerHTML = `
+      <div style="background:#1e293b;border:1.5px solid #475569;border-radius:14px;padding:22px 26px;width:440px;max-width:92vw;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+        <h3 id="alert-modal-title" style="font-size:15px;font-weight:800;margin-bottom:10px"></h3>
+        <div id="alert-modal-body" style="font-size:13px;color:#cbd5e1;line-height:1.6;white-space:pre-wrap;margin-bottom:16px"></div>
+        <div style="display:flex;justify-content:flex-end">
+          <button id="alert-modal-ok" style="background:#3b82f6;color:#fff;border:none;padding:8px 22px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:800">확인</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('#alert-modal-ok').onclick = () => modal.style.display = 'none';
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.style.display === 'flex') modal.style.display = 'none'; });
+  }
+  const colors = { info:'#60a5fa', success:'#22c55e', warn:'#fbbf24', error:'#f87171' };
+  modal.querySelector('#alert-modal-title').textContent = title;
+  modal.querySelector('#alert-modal-title').style.color = colors[kind] || colors.info;
+  modal.querySelector('#alert-modal-body').innerHTML = body;
+  modal.querySelector('#alert-modal-ok').style.background = colors[kind] || colors.info;
+  modal.style.display = 'flex';
+}
+
+// 자동 보충 트리거 — 진입 시 잔여 < 30이면 자동 호출
+async function checkAutoRefill() {
+  const r = await fetchAuth(CDB + '/stats/summary');
+  if (!r.ok) return;
+  const d = await r.json();
+  const pending = (d.by_status || {}).pending || 0;
+  const noAns = (d.by_status || {}).no_answer || 0;
+  const callback = (d.by_status || {}).callback || 0;
+  const remaining = pending + noAns + callback;
+  if (remaining < 30) {
+    showToast('잔여 콜 ' + remaining + '건 — 자동 추가 받음');
+    await autoRefill();
+  }
+}
+
+async function loadMgrDistribute() {
+  if (!window._myAgent || window._myAgent.role !== 'manager') return;
+  const r = await fetchAuth(CDB + '/pool/centers');
+  if (!r.ok) return;
+  const d = await r.json();
+  const myCenter = (d.centers || []).find(c => c.center === window._myAgent.center);
+  if (!myCenter || myCenter.pending_assignment === 0) {
+    document.getElementById('mgr-distribute').style.display = 'none';
+    return;
+  }
+  document.getElementById('mgr-distribute').style.display = '';
+  document.getElementById('mgr-pool-count').textContent = myCenter.pending_assignment.toLocaleString();
+
+  // 본인 센터 상담사 list (본인 포함, agent + manager)
+  const r2 = await fetchAuth('/api/incentive/agents');
+  if (!r2.ok) return;
+  const agents = (await r2.json()).agents || [];
+  const teamMembers = agents.filter(a => a.center === window._myAgent.center && (a.role === 'agent' || a.role === 'manager') && a.active);
+
+  // 잔여 콜 정보 (pool/stats per_agent)
+  const r3 = await fetchAuth(CDB + '/pool/stats');
+  const pool = r3.ok ? await r3.json() : { per_agent: [] };
+
+  document.getElementById('mgr-team-agents').innerHTML = teamMembers.map(a => {
+    const rem = (pool.per_agent || []).find(x => x.id === a.id)?.remaining || 0;
+    const color = rem === 0 ? '#dc2626' : rem < 30 ? '#fca5a5' : rem < 100 ? '#fde047' : '#86efac';
+    return `<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;font-size:12px;color:#cbd5e1;cursor:pointer;border-radius:4px">
+      <input type="checkbox" value="${a.id}" data-mgr-team style="width:16px;height:16px">
+      <b>${a.name}</b> <span style="color:#64748b;font-size:10.5px">(${a.role})</span>
+      <span style="margin-left:auto;color:${color};font-weight:700;font-size:11px">잔여 ${rem}</span>
+    </label>`;
+  }).join('');
+}
+
+async function executeMgrDistribute() {
+  const ids = Array.from(document.querySelectorAll('[data-mgr-team]:checked')).map(i => i.value);
+  if (!ids.length) { alert('팀원 1명 이상 선택'); return; }
+  const max = parseInt(document.getElementById('mgr-max').value) || 0;
+  const r = await fetchAuth(CDB + '/distribute', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ method: 'round_robin', agent_ids: ids, max_per_agent: max }),
+  });
+  const d = await r.json();
+  if (!r.ok) { alert(d.error); return; }
+  showToast(`🎯 ${d.distributed.toLocaleString()}건 팀원 분배 완료`);
+  loadStats();
+  loadMgrDistribute();
+  loadCustomers();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 분배 요청 (agent → manager/admin 승인)
+// ═══════════════════════════════════════════════════════════════
+function openRequestModal() {
+  document.getElementById('req-count').value = 50;
+  document.getElementById('req-reason').value = '';
+  const modal = document.getElementById('req-modal');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('req-count').focus(), 50);
+  // ESC 닫기 / Ctrl+Enter 제출
+  const keyHandler = (e) => {
+    if (modal.style.display !== 'flex') { document.removeEventListener('keydown', keyHandler); return; }
+    if (e.key === 'Escape') { closeRequestModal(); document.removeEventListener('keydown', keyHandler); }
+    else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || e.target.id === 'req-count')) {
+      e.preventDefault(); submitRequest(); document.removeEventListener('keydown', keyHandler);
+    }
+  };
+  document.addEventListener('keydown', keyHandler);
+}
+function closeRequestModal() { document.getElementById('req-modal').style.display = 'none'; }
+
+async function submitRequest() {
+  console.log('[submitRequest] start');
+  try {
+    const count = parseInt(document.getElementById('req-count').value) || 50;
+    const reason = document.getElementById('req-reason').value.trim();
+    console.log('[submitRequest] count=', count, 'reason=', reason, 'token=', !!tk());
+    const r = await fetchAuth(CDB + '/requests', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ requested_count: count, reason })
+    });
+    const d = await r.json();
+    console.log('[submitRequest] status=', r.status, 'data=', d);
+    if (!r.ok) {
+      closeRequestModal();
+      showAlertModal('❌ 요청 실패', d.error || ('status ' + r.status), 'error');
+      return;
+    }
+    closeRequestModal();
+    showAlertModal('📨 요청 제출됨', `${count}건 요청 — 매니저 승인 대기 중`, 'success');
+  } catch (e) {
+    console.error('[submitRequest] error', e);
+    alert('요청 실패: ' + e.message);
+  }
+}
+
+async function loadMyRequests() {
+  // 모달 먼저 띄우고 로딩 상태
+  const role = window._myAgent?.role;
+  const isApprover = role === 'manager' || role === 'admin';
+  document.getElementById('req-list-title').textContent = isApprover ? '📋 분배 요청 (승인 대기·이력)' : '📋 내 분배 요청';
+  document.getElementById('req-list-body').innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8">로딩 중...</div>';
+  document.getElementById('req-list-modal').style.display = 'flex';
+
+  let r, d;
+  try {
+    r = await fetchAuth(CDB + '/requests?limit=50');
+    d = await r.json();
+    console.log('[loadMyRequests]', r.status, d);
+  } catch (e) {
+    document.getElementById('req-list-body').innerHTML = `<div style="padding:30px;text-align:center;color:#f87171">네트워크 오류: ${e.message}</div>`;
+    return;
+  }
+  if (!r.ok) {
+    document.getElementById('req-list-body').innerHTML = `<div style="padding:30px;text-align:center;color:#f87171">⚠️ 오류 ${r.status}<br><span style="font-size:11px;color:#94a3b8">${d.error || ''}</span></div>`;
+    return;
+  }
+  const body = document.getElementById('req-list-body');
+  if (!d.requests.length) { body.innerHTML = '<div style="padding:30px;text-align:center;color:#64748b">요청 없음</div>'; }
+  else {
+    const STATUS = { pending:{txt:'⏳ 대기',c:'#fbbf24'}, approved:{txt:'✅ 승인',c:'#22c55e'}, rejected:{txt:'❌ 거부',c:'#f87171'}, cancelled:{txt:'🚫 취소',c:'#94a3b8'} };
+    body.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:11.5px">
+      <thead><tr style="background:#0f172a;color:#94a3b8">
+        <th style="padding:8px;text-align:left">요청자</th><th style="padding:8px">센터</th>
+        <th style="padding:8px">건수</th><th style="padding:8px;text-align:left">사유</th>
+        <th style="padding:8px">상태</th><th style="padding:8px">분배</th><th style="padding:8px">시각</th>
+        ${isApprover ? '<th style="padding:8px">처리</th>' : '<th style="padding:8px">취소</th>'}
+      </tr></thead><tbody>` +
+      d.requests.map(rq => {
+        const st = STATUS[rq.status] || { txt: rq.status, c:'#94a3b8' };
+        const dt = new Date(rq.created_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+        const actCell = rq.status !== 'pending' ? '<td style="padding:8px;text-align:center;color:#64748b">-</td>' : (
+          isApprover
+            ? `<td style="padding:8px;display:flex;gap:4px">
+                 <button onclick="approveReq(${rq.id})" style="background:#22c55e;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer">승인</button>
+                 <button onclick="rejectReq(${rq.id})" style="background:#dc2626;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer">거부</button>
+               </td>`
+            : `<td style="padding:8px;text-align:center"><button onclick="cancelReq(${rq.id})" style="background:#475569;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer">취소</button></td>`
+        );
+        const noteSlice = rq.decided_note ? (rq.decided_note.length > 18 ? rq.decided_note.slice(0,18)+'…' : rq.decided_note) : '';
+        return `<tr style="border-bottom:1px solid #334155">
+          <td style="padding:8px"><b>${esc(rq.agent?.name)||'-'}</b><div style="font-size:10px;color:#94a3b8">${esc(rq.agent?.role)}</div></td>
+          <td style="padding:8px;text-align:center">${esc(rq.center)||'-'}</td>
+          <td style="padding:8px;text-align:center;font-weight:800">${rq.requested_count|0}</td>
+          <td style="padding:8px;color:#cbd5e1;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(rq.reason)}">${rq.reason ? esc(rq.reason) : '<i style="color:#64748b">-</i>'}</td>
+          <td style="padding:8px;text-align:center;color:${st.c};font-weight:700">${st.txt}${rq.decided_note ? `<div style="font-size:10px;color:#94a3b8;font-weight:400;margin-top:2px;font-style:italic" title="${esc(rq.decided_note)}">💬 ${esc(noteSlice)}</div>` : ''}</td>
+          <td style="padding:8px;text-align:center">${rq.distributed_count > 0 ? (rq.distributed_count|0) + '건' : '-'}</td>
+          <td style="padding:8px;text-align:center;color:#94a3b8;font-size:10.5px">${dt}</td>
+          ${actCell}
+        </tr>`;
+      }).join('') + '</tbody></table>';
+  }
+  document.getElementById('req-list-modal').style.display = 'flex';
+}
+function closeRequestList() { document.getElementById('req-list-modal').style.display = 'none'; }
+
+async function approveReq(id) {
+  const grant = prompt('승인 건수 (요청한 만큼 분배 — 비워두면 요청 그대로)');
+  const r = await fetchAuth(CDB + `/requests/${id}/approve`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ grant_count: grant ? parseInt(grant) : undefined })
+  });
+  const d = await r.json();
+  if (!r.ok) { showAlertModal('❌ 승인 실패', d.error, 'error'); return; }
+  showAlertModal('✅ 승인됨', `${d.distributed}건 분배 완료`, 'success');
+  loadMyRequests();
+  loadStats(); loadCustomers();
+}
+async function rejectReq(id) {
+  const note = prompt('거부 사유');
+  if (note === null) return;
+  const r = await fetchAuth(CDB + `/requests/${id}/reject`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ note })
+  });
+  const d = await r.json();
+  if (!r.ok) { showAlertModal('❌ 거부 실패', d.error, 'error'); return; }
+  showAlertModal('❌ 거부됨', '요청이 거부되었습니다.', 'info');
+  loadMyRequests();
+}
+async function cancelReq(id) {
+  if (!confirm('요청 취소?')) return;
+  const r = await fetchAuth(CDB + `/requests/${id}/cancel`, { method:'POST' });
+  if (!r.ok) { const d = await r.json(); showAlertModal('❌ 취소 실패', d.error, 'error'); return; }
+  loadMyRequests();
+}
+
+// 🆕 agent — 본인 요청 결과 변경 감지 (approved/rejected) → 푸시 알림
+const LAST_SEEN_KEY = 'incentive-my-req-last-seen-v1';
+async function checkMyRequestUpdates() {
+  if (!tk()) return;
+  try {
+    const r = await fetchAuth(CDB + '/requests?limit=20');
+    if (!r.ok) return;
+    const d = await r.json();
+    const decided = (d.requests || []).filter(rq => rq.status === 'approved' || rq.status === 'rejected');
+    if (!decided.length) return;
+    const lastSeenIso = localStorage.getItem(LAST_SEEN_KEY) || new Date(Date.now() - 86400000).toISOString();
+    const since = new Date(lastSeenIso).getTime();
+    const fresh = decided.filter(rq => rq.decided_at && new Date(rq.decided_at).getTime() > since);
+    if (!fresh.length) return;
+    fresh.forEach(rq => {
+      const isOk = rq.status === 'approved';
+      const title = isOk ? `✅ 분배 요청 승인 — ${rq.distributed_count}건 추가됨` : `❌ 분배 요청 거부됨`;
+      const body = (rq.decided_note ? `사유: ${rq.decided_note}` : '') + (isOk ? `\n요청 ${rq.requested_count}건 → ${rq.distributed_count}건 분배` : '');
+      pushNotify(title, body || ' ');
+    });
+    // 콜 큐 자동 갱신 (분배됨)
+    if (fresh.some(rq => rq.status === 'approved' && rq.distributed_count > 0)) {
+      loadCustomers(); loadStats();
+    }
+    // 가장 최근 decided_at 저장
+    const latest = fresh.reduce((m, rq) => rq.decided_at > m ? rq.decided_at : m, lastSeenIso);
+    localStorage.setItem(LAST_SEEN_KEY, latest);
+  } catch (e) { console.warn('[checkMyRequestUpdates]', e); }
+}
+
+async function checkPendingRequests() {
+  const r = await fetchAuth(CDB + '/requests?status=pending&limit=50');
+  if (!r.ok) return;
+  const d = await r.json();
+  const btn = document.getElementById('btn-my-requests');
+  if (!btn) return;
+  if (d.requests.length) {
+    btn.innerHTML = `📋 분배 요청 <span style="background:#dc2626;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px">${d.requests.length}</span>`;
+    btn.style.background = '#dc2626';
+  } else {
+    btn.textContent = '📋 분배 요청';
+    btn.style.background = '#475569';
+  }
+}
+
+// 🆕 부모(통합 어드민)/자식(TM 콜모드)에서 보낸 갱신 신호 수신 → 자동 reload (same-origin만)
+window.addEventListener('message', (e) => {
+  if (e.origin !== window.location.origin) return;
+  const t = e.data?.type;
+  if (t === 'customer-converted' || t === 'call-result-logged') {
+    if (typeof loadCustomers === 'function') loadCustomers();
+    if (typeof loadStats === 'function') loadStats();
+  }
+});
+
+init();
+// (자동 보충 제거 — 분배 요청 흐름으로 대체)
+</script>
+</body>
+</html>

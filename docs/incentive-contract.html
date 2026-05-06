@@ -12,6 +12,11 @@
 <style>
 * { box-sizing: border-box; margin:0; padding:0; }
 body { font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
+/* 읽기 전용 모드 — agent role */
+body.role-readonly select, body.role-readonly input:not([type="search"]):not([readonly]), body.role-readonly textarea { pointer-events:none !important; opacity:0.7 !important; background:#1e293b !important; }
+body.role-readonly button[data-mutate], body.role-readonly .btn-edit, body.role-readonly .btn-delete, body.role-readonly .btn-restore, body.role-readonly .btn-cancel-contract, body.role-readonly .status-change-btn { display:none !important; }
+body.role-readonly .row-edit-btn, body.role-readonly button:where([onclick*="edit"], [onclick*="delete"], [onclick*="cancel"], [onclick*="restore"], [onclick*="updateStatus"], [onclick*="patch"], [onclick*="save"]) { display:none !important; }
+body.role-readonly tr[onclick] { cursor:default !important; }
 
 .wrap { max-width: 1400px; margin: 0 auto; }
 header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #334155; }
@@ -300,6 +305,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   }
 })();
 </script>
+<script src="/docs/_security.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -960,6 +966,7 @@ async function handleAction(id, act) {
     body = { status: 'completed' };
   }
 
+  if (window._readOnly) { showToast('👁 읽기 전용 — 매니저에게 요청하세요'); return; }
   try {
     const res = await fetch(API + '/sales/' + id, {
       method: 'PATCH',
@@ -1412,6 +1419,20 @@ function onLoggedIn(agent, skipLoad) {
   document.getElementById('user-info').style.display = '';
   document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
   document.getElementById('user-meta').textContent = agent.center;
+  // agent는 read-only — 본인 계약건만 보고 수정 불가
+  window._myAgent = agent;
+  window._readOnly = (agent.role === 'agent');
+  if (window._readOnly) {
+    document.body.classList.add('role-readonly');
+    // 읽기 전용 안내 배너
+    if (!document.getElementById('readonly-banner')) {
+      const b = document.createElement('div');
+      b.id = 'readonly-banner';
+      b.style.cssText = 'background:linear-gradient(90deg,#1e3a8a,#0f172a);color:#bfdbfe;padding:8px 16px;font-size:12px;font-weight:700;text-align:center;border-bottom:1px solid #3b82f6;letter-spacing:0.02em';
+      b.textContent = '👁 읽기 전용 모드 — 본인 계약 조회만 가능 · 수정·취소·삭제는 매니저에게 요청';
+      document.body.insertBefore(b, document.body.firstChild);
+    }
+  }
   // DB 출처 fetch (병렬, 실패해도 화면 정상 동작)
   fetchDbSources().then(list => { _dbSources = list || []; renderDbSourceFilter(); if (_currentContracts && _currentContracts.length) renderTable(_currentContracts); });
   if (!skipLoad) loadContracts();

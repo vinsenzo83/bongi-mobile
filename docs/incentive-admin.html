@@ -18,20 +18,33 @@ body { font-family: 'Pretendard Variable', sans-serif; background:#0f172a; color
 .top-bar { background:linear-gradient(135deg,#0f172a,#1e293b); border-bottom:1.5px solid #334155; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; height:56px; }
 .top-bar h1 { font-size:16px; color:#f8fafc; font-weight:800; letter-spacing:-0.02em; }
 .top-bar h1 .v { background:#3b82f6; color:#fff; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:6px; }
-.top-bar .user { display:flex; gap:10px; align-items:center; }
-.top-bar .user-name { font-size:12px; color:#f8fafc; font-weight:700; }
-.top-bar .user-meta { font-size:10px; color:#94a3b8; }
-.top-bar .role-badge { padding:2px 8px; border-radius:4px; font-size:10px; font-weight:800; }
+.top-bar .user { display:flex; gap:8px; align-items:center; background:rgba(255,255,255,0.04); padding:5px 6px 5px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); }
+.top-bar .user-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:#fff; flex-shrink:0; box-shadow:0 2px 6px rgba(59,130,246,0.3); }
+.top-bar .user-info { display:flex; flex-direction:column; gap:1px; padding-right:4px; }
+.top-bar .user-name { font-size:12px; color:#f8fafc; font-weight:700; line-height:1.2; letter-spacing:-0.01em; }
+.top-bar .user-meta { font-size:9.5px; color:#94a3b8; display:flex; gap:4px; align-items:center; line-height:1.3; }
+.top-bar .role-badge { padding:1px 6px; border-radius:3px; font-size:9px; font-weight:800; letter-spacing:0.02em; }
 .top-bar .role-manager { background:#16a34a; color:#fff; }
 .top-bar .role-admin { background:#dc2626; color:#fff; }
 .top-bar .role-agent { background:#3b82f6; color:#fff; }
 .top-bar .role-contract { background:#8b5cf6; color:#fff; }
-.top-bar button { background:#475569; color:#fff; border:none; padding:5px 11px; border-radius:5px; cursor:pointer; font-size:11px; font-weight:700; }
-.top-bar button:hover { background:#64748b; }
+.top-bar .user .divider { width:1px; height:22px; background:rgba(255,255,255,0.1); margin:0 2px; }
+.top-bar button.icon-btn { background:transparent; color:#cbd5e1; border:1px solid rgba(255,255,255,0.08); padding:5px 9px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; transition:all 0.15s; display:inline-flex; align-items:center; gap:4px; }
+.top-bar button.icon-btn:hover { background:rgba(255,255,255,0.08); color:#fff; border-color:rgba(255,255,255,0.2); }
+.top-bar button.icon-btn.danger:hover { background:rgba(220,38,38,0.18); color:#fca5a5; border-color:rgba(220,38,38,0.4); }
+/* 폴백 (다른 곳에서 plain button 사용 시) */
+.top-bar button:not(.icon-btn) { background:#475569; color:#fff; border:none; padding:5px 11px; border-radius:5px; cursor:pointer; font-size:11px; font-weight:700; }
+.top-bar button:not(.icon-btn):hover { background:#64748b; }
 
 /* ─── 메인 레이아웃 ─── */
 .main { flex:1; display:flex; min-height:0; }
-aside.sidebar { width:200px; background:#1e293b; border-right:1.5px solid #334155; padding:14px 0; display:flex; flex-direction:column; gap:2px; flex-shrink:0; overflow-y:auto; }
+aside.sidebar { width:200px; background:#1e293b; border-right:1.5px solid #334155; padding:14px 0; display:flex; flex-direction:column; gap:2px; flex-shrink:0; overflow-y:auto; transition:width 0.2s; position:relative; }
+body.sidebar-collapsed aside.sidebar { width:48px; }
+body.sidebar-collapsed .tab-btn { justify-content:center; padding:11px 4px; font-size:0; }
+body.sidebar-collapsed .tab-btn .icon { font-size:18px; margin:0; }
+body.sidebar-collapsed .sidebar-divider { margin:8px 6px; }
+.sidebar-toggle { background:#334155; color:#fff; border:none; padding:8px 0; cursor:pointer; font-size:11px; font-weight:700; border-bottom:1px solid #475569; width:100%; transition:background 0.15s; }
+.sidebar-toggle:hover { background:#475569; }
 .tab-btn { background:transparent; border:none; color:#cbd5e1; padding:11px 18px; text-align:left; cursor:pointer; font-size:12.5px; font-weight:700; letter-spacing:0.02em; display:flex; align-items:center; gap:10px; border-left:3px solid transparent; transition:all 0.15s; font-family:inherit; width:100%; }
 .tab-btn:hover { background:rgba(59,130,246,0.1); color:#f8fafc; }
 .tab-btn.active { background:rgba(59,130,246,0.15); color:#60a5fa; border-left-color:#3b82f6; font-weight:800; }
@@ -66,20 +79,35 @@ aside.sidebar { width:200px; background:#1e293b; border-right:1.5px solid #33415
 /* 다크 테마 - 달력 아이콘 강제 표시 */
 input[type="date"], input[type="month"] { color-scheme: dark; }
 </style>
+<script src="/docs/_security.js" defer></script>
 </head>
 <body>
 
 <header class="top-bar">
   <h1>⚡ 인센티브 어드민<span class="v">V5</span></h1>
   <div class="user" id="g-user-info" style="display:none">
-    <div>
+    <div class="user-avatar" id="g-user-avatar">?</div>
+    <div class="user-info">
       <div class="user-name" id="g-user-name">-</div>
-      <div class="user-meta"><span class="role-badge" id="g-role-badge">-</span> · <span id="g-user-center">-</span></div>
+      <div class="user-meta"><span class="role-badge" id="g-role-badge">-</span><span id="g-user-center">-</span></div>
     </div>
-    <button id="g-changepw-btn" style="background:#0891b2;margin-right:4px">🔐 비번변경</button>
-    <button id="g-logout-btn">로그아웃</button>
+    <div class="divider"></div>
+    <button class="icon-btn" id="g-2fa-btn" title="2단계 인증" onclick="g2faOpen()">🔑 2FA</button>
+    <button class="icon-btn" id="g-changepw-btn" title="비밀번호 변경">🔐</button>
+    <button class="icon-btn danger" id="g-logout-btn" title="로그아웃">⏻ 로그아웃</button>
   </div>
 </header>
+
+<!-- 2FA 모달 -->
+<div id="g-2fa-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:99998;justify-content:center;align-items:center" onclick="if(event.target===this)g2faClose()">
+  <div style="background:linear-gradient(135deg,#1e293b,#334155);border:1.5px solid #475569;border-radius:12px;padding:24px 28px;width:420px;max-width:92vw;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+    <h2 style="font-size:16px;color:#60a5fa;font-weight:800;margin-bottom:14px">🔑 2단계 인증 (TOTP)</h2>
+    <div id="g-2fa-body" style="font-size:12px;color:#cbd5e1;line-height:1.6">로딩 중...</div>
+    <div style="display:flex;gap:6px;margin-top:14px;justify-content:flex-end">
+      <button onclick="g2faClose()" style="background:#475569;color:#fff;border:none;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:12px">닫기</button>
+    </div>
+  </div>
+</div>
 
 <!-- 비밀번호 변경 모달 -->
 <div id="g-pw-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:99998;justify-content:center;align-items:center">
@@ -98,13 +126,19 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
 
 <div class="main" id="g-main" style="display:none">
   <aside class="sidebar">
+    <button class="sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="카테고리 접기/펼치기">◀ 접기</button>
     <button class="tab-btn" data-key="dashboard" data-src="/docs/incentive-dashboard.html"><span class="icon">📊</span> 대시보드</button>
     <button class="tab-btn" data-key="contract" data-src="/docs/incentive-contract.html"><span class="icon">📋</span> 계약 처리</button>
     <button class="tab-btn" data-key="agents" data-src="/docs/incentive-agents.html"><span class="icon">👥</span> 상담사 관리</button>
     <button class="tab-btn" data-key="products" data-src="/docs/incentive-products.html"><span class="icon">📦</span> 상품 관리</button>
     <button class="tab-btn" data-key="rules" data-src="/docs/incentive-rules.html"><span class="icon">⚙️</span> 정책 관리</button>
     <button class="tab-btn" data-key="db-sources" data-src="/docs/incentive-db-sources.html"><span class="icon">🗂️</span> DB 출처</button>
+    <button class="tab-btn" data-key="customer-db" data-src="/docs/incentive-customer-db.html"><span class="icon">📞</span> 콜 DB 관리</button>
+    <button class="tab-btn" data-key="call-stats" data-src="/docs/incentive-call-stats.html"><span class="icon">📈</span> 콜 통계</button>
+    <button class="tab-btn" data-key="settlements" data-src="/docs/incentive-settlements.html"><span class="icon">💰</span> 월별 정산</button>
+    <button class="tab-btn" data-key="sales-quick" data-src="/docs/incentive-sales-quick.html"><span class="icon">📝</span> 견적 빠른 입력</button>
     <div class="sidebar-divider"></div>
+    <button class="tab-btn" data-key="call-list" data-src="/docs/incentive-call-list.html"><span class="icon">📋</span> 내 콜 리스트</button>
     <button class="tab-btn" data-key="tm-counselor" data-src="/docs/tm-counselor.html"><span class="icon">📞</span> TM 상담</button>
     <button class="tab-btn" data-key="tm-data" data-src="/docs/calculator.html?admin=1"><span class="icon">🧮</span> TM 데이터 관리</button>
     <button class="tab-btn" data-key="guide" data-src="/docs/incentive-guide.html"><span class="icon">📖</span> 급여 안내</button>
@@ -124,6 +158,7 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
     <h2>🔐 인센티브 어드민 로그인</h2>
     <input type="email" id="g-auth-email" placeholder="email" autocomplete="username">
     <input type="password" id="g-auth-pass" placeholder="비밀번호" autocomplete="current-password">
+    <input type="text" id="g-auth-totp" placeholder="🔑 2FA 코드 (활성 사용자만)" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="display:none;letter-spacing:0.3em;text-align:center;font-family:monospace;font-size:14px">
     <button id="g-auth-login-btn">로그인</button>
     <div class="auth-msg" id="g-auth-msg"></div>
     <div class="auth-hint">
@@ -134,9 +169,16 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
 </div>
 
 <script>
-// 🚀 Service Worker 등록 (정적 자산 stale-while-revalidate)
+// 🚀 Service Worker — 개발 중 비활성 (localhost는 캐시 X, prod에서만 활성)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/docs/sw.js', { scope: '/docs/' }).catch(() => {});
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    // 로컬: 기존 SW 모두 제거 (개발 캐시 안 함)
+    navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+    if (window.caches) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  } else {
+    // 프로덕션: SW 등록
+    navigator.serviceWorker.register('/docs/sw.js', { scope: '/docs/' }).catch(() => {});
+  }
 }
 
 // ═══════════════════════════════ 공용 인증 + iframe 컨트롤러 ═══════════════════════════════
@@ -152,12 +194,24 @@ const gClearToken = () => { localStorage.removeItem(G_TOKEN_KEY); localStorage.r
 window.G_currentAgent = null;
 
 async function gLogin(email, password) {
+  const totpInput = document.getElementById('g-auth-totp');
+  const totp_code = totpInput?.value?.trim() || undefined;
   const res = await fetch(G_AUTH + '/login', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({email, password})
+    body: JSON.stringify({email, password, totp_code})
   });
+  // 2FA 필요 응답
+  if (res.status === 202) {
+    if (totpInput) {
+      totpInput.style.display = '';
+      totpInput.value = '';
+      totpInput.focus();
+    }
+    throw new Error('2FA 코드를 입력하세요');
+  }
   if (!res.ok) throw new Error((await res.json()).error || '로그인 실패');
   const data = await res.json();
+  if (totpInput) { totpInput.style.display = 'none'; totpInput.value = ''; }
   gSetToken(data.access_token);
   if (data.refresh_token) localStorage.setItem(G_REFRESH_KEY, data.refresh_token);
   // 로그인 응답에 동봉된 role_menus 즉시 캐싱 (사이드바 fetch round-trip 1회 절약)
@@ -243,6 +297,81 @@ function gApplyMenuVisibility(allowedKeys) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 2FA 설정/해제 모달
+// ═══════════════════════════════════════════════════════════════
+async function g2faOpen() {
+  const m = document.getElementById('g-2fa-modal');
+  const body = document.getElementById('g-2fa-body');
+  m.style.display = 'flex';
+  body.innerHTML = '로딩 중...';
+  const tk = localStorage.getItem(G_TOKEN_KEY);
+  if (!tk) { body.innerHTML = '로그인 필요'; return; }
+  const r = await fetch('/api/auth/2fa/status', { headers: { Authorization: 'Bearer ' + tk }});
+  const d = await r.json();
+  if (d.enabled) {
+    body.innerHTML = `
+      <p style="color:#22c55e;font-weight:700;margin-bottom:8px">✅ 2FA 활성화됨</p>
+      <p style="font-size:11px;color:#94a3b8">활성 시각: ${d.enabled_at ? new Date(d.enabled_at).toLocaleString('ko-KR') : '-'}</p>
+      <hr style="border:none;border-top:1px solid #475569;margin:12px 0">
+      <p style="margin-bottom:8px">⚠️ 해제하려면 현재 OTP 코드 입력</p>
+      <input type="text" id="g-2fa-disable-code" placeholder="6자리 코드" maxlength="6" inputmode="numeric" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:5px;font-size:14px;font-family:monospace;letter-spacing:0.3em;text-align:center">
+      <button onclick="g2faDisable()" style="margin-top:8px;background:#dc2626;color:#fff;border:none;padding:8px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;width:100%">해제</button>
+    `;
+    return;
+  }
+  // 미활성 — setup
+  body.innerHTML = `
+    <p style="margin-bottom:8px">${d.recommended ? '⚠️ admin 계정은 2FA를 활성화하세요.' : '계정 보안 강화를 위해 2FA를 권장합니다.'}</p>
+    <button onclick="g2faSetup()" style="background:#3b82f6;color:#fff;border:none;padding:10px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:800;width:100%">🔑 2FA 활성화</button>
+  `;
+}
+async function g2faSetup() {
+  const tk = localStorage.getItem(G_TOKEN_KEY);
+  const body = document.getElementById('g-2fa-body');
+  body.innerHTML = '시크릿 생성 중...';
+  const r = await fetch('/api/auth/2fa/setup', { method:'POST', headers: { Authorization: 'Bearer ' + tk }});
+  const d = await r.json();
+  if (!r.ok) { body.innerHTML = '❌ 실패: ' + (d.error || ''); return; }
+  body.innerHTML = `
+    <p>📱 Google Authenticator / 1Password 등으로 QR 스캔:</p>
+    <div style="background:#fff;padding:12px;border-radius:8px;margin:10px 0;display:flex;justify-content:center"><img src="${d.qr_data_url}" alt="QR" style="width:200px;height:200px"></div>
+    <p style="font-size:10.5px;color:#94a3b8">또는 시크릿 직접 입력: <code style="background:#0f172a;padding:2px 6px;border-radius:3px;color:#fbbf24;font-family:monospace">${d.secret}</code></p>
+    <hr style="border:none;border-top:1px solid #475569;margin:12px 0">
+    <p style="margin-bottom:8px">앱에서 발급된 6자리 코드 입력:</p>
+    <input type="text" id="g-2fa-verify-code" placeholder="000000" maxlength="6" inputmode="numeric" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:5px;font-size:18px;font-family:monospace;letter-spacing:0.3em;text-align:center">
+    <button onclick="g2faVerify()" style="margin-top:8px;background:#22c55e;color:#fff;border:none;padding:10px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:800;width:100%">✅ 검증 + 활성화</button>
+  `;
+}
+async function g2faVerify() {
+  const code = document.getElementById('g-2fa-verify-code').value.trim();
+  if (!/^\d{6}$/.test(code)) { alert('6자리 숫자'); return; }
+  const tk = localStorage.getItem(G_TOKEN_KEY);
+  const r = await fetch('/api/auth/2fa/verify', {
+    method:'POST', headers:{'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
+    body: JSON.stringify({ code })
+  });
+  const d = await r.json();
+  if (!r.ok) { alert(d.error || '실패'); return; }
+  gShowToast('🔑 2FA 활성화 완료 — 다음 로그인부터 적용');
+  g2faOpen();
+}
+async function g2faDisable() {
+  const code = document.getElementById('g-2fa-disable-code').value.trim();
+  if (!code) { alert('OTP 코드 입력'); return; }
+  if (!confirm('2FA를 해제하시겠습니까?')) return;
+  const tk = localStorage.getItem(G_TOKEN_KEY);
+  const r = await fetch('/api/auth/2fa/disable', {
+    method:'POST', headers:{'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
+    body: JSON.stringify({ code })
+  });
+  const d = await r.json();
+  if (!r.ok) { alert(d.error || '실패'); return; }
+  gShowToast('🔓 2FA 해제됨');
+  g2faOpen();
+}
+function g2faClose() { document.getElementById('g-2fa-modal').style.display = 'none'; }
+
 function gShowToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -251,45 +380,93 @@ function gShowToast(msg) {
   window._gToastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// ─── iframe 전환 (keep-alive: 한번 로드한 메뉴는 숨겨서 보존) ───
-const _iframePool = new Map(); // src → iframe element
+// 사이드바 카테고리 바 접기/펼치기
+function toggleSidebar() {
+  document.body.classList.toggle('sidebar-collapsed');
+  const collapsed = document.body.classList.contains('sidebar-collapsed');
+  const btn = document.getElementById('sidebar-toggle-btn');
+  if (btn) btn.textContent = collapsed ? '▶' : '◀ 접기';
+  try { localStorage.setItem('admin-sidebar-collapsed', collapsed ? '1' : '0'); } catch(e) {}
+}
+// 페이지 로드 시 상태 복원
+(function(){
+  if (localStorage.getItem('admin-sidebar-collapsed') === '1') {
+    document.documentElement.classList.add('sidebar-collapsed-pre');
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.classList.add('sidebar-collapsed');
+      const btn = document.getElementById('sidebar-toggle-btn');
+      if (btn) btn.textContent = '▶';
+    });
+  }
+})();
+
+// ─── iframe 전환 (keep-alive — path 기반 풀 key) ───
+const _iframePool = new Map(); // path(query 제외) → iframe element
 function gLoadTab(btn) {
   if (!btn) return;
   const src = btn.dataset.src;
   if (!src) return;
+  const path = src.split('?')[0];
   const container = document.querySelector('.content-area');
   const loading = document.getElementById('g-iframe-loading');
   // active 표시
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
-  try { localStorage.setItem(G_LAST_TAB_KEY, src); } catch(e) {}
+  try { localStorage.setItem(G_LAST_TAB_KEY, path); } catch(e) {}
   // 모든 풀 iframe 숨김
   _iframePool.forEach(f => { f.style.display = 'none'; });
   // 이미 로드한 iframe 재사용
-  let iframe = _iframePool.get(src);
+  let iframe = _iframePool.get(path);
   if (iframe) {
     iframe.style.display = 'block';
     loading.style.display = 'none';
+    // query만 다르면 iframe 안에 postMessage로 통보 (재로드 X)
+    if (src.includes('?')) {
+      try { iframe.contentWindow.postMessage({ type:'iframe-navigate', src }, '*'); } catch(e) {}
+    }
     return;
   }
-  // 신규 — 첫 로드만 fresh fetch
+  // 신규
   iframe = document.createElement('iframe');
   iframe.style.cssText = 'width:100%;height:100%;border:none;background:#0f172a;display:block';
   iframe.src = src + (src.includes('?') ? '&' : '?') + '_t=' + Date.now();
   loading.style.display = 'flex';
   iframe.onload = () => { loading.style.display = 'none'; };
   container.appendChild(iframe);
-  _iframePool.set(src, iframe);
-  // 기존 단일 iframe 숨김 (legacy)
+  _iframePool.set(path, iframe);
   const legacy = document.getElementById('g-iframe');
   if (legacy && legacy !== iframe) legacy.style.display = 'none';
 }
 
 async function gOnLoggedIn(agent) {
   window.G_currentAgent = agent;
-  document.getElementById('g-user-name').textContent = '👤 ' + (agent.name || '-');
+  // 🔑 admin 2FA 강제 — 미설정 시 자동 모달
+  if (agent.role === 'admin') {
+    setTimeout(async () => {
+      try {
+        const tk = localStorage.getItem(G_TOKEN_KEY);
+        const r = await fetch('/api/auth/2fa/status', { headers: { Authorization: 'Bearer ' + tk }});
+        if (r.ok) {
+          const d = await r.json();
+          if (!d.enabled) {
+            const banner = document.createElement('div');
+            banner.id = 'g-2fa-nudge';
+            banner.style.cssText = 'background:linear-gradient(90deg,#7f1d1d,#0f172a);color:#fff;padding:12px 18px;border-bottom:2px solid #dc2626;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700';
+            banner.innerHTML = `<span>⚠️ <b>admin 계정 보안 위험</b> — 2FA 미설정 상태입니다. 즉시 활성화 권장.</span>
+              <span><button onclick="g2faOpen();this.parentElement.parentElement.remove()" style="background:#dc2626;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:800;margin-right:6px">🔑 지금 설정</button>
+              <button onclick="this.parentElement.parentElement.remove()" style="background:transparent;color:#cbd5e1;border:1px solid #475569;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:11px">나중에</button></span>`;
+            document.body.insertBefore(banner, document.body.firstChild);
+          }
+        }
+      } catch(e) {}
+    }, 1500);
+  }
+  const name = agent.name || '-';
+  document.getElementById('g-user-name').textContent = name;
+  document.getElementById('g-user-avatar').textContent = name.trim().charAt(0).toUpperCase() || '?';
   document.getElementById('g-user-center').textContent = agent.center || '-';
   const badge = document.getElementById('g-role-badge');
-  badge.textContent = agent.role;
+  const roleLabel = ({admin:'ADMIN', manager:'MANAGER', agent:'AGENT', contract:'CONTRACT'})[agent.role] || agent.role;
+  badge.textContent = roleLabel;
   badge.className = 'role-badge role-' + agent.role;
   document.getElementById('g-user-info').style.display = '';
   document.getElementById('g-main').style.display = '';
@@ -401,6 +578,43 @@ document.getElementById('g-pw-submit').addEventListener('click', async () => {
       gShowToast('🔐 비밀번호 변경 완료');
     }, 800);
   } catch (e) { msg.textContent = e.message; }
+});
+
+// 🆕 자식 iframe → 부모(통합 어드민)으로 메뉴 전환 신호 (same-origin만)
+window.addEventListener('message', (e) => {
+  if (e.origin !== window.location.origin) return;
+  if (e.data?.type === 'switch-menu' && e.data.key) {
+    const tgt = document.querySelector(`.tab-btn[data-key="${e.data.key}"]`);
+    if (tgt) {
+      // sale_id 같은 deep-link 파라미터 전달
+      if (e.data.sale_id) {
+        const baseSrc = tgt.dataset.src.split('?')[0];
+        tgt.dataset.src = baseSrc + '?sale_id=' + encodeURIComponent(e.data.sale_id);
+      }
+      gLoadTab(tgt);
+    }
+    return;
+  }
+  if (e.data?.type === 'open-call-screen' && e.data.customer_id) {
+    const tmBtn = document.querySelector('.tab-btn[data-key="tm-counselor"]');
+    if (tmBtn) {
+      // 콜 모드 src로 강제 변경
+      const newSrc = '/docs/tm-counselor.html?customer_id=' + encodeURIComponent(e.data.customer_id);
+      // 기존 풀에서 tm-counselor iframe 제거 (재로드 강제)
+      const oldIframe = _iframePool.get('/docs/tm-counselor.html');
+      if (oldIframe) { oldIframe.remove(); _iframePool.delete('/docs/tm-counselor.html'); }
+      // 새로 로드
+      tmBtn.dataset.src = newSrc;
+      gLoadTab(tmBtn);
+      // dataset.src 원복 (다음 사용자가 일반 모드로 진입할 수 있게)
+      setTimeout(() => { tmBtn.dataset.src = '/docs/tm-counselor.html'; }, 1000);
+    }
+  } else if (e.data?.type === 'call-queue-empty') {
+    gShowToast('🎉 모든 콜 처리 완료');
+    // 콜 list로 복귀
+    const listBtn = document.querySelector('.tab-btn[data-key="call-list"]');
+    if (listBtn) gLoadTab(listBtn);
+  }
 });
 
 // 사이드바 메뉴 바인딩

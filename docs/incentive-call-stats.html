@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>콜 통계</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/docs/_security.js" defer></script>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Pretendard Variable',-apple-system,sans-serif; background:#0f172a; color:#e2e8f0; padding:18px; }
+h1 { font-size:18px; color:#f8fafc; margin-bottom:14px; letter-spacing:-0.02em; display:flex; align-items:center; gap:8px; }
+.toolbar { display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
+.toolbar select, .toolbar button { background:#1e293b; border:1px solid #475569; color:#e2e8f0; padding:7px 12px; border-radius:6px; font-size:12px; font-family:inherit; cursor:pointer; }
+.toolbar button:hover { background:#334155; }
+.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+.kpi { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:12px 14px; }
+.kpi .label { font-size:10.5px; color:#94a3b8; font-weight:700; letter-spacing:0.04em; }
+.kpi .val { font-size:22px; color:#fff; font-weight:900; margin-top:4px; letter-spacing:-0.02em; }
+.kpi .sub { font-size:10.5px; color:#cbd5e1; margin-top:2px; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+.card { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:14px 16px; }
+.card h3 { font-size:13px; color:#a5b4fc; font-weight:800; margin-bottom:10px; }
+.chart-wrap { position:relative; height:240px; }
+.chart-wrap.tall { height:300px; }
+table { width:100%; border-collapse:collapse; font-size:11.5px; }
+table th { padding:8px; text-align:left; background:#0f172a; color:#94a3b8; font-weight:700; font-size:10.5px; }
+table td { padding:8px; border-bottom:1px solid #334155; color:#cbd5e1; }
+table td.r { text-align:right; font-family:monospace; }
+.bar { display:inline-block; height:8px; background:#3b82f6; border-radius:4px; vertical-align:middle; }
+#empty { padding:40px; text-align:center; color:#64748b; font-size:12px; }
+</style>
+</head>
+<body>
+
+<h1>📈 콜 통계 <span style="font-size:11px;color:#94a3b8;font-weight:400" id="role-tag">-</span></h1>
+
+<div class="toolbar">
+  <span style="font-size:11.5px;color:#94a3b8">기간:</span>
+  <select id="f-days" onchange="loadAll()">
+    <option value="7">최근 7일</option>
+    <option value="30" selected>최근 30일</option>
+    <option value="60">최근 60일</option>
+    <option value="90">최근 90일</option>
+  </select>
+  <button onclick="loadAll()">🔄 새로고침</button>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="label">📞 총 콜 수</div><div class="val" id="kpi-total">-</div></div>
+  <div class="kpi"><div class="label">✅ 컨택률</div><div class="val" id="kpi-contact">-</div><div class="sub" id="kpi-contact-cnt">-</div></div>
+  <div class="kpi"><div class="label">🎉 전환률</div><div class="val" id="kpi-conv">-</div><div class="sub" id="kpi-conv-cnt">-</div></div>
+  <div class="kpi"><div class="label">⭐ 최고 시간대</div><div class="val" id="kpi-besthr">-</div><div class="sub" id="kpi-besthr-rate">-</div></div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h3>⏰ 시간대별 콜·컨택률</h3>
+    <div class="chart-wrap"><canvas id="ch-hour"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>📅 요일별 콜·컨택률</h3>
+    <div class="chart-wrap"><canvas id="ch-dow"></canvas></div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:14px">
+  <h3>📈 일별 추이 (콜 / 컨택 / 전환)</h3>
+  <div class="chart-wrap tall"><canvas id="ch-daily"></canvas></div>
+</div>
+
+<div class="card">
+  <h3>🏆 상담사별 ROI</h3>
+  <div id="agent-table"></div>
+</div>
+
+<div id="empty" style="display:none">기간 내 콜 데이터 없음</div>
+
+<script>
+const TK = () => localStorage.getItem('incentive-auth-token-v1');
+const fetchAuth = (url) => fetch(url, { headers: { Authorization: 'Bearer ' + TK() }});
+let _charts = {};
+
+async function loadAll() {
+  if (!TK()) { document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#64748b">로그인 후 이용</div>'; return; }
+  const days = document.getElementById('f-days').value;
+  const r = await fetchAuth('/api/customer-db/stats/timeseries?days=' + days);
+  if (!r.ok) { alert('통계 조회 실패: ' + r.status); return; }
+  const d = await r.json();
+  document.getElementById('role-tag').textContent = `· 최근 ${d.days}일 · 총 ${d.total_calls.toLocaleString()}콜`;
+  if (!d.total_calls) {
+    document.getElementById('empty').style.display = '';
+    Object.values(_charts).forEach(c => c?.destroy());
+    document.getElementById('agent-table').innerHTML = '';
+    return;
+  }
+  document.getElementById('empty').style.display = 'none';
+  renderKpi(d);
+  renderHourChart(d.by_hour);
+  renderDowChart(d.by_dow);
+  renderDailyChart(d.by_day);
+  renderAgentTable(d.by_agent);
+}
+
+function renderKpi(d) {
+  const total = d.total_calls;
+  const contact = d.by_hour.reduce((s,h)=>s+h.contact, 0);
+  const convert = d.by_hour.reduce((s,h)=>s+h.convert, 0);
+  document.getElementById('kpi-total').textContent = total.toLocaleString();
+  document.getElementById('kpi-contact').textContent = total ? (contact/total*100).toFixed(1) + '%' : '0%';
+  document.getElementById('kpi-contact-cnt').textContent = `컨택 ${contact.toLocaleString()}건`;
+  document.getElementById('kpi-conv').textContent = total ? (convert/total*100).toFixed(1) + '%' : '0%';
+  document.getElementById('kpi-conv-cnt').textContent = `전환 ${convert.toLocaleString()}건`;
+  // 최고 시간대 (컨택률 기준, 최소 5건 이상)
+  const bestHr = d.by_hour.filter(h => h.total >= 5).sort((a,b) => b.contact_rate - a.contact_rate)[0];
+  if (bestHr) {
+    document.getElementById('kpi-besthr').textContent = bestHr.hour + '시';
+    document.getElementById('kpi-besthr-rate').textContent = `컨택 ${bestHr.contact_rate}% · ${bestHr.total}콜`;
+  } else {
+    document.getElementById('kpi-besthr').textContent = '-';
+    document.getElementById('kpi-besthr-rate').textContent = '데이터 부족';
+  }
+}
+
+function makeChart(id, type, data, opt = {}) {
+  if (_charts[id]) _charts[id].destroy();
+  Chart.defaults.color = '#cbd5e1';
+  Chart.defaults.font.family = "'Pretendard Variable', sans-serif";
+  _charts[id] = new Chart(document.getElementById(id), {
+    type, data,
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', font: { size: 10 } }, beginAtZero: true },
+      },
+      ...opt,
+    },
+  });
+}
+
+function renderHourChart(hours) {
+  makeChart('ch-hour', 'bar', {
+    labels: hours.map(h => h.hour + '시'),
+    datasets: [
+      { label: '콜 수', data: hours.map(h=>h.total), backgroundColor: 'rgba(59,130,246,0.6)', yAxisID: 'y' },
+      { label: '컨택률 (%)', data: hours.map(h=>h.contact_rate), type:'line', borderColor: '#22c55e', backgroundColor: '#22c55e', yAxisID: 'y1', tension: 0.3 },
+    ],
+  }, {
+    scales: {
+      x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } },
+      y: { position:'left', grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color:'#94a3b8' }, beginAtZero:true },
+      y1: { position:'right', grid: { display:false }, ticks: { color:'#22c55e', callback: v => v + '%' }, beginAtZero:true, max: 100 },
+    },
+  });
+}
+
+function renderDowChart(dows) {
+  makeChart('ch-dow', 'bar', {
+    labels: dows.map(d => d.label),
+    datasets: [
+      { label: '콜 수', data: dows.map(d=>d.total), backgroundColor: 'rgba(139,92,246,0.6)', yAxisID:'y' },
+      { label: '컨택률 (%)', data: dows.map(d=>d.contact_rate), type:'line', borderColor:'#22c55e', backgroundColor:'#22c55e', yAxisID:'y1', tension:0.3 },
+    ],
+  }, {
+    scales: {
+      x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } },
+      y: { position:'left', grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color:'#94a3b8' }, beginAtZero:true },
+      y1: { position:'right', grid: { display:false }, ticks: { color:'#22c55e', callback: v => v + '%' }, beginAtZero:true, max: 100 },
+    },
+  });
+}
+
+function renderDailyChart(days) {
+  makeChart('ch-daily', 'line', {
+    labels: days.map(d => d.date.slice(5)),
+    datasets: [
+      { label: '콜', data: days.map(d=>d.total), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.15)', fill:true, tension:0.3 },
+      { label: '컨택', data: days.map(d=>d.contact), borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,0.15)', fill:true, tension:0.3 },
+      { label: '전환', data: days.map(d=>d.convert), borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.2)', fill:true, tension:0.3 },
+    ],
+  });
+}
+
+function renderAgentTable(agents) {
+  if (!agents.length) { document.getElementById('agent-table').innerHTML = '<div style="padding:20px;color:#64748b">데이터 없음</div>'; return; }
+  const max = Math.max(...agents.map(a => a.total));
+  document.getElementById('agent-table').innerHTML = `<table>
+    <thead><tr>
+      <th>순위</th><th>상담사</th><th>센터</th>
+      <th class="r">콜</th><th class="r">컨택</th><th class="r">컨택률</th>
+      <th class="r">전환</th><th class="r">전환률</th><th>분포</th>
+    </tr></thead><tbody>
+    ${agents.map((a, i) => `<tr>
+      <td>${i+1}</td>
+      <td><b style="color:#f8fafc">${a.name}</b></td>
+      <td>${a.center}</td>
+      <td class="r">${a.total.toLocaleString()}</td>
+      <td class="r">${a.contact.toLocaleString()}</td>
+      <td class="r" style="color:${a.contact_rate >= 50 ? '#22c55e' : a.contact_rate >= 30 ? '#fbbf24' : '#94a3b8'}">${a.contact_rate}%</td>
+      <td class="r">${a.convert.toLocaleString()}</td>
+      <td class="r" style="color:${a.conversion_rate >= 10 ? '#22c55e' : a.conversion_rate >= 5 ? '#fbbf24' : '#94a3b8'}">${a.conversion_rate}%</td>
+      <td><span class="bar" style="width:${(a.total/max*100).toFixed(0)}%"></span></td>
+    </tr>`).join('')}
+    </tbody></table>`;
+}
+
+loadAll();
+</script>
+</body>
+</html>

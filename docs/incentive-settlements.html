@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>월별 정산</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<script src="/docs/_security.js" defer></script>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Pretendard Variable',-apple-system,sans-serif; background:#0f172a; color:#e2e8f0; padding:18px; }
+h1 { font-size:18px; color:#f8fafc; margin-bottom:14px; letter-spacing:-0.02em; display:flex; align-items:center; gap:8px; }
+h2 { font-size:14px; color:#a5b4fc; font-weight:800; margin:18px 0 10px; letter-spacing:-0.01em; }
+.toolbar { display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
+.toolbar select, .toolbar button, .toolbar input { background:#1e293b; border:1px solid #475569; color:#e2e8f0; padding:7px 12px; border-radius:6px; font-size:12px; font-family:inherit; cursor:pointer; }
+.toolbar button:hover { background:#334155; }
+.btn-primary { background:#3b82f6 !important; color:#fff !important; font-weight:700; border-color:#60a5fa !important; }
+.btn-success { background:#22c55e !important; color:#fff !important; font-weight:700; }
+
+/* ─── KPI 카드 (대시보드 스타일) ─── */
+.agent-kpi-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:10px; margin-bottom:16px; }
+.kpi-card { background:linear-gradient(135deg,#064e3b,#0f172a); border:1.5px solid #16a34a; border-radius:12px; padding:14px 16px; position:relative; overflow:hidden; }
+.kpi-card.primary { background:linear-gradient(135deg,#15803d,#064e3b); border-color:#22c55e; }
+.kpi-card.danger { background:linear-gradient(135deg,#7f1d1d,#0f172a); border-color:#dc2626; }
+.kpi-card.warn { background:linear-gradient(135deg,#854d0e,#0f172a); border-color:#fbbf24; }
+.kpi-card.info { background:linear-gradient(135deg,#1e40af,#0f172a); border-color:#3b82f6; }
+.kpi-card .label { font-size:10px; color:#86efac; font-weight:800; letter-spacing:0.04em; margin-bottom:6px; }
+.kpi-card.primary .label { color:#dcfce7; }
+.kpi-card.danger .label { color:#fca5a5; }
+.kpi-card.warn .label { color:#fcd34d; }
+.kpi-card.info .label { color:#bfdbfe; }
+.kpi-card .val { font-size:22px; color:#f8fafc; font-weight:900; letter-spacing:-0.02em; line-height:1.2; }
+.kpi-card.primary .val { font-size:28px; color:#bbf7d0; }
+.kpi-card.danger .val { color:#fca5a5; }
+.kpi-card .sub { font-size:10px; color:#94a3b8; margin-top:4px; line-height:1.4; }
+@media (max-width: 1100px) { .agent-kpi-grid { grid-template-columns:repeat(4, 1fr); } }
+@media (max-width: 700px) { .agent-kpi-grid { grid-template-columns:repeat(2, 1fr); } }
+
+/* ─── 등급 진행률 ─── */
+.progress-section { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:14px 16px; margin-bottom:18px; }
+.progress-bar { background:#0f172a; border:1px solid #334155; height:14px; border-radius:7px; overflow:hidden; position:relative; }
+.progress-fill { background:linear-gradient(90deg,#22c55e,#16a34a); height:100%; transition:width 0.4s; }
+.progress-info { display:flex; justify-content:space-between; font-size:10.5px; color:#cbd5e1; margin-top:6px; }
+.progress-info b { color:#f8fafc; font-weight:800; }
+
+/* ─── 본인 정산 표 (manager/admin) ─── */
+.team-table { width:100%; border-collapse:collapse; font-size:11.5px; background:#1e293b; border:1px solid #334155; border-radius:8px; overflow:hidden; }
+.team-table th { padding:8px; text-align:center; background:#0f172a; color:#94a3b8; font-weight:700; font-size:10.5px; white-space:nowrap; }
+.team-table th.l { text-align:left; }
+.team-table td { padding:8px; border-bottom:1px solid #334155; color:#cbd5e1; text-align:center; }
+.team-table td.r { text-align:right; font-family:monospace; }
+.team-table td.l { text-align:left; }
+.grade-1 { background:#475569; color:#fff; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:800; }
+.grade-2 { background:#3b82f6; color:#fff; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:800; }
+.grade-3 { background:#22c55e; color:#fff; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:800; }
+.penalty { color:#f87171; font-size:9px; margin-left:3px; }
+.role-badge { padding:1px 6px; border-radius:3px; font-size:9px; font-weight:800; }
+.r-admin { background:#dc2626; color:#fff; }
+.r-manager { background:#16a34a; color:#fff; }
+.r-agent { background:#3b82f6; color:#fff; }
+
+body.role-agent .admin-only { display:none !important; }
+body:not(.role-agent) .agent-self-only { display:none !important; }
+@media print {
+  body { background:#fff; color:#000; }
+  .toolbar, .no-print { display:none !important; }
+  .kpi-card { background:#fff !important; border:1px solid #ccc !important; }
+  .kpi-card .label, .kpi-card .sub { color:#444 !important; }
+  .kpi-card .val { color:#000 !important; }
+  .team-table { background:#fff; border:1px solid #ccc; }
+  .team-table th { background:#eee; color:#000; }
+  .team-table td { color:#000; }
+}
+</style>
+</head>
+<body>
+
+<h1>💰 월별 정산 <span style="font-size:11px;color:#94a3b8;font-weight:400">V5 인센티브</span></h1>
+
+<div class="toolbar">
+  <span style="font-size:11.5px;color:#94a3b8">정산 월:</span>
+  <input type="month" id="f-period" onchange="loadAll()">
+  <button onclick="loadAll()">🔄 새로고침</button>
+  <button class="btn-success no-print" onclick="finalizeAll()" id="btn-finalize">🔒 전체 확정</button>
+  <button class="no-print" onclick="openCorrections()" id="btn-corrections" style="background:#475569;color:#fff;font-weight:700">📩 수정 요청</button>
+  <span style="margin-left:auto"></span>
+  <button class="no-print" onclick="exportCSV()">📥 CSV</button>
+  <button class="no-print" onclick="window.print()">🖨️ 인쇄</button>
+</div>
+
+<!-- ─── KPI: 본인(agent) 또는 합산(manager/admin) ─── -->
+<h2 id="kpi-title">📊 정산 요약</h2>
+<div class="agent-kpi-grid">
+  <div class="kpi-card primary">
+    <div class="label">💰 <span id="primary-label">총 정산</span></div>
+    <div class="val" id="kpi-primary">-</div>
+    <div class="sub" id="kpi-primary-sub">-</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">🏆 등급/계약</div>
+    <div class="val" id="kpi-grade">-</div>
+    <div class="sub" id="kpi-grade-sub">-</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">📊 누적 P</div>
+    <div class="val" id="kpi-points">-</div>
+    <div class="sub" id="kpi-points-sub">-</div>
+  </div>
+  <div class="kpi-card warn">
+    <div class="label">⭐ 우수</div>
+    <div class="val" id="kpi-premium">-</div>
+    <div class="sub" id="kpi-premium-sub">건</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">💵 인센티브</div>
+    <div class="val" id="kpi-incentive">-</div>
+    <div class="sub" id="kpi-incentive-sub">-</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">🎁 보너스</div>
+    <div class="val" id="kpi-bonus">-</div>
+    <div class="sub">우수 보너스</div>
+  </div>
+  <div class="kpi-card danger">
+    <div class="label">💸 페이백 차감</div>
+    <div class="val" id="kpi-deduct">-</div>
+    <div class="sub" id="kpi-deduct-sub">본인 부담</div>
+  </div>
+</div>
+
+<!-- 매니저 전용 — 팀 오버라이드 보너스 (V5.1) -->
+<div id="mgr-override-section" style="display:none;background:linear-gradient(135deg,#1e40af,#0f172a);border:1.5px solid #3b82f6;border-radius:12px;padding:16px;margin-bottom:18px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <h3 style="font-size:13px;color:#bfdbfe;font-weight:800">👨‍💼 팀 오버라이드 보너스 (V5.1)</h3>
+    <span style="font-size:10.5px;color:#94a3b8" id="mgr-ov-status">-</span>
+  </div>
+  <div class="agent-kpi-grid" style="grid-template-columns:repeat(5, 1fr)">
+    <div class="kpi-card info"><div class="label">👥 팀원</div><div class="val" id="mov-team">-</div><div class="sub" id="mov-team-sub">활성 인원</div></div>
+    <div class="kpi-card info"><div class="label">📋 팀 계약</div><div class="val" id="mov-count">-</div><div class="sub" id="mov-count-sub">본인 + 팀원</div></div>
+    <div class="kpi-card info"><div class="label">💰 팀 인센티브</div><div class="val" id="mov-team-inc">-</div><div class="sub">합계</div></div>
+    <div class="kpi-card info"><div class="label">📊 오버라이드율</div><div class="val" id="mov-rate">-</div><div class="sub" id="mov-rate-sub">기본 12%</div></div>
+    <div class="kpi-card primary"><div class="label">🎁 오버라이드 보너스</div><div class="val" id="mov-final">-</div><div class="sub" id="mov-final-sub">매니저 추가 지급</div></div>
+  </div>
+  <div id="mov-detail" style="margin-top:10px;font-size:11px;color:#cbd5e1;line-height:1.6"></div>
+</div>
+
+<!-- ─── 본인 등급 진행률 (agent self) ─── -->
+<div class="progress-section agent-self-only" id="progress-section">
+  <div style="font-size:12px;font-weight:700;color:#a5b4fc;margin-bottom:8px" id="progress-label">등급 진행률</div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="progress-info">
+    <span id="progress-current">-</span>
+    <span id="progress-target">-</span>
+  </div>
+  <div style="font-size:11px;color:#fbbf24;margin-top:6px" id="progress-hint">-</div>
+</div>
+
+<!-- ─── 본인/팀 정산 상세 (agent도 본인 1행만) ─── -->
+<h2 id="team-title">📋 정산 상세</h2>
+<div style="overflow-x:auto">
+<table class="team-table">
+  <thead><tr>
+    <th>#</th>
+    <th class="l">상담사</th><th>역할</th><th>센터</th>
+    <th>계약</th><th>P</th><th>우수</th>
+    <th>Grade</th><th>단가</th>
+    <th>인센티브</th><th>보너스</th>
+    <th>페이백 차감</th><th>기본급</th>
+    <th>최종 지급</th>
+    <th class="admin-only">회사이익</th><th class="admin-only">이익률</th>
+    <th class="no-print">확정</th>
+  </tr></thead>
+  <tbody id="tbody"><tr><td colspan="17" style="padding:30px;color:#64748b">로딩 중...</td></tr></tbody>
+</table>
+</div>
+
+<div id="empty" style="display:none;padding:40px;text-align:center;color:#64748b">해당 월 데이터 없음</div>
+
+<!-- 수정 요청 모달 -->
+<div id="cor-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99998;justify-content:center;align-items:center" onclick="if(event.target===this)closeCorrections()">
+  <div style="background:#1e293b;border:1.5px solid #475569;border-radius:14px;padding:22px 26px;width:760px;max-width:94vw;max-height:84vh;overflow-y:auto;color:#fff">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:15px;color:#fbbf24;font-weight:800">📩 정산 수정 요청</h3>
+      <button onclick="closeCorrections()" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px">닫기</button>
+    </div>
+    <div id="cor-new-form" class="agent-self-only" style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;color:#cbd5e1;margin-bottom:8px">현재 월(<span id="cor-current-period">-</span>) 정산에 대한 수정 요청 — admin이 검토 후 sale 데이터 정정합니다</div>
+      <textarea id="cor-reason" placeholder="예: 5/15 신청한 김OO 계약이 누락되었습니다" rows="3" style="width:100%;background:#1e293b;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+      <button onclick="submitCorrection()" style="background:#fbbf24;color:#1e293b;border:none;padding:8px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:800;margin-top:6px">📨 제출</button>
+    </div>
+    <h4 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">📋 요청 이력</h4>
+    <div id="cor-list-body" style="font-size:11.5px"></div>
+  </div>
+</div>
+
+<div id="toast" style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:10px 20px;border-radius:8px;font-weight:800;z-index:99999;opacity:0;transition:opacity 0.2s"></div>
+
+<script>
+const TK = () => localStorage.getItem('incentive-auth-token-v1');
+const fetchAuth = (url, opts={}) => fetch(url, { ...opts, headers: { ...(opts.headers||{}), Authorization: 'Bearer ' + TK() }});
+const esc = (s) => String(s ?? '').replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (n) => (n||0).toLocaleString();
+function showToast(m, color='#16a34a') { const t=document.getElementById('toast'); t.textContent=m; t.style.background=color; t.style.opacity=1; setTimeout(()=>t.style.opacity=0, 2500); }
+
+const now = new Date();
+document.getElementById('f-period').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+let _myRole = null, _myAgentId = null;
+let _settlements = [];
+
+async function loadAll() {
+  if (!TK()) { document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#64748b">로그인 필요</div>'; return; }
+  if (!_myRole) {
+    const r = await fetchAuth('/api/incentive/agents/me');
+    if (r.ok) { const d = await r.json(); _myRole = d.agent?.role; _myAgentId = d.agent?.id; }
+  }
+  if (_myRole === 'agent') document.body.classList.add('role-agent');
+  document.getElementById('btn-finalize').style.display = _myRole === 'admin' ? '' : 'none';
+
+  const period = document.getElementById('f-period').value;
+  const r = await fetchAuth('/api/incentive/manager/overview?month=' + period);
+  if (!r.ok) { showToast('조회 실패: ' + r.status, '#dc2626'); return; }
+  const d = await r.json();
+  _settlements = d.settlements || [];
+  renderKpi(d.totals || {});
+  renderTable();
+  renderProgress();
+  await loadManagerOverride();
+}
+
+async function loadManagerOverride() {
+  // manager 본인일 때만 오버라이드 표시
+  document.getElementById('mgr-override-section').style.display = 'none';
+  if (_myRole !== 'manager') return;
+  const period = document.getElementById('f-period').value;
+  const r = await fetchAuth('/api/incentive/settlement?month=' + period);
+  if (!r.ok) return;
+  const d = await r.json();
+  const mov = d.manager_override;
+  if (!mov || !mov.enabled) {
+    document.getElementById('mgr-override-section').style.display = 'block';
+    document.getElementById('mgr-ov-status').textContent = mov?.exempted ? `면제 — ${mov.exempt_reason||''}` : '비활성 (조건 미충족)';
+    document.getElementById('mov-team').textContent = mov?.team_count || 0;
+    document.getElementById('mov-count').textContent = (mov?.my_completed_count || 0);
+    document.getElementById('mov-count-sub').textContent = '본인 완료';
+    document.getElementById('mov-team-inc').textContent = fmt(mov?.team_incentive_sum || 0);
+    document.getElementById('mov-rate').textContent = ((mov?.override_rate || 0)*100).toFixed(0) + '%';
+    document.getElementById('mov-rate-sub').textContent = `최소 ${(mov?.team_profit_rate_min||0).toFixed(0)}% 미달`;
+    document.getElementById('mov-final').textContent = '0원';
+    document.getElementById('mov-final-sub').textContent = mov?.penalty_reason || mov?.exempt_reason || '미지급';
+    document.getElementById('mov-detail').innerHTML = mov?.penalty_reason ? `<span style="color:#f87171">⚠️ ${esc(mov.penalty_reason)}</span>` : '';
+    return;
+  }
+  document.getElementById('mgr-override-section').style.display = 'block';
+  document.getElementById('mgr-ov-status').textContent = '✅ 활성 — 본인 정산에 자동 합산';
+  document.getElementById('mov-team').textContent = mov.team_count || 0;
+  document.getElementById('mov-team-sub').textContent = `의무 ${mov.obligation_count || 0}건`;
+  document.getElementById('mov-count').textContent = mov.my_completed_count || 0;
+  document.getElementById('mov-count-sub').textContent = '본인 완료';
+  document.getElementById('mov-team-inc').textContent = fmt(mov.team_incentive_sum || 0);
+  document.getElementById('mov-rate').textContent = ((mov.override_rate || 0)*100).toFixed(0) + '%';
+  document.getElementById('mov-rate-sub').textContent = `이익률 ${(mov.team_profit_rate||0).toFixed(1)}%`;
+  document.getElementById('mov-final').textContent = fmt(mov.override_final || 0) + '원';
+  document.getElementById('mov-final-sub').textContent = (mov.penalty_factor||1) < 1 ? `페널티 ×${(mov.penalty_factor||1).toFixed(2)}` : '정상 지급';
+  document.getElementById('mov-detail').innerHTML = `
+    <div>📊 raw: ${fmt(mov.override_raw||0)}원 × 페널티 ${(mov.penalty_factor||1).toFixed(2)} = <b style="color:#22c55e">${fmt(mov.override_final||0)}원</b></div>
+    ${mov.penalty_reason ? `<div style="color:#fbbf24;margin-top:4px">⚠️ ${esc(mov.penalty_reason)}</div>` : ''}
+  `;
+}
+
+function renderKpi(t) {
+  const isAgent = _myRole === 'agent';
+  const me = isAgent ? _settlements[0] : null;
+  document.getElementById('kpi-title').textContent = isAgent ? '🎯 내 이번 달 누적' : '📊 팀 정산 요약';
+  document.getElementById('team-title').textContent = isAgent ? '📋 본인 정산 상세' : (_myRole === 'manager' ? '👨‍💼 팀원 정산 상세' : '🏢 전사 정산 상세');
+  document.getElementById('primary-label').textContent = isAgent ? '총수령' : '총 정산액';
+
+  if (isAgent && me) {
+    document.getElementById('kpi-primary').textContent = fmt(me.agent_total) + '원';
+    document.getElementById('kpi-primary-sub').textContent = `기본 ${fmt(me.base_salary)} + 인센 ${fmt(me.incentive)} + 보너스 ${fmt(me.bonus)} − 페이백 ${fmt(me.total_agent_payback_deduct)}`;
+    document.getElementById('kpi-grade').innerHTML = `G${me.grade_applied||1} <span style="font-size:13px;color:#cbd5e1">${fmt(me.applied_rate)}원/P</span>`;
+    document.getElementById('kpi-grade-sub').textContent = `목표 G${me.grade_target||1} / 적용 G${me.grade_applied||1}` + (me.is_penalty ? ' ▼ 페널티' : '');
+    document.getElementById('kpi-points').textContent = (Number(me.total_points||0)).toFixed(1) + 'P';
+    document.getElementById('kpi-points-sub').textContent = `건수 ${fmt(me.total_count)}건`;
+    document.getElementById('kpi-premium').textContent = fmt(me.premium_count);
+    document.getElementById('kpi-premium-sub').textContent = '건';
+    document.getElementById('kpi-incentive').textContent = fmt(me.incentive) + '원';
+    document.getElementById('kpi-incentive-sub').textContent = `단가 ${fmt(me.applied_rate)}/P`;
+    document.getElementById('kpi-bonus').textContent = fmt(me.bonus) + '원';
+    document.getElementById('kpi-deduct').textContent = '−' + fmt(me.total_agent_payback_deduct);
+    document.getElementById('kpi-deduct-sub').textContent = `${me.total_count||0}건 중 페이백 30,000↑ 건수만`;
+  } else {
+    document.getElementById('kpi-primary').textContent = fmt((_settlements.reduce((a,s)=>a+(s.agent_total||0),0))) + '원';
+    document.getElementById('kpi-primary-sub').textContent = `${_settlements.length}명 합산 (지급 예정)`;
+    document.getElementById('kpi-grade').textContent = fmt(t.total_sales_count);
+    document.getElementById('kpi-grade-sub').textContent = '총 계약 건수';
+    const totalP = _settlements.reduce((a,s)=>a+(Number(s.total_points)||0),0);
+    document.getElementById('kpi-points').textContent = totalP.toFixed(1) + 'P';
+    document.getElementById('kpi-points-sub').textContent = '팀 누적 포인트';
+    document.getElementById('kpi-premium').textContent = fmt(_settlements.reduce((a,s)=>a+(s.premium_count||0),0));
+    document.getElementById('kpi-premium-sub').textContent = '팀 우수상품 건';
+    document.getElementById('kpi-incentive').textContent = fmt(t.total_incentive) + '원';
+    document.getElementById('kpi-incentive-sub').textContent = '인센티브 합';
+    document.getElementById('kpi-bonus').textContent = fmt(t.total_bonus) + '원';
+    document.getElementById('kpi-deduct').textContent = '−' + fmt(_settlements.reduce((a,s)=>a+(s.total_agent_payback_deduct||0),0));
+    document.getElementById('kpi-deduct-sub').textContent = '팀 합계';
+  }
+}
+
+function renderProgress() {
+  if (_myRole !== 'agent' || !_settlements[0]) return;
+  const me = _settlements[0];
+  const p = Number(me.total_points || 0);
+  const grade = me.grade_applied || 1;
+  let target, label, hint;
+  if (grade >= 3) {
+    target = Math.max(p, 50);
+    label = `G3 유지 — ${p.toFixed(1)}P`;
+    hint = '목표 G3 (31P+ & 우수 10건+) 도달';
+  } else if (grade === 2) {
+    target = 31;
+    label = `G3까지 +${(31-p).toFixed(1)}P`;
+    hint = `G3 도달 시 단가 40,000원/P 적용 (현 ${fmt(me.applied_rate)})`;
+  } else {
+    target = 16;
+    label = `G2까지 +${(16-p).toFixed(1)}P`;
+    hint = `G2 도달 시 단가 30,000원/P 적용 (현 ${fmt(me.applied_rate)})`;
+  }
+  const pct = Math.min(100, (p/target*100));
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = '📈 ' + label;
+  document.getElementById('progress-current').innerHTML = `<b>${p.toFixed(1)}P</b> / G${grade}`;
+  document.getElementById('progress-target').innerHTML = `G${Math.min(3, grade+1)} <b>${target}P</b>`;
+  document.getElementById('progress-hint').textContent = hint;
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tbody');
+  document.getElementById('empty').style.display = _settlements.length ? 'none' : '';
+  if (!_settlements.length) { tbody.innerHTML = ''; return; }
+  tbody.innerHTML = _settlements.map((s,i) => {
+    const a = s.agent || {};
+    const gradeBadge = `<span class="grade-${s.grade_applied||1}">G${s.grade_applied||1}</span>` + (s.is_penalty ? `<span class="penalty">▼${s.grade_target||''}</span>` : '');
+    const finalized = s.finalized_at ? `<span style="color:#22c55e;font-size:10px">✅ ${new Date(s.finalized_at).toLocaleDateString('ko-KR')}</span>` : (_myRole === 'admin' ? `<button onclick="finalizeOne('${a.id}')" style="background:#3b82f6;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer">확정</button>` : '<span style="color:#94a3b8;font-size:10px">미확정</span>');
+    return `<tr>
+      <td>${i+1}</td>
+      <td class="l"><b style="color:#f8fafc">${esc(a.name)}</b></td>
+      <td><span class="role-badge r-${a.role}">${esc(a.role)}</span></td>
+      <td>${esc(a.center)||'-'}</td>
+      <td class="r">${fmt(s.total_count)}</td>
+      <td class="r" style="color:#a5b4fc">${(s.total_points||0).toFixed(1)}P</td>
+      <td class="r" style="color:#fbbf24">${fmt(s.premium_count)}</td>
+      <td>${gradeBadge}</td>
+      <td class="r">${fmt(s.applied_rate)}원</td>
+      <td class="r" style="color:#22c55e">${fmt(s.incentive)}</td>
+      <td class="r" style="color:#fbbf24">${fmt(s.bonus)}</td>
+      <td class="r" style="color:#f87171">-${fmt(s.total_agent_payback_deduct)}</td>
+      <td class="r">${fmt(s.base_salary)}</td>
+      <td class="r" style="color:#22c55e;font-weight:900">${fmt(s.agent_total)}원</td>
+      <td class="r admin-only">${fmt(s.company_profit)}</td>
+      <td class="r admin-only" style="color:${(s.profit_rate||0)>=20?'#22c55e':(s.profit_rate||0)>=10?'#fbbf24':'#f87171'}">${(s.profit_rate||0).toFixed(1)}%</td>
+      <td class="no-print">${finalized}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function finalizeOne(agentId) {
+  const period = document.getElementById('f-period').value;
+  if (!confirm(`${period} 정산을 이 상담사에 대해 확정하시겠습니까?\n\n확정 후 수정 불가.`)) return;
+  const r = await fetchAuth('/api/incentive/finalize', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ month: period, agent_id: agentId })
+  });
+  if (!r.ok) { const d = await r.json(); showToast('실패: ' + (d.error||''), '#dc2626'); return; }
+  showToast('🔒 확정 완료'); loadAll();
+}
+async function finalizeAll() {
+  const period = document.getElementById('f-period').value;
+  if (!confirm(`${period} 정산 — 미확정 인원 전체를 확정하시겠습니까?`)) return;
+  const r = await fetchAuth('/api/incentive/finalize', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ month: period })
+  });
+  if (!r.ok) { const d = await r.json(); showToast('실패: ' + (d.error||''), '#dc2626'); return; }
+  showToast('🔒 전체 확정 완료'); loadAll();
+}
+function exportCSV() {
+  if (!_settlements.length) { showToast('데이터 없음', '#dc2626'); return; }
+  const head = ['#','상담사','역할','센터','계약수','P','우수건','Grade','단가','인센티브','보너스','페이백차감','기본급','최종지급','회사이익','이익률'];
+  const rows = [head];
+  _settlements.forEach((s,i) => {
+    const a = s.agent || {};
+    rows.push([i+1, a.name, a.role, a.center, s.total_count, s.total_points, s.premium_count,
+      'G'+(s.grade_applied||1)+(s.is_penalty?'(페널티)':''), s.applied_rate,
+      s.incentive, s.bonus, s.total_agent_payback_deduct, s.base_salary, s.agent_total, s.company_profit, s.profit_rate]);
+  });
+  const csv = '﻿' + rows.map(r => r.map(x => `"${String(x ?? '').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `정산_${document.getElementById('f-period').value}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('📥 CSV 다운로드');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 정산 수정 요청
+// ═══════════════════════════════════════════════════════════════
+async function openCorrections() {
+  const modal = document.getElementById('cor-modal');
+  modal.style.display = 'flex';
+  document.getElementById('cor-current-period').textContent = document.getElementById('f-period').value;
+  document.getElementById('cor-reason').value = '';
+  await loadCorrections();
+}
+function closeCorrections() { document.getElementById('cor-modal').style.display = 'none'; }
+
+async function loadCorrections() {
+  const r = await fetchAuth('/api/incentive/corrections?limit=50');
+  if (!r.ok) { document.getElementById('cor-list-body').innerHTML = '<div style="color:#f87171;padding:8px">조회 실패</div>'; return; }
+  const d = await r.json();
+  const body = document.getElementById('cor-list-body');
+  if (!d.corrections.length) { body.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b">요청 없음</div>'; return; }
+  const ST = { pending:{txt:'⏳ 대기',c:'#fbbf24'}, resolved:{txt:'✅ 해결',c:'#22c55e'}, rejected:{txt:'❌ 거부',c:'#f87171'} };
+  const isAdmin = _myRole === 'admin';
+  body.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:#0f172a;color:#94a3b8">
+      <th style="padding:6px;text-align:left">요청자</th><th style="padding:6px">월</th>
+      <th style="padding:6px;text-align:left">사유</th><th style="padding:6px">상태</th>
+      <th style="padding:6px;text-align:left">처리 메모</th><th style="padding:6px">시각</th>
+      ${isAdmin ? '<th style="padding:6px">처리</th>' : ''}
+    </tr></thead><tbody>` +
+    d.corrections.map(c => {
+      const st = ST[c.status] || { txt: c.status, c:'#94a3b8' };
+      const dt = new Date(c.created_at).toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const act = !isAdmin ? '' : (c.status !== 'pending' ? '<td style="padding:6px;text-align:center;color:#64748b">-</td>' :
+        `<td style="padding:6px;display:flex;gap:3px">
+           <button onclick="resolveCor(${c.id})" style="background:#22c55e;color:#fff;border:none;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer">해결</button>
+           <button onclick="rejectCor(${c.id})" style="background:#dc2626;color:#fff;border:none;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer">거부</button>
+         </td>`);
+      return `<tr style="border-bottom:1px solid #334155">
+        <td style="padding:6px"><b>${esc(c.agent?.name)||'-'}</b><div style="font-size:9.5px;color:#94a3b8">${esc(c.agent?.role)}</div></td>
+        <td style="padding:6px;text-align:center">${esc(c.period)}</td>
+        <td style="padding:6px;color:#cbd5e1;max-width:240px;white-space:pre-wrap">${esc(c.reason)}</td>
+        <td style="padding:6px;text-align:center;color:${st.c};font-weight:700">${st.txt}</td>
+        <td style="padding:6px;color:#94a3b8;max-width:200px;white-space:pre-wrap">${esc(c.resolved_note)||'-'}</td>
+        <td style="padding:6px;text-align:center;color:#94a3b8;font-size:10.5px">${dt}</td>
+        ${act}
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
+
+async function submitCorrection() {
+  const period = document.getElementById('f-period').value;
+  const reason = document.getElementById('cor-reason').value.trim();
+  if (!reason) { showToast('사유 입력', '#dc2626'); return; }
+  const r = await fetchAuth('/api/incentive/corrections', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ period, reason })
+  });
+  if (!r.ok) { const d = await r.json(); showToast('실패: ' + d.error, '#dc2626'); return; }
+  showToast('📨 수정 요청 제출');
+  document.getElementById('cor-reason').value = '';
+  await loadCorrections();
+  checkPendingCorrections();
+}
+
+async function resolveCor(id) {
+  const note = prompt('해결 메모 (예: sale_id 123 추가됨)');
+  if (note === null) return;
+  const r = await fetchAuth('/api/incentive/corrections/' + id + '/resolve', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ note })
+  });
+  if (!r.ok) { const d = await r.json(); showToast('실패: ' + d.error, '#dc2626'); return; }
+  showToast('✅ 해결 처리'); loadCorrections(); checkPendingCorrections();
+}
+async function rejectCor(id) {
+  const note = prompt('거부 사유');
+  if (note === null) return;
+  const r = await fetchAuth('/api/incentive/corrections/' + id + '/reject', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ note })
+  });
+  if (!r.ok) { const d = await r.json(); showToast('실패: ' + d.error, '#dc2626'); return; }
+  showToast('❌ 거부 처리'); loadCorrections(); checkPendingCorrections();
+}
+
+async function checkPendingCorrections() {
+  if (_myRole !== 'admin') return;
+  const r = await fetchAuth('/api/incentive/corrections?status=pending&limit=50');
+  if (!r.ok) return;
+  const d = await r.json();
+  const btn = document.getElementById('btn-corrections');
+  if (d.corrections.length) {
+    btn.innerHTML = `📩 수정 요청 <span style="background:#dc2626;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px">${d.corrections.length}</span>`;
+    btn.style.background = '#dc2626';
+  } else {
+    btn.innerHTML = '📩 수정 요청';
+    btn.style.background = '#475569';
+  }
+}
+
+setTimeout(checkPendingCorrections, 1500);
+
+loadAll();
+</script>
+</body>
+</html>

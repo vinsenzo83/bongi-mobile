@@ -12,6 +12,7 @@
 <style>
 * { box-sizing: border-box; margin:0; padding:0; }
 html, body { height:100%; }
+kbd { background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); border-radius:3px; padding:1px 5px; font-family:monospace; font-size:10px; font-weight:700; color:#fff; margin:0 1px; }
 body {
   font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background:#eef1f6; color:#0f172a; font-size:13px; -webkit-font-smoothing:antialiased; letter-spacing:-0.005em;
@@ -388,8 +389,681 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script src="/docs/_security.js" defer></script>
 </head>
 <body>
+
+<!-- 🆕 콜 모드 — 고객 카드 + 결과 패널 + 좌측 콜 큐 사이드바 -->
+<style>
+/* 콜 모드 bar / 큐 사이드 폭은 JS ResizeObserver로 실시간 측정 → CSS 변수로 자동 반영 */
+:root { --call-bar-h: 0px; --queue-w: 0px; }
+body.call-mode-active { padding-top: var(--call-bar-h, 130px) !important; }
+body.call-mode-active .tm-app { height: calc(100vh - var(--call-bar-h, 130px)) !important; max-width:none !important; }
+body.queue-side-active, body.queue-side-collapsed { padding-left: var(--queue-w, 280px) !important; }
+body.call-mode-active.queue-side-active #call-queue-side,
+body.call-mode-active.queue-side-collapsed #call-queue-side { top: var(--call-bar-h, 130px) !important; }
+@media (max-width: 768px) {
+  body.call-mode-active { padding-left: 0 !important; }
+  body.queue-side-active, body.queue-side-collapsed { padding-left: 0 !important; }
+}
+
+/* 좌측 콜 큐 사이드바 — agent/manager 자동 표시 + 접힘/펼침 */
+#call-queue-side { display:none; position:fixed; top:0; left:0; bottom:0; width:280px; background:#0f172a; border-right:1.5px solid #334155; overflow-y:auto; z-index:99; box-shadow:2px 0 8px rgba(0,0,0,0.3); transition:width 0.2s; }
+body.queue-side-active { transition:padding-left 0.2s; }
+body.queue-side-active #call-queue-side { display:block; top:0; }
+/* 접힘 모드 */
+body.queue-side-collapsed #call-queue-side { width:40px; overflow:hidden; display:block; }
+body.queue-side-collapsed #call-queue-side .cq-header h3 span,
+body.queue-side-collapsed #call-queue-side .cq-header .meta,
+body.queue-side-collapsed #call-queue-side .cq-header a,
+body.queue-side-collapsed #call-queue-side #cq-list { display:none; }
+body.queue-side-collapsed #call-queue-side .cq-header { padding:10px 4px; text-align:center; }
+body.queue-side-collapsed #call-queue-side .cq-header h3 { font-size:11px; }
+.cq-toggle { position:absolute; top:8px; right:6px; background:#475569; color:#fff; border:none; width:24px; height:24px; border-radius:5px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center; padding:0; z-index:2; }
+.cq-toggle:hover { background:#64748b; }
+body.queue-side-collapsed .cq-toggle { position:fixed; top:8px; left:8px; right:auto; }
+@media (max-width: 768px) { body.queue-side-active, body.queue-side-collapsed { padding-left:0 !important; } body.queue-side-active #call-queue-side { display:none; } }
+.cq-header { padding:10px 14px; border-bottom:1px solid #334155; background:#1e293b; position:sticky; top:0; z-index:1; }
+.cq-header h3 { font-size:13px; color:#a5b4fc; font-weight:800; }
+.cq-header .meta { font-size:10.5px; color:#94a3b8; margin-top:2px; }
+.cq-item { padding:10px 14px; border-bottom:1px solid #1e293b; cursor:pointer; transition:background 0.1s; }
+.cq-item:hover { background:rgba(59,130,246,0.1); }
+.cq-item.current { background:rgba(34,197,94,0.15); border-left:3px solid #22c55e; padding-left:11px; }
+.cq-item.callback { background:rgba(251,191,36,0.06); }
+.cq-item .name { font-size:12.5px; color:#f8fafc; font-weight:800; }
+.cq-item .phone { font-size:10.5px; color:#cbd5e1; font-family:monospace; }
+.cq-item .meta-line { font-size:10px; color:#94a3b8; margin-top:2px; }
+.cq-item .badge { font-size:9px; padding:1px 5px; border-radius:3px; color:#fff; font-weight:800; margin-left:4px; }
+</style>
+
+<!-- 좌측 콜 큐 사이드바 -->
+<div id="call-queue-side">
+  <button class="cq-toggle" id="cq-toggle-btn" onclick="toggleQueueSide()" title="접기/펼치기">◀</button>
+  <div class="cq-header">
+    <h3>📋 <span>내 콜 큐 <span id="cq-count" style="font-size:11px;color:#94a3b8;font-weight:400">-</span></span></h3>
+    <div class="meta">우선순위 30건 · 클릭으로 진입</div>
+  </div>
+  <div id="cq-list"></div>
+</div>
+
+<!-- 거절 사유 picker -->
+<div id="rj-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99999;justify-content:center;align-items:center" onclick="if(event.target===this)rjPickerCancel()">
+  <div style="background:#1e293b;border:1.5px solid #475569;border-radius:14px;padding:22px 24px;width:420px;max-width:92vw;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+    <h3 style="font-size:15px;color:#fca5a5;font-weight:800;margin-bottom:14px">❌ 거절 사유</h3>
+    <div id="rj-presets" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px"></div>
+    <label style="font-size:11px;color:#cbd5e1;display:block">📝 직접 입력
+      <input type="text" id="rj-text" placeholder="기타 사유 입력" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:13px;margin-top:4px;font-family:inherit">
+    </label>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button onclick="rjPickerCancel()" style="background:#475569;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px">취소</button>
+      <button onclick="rjPickerConfirm()" style="background:#dc2626;color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:800">❌ 거절 기록</button>
+    </div>
+  </div>
+</div>
+
+<!-- 콜백 약속 시간 picker -->
+<div id="cb-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99999;justify-content:center;align-items:center" onclick="if(event.target===this)cbPickerCancel()">
+  <div style="background:#1e293b;border:1.5px solid #475569;border-radius:14px;padding:22px 24px;width:420px;max-width:92vw;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+    <h3 style="font-size:15px;color:#60a5fa;font-weight:800;margin-bottom:14px">📞 콜백 약속 시간</h3>
+    <div id="cb-presets" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px"></div>
+    <label style="font-size:11px;color:#cbd5e1;display:block">⏱️ 직접 선택
+      <input type="datetime-local" id="cb-dt" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:13px;margin-top:4px;font-family:inherit">
+    </label>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button onclick="cbPickerCancel()" style="background:#475569;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px">취소</button>
+      <button onclick="cbPickerConfirm()" style="background:#16a34a;color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:800">✅ 확정</button>
+    </div>
+  </div>
+</div>
+
+<div id="call-mode-bar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(135deg,#1e3a8a,#0f172a);border-bottom:2px solid #3b82f6;padding:14px 22px;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.4)">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
+    <div style="flex:1;min-width:300px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:18px;font-weight:900" id="cm-name">-</span>
+        <span style="font-family:monospace;font-size:14px;color:#bfdbfe" id="cm-phone">-</span>
+        <button onclick="copyCallPhone()" style="background:#475569;color:#fff;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px">📋 복사</button>
+      </div>
+      <div style="font-size:11.5px;color:#cbd5e1;line-height:1.6" id="cm-meta">-</div>
+      <div style="font-size:10.5px;color:#94a3b8;margin-top:4px;display:flex;align-items:center;gap:8px">
+        <span id="cm-history-summary">-</span>
+        <button type="button" id="cm-history-toggle" onclick="toggleCallHistory()" style="background:rgba(255,255,255,0.08);color:#cbd5e1;border:1px solid rgba(255,255,255,0.15);padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px;display:none">📜 이력 펼치기</button>
+      </div>
+      <div id="cm-history-panel" style="display:none;margin-top:8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;max-height:180px;overflow-y:auto"></div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap">
+      <button onclick="callResult('no_answer')" style="background:#64748b;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700">📵 부재 (1)</button>
+      <button onclick="callResult('callback', true)" style="background:#3b82f6;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700">📞 콜백 (2)</button>
+      <button onclick="callResult('rejected', true)" style="background:#dc2626;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700">❌ 거절 (3)</button>
+      <button onclick="callResult('wrong_number')" style="background:#7f1d1d;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700">⚠️ 잘못</button>
+      <button onclick="dntCustomer()" style="background:#000;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700">🚫 DNT</button>
+      <button onclick="loadNextCallCustomer()" style="background:#16a34a;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:800">⏭️ 다음 고객</button>
+    </div>
+  </div>
+  <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.15);display:flex;gap:8px;align-items:flex-start">
+    <span style="font-size:11px;color:#cbd5e1;flex-shrink:0;padding-top:6px;font-weight:700">📝 고객 메모</span>
+    <textarea id="cm-notes" placeholder="이 고객에 대한 메모 — 자동 저장 + 콜 결과 기록 시 함께 저장" rows="2"
+      style="flex:1;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit;resize:vertical;min-height:38px;line-height:1.4"
+      oninput="onNotesInput()"></textarea>
+    <span id="cm-notes-status" style="font-size:10px;color:#94a3b8;flex-shrink:0;padding-top:6px;min-width:60px;text-align:right">-</span>
+  </div>
+  <div style="margin-top:6px;font-size:10.5px;color:#94a3b8;line-height:1.5">
+    💡 단축키: <kbd>1</kbd>부재 · <kbd>2</kbd>콜백 · <kbd>3</kbd>거절 · <kbd>4</kbd>잘못 · <kbd>0</kbd>DNT · <kbd>Space</kbd>다음 · <kbd>C</kbd>복사 · <kbd>M</kbd>메모 · <kbd>H</kbd>이력 · <kbd>?</kbd>도움말
+  </div>
+</div>
+
+<script>
+// 🆕 콜 모드 진입 — URL ?customer_id=X 감지
+window.CALL_MODE_CUSTOMER_ID = null;
+window.CALL_MODE_QUEUE = []; // 다음 고객 큐 (캐시)
+window.CALL_MODE_VISITED = new Set(); // 이번 세션 이미 진입한 customer (콜 결과 기록 전엔 다시 안 옴)
+
+(function callModeInit() {
+  const params = new URLSearchParams(location.search);
+  const cid = params.get('customer_id');
+  if (cid) {
+    window.CALL_MODE_CUSTOMER_ID = cid;
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => loadCallCustomer(cid), 300);
+      bindShortcutKeys();
+    });
+  }
+  // 콜 큐 사이드바 — agent/manager 자동 표시 (cid 없어도)
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initQueueSide, 800);
+    initLayoutObservers();
+  });
+})();
+
+// 🆕 자동 레이아웃 — fixed bar 높이/사이드 폭 실시간 측정 → CSS 변수
+function initLayoutObservers() {
+  const root = document.documentElement;
+  const bar = document.getElementById('call-mode-bar');
+  const side = document.getElementById('call-queue-side');
+  const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
+  const update = () => {
+    const barH = bar && bar.style.display !== 'none' ? bar.offsetHeight : 0;
+    const sideW = side && getComputedStyle(side).display !== 'none' && !isMobile() ? side.offsetWidth : 0;
+    root.style.setProperty('--call-bar-h', barH + 'px');
+    root.style.setProperty('--queue-w', sideW + 'px');
+  };
+  update();
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(update);
+    if (bar) ro.observe(bar);
+    if (side) ro.observe(side);
+  }
+  window.addEventListener('resize', update);
+  // class 변경 (call-mode-active, queue-side-active/collapsed) 감지
+  new MutationObserver(update).observe(document.body, { attributes:true, attributeFilter:['class'] });
+  if (bar) new MutationObserver(update).observe(bar, { attributes:true, attributeFilter:['style'] });
+}
+
+function toggleQueueSide() {
+  document.body.classList.toggle('queue-side-collapsed');
+  const collapsed = document.body.classList.contains('queue-side-collapsed');
+  document.getElementById('cq-toggle-btn').textContent = collapsed ? '▶' : '◀';
+  try { localStorage.setItem('cq-side-collapsed', collapsed ? '1' : '0'); } catch(e) {}
+}
+
+async function initQueueSide() {
+  const tk = localStorage.getItem('incentive-auth-token-v1');
+  if (!tk) return;
+  try {
+    const r = await fetch('/api/incentive/agents/me', { headers: { Authorization: 'Bearer ' + tk } });
+    if (!r.ok) return;
+    const me = (await r.json()).agent;
+    if (!me || (me.role !== 'agent' && me.role !== 'manager')) return;
+    document.body.classList.add('queue-side-active');
+    // 접힘 상태 복원
+    if (localStorage.getItem('cq-side-collapsed') === '1') {
+      document.body.classList.add('queue-side-collapsed');
+      const btn = document.getElementById('cq-toggle-btn'); if (btn) btn.textContent = '▶';
+    }
+    await prefetchNextQueue();
+    bindShortcutKeys();
+  } catch {}
+}
+
+async function loadCallCustomer(customerId) {
+  const tk = (typeof authGetToken === 'function') ? authGetToken() : localStorage.getItem('incentive-auth-token-v1');
+  if (!tk) return;
+  try {
+    const r = await fetch('/api/customer-db/' + customerId, { headers: { Authorization: 'Bearer ' + tk } });
+    if (!r.ok) return;
+    const { customer: c, call_logs: logs } = await r.json();
+    window.CALL_MODE_CUSTOMER_ID = c.id;
+
+    // UI 채움
+    document.getElementById('call-mode-bar').style.display = '';
+    document.body.classList.add('call-mode-active');
+    document.getElementById('cm-name').textContent = c.name + (c.age ? ` · ${c.age}세` : '') + (c.gender ? ` · ${c.gender}` : '');
+    document.getElementById('cm-phone').textContent = c.phone;
+    const meta = [];
+    if (c.region) meta.push('🏠 ' + c.region);
+    if (c.carrier) meta.push('🏢 현재: ' + c.carrier);
+    document.getElementById('cm-meta').textContent = meta.join(' · ') || '추가 정보 없음';
+    // 고객 메모 prefill
+    const notesEl = document.getElementById('cm-notes');
+    if (notesEl) {
+      notesEl.value = c.notes || '';
+      window._cmNotesLast = notesEl.value;
+      const st = document.getElementById('cm-notes-status');
+      if (st) st.textContent = c.notes ? '저장됨' : '';
+    }
+    // 통화 이력 — 요약 + 펼치기 timeline
+    renderCallHistory(logs || []);
+
+    // 견적 폼 prefill (기존 deal-* 입력란)
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+    setVal('deal-name', c.name);
+    setVal('deal-phone', c.phone);
+    if (c.region) setVal('deal-address', c.region);
+    // DB 출처 자동 — db_source_id가 select 옵션에 있으면 set, 없으면 옵션 로드 후 재시도
+    if (c.db_source_id) {
+      const sel = document.getElementById('deal-db-source');
+      const trySet = () => {
+        if (!sel) return false;
+        const opt = sel.querySelector(`option[value="${c.db_source_id}"]`);
+        if (opt) { sel.value = c.db_source_id; sel.dispatchEvent(new Event('change', {bubbles:true})); return true; }
+        return false;
+      };
+      if (!trySet()) {
+        // 옵션 아직 로드 전 — incLoadDbSources 후 재시도
+        if (typeof incLoadDbSources === 'function') {
+          incLoadDbSources().then(trySet).catch(() => {});
+        }
+        // 폴링 fallback (최대 3초)
+        let n = 0;
+        const iv = setInterval(() => { if (trySet() || ++n > 30) clearInterval(iv); }, 100);
+      }
+    }
+
+    // 인센티브 미리보기 카드 표시 (TM 기존 기능)
+    const sec = document.getElementById('inc-sales-section');
+    if (sec) sec.style.display = '';
+  } catch (e) { console.warn('[loadCallCustomer]', e); }
+}
+
+// 🆕 거절 사유 picker
+function pickRejectReason() {
+  return new Promise((resolve) => {
+    window._rjResolve = resolve;
+    const overlay = document.getElementById('rj-picker-overlay');
+    const txt = document.getElementById('rj-text');
+    const presets = document.getElementById('rj-presets');
+    const items = ['약정 중', '관심 없음', '가격 부담', '타사 사용 만족', '나이 많음', '결정권 없음', '재상담 거절', '기타'];
+    presets.innerHTML = items.map((label, i) =>
+      `<button type="button" data-i="${i}" style="background:#334155;color:#e2e8f0;border:1px solid #475569;padding:9px 10px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;transition:all 0.12s">${label}</button>`
+    ).join('');
+    presets.querySelectorAll('button').forEach(btn => {
+      btn.onclick = () => {
+        txt.value = items[parseInt(btn.dataset.i)];
+        rjPickerConfirm();
+      };
+      btn.onmouseenter = () => { btn.style.background = '#dc2626'; btn.style.borderColor = '#fca5a5'; };
+      btn.onmouseleave = () => { btn.style.background = '#334155'; btn.style.borderColor = '#475569'; };
+    });
+    txt.value = '';
+    overlay.style.display = 'flex';
+    setTimeout(() => txt.focus(), 50);
+    const keyHandler = (e) => {
+      if (e.key === 'Escape') { rjPickerCancel(); document.removeEventListener('keydown', keyHandler); }
+      else if (e.key === 'Enter' && overlay.style.display === 'flex') { e.preventDefault(); rjPickerConfirm(); document.removeEventListener('keydown', keyHandler); }
+    };
+    document.addEventListener('keydown', keyHandler);
+  });
+}
+function rjPickerConfirm() {
+  const v = (document.getElementById('rj-text').value || '').trim() || '기타';
+  document.getElementById('rj-picker-overlay').style.display = 'none';
+  if (window._rjResolve) { window._rjResolve(v); window._rjResolve = null; }
+}
+function rjPickerCancel() {
+  document.getElementById('rj-picker-overlay').style.display = 'none';
+  if (window._rjResolve) { window._rjResolve(null); window._rjResolve = null; }
+}
+
+// 🆕 콜백 시간 picker (프리셋 + datetime-local)
+function pickCallbackTime() {
+  return new Promise((resolve) => {
+    window._cbResolve = resolve;
+    const overlay = document.getElementById('cb-picker-overlay');
+    const dt = document.getElementById('cb-dt');
+    const presets = document.getElementById('cb-presets');
+    const now = new Date();
+    const p2 = (n) => String(n).padStart(2,'0');
+    const fmt = (d) => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`;
+    const lbl = (d) => `${(d.getMonth()+1)}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+
+    const items = [];
+    const add = (label, d) => items.push({ label, d });
+    add('1시간 후', new Date(now.getTime() + 60*60000));
+    add('3시간 후', new Date(now.getTime() + 3*60*60000));
+    const t18 = new Date(now); t18.setHours(18,0,0,0);
+    if (t18 > now) add('오늘 18:00', t18);
+    const tom = new Date(now); tom.setDate(tom.getDate()+1);
+    const tom10 = new Date(tom); tom10.setHours(10,0,0,0); add('내일 10:00', tom10);
+    const tom14 = new Date(tom); tom14.setHours(14,0,0,0); add('내일 14:00', tom14);
+    const tom19 = new Date(tom); tom19.setHours(19,0,0,0); add('내일 19:00', tom19);
+    const d3 = new Date(now); d3.setDate(d3.getDate()+3); d3.setHours(14,0,0,0); add('3일 후 14:00', d3);
+    const wk = new Date(now); wk.setDate(wk.getDate()+7); wk.setHours(14,0,0,0); add('1주 후 14:00', wk);
+
+    presets.innerHTML = items.map((it, i) =>
+      `<button type="button" data-i="${i}" style="background:#334155;color:#e2e8f0;border:1px solid #475569;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:11.5px;font-weight:700;transition:all 0.12s;text-align:left;line-height:1.3">
+        <div>${it.label}</div><div style="font-size:9.5px;color:#94a3b8;font-weight:400;margin-top:2px">${lbl(it.d)}</div>
+      </button>`
+    ).join('');
+    presets.querySelectorAll('button').forEach(btn => {
+      btn.onclick = () => {
+        const i = parseInt(btn.dataset.i);
+        dt.value = fmt(items[i].d);
+        cbPickerConfirm();
+      };
+      btn.onmouseenter = () => { btn.style.background = '#3b82f6'; btn.style.borderColor = '#60a5fa'; };
+      btn.onmouseleave = () => { btn.style.background = '#334155'; btn.style.borderColor = '#475569'; };
+    });
+    dt.value = fmt(items[0].d);
+    overlay.style.display = 'flex';
+    setTimeout(() => dt.focus(), 50);
+    // ESC 닫기 / Enter 확정
+    const keyHandler = (e) => {
+      if (e.key === 'Escape') { cbPickerCancel(); document.removeEventListener('keydown', keyHandler); }
+      else if (e.key === 'Enter' && overlay.style.display === 'flex') { e.preventDefault(); cbPickerConfirm(); document.removeEventListener('keydown', keyHandler); }
+    };
+    document.addEventListener('keydown', keyHandler);
+  });
+}
+function cbPickerConfirm() {
+  const v = document.getElementById('cb-dt').value;
+  if (!v) { alert('시간을 선택하세요'); return; }
+  document.getElementById('cb-picker-overlay').style.display = 'none';
+  if (window._cbResolve) { window._cbResolve(new Date(v).toISOString()); window._cbResolve = null; }
+}
+function cbPickerCancel() {
+  document.getElementById('cb-picker-overlay').style.display = 'none';
+  if (window._cbResolve) { window._cbResolve(null); window._cbResolve = null; }
+}
+
+// 🆕 통화 이력 timeline 렌더 (요약 KPI + sale link + 메모 검색)
+function renderCallHistory(logs) {
+  const sumEl = document.getElementById('cm-history-summary');
+  const tglEl = document.getElementById('cm-history-toggle');
+  const panel = document.getElementById('cm-history-panel');
+  if (!sumEl || !panel) return;
+  if (!logs.length) {
+    sumEl.textContent = '🕒 첫 시도';
+    if (tglEl) tglEl.style.display = 'none';
+    panel.style.display = 'none';
+    panel.innerHTML = '';
+    return;
+  }
+  // 요약 카운트
+  const counts = logs.reduce((a, l) => { a[l.result] = (a[l.result]||0) + 1; return a; }, {});
+  const contact = (counts.callback||0) + (counts.rejected||0) + (counts.converted||0);
+  const contactRate = ((contact/logs.length)*100).toFixed(0);
+  sumEl.innerHTML = `🕒 이전 시도 <b>${logs.length}회</b> · 컨택 ${contact}회(${contactRate}%) · 마지막 ${new Date(logs[0].called_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})} ${logs[0].result}`;
+  if (tglEl) tglEl.style.display = '';
+
+  const escTl = (s) => String(s ?? '').replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+  const RES = { no_answer:'📵 부재', callback:'📞 콜백', rejected:'❌ 거절', converted:'🎉 계약완료', wrong_number:'⚠️ 잘못' };
+
+  // 상단 요약 카드
+  const kpiHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.1)">
+    ${Object.entries(counts).map(([r,n]) => `<span style="background:rgba(255,255,255,0.06);color:#cbd5e1;padding:2px 8px;border-radius:10px;font-size:10.5px">${RES[r]||r} ${n}</span>`).join('')}
+  </div>`;
+
+  // 메모 검색 박스
+  const searchHtml = `<input type="text" id="cm-history-search" oninput="filterHistoryMemo(this.value)" placeholder="🔍 이 고객 메모 검색" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;padding:5px 8px;border-radius:5px;font-size:11px;margin-bottom:8px;font-family:inherit">`;
+
+  // 각 row
+  const rowsHtml = logs.map(l => {
+    const dt = new Date(l.called_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const who = l.agent?.name ? `<span style="color:#94a3b8">· ${escTl(l.agent.name)}</span>` : '';
+    const cb = l.callback_at ? ` <span style="color:#fbbf24">(콜백 ${new Date(l.callback_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})})</span>` : '';
+    const rj = l.reject_reason ? ` <span style="color:#fca5a5">[${escTl(l.reject_reason)}]</span>` : '';
+    const note = (l.notes || '').trim();
+    // sale_id 추출 (converted 자동 stamp 패턴)
+    const saleM = note.match(/sale_id\s*(\d+)/i);
+    const saleLink = saleM ? `<a href="javascript:void(0)" onclick="openSaleInContract(${saleM[1]})" style="color:#22d3ee;text-decoration:underline;margin-left:4px">→ 견적 #${saleM[1]}</a>` : '';
+    const noteHtml = note ? `<div class="cm-hist-note" style="font-size:11px;color:#e2e8f0;margin-top:2px;padding-left:14px;line-height:1.4;white-space:pre-wrap">${escTl(note)}${saleLink}</div>` : '';
+    return `<div class="cm-hist-row" data-text="${escTl((note + ' ' + (l.reject_reason||'') + ' ' + (l.agent?.name||'')).toLowerCase())}" style="padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.08)">
+      <div style="font-size:10.5px;color:#cbd5e1;display:flex;gap:6px;flex-wrap:wrap"><b style="color:#fff">${dt}</b> <span>${RES[l.result]||l.result}</span>${cb}${rj} ${who}</div>
+      ${noteHtml}
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = kpiHtml + searchHtml + rowsHtml;
+}
+
+function filterHistoryMemo(q) {
+  const term = (q || '').toLowerCase().trim();
+  document.querySelectorAll('#cm-history-panel .cm-hist-row').forEach(r => {
+    const txt = r.dataset.text || '';
+    r.style.display = !term || txt.includes(term) ? '' : 'none';
+  });
+}
+
+function openSaleInContract(saleId) {
+  // 통합 어드민 안에 있으면 부모에 메뉴 전환 신호 + sale 강조
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type:'switch-menu', key:'contract', sale_id: saleId }, '*');
+  } else {
+    location.href = '/docs/incentive-contract.html?sale_id=' + saleId;
+  }
+}
+function toggleCallHistory() {
+  const panel = document.getElementById('cm-history-panel');
+  const btn = document.getElementById('cm-history-toggle');
+  if (!panel) return;
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : '';
+  if (btn) btn.textContent = open ? '📜 이력 펼치기' : '📜 접기';
+}
+
+// 🆕 고객 메모 자동저장 (800ms debounce)
+window._cmNotesTimer = null;
+window._cmNotesLast = '';
+function onNotesInput() {
+  const st = document.getElementById('cm-notes-status');
+  if (st) st.textContent = '입력 중...';
+  if (window._cmNotesTimer) clearTimeout(window._cmNotesTimer);
+  window._cmNotesTimer = setTimeout(saveNotes, 800);
+}
+async function saveNotes() {
+  if (!window.CALL_MODE_CUSTOMER_ID) return;
+  const el = document.getElementById('cm-notes');
+  if (!el) return;
+  const v = el.value.trim();
+  if (v === window._cmNotesLast) return;
+  const tk = (typeof authGetToken === 'function') ? authGetToken() : localStorage.getItem('incentive-auth-token-v1');
+  if (!tk) return;
+  const st = document.getElementById('cm-notes-status');
+  if (st) st.textContent = '저장 중...';
+  try {
+    const r = await fetch('/api/customer-db/' + window.CALL_MODE_CUSTOMER_ID, {
+      method:'PATCH',
+      headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
+      body: JSON.stringify({ notes: v })
+    });
+    if (r.ok) { window._cmNotesLast = v; if (st) st.textContent = '✓ 저장됨'; }
+    else if (st) st.textContent = '⚠️ 실패';
+  } catch (e) { if (st) st.textContent = '⚠️ 오프라인'; }
+}
+async function flushNotesNow() {
+  if (window._cmNotesTimer) { clearTimeout(window._cmNotesTimer); window._cmNotesTimer = null; }
+  await saveNotes();
+}
+
+function copyCallPhone() {
+  const phone = document.getElementById('cm-phone').textContent;
+  navigator.clipboard.writeText(phone).then(() => {
+    const t = document.createElement('div');
+    t.textContent = '📋 복사됨: ' + phone;
+    t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:10px 20px;border-radius:8px;font-weight:800;z-index:99999;box-shadow:0 4px 16px rgba(22,163,74,0.5)';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 1500);
+    // access_log 자동 (서버에서 GET 시 이미 기록됨, copy는 별도 X)
+  });
+}
+
+async function callResult(result, askDetail = false) {
+  const tk = (typeof authGetToken === 'function') ? authGetToken() : localStorage.getItem('incentive-auth-token-v1');
+  if (!tk || !window.CALL_MODE_CUSTOMER_ID) return;
+  // 메모 즉시 flush — pending 자동저장 있으면 먼저 반영
+  await flushNotesNow();
+  let body = { result };
+  const memo = (document.getElementById('cm-notes')?.value || '').trim();
+  if (memo) body.notes = memo;
+  if (result === 'callback' && askDetail) {
+    const iso = await pickCallbackTime();
+    if (!iso) return;
+    body.callback_at = iso;
+  }
+  if (result === 'rejected' && askDetail) {
+    const r = await pickRejectReason();
+    if (!r) return;
+    body.reject_reason = r;
+  }
+  try {
+    const res = await fetch('/api/customer-db/' + window.CALL_MODE_CUSTOMER_ID + '/log', {
+      method:'POST',
+      headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) { alert('실패: ' + (await res.text())); return; }
+    // 부모(콜 리스트) 자동 갱신 신호
+    try {
+      window.parent.postMessage({ type:'call-result-logged', customer_id: window.CALL_MODE_CUSTOMER_ID, result }, '*');
+    } catch(e) {}
+    // 메모 textarea 비우기 (다음 통화는 깨끗한 상태)
+    const ne = document.getElementById('cm-notes');
+    if (ne) { ne.value = ''; window._cmNotesLast = ''; const st = document.getElementById('cm-notes-status'); if (st) st.textContent = '-'; }
+    showCallToast('✅ 결과 기록 — ' + result + ' · 다음 고객 진입...');
+    setTimeout(loadNextCallCustomer, 1000);
+  } catch (e) { alert(e.message); }
+}
+
+async function dntCustomer() {
+  if (!confirm('이 고객을 영구 차단(DNT)하시겠습니까? 재컨택 불가')) return;
+  const tk = localStorage.getItem('incentive-auth-token-v1');
+  await fetch('/api/customer-db/' + window.CALL_MODE_CUSTOMER_ID + '/log', {
+    method:'POST',
+    headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
+    body: JSON.stringify({ result:'rejected', dnt:true, reject_reason:'재컨택 거부' }),
+  });
+  showCallToast('🚫 DNT 영구 차단');
+  setTimeout(loadNextCallCustomer, 1000);
+}
+
+function showCallToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1e3a8a;color:#fff;padding:14px 24px;border-radius:10px;font-weight:800;z-index:99999;box-shadow:0 6px 24px rgba(30,58,138,0.5)';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+async function prefetchNextQueue() {
+  const tk = localStorage.getItem('incentive-auth-token-v1');
+  if (!tk) return;
+  try {
+    const r = await fetch('/api/customer-db?sort=priority&limit=50', { headers: { Authorization: 'Bearer ' + tk }});
+    if (!r.ok) return;
+    const d = await r.json();
+    const all = (d.customers || []).filter(c => ['pending','callback','no_answer'].includes(c.call_status) && !c.archived);
+    // 다음 큐 — 현재 + 이미 본 customer 제외
+    window.CALL_MODE_QUEUE = all.filter(c =>
+      String(c.id) !== String(window.CALL_MODE_CUSTOMER_ID) &&
+      !window.CALL_MODE_VISITED.has(String(c.id))
+    );
+    // 사이드바엔 모두 표시 (visited는 흐리게)
+    renderCallQueueSide(all);
+  } catch {}
+}
+
+function renderCallQueueSide(list) {
+  const el = document.getElementById('cq-list');
+  const cnt = document.getElementById('cq-count');
+  if (!el) return;
+  cnt.textContent = `· ${list.length}건`;
+  if (!list.length) {
+    el.innerHTML = '<div style="padding:30px 14px;text-align:center;color:#64748b;font-size:11.5px">🎉 콜 큐 빈 상태<br><a href="/docs/incentive-call-list.html" style="color:#3b82f6;font-size:11px">→ 콜 list로</a></div>';
+    return;
+  }
+  const statusMap = {
+    pending: { txt:'미연락', bg:'#475569' },
+    callback: { txt:'콜백', bg:'#3b82f6' },
+    no_answer: { txt:'부재', bg:'#64748b' },
+  };
+  el.innerHTML = list.slice(0, 30).map(c => {
+    const sm = statusMap[c.call_status] || { txt:c.call_status, bg:'#475569' };
+    const isCur = String(c.id) === String(window.CALL_MODE_CUSTOMER_ID);
+    const isVisited = !isCur && window.CALL_MODE_VISITED.has(String(c.id));
+    const isCb = c.callback_at && new Date(c.callback_at).toDateString() === new Date().toDateString();
+    const cls = (isCur ? 'cq-item current' : 'cq-item') + (isCb ? ' callback' : '') + (isVisited ? ' visited' : '');
+    const cb = c.callback_at ? new Date(c.callback_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const visitedTag = isVisited ? '<span style="font-size:9px;color:#fbbf24;margin-left:4px">↻ 이미 시도</span>' : '';
+    return `<div class="${cls}" onclick="switchCallCustomer('${c.id}')" style="${isVisited?'opacity:0.5;':''}">
+      <div class="name">${(c.name||'-').replace(/[<>&]/g,'')}${c.age?` <span style="font-size:10px;color:#94a3b8">${c.age|0}세</span>`:''}<span class="badge" style="background:${sm.bg}">${sm.txt}</span>${visitedTag}</div>
+      <div class="phone">${(c.phone||'-').replace(/[<>&]/g,'')}</div>
+      <div class="meta-line">${(c.region||'').replace(/[<>&]/g,'')} ${c.carrier?'· '+(c.carrier||'').replace(/[<>&]/g,''):''}${cb?' · 🕒 '+cb:''}</div>
+    </div>`;
+  }).join('');
+}
+
+function switchCallCustomer(customerId) {
+  if (String(customerId) === String(window.CALL_MODE_CUSTOMER_ID)) return;
+  const url = new URL(location.href);
+  url.searchParams.set('customer_id', customerId);
+  history.replaceState({}, '', url.toString());
+  window.CALL_MODE_CUSTOMER_ID = customerId;
+  // 처음 콜 모드 진입 시 body 클래스 + 큐 갱신
+  document.body.classList.add('call-mode-active');
+  loadCallCustomer(customerId);
+  // 견적 폼 초기화
+  ['deal-name','deal-phone','deal-install-date','deal-installation-time','deal-address','deal-address-detail','deal-notes'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  prefetchNextQueue();
+  if (typeof incSimulate === 'function') setTimeout(incSimulate, 200);
+}
+
+async function loadNextCallCustomer() {
+  // 현재 customer를 visited에 추가 (다음 prefetch에서 제외)
+  if (window.CALL_MODE_CUSTOMER_ID) window.CALL_MODE_VISITED.add(String(window.CALL_MODE_CUSTOMER_ID));
+  if (!window.CALL_MODE_QUEUE.length) await prefetchNextQueue();
+  // 그래도 비어있으면 visited 초기화 후 한 번 더 시도 (한 바퀴 다 돌았으니 재순회)
+  if (!window.CALL_MODE_QUEUE.length && window.CALL_MODE_VISITED.size > 0) {
+    window.CALL_MODE_VISITED.clear();
+    if (window.CALL_MODE_CUSTOMER_ID) window.CALL_MODE_VISITED.add(String(window.CALL_MODE_CUSTOMER_ID));
+    await prefetchNextQueue();
+    showCallToast('🔄 콜 큐 한 바퀴 완료 — 재순회 시작');
+  }
+  const next = window.CALL_MODE_QUEUE.shift();
+  if (!next) {
+    alert('🎉 모든 콜 처리 완료 — 콜 큐 빈 상태');
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type:'call-queue-empty' }, '*');
+    }
+    return;
+  }
+  // URL 변경
+  const url = new URL(location.href);
+  url.searchParams.set('customer_id', next.id);
+  history.replaceState({}, '', url.toString());
+  window.CALL_MODE_CUSTOMER_ID = next.id;
+  loadCallCustomer(next.id);
+  // 견적 폼 초기화
+  ['deal-name','deal-phone','deal-install-date','deal-installation-time','deal-address','deal-address-detail','deal-notes'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  // 좌측 큐 사이드 즉시 갱신 (현재 + 잔여) + 백그라운드 fresh fetch
+  renderCallQueueSide([next, ...window.CALL_MODE_QUEUE]);
+  prefetchNextQueue();
+  // 인센티브 미리보기 갱신
+  if (typeof incSimulate === 'function') setTimeout(incSimulate, 200);
+}
+
+function bindShortcutKeys() {
+  if (window._callShortcutsBound) return;
+  window._callShortcutsBound = true;
+  document.addEventListener('keydown', e => {
+    if (!window.CALL_MODE_CUSTOMER_ID) return;
+    // 모달 열려있으면 단축키 비활성 (모달 자체 핸들러)
+    if (document.getElementById('cb-picker-overlay')?.style.display === 'flex') return;
+    if (document.getElementById('rj-picker-overlay')?.style.display === 'flex') return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    // 콜 결과
+    if (e.key === '1') { e.preventDefault(); callResult('no_answer'); }
+    else if (e.key === '2') { e.preventDefault(); callResult('callback', true); }
+    else if (e.key === '3') { e.preventDefault(); callResult('rejected', true); }
+    else if (e.key === '4') { e.preventDefault(); callResult('wrong_number'); }
+    else if (e.key === '0') { e.preventDefault(); dntCustomer(); }
+    // 진입/이동
+    else if (e.key === ' ' || e.key === 'Enter') {
+      // Space/Enter — 다음 고객
+      if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); loadNextCallCustomer(); }
+    }
+    // 유틸리티
+    else if (e.key === 'c' || e.key === 'C') { e.preventDefault(); copyCallPhone(); }
+    else if (e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      const ne = document.getElementById('cm-notes');
+      if (ne) { ne.focus(); ne.scrollIntoView({behavior:'smooth', block:'center'}); }
+    }
+    else if (e.key === 'h' || e.key === 'H') {
+      e.preventDefault();
+      if (typeof toggleCallHistory === 'function') toggleCallHistory();
+    }
+    else if (e.key === '?') {
+      e.preventDefault();
+      showCallToast('단축키: 1=부재 / 2=콜백 / 3=거절 / 4=잘못 / 0=DNT / Space=다음 / C=복사 / M=메모 / H=이력');
+    }
+  });
+}
+</script>
+
 
 <div class="tm-app">
 
@@ -3260,6 +3934,30 @@ async function incSubmitDeal() {
     // 누적 + 영업 내역 자동 갱신
     if (typeof incFetchMyState === 'function') incFetchMyState();
     if (typeof incRenderSales === 'function') incRenderSales();
+
+    // 🆕 콜 모드 — customer_db 연결 + 다음 고객 자동
+    if (window.CALL_MODE_CUSTOMER_ID) {
+      try {
+        const tk = (typeof authGetToken === 'function') ? authGetToken() : null;
+        if (tk) {
+          await fetch('/api/customer-db/' + window.CALL_MODE_CUSTOMER_ID, {
+            method: 'PATCH',
+            headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
+            body: JSON.stringify({ converted_sale_id: dat.sale.id, call_status: 'converted' }),
+          });
+          await fetch('/api/customer-db/' + window.CALL_MODE_CUSTOMER_ID + '/log', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
+            body: JSON.stringify({ result: 'converted', notes: '계약 완료 (sale_id ' + saleId + ')' }),
+          });
+          // 부모(통합 어드민/콜 리스트) 갱신 신호
+          try {
+            window.parent.postMessage({ type:'customer-converted', customer_id: window.CALL_MODE_CUSTOMER_ID, sale_id: dat.sale.id }, '*');
+          } catch(e) {}
+        }
+        if (typeof loadNextCallCustomer === 'function') setTimeout(loadNextCallCustomer, 1500);
+      } catch (e) { console.warn('[customer connect]', e); }
+    }
   } catch(e) {
     msg.textContent = '❌ ' + e.message;
     alert('❌ 계약 등록 실패\n\n' + e.message);

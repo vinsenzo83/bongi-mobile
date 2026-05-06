@@ -562,29 +562,16 @@ body.admin-only .section.sec-collapsed > *:not(.st) { display: none !important; 
 
 <!-- ═══ 7. 공통 영업 포인트 ═══ -->
 <div class="section">
-  <div class="st">💡 7. 공통 영업 포인트 (3사 공통)</div>
+  <div class="st">💡 7. 공통 영업 포인트 (3사 공통 · 편집/추가/삭제)</div>
+  <div class="note">셀 클릭으로 편집. 할인 우선순위 표 + 약정 비교 표 — localStorage 자동 저장 + Supabase 동기화.</div>
 
   <div class="st2">할인 우선순위 (큰 순서)</div>
-  <table>
-    <thead><tr><th>순위</th><th>할인 종류</th><th>규모</th></tr></thead>
-    <tbody>
-      <tr><td><b>1</b></td><td>약정 할인</td><td>가장 큼 (3년 약정 기본)</td></tr>
-      <tr><td><b>2</b></td><td>가족결합 할인</td><td>최대 월 33,000원</td></tr>
-      <tr><td><b>3</b></td><td>제휴카드 할인</td><td>월 5,000~22,000원</td></tr>
-      <tr><td><b>4</b></td><td>복지 할인</td><td>아주 제한적</td></tr>
-    </tbody>
-  </table>
-  <div class="note">통신 요금 자체는 대리점에 따라 달라지지 않음. <b>할인 조합</b>에서 차이가 발생.</div>
+  <div id="sales-priority-controls"></div>
+  <div class="note" id="sales-priority-note"></div>
 
-  <div class="st2">약정 비교 (3년 권장 근거, 100M + 기본 TV 기준)</div>
-  <table>
-    <thead><tr><th>약정</th><th>월 요금</th><th>12개월 합계</th><th>사은품</th><th>위약금</th><th>실부담</th></tr></thead>
-    <tbody>
-      <tr><td><b>1년</b></td><td>58,520원</td><td>702,240원</td><td>없음</td><td>-</td><td>702,240원</td></tr>
-      <tr><td><b>3년</b> (권장)</td><td>38,500~39,600원</td><td>448,800~475,200원</td><td>약 37~40만원</td><td>약 20~30만원</td><td><b>약 275,000~392,000원</b></td></tr>
-    </tbody>
-  </table>
-  <div class="note"><b>결론: 1년 약정이 30~40만원 이상 손해.</b> ⚠️ 단, 설치 12개월 내 중도해지 시 사은품 전액 반환 의무.</div>
+  <div class="st2" style="margin-top:18px">약정 비교 (3년 권장 근거)</div>
+  <div id="sales-contract-controls"></div>
+  <div class="note" id="sales-contract-note"></div>
 </div>
 
 <!-- ═══ 8. 사은품 관리 ═══ -->
@@ -2440,6 +2427,10 @@ function renderTicketList() {
 }
 renderTicketList();
 renderDefaultControls();
+if (typeof renderSalesControls === 'function') renderSalesControls();
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof renderSalesControls === 'function') renderSalesControls();
+});
 
 // 사은품 편집 + 이력 관리
 var GIFT_HISTORY_KEY = 'bongi-gift-history';
@@ -3069,6 +3060,96 @@ function renderEditHistory() {
   html += '</tbody></table></div>';
   if (hist.length > 100) html += '<div style="font-size:10px;color:#999;text-align:center;margin-top:6px">최근 100건 표시 · 총 ' + hist.length + '건 보존</div>';
   el.innerHTML = html;
+}
+
+// ═══ 섹션 7 — 공통 영업 포인트 편집 패널 ═══
+var SALES_KEY = 'bongi-sales-overrides-v1';
+var SALES_DEFAULT = {
+  priority: [
+    { rank:'1', type:'약정 할인', scale:'가장 큼 (3년 약정 기본)' },
+    { rank:'2', type:'가족결합 할인', scale:'최대 월 33,000원' },
+    { rank:'3', type:'제휴카드 할인', scale:'월 5,000~22,000원' },
+    { rank:'4', type:'복지 할인', scale:'아주 제한적' },
+  ],
+  priorityNote: '통신 요금 자체는 대리점에 따라 달라지지 않음. <b>할인 조합</b>에서 차이가 발생.',
+  contract: [
+    { name:'1년', monthly:'58,520원', yearTotal:'702,240원', gift:'없음', penalty:'-', net:'702,240원' },
+    { name:'3년 (권장)', monthly:'38,500~39,600원', yearTotal:'448,800~475,200원', gift:'약 37~40만원', penalty:'약 20~30만원', net:'<b>약 275,000~392,000원</b>' },
+  ],
+  contractNote: '<b>결론: 1년 약정이 30~40만원 이상 손해.</b> ⚠️ 단, 설치 12개월 내 중도해지 시 사은품 전액 반환 의무.',
+};
+
+function loadSalesOverrides() {
+  try {
+    var raw = JSON.parse(localStorage.getItem(SALES_KEY) || 'null');
+    if (raw && raw.priority && raw.contract) return raw;
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(SALES_DEFAULT));
+}
+function saveSalesOverrides(obj) {
+  try { localStorage.setItem(SALES_KEY, JSON.stringify(obj)); } catch(e) {}
+  syncCalcOverrideToDb('sales', obj);
+}
+function escSalesHtml(s) { return String(s ?? '').replace(/[<>&"']/g, function(c){ return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'})[c]; }); }
+function renderSalesControls() {
+  var data = loadSalesOverrides();
+  // 우선순위 표
+  var pHtml = '<table style="width:100%"><thead><tr><th style="width:60px">순위</th><th>할인 종류</th><th>규모</th><th style="width:50px"></th></tr></thead><tbody>';
+  data.priority.forEach(function(r, i) {
+    pHtml += '<tr>'
+      + '<td><input type="text" value="' + escSalesHtml(r.rank) + '" oninput="updateSalesField(\'priority\',' + i + ',\'rank\',this.value)" style="width:50px;text-align:center;background:transparent;border:1px dashed #ccc;padding:3px;font-weight:700"></td>'
+      + '<td><input type="text" value="' + escSalesHtml(r.type) + '" oninput="updateSalesField(\'priority\',' + i + ',\'type\',this.value)" style="width:100%;background:transparent;border:1px dashed #ccc;padding:3px"></td>'
+      + '<td><input type="text" value="' + escSalesHtml(r.scale) + '" oninput="updateSalesField(\'priority\',' + i + ',\'scale\',this.value)" style="width:100%;background:transparent;border:1px dashed #ccc;padding:3px"></td>'
+      + '<td><button onclick="removeSalesRow(\'priority\',' + i + ')" style="background:#dc2626;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer">삭제</button></td>'
+      + '</tr>';
+  });
+  pHtml += '</tbody></table>';
+  pHtml += '<button onclick="addSalesRow(\'priority\')" style="margin-top:6px;background:#3b82f6;color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700">+ 행 추가</button>';
+  document.getElementById('sales-priority-controls').innerHTML = pHtml;
+  document.getElementById('sales-priority-note').innerHTML = '<input type="text" value="' + escSalesHtml(data.priorityNote) + '" oninput="updateSalesNote(\'priorityNote\',this.value)" style="width:100%;background:transparent;border:1px dashed #ccc;padding:4px 6px">';
+
+  // 약정 비교 표
+  var cHtml = '<table style="width:100%"><thead><tr><th>약정</th><th>월 요금</th><th>12개월 합계</th><th>사은품</th><th>위약금</th><th>실부담</th><th style="width:50px"></th></tr></thead><tbody>';
+  data.contract.forEach(function(r, i) {
+    var fields = ['name','monthly','yearTotal','gift','penalty','net'];
+    cHtml += '<tr>';
+    fields.forEach(function(f) {
+      cHtml += '<td><input type="text" value="' + escSalesHtml(r[f]) + '" oninput="updateSalesField(\'contract\',' + i + ',\'' + f + '\',this.value)" style="width:100%;background:transparent;border:1px dashed #ccc;padding:3px"></td>';
+    });
+    cHtml += '<td><button onclick="removeSalesRow(\'contract\',' + i + ')" style="background:#dc2626;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer">삭제</button></td>';
+    cHtml += '</tr>';
+  });
+  cHtml += '</tbody></table>';
+  cHtml += '<button onclick="addSalesRow(\'contract\')" style="margin-top:6px;background:#3b82f6;color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700">+ 행 추가</button>';
+  document.getElementById('sales-contract-controls').innerHTML = cHtml;
+  document.getElementById('sales-contract-note').innerHTML = '<input type="text" value="' + escSalesHtml(data.contractNote) + '" oninput="updateSalesNote(\'contractNote\',this.value)" style="width:100%;background:transparent;border:1px dashed #ccc;padding:4px 6px">';
+}
+function updateSalesField(table, idx, field, val) {
+  var d = loadSalesOverrides();
+  if (!d[table] || !d[table][idx]) return;
+  var prev = d[table][idx][field];
+  d[table][idx][field] = val;
+  saveSalesOverrides(d);
+  if (typeof logEdit === 'function') logEdit('7·영업포인트', table + '[' + idx + '].' + field, prev, val);
+}
+function updateSalesNote(key, val) {
+  var d = loadSalesOverrides();
+  d[key] = val;
+  saveSalesOverrides(d);
+}
+function addSalesRow(table) {
+  var d = loadSalesOverrides();
+  if (table === 'priority') d.priority.push({ rank:String(d.priority.length+1), type:'', scale:'' });
+  else d.contract.push({ name:'', monthly:'', yearTotal:'', gift:'', penalty:'', net:'' });
+  saveSalesOverrides(d);
+  renderSalesControls();
+}
+function removeSalesRow(table, idx) {
+  if (!confirm('이 행을 삭제할까요?')) return;
+  var d = loadSalesOverrides();
+  d[table].splice(idx, 1);
+  saveSalesOverrides(d);
+  renderSalesControls();
 }
 
 var BUNDLE_OVERRIDES_KEY = 'bongi-bundle-overrides';
