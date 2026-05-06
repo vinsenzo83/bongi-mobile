@@ -134,6 +134,11 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
 </div>
 
 <script>
+// 🚀 Service Worker 등록 (정적 자산 stale-while-revalidate)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/docs/sw.js', { scope: '/docs/' }).catch(() => {});
+}
+
 // ═══════════════════════════════ 공용 인증 + iframe 컨트롤러 ═══════════════════════════════
 const G_API = '/api/incentive';
 const G_AUTH = '/api/auth';
