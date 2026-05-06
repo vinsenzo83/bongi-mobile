@@ -158,13 +158,64 @@ async function gLogin(email, password) {
   return data;
 }
 
+async function gTryRefreshToken() {
+  const rt = localStorage.getItem(G_REFRESH_KEY);
+  if (!rt) return false;
+  try {
+    const res = await fetch(G_AUTH + '/refresh', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ refresh_token: rt })
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    gSetToken(data.access_token);
+    if (data.refresh_token) localStorage.setItem(G_REFRESH_KEY, data.refresh_token);
+    return true;
+  } catch { return false; }
+}
+
 async function gFetchAgent() {
   const tk = gGetToken(); if (!tk) return null;
-  const res = await fetch(G_API + '/agents/me', {headers: {Authorization: 'Bearer ' + tk}});
-  if (res.status === 401) { gClearToken(); return null; }
-  // 500/503 일시 에러는 토큰 보존 — 사용자 자동 로그아웃 방지
+  let res = await fetch(G_API + '/agents/me', {headers: {Authorization: 'Bearer ' + tk}});
+  if (res.status === 401) {
+    // refresh 시도
+    if (await gTryRefreshToken()) {
+      res = await fetch(G_API + '/agents/me', {headers: {Authorization: 'Bearer ' + gGetToken()}});
+      if (res.ok) return (await res.json()).agent;
+    }
+    gClearToken();
+    return null;
+  }
   if (!res.ok) return null;
   return (await res.json()).agent;
+}
+
+// 세션 만료 → 즉시 로그인 화면 전환 + 안내 토스트
+function gShowSessionExpired() {
+  if (!window.G_currentAgent) return; // 이미 로그아웃 상태
+  window.G_currentAgent = null;
+  document.getElementById('g-main').style.display = 'none';
+  document.getElementById('g-user-info').style.display = 'none';
+  const overlay = document.getElementById('g-auth-overlay');
+  overlay.style.display = '';
+  const msg = document.getElementById('g-auth-msg');
+  if (msg) { msg.style.color = '#fbbf24'; msg.textContent = '⏰ 세션이 만료되어 자동 로그아웃되었습니다. 다시 로그인하세요.'; }
+  gShowToast('⏰ 세션 만료 — 다시 로그인 필요');
+}
+
+// 3분마다 토큰 헬스체크 + storage 이벤트 (다른 탭 로그아웃 감지)
+function gStartSessionWatch() {
+  if (window._gSessionTimer) return;
+  window._gSessionTimer = setInterval(async () => {
+    if (!window.G_currentAgent) return;
+    if (!gGetToken()) { gShowSessionExpired(); return; }
+    const agent = await gFetchAgent();
+    if (!agent) gShowSessionExpired();
+  }, 3 * 60 * 1000);
+  // 다른 탭에서 로그아웃 시 즉시 반응
+  window.addEventListener('storage', (e) => {
+    if (e.key === G_TOKEN_KEY && !e.newValue && window.G_currentAgent) gShowSessionExpired();
+  });
 }
 
 async function gFetchMyPermissions() {
@@ -255,6 +306,8 @@ async function gOnLoggedIn(agent) {
       .find(b => window.getComputedStyle(b).display !== 'none') || null;
   }
   if (initialBtn) gLoadTab(initialBtn);
+  // 세션 헬스체크 시작
+  gStartSessionWatch();
 }
 
 async function gInit() {
