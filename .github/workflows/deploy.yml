@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, main, develop]
 
 jobs:
   deploy:
@@ -13,19 +13,20 @@ jobs:
       - name: Set environment by branch
         id: env
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          BR="${{ github.ref_name }}"
+          if [ "$BR" = "main" ] || [ "$BR" = "master" ]; then
             echo "name=라이브" >> $GITHUB_OUTPUT
-            echo "service=${{ secrets.RAILWAY_SERVICE_LIVE }}" >> $GITHUB_OUTPUT
+            echo "rail_env=production" >> $GITHUB_OUTPUT
           else
             echo "name=데브" >> $GITHUB_OUTPUT
-            echo "service=${{ secrets.RAILWAY_SERVICE_DEV }}" >> $GITHUB_OUTPUT
+            echo "rail_env=staging" >> $GITHUB_OUTPUT
           fi
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
       - name: Deploy to Railway
-        run: railway up --service ${{ steps.env.outputs.service }} --detach
+        run: railway up --service bongi-mobile --environment ${{ steps.env.outputs.rail_env }} --ci --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
