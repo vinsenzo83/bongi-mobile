@@ -223,8 +223,12 @@ app.get('/api/rental', (req, res) => {
 app.use('/docs', express.static(join(__dirname, 'public', 'docs')));
 app.use('/reports', express.static(join(__dirname, 'public', 'reports')));
 // root → 어드민 직접 서빙 (redirect 안 함 — URL 그대로 유지)
-const ADMIN_HTML = join(__dirname, 'public', 'docs', 'incentive-admin.html');
-app.get('/', (req, res) => res.sendFile(ADMIN_HTML));
+// docs/ (실제 최신본) 우선, server/public/docs/ (백업)는 fallback
+const ADMIN_HTML_PRIMARY = join(__dirname, '..', 'docs', 'incentive-admin.html');
+const ADMIN_HTML_FALLBACK = join(__dirname, 'public', 'docs', 'incentive-admin.html');
+app.get('/', (req, res) => {
+  res.sendFile(existsSync(ADMIN_HTML_PRIMARY) ? ADMIN_HTML_PRIMARY : ADMIN_HTML_FALLBACK);
+});
 
 // 전역 에러 핸들러
 app.use(errorHandler);
