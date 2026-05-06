@@ -638,7 +638,7 @@ router.get('/stats/daily', async (req, res) => {
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
-    const days = Math.min(parseInt(req.query.days) || 30, 90);
+    const days = Math.min(Math.max(1, parseInt(req.query.days) || 30), 90);
     // KST(+09:00) 기준 자정 — 한국 운영 시간 정렬용
     const KST_OFFSET_MS = 9 * 3600 * 1000;
     const kstNow = new Date(Date.now() + KST_OFFSET_MS);
@@ -1225,7 +1225,7 @@ router.get('/stats/timeseries', async (req, res) => {
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(401).json({ error: 'unauthenticated' });
-    const days = Math.min(parseInt(req.query.days) || 30, 90);
+    const days = Math.min(Math.max(1, parseInt(req.query.days) || 30), 90);
     const since = new Date(Date.now() - days * 86400000).toISOString();
 
     // manager 멤버 미리 로드

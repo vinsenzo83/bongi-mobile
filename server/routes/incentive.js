@@ -2123,11 +2123,15 @@ router.post('/goals', authenticateJWT, async (req, res) => {
       const { data: target } = await supabase.from('incentive_agents').select('center').eq('id', agent_id).single();
       if (!target || target.center !== me.center) return res.status(403).json({ error: '본인 센터 상담사만' });
     }
+    // 음수 입력 방지 (UI bypass 가능성)
+    const tCalls = Math.max(0, parseInt(target_calls) || 0);
+    const tConv = Math.max(0, parseInt(target_conversions) || 0);
+    const tPoints = Math.max(0, parseFloat(target_points) || 0);
     const { data, error } = await supabase.from('incentive_monthly_goals').upsert({
       agent_id, ym,
-      target_calls: parseInt(target_calls) || 0,
-      target_conversions: parseInt(target_conversions) || 0,
-      target_points: parseFloat(target_points) || 0,
+      target_calls: tCalls,
+      target_conversions: tConv,
+      target_points: tPoints,
       notes: (notes || '').slice(0, 500),
       created_by: req.user.id, updated_at: new Date().toISOString(),
     }, { onConflict: 'agent_id,ym' }).select().single();
