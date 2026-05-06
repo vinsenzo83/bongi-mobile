@@ -222,6 +222,14 @@ app.get('/api/rental', (req, res) => {
 // 프로덕션: 클라이언트 정적 파일 서빙
 const clientDist = join(__dirname, '..', 'client', 'dist');
 if (existsSync(clientDist)) {
+  // admin·dev-admin 서브도메인은 root → 인센티브 어드민으로 redirect
+  app.get('/', (req, res, next) => {
+    const host = req.hostname || '';
+    if (host.startsWith('admin.') || host.startsWith('dev-admin.')) {
+      return res.redirect(302, '/docs/incentive-admin.html');
+    }
+    next();
+  });
   // /docs, /reports 등은 서버 정적 파일 우선 (SPA보다 먼저)
   app.use('/docs', express.static(join(__dirname, 'public', 'docs')));
   app.use('/reports', express.static(join(__dirname, 'public', 'reports')));
