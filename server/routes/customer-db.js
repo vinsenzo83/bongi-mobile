@@ -577,6 +577,127 @@ router.get('/stats/summary', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// 8-1. GET /stats/by-source — DB 출처별 컨버전 비교 (admin)
+// ═══════════════════════════════════════════════════════════════
+router.get('/stats/by-source', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const { data: sources } = await supabase.from('incentive_db_sources').select('id, name, color').order('id');
+    const out = [];
+    for (const src of (sources || [])) {
+      const base = () => supabase.from('incentive_customer_db').select('id', { count:'exact', head:true })
+        .is('deleted_at', null).eq('db_source_id', src.id);
+      const [{ count: total }, { count: converted }, { count: rejected }, { count: contacted }, { count: callback }] = await Promise.all([
+        base(),
+        base().eq('call_status', 'converted'),
+        base().eq('call_status', 'rejected'),
+        base().eq('call_status', 'contacted'),
+        base().eq('call_status', 'callback'),
+      ]);
+      const t = total || 0;
+      out.push({
+        ...src,
+        total: t,
+        converted: converted || 0,
+        rejected: rejected || 0,
+        contact_count: (contacted||0) + (callback||0) + (rejected||0) + (converted||0),
+        contact_rate: t > 0 ? +(((contacted||0) + (callback||0) + (rejected||0) + (converted||0)) / t * 100).toFixed(1) : 0,
+        conversion_rate: t > 0 ? +((converted||0) / t * 100).toFixed(1) : 0,
+      });
+    }
+    res.json({ sources: out });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 8-2. GET /stats/aging — N일 이상 미연락 (방치된 콜)
+// ═══════════════════════════════════════════════════════════════
+router.get('/stats/aging', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+    const days = Math.min(parseInt(req.query.days) || 7, 90);
+    const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+    let q = supabase.from('incentive_customer_db').select('id', { count:'exact', head:true })
+      .is('deleted_at', null).eq('archived', false).eq('call_status', 'pending').lt('created_at', cutoff);
+    if (me.role === 'agent') q = q.eq('assigned_agent_id', me.id);
+    else if (me.role === 'manager') {
+      const { data: members } = await supabase.from('incentive_agents').select('id').eq('center', me.center).eq('active', true);
+      q = q.in('assigned_agent_id', (members || []).map(x => x.id));
+    }
+    const { count } = await q;
+    res.json({ days, count: count || 0, cutoff });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 8-3. GET /stats/daily — 일별 import + 처리 건수 (최근 N일)
+// ═══════════════════════════════════════════════════════════════
+router.get('/stats/daily', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const days = Math.min(parseInt(req.query.days) || 30, 90);
+    const start = new Date(Date.now() - days * 86400000); start.setHours(0,0,0,0);
+    // import 일별
+    const { data: imported } = await supabase.from('incentive_customer_db')
+      .select('imported_at, call_status, last_contacted_at')
+      .is('deleted_at', null).gte('imported_at', start.toISOString());
+    const buckets = {};
+    for (let i = 0; i < days; i++) {
+      const d = new Date(start.getTime() + i * 86400000);
+      const key = d.toISOString().slice(0, 10);
+      buckets[key] = { date: key, imported: 0, called: 0, converted: 0 };
+    }
+    (imported || []).forEach(r => {
+      const k = (r.imported_at || '').slice(0, 10);
+      if (buckets[k]) buckets[k].imported++;
+      const lk = (r.last_contacted_at || '').slice(0, 10);
+      if (lk && buckets[lk]) buckets[lk].called++;
+      if (r.call_status === 'converted' && lk && buckets[lk]) buckets[lk].converted++;
+    });
+    res.json({ days, buckets: Object.values(buckets) });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 8-4. GET /export/csv — 콜 DB CSV 내보내기 (admin·manager)
+// ═══════════════════════════════════════════════════════════════
+router.get('/export/csv', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || (me.role !== 'admin' && me.role !== 'manager')) return res.status(403).json({ error: 'admin·manager 전용' });
+    let q = supabase.from('incentive_customer_db')
+      .select('id, name, phone, age, gender, region, carrier, call_status, call_count, callback_at, last_contacted_at, notes, imported_at, db_source:incentive_db_sources(name), assigned_agent:incentive_agents!incentive_customer_db_assigned_agent_id_fkey(name, center)')
+      .is('deleted_at', null);
+    if (req.query.archived === 'true') q = q.eq('archived', true);
+    else q = q.eq('archived', false);
+    if (req.query.status) q = q.eq('call_status', req.query.status);
+    if (req.query.db_source_id) q = q.eq('db_source_id', req.query.db_source_id);
+    if (me.role === 'manager') {
+      const { data: members } = await supabase.from('incentive_agents').select('id').eq('center', me.center).eq('active', true);
+      q = q.in('assigned_agent_id', (members || []).map(x => x.id));
+    }
+    q = q.order('imported_at', { ascending: false }).limit(10000);
+    const { data, error } = await q;
+    if (error) throw error;
+    const headers = ['ID','이름','전화','나이','성별','지역','통신사','상태','콜횟수','콜백','마지막콜','메모','import일','출처','담당상담사','센터'];
+    const rows = (data || []).map(r => [
+      r.id, r.name||'', r.phone||'', r.age||'', r.gender||'', r.region||'', r.carrier||'', r.call_status||'',
+      r.call_count||0, r.callback_at||'', r.last_contacted_at||'', (r.notes||'').replace(/"/g,'""').replace(/[\r\n]+/g,' '),
+      r.imported_at?.slice(0,10)||'', r.db_source?.name||'', r.assigned_agent?.name||'', r.assigned_agent?.center||''
+    ]);
+    const csv = '﻿' + [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+    const fname = `customer_db_${new Date().toISOString().slice(0,10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+    res.send(csv);
+    logAccess({ user_id: req.user.id, action: 'export_csv', ip: req.ip, ua: req.get('user-agent'), metadata: { count: rows.length, filter: req.query } });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // 9-1. POST /api/customer-db/distribute-to-center — 센터별 일괄 배정 (admin)
 //   body: { allocations: [{center, count}], batch_id (선택) }
 // ═══════════════════════════════════════════════════════════════
