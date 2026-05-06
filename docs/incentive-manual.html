@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>봉이 운영 매뉴얼</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<script src="/docs/_security.js" defer></script>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Pretendard Variable',-apple-system,sans-serif; background:#0f172a; color:#e2e8f0; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+header { padding:14px 18px; background:linear-gradient(135deg,#1e293b,#334155); border-bottom:1px solid #475569; display:flex; align-items:center; gap:14px; flex-shrink:0; }
+header h1 { font-size:17px; color:#f8fafc; letter-spacing:-0.02em; font-weight:800; }
+header .role-pick { margin-left:auto; display:flex; gap:4px; }
+header .role-pick button { background:#334155; border:1px solid #475569; color:#cbd5e1; padding:5px 12px; border-radius:6px; font-size:11.5px; cursor:pointer; font-family:inherit; font-weight:700; }
+header .role-pick button.active { background:#3b82f6; color:#fff; border-color:#60a5fa; }
+header input[type="search"] { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:6px 11px; border-radius:6px; font-size:11.5px; width:240px; font-family:inherit; }
+
+.layout { display:grid; grid-template-columns:260px 1fr; flex:1; min-height:0; }
+@media (max-width:768px) { .layout { grid-template-columns: 1fr; } nav.toc { display:none; } body.show-toc nav.toc { display:block; } }
+
+nav.toc { background:#1e293b; border-right:1px solid #334155; overflow-y:auto; padding:10px 0; }
+nav.toc .group { padding:6px 14px 4px; font-size:10px; color:#94a3b8; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; margin-top:8px; }
+nav.toc a { display:block; padding:6px 14px 6px 22px; font-size:12px; color:#cbd5e1; text-decoration:none; border-left:3px solid transparent; transition:all 0.1s; }
+nav.toc a:hover { background:rgba(59,130,246,0.08); color:#fff; }
+nav.toc a.active { background:rgba(59,130,246,0.15); color:#60a5fa; border-left-color:#3b82f6; font-weight:700; }
+nav.toc a.hidden { display:none; }
+nav.toc .group.hidden { display:none; }
+
+main { overflow-y:auto; padding:24px 36px 60px; }
+main .section { display:none; max-width:880px; }
+main .section.active { display:block; }
+main h2 { font-size:22px; color:#f8fafc; margin-bottom:6px; letter-spacing:-0.02em; font-weight:800; }
+main h2 .role-tag { font-size:11px; padding:3px 8px; border-radius:4px; font-weight:800; margin-left:8px; vertical-align:middle; letter-spacing:0.04em; }
+.r-admin { background:#dc2626; color:#fff; }
+.r-manager { background:#16a34a; color:#fff; }
+.r-agent { background:#3b82f6; color:#fff; }
+.r-contract { background:#8b5cf6; color:#fff; }
+.r-all { background:#475569; color:#fff; }
+main .lead { font-size:13px; color:#94a3b8; margin-bottom:18px; line-height:1.7; }
+main h3 { font-size:14px; color:#a5b4fc; margin:22px 0 8px; font-weight:800; letter-spacing:-0.01em; display:flex; align-items:center; gap:6px; }
+main h3::before { content:'▸'; color:#60a5fa; font-size:11px; }
+main p { color:#cbd5e1; line-height:1.75; font-size:13px; margin-bottom:8px; }
+main ol, main ul { color:#cbd5e1; padding-left:24px; line-height:1.85; font-size:13px; margin-bottom:10px; }
+main li { margin-bottom:3px; }
+main b { color:#f8fafc; font-weight:700; }
+main code { background:#0f172a; border:1px solid #334155; padding:1px 6px; border-radius:4px; color:#fbbf24; font-family:'Menlo','Monaco',monospace; font-size:11.5px; }
+main pre { background:#0f172a; border:1px solid #334155; border-radius:8px; padding:12px 14px; overflow-x:auto; margin:8px 0 12px; }
+main pre code { background:transparent; border:none; padding:0; color:#cbd5e1; font-size:11.5px; line-height:1.6; }
+main kbd { background:linear-gradient(180deg,#475569,#334155); border:1px solid #64748b; border-bottom-width:2px; padding:1px 7px; border-radius:4px; font-family:monospace; font-size:11px; font-weight:700; color:#fff; margin:0 1px; }
+main .tip { background:linear-gradient(135deg,#1e3a8a,#0f172a); border-left:3px solid #3b82f6; padding:11px 14px; border-radius:6px; margin:10px 0; font-size:12px; line-height:1.6; }
+main .tip b { color:#bfdbfe; }
+main .warn { background:linear-gradient(135deg,#7f1d1d,#0f172a); border-left:3px solid #dc2626; padding:11px 14px; border-radius:6px; margin:10px 0; font-size:12px; line-height:1.6; }
+main .warn b { color:#fca5a5; }
+main .ok { background:linear-gradient(135deg,#14532d,#0f172a); border-left:3px solid #22c55e; padding:11px 14px; border-radius:6px; margin:10px 0; font-size:12px; line-height:1.6; }
+main .ok b { color:#86efac; }
+main table { width:100%; border-collapse:collapse; margin:10px 0; font-size:12px; }
+main table th { padding:8px 10px; text-align:left; background:#0f172a; color:#94a3b8; font-weight:700; border-bottom:1px solid #334155; }
+main table td { padding:7px 10px; border-bottom:1px solid #334155; color:#cbd5e1; }
+main hr { border:none; border-top:1px dashed #334155; margin:16px 0; }
+main .step { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:14px 16px; margin:8px 0; }
+main .step .num { display:inline-flex; width:22px; height:22px; align-items:center; justify-content:center; background:#3b82f6; color:#fff; border-radius:50%; font-size:11px; font-weight:800; margin-right:8px; }
+main .anchor { display:block; height:0; visibility:hidden; padding-top:60px; margin-top:-60px; }
+.search-no-result { padding:30px; text-align:center; color:#64748b; font-size:12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📖 봉이 운영 매뉴얼</h1>
+  <input type="search" id="q" placeholder="🔍 키워드 검색 (예: 분배·정산·콜백)">
+  <div class="role-pick">
+    <button data-role="all" class="active">전체</button>
+    <button data-role="admin">Admin</button>
+    <button data-role="manager">Manager</button>
+    <button data-role="agent">Agent</button>
+    <button data-role="contract">Contract</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc" id="toc"></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// 매뉴얼 데이터 — { id, title, roles[], group, html }
+// ═══════════════════════════════════════════════════════════════
+const SECTIONS = [
+  // ═════════ 시작하기 ═════════
+  {
+    id: 'intro', group: '시작하기', title: '👋 환영합니다', roles: ['all'],
+    html: `<h2>봉이 운영 매뉴얼<span class="role-tag r-all">전체</span></h2>
+<p class="lead">봉이 모바일 어드민 사용자를 위한 종합 매뉴얼입니다. 좌측 메뉴에서 화면별 사용법을 찾거나 상단 검색을 사용하세요.</p>
+<h3>역할 (Role)</h3>
+<table>
+<tr><th>Role</th><th>권한</th><th>메뉴</th></tr>
+<tr><td><span class="role-tag r-admin">ADMIN</span></td><td>전체 관리·정책 결정</td><td>모든 메뉴 + 권한·DB 출처·정산 확정·보안</td></tr>
+<tr><td><span class="role-tag r-manager">MANAGER</span></td><td>본인 센터 운영</td><td>콜 분배 승인·팀 정산·팀 ROI</td></tr>
+<tr><td><span class="role-tag r-agent">AGENT</span></td><td>상담사 (TM 영업)</td><td>본인 콜·견적·정산</td></tr>
+<tr><td><span class="role-tag r-contract">CONTRACT</span></td><td>계약 후처리</td><td>계약 처리·대시보드</td></tr>
+</table>
+<h3>환경</h3>
+<table>
+<tr><th>환경</th><th>URL</th><th>용도</th></tr>
+<tr><td>로컬</td><td><code>http://localhost:3001</code></td><td>개발자 1차 검증</td></tr>
+<tr><td>데브</td><td><code>dev-admin.prexymarket.com</code></td><td>QA·통합 테스트</td></tr>
+<tr><td>라이브</td><td><code>admin.prexymarket.com</code></td><td>운영</td></tr>
+</table>
+<div class="tip"><b>💡 좌측 메뉴 / 검색 활용</b><br>역할별로 보고 싶을 때는 우상단 [Admin / Manager / Agent / Contract] 버튼을, 키워드로 찾을 때는 검색을 사용하세요.</div>`
+  },
+  {
+    id: 'login', group: '시작하기', title: '🔐 로그인 & 2FA', roles: ['all'],
+    html: `<h2>로그인<span class="role-tag r-all">전체</span></h2>
+<p class="lead">통합 어드민 진입 시 이메일·비밀번호 입력. admin은 2FA 필수 활성 권장.</p>
+<h3>로그인 절차</h3>
+<div class="step"><span class="num">1</span><b>이메일·비밀번호</b> 입력 (관리자가 발급)</div>
+<div class="step"><span class="num">2</span><b>2FA 코드</b> 입력 (활성 사용자만 — 입력칸 자동 표시)</div>
+<div class="step"><span class="num">3</span>로그인 → 우상단에 본인 이름·역할·센터 표시</div>
+<h3>2FA (TOTP) 설정</h3>
+<p>우상단 <kbd>🔐</kbd> 버튼 → [2FA 활성화] → Google Authenticator/1Password 등으로 QR 스캔 → 6자리 코드 입력 → 검증.</p>
+<div class="warn"><b>⚠️ admin 보안</b><br>admin 로그인 시 2FA 미설정이면 빨간 banner로 권장. 즉시 활성화 권장.</div>
+<h3>비밀번호 변경</h3>
+<p>우상단 <kbd>🔐 비번변경</kbd> → 현재 비밀번호 + 새 비밀번호 (8자 이상) → 변경.</p>
+<h3>자동 로그아웃</h3>
+<p>3분마다 토큰 헬스체크. 만료 시 자동 로그아웃 + 안내 메시지.</p>`
+  },
+
+  // ═════════ 대시보드 ═════════
+  {
+    id: 'dashboard', group: '대시보드', title: '📊 대시보드', roles: ['all'],
+    html: `<h2>대시보드<span class="role-tag r-all">전체</span></h2>
+<p class="lead">로그인 직후 첫 화면. 본인 역할에 따라 다른 KPI·차트가 표시됩니다.</p>
+<h3>Agent 화면</h3>
+<ul>
+<li><b>🎯 내 이번 달 누적</b> — 총수령(기본급+인센티브+보너스−페이백차감)·등급(G1/G2/G3)·누적 P·우수 건수·인센티브·보너스·페이백차감 7개 카드</li>
+<li><b>📈 등급 진행률</b> — 다음 등급까지 +N P 시각화 (G2: 16P / G3: 31P)</li>
+<li><b>📋 본인 영업 리스트</b> — 이번 달 등록한 견적 list (상태·페이백·계약일)</li>
+</ul>
+<h3>Manager 화면</h3>
+<ul>
+<li><b>👨‍💼 팀장 전용 KPI</b> — 팀 인원 / 팀 매출 / 팀 인센티브 합 / 팀 이익률</li>
+<li>팀원 별 영업 monitoring · 우수 상담사 강조</li>
+</ul>
+<h3>Admin 화면</h3>
+<ul>
+<li><b>📊 매출 차트 5종</b> — 월별 추이·상태 분포·상품 TOP 10·DB 출처별·상담사 ROI</li>
+<li>기간 선택 (3·6·12개월)</li>
+</ul>
+<div class="tip"><b>💡 ROI 표 (admin)</b><br>이번 달 진행 중 정산을 V5 정식 RPC로 계산 (P·Grade·인센티브·보너스·최종지급액).</div>`
+  },
+
+  // ═════════ 콜 DB CRM ═════════
+  {
+    id: 'customer-db', group: '콜 DB CRM', title: '📞 콜 DB 관리 (Admin)', roles: ['admin'],
+    html: `<h2>콜 DB 관리<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">전체 콜DB 관리 — 엑셀 import / 분배 / archived / 보안.</p>
+<h3>1. 엑셀 import</h3>
+<div class="step"><span class="num">1</span>출처 선택 (네이버·카카오 등)</div>
+<div class="step"><span class="num">2</span><b>드래그 앤 드롭</b> 또는 파일 선택</div>
+<div class="step"><span class="num">3</span>자동 검증 → 유효 row insert + 중복 제외</div>
+<div class="step"><span class="num">4</span>완료 후 batch list에 신규 batch 표시</div>
+<h3>2. 분배 — 2단계</h3>
+<ol>
+<li><b>센터 분배</b> (admin) — 전사 미배정 풀 → 광주센터/본사 등 센터별 할당</li>
+<li><b>상담사 분배</b> (manager 또는 admin) — 센터 풀 → 상담사 분배 (round-robin / max_per_agent 옵션)</li>
+</ol>
+<h3>3. 분배 요청 승인</h3>
+<p>우상단 <kbd>📋 분배 요청</kbd> 클릭 (빨간 배지 = 대기 N건). 승인 시 자동 분배.</p>
+<h3>4. archived 토글</h3>
+<p>상태 필터에서 <code>archived만</code> 선택 → archived customer 보임. retention cron으로 converted 90일 / rejected 30일 후 자동 archive.</p>
+<h3>5. retention 실행</h3>
+<p><kbd>🧹 retention</kbd> — converted 90일/rejected 30일 → archive · archived 90일 → soft delete · 3년 → 영구 삭제. 매일 03:00 KST 자동.</p>
+<h3>6. 자동 재배정</h3>
+<p><kbd>♻️ 재배정</kbd> — 분배 후 7일 0시도 / 14일 ≤2회 시도 → 풀 복귀. 매일 04:00 KST 자동.</p>
+<h3>7. 🔐 보안 패널</h3>
+<p>우상단 <kbd>🔐 보안</kbd> → IP 화이트리스트 + 액세스 로그 (PIPA audit).</p>
+<h3>8. 일괄 rollback</h3>
+<p>batch list에서 [🗑] 버튼 → 미컨택만 또는 전체 → soft delete.</p>
+<div class="warn"><b>⚠️ PIPA 준수</b><br>개인정보 화면은 워터마크·인쇄 차단·복사 시 출처 stamp 자동 적용. 외부 유출 시 access_log로 추적.</div>`
+  },
+  {
+    id: 'call-list', group: '콜 DB CRM', title: '📋 내 콜 리스트', roles: ['agent', 'manager'],
+    html: `<h2>내 콜 리스트<span class="role-tag r-agent">AGENT</span><span class="role-tag r-manager">MANAGER</span></h2>
+<p class="lead">본인에게 분배된 customer 목록. 우선순위 자동 정렬.</p>
+<h3>우선순위 정렬</h3>
+<ol>
+<li><b>callback_at 임박</b> 순 (지난 콜백 우선)</li>
+<li><b>priority_score</b> 큰 순</li>
+<li><b>imported_at</b> 최신 순</li>
+</ol>
+<h3>KPI</h3>
+<ul>
+<li>📋 전체 / 🔔 오늘 콜백 / ⏰ 미연락 / 📵 부재 / 🎉 전환</li>
+</ul>
+<h3>주요 액션</h3>
+<table>
+<tr><th>버튼</th><th>동작</th></tr>
+<tr><td><kbd>📥 콜 분배 요청</kbd></td><td>매니저에게 추가 분배 요청 (사유 + 건수)</td></tr>
+<tr><td><kbd>📋 내 요청</kbd></td><td>본인 요청 이력 (대기·승인·거부) 조회</td></tr>
+<tr><td>customer 행 클릭</td><td>TM 상담 콜 모드로 진입</td></tr>
+</table>
+<h3>콜백 알림</h3>
+<p>30분 이내 도래하는 콜백 → 브라우저 Notification + 비프음. 1분마다 자동 체크.</p>
+<h3>분배 요청 승인 (manager)</h3>
+<p>매니저 화면에서 [📋 분배 요청] 빨간 배지 → 모달 → 승인/거부.</p>
+<div class="ok"><b>✅ 자동 갱신</b><br>견적 등록 / 콜 결과 기록 시 콜 큐 자동 새로고침. 본인 통화 후 status 변경 즉시 반영.</div>`
+  },
+  {
+    id: 'call-stats', group: '콜 DB CRM', title: '📈 콜 통계', roles: ['admin', 'manager', 'agent'],
+    html: `<h2>콜 통계<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span><span class="role-tag r-agent">AGENT</span></h2>
+<p class="lead">콜 결과 시간대·요일·일별·상담사별 분석. KST 기준.</p>
+<h3>화면 구성</h3>
+<ul>
+<li><b>KPI 4개</b> — 총 콜 수 / 컨택률 / 전환률 / 최고 시간대</li>
+<li><b>시간대별 차트</b> — 24시간 콜 막대 + 컨택률 라인 (이중축)</li>
+<li><b>요일별 차트</b> — 일~토 콜 + 컨택률</li>
+<li><b>일별 추이</b> — 콜·컨택·전환 3개 라인</li>
+<li><b>상담사별 ROI 표</b> — 컨택률·전환률·분포 막대</li>
+</ul>
+<h3>기간 선택</h3>
+<p>최근 7 / 30 / 60 / 90일.</p>
+<h3>역할별 데이터 범위</h3>
+<table>
+<tr><th>Role</th><th>표시</th></tr>
+<tr><td>agent</td><td>본인 콜 결과만</td></tr>
+<tr><td>manager</td><td>본인 센터 멤버 전체</td></tr>
+<tr><td>admin</td><td>전사</td></tr>
+</table>
+<div class="tip"><b>💡 컨택률 정의</b><br>컨택 = callback + rejected + converted (no_answer·wrong_number 제외). 즉 실제 통화 성공.</div>`
+  },
+
+  // ═════════ TM 상담 ═════════
+  {
+    id: 'tm-counselor', group: 'TM 상담', title: '📞 TM 콜 모드', roles: ['agent', 'manager'],
+    html: `<h2>TM 상담 콜 모드<span class="role-tag r-agent">AGENT</span><span class="role-tag r-manager">MANAGER</span></h2>
+<p class="lead">콜 리스트에서 customer 클릭 시 진입. 전화·결과 기록·견적 작성·메모 한 화면.</p>
+<h3>화면 구성</h3>
+<ul>
+<li><b>상단 콜 모드 bar</b> — 고객 정보·콜 결과 버튼·메모·통화 이력</li>
+<li><b>좌측 콜 큐</b> — 우선순위 30건 (현재 customer 강조)</li>
+<li><b>중앙 견적 폼</b> — 상품·금액·고객정보·페이백</li>
+<li><b>우측 인센티브 미리보기</b> — V5 단가·P·예상 인센티브</li>
+</ul>
+<h3>키보드 단축키</h3>
+<table>
+<tr><th>키</th><th>동작</th></tr>
+<tr><td><kbd>1</kbd></td><td>📵 부재</td></tr>
+<tr><td><kbd>2</kbd></td><td>📞 콜백 (시간 picker)</td></tr>
+<tr><td><kbd>3</kbd></td><td>❌ 거절 (사유 picker)</td></tr>
+<tr><td><kbd>4</kbd></td><td>⚠️ 잘못된 번호 (즉시 archive)</td></tr>
+<tr><td><kbd>0</kbd></td><td>🚫 DNT (재컨택 차단)</td></tr>
+<tr><td><kbd>Space</kbd> / <kbd>Enter</kbd></td><td>⏭️ 다음 고객</td></tr>
+<tr><td><kbd>C</kbd></td><td>📋 전화번호 복사</td></tr>
+<tr><td><kbd>M</kbd></td><td>📝 메모 focus</td></tr>
+<tr><td><kbd>H</kbd></td><td>📜 통화 이력 펼치기/접기</td></tr>
+<tr><td><kbd>?</kbd></td><td>도움말 토스트</td></tr>
+</table>
+<h3>콜 결과 흐름</h3>
+<div class="step"><span class="num">1</span>고객에게 전화 → 응답 결과 분류</div>
+<div class="step"><span class="num">2</span>메모 입력 (자동저장 + 콜 결과 시 stamp)</div>
+<div class="step"><span class="num">3</span>결과 버튼 클릭 → 상태 자동 변경 → 다음 고객으로 이동</div>
+<h3>계약 진행</h3>
+<ol>
+<li>견적 폼 작성 (상품·고객·페이백·DB 출처는 자동 prefill)</li>
+<li>[✅ 이 견적으로 계약 완료] 클릭 → sale 등록</li>
+<li>customer 자동 <b>converted</b> 처리 → 콜 큐에서 자동 제거</li>
+<li>다음 고객 자동 진입 (1.5초)</li>
+</ol>
+<h3>통화 이력 timeline</h3>
+<p>고객 카드의 [📜 이력 펼치기] → 이전 시도 결과·메모·상담사 timeline. 메모 검색 가능. 계약 완료 row에 견적 #N 클릭 → 계약 처리 화면 deep-link.</p>
+<div class="tip"><b>💡 좌측 콜 큐 visited</b><br>이번 세션에서 이미 진입한 customer는 흐리게 + ↻ 표시. 한 바퀴 돌면 자동 reset.</div>`
+  },
+
+  // ═════════ V5 인센티브 ═════════
+  {
+    id: 'v5-policy', group: 'V5 인센티브', title: '💡 V5 정책 (전체)', roles: ['all'],
+    html: `<h2>V5 인센티브 정책<span class="role-tag r-all">전체</span></h2>
+<p class="lead">2026-05 시행. 가중치·등급·페이백·기본급으로 구성.</p>
+<h3>가중치 (P)</h3>
+<table>
+<tr><th>유형</th><th>P</th></tr>
+<tr><td>단독</td><td>1.0 P</td></tr>
+<tr><td>결합</td><td>1.5 P</td></tr>
+</table>
+<h3>등급</h3>
+<table>
+<tr><th>Grade</th><th>P 조건</th><th>우수 조건</th><th>단가</th></tr>
+<tr><td>G1</td><td>0~15 P</td><td>—</td><td>20,000원/P</td></tr>
+<tr><td>G2</td><td>16~30 P</td><td>우수 5건+</td><td>30,000원/P</td></tr>
+<tr><td>G3</td><td>31 P+</td><td>우수 10건+</td><td>40,000원/P</td></tr>
+</table>
+<div class="warn"><b>⚠️ 페널티</b><br>P 조건은 충족했는데 우수 미달 → 한 단계 강등 (G3→G2 or G2→G1).</div>
+<h3>우수 상품</h3>
+<p>마진 25만원+ 상품 → +10,000원/건 보너스.</p>
+<h3>페이백 분담</h3>
+<table>
+<tr><th>구간</th><th>회사 부담</th><th>상담사 부담</th></tr>
+<tr><td>0~30,000원</td><td>전액</td><td>0</td></tr>
+<tr><td>30,001~50,000원</td><td>30,000</td><td>초과분</td></tr>
+</table>
+<h3>최종 지급액</h3>
+<pre><code>최종 지급 = 기본급 + (단가 × P) + (우수 보너스) − 페이백 차감</code></pre>
+<div class="ok"><b>✅ 자동 계산</b><br>모든 화면(대시보드·정산·TM 미리보기)이 V5 정식 RPC로 동일하게 계산.</div>`
+  },
+  {
+    id: 'settlements', group: 'V5 인센티브', title: '💰 월별 정산', roles: ['all'],
+    html: `<h2>월별 정산<span class="role-tag r-all">전체</span></h2>
+<p class="lead">매월 인센티브 정산. role별 데이터 범위 자동 필터.</p>
+<h3>화면 구성 (역할별)</h3>
+<table>
+<tr><th>Role</th><th>표시</th></tr>
+<tr><td>agent</td><td>본인 1행 + 등급 진행률 + 7개 KPI 카드</td></tr>
+<tr><td>manager</td><td>본인 + 팀원 + V5.1 오버라이드 보너스 카드</td></tr>
+<tr><td>admin</td><td>전사 + 회사이익·이익률 컬럼</td></tr>
+</table>
+<h3>KPI 7개 (agent)</h3>
+<ul>
+<li>💰 총수령 (기본+인센+보너스−페이백)</li>
+<li>🏆 등급 + 단가</li>
+<li>📊 누적 P + 건수</li>
+<li>⭐ 우수 건수</li>
+<li>💵 인센티브 (단가 × P)</li>
+<li>🎁 우수 보너스</li>
+<li>💸 페이백 차감</li>
+</ul>
+<h3>매니저 V5.1 오버라이드</h3>
+<p>팀 인센티브 합 × 12% (이익률 ≥20% 시). 본인 영업 ≥10건 미달 시 페널티.</p>
+<table>
+<tr><th>조건</th><th>결과</th></tr>
+<tr><td>이익률 &lt;20%</td><td>비활성 (지급 X)</td></tr>
+<tr><td>본인 &lt;10건</td><td>페널티 ×0 (미지급)</td></tr>
+<tr><td>본인 10~19건</td><td>일부 지급</td></tr>
+<tr><td>본인 ≥20건</td><td>full 지급</td></tr>
+</table>
+<h3>상태 흐름 (admin)</h3>
+<div class="step"><span class="num">1</span><b>draft</b> — admin이 [집계 실행] 또는 cron 자동 (매월 1일 02:00 시도)</div>
+<div class="step"><span class="num">2</span><b>locked (확정)</b> — admin이 [확정] 클릭 → 데이터 영구 박제</div>
+<div class="step"><span class="num">3</span><b>paid (지급완료)</b> — admin이 [지급] 클릭 → 정산 완료</div>
+<h3>정산 수정 요청</h3>
+<p><kbd>📩 수정 요청</kbd> 클릭 → 사유 입력 → admin 빨간 배지로 알림 → admin이 [해결] 또는 [거부]. agent 본인 정산만 가능.</p>
+<h3>CSV 다운로드</h3>
+<p><kbd>📥 CSV</kbd> — Excel 호환 (BOM 포함). 회사이익·이익률은 admin만 포함.</p>`
+  },
+  {
+    id: 'sales-quick', group: 'V5 인센티브', title: '📝 견적 빠른 입력', roles: ['admin', 'manager', 'agent'],
+    html: `<h2>견적 빠른 입력<span class="role-tag r-agent">AGENT</span><span class="role-tag r-manager">MANAGER</span><span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">콜 모드를 거치지 않고 직접 견적 등록. 본인 이번 달 sales 동시 표시.</p>
+<h3>입력 항목</h3>
+<ul>
+<li>📦 상품 (필수) — V5 인센티브 자동 미리보기</li>
+<li>🗂 DB 출처 (필수)</li>
+<li>👤 고객명·전화 (필수, 010 형식 자동 검증)</li>
+<li>🏠 주소·상세주소</li>
+<li>📅 계약일·설치일</li>
+<li>💵 추가 페이백 (0~50,000)</li>
+<li>📺 TV 대수</li>
+<li>📝 메모</li>
+</ul>
+<h3>등록 후 자동 처리</h3>
+<ul>
+<li>같은 phone customer가 콜DB에 있으면 자동 <b>converted</b> 처리</li>
+<li>본인 이번 달 sales list 즉시 갱신</li>
+<li>인센티브 미리보기에 V5 정책 즉시 반영</li>
+</ul>
+<div class="warn"><b>⚠️ 추가 페이백 한도</b><br>50,000원 초과 불가. 30,000원 초과분은 상담사 본인 부담 (정산 시 차감).</div>`
+  },
+
+  // ═════════ 계약 처리 ═════════
+  {
+    id: 'contract', group: '계약', title: '📋 계약 처리', roles: ['admin', 'manager', 'contract', 'agent'],
+    html: `<h2>계약 처리<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span><span class="role-tag r-contract">CONTRACT</span><span class="role-tag r-agent">AGENT</span></h2>
+<p class="lead">계약 상태 흐름·후처리·정산 연결.</p>
+<h3>역할별 권한</h3>
+<table>
+<tr><th>Role</th><th>권한</th></tr>
+<tr><td>agent</td><td>👁 본인 계약만 read-only — 수정·취소 X</td></tr>
+<tr><td>contract</td><td>본인 담당 후처리 (개통일·은행정보 입력)</td></tr>
+<tr><td>manager</td><td>팀 계약 수정·취소</td></tr>
+<tr><td>admin</td><td>전체 + 삭제·복구</td></tr>
+</table>
+<h3>계약 상태</h3>
+<table>
+<tr><th>상태</th><th>의미</th><th>전환</th></tr>
+<tr><td>pending</td><td>접수 (TM 등록 직후)</td><td>→ in_progress / cancelled</td></tr>
+<tr><td>in_progress</td><td>처리 중 (계약부서 작업)</td><td>→ completed / cancelled</td></tr>
+<tr><td>completed</td><td>완료</td><td>→ activated</td></tr>
+<tr><td>activated</td><td>개통완료</td><td>(종결)</td></tr>
+<tr><td>cancelled</td><td>취소</td><td>customer 자동 콜 큐 복귀</td></tr>
+</table>
+<h3>주요 액션</h3>
+<ul>
+<li><b>처리 시작</b> — pending → in_progress (status timestamp 자동 기록)</li>
+<li><b>완료</b> — in_progress → completed</li>
+<li><b>취소</b> — 사유 필수 / customer 자동 callback 복귀 (콜 큐 재진입)</li>
+<li><b>개통일 입력</b> — installation_date / activation_date</li>
+<li><b>은행정보 입력</b> — 페이백 지급 정보</li>
+</ul>
+<div class="tip"><b>💡 계약 취소 → 콜 큐 복귀</b><br>cancelled 처리 시 연결된 customer가 자동으로 callback 상태로 콜 큐에 다시 들어옴.</div>`
+  },
+
+  // ═════════ Admin 전용 ═════════
+  {
+    id: 'agents', group: '관리자 전용', title: '👥 상담사 관리', roles: ['admin'],
+    html: `<h2>상담사 관리<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">상담사 추가·역할 변경·센터 배정·기본급 설정.</p>
+<h3>주요 컬럼</h3>
+<ul>
+<li>이름 / role (admin·manager·agent·contract) / 센터</li>
+<li>기본급 (default 2,300,000)</li>
+<li>입사일 / 활성 여부</li>
+<li>2FA 활성 여부</li>
+</ul>
+<h3>새 상담사 추가</h3>
+<div class="step"><span class="num">1</span>이메일·이름·역할·센터 입력</div>
+<div class="step"><span class="num">2</span>임시 비밀번호 발급 → 본인에게 전달</div>
+<div class="step"><span class="num">3</span>최초 로그인 → 비밀번호 변경 → 2FA 활성 권장</div>
+<div class="warn"><b>⚠️ admin 추가</b><br>admin은 모든 데이터·정산 변경 권한. 신중히 부여.</div>`
+  },
+  {
+    id: 'products', group: '관리자 전용', title: '📦 상품 관리', roles: ['admin'],
+    html: `<h2>상품 관리<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">SKT/KT/LGU+ 상품 등록·페이백·리베이트·V5 가중치.</p>
+<h3>필드</h3>
+<ul>
+<li><b>carrier</b> — SKT/KT/LGU+</li>
+<li><b>type</b> — 단독·결합 (V5 가중치 자동: 1.0 / 1.5)</li>
+<li><b>name</b>·speed·tv_tier</li>
+<li><b>rebate</b> — 회사 매출</li>
+<li><b>payback</b> — 고객 지급</li>
+<li><b>point_weight</b> — V5 P (0.5/1.0/1.5/2.0)</li>
+<li><b>margin</b> — 자동 계산 (rebate × 0.9 − payback − P × 70,000)</li>
+<li><b>tier</b> — S/A/B/C 자동 (margin 기준)</li>
+<li><b>is_premium</b> — 마진 25만+ → 우수 상품 (보너스 +1만/건)</li>
+</ul>
+<h3>변경 이력</h3>
+<p>모든 단가 변경은 history 테이블에 기록. 등록 시점의 sale은 snapshot으로 박제 (이후 변경 영향 X).</p>`
+  },
+  {
+    id: 'rules', group: '관리자 전용', title: '⚙️ 정책 관리', roles: ['admin'],
+    html: `<h2>정책 관리 (V5 규칙)<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">기본급·등급 단가·우수 보너스 등 V5 정책 변경.</p>
+<h3>현재 활성 (V5.0)</h3>
+<table>
+<tr><th>항목</th><th>값</th></tr>
+<tr><td>기본급</td><td>2,300,000원</td></tr>
+<tr><td>우수 보너스</td><td>10,000원/건</td></tr>
+<tr><td>페이백 회사 한도</td><td>30,000원</td></tr>
+<tr><td>페이백 최대</td><td>50,000원</td></tr>
+<tr><td>G1 단가</td><td>20,000원/P</td></tr>
+<tr><td>G2 단가</td><td>30,000원/P (우수 5건+)</td></tr>
+<tr><td>G3 단가</td><td>40,000원/P (우수 10건+)</td></tr>
+<tr><td>우수상품 마진 기준</td><td>250,000원</td></tr>
+</table>
+<div class="warn"><b>⚠️ 정책 변경</b><br>새 버전(V5.1, V6.0 등) 추가 후 활성. 이전 정산 데이터는 기존 정책으로 박제됨.</div>`
+  },
+  {
+    id: 'permissions', group: '관리자 전용', title: '🔐 권한 관리', roles: ['admin'],
+    html: `<h2>권한 관리<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">역할별 메뉴 가시성 + 2FA 강제 정책.</p>
+<h3>메뉴 가시성</h3>
+<p>각 메뉴를 role별로 토글. 즉시 적용 (사용자 다음 진입 시 반영).</p>
+<h3>현재 메뉴</h3>
+<ul>
+<li>대시보드 / 계약 처리 / 콜 DB 관리 / 콜 통계 / 콜 리스트</li>
+<li>월별 정산 / 견적 빠른 입력 / TM 상담 / TM 데이터 관리</li>
+<li>상품·정책·DB 출처·상담사·권한 (admin 전용)</li>
+<li>급여 안내 (전체)</li>
+</ul>
+<div class="warn"><b>⚠️ admin lockout 방지</b><br>admin은 [permissions]·[agents] 메뉴 제거 불가 (자기 자신 잠금 방지).</div>`
+  },
+  {
+    id: 'db-sources', group: '관리자 전용', title: '🗂️ DB 출처', roles: ['admin'],
+    html: `<h2>DB 출처<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">콜DB import 시 분류 (네이버 광고·카카오 광고 등).</p>
+<h3>활용</h3>
+<ul>
+<li>대시보드 차트 — DB 출처별 매출 분석</li>
+<li>콜DB import 시 출처 선택 (필수)</li>
+<li>견적 등록 시 자동 prefill (콜 모드 진입 시 customer의 db_source_id 사용)</li>
+</ul>
+<h3>필드</h3>
+<ul>
+<li>이름 / 색상 (대시보드 차트 막대 색) / 활성 여부</li>
+</ul>`
+  },
+  {
+    id: 'tm-data', group: '관리자 전용', title: '🧮 TM 데이터 관리', roles: ['admin'],
+    html: `<h2>TM 데이터 관리 (calculator)<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">TM 상담사가 사용하는 요금 계산기 데이터 편집. 모든 사용자에게 즉시 반영.</p>
+<h3>섹션 1~9</h3>
+<table>
+<tr><th>섹션</th><th>내용</th></tr>
+<tr><td>1. 인터넷·WiFi</td><td>속도별 요금·WiFi 옵션</td></tr>
+<tr><td>2. TV 상품</td><td>채널 수·기본료·할인</td></tr>
+<tr><td>3. 셋톱박스</td><td>모델별 가격·기능</td></tr>
+<tr><td>4. 결합 할인</td><td>3사 결합 정책 (가족·총액·정액·프리미엄)</td></tr>
+<tr><td>5. 설치비</td><td>3사 평일/주말</td></tr>
+<tr><td>6. 제휴카드</td><td>카드별 할인</td></tr>
+<tr><td>7. 영업 포인트</td><td>할인 우선순위·약정 비교</td></tr>
+<tr><td>8. 사은품</td><td>63개 카탈로그</td></tr>
+<tr><td>9. 티켓 리스트</td><td>속도×TV×WiFi 조합 자동 생성</td></tr>
+</table>
+<h3>편집 흐름</h3>
+<p>셀 클릭 → 인라인 편집 → 자동 저장 (localStorage + Supabase 동기화). 변경 이력은 섹션 10에 시간순 기록.</p>
+<div class="ok"><b>✅ 즉시 반영</b><br>편집 시 TM 상담사·계산기·티켓 리스트에 즉시 반영.</div>`
+  },
+
+  // ═════════ 운영 ═════════
+  {
+    id: 'security', group: '운영·보안', title: '🛡 보안 (PIPA)', roles: ['admin', 'manager'],
+    html: `<h2>보안 (PIPA 준수)<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span></h2>
+<p class="lead">개인정보보호법 준수 + 외부 유출 방지.</p>
+<h3>자동 적용 보안</h3>
+<ul>
+<li><b>워터마크</b> — 모든 페이지에 사용자명·시각·호스트 반복 표시</li>
+<li><b>인쇄 차단</b> — Cmd/Ctrl+P 차단 + onbeforeprint alert</li>
+<li><b>PrintScreen 감지</b> — alert + clipboard 비우기</li>
+<li><b>우클릭 차단</b> — input/textarea 제외</li>
+<li><b>copy 시 출처 stamp</b> — 5자 이상 복사 시 자동 부착</li>
+</ul>
+<h3>retention 정책 (자동)</h3>
+<table>
+<tr><th>단계</th><th>조건</th></tr>
+<tr><td>archive</td><td>converted 90일 / rejected 30일</td></tr>
+<tr><td>soft delete</td><td>archived 90일 후</td></tr>
+<tr><td>물리 삭제</td><td>soft delete 후 3년 (PIPA 보존 만료)</td></tr>
+</table>
+<h3>IP 화이트리스트 (admin)</h3>
+<p>콜DB 관리 → <kbd>🔐 보안</kbd> → CIDR 추가. 등록 0건이면 비활성. localhost·사설망 자동 통과.</p>
+<h3>액세스 로그</h3>
+<p>모든 view·update·distribute·retention 액션은 audit 로그에 기록. admin이 보안 패널에서 7일치 조회.</p>
+<h3>2FA</h3>
+<p>admin 권장. 우상단 <kbd>🔐</kbd> 또는 강제 banner.</p>`
+  },
+  {
+    id: 'environments', group: '운영·보안', title: '🌐 환경 (로컬·데브·라이브)', roles: ['admin'],
+    html: `<h2>환경<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">로컬 → 데브 → 라이브 흐름.</p>
+<h3>3단계 흐름</h3>
+<div class="step"><span class="num">1</span><b>로컬</b> (localhost:3001) — 개발자 1차 검증</div>
+<div class="step"><span class="num">2</span><b>데브</b> (dev-admin.prexymarket.com) — QA·통합 테스트 (별도 Supabase)</div>
+<div class="step"><span class="num">3</span><b>라이브</b> (admin.prexymarket.com) — 운영 (라이브 Supabase)</div>
+<h3>배포 흐름</h3>
+<pre><code>git checkout develop      # 데브 브랜치
+git push origin develop   # → Railway 데브 자동 배포 (1~2분)
+
+# 데브 검증 통과 후
+git checkout master
+git merge develop
+git push origin master    # → Railway 라이브 자동 배포</code></pre>
+<h3>데브 테스트 계정</h3>
+<table>
+<tr><th>계정</th><th>비밀번호</th><th>역할</th></tr>
+<tr><td>admin1@bongi.dev</td><td>pass1234!</td><td>관리자 (본사)</td></tr>
+<tr><td>manager1@bongi.dev</td><td>pass1234!</td><td>박매니저 (광주센터)</td></tr>
+<tr><td>agent1@bongi.dev</td><td>pass1234!</td><td>김상담 (광주센터)</td></tr>
+<tr><td>agent2@bongi.dev</td><td>pass1234!</td><td>최상담 (광주센터)</td></tr>
+</table>
+<div class="warn"><b>⚠️ 라이브 직접 배포 금지</b><br>반드시 데브 검증 후 master로 merge. 라이브 데이터에 즉시 영향.</div>`
+  },
+  {
+    id: 'troubleshooting', group: '운영·보안', title: '🔧 트러블슈팅', roles: ['all'],
+    html: `<h2>자주 발생하는 문제<span class="role-tag r-all">전체</span></h2>
+<table>
+<tr><th>증상</th><th>원인</th><th>해결</th></tr>
+<tr><td>로그인 후 빈 화면</td><td>토큰 만료</td><td>새로고침 → 재로그인</td></tr>
+<tr><td>변경한 코드가 안 보임</td><td>SW 캐시 또는 iframe 캐시</td><td>Cmd+Shift+R 하드 새로고침</td></tr>
+<tr><td>"풀 비어있음"</td><td>매니저 분배 안 됨 또는 admin import 안 됨</td><td>매니저에게 분배 요청 (콜 분배 요청 모달)</td></tr>
+<tr><td>"이미 대기 요청 있음"</td><td>이전 분배 요청 처리 안 됨</td><td>📋 내 요청 → 취소 후 새로 요청</td></tr>
+<tr><td>2FA 코드 안 받음</td><td>인증 앱 시간 동기화 X</td><td>스마트폰 시간 자동 설정 ON</td></tr>
+<tr><td>견적 등록 안 됨</td><td>전화번호 형식 오류 (010-1234-5678)</td><td>국번 정확히 입력</td></tr>
+<tr><td>"콜 큐 빈 상태"</td><td>모든 customer 한 번 시도함</td><td>다음 누르면 visited 자동 reset → 재순회</td></tr>
+<tr><td>대시보드 차트 0건</td><td>이번 달 데이터 부족</td><td>기간 변경 (3·6·12개월)</td></tr>
+<tr><td>인쇄 차단됨</td><td>PIPA 보안</td><td>의도된 동작 — 화면 캡처 대신 CSV 다운로드</td></tr>
+</table>
+<h3>긴급 문의</h3>
+<p>admin 또는 IT 담당자에게 연락. 액세스 로그(보안 패널)로 조사 가능.</p>`
+  },
+  {
+    id: 'shortcuts', group: '운영·보안', title: '⌨️ 단축키 모음', roles: ['all'],
+    html: `<h2>단축키 정리<span class="role-tag r-all">전체</span></h2>
+<h3>TM 콜 모드</h3>
+<table>
+<tr><th>키</th><th>동작</th></tr>
+<tr><td><kbd>1</kbd></td><td>📵 부재</td></tr>
+<tr><td><kbd>2</kbd></td><td>📞 콜백 (시간 picker)</td></tr>
+<tr><td><kbd>3</kbd></td><td>❌ 거절 (사유 picker)</td></tr>
+<tr><td><kbd>4</kbd></td><td>⚠️ 잘못된 번호</td></tr>
+<tr><td><kbd>0</kbd></td><td>🚫 DNT</td></tr>
+<tr><td><kbd>Space</kbd> / <kbd>Enter</kbd></td><td>⏭️ 다음 고객</td></tr>
+<tr><td><kbd>C</kbd></td><td>📋 전화번호 복사</td></tr>
+<tr><td><kbd>M</kbd></td><td>📝 메모 focus</td></tr>
+<tr><td><kbd>H</kbd></td><td>📜 이력 펼치기/접기</td></tr>
+<tr><td><kbd>?</kbd></td><td>도움말 토스트</td></tr>
+</table>
+<h3>모달 (콜백·거절·분배 요청)</h3>
+<table>
+<tr><th>키</th><th>동작</th></tr>
+<tr><td><kbd>Enter</kbd></td><td>확정</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>취소·닫기</td></tr>
+</table>
+<h3>전체 어드민</h3>
+<table>
+<tr><th>키</th><th>동작</th></tr>
+<tr><td><kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd></td><td>하드 새로고침 (캐시 무시)</td></tr>
+<tr><td><kbd>F12</kbd></td><td>DevTools (개발자 모드)</td></tr>
+</table>`
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// 렌더링
+// ═══════════════════════════════════════════════════════════════
+let currentRole = 'all';
+let currentSection = SECTIONS[0].id;
+let searchTerm = '';
+
+function renderTOC() {
+  const groups = {};
+  SECTIONS.forEach(s => {
+    if (!groups[s.group]) groups[s.group] = [];
+    groups[s.group].push(s);
+  });
+  const toc = document.getElementById('toc');
+  let html = '';
+  for (const [group, items] of Object.entries(groups)) {
+    const visible = items.filter(s => filterMatch(s));
+    if (!visible.length) continue;
+    html += `<div class="group">${group}</div>`;
+    visible.forEach(s => {
+      html += `<a href="#${s.id}" data-id="${s.id}">${s.title}</a>`;
+    });
+  }
+  if (!html) html = '<div class="search-no-result">결과 없음</div>';
+  toc.innerHTML = html;
+  toc.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      navigate(a.dataset.id);
+    });
+  });
+  updateActiveLink();
+}
+
+function filterMatch(s) {
+  // role 필터
+  if (currentRole !== 'all' && !s.roles.includes('all') && !s.roles.includes(currentRole)) return false;
+  // 검색
+  if (searchTerm) {
+    const haystack = (s.title + ' ' + s.html.replace(/<[^>]+>/g, ' ')).toLowerCase();
+    if (!haystack.includes(searchTerm.toLowerCase())) return false;
+  }
+  return true;
+}
+
+function renderMain() {
+  const main = document.getElementById('main');
+  const matches = SECTIONS.filter(filterMatch);
+  if (!matches.length) {
+    main.innerHTML = '<div class="search-no-result">결과 없음 — 검색어를 바꾸거나 역할 필터를 조정하세요.</div>';
+    return;
+  }
+  // 모든 섹션 렌더 (active만 표시)
+  main.innerHTML = matches.map(s =>
+    `<a class="anchor" id="${s.id}"></a><div class="section ${s.id === currentSection ? 'active' : ''}" data-id="${s.id}">${s.html}</div>`
+  ).join('');
+  // 현재 active가 필터에서 빠지면 첫 번째로
+  if (!matches.find(s => s.id === currentSection)) {
+    currentSection = matches[0].id;
+    main.querySelectorAll('.section').forEach(d => d.classList.toggle('active', d.dataset.id === currentSection));
+  }
+}
+
+function updateActiveLink() {
+  document.querySelectorAll('#toc a').forEach(a => {
+    a.classList.toggle('active', a.dataset.id === currentSection);
+  });
+}
+
+function navigate(id) {
+  currentSection = id;
+  document.querySelectorAll('#main .section').forEach(d => {
+    d.classList.toggle('active', d.dataset.id === id);
+  });
+  updateActiveLink();
+  document.getElementById('main').scrollTo(0, 0);
+  history.replaceState({}, '', '#' + id);
+}
+
+// 역할 전환
+document.querySelectorAll('.role-pick button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.role-pick button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRole = btn.dataset.role;
+    renderTOC();
+    renderMain();
+  });
+});
+
+// 검색
+document.getElementById('q').addEventListener('input', e => {
+  searchTerm = e.target.value.trim();
+  renderTOC();
+  renderMain();
+});
+
+// 본인 role 자동 감지 → 기본 필터
+async function detectRole() {
+  try {
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    if (!tk) return;
+    const r = await fetch('/api/incentive/agents/me', { headers: { Authorization: 'Bearer ' + tk }});
+    if (!r.ok) return;
+    const d = await r.json();
+    const role = d.agent?.role;
+    if (role) {
+      const btn = document.querySelector(`.role-pick button[data-role="${role}"]`);
+      if (btn) btn.click();
+    }
+  } catch {}
+}
+
+// 초기 — URL hash 또는 첫 섹션
+const hash = location.hash.slice(1);
+if (hash && SECTIONS.find(s => s.id === hash)) currentSection = hash;
+renderTOC();
+renderMain();
+detectRole();
+</script>
+</body>
+</html>
