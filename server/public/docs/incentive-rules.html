@@ -291,6 +291,39 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         </div>
       </div>
 
+      <!-- 🏢 팀장(manager) 인센티브 V5.1 정책 -->
+      <div class="section" style="background:linear-gradient(135deg,#1e3a8a,#0f172a);border:1.5px solid #3b82f6;margin-top:18px">
+        <h2 style="color:#93c5fd">🏢 팀장 인센티브 V5.1 (manager role)</h2>
+        <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.6">
+          본인 영업은 V5(agent와 동일) 적용 + <b style="color:#fbbf24">팀 오버라이드</b> 추가. 페널티는 오버라이드에만 적용.
+        </div>
+        <div class="row" style="grid-template-columns:repeat(4, 1fr);gap:10px">
+          <div class="field">
+            <label>팀 오버라이드율 (0~1)</label>
+            <input type="number" id="f-mgr-override" min="0" max="1" step="0.01" placeholder="0.12">
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px">팀원 인센·보너스 합계 × 이 비율</div>
+          </div>
+          <div class="field">
+            <label>본인 영업 의무 건수</label>
+            <input type="number" id="f-mgr-obligation" min="0" step="1" placeholder="20">
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px">미달 시 페널티 발동</div>
+          </div>
+          <div class="field">
+            <label>부분 페널티 임계 (50%)</label>
+            <input type="number" id="f-mgr-partial" min="0" step="1" placeholder="10">
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px">이 건수~의무-1 → 오버라이드 50%</div>
+          </div>
+          <div class="field">
+            <label>팀 영업이익률 임계 (0~1)</label>
+            <input type="number" id="f-mgr-profit-rate" min="0" max="1" step="0.01" placeholder="0.20">
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px">(매출-페이백)/매출 미달 시 0%</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#fde047;margin-top:10px;padding:8px 12px;background:rgba(251,191,36,0.08);border-radius:6px">
+          💡 페널티 매트릭스: 본인 영업 ≥ 의무 → 100% / 부분임계~의무-1 → 50% / 부분임계 미만 또는 팀이익률 미달 → 0%
+        </div>
+      </div>
+
       <div class="actions-bar">
         <button id="btn-save" class="btn-primary">💾 현재 정책 수정 저장 (PATCH)</button>
         <button id="btn-publish" class="btn-secondary">📌 새 버전으로 발행 (POST + 기존 비활성화)</button>
@@ -496,6 +529,11 @@ function loadActiveToForm(r) {
   document.getElementById('f-thr-2-prem').value = (thrs['2'] || {}).premium || 0;
   document.getElementById('f-thr-3-p').value = (thrs['3'] || {}).points || 0;
   document.getElementById('f-thr-3-prem').value = (thrs['3'] || {}).premium || 0;
+  // 🏢 팀장 V5.1 정책
+  document.getElementById('f-mgr-override').value = (r.manager_override_rate != null) ? r.manager_override_rate : 0.12;
+  document.getElementById('f-mgr-obligation').value = (r.manager_obligation_count != null) ? r.manager_obligation_count : 20;
+  document.getElementById('f-mgr-partial').value = (r.manager_penalty_partial_min != null) ? r.manager_penalty_partial_min : 10;
+  document.getElementById('f-mgr-profit-rate').value = (r.manager_team_profit_rate_min != null) ? r.manager_team_profit_rate_min : 0.20;
 }
 
 function collectForm() {
@@ -523,6 +561,11 @@ function collectForm() {
         premium: parseInt(document.getElementById('f-thr-3-prem').value) || 0,
       },
     },
+    // 🏢 팀장 V5.1 정책
+    manager_override_rate: parseFloat(document.getElementById('f-mgr-override').value) || 0,
+    manager_obligation_count: parseInt(document.getElementById('f-mgr-obligation').value) || 0,
+    manager_penalty_partial_min: parseInt(document.getElementById('f-mgr-partial').value) || 0,
+    manager_team_profit_rate_min: parseFloat(document.getElementById('f-mgr-profit-rate').value) || 0,
   };
 }
 

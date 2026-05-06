@@ -965,6 +965,8 @@ router.post('/rules', authenticateJWT, async (req, res) => {
       payback_company_limit, payback_max,
       grade_rates, grade_thresholds, premium_margin_threshold,
       notes, deactivate_others,
+      manager_override_rate, manager_obligation_count,
+      manager_penalty_partial_min, manager_team_profit_rate_min,
     } = req.body || {};
 
     if (!version || !effective_from || !grade_rates || !grade_thresholds) {
@@ -986,6 +988,10 @@ router.post('/rules', authenticateJWT, async (req, res) => {
         payback_max: payback_max || 50000,
         grade_rates, grade_thresholds,
         premium_margin_threshold: premium_margin_threshold || 250000,
+        manager_override_rate: manager_override_rate ?? 0.12,
+        manager_obligation_count: manager_obligation_count ?? 20,
+        manager_penalty_partial_min: manager_penalty_partial_min ?? 10,
+        manager_team_profit_rate_min: manager_team_profit_rate_min ?? 0.20,
         active: true, notes,
       })
       .select()
@@ -1009,7 +1015,9 @@ router.patch('/rules/:id', authenticateJWT, async (req, res) => {
 
     const allowed = ['version', 'effective_from', 'base_salary', 'bonus_per_premium',
       'payback_company_limit', 'payback_max', 'grade_rates', 'grade_thresholds',
-      'premium_margin_threshold', 'active', 'notes'];
+      'premium_margin_threshold', 'active', 'notes',
+      'manager_override_rate', 'manager_obligation_count',
+      'manager_penalty_partial_min', 'manager_team_profit_rate_min'];
     const update = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
 
