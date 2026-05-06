@@ -12,7 +12,10 @@
     "build": "cd client && npm run build && cd .. && npm run sync:docs",
     "sync:docs": "mkdir -p server/public/docs && cp docs/*.html server/public/docs/",
     "start": "cd server && node index.js",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:local": "E2E_BASE_URL=http://localhost:3001 playwright test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
@@ -22,10 +25,16 @@
     "dotenv": "^16.4.0",
     "express": "^4.21.0",
     "express-rate-limit": "^8.3.1",
+    "multer": "^2.1.1",
     "node-cron": "^4.2.1",
-    "playwright": "^1.59.1"
+    "otplib": "^13.4.0",
+    "pg": "^8.20.0",
+    "playwright": "^1.59.1",
+    "qrcode": "^1.5.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "concurrently": "^9.0.0"
   }
 }
