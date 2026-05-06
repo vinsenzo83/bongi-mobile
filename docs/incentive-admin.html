@@ -156,7 +156,16 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
 
 <div class="auth-overlay" id="g-auth-overlay" style="display:none">
   <div class="auth-box">
-    <h2>🔐 인센티브 어드민 로그인</h2>
+    <h2 id="g-auth-title">🔐 인센티브 어드민 로그인</h2>
+    <script>
+      (function() {
+        const isDev = location.hostname.includes('dev-admin') || location.hostname.includes('staging');
+        if (isDev) {
+          document.getElementById('g-auth-title').innerHTML = '🧪 <span style="color:#fbbf24">데브</span> · 인센티브 어드민 로그인';
+          document.title = '[데브] 인센티브 어드민';
+        }
+      })();
+    </script>
     <input type="email" id="g-auth-email" placeholder="email" autocomplete="username">
     <input type="password" id="g-auth-pass" placeholder="비밀번호" autocomplete="current-password">
     <input type="text" id="g-auth-totp" placeholder="🔑 2FA 코드 (활성 사용자만)" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="display:none;letter-spacing:0.3em;text-align:center;font-family:monospace;font-size:14px">
