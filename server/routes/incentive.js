@@ -2083,16 +2083,20 @@ router.get('/goals', authenticateJWT, async (req, res) => {
 
     const goals = await Promise.all((data || []).map(async (g) => {
       const aid = g.agent_id;
-      const [callsResp, convResp, salesResp] = await Promise.all([
-        supabase.from('incentive_call_log').select('id', { count:'exact', head:true })
+      const [callsResp, salesResp, settleResp] = await Promise.all([
+        // 콜 시도 = 통화 로그 카운트 (called_at 기준)
+        supabase.from('incentive_customer_call_log').select('id', { count:'exact', head:true })
           .eq('agent_id', aid).gte('called_at', ymStart).lt('called_at', ymEnd),
-        supabase.from('incentive_customer_db').select('id', { count:'exact', head:true })
-          .eq('assigned_agent_id', aid).eq('call_status', 'converted').gte('updated_at', ymStart).lt('updated_at', ymEnd),
-        supabase.from('incentive_sales').select('points').eq('agent_id', aid).eq('ym', ym),
+        // 전환 = 계약 카운트 (contract_date 기준, 삭제 제외)
+        supabase.from('incentive_sales').select('id', { count:'exact', head:true })
+          .eq('agent_id', aid).gte('contract_date', ymStart).lt('contract_date', ymEnd).is('deleted_at', null),
+        // P = V5 정산 RPC (total_points 필드)
+        supabase.rpc('incentive_calc_monthly_settlement', { p_agent_id: aid, p_year_month: ym }),
       ]);
-      const points = (salesResp.data || []).reduce((s, r) => s + (Number(r.points) || 0), 0);
       const callsActual = callsResp.count || 0;
-      const convActual = convResp.count || 0;
+      const convActual = salesResp.count || 0;
+      const settle = Array.isArray(settleResp.data) ? settleResp.data[0] : settleResp.data;
+      const points = Number(settle?.total_points || 0);
       return {
         ...g,
         actual: { calls: callsActual, conversions: convActual, points },
