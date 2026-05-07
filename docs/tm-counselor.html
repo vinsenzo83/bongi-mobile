@@ -4055,23 +4055,29 @@ setTimeout(() => {
   const addrBtn = document.getElementById('deal-address-search-btn');
   const addrInput = document.getElementById('deal-address');
   function openDealAddressSearch() {
-    if (!window.daum || !window.daum.Postcode) {
-      alert('주소 검색 API 로드 중. 잠시 후 다시 시도하세요.');
-      return;
-    }
-    new window.daum.Postcode({
-      oncomplete: function(data) {
-        const fullAddr = data.address + (data.buildingName ? ' (' + data.buildingName + ')' : '');
-        if (addrInput) {
-          addrInput.value = fullAddr;
-          addrInput.style.background = '#f0fdf4';
-          addrInput.style.borderColor = '#22c55e';
+    const proceed = () => {
+      new window.daum.Postcode({
+        oncomplete: function(data) {
+          const fullAddr = data.address + (data.buildingName ? ' (' + data.buildingName + ')' : '');
+          if (addrInput) {
+            addrInput.value = fullAddr;
+            addrInput.style.background = '#f0fdf4';
+            addrInput.style.borderColor = '#22c55e';
+          }
+          const detailEl = document.getElementById('deal-address-detail');
+          if (detailEl) detailEl.focus();
         }
-        // 검색 완료 후 상세주소로 포커스 이동
-        const detailEl = document.getElementById('deal-address-detail');
-        if (detailEl) detailEl.focus();
-      }
-    }).open();
+      }).open();
+    };
+    if (window.daum?.Postcode) { proceed(); return; }
+    // 동적 재로드 (sw.js 캐시·네트워크 일시 실패 fallback)
+    const existing = document.querySelector('script[src*="postcode.v2.js"]');
+    if (existing) existing.remove();
+    const s = document.createElement('script');
+    s.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js?v=' + Date.now();
+    s.onload = () => { if (window.daum?.Postcode) proceed(); else alert('주소 검색 API 로드 실패 — 페이지 새로고침 (Cmd+Shift+R)'); };
+    s.onerror = () => alert('주소 검색 API 네트워크 차단됨 — 광고차단 확장 또는 사내 방화벽 확인');
+    document.head.appendChild(s);
   }
   if (addrBtn) addrBtn.addEventListener('click', openDealAddressSearch);
   if (addrInput) addrInput.addEventListener('click', openDealAddressSearch);

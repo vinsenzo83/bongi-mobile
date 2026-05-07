@@ -455,7 +455,14 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 // ─── Daum Postcode 주소 검색 ───
 function openAddressSearch(targetSelector) {
   if (!window.daum || !window.daum.Postcode) {
-    alert('주소 검색 API 로드 중. 잠시 후 다시 시도하세요.');
+    // 동적 재로드 (sw.js 캐시·네트워크 일시 실패 fallback)
+    const existing = document.querySelector('script[src*="postcode.v2.js"]');
+    if (existing) existing.remove();
+    const s = document.createElement('script');
+    s.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js?v=' + Date.now();
+    s.onload = () => { if (window.daum?.Postcode) openAddressSearch(targetSelector); else alert('주소 검색 API 로드 실패 — 페이지 새로고침 (Cmd+Shift+R)'); };
+    s.onerror = () => alert('주소 검색 API 네트워크 차단됨 — 광고차단/방화벽 확인');
+    document.head.appendChild(s);
     return;
   }
   new window.daum.Postcode({
