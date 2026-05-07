@@ -16,6 +16,12 @@ body { font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sa
 body.role-readonly select, body.role-readonly input:not([type="search"]):not([readonly]), body.role-readonly textarea { pointer-events:none !important; opacity:0.7 !important; background:#1e293b !important; }
 body.role-readonly button[data-mutate], body.role-readonly .btn-edit, body.role-readonly .btn-delete, body.role-readonly .btn-restore, body.role-readonly .btn-cancel-contract, body.role-readonly .status-change-btn { display:none !important; }
 body.role-readonly .row-edit-btn, body.role-readonly button:where([onclick*="edit"], [onclick*="delete"], [onclick*="cancel"], [onclick*="restore"], [onclick*="updateStatus"], [onclick*="patch"], [onclick*="save"]) { display:none !important; }
+/* data-act 기반 mutating 액션 일괄 숨김 (btn-action[data-act="soft-delete"] 등) */
+body.role-readonly .btn-action[data-act="edit"],
+body.role-readonly .btn-action[data-act="soft-delete"],
+body.role-readonly .btn-action[data-act="permanent-delete"],
+body.role-readonly .btn-action[data-act="restore"],
+body.role-readonly .btn-action[data-act="save-detail"] { display:none !important; }
 body.role-readonly tr[onclick] { cursor:default !important; }
 
 .wrap { max-width: 1400px; margin: 0 auto; }
