@@ -1344,18 +1344,32 @@ async function injectDealerSection(c) {
     const urlAttr = x.url ? `data-url="${x.url.replace(/"/g,'&quot;')}"` : '';
     return `<option value="${x.id}" ${urlAttr} ${sel}>${label}</option>`;
   }).join('');
+  // 통신사별 설치가능지역 조회 페이지 (3사 공식)
+  const installCheckUrls = {
+    skt: 'https://www.bworld.co.kr/myb/product/join/address/svcAveSearch.do',
+    kt: 'https://help.kt.com/serviceinfo/SearchHomePhone.do',
+    lgu: 'https://www.lguplus.com/support/online/coverage-check',
+  };
+  const installUrl = installCheckUrls[carrier];
+
   wrap.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div style="font-size:13px;font-weight:800;color:#86efac">🏪 접수 대리점 (${p.carrier || carrier.toUpperCase()})</div>
       <a href="/docs/incentive-products.html" target="_blank" style="font-size:10px;color:#94a3b8;text-decoration:none">⚙ 대리점 관리</a>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
       <select class="detail-input" data-field="dealer_id" style="flex:1;min-width:220px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:5px;font-size:12.5px" onchange="window._updateDealerLink(this)">
         <option value="">대리점 선택...</option>
         ${opts}
       </select>
       <a class="dealer-open-link" href="" target="_blank" style="display:none;background:#3b82f6;color:#fff;padding:8px 16px;border-radius:5px;text-decoration:none;font-size:12px;font-weight:700">🔗 접수 사이트 열기</a>
     </div>
+    ${installUrl ? `
+      <div style="display:flex;gap:8px;align-items:center;padding-top:8px;border-top:1px dashed rgba(134,239,172,0.25)">
+        <span style="font-size:11px;color:#94a3b8">📍 설치 가능 지역 조회 (${p.carrier || carrier.toUpperCase()} 공식)</span>
+        <a href="${installUrl}" target="_blank" style="margin-left:auto;background:#0891b2;color:#fff;padding:6px 14px;border-radius:5px;text-decoration:none;font-size:11.5px;font-weight:700">📍 조회하기</a>
+      </div>
+    ` : ''}
   `;
   // 모달 제일 아래에 삽입 — [💾 저장] 버튼 직전 (저장 버튼 자체보다 위)
   const modalBody = document.getElementById('modal-body');
