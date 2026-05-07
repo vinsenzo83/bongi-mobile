@@ -279,8 +279,10 @@ router.get('/', async (req, res) => {
     // 정렬 — 우선순위 큐
     const sortBy = req.query.sort || 'priority';
     if (sortBy === 'priority') {
-      // callback 시간순 → 우선순위 → 신규
+      // callback → 재시도 도래 → 우선순위 → 신규
+      // (next_retry_at: no_answer 1시간 후·rejected 30일 후 자동 도래 시 큐 상단)
       q = q.order('callback_at', { ascending: true, nullsFirst: false })
+           .order('next_retry_at', { ascending: true, nullsFirst: false })
            .order('priority_score', { ascending: false })
            .order('imported_at', { ascending: false });
     } else if (sortBy === 'recent') q = q.order('imported_at', { ascending: false });
