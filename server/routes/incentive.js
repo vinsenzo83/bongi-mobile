@@ -717,7 +717,7 @@ router.get('/sales', authenticateJWT, async (req, res) => {
     // soft delete 제외 — 기본은 deleted_at IS NULL만 (휴지통은 /contracts?trash=1만 노출)
     const { data, error } = await supabase
       .from('incentive_sales')
-      .select('*, product:incentive_products(*)')
+      .select('*, product:incentive_products(*), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)')
       .eq('agent_id', targetAgentId)
       .gte('contract_date', monthStart)
       .lte('contract_date', monthEnd)
@@ -869,7 +869,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id } = req.body || {};
+    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id, dealer_id } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -933,6 +933,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (quote_summary !== undefined) update.quote_summary = quote_summary;
     if (quote_full_html !== undefined) update.quote_full_html = quote_full_html;
     if (db_source_id !== undefined) update.db_source_id = db_source_id ? parseInt(db_source_id) : null;
+    if (dealer_id !== undefined) update.dealer_id = dealer_id ? parseInt(dealer_id) : null;
 
     // product 변경 — pending 단계에서만 허용, snapshot 재계산
     // (계약 진행/완료 단계에서는 등록 시점 snapshot 락)
@@ -1351,10 +1352,10 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
 
     // gzip 적용 후 quote_full_html 포함해도 페이로드 작음 (~10KB 추가) — 모달 즉시 표시
     // 휴지통 모드일 때는 deleted_at/deleted_by_user_id/deleted_reason도 함께 반환
-    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,point_weight_snapshot,is_premium_snapshot,db_source_id';
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,point_weight_snapshot,is_premium_snapshot,db_source_id,dealer_id';
     let q = supabase
       .from('incentive_sales')
-      .select(`${listCols}, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role)`)
+      .select(`${listCols}, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)`)
       .gte('contract_date', monthStart)
       .lte('contract_date', monthEnd);
 
@@ -2181,6 +2182,77 @@ router.delete('/goals/:id(\\d+)', authenticateJWT, async (req, res) => {
       if (goal.agent?.center !== me.center) return res.status(403).json({ error: '본인 센터 상담사만' });
     }
     const { error } = await supabase.from('incentive_monthly_goals').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 🏪 대리점 (incentive_dealers) — 통신사별 접수 대리점 + URL 관리
+// ═══════════════════════════════════════════════════════════════
+
+// GET /dealers?carrier=skt[&active_only=true]
+router.get('/dealers', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+    let q = supabase.from('incentive_dealers').select('*').order('carrier').order('display_order').order('name');
+    if (req.query.carrier) q = q.eq('carrier', req.query.carrier);
+    if (req.query.active_only === 'true') q = q.eq('active', true);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json({ dealers: data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /dealers (admin)
+router.post('/dealers', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const { carrier, name, url, notes, display_order } = req.body || {};
+    if (!carrier || !name) return res.status(400).json({ error: 'carrier·name 필수' });
+    if (!['skt', 'kt', 'lgu'].includes(carrier)) return res.status(400).json({ error: 'carrier는 skt/kt/lgu 중 하나' });
+    const { data, error } = await supabase.from('incentive_dealers').insert({
+      carrier, name: String(name).trim().slice(0, 100),
+      url: url ? String(url).trim().slice(0, 500) : null,
+      notes: notes ? String(notes).slice(0, 500) : null,
+      display_order: parseInt(display_order) || 0,
+      created_by: req.user.id,
+    }).select().single();
+    if (error) {
+      if (error.code === '23505') return res.status(409).json({ error: '동일 통신사에 같은 이름의 대리점이 이미 있습니다' });
+      throw error;
+    }
+    res.json({ dealer: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /dealers/:id (admin) — 활성 토글, 정보 수정
+router.patch('/dealers/:id(\\d+)', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const update = { updated_at: new Date().toISOString() };
+    const { name, url, active, notes, display_order } = req.body || {};
+    if (name !== undefined) update.name = String(name).trim().slice(0, 100);
+    if (url !== undefined) update.url = url ? String(url).trim().slice(0, 500) : null;
+    if (active !== undefined) update.active = !!active;
+    if (notes !== undefined) update.notes = notes ? String(notes).slice(0, 500) : null;
+    if (display_order !== undefined) update.display_order = parseInt(display_order) || 0;
+    const { data, error } = await supabase.from('incentive_dealers').update(update).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: '대리점 없음' });
+    res.json({ dealer: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /dealers/:id (admin)
+router.delete('/dealers/:id(\\d+)', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const { error } = await supabase.from('incentive_dealers').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }

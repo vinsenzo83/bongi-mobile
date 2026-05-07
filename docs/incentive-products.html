@@ -121,6 +121,40 @@ input[type="number"] { -moz-appearance: textfield; }
       <div class="kpi-card"><div class="kpi-label">⚠️ C Tier</div><div class="kpi-val" id="kpi-c">-</div><div class="kpi-sub">위험 상품</div></div>
     </div>
 
+    <!-- 🏪 대리점 관리 (admin 전용) -->
+    <div class="section" id="dealers-section" style="display:none">
+      <h2>🏪 통신사별 접수 대리점 <span style="font-size:11px;color:#94a3b8;font-weight:400">— 계약 처리 편집창에서 자동 노출</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px">
+        <div style="background:rgba(0,0,0,0.3);border:1px solid #334155;border-radius:8px;padding:12px">
+          <div style="font-size:13px;font-weight:800;color:#dc2626;margin-bottom:8px">🔴 SKT</div>
+          <div id="dealers-skt" style="font-size:11.5px"></div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <input type="text" id="d-skt-name" placeholder="대리점명" style="flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px">
+            <input type="url" id="d-skt-url" placeholder="https://..." style="flex:1.5;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px;font-family:monospace">
+            <button onclick="addDealer('skt')" style="background:#22c55e;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">+</button>
+          </div>
+        </div>
+        <div style="background:rgba(0,0,0,0.3);border:1px solid #334155;border-radius:8px;padding:12px">
+          <div style="font-size:13px;font-weight:800;color:#fbbf24;margin-bottom:8px">🟡 KT</div>
+          <div id="dealers-kt" style="font-size:11.5px"></div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <input type="text" id="d-kt-name" placeholder="대리점명" style="flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px">
+            <input type="url" id="d-kt-url" placeholder="https://..." style="flex:1.5;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px;font-family:monospace">
+            <button onclick="addDealer('kt')" style="background:#22c55e;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">+</button>
+          </div>
+        </div>
+        <div style="background:rgba(0,0,0,0.3);border:1px solid #334155;border-radius:8px;padding:12px">
+          <div style="font-size:13px;font-weight:800;color:#a5b4fc;margin-bottom:8px">🟣 LGU+</div>
+          <div id="dealers-lgu" style="font-size:11.5px"></div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <input type="text" id="d-lgu-name" placeholder="대리점명" style="flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px">
+            <input type="url" id="d-lgu-url" placeholder="https://..." style="flex:1.5;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px;font-family:monospace">
+            <button onclick="addDealer('lgu')" style="background:#22c55e;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="section">
       <h2>📋 상품 목록 — 인라인 편집</h2>
       <div style="font-size:11.5px;color:#fbbf24;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);padding:8px 12px;border-radius:6px;margin-bottom:14px;line-height:1.5">
@@ -343,7 +377,77 @@ function onLoggedIn(agent) {
   document.getElementById('main-area').style.display = '';
   document.getElementById('user-info').style.display = '';
   document.getElementById('user-name').textContent = '👤 ' + agent.name;
+  // admin 전용 대리점 섹션 노출
+  if (agent.role === 'admin') {
+    document.getElementById('dealers-section').style.display = '';
+    loadDealers();
+  }
   loadAll();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🏪 대리점 (incentive_dealers)
+// ═══════════════════════════════════════════════════════════════
+async function loadDealers() {
+  const tk = getToken(); if (!tk) return;
+  const r = await fetch('/api/incentive/dealers', { headers: { Authorization: 'Bearer ' + tk }});
+  if (!r.ok) return;
+  const d = await r.json();
+  const byCarrier = { skt:[], kt:[], lgu:[] };
+  (d.dealers || []).forEach(x => byCarrier[x.carrier]?.push(x));
+  ['skt','kt','lgu'].forEach(c => {
+    const wrap = document.getElementById('dealers-' + c);
+    if (!wrap) return;
+    if (!byCarrier[c].length) { wrap.innerHTML = '<div style="color:#64748b;text-align:center;padding:6px">대리점 없음</div>'; return; }
+    wrap.innerHTML = byCarrier[c].map(x => {
+      const nameEsc = String(x.name).replace(/[<>&"]/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
+      const urlEsc = x.url ? String(x.url).replace(/[<>&"]/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch])) : '';
+      return `<div style="display:flex;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid #1e293b">
+        <input type="checkbox" ${x.active?'checked':''} onchange="toggleDealer(${x.id}, this.checked)" title="활성/비활성">
+        <span style="flex:1;font-weight:${x.active?'700':'400'};color:${x.active?'#f8fafc':'#64748b'}">${nameEsc}</span>
+        ${urlEsc ? `<a href="${urlEsc}" target="_blank" style="color:#60a5fa;font-size:10px;text-decoration:none" title="${urlEsc}">🔗</a>` : ''}
+        <button onclick="editDealerUrl(${x.id})" style="background:#475569;color:#fff;border:none;padding:2px 8px;border-radius:3px;font-size:10px;cursor:pointer">URL</button>
+        <button onclick="deleteDealer(${x.id},'${nameEsc}')" style="background:#dc2626;color:#fff;border:none;padding:2px 7px;border-radius:3px;font-size:10px;cursor:pointer">×</button>
+      </div>`;
+    }).join('');
+  });
+}
+async function addDealer(carrier) {
+  const tk = getToken();
+  const name = document.getElementById('d-' + carrier + '-name').value.trim();
+  const url = document.getElementById('d-' + carrier + '-url').value.trim();
+  if (!name) { alert('대리점명 입력'); return; }
+  const r = await fetch('/api/incentive/dealers', {
+    method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+tk},
+    body: JSON.stringify({ carrier, name, url: url || null })
+  });
+  if (!r.ok) { const d = await r.json(); alert('실패: ' + d.error); return; }
+  document.getElementById('d-' + carrier + '-name').value = '';
+  document.getElementById('d-' + carrier + '-url').value = '';
+  loadDealers();
+}
+async function toggleDealer(id, active) {
+  const tk = getToken();
+  await fetch('/api/incentive/dealers/' + id, {
+    method:'PATCH', headers:{'Content-Type':'application/json', Authorization:'Bearer '+tk},
+    body: JSON.stringify({ active })
+  });
+}
+async function editDealerUrl(id) {
+  const newUrl = prompt('URL 입력 (비워두면 제거)');
+  if (newUrl === null) return;
+  const tk = getToken();
+  await fetch('/api/incentive/dealers/' + id, {
+    method:'PATCH', headers:{'Content-Type':'application/json', Authorization:'Bearer '+tk},
+    body: JSON.stringify({ url: newUrl.trim() || null })
+  });
+  loadDealers();
+}
+async function deleteDealer(id, name) {
+  if (!confirm(`"${name}" 대리점 삭제?\n(기존 계약의 dealer_id는 NULL로 변경됨)`)) return;
+  const tk = getToken();
+  await fetch('/api/incentive/dealers/' + id, { method:'DELETE', headers:{Authorization:'Bearer '+tk}});
+  loadDealers();
 }
 
 document.getElementById('auth-login-btn').addEventListener('click', async () => {

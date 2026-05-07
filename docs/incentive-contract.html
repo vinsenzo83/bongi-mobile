@@ -957,7 +957,7 @@ async function handleAction(id, act) {
       const val = (inp.value || '').trim();
       if (field === 'add_payback') {
         body[field] = parseInt(val) || 0;
-      } else if (field === 'db_source_id') {
+      } else if (field === 'db_source_id' || field === 'dealer_id') {
         body[field] = val ? parseInt(val) : null;
       } else {
         body[field] = val || null;
@@ -1305,11 +1305,67 @@ function openEditModal(id) {
       slot.outerHTML = '<div class="quote-empty">⚠️ 상담사가 견적서를 등록하지 않았습니다.</div>';
     }
   });
+  // 🏪 접수 대리점 섹션 동적 삽입 (carrier 매칭 + URL 노출)
+  injectDealerSection(c);
   } catch (err) {
     console.error('[openEditModal] 렌더링 오류:', err);
     alert('모달 표시 중 오류: ' + err.message);
   }
 }
+
+// ═══ 🏪 접수 대리점 섹션 동적 삽입 ═══
+async function injectDealerSection(c) {
+  const p = c.product || {};
+  const carrierMap = { 'SKT':'skt', 'KT':'kt', 'LGU+':'lgu', 'lgu+':'lgu' };
+  const carrier = carrierMap[p.carrier] || (p.carrier || '').toLowerCase().replace('+','');
+  if (!['skt','kt','lgu'].includes(carrier)) return;
+
+  const tk = getToken();
+  // 활성 대리점 + 현재 선택된 비활성 dealer 포함
+  const r = await fetch(`/api/incentive/dealers?carrier=${carrier}`, { headers: { Authorization:'Bearer '+tk }});
+  if (!r.ok) return;
+  const d = await r.json();
+  const dealers = d.dealers || [];
+  const currentId = c.dealer_id;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'sec-card';
+  wrap.style.cssText = 'background:linear-gradient(135deg,#064e3b,#0f172a);border:1.5px solid #16a34a;border-radius:8px;padding:12px 16px;margin:10px 0';
+  const opts = dealers.map(x => {
+    const sel = x.id === currentId ? 'selected' : '';
+    const label = x.name + (x.active ? '' : ' (비활성)');
+    const urlAttr = x.url ? `data-url="${x.url.replace(/"/g,'&quot;')}"` : '';
+    return `<option value="${x.id}" ${urlAttr} ${sel}>${label}</option>`;
+  }).join('');
+  wrap.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:800;color:#86efac">🏪 접수 대리점 (${p.carrier || carrier.toUpperCase()})</div>
+      <a href="/docs/incentive-products.html" target="_blank" style="font-size:10px;color:#94a3b8;text-decoration:none">⚙ 대리점 관리</a>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select class="detail-input" data-field="dealer_id" style="flex:1;min-width:220px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:5px;font-size:12.5px" onchange="window._updateDealerLink(this)">
+        <option value="">대리점 선택...</option>
+        ${opts}
+      </select>
+      <a class="dealer-open-link" href="" target="_blank" style="display:none;background:#3b82f6;color:#fff;padding:8px 16px;border-radius:5px;text-decoration:none;font-size:12px;font-weight:700">🔗 접수 사이트 열기</a>
+    </div>
+  `;
+  // 첫 sec-card 다음 (📦 계약 상품 정보 카드 직후)에 삽입
+  const firstCard = document.querySelector('#modal-body .sec-card');
+  if (firstCard?.nextSibling) firstCard.parentNode.insertBefore(wrap, firstCard.nextSibling);
+  else document.getElementById('modal-body').appendChild(wrap);
+  // 초기 link 활성화
+  window._updateDealerLink(wrap.querySelector('select'));
+}
+
+window._updateDealerLink = function(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const url = opt?.dataset?.url;
+  const linkEl = sel.parentNode.querySelector('.dealer-open-link');
+  if (!linkEl) return;
+  if (url) { linkEl.href = url; linkEl.style.display = ''; }
+  else { linkEl.style.display = 'none'; linkEl.href = ''; }
+};
 
 function closeModal() {
   document.getElementById('modal-overlay').style.display = 'none';
