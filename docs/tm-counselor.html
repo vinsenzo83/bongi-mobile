@@ -566,7 +566,31 @@ function toggleQueueSide() {
   try { localStorage.setItem('cq-side-collapsed', collapsed ? '1' : '0'); } catch(e) {}
 }
 
+// 모드 감지: ?mode=manual 또는 부모창에서 인자 주입 — 큐콜·DB출처 비활성
+const _isManualMode = (() => {
+  try {
+    const u = new URL(location.href);
+    return u.searchParams.get('mode') === 'manual';
+  } catch { return false; }
+})();
+if (_isManualMode) {
+  document.documentElement.classList.add('tm-manual-mode');
+  // 콜 큐·DB출처 숨김 CSS 즉시 주입
+  const s = document.createElement('style');
+  s.textContent = `
+    .tm-manual-mode #call-queue-side,
+    .tm-manual-mode .cq-toggle-btn { display:none !important; }
+    .tm-manual-mode body.queue-side-active,
+    .tm-manual-mode body.queue-side-collapsed { padding-left:0 !important; }
+    .tm-manual-mode #deal-db-source,
+    .tm-manual-mode label[for="deal-db-source"],
+    .tm-manual-mode label:has(#deal-db-source) { display:none !important; }
+  `;
+  document.head.appendChild(s);
+}
+
 async function initQueueSide() {
+  if (_isManualMode) return; // 수동 모드 — 콜 큐 비활성
   const tk = localStorage.getItem('incentive-auth-token-v1');
   if (!tk) return;
   try {
@@ -3923,7 +3947,7 @@ async function incSubmitDeal() {
     msg.textContent = '페이백은 0~50,000원';
     return;
   }
-  if (!dbSourceId) {
+  if (!dbSourceId && !_isManualMode) {
     msg.textContent = '⚠️ DB 출처를 선택하세요 (어느 DB로 상담했는지)';
     document.getElementById('deal-db-source')?.focus();
     return;
