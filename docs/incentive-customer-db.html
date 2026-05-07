@@ -143,6 +143,7 @@ tr:hover { background:#334155; }
 
       <div id="per-agent-quota" style="margin-top:12px;font-size:11px;color:#cbd5e1;background:rgba(0,0,0,0.3);padding:10px 14px;border-radius:8px"></div>
       <div id="job-status" style="margin-top:8px;font-size:11px;color:#94a3b8;display:flex;gap:18px;flex-wrap:wrap"></div>
+
     </div>
 
     <!-- 엑셀 import -->
@@ -156,19 +157,49 @@ tr:hover { background:#334155; }
       <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
         <div style="font-size:48px;margin-bottom:8px">📥</div>
         <div style="font-size:13px;color:#cbd5e1;font-weight:700">엑셀 파일을 여기에 드래그 또는 클릭해서 업로드</div>
-        <div style="font-size:10.5px;color:#94a3b8;margin-top:6px">.xlsx / .csv 지원 · 헤더: 이름·전화·나이·성별·지역·통신사·메모</div>
+        <div style="font-size:10.5px;color:#94a3b8;margin-top:6px">.xlsx / .csv 지원</div>
         <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
+      </div>
+      <div style="display:flex;gap:14px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <label style="font-size:12px;color:#cbd5e1;font-weight:700">📋 import 모드:</label>
+        <label style="font-size:11.5px;color:#cbd5e1"><input type="radio" name="import-mode" value="simple" checked> 일반 (이름·전화·나이·성별·지역·통신사·메모)</label>
+        <label style="font-size:11.5px;color:#fbbf24"><input type="radio" name="import-mode" value="closing_ledger"> 📊 마감원장 (개통날짜·통신사·매장·단말·요금제·기타) → 자동 1차/2차 분류 + 워치/미성년/100세 제외 + 이름+생일 통합 + phone 충돌 on_hold</label>
       </div>
       <div id="import-result" style="margin-top:14px;font-size:11.5px;color:#94a3b8"></div>
     </div>
 
-    <!-- 🏢 센터별 분배 (admin 1단계) -->
+    <!-- 🎯 분배 (지정 + 균등 hybrid) -->
     <div class="section">
-      <h2>🏢 센터별 분배 (1단계: admin)</h2>
-      <div style="font-size:11.5px;color:#cbd5e1;margin-bottom:10px">미배정 풀에서 각 센터에 건수 할당 → 팀장이 본인 센터에서 상담사별 재분배</div>
-      <div id="center-allocations" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px"></div>
-      <button class="btn btn-success" onclick="executeCenterDistribute()">🏢 센터별 배정 실행</button>
-      <div id="center-allocations-result" style="margin-top:10px;font-size:11px;color:#86efac"></div>
+      <h2>🎯 콜센터 분배 — 지정 / 균등</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <!-- 1️⃣ 지정 분배 -->
+        <div style="background:rgba(0,0,0,0.3);border:1.5px solid #475569;border-radius:8px;padding:14px">
+          <div style="font-size:13px;color:#fde68a;font-weight:800;margin-bottom:6px">1️⃣ 지정 분배</div>
+          <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.5">manager/admin이 특정 batch·등급 → 특정 상담사 지정. 베테랑/신입 등 전략 분배.</div>
+          <button class="btn btn-success" style="width:100%" onclick="openDistribute(null)">🎯 풀 → 상담사 직접 분배</button>
+        </div>
+        <!-- 2️⃣ 균등 분배 -->
+        <div style="background:linear-gradient(135deg,rgba(22,163,74,0.15),rgba(0,0,0,0.3));border:1.5px solid #16a34a;border-radius:8px;padding:14px">
+          <div style="font-size:13px;color:#86efac;font-weight:800;margin-bottom:6px">2️⃣ 균등 분배 (1클릭 자동)</div>
+          <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.5">콜센터 active 상담사 전원에게 미배정 풀 라운드로빈 균등 분배. S→A→B 우선순위로 자동 정렬.</div>
+          <div style="margin-bottom:8px">
+            <label style="font-size:11px;color:#cbd5e1">상담사당 최대 (옵션):
+              <input type="number" id="eq-max" min="0" placeholder="0 = 무제한" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 6px;border-radius:4px;font-size:11px;width:120px;margin-left:6px">
+            </label>
+          </div>
+          <button class="btn" style="width:100%;background:#16a34a;color:#fff;font-weight:800" onclick="executeEqualDistribute()">⚡ 균등 분배 실행</button>
+        </div>
+      </div>
+      <div id="eq-result" style="margin-top:6px;font-size:11.5px;color:#86efac"></div>
+
+      <!-- 🏢 센터별 분배 (admin) -->
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid #334155">
+        <h3 style="font-size:13px;color:#a5b4fc;font-weight:700;margin-bottom:8px">🏢 센터별 분배 (admin 전용)</h3>
+        <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px">미배정 풀에서 각 센터에 건수 할당 → 팀장이 본인 센터에서 상담사별 재분배</div>
+        <div id="center-allocations" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px"></div>
+        <button class="btn btn-success" onclick="executeCenterDistribute()">🏢 센터별 배정 실행</button>
+        <div id="center-allocations-result" style="margin-top:8px;font-size:11px;color:#86efac"></div>
+      </div>
     </div>
 
     <!-- 최근 batch -->
@@ -285,6 +316,7 @@ tr:hover { background:#334155; }
         </tr></thead>
         <tbody id="cust-tbody"><tr><td colspan="11" style="text-align:center;padding:20px;color:#64748b">로딩 중...</td></tr></tbody>
       </table>
+      <!-- (옛 detail/v2 위젯·import-mode 토글·hybrid 분배 카드 모두 제거) -->
       <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
         <button class="btn btn-secondary" onclick="prevPage()">← 이전</button>
         <span id="page-info" style="padding:8px;font-size:11.5px;color:#94a3b8">-</span>
@@ -332,12 +364,21 @@ tr:hover { background:#334155; }
         <div style="margin-top:3px">🎯 분배 대상: <b id="dist-target-count" style="color:#fbbf24">-</b>건 (선택한 상담사 + max)</div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
           <label style="font-size:11.5px;color:#94a3b8;font-weight:700;display:block;margin-bottom:4px">📍 센터 선택</label>
           <select id="dist-center" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 12px;border-radius:6px;font-size:13px">
             <option value="">전체 센터</option>
           </select>
+        </div>
+        <div>
+          <label style="font-size:11.5px;color:#94a3b8;font-weight:700;display:block;margin-bottom:4px">⭐ 등급 선택</label>
+          <div style="display:flex;gap:6px;padding-top:5px">
+            <label style="font-size:11px;color:#cbd5e1;cursor:pointer"><input type="checkbox" class="dist-grade" value="S" checked style="margin-right:2px"> S</label>
+            <label style="font-size:11px;color:#cbd5e1;cursor:pointer"><input type="checkbox" class="dist-grade" value="A" checked style="margin-right:2px"> A</label>
+            <label style="font-size:11px;color:#cbd5e1;cursor:pointer"><input type="checkbox" class="dist-grade" value="B" checked style="margin-right:2px"> B</label>
+            <label style="font-size:11px;color:#cbd5e1;cursor:pointer"><input type="checkbox" class="dist-grade" value="C" style="margin-right:2px"> C</label>
+          </div>
         </div>
         <div>
           <label style="font-size:11.5px;color:#94a3b8;font-weight:700;display:block;margin-bottom:4px">1인당 max (0=한도없음)</label>
@@ -424,6 +465,51 @@ async function loadAll() {
   loadStats(); loadDbSources(); loadBatches(); loadAgents(); loadCustomers(); loadCenterAllocations(); loadJobStatus();
 }
 
+let _monthlyChart = null;
+async function _unused_loadMonthlyContracts() {
+  try {
+    const r = await fetchAuth(CDB + '/stats/monthly-contracts?months=12');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d.rows?.length) return;
+    if (typeof Chart === 'undefined') {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = '/docs/vendor/chart.umd.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    const ctx = document.getElementById('monthly-contract-chart');
+    if (!ctx) return;
+    if (_monthlyChart) _monthlyChart.destroy();
+    const labels = d.rows.map(r => r.ym.slice(2)); // YY-MM
+    _monthlyChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: '계약 (전체)', type:'bar', data: d.rows.map(r => r.total_contracts), backgroundColor:'rgba(59,130,246,0.7)', borderColor:'#3b82f6', yAxisID:'y' },
+          { label: '완료', type:'bar', data: d.rows.map(r => r.completed), backgroundColor:'rgba(34,197,94,0.7)', borderColor:'#22c55e', yAxisID:'y' },
+          { label: '취소', type:'bar', data: d.rows.map(r => r.cancelled), backgroundColor:'rgba(220,38,38,0.6)', borderColor:'#dc2626', yAxisID:'y' },
+          { label: '월 매출 합계 (원)', type:'line', data: d.rows.map(r => r.monthly_fee_sum), borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.1)', tension:0.3, yAxisID:'y1' },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color:'#cbd5e1', font:{size:10} } } },
+        scales: {
+          x: { ticks:{color:'#94a3b8',font:{size:9}}, grid:{color:'rgba(148,163,184,0.1)'} },
+          y: { ticks:{color:'#94a3b8',font:{size:10}}, grid:{color:'rgba(148,163,184,0.1)'}, beginAtZero:true, position:'left', title:{display:true,text:'계약 건수',color:'#94a3b8',font:{size:10}} },
+          y1: { ticks:{color:'#fbbf24',font:{size:10},callback:v => (v/10000).toFixed(0)+'만'}, grid:{drawOnChartArea:false}, beginAtZero:true, position:'right', title:{display:true,text:'매출(원)',color:'#fbbf24',font:{size:10}} },
+        },
+      },
+    });
+  } catch (e) { console.warn('[loadMonthlyContracts]', e); }
+}
+
+// 큐콜 v2 dashboard 함수 — 원복으로 제거됨
+
 async function loadCenterAllocations() {
   const r = await fetchAuth(CDB + '/pool/centers');
   if (!r.ok) return;
@@ -441,6 +527,25 @@ async function loadCenterAllocations() {
     </div>
   `).join('');
   div.innerHTML = html;
+}
+
+async function executeEqualDistribute() {
+  const max_per_agent = parseInt(document.getElementById('eq-max').value) || 0;
+  const resEl = document.getElementById('eq-result');
+  resEl.textContent = '⏳ 분배 중...';
+  try {
+    const r = await fetchAuth(CDB + '/distribute/equal', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ max_per_agent })  // 등급 옵션 생략 → 서버 default ['S','A','B']
+    });
+    const d = await r.json();
+    if (!r.ok) { resEl.innerHTML = `<span style="color:#fca5a5">❌ ${d.error || '실패'}</span>`; return; }
+    if (!d.distributed) { resEl.innerHTML = '<span style="color:#fbbf24">⚠️ 미배정 풀 비어있음</span>'; return; }
+    const lines = (d.breakdown || []).map(b => `${b.name}(${b.center}) ${b.assigned}건`).join(' · ');
+    resEl.innerHTML = `<span style="color:#86efac">✅ <b>${d.distributed.toLocaleString()}건 분배</b> — ${lines}</span>`;
+    showToast(`✅ 균등 분배 ${d.distributed.toLocaleString()}건`);
+    loadAll();
+  } catch (e) { resEl.innerHTML = `<span style="color:#fca5a5">❌ ${e.message}</span>`; }
 }
 
 async function executeCenterDistribute() {
@@ -833,6 +938,93 @@ async function loadCustomers() {
   }).join('');
 }
 
+// ═══════════════════════════════════════════════════════════════
+// customer 상세 모달 — 풍부 정보 + 해피콜 history
+// ═══════════════════════════════════════════════════════════════
+async function openCustomerDetail(customerId) {
+  let modal = document.getElementById('cust-detail-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'cust-detail-modal';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:99999;justify-content:center;align-items:flex-start;padding:30px 20px;overflow-y:auto';
+    modal.innerHTML = `<div style="background:#1e293b;border:1.5px solid #3b82f6;border-radius:12px;padding:22px 26px;width:880px;max-width:100%;max-height:90vh;overflow-y:auto;color:#e2e8f0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h2 id="cd-title" style="font-size:16px;color:#60a5fa;margin:0">고객 상세</h2>
+        <button onclick="document.getElementById('cust-detail-modal').style.display='none'" style="background:#475569;color:#fff;border:0;padding:5px 12px;border-radius:5px;cursor:pointer">닫기</button>
+      </div>
+      <div id="cd-content" style="font-size:12px;line-height:1.7"></div>
+    </div>`;
+    modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+    document.body.appendChild(modal);
+  }
+  modal.style.display = 'flex';
+  document.getElementById('cd-content').innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8">로딩 중...</div>';
+
+  const [cR, hR] = await Promise.all([
+    fetchAuth(CDB + '/' + customerId).then(r => r.ok ? r.json() : null),
+    fetchAuth(CDB + '/' + customerId + '/happycall-history').then(r => r.ok ? r.json() : null),
+  ]);
+  if (!cR) { document.getElementById('cd-content').innerHTML = '<div style="color:#fca5a5">조회 실패</div>'; return; }
+  const c = cR.customer || cR;
+  const logs = cR.call_logs || [];
+  const surveys = (hR && hR.surveys) || [];
+
+  document.getElementById('cd-title').textContent = `${c.name} · ${c.phone} · 만 ${c.age || '?'}세`;
+  const fmtMoney = (n) => n != null ? n.toLocaleString() + '원' : '-';
+  const sec = (title, body) => `<div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:12px 14px;margin-bottom:10px"><div style="font-weight:800;color:#a5b4fc;margin-bottom:6px">${title}</div>${body}</div>`;
+
+  const internetSec = c.current_internet_status
+    ? `<div>현재 인터넷: <b>${c.current_internet_status === 'subscribed' ? c.current_internet_carrier + (c.current_internet_signup_year ? ' (' + c.current_internet_signup_year + '~)' : '') : c.current_internet_status === 'none' ? '미가입' : '모름'}</b></div><div style="font-size:10px;color:#94a3b8">청취: ${(c.current_internet_listened_at||'').slice(0,16).replace('T',' ')}</div>`
+    : '<div style="color:#fbbf24">⚠️ 아직 청취되지 않음</div>';
+
+  const recCarriers = c.current_internet_status === 'subscribed' && c.current_internet_carrier
+    ? ['SK','KT','LG'].filter(x => x !== c.current_internet_carrier).join(' · ')
+    : c.current_internet_status === 'none' ? 'SK · KT · LG (자유)' : '청취 후 자동 산출';
+
+  const surveysHTML = surveys.length ? surveys.map(s => `
+    <div style="border-left:3px solid #3b82f6;padding:8px 12px;margin-bottom:6px;background:rgba(59,130,246,0.05)">
+      <div style="font-size:10px;color:#94a3b8">${(s.surveyed_at||'').slice(0,16).replace('T',' ')} · ${esc(s.agent?.name || '?')}</div>
+      <div>⭐ 만족도 — 단말 ${s.device_satisfaction||'-'} · 요금 ${s.plan_satisfaction||'-'} · 신호 ${s.signal_quality||'-'} · 매장 ${s.store_satisfaction||'-'} · NPS ${s.nps_score!=null?s.nps_score:'-'}</div>
+      ${s.next_action ? `<div>📌 다음 액션: <b style="color:#86efac">${esc(s.next_action)}</b></div>` : ''}
+      ${s.upsell_interest && Object.values(s.upsell_interest).some(v=>v) ? `<div>🎯 관심: ${Object.entries(s.upsell_interest).filter(([,v])=>v).map(([k])=>k).join(', ')}</div>` : ''}
+      ${s.free_comment ? `<div style="color:#cbd5e1">💬 ${esc(s.free_comment)}</div>` : ''}
+      ${s.cs_escalation_reason ? `<div style="color:#fca5a5">⚠️ CS 사유: ${esc(s.cs_escalation_reason)}</div>` : ''}
+    </div>
+  `).join('') : '<div style="color:#94a3b8">아직 응답 없음</div>';
+
+  const callLogsHTML = logs.length ? logs.slice(0, 10).map(l => `
+    <div style="font-size:11px;padding:4px 0;border-bottom:1px dotted #334155"><span style="color:#94a3b8">${(l.created_at||'').slice(5,16).replace('T',' ')}</span> · ${esc(l.call_status||'')} ${l.notes ? '· ' + esc(l.notes) : ''}</div>
+  `).join('') : '<div style="color:#94a3b8">통화 이력 없음</div>';
+
+  document.getElementById('cd-content').innerHTML =
+    sec('📋 기본 정보',
+      `<div>이름: <b>${esc(c.name)}</b> · 전화: ${esc(c.phone)} · 만 ${c.age||'?'}세 · 생일 ${(c.birth_date||'').slice(0,10) || '-'}</div>` +
+      `<div>휴대폰 통신사: <b>${esc(c.carrier)||'-'}</b> · ${esc(c.subscription_type)||'-'} · ${esc(c.payment_type)||'-'}/${esc(c.subsidy_type)||'-'}</div>` +
+      `<div>매장: <b>${esc(c.store)||'-'}</b> · 판매담당: ${esc(c.dealer)||'-'} · 대리점: ${esc(c.agency_code)||'-'}</div>` +
+      `<div>개통일: <b>${esc(c.activation_date)||'-'}</b></div>`
+    ) +
+    sec('📱 단말·요금제',
+      `<div>단말: <b>${esc(c.device_model)||'-'}</b> ${esc(c.device_color)||''} ${c.device_serial ? '(S/N ' + esc(c.device_serial) + ')' : ''}</div>` +
+      `<div>요금제: <b>${esc(c.plan_name)||'-'}</b> · 부가: ${esc(c.addon_services)||'-'}</div>` +
+      `<div>출고가 ${fmtMoney(c.retail_price)} · 공시지원 ${fmtMoney(c.public_subsidy)} · 추가지원 ${fmtMoney(c.extra_subsidy)} · <b>현금가 ${fmtMoney(c.cash_price)}</b> · 할부원금 ${fmtMoney(c.installment_principal)}</div>`
+    ) +
+    sec('🎯 TM CRM 분류',
+      `<div>Tier: <b>${c.tier === 1 ? '1차 인터넷·TV 권유' : c.tier === 2 ? '2차 렌탈 권유' : '-'}</b> · 카테고리: ${esc(c.category)||'-'} · priority ${c.priority_score||0}</div>` +
+      (c.on_hold_reason ? `<div style="color:#fbbf24">⏸ on_hold: ${esc(c.on_hold_reason)}</div>` : '') +
+      (c.cs_escalated ? `<div style="color:#fca5a5">⚠️ CS 이관 — 매장 처리 필요</div>` : '')
+    ) +
+    sec('🌐 현재 인터넷 (청취 결과)',
+      internetSec + `<div>🎯 권유 가능 통신사: <b>${recCarriers}</b></div>`
+    ) +
+    sec('📝 영업 메모',
+      `<div>${esc(c.memo_etc) || '<i style="color:#94a3b8">없음</i>'}</div>` +
+      (c.memo_activation ? `<div style="margin-top:6px;color:#cbd5e1">개통실 메모: ${esc(c.memo_activation)}</div>` : '') +
+      (c.notes ? `<div style="margin-top:6px;background:#0f172a;padding:6px 10px;border-radius:5px">상담사 메모: ${esc(c.notes)}</div>` : '')
+    ) +
+    sec('⭐ 해피콜 응답 history (' + surveys.length + '건)', surveysHTML) +
+    sec('📞 통화 이력 (' + logs.length + '건, 최근 10)', callLogsHTML);
+}
+
 async function toggleDnt(customerId, checked, el) {
   const action = checked ? '수신거부 등록' : '수신거부 해제';
   if (!confirm(`${action}하시겠습니까?\n${checked ? '— 향후 분배·재시도에서 자동 제외됩니다.' : '— 다시 분배·재시도 가능 상태로 복귀합니다.'}`)) {
@@ -877,12 +1069,14 @@ document.getElementById('file-input').addEventListener('change', e => {
 async function handleFile(file) {
   const sourceId = document.getElementById('i-source').value;
   if (!sourceId) { alert('DB 출처 먼저 선택'); return; }
+  const mode = document.querySelector('input[name="import-mode"]:checked')?.value || 'simple';
   const result = document.getElementById('import-result');
-  result.textContent = '⏳ 업로드 + 검증 중... ' + file.name;
+  result.textContent = `⏳ 업로드 + 검증 중 (${mode})... ` + file.name;
 
   const fd = new FormData();
   fd.append('file', file);
   fd.append('db_source_id', sourceId);
+  fd.append('mode', mode);
 
   try {
     const r = await fetch(CDB + '/import', {
@@ -892,12 +1086,24 @@ async function handleFile(file) {
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || '실패');
-    result.innerHTML = `
-      <div style="color:#86efac">✅ 완료 — 전체 ${d.total} / 적재 <b>${d.inserted}</b> / 중복 ${d.duplicates} / 오류 ${d.invalid}</div>
-      ${d.errors?.length ? `<div style="font-size:10.5px;color:#fca5a5;margin-top:6px">오류 예시: ${d.errors.slice(0,5).map(e => `행${e.row}-${e.reason}`).join(' / ')}</div>` : ''}
-      <div style="margin-top:6px;color:#94a3b8">batch_id: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">${d.batch_id}</code></div>
-    `;
-    showToast('✅ Import 완료 — ' + d.inserted + '건');
+    if (mode === 'closing_ledger') {
+      const cd = d.category_dist || {};
+      result.innerHTML = `
+        <div style="color:#86efac;font-weight:700">✅ 마감원장 import 완료</div>
+        <div>엑셀 ${d.excel_rows} → 필터 ${d.filtered} → 통합 customer ${d.customers}</div>
+        <div>적재 <b style="color:#fbbf24">${d.inserted}</b> · 중복 ${d.duplicates} · on_hold ${d.on_hold} · 실패 ${d.failed}</div>
+        <div style="margin-top:6px">📊 1차 ${d.tier_dist?.[1] || 0}명 (이동 ${cd['이동']||0} · 신규 ${cd['신규']||0} · 기변 ${cd['기변']||0}) · 2차 렌탈 ${d.tier_dist?.[2] || 0}명</div>
+        <div style="margin-top:6px;color:#94a3b8">batch_id: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">${d.batch_id}</code></div>
+      `;
+      showToast('✅ 마감원장 import — ' + d.inserted + '명');
+    } else {
+      result.innerHTML = `
+        <div style="color:#86efac">✅ 완료 — 전체 ${d.total} / 적재 <b>${d.inserted}</b> / 중복 ${d.duplicates} / 오류 ${d.invalid}</div>
+        ${d.errors?.length ? `<div style="font-size:10.5px;color:#fca5a5;margin-top:6px">오류 예시: ${d.errors.slice(0,5).map(e => `행${e.row}-${e.reason}`).join(' / ')}</div>` : ''}
+        <div style="margin-top:6px;color:#94a3b8">batch_id: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">${d.batch_id}</code></div>
+      `;
+      showToast('✅ Import 완료 — ' + d.inserted + '건');
+    }
     loadAll();
   } catch (e) {
     result.innerHTML = `<div style="color:#fca5a5">❌ ${e.message}</div>`;
@@ -1162,8 +1368,10 @@ document.addEventListener('change', e => {
 async function executeDistribute() {
   const ids = Array.from(document.querySelectorAll('#dist-agents input:checked')).map(i => i.value);
   if (!ids.length) { alert('상담사 1명 이상 선택'); return; }
+  const grades = Array.from(document.querySelectorAll('.dist-grade:checked')).map(i => i.value);
+  if (!grades.length) { alert('등급 1개 이상 선택'); return; }
   const max = parseInt(document.getElementById('dist-max-per-agent').value) || 0;
-  const body = { method: 'round_robin', agent_ids: ids, max_per_agent: max };
+  const body = { method: 'round_robin', agent_ids: ids, max_per_agent: max, grades };
   if (_state.currentBatch) body.batch_id = _state.currentBatch;
 
   const r = await fetchAuth(CDB + '/distribute', {
@@ -1172,7 +1380,7 @@ async function executeDistribute() {
   });
   const d = await r.json();
   if (!r.ok) { alert(d.error); return; }
-  showToast(`🎯 ${d.distributed.toLocaleString()}건 분배 완료 (${ids.length}명, 1인당 max ${max||'∞'})`);
+  showToast(`🎯 ${d.distributed.toLocaleString()}건 분배 완료 (${ids.length}명·등급 ${grades.join('/')}·1인당 max ${max||'∞'})`);
   closeDistribute();
   loadAll();
 }

@@ -1462,6 +1462,40 @@ init();
   </div>
 </section>
 
+<!-- 📞 콜DB 그룹별 실적 (통신사·등급·카테고리·tier) -->
+<section style="margin-top:24px;padding:18px;background:linear-gradient(135deg,#0f172a,#1e293b);border:1px solid #334155;border-radius:12px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <h2 style="font-size:16px;color:#f8fafc;font-weight:800;letter-spacing:-0.02em">📞 콜DB 그룹별 실적</h2>
+    <div style="font-size:11px;color:#94a3b8">전체 active customer 기준 · 컨택률 = 콜 시도 성공률 · 전환율 = 계약 성사율</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px">
+      <h3 style="font-size:12px;color:#fde68a;font-weight:800;margin-bottom:8px">📡 통신사별</h3>
+      <div id="dash-perf-carrier" class="dash-perf-body"></div>
+    </div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px">
+      <h3 style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:8px">⭐ DB 등급별</h3>
+      <div id="dash-perf-grade" class="dash-perf-body"></div>
+    </div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px">
+      <h3 style="font-size:12px;color:#86efac;font-weight:800;margin-bottom:8px">🏷️ 카테고리별</h3>
+      <div id="dash-perf-category" class="dash-perf-body"></div>
+    </div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px">
+      <h3 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">🎯 Tier별</h3>
+      <div id="dash-perf-tier" class="dash-perf-body"></div>
+    </div>
+  </div>
+  <style>
+    .dash-perf-body table { width:100%; font-size:11px; border-collapse:collapse; }
+    .dash-perf-body th { color:#94a3b8; font-weight:700; text-align:right; padding:4px 6px; border-bottom:1px solid rgba(255,255,255,0.1); font-size:10px; }
+    .dash-perf-body th:first-child { text-align:left; }
+    .dash-perf-body td { color:#e2e8f0; padding:4px 6px; text-align:right; border-bottom:1px dashed rgba(255,255,255,0.05); }
+    .dash-perf-body td:first-child { text-align:left; color:#cbd5e1; font-weight:700; }
+    .dash-perf-body tr:last-child td { border-bottom:none; }
+  </style>
+</section>
+
 <script>
 let _charts = {};
 function makeChart(id, type, data, opt = {}) {
@@ -1573,6 +1607,45 @@ async function loadCharts() {
 }
 
 setTimeout(loadCharts, 800);
+
+// 📞 콜DB 그룹별 실적 (통신사·등급·카테고리·tier)
+async function loadCallDbPerf() {
+  try {
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    if (!tk) return;
+    const r = await fetch('/api/customer-db/stats/summary', { headers: { Authorization: 'Bearer ' + tk } });
+    if (!r.ok) return;
+    const s = await r.json();
+    const renderPerf = (id, dist, labelMap = {}) => {
+      const el = document.getElementById(id); if (!el) return;
+      const entries = Object.entries(dist || {}).filter(([k, v]) => (v.total || 0) > 0).sort((a,b) => b[1].total - a[1].total);
+      if (!entries.length) { el.innerHTML = '<div style="color:#64748b;font-size:11px">데이터 없음</div>'; return; }
+      const rows = entries.map(([k, v]) => {
+        const label = labelMap[k] || k;
+        const cr = (v.contact_rate || 0).toFixed(1);
+        const vr = (v.conversion_rate || 0).toFixed(1);
+        const vrColor = vr >= 5 ? '#86efac' : vr >= 1 ? '#fbbf24' : '#94a3b8';
+        return `<tr>
+          <td>${label}</td>
+          <td>${(v.total||0).toLocaleString()}</td>
+          <td>${(v.contacted||0).toLocaleString()}</td>
+          <td>${cr}%</td>
+          <td>${(v.converted||0).toLocaleString()}</td>
+          <td style="color:${vrColor};font-weight:700">${vr}%</td>
+        </tr>`;
+      }).join('');
+      el.innerHTML = `<table>
+        <thead><tr><th>구분</th><th>전체</th><th>컨택</th><th>컨택률</th><th>전환</th><th>전환율</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    };
+    renderPerf('dash-perf-carrier', s.by_carrier);
+    renderPerf('dash-perf-grade', s.by_grade, { S:'⭐ S (이동)', A:'⭐ A (신규·렌탈)', B:'⭐ B (기변)', C:'⭐ C' });
+    renderPerf('dash-perf-category', s.by_category, { '이동':'🔥 이동', '신규':'✨ 신규', '기변':'⚠️ 기변', '렌탈권유':'🏠 렌탈권유' });
+    renderPerf('dash-perf-tier', s.by_tier, { '1':'1차 인터넷·TV', '2':'2차 렌탈' });
+  } catch (e) { console.warn('[loadCallDbPerf]', e); }
+}
+setTimeout(loadCallDbPerf, 1200);
 </script>
 
 </body>

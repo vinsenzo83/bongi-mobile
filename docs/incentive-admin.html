@@ -213,7 +213,9 @@ const G_AUTH = '/api/auth';
 const G_TOKEN_KEY = 'incentive-auth-token-v1';
 const G_REFRESH_KEY = 'incentive-refresh-token-v1';
 const G_LAST_TAB_KEY = 'incentive-admin-last-tab';
-const G_MENUS_CACHE_KEY = 'incentive-admin-my-menus-v1';
+const G_MENUS_CACHE_KEY = 'incentive-admin-my-menus-v3';
+// 옛 v1·v2 캐시 정리 — 큐콜 v2 원복으로 메뉴 매트릭스 재정렬
+try { localStorage.removeItem('incentive-admin-my-menus-v1'); localStorage.removeItem('incentive-admin-my-menus-v2'); } catch(e) {}
 const gGetToken = () => localStorage.getItem(G_TOKEN_KEY);
 const gSetToken = (t) => localStorage.setItem(G_TOKEN_KEY, t);
 const gClearToken = () => { localStorage.removeItem(G_TOKEN_KEY); localStorage.removeItem(G_REFRESH_KEY); localStorage.removeItem(G_MENUS_CACHE_KEY); };

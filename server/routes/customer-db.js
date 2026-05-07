@@ -73,9 +73,11 @@ router.post('/import', upload.single('file'), async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
 
-    const { db_source_id } = req.body;
+    const { db_source_id, mode } = req.body;
     if (!db_source_id) return res.status(400).json({ error: 'db_source_id 필수' });
     if (!req.file) return res.status(400).json({ error: '파일 첨부 필수' });
+
+    const importMode = mode === 'closing_ledger' ? 'closing_ledger' : 'simple';
 
     // CSV/엑셀 파싱 (xlsx 라이브러리 동적 import — 큰 의존성)
     let rows;
@@ -88,6 +90,12 @@ router.post('/import', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: '엑셀 파일 파싱 실패' + (_isProd ? '' : ': ' + e.message) });
     }
     if (!rows.length) return res.status(400).json({ error: '데이터 행 없음' });
+
+    // 마감원장 모드: 워치·미성년·100세 제외 + 이름+생년월일 통합 + 1차/2차 분류 + phone 충돌 on_hold
+    if (importMode === 'closing_ledger') {
+      const result = await importClosingLedger({ rows, db_source_id, me, userId: req.user.id, ip: req.ip, ua: req.get('user-agent') });
+      return res.json(result);
+    }
 
     // 헤더 매핑 (한글/영문)
     const FIELD_MAP = {
@@ -347,12 +355,144 @@ router.get('/:id(\\d+)', async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // 6. POST /api/customer-db/distribute — 자동 분배 (admin/manager)
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// 6-EQ. POST /api/customer-db/distribute/equal — 균등 분배 (1클릭)
+// ═══════════════════════════════════════════════════════════════
+router.post('/distribute/equal', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+
+    const { center, max_per_agent = 0 } = req.body || {};
+    const targetCenter = me.role === 'manager' ? me.center : (center || null);
+
+    // 콜센터 active agent 자동 조회
+    let aq = supabase.from('incentive_agents').select('id, name, center').eq('active', true).in('role', ['agent','manager']);
+    if (targetCenter) aq = aq.eq('center', targetCenter);
+    const { data: agents, error: ae } = await aq;
+    if (ae) throw ae;
+    if (!agents || !agents.length) return res.status(400).json({ error: '분배 대상 상담사 없음' });
+
+    const agent_ids = agents.map(a => a.id);
+
+    // 미배정 풀 가져오기 (priority_score DESC)
+    const totalLimit = max_per_agent > 0 ? max_per_agent * agent_ids.length : 100000;
+    let q = supabase.from('incentive_customer_db')
+      .select('id, priority_score').is('deleted_at', null).is('assigned_agent_id', null).eq('archived', false);
+    if (me.role === 'manager') q = q.eq('assigned_center', me.center);
+    q = q.order('priority_score', { ascending: false, nullsFirst: false })
+         .order('imported_at', { ascending: true })
+         .limit(totalLimit);
+    const { data: targets, error: e1 } = await q;
+    if (e1) throw e1;
+    if (!targets.length) return res.json({ ok: true, distributed: 0, message: '미배정 풀 비어있음' });
+
+    // 라운드로빈
+    const updates = targets.map((t, i) => ({
+      id: t.id,
+      assigned_agent_id: agent_ids[i % agent_ids.length],
+      assigned_center: targetCenter,
+      assigned_at: new Date().toISOString(),
+      assigned_by_user_id: req.user.id,
+    }));
+
+    let total = 0;
+    for (let i = 0; i < updates.length; i += 500) {
+      const chunk = updates.slice(i, i + 500);
+      const { error } = await supabase.from('incentive_customer_db').upsert(chunk);
+      if (error) throw error;
+      total += chunk.length;
+    }
+
+    logAccess({
+      user_id: req.user.id, action: 'distribute_equal', ip: req.ip, ua: req.get('user-agent'),
+      metadata: { center: targetCenter, agent_count: agent_ids.length, distributed: total, max_per_agent },
+    });
+
+    // 상담사별 분배 카운트
+    const perAgent = {};
+    updates.forEach(u => { perAgent[u.assigned_agent_id] = (perAgent[u.assigned_agent_id] || 0) + 1; });
+    const breakdown = agents.map(a => ({ id: a.id, name: a.name, center: a.center, assigned: perAgent[a.id] || 0 }));
+
+    res.json({ ok: true, distributed: total, agent_count: agent_ids.length, center: targetCenter, breakdown });
+  } catch (e) {
+    console.error('[distribute/equal]', e);
+    res.status(500).json({ error: sanitizeErr(e) });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 6-EQ. POST /api/customer-db/distribute/equal — 균등 분배 (1클릭)
+//   - 콜센터 active agent 자동 조회
+//   - 미배정 풀 → quality_grade·priority_score 우선순위 → 라운드로빈
+// ═══════════════════════════════════════════════════════════════
+router.post('/distribute/equal', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+
+    const { center, max_per_agent = 0, grades = ['S','A','B'] } = req.body || {};
+    const targetCenter = me.role === 'manager' ? me.center : (center || null);
+
+    let aq = supabase.from('incentive_agents').select('id, name, center').eq('active', true).in('role', ['agent','manager']);
+    if (targetCenter) aq = aq.eq('center', targetCenter);
+    const { data: agents, error: ae } = await aq;
+    if (ae) throw ae;
+    if (!agents || !agents.length) return res.status(400).json({ error: '분배 대상 상담사 없음' });
+
+    const agent_ids = agents.map(a => a.id);
+    const totalLimit = max_per_agent > 0 ? max_per_agent * agent_ids.length : 100000;
+
+    let q = supabase.from('incentive_customer_db')
+      .select('id, quality_grade, priority_score').is('deleted_at', null).is('assigned_agent_id', null).eq('archived', false)
+      .in('quality_grade', grades);
+    if (me.role === 'manager') q = q.eq('assigned_center', me.center);
+    q = q.order('quality_grade', { ascending: true })
+         .order('priority_score', { ascending: false, nullsFirst: false })
+         .order('imported_at', { ascending: true })
+         .limit(totalLimit);
+    const { data: targets, error: e1 } = await q;
+    if (e1) throw e1;
+    if (!targets.length) return res.json({ ok: true, distributed: 0, message: '미배정 풀 비어있음' });
+
+    const updates = targets.map((t, i) => ({
+      id: t.id,
+      assigned_agent_id: agent_ids[i % agent_ids.length],
+      assigned_center: targetCenter,
+      assigned_at: new Date().toISOString(),
+      assigned_by_user_id: req.user.id,
+    }));
+
+    let total = 0;
+    for (let i = 0; i < updates.length; i += 500) {
+      const chunk = updates.slice(i, i + 500);
+      const { error } = await supabase.from('incentive_customer_db').upsert(chunk);
+      if (error) throw error;
+      total += chunk.length;
+    }
+
+    logAccess({
+      user_id: req.user.id, action: 'distribute_equal', ip: req.ip, ua: req.get('user-agent'),
+      metadata: { center: targetCenter, agent_count: agent_ids.length, distributed: total, grades },
+    });
+
+    const perAgent = {};
+    updates.forEach(u => { perAgent[u.assigned_agent_id] = (perAgent[u.assigned_agent_id] || 0) + 1; });
+    const breakdown = agents.map(a => ({ id: a.id, name: a.name, center: a.center, assigned: perAgent[a.id] || 0 }));
+
+    res.json({ ok: true, distributed: total, agent_count: agent_ids.length, center: targetCenter, breakdown, grades });
+  } catch (e) {
+    console.error('[distribute/equal]', e);
+    res.status(500).json({ error: sanitizeErr(e) });
+  }
+});
+
 router.post('/distribute', async (req, res) => {
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
 
-    const { batch_id, method = 'round_robin', agent_ids = [], max_per_agent = 0 } = req.body || {};
+    const { batch_id, method = 'round_robin', agent_ids = [], max_per_agent = 0, grades = null } = req.body || {};
     if (!Array.isArray(agent_ids) || !agent_ids.length) return res.status(400).json({ error: 'agent_ids 필수' });
 
     // manager는 본인 센터 상담사만
@@ -362,17 +502,14 @@ router.post('/distribute', async (req, res) => {
       if (agent_ids.some(id => !valid.has(id))) return res.status(403).json({ error: '센터 외 상담사 포함' });
     }
 
-    // 미분배 customer 가져오기 (batch 지정 또는 전체 풀)
     const totalLimit = max_per_agent > 0 ? max_per_agent * agent_ids.length : 100000;
     let q = supabase.from('incentive_customer_db')
       .select('id').is('deleted_at', null).is('assigned_agent_id', null).eq('archived', false);
     if (batch_id) q = q.eq('imported_batch_id', batch_id);
-
-    // manager는 본인 센터에 배정된 customer만 분배 가능
+    if (Array.isArray(grades) && grades.length) q = q.in('quality_grade', grades);
     if (me.role === 'manager') q = q.eq('assigned_center', me.center);
-    // admin은 전체 풀에서 (assigned_center 무관)
 
-    q = q.order('priority_score', { ascending: false }).order('imported_at', { ascending: true }).limit(totalLimit);
+    q = q.order('quality_grade', { ascending: true }).order('priority_score', { ascending: false }).order('imported_at', { ascending: true }).limit(totalLimit);
     const { data: targets, error: e1 } = await q;
     if (e1) throw e1;
     if (!targets.length) return res.json({ ok: true, distributed: 0, message: '분배할 customer 없음 (미배정 풀 비어있음)' });
@@ -434,11 +571,15 @@ router.post('/:id(\\d+)/log', async (req, res) => {
     if (me.role === 'agent' && cust.assigned_agent_id !== me.id)
       return res.status(403).json({ error: '본인 분배 외 기록 불가' });
 
-    // 1) call_log 추가
-    await supabase.from('incentive_customer_call_log').insert({
+    // 1) call_log 추가 (error 캐치 — sequence 충돌 등 silent fail 방지)
+    const { error: logErr } = await supabase.from('incentive_customer_call_log').insert({
       customer_id: cust.id, agent_id: me.id, result,
       notes: notes || null, callback_at: callback_at || null, reject_reason: reject_reason || null,
     });
+    if (logErr) {
+      console.error('[customer log INSERT 실패]', logErr);
+      throw logErr;
+    }
 
     // 2) customer 상태 업데이트 (재컨택 룰 적용)
     const now = new Date();
@@ -563,11 +704,48 @@ router.get('/stats/summary', async (req, res) => {
     const { count: archived } = await baseFilter(supabase.from('incentive_customer_db').select('id', { count: 'exact', head: true }))
       .eq('archived', true);
 
+    // 🆕 그룹별 실적 (head:true count — 1000 row 제한 무관)
+    const CONTACT = ['contacted','callback','rejected','converted'];
+    const groupPerf = async (col, value) => {
+      const baseQ = () => baseFilter(supabase.from('incentive_customer_db').select('id', { count:'exact', head:true })).eq('archived', false).eq(col, value);
+      const [t, c, v] = await Promise.all([
+        baseQ(),
+        baseQ().in('call_status', CONTACT),
+        baseQ().eq('call_status', 'converted'),
+      ]);
+      const total = t.count || 0;
+      const contacted = c.count || 0;
+      const converted = v.count || 0;
+      return {
+        total,
+        contacted,
+        converted,
+        contact_rate: total ? +(contacted / total * 100).toFixed(1) : 0,
+        conversion_rate: total ? +(converted / total * 100).toFixed(1) : 0,
+      };
+    };
+
+    const carriers = ['SK','KT','LG'];
+    const grades = ['S','A','B','C'];
+    const categories = ['이동','신규','기변','렌탈권유'];
+    const tiers = [1, 2];
+
+    const [byCarrier, byGrade, byCategory, byTier] = await Promise.all([
+      Promise.all(carriers.map(async c => [c, await groupPerf('carrier', c)])).then(arr => Object.fromEntries(arr)),
+      Promise.all(grades.map(async g => [g, await groupPerf('quality_grade', g)])).then(arr => Object.fromEntries(arr)),
+      Promise.all(categories.map(async c => [c, await groupPerf('category', c)])).then(arr => Object.fromEntries(arr)),
+      Promise.all(tiers.map(async t => [t, await groupPerf('tier', t)])).then(arr => Object.fromEntries(arr)),
+    ]);
+
     res.json({
       role: me.role,
       total_active: totalActive || 0,
       archived: archived || 0,
       by_status: result,
+      by_carrier: byCarrier,
+      by_grade: byGrade,
+      by_category: byCategory,
+      by_tier: byTier,
       contact_rate: result.contacted + result.callback + result.rejected + result.converted > 0
         ? ((result.contacted + result.callback + result.rejected + result.converted) / (totalActive || 1) * 100).toFixed(1) + '%'
         : '0%',
@@ -1317,6 +1495,531 @@ router.get('/stats/timeseries', async (req, res) => {
       .sort((a,b) => b.convert - a.convert || b.contact - a.contact);
 
     res.json({ days, total_calls: (logs||[]).length, by_hour: hours, by_dow: dows, by_day: daily, by_agent: agents });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 마감원장(closing_ledger) import 헬퍼
+// ═══════════════════════════════════════════════════════════════
+async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
+  const isWatch = (d) => /^L/.test(String(d || ''));
+  // 인터넷·TV row 판단 — type='유선' 또는 model이 '인+TV'/'인터넷'/'유선' (유심·기타 안 잡음)
+  const isInternetTV = (model, type) => {
+    if (type === '유선') return true;
+    const m = String(model || '').trim();
+    return m === '인+TV' || m === '인터넷' || m === '유선' || m.startsWith('인');
+  };
+  const excelToDate = (s) => {
+    if (typeof s !== 'number' || s < 1) return null;
+    const d = new Date((s - 25569) * 86400 * 1000);
+    return isNaN(d.getTime()) ? null : d;
+  };
+  const ageAt = (s, ref) => {
+    const d = excelToDate(s); if (!d) return null;
+    let a = ref.getFullYear() - d.getFullYear();
+    if (ref.getMonth() < d.getMonth() || (ref.getMonth() === d.getMonth() && ref.getDate() < d.getDate())) a--;
+    return a;
+  };
+  const dateISO = (d) => d ? d.toISOString().slice(0, 10) : null;
+  const parseActDate = (s) => {
+    if (!s) return null;
+    const m = String(s).match(/(\d{4})\.\s*(\d+)\.\s*(\d+)/);
+    if (!m) return null;
+    return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  };
+  const cleanPhone = (p) => String(p || '').replace(/[^0-9]/g, '');
+  const intOrNull = (v) => { const n = parseInt(v); return isNaN(n) ? null : n; };
+  const REF = new Date();
+
+  const filtered = rows.filter(r => {
+    if (isWatch(r.단말)) return false;
+    const a = ageAt(r.생년월일, REF);
+    if (a === null || a < 19 || a >= 100) return false;
+    const ph = cleanPhone(r.전화번호);
+    if (!/^01[016789][0-9]{7,8}$/.test(ph)) return false;
+    if (!String(r.고객명 || '').trim()) return false;
+    if (!r.생년월일) return false;
+    return true;
+  });
+
+  // 통합
+  const groups = new Map();
+  filtered.forEach(r => {
+    const k = String(r.고객명).trim() + '|' + r.생년월일;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  });
+
+  // ═══ 분류 룰 ═══════════════════════════════════════════════
+  // 1) tier 결정 — 그룹 안에 인터넷·TV row가 있으면 tier=2, 없으면 tier=1
+  //    (인터넷·TV row 판단: isInternetTV — type='유선' or model='인+TV'/'인터넷'/'유선'/'인*')
+  //    ※ '유심'은 휴대폰 회선만 변경(USIM 발급)이므로 인터넷·TV 아님 → tier=1
+  // 2) category 결정
+  //    tier=2 → '렌탈권유' (priority 50)
+  //    tier=1:
+  //      - '이동' 우선 (priority 100, 통신사 이동 = 결합 깨기 좋음)
+  //      - '신규' (priority 80, 신규 가입자 = 인터넷도 신규 자유)
+  //      - '기변' (priority 30, 기존 결합 가능성 높음)
+  //      - 그 외 → '기타' (priority 10)
+  // 3) 한 사람의 여러 회선 → 우선순위 높은 유형 1개로 통합
+  // ═════════════════════════════════════════════════════════════
+  // 등급 + 나이 가중치 헬퍼
+  const calcGrade = (t, c) => {
+    if (t === 1 && c === '이동') return 'S';
+    if (t === 1 && c === '신규') return 'A';
+    if (t === 2) return 'A';
+    if (t === 1 && c === '기변') return 'B';
+    return 'C';
+  };
+  const calcAgeBonus = (a) => {
+    if (a == null) return 0;
+    if (a < 30) return 20;
+    if (a < 40) return 25;
+    if (a < 50) return 25;
+    if (a < 60) return 15;
+    if (a < 70) return 0;
+    return -30;
+  };
+
+  const customers = [];
+  groups.forEach((gRows, key) => {
+    const hasInternet = gRows.some(r => isInternetTV(r.단말, r.유형));
+    let tier, category, basePriority;
+    if (hasInternet) { tier = 2; category = '렌탈권유'; basePriority = 50; }
+    else {
+      const types = gRows.map(r => r.유형);
+      if (types.includes('이동')) { tier = 1; category = '이동'; basePriority = 100; }
+      else if (types.includes('신규')) { tier = 1; category = '신규'; basePriority = 80; }
+      else if (types.includes('기변')) { tier = 1; category = '기변'; basePriority = 30; }
+      else { tier = 1; category = '기타'; basePriority = 10; }
+    }
+    const sorted = [...gRows].sort((a, b) => {
+      const da = parseActDate(a.개통날짜); const db = parseActDate(b.개통날짜);
+      return (db || '').localeCompare(da || '');
+    });
+    const base = sorted[0];
+    const mobileBase = sorted.find(r => !isInternetTV(r.단말, r.유형)) || base;
+    const internetRow = sorted.find(r => isInternetTV(r.단말, r.유형));
+    customers.push({
+      key, tier, category, basePriority, gRows,
+      name: String(base.고객명).trim(),
+      phone: cleanPhone(mobileBase.전화번호),
+      birth_date: dateISO(excelToDate(base.생년월일)),
+      age: ageAt(base.생년월일, REF),
+      activation_date: parseActDate(mobileBase.개통날짜),
+      subscription_type: mobileBase.유형,
+      device_model: mobileBase.단말, device_color: mobileBase.색상,
+      device_serial: mobileBase.일련번호 ? String(mobileBase.일련번호) : null,
+      plan_name: mobileBase.요금제, addon_services: mobileBase.부가,
+      payment_type: mobileBase['현/할'], subsidy_type: mobileBase['공/선'],
+      retail_price: intOrNull(mobileBase.출고가),
+      public_subsidy: intOrNull(mobileBase.공시지원금),
+      extra_subsidy: intOrNull(mobileBase.추가지원금),
+      cash_price: intOrNull(mobileBase.현금가),
+      installment_principal: intOrNull(mobileBase.할부원금),
+      carrier: mobileBase.통신사,
+      store: base.매장, store_code: base.코드, dealer: base.판매처, agency_code: mobileBase.대리점,
+      memo_etc: gRows.map(r => r.기타).filter(Boolean).join(' | ') || null,
+      memo_activation: gRows.map(r => r['개통실 메모']).filter(Boolean).join(' | ') || null,
+      internet_info: internetRow ? `${internetRow.단말} (${internetRow.개통날짜})` : null,
+      source_data: gRows,
+      status: 'available',
+      quality_grade: calcGrade(tier, category),
+      priority_score: basePriority + calcAgeBonus(ageAt(base.생년월일, REF)),
+    });
+  });
+
+  // phone 충돌 → 우선순위 1건 active, 나머지 on_hold
+  const phoneMap = new Map();
+  customers.forEach(c => {
+    if (!phoneMap.has(c.phone)) phoneMap.set(c.phone, []);
+    phoneMap.get(c.phone).push(c);
+  });
+  let onHold = 0;
+  phoneMap.forEach((custs) => {
+    if (custs.length > 1) {
+      custs.sort((a, b) => b.priority_score - a.priority_score);
+      custs.slice(1).forEach(c => {
+        c.status = 'on_hold';
+        c.on_hold_reason = `phone 충돌 — ${custs[0].name}(${custs[0].category})에 우선 배정`;
+        onHold++;
+      });
+    }
+  });
+
+  // batch + insert
+  const batchId = randomUUID();
+  await supabase.from('incentive_customer_import_batch').insert({
+    id: batchId, db_source_id, imported_by_user_id: userId,
+    imported_by_name: me.name, total_count: customers.length, status: 'active',
+  });
+
+  const retentionDate = new Date(); retentionDate.setFullYear(retentionDate.getFullYear() + 3);
+  const retentionISO = retentionDate.toISOString().slice(0, 10);
+
+  const insertRows = customers.map(c => ({
+    imported_batch_id: batchId, db_source_id, imported_by_user_id: userId,
+    name: c.name, phone: c.phone, age: c.age,
+    birth_date: c.birth_date, activation_date: c.activation_date,
+    subscription_type: c.subscription_type, device_model: c.device_model, device_color: c.device_color,
+    device_serial: c.device_serial, plan_name: c.plan_name, addon_services: c.addon_services,
+    payment_type: c.payment_type, subsidy_type: c.subsidy_type,
+    retail_price: c.retail_price, public_subsidy: c.public_subsidy, extra_subsidy: c.extra_subsidy,
+    cash_price: c.cash_price, installment_principal: c.installment_principal,
+    carrier: c.carrier, store: c.store, store_code: c.store_code, dealer: c.dealer, agency_code: c.agency_code,
+    memo_etc: c.memo_etc, memo_activation: c.memo_activation,
+    notes: c.internet_info ? `[기존 인터넷/TV] ${c.internet_info}` : null,
+    tier: c.tier, category: c.category, quality_grade: c.quality_grade, priority_score: c.priority_score,
+    on_hold_reason: c.on_hold_reason || null,
+    call_status: c.status === 'on_hold' ? 'on_hold' : 'pending',
+    call_count: 0, consent_status: 'unknown', data_retention_until: retentionISO,
+    source_data: c.source_data, archived: false,
+  }));
+
+  let inserted = 0, dups = 0, failed = 0;
+  for (let i = 0; i < insertRows.length; i += 500) {
+    const chunk = insertRows.slice(i, i + 500);
+    const { data, error } = await supabase.from('incentive_customer_db').insert(chunk).select('id');
+    if (error) {
+      if (error.code === '23505') {
+        for (const row of chunk) {
+          const { error: e1 } = await supabase.from('incentive_customer_db').insert(row);
+          if (e1 && e1.code === '23505') dups++;
+          else if (!e1) inserted++;
+          else failed++;
+        }
+      } else { failed += chunk.length; }
+    } else inserted += data.length;
+  }
+
+  await supabase.from('incentive_customer_import_batch').update({
+    valid_count: inserted, invalid_count: failed, duplicate_count: dups,
+  }).eq('id', batchId);
+
+  logAccess({
+    user_id: userId, action: 'import_closing_ledger', ip, ua,
+    metadata: { batch_id: batchId, db_source_id, total: rows.length, customers: customers.length, inserted, dups, on_hold: onHold, failed },
+  });
+
+  return {
+    batch_id: batchId, mode: 'closing_ledger',
+    excel_rows: rows.length, filtered: filtered.length, customers: customers.length,
+    inserted, duplicates: dups, on_hold: onHold, failed,
+    tier_dist: {
+      1: customers.filter(c => c.tier === 1).length,
+      2: customers.filter(c => c.tier === 2).length,
+    },
+    category_dist: customers.reduce((m, c) => { m[c.category] = (m[c.category] || 0) + 1; return m; }, {}),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 큐콜 v2 — 모드별 다음 콜 / 해피콜 / 인터넷 청취
+// ═══════════════════════════════════════════════════════════════
+
+const QUEUE_MODES = ['happycall', 'upsell_tier1', 'upsell_tier2', 'callback', 'cs', 'pending'];
+
+function buildQueueQuery(mode, me) {
+  let q = supabase.from('incentive_customer_db').select(
+    '*, db_source:incentive_db_sources(name, color), assigned_agent:incentive_agents!incentive_customer_db_assigned_agent_id_fkey(id, name, center)'
+  )
+    .is('deleted_at', null).eq('archived', false)
+    .or('is_dnt.is.null,is_dnt.eq.false')
+    .not('call_status', 'in', '("on_hold","converted","dnt")');
+
+  // 권한 필터
+  if (me.role === 'agent') q = q.eq('assigned_agent_id', me.id);
+  // manager는 라우트에서 in() 필터 추가
+
+  // 모드별 필터
+  const today = new Date();
+  const day7 = new Date(today.getTime() - 7 * 86400000).toISOString().slice(0, 10);
+  const day14 = new Date(today.getTime() - 14 * 86400000).toISOString().slice(0, 10);
+  const day30 = new Date(today.getTime() - 30 * 86400000).toISOString();
+  const nowISO = today.toISOString();
+
+  switch (mode) {
+    case 'happycall':
+      q = q.eq('tier', 1).is('last_happycall_at', null).lte('activation_date', day7).gte('activation_date', day14);
+      break;
+    case 'upsell_tier1':
+      q = q.eq('tier', 1).or(`latest_satisfaction_avg.gte.4,last_happycall_at.lt.${day30}`);
+      break;
+    case 'upsell_tier2':
+      q = q.eq('tier', 2).gte('latest_satisfaction_avg', 4);
+      break;
+    case 'callback':
+      q = q.lte('callback_at', nowISO).not('callback_at', 'is', null);
+      break;
+    case 'cs':
+      q = q.eq('cs_escalated', true);
+      break;
+    case 'pending':
+    default:
+      q = q.eq('call_status', 'pending');
+  }
+  return q;
+}
+
+// 1) 큐 카운트 (모드별 카드용)
+router.get('/queue/stats', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+
+    let memberIds = null;
+    if (me.role === 'manager') {
+      const { data: ms } = await supabase.from('incentive_agents').select('id').eq('center', me.center);
+      memberIds = (ms || []).map(m => m.id);
+    }
+
+    const counts = {};
+    for (const mode of QUEUE_MODES) {
+      let q = buildQueueQuery(mode, me);
+      if (me.role === 'manager') q = q.in('assigned_agent_id', memberIds.length ? memberIds : ['00000000-0000-0000-0000-000000000000']);
+      const { count } = await q.select('id', { count: 'exact', head: true });
+      counts[mode] = count || 0;
+    }
+    res.json({ counts });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// 2) 다음 콜 가져오기 (atomic claim)
+router.get('/queue/next', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+
+    const mode = String(req.query.mode || 'pending');
+    if (!QUEUE_MODES.includes(mode)) return res.status(400).json({ error: 'invalid mode' });
+
+    let q = buildQueueQuery(mode, me);
+    if (me.role === 'manager') {
+      const { data: ms } = await supabase.from('incentive_agents').select('id').eq('center', me.center);
+      const ids = (ms || []).map(m => m.id);
+      q = q.in('assigned_agent_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
+    }
+    // 정렬: priority_score DESC, callback 우선시 callback_at ASC, 그 외 activation_date ASC
+    if (mode === 'callback') q = q.order('callback_at', { ascending: true });
+    else q = q.order('priority_score', { ascending: false, nullsFirst: false }).order('activation_date', { ascending: true, nullsFirst: false });
+    q = q.limit(1);
+
+    const { data, error } = await q;
+    if (error) throw error;
+    if (!data?.length) return res.json({ customer: null, mode });
+
+    const cust = data[0];
+
+    // 휴대폰 통신사와 무관하게, 청취된 인터넷 통신사 기반 권유 옵션 산출
+    let recommendedCarriers = ['SK', 'KT', 'LG'];
+    if (cust.current_internet_status === 'subscribed' && cust.current_internet_carrier) {
+      recommendedCarriers = recommendedCarriers.filter(c => c !== cust.current_internet_carrier);
+    }
+    const needInternetListening = !cust.current_internet_status || cust.current_internet_status === 'unknown';
+
+    res.json({
+      customer: cust,
+      mode,
+      recommended_internet_carriers: recommendedCarriers,
+      need_internet_listening: needInternetListening,
+    });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// 3) 인터넷 청취 결과 저장
+router.patch('/:id(\\d+)/internet-listening', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+
+    const { status, carrier, signup_year } = req.body || {};
+    if (!['subscribed', 'none', 'unknown'].includes(status)) {
+      return res.status(400).json({ error: 'invalid status' });
+    }
+    if (status === 'subscribed' && !['SK', 'KT', 'LG'].includes(carrier)) {
+      return res.status(400).json({ error: 'subscribed면 carrier 필수' });
+    }
+
+    const { data: target } = await supabase.from('incentive_customer_db')
+      .select('id, assigned_agent_id').eq('id', req.params.id).is('deleted_at', null).single();
+    if (!target) return res.status(404).json({ error: 'not found' });
+    if (me.role === 'agent' && target.assigned_agent_id !== me.id) return res.status(403).json({ error: 'forbidden' });
+
+    const update = {
+      current_internet_status: status,
+      current_internet_carrier: status === 'subscribed' ? carrier : null,
+      current_internet_signup_year: status === 'subscribed' && signup_year ? parseInt(signup_year) : null,
+      current_internet_listened_at: new Date().toISOString(),
+      current_internet_listened_by_agent_id: me.id,
+    };
+    const { error } = await supabase.from('incentive_customer_db').update(update).eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true, ...update });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// 4) 해피콜 만족도 응답 저장 + customer_db derived 갱신 + 자동 라우팅
+router.post('/:id(\\d+)/happycall-survey', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+
+    const customerId = parseInt(req.params.id);
+    const {
+      call_log_id,
+      device_satisfaction, plan_satisfaction, signal_quality, store_satisfaction,
+      nps_score, free_comment, upsell_interest, next_action, cs_escalation_reason,
+    } = req.body || {};
+
+    const clamp15 = v => v == null ? null : Math.max(1, Math.min(5, parseInt(v)));
+    const clampNps = v => v == null ? null : Math.max(0, Math.min(10, parseInt(v)));
+    const validActions = ['callback','proposal','no_interest','converted','cs_escalation','completed'];
+
+    const survey = {
+      customer_id: customerId,
+      call_log_id: call_log_id || null,
+      surveyed_by_agent_id: me.id,
+      device_satisfaction: clamp15(device_satisfaction),
+      plan_satisfaction: clamp15(plan_satisfaction),
+      signal_quality: clamp15(signal_quality),
+      store_satisfaction: clamp15(store_satisfaction),
+      nps_score: clampNps(nps_score),
+      free_comment: free_comment || null,
+      upsell_interest: upsell_interest || {},
+      next_action: validActions.includes(next_action) ? next_action : null,
+      cs_escalation_reason: cs_escalation_reason || null,
+    };
+
+    const { data: ins, error } = await supabase
+      .from('incentive_customer_happycall_survey').insert(survey).select('*').single();
+    if (error) throw error;
+
+    // derived 필드 갱신
+    const scores = [survey.device_satisfaction, survey.plan_satisfaction, survey.signal_quality, survey.store_satisfaction].filter(v => v != null);
+    const avg = scores.length ? scores.reduce((a,b)=>a+b,0) / scores.length : null;
+    const isCs = next_action === 'cs_escalation' || (avg != null && avg <= 2.5);
+
+    const update = {
+      latest_satisfaction_avg: avg,
+      latest_nps: survey.nps_score,
+      last_happycall_at: new Date().toISOString(),
+      upsell_interest_summary: survey.upsell_interest,
+      cs_escalated: isCs ? true : undefined,
+    };
+    if (next_action === 'converted') update.call_status = 'converted';
+
+    Object.keys(update).forEach(k => update[k] === undefined && delete update[k]);
+    await supabase.from('incentive_customer_db').update(update).eq('id', customerId);
+
+    logAccess({
+      user_id: req.user.id, action: 'happycall_survey', ip: req.ip, ua: req.get('user-agent'),
+      metadata: { customer_id: customerId, avg, nps: survey.nps_score, next_action },
+    });
+
+    res.json({ survey: ins, derived: update });
+  } catch (e) { console.error('[happycall-survey]', e); res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// 5-1) 해피콜·업셀링 대시보드 stats
+router.get('/queue/dashboard', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+
+    let memberIds = null;
+    if (me.role === 'manager') {
+      const { data: ms } = await supabase.from('incentive_agents').select('id').eq('center', me.center);
+      memberIds = (ms || []).map(m => m.id);
+    }
+    const filterAgent = (q) => {
+      if (me.role === 'agent') return q.eq('assigned_agent_id', me.id);
+      if (me.role === 'manager') return q.in('assigned_agent_id', memberIds.length ? memberIds : ['00000000-0000-0000-0000-000000000000']);
+      return q;
+    };
+
+    // tier·category 분포
+    let q1 = filterAgent(supabase.from('incentive_customer_db').select('tier, category, store, call_status, latest_satisfaction_avg, latest_nps, last_happycall_at, cs_escalated, current_internet_status, current_internet_carrier').is('deleted_at', null).eq('archived', false));
+    const { data: rows = [] } = await q1.limit(20000);
+
+    const byTier = {1:0, 2:0, null:0};
+    const byCategory = {};
+    const byStore = {};
+    let happycallDone = 0, satSum = 0, satN = 0, npsSum = 0, npsN = 0, csCount = 0, internetListened = 0;
+    const carrierDist = { SK:0, KT:0, LG:0, none:0, unknown:0 };
+    rows.forEach(r => {
+      byTier[r.tier ?? 'null'] = (byTier[r.tier ?? 'null'] || 0) + 1;
+      byCategory[r.category || '미분류'] = (byCategory[r.category || '미분류'] || 0) + 1;
+      byStore[r.store || '미상'] = (byStore[r.store || '미상'] || 0) + 1;
+      if (r.last_happycall_at) happycallDone++;
+      if (r.latest_satisfaction_avg != null) { satSum += +r.latest_satisfaction_avg; satN++; }
+      if (r.latest_nps != null) { npsSum += +r.latest_nps; npsN++; }
+      if (r.cs_escalated) csCount++;
+      if (r.current_internet_status) {
+        internetListened++;
+        if (r.current_internet_status === 'subscribed' && r.current_internet_carrier) {
+          carrierDist[r.current_internet_carrier] = (carrierDist[r.current_internet_carrier] || 0) + 1;
+        } else if (r.current_internet_status === 'none') carrierDist.none++;
+        else carrierDist.unknown++;
+      }
+    });
+
+    // 24h 응답 + 다음액션 분포
+    const since24 = new Date(Date.now() - 86400000).toISOString();
+    let q2 = supabase.from('incentive_customer_happycall_survey').select('next_action, surveyed_at, surveyed_by_agent_id').gte('surveyed_at', since24);
+    if (me.role === 'agent') q2 = q2.eq('surveyed_by_agent_id', me.id);
+    if (me.role === 'manager' && memberIds) q2 = q2.in('surveyed_by_agent_id', memberIds.length ? memberIds : ['00000000-0000-0000-0000-000000000000']);
+    const { data: surveys24 = [] } = await q2;
+    const nextActionDist = {};
+    surveys24.forEach(s => { if (s.next_action) nextActionDist[s.next_action] = (nextActionDist[s.next_action] || 0) + 1; });
+
+    // 업셀링 전환율 (전환 / 응답)
+    let convertedCount = 0;
+    let q3 = supabase.from('incentive_customer_happycall_survey').select('next_action');
+    if (me.role === 'agent') q3 = q3.eq('surveyed_by_agent_id', me.id);
+    if (me.role === 'manager' && memberIds) q3 = q3.in('surveyed_by_agent_id', memberIds.length ? memberIds : ['00000000-0000-0000-0000-000000000000']);
+    const { data: allSurveys = [] } = await q3.limit(50000);
+    convertedCount = allSurveys.filter(s => s.next_action === 'converted').length;
+    const totalSurveys = allSurveys.length;
+
+    res.json({
+      tier_dist: byTier,
+      category_dist: byCategory,
+      store_dist: byStore,
+      total: rows.length,
+      happycall: {
+        done: happycallDone,
+        rate: rows.length ? +(happycallDone / rows.length * 100).toFixed(1) : 0,
+        avg_satisfaction: satN ? +(satSum / satN).toFixed(2) : null,
+        avg_nps: npsN ? +(npsSum / npsN).toFixed(1) : null,
+        cs_escalated: csCount,
+        last_24h_responses: surveys24.length,
+        next_action_dist_24h: nextActionDist,
+        total_surveys: totalSurveys,
+        upsell_conversion_rate: totalSurveys ? +(convertedCount / totalSurveys * 100).toFixed(1) : 0,
+        upsell_converted: convertedCount,
+      },
+      internet: {
+        listened: internetListened,
+        listened_rate: rows.length ? +(internetListened / rows.length * 100).toFixed(1) : 0,
+        carrier_dist: carrierDist,
+      },
+    });
+  } catch (e) { console.error('[queue/dashboard]', e); res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// 5) 해피콜 응답 이력 조회
+router.get('/:id(\\d+)/happycall-history', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+
+    const { data, error } = await supabase
+      .from('incentive_customer_happycall_survey')
+      .select('*, agent:incentive_agents!incentive_customer_happycall_survey_surveyed_by_agent_id_fkey(id, name)')
+      .eq('customer_id', req.params.id)
+      .order('surveyed_at', { ascending: false }).limit(20);
+    if (error) throw error;
+    res.json({ surveys: data || [] });
   } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
 });
 

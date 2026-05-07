@@ -21,8 +21,8 @@ body {
 /* ===== 레이아웃 ===== */
 html, body { overflow:hidden; }
 .tm-app {
-  display:grid; grid-template-columns: 300px minmax(0, 1fr) 400px; gap:12px;
-  padding:12px; height:100vh; max-width:1800px; margin:0 auto;
+  display:grid; grid-template-columns: 280px minmax(0, 1fr) 320px; gap:8px;
+  padding:8px; height:100vh; max-width:1800px; margin:0 auto;
 }
 .tm-panel {
   background:#fff; border-radius:14px; padding:18px;
@@ -345,14 +345,17 @@ html, body { overflow:hidden; }
 
 /* ===== 반응형 단계 ===== */
 @media (max-width: 1400px) {
-  .tm-app { grid-template-columns: 280px minmax(0,1fr) 380px; gap:10px; padding:10px; }
-  .tm-panel { padding:14px; }
+  .tm-app { grid-template-columns: 240px minmax(0,1fr) 300px; gap:6px; padding:6px; }
+  .tm-panel { padding:10px; }
+  .tm-option { padding:5px 9px; font-size:11px; }
+  .tm-card { padding:8px 10px; }
+  .tm-card-title { font-size:10px; }
 }
 @media (max-width: 1200px) {
-  .tm-app { grid-template-columns: 260px minmax(0,1fr) 360px; gap:8px; padding:8px; }
-  .tm-option { padding:7px 11px; font-size:12px; }
-  .tm-card { padding:12px 14px; }
-  .tm-card-title { font-size:10.5px; }
+  .tm-app { grid-template-columns: 200px minmax(0,1fr) 280px; gap:5px; padding:5px; }
+  .tm-option { padding:4px 8px; font-size:10.5px; }
+  .tm-card { padding:6px 8px; }
+  .tm-card-title { font-size:9.5px; }
 }
 @media (max-width: 1024px) {
   /* 태블릿: 좌측만 위로, 중앙+우측 2단 */
@@ -396,44 +399,78 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 <!-- 🆕 콜 모드 — 고객 카드 + 결과 패널 + 좌측 콜 큐 사이드바 -->
 <style>
 /* 콜 모드 bar / 큐 사이드 폭은 JS ResizeObserver로 실시간 측정 → CSS 변수로 자동 반영 */
-:root { --call-bar-h: 0px; --queue-w: 0px; }
-body.call-mode-active { padding-top: var(--call-bar-h, 130px) !important; }
-body.call-mode-active .tm-app { height: calc(100vh - var(--call-bar-h, 130px)) !important; max-width:none !important; }
-body.queue-side-active, body.queue-side-collapsed { padding-left: var(--queue-w, 280px) !important; }
-body.call-mode-active.queue-side-active #call-queue-side,
-body.call-mode-active.queue-side-collapsed #call-queue-side { top: var(--call-bar-h, 130px) !important; }
+:root { --call-bar-h: 0px; --queue-h: 150px; --cust-card-w: 560px; }
+body.call-mode-active { padding-top: 0 !important; }
+body.call-mode-active .tm-app { max-width:none !important; }
+/* 내콜큐 — 상단 가로 스크롤 */
+body.queue-side-active, body.queue-side-collapsed { padding-left: var(--cust-card-w, 380px) !important; padding-top: var(--queue-h, 150px) !important; }
+body.queue-side-collapsed { padding-top: 38px !important; }
+/* viewport 짤림 방지: .tm-app 높이 = viewport - 상단큐 */
+body.queue-side-active .tm-app { height: calc(100vh - var(--queue-h, 150px)) !important; }
+body.queue-side-collapsed .tm-app { height: calc(100vh - 38px) !important; }
+/* 고객 정보 list (가독성) */
+.cm-info-section { background:rgba(0,0,0,0.25); border-radius:6px; padding:8px 14px; }
+.cm-info-row { display:flex; gap:12px; padding:6px 0; align-items:flex-start; border-bottom:1px dashed rgba(255,255,255,0.06); }
+.cm-info-row:last-child { border-bottom:none; }
+.cm-info-label { color:#94a3b8; font-weight:700; min-width:90px; flex-shrink:0; font-size:12px; padding-top:1px; }
+.cm-info-val { color:#e2e8f0; flex:1; font-size:13px; word-break:break-word; line-height:1.55; }
+/* 고객 카드 — 좌측 fixed 패널 (옛 콜큐 자리) */
+#call-mode-bar.in-main {
+  position:fixed !important;
+  top: var(--queue-h, 150px) !important;
+  left:0 !important;
+  right:auto !important;
+  width: var(--cust-card-w, 380px) !important;
+  height: calc(100vh - var(--queue-h, 150px)) !important;
+  z-index:98 !important;
+  overflow-y:auto !important;
+  border-radius:0 !important;
+  border-right:1.5px solid #334155 !important;
+  border-bottom:none !important;
+  box-shadow:2px 0 8px rgba(0,0,0,0.3) !important;
+  margin:0 !important;
+  padding:14px 16px !important;
+}
+body.queue-side-collapsed #call-mode-bar.in-main { top:38px !important; height:calc(100vh - 38px) !important; }
+@media (max-width: 768px) {
+  body.queue-side-active, body.queue-side-collapsed { padding-left:0 !important; }
+  #call-mode-bar.in-main { position:relative !important; width:100% !important; height:auto !important; top:auto !important; }
+}
 @media (max-width: 768px) {
   body.call-mode-active { padding-left: 0 !important; }
   body.queue-side-active, body.queue-side-collapsed { padding-left: 0 !important; }
 }
 
-/* 좌측 콜 큐 사이드바 — agent/manager 자동 표시 + 접힘/펼침 */
-#call-queue-side { display:none; position:fixed; top:0; left:0; bottom:0; width:280px; background:#0f172a; border-right:1.5px solid #334155; overflow-y:auto; z-index:99; box-shadow:2px 0 8px rgba(0,0,0,0.3); transition:width 0.2s; }
-body.queue-side-active { transition:padding-left 0.2s; }
-body.queue-side-active #call-queue-side { display:block; top:0; }
-/* 접힘 모드 */
-body.queue-side-collapsed #call-queue-side { width:40px; overflow:hidden; display:block; }
-body.queue-side-collapsed #call-queue-side .cq-header h3 span,
+/* 상단 가로 콜 큐 — agent/manager 자동 표시 + 접힘/펼침 */
+#call-queue-side { display:none; position:fixed; top:0; left:0; right:0; height:var(--queue-h, 180px); background:#0f172a; border-bottom:1.5px solid #334155; overflow-x:auto; overflow-y:hidden; z-index:99; box-shadow:0 2px 8px rgba(0,0,0,0.3); transition:height 0.2s; }
+body.queue-side-active #call-queue-side { display:block; }
+/* 접힘 모드 — 상단 얇게 */
+body.queue-side-collapsed #call-queue-side { height:38px; overflow:hidden; display:block; }
 body.queue-side-collapsed #call-queue-side .cq-header .meta,
 body.queue-side-collapsed #call-queue-side .cq-header a,
 body.queue-side-collapsed #call-queue-side #cq-list { display:none; }
-body.queue-side-collapsed #call-queue-side .cq-header { padding:10px 4px; text-align:center; }
-body.queue-side-collapsed #call-queue-side .cq-header h3 { font-size:11px; }
-.cq-toggle { position:absolute; top:8px; right:6px; background:#475569; color:#fff; border:none; width:24px; height:24px; border-radius:5px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center; padding:0; z-index:2; }
+body.queue-side-collapsed #call-queue-side .cq-header { padding:8px 12px; }
+.cq-toggle { position:absolute; top:6px; right:8px; background:#475569; color:#fff; border:none; width:24px; height:24px; border-radius:5px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center; padding:0; z-index:2; }
 .cq-toggle:hover { background:#64748b; }
-body.queue-side-collapsed .cq-toggle { position:fixed; top:8px; left:8px; right:auto; }
+/* 헤더 — 가로 한 줄로 */
+#call-queue-side .cq-header { padding:6px 14px; display:flex; align-items:center; gap:14px; border-bottom:1px solid #1e293b; }
+#call-queue-side .cq-header h3 { margin:0; font-size:12px; color:#60a5fa; font-weight:800; }
+#call-queue-side .cq-header .meta { font-size:10.5px; color:#94a3b8; }
+/* 큐 list — 가로 스크롤 flex */
+#cq-list { display:flex; gap:8px; padding:8px 12px; overflow-x:auto; height:calc(100% - 34px); align-items:stretch; }
+#cq-list::-webkit-scrollbar { height:8px; } #cq-list::-webkit-scrollbar-thumb { background:#475569; border-radius:4px; }
 @media (max-width: 768px) { body.queue-side-active, body.queue-side-collapsed { padding-left:0 !important; } body.queue-side-active #call-queue-side { display:none; } }
 .cq-header { padding:10px 14px; border-bottom:1px solid #334155; background:#1e293b; position:sticky; top:0; z-index:1; }
 .cq-header h3 { font-size:13px; color:#a5b4fc; font-weight:800; }
 .cq-header .meta { font-size:10.5px; color:#94a3b8; margin-top:2px; }
-.cq-item { padding:10px 14px; border-bottom:1px solid #1e293b; cursor:pointer; transition:background 0.1s; }
-.cq-item:hover { background:rgba(59,130,246,0.1); }
-.cq-item.current { background:rgba(34,197,94,0.15); border-left:3px solid #22c55e; padding-left:11px; }
-.cq-item.callback { background:rgba(251,191,36,0.06); }
-.cq-item .name { font-size:12.5px; color:#f8fafc; font-weight:800; }
+.cq-item { padding:8px 12px; cursor:pointer; transition:all 0.1s; flex:0 0 auto; width:240px; min-height:108px; background:#1e293b; border:1px solid #334155; border-radius:7px; display:flex; flex-direction:column; gap:2px; font-size:11px; line-height:1.4; }
+.cq-item:hover { background:rgba(59,130,246,0.18); border-color:#3b82f6; }
+.cq-item.current { background:rgba(34,197,94,0.15); border-color:#22c55e; }
+.cq-item.callback { background:rgba(251,191,36,0.08); border-color:#f59e0b; }
+.cq-item .name { font-size:12px; color:#f8fafc; font-weight:800; line-height:1.3; }
 .cq-item .phone { font-size:10.5px; color:#cbd5e1; font-family:monospace; }
-.cq-item .meta-line { font-size:10px; color:#94a3b8; margin-top:2px; }
-.cq-item .badge { font-size:9px; padding:1px 5px; border-radius:3px; color:#fff; font-weight:800; margin-left:4px; }
+.cq-item .meta-line { font-size:10px; color:#94a3b8; }
+.cq-item .badge { font-size:9px; padding:1px 5px; border-radius:3px; color:#fff; font-weight:800; margin-left:3px; }
 </style>
 
 <!-- 좌측 콜 큐 사이드바 -->
@@ -484,8 +521,47 @@ body.queue-side-collapsed .cq-toggle { position:fixed; top:8px; left:8px; right:
         <span style="font-family:monospace;font-size:14px;color:#bfdbfe" id="cm-phone">-</span>
         <button onclick="copyCallPhone()" style="background:#475569;color:#fff;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px">📋 복사</button>
       </div>
-      <div style="font-size:11.5px;color:#cbd5e1;line-height:1.6" id="cm-meta">-</div>
-      <div style="font-size:10.5px;color:#94a3b8;margin-top:4px;display:flex;align-items:center;gap:8px">
+      <div id="cm-tier-badge" style="display:inline-flex;gap:4px;margin-bottom:6px"></div>
+      <div id="cm-meta" style="font-size:11.5px;color:#cbd5e1;line-height:1.6">-</div>
+
+      <!-- 🆕 풍부 정보 카드 (list 형태로 가독성 개선) -->
+      <div id="cm-rich-card" style="display:none;margin-top:10px;font-size:13px;line-height:1.6">
+
+        <!-- 🎯 권유 상품 (강조 박스) -->
+        <div id="cm-recommend" style="background:linear-gradient(135deg,rgba(22,163,74,0.18),rgba(168,85,247,0.12));border:1.5px solid #22c55e;border-radius:8px;padding:12px 16px;margin-bottom:10px;font-size:13px">
+          <div style="font-size:12.5px;font-weight:900;color:#fde68a;margin-bottom:10px;letter-spacing:0.05em">🎯 이 고객에게 권유하세요</div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="background:rgba(0,0,0,0.3);border-left:3px solid #16a34a;padding:8px 12px;border-radius:4px">
+              <span style="font-weight:800;color:#86efac">[1차] 📞 인터넷·TV</span>
+              <span id="cm-rec-1" style="margin-left:6px;color:#e2e8f0">-</span>
+            </div>
+            <div style="background:rgba(0,0,0,0.3);border-left:3px solid #a855f7;padding:8px 12px;border-radius:4px">
+              <span style="font-weight:800;color:#e9d5ff">[2차] 🏠 렌탈</span>
+              <span id="cm-rec-2" style="margin-left:6px;color:#e2e8f0">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 고객 정보 list -->
+        <div class="cm-info-section">
+          <div class="cm-info-row"><span class="cm-info-label">📅 개통</span><span id="cm-r-open" class="cm-info-val">-</span></div>
+          <div class="cm-info-row"><span class="cm-info-label">📱 단말</span><span id="cm-r-device" class="cm-info-val">-</span></div>
+          <div class="cm-info-row"><span class="cm-info-label">💳 요금제</span><span id="cm-r-plan" class="cm-info-val">-</span></div>
+          <div class="cm-info-row"><span class="cm-info-label">💰 금액</span><span id="cm-r-money" class="cm-info-val">-</span></div>
+          <div class="cm-info-row"><span class="cm-info-label">🏬 매장</span><span id="cm-r-store" class="cm-info-val">-</span></div>
+          <div class="cm-info-row"><span class="cm-info-label">💬 상담메모</span><span id="cm-r-notes" class="cm-info-val" style="white-space:pre-wrap;color:#86efac">-</span></div>
+        </div>
+
+        <!-- 영업 핵심 list -->
+        <div class="cm-info-section" style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.1);padding-top:8px">
+          <div class="cm-info-row"><span class="cm-info-label" style="color:#fbbf24">🌐 인터넷</span><span id="cm-r-internet" class="cm-info-val">미청취</span></div>
+          <div class="cm-info-row"><span class="cm-info-label">📞 콜 상태</span><span id="cm-r-assign" class="cm-info-val">-</span></div>
+          <div class="cm-info-row"><span class="cm-info-label">✅ 동의·출처</span><span id="cm-r-meta-ext" class="cm-info-val">-</span></div>
+        </div>
+
+      </div>
+
+      <div style="font-size:10.5px;color:#94a3b8;margin-top:6px;display:flex;align-items:center;gap:8px">
         <span id="cm-history-summary">-</span>
         <button type="button" id="cm-history-toggle" onclick="toggleCallHistory()" style="background:rgba(255,255,255,0.08);color:#cbd5e1;border:1px solid rgba(255,255,255,0.15);padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px;display:none">📜 이력 펼치기</button>
       </div>
@@ -507,9 +583,7 @@ body.queue-side-collapsed .cq-toggle { position:fixed; top:8px; left:8px; right:
       oninput="onNotesInput()"></textarea>
     <span id="cm-notes-status" style="font-size:10px;color:#94a3b8;flex-shrink:0;padding-top:6px;min-width:60px;text-align:right">-</span>
   </div>
-  <div style="margin-top:6px;font-size:10.5px;color:#94a3b8;line-height:1.5">
-    💡 단축키: <kbd>1</kbd>부재 · <kbd>2</kbd>콜백 · <kbd>3</kbd>거절 · <kbd>4</kbd>잘못 · <kbd>0</kbd>DNT · <kbd>Space</kbd>다음 · <kbd>C</kbd>복사 · <kbd>M</kbd>메모 · <kbd>H</kbd>이력 · <kbd>?</kbd>도움말
-  </div>
+
 </div>
 
 <script>
@@ -532,8 +606,19 @@ window.CALL_MODE_VISITED = new Set(); // 이번 세션 이미 진입한 customer
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(initQueueSide, 800);
     initLayoutObservers();
+    // 🆕 상단 fixed bar → 메인 카드로 이동
+    moveCallBarIntoMain();
   });
 })();
+
+function moveCallBarIntoMain() {
+  const bar = document.getElementById('call-mode-bar');
+  const main = document.querySelector('.tm-app > main');
+  if (bar && main && !bar.classList.contains('in-main')) {
+    bar.classList.add('in-main');
+    main.prepend(bar);
+  }
+}
 
 // 🆕 자동 레이아웃 — fixed bar 높이/사이드 폭 실시간 측정 → CSS 변수
 function initLayoutObservers() {
@@ -623,10 +708,172 @@ async function loadCallCustomer(customerId) {
     document.body.classList.add('call-mode-active');
     document.getElementById('cm-name').textContent = c.name + (c.age ? ` · ${c.age}세` : '') + (c.gender ? ` · ${c.gender}` : '');
     document.getElementById('cm-phone').textContent = c.phone;
+
+    // tier·카테고리·등급 배지
+    const tierEl = document.getElementById('cm-tier-badge');
+    if (tierEl) {
+      const tags = [];
+      // 등급 배지 (가장 강조)
+      const gradeStyles = {
+        S: 'background:linear-gradient(135deg,#dc2626,#f59e0b);color:#fff',
+        A: 'background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff',
+        B: 'background:#475569;color:#fff',
+        C: 'background:#1e293b;color:#94a3b8;border:1px solid #475569',
+      };
+      if (c.quality_grade) {
+        const gs = gradeStyles[c.quality_grade] || gradeStyles.B;
+        tags.push(`<span style="${gs};padding:3px 10px;border-radius:4px;font-size:11px;font-weight:900;letter-spacing:0.05em">⭐ ${c.quality_grade}급</span>`);
+      }
+      if (c.tier === 1) tags.push('<span style="background:#16a34a;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800">1차 인터넷·TV</span>');
+      else if (c.tier === 2) tags.push('<span style="background:#a855f7;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800">2차 렌탈</span>');
+      if (c.category) tags.push(`<span style="background:#475569;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">${(c.category||'').replace(/[<>&]/g,'')}</span>`);
+      if (c.carrier) tags.push(`<span style="background:#0c4a6e;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">📡 ${(c.carrier||'').replace(/[<>&]/g,'')}</span>`);
+      if (c.cs_escalated) tags.push('<span style="background:#dc2626;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800">⚠️ CS</span>');
+      tierEl.innerHTML = tags.join(' ');
+    }
+
+    // 한 줄 요약 (cm-meta)
     const meta = [];
+    if (c.birth_date) meta.push('🎂 ' + c.birth_date);
     if (c.region) meta.push('🏠 ' + c.region);
-    if (c.carrier) meta.push('🏢 현재: ' + c.carrier);
-    document.getElementById('cm-meta').textContent = meta.join(' · ') || '추가 정보 없음';
+    document.getElementById('cm-meta').innerHTML = meta.join(' · ') || '';
+
+    // 풍부 카드 (마감원장 정보)
+    const rich = document.getElementById('cm-rich-card');
+    const hasRich = c.activation_date || c.device_model || c.plan_name || c.store || c.cash_price != null || c.memo_etc;
+    if (rich) {
+      rich.style.display = hasRich ? '' : 'none';
+      if (hasRich) {
+        const fmt = (n) => n != null ? n.toLocaleString() + '원' : '-';
+        const esc = (s) => String(s||'').replace(/[<>&]/g,'');
+        // 개통
+        const openParts = [];
+        if (c.activation_date) {
+          const days = Math.floor((Date.now() - new Date(c.activation_date).getTime()) / 86400000);
+          openParts.push(`<b>${esc(c.activation_date)}</b> <span style="color:#94a3b8">(${days}일 전)</span>`);
+        }
+        if (c.subscription_type) openParts.push(`유형: <b>${esc(c.subscription_type)}</b>`);
+        if (c.payment_type) openParts.push(`결제: ${esc(c.payment_type)}`);
+        if (c.subsidy_type) openParts.push(`지원: ${esc(c.subsidy_type)}`);
+        document.getElementById('cm-r-open').innerHTML = openParts.join(' · ') || '-';
+        // 단말 (모델 코드 → 펫네임 매핑)
+        const DEVICE_PET = {
+          // 갤럭시 S
+          'S731':'갤럭시 S23','S937':'갤럭시 S24+','S938':'갤럭시 S25',
+          'S942':'갤럭시 S25+','S942512':'갤럭시 S25+ 512GB',
+          'S947':'갤럭시 S26','S947512':'갤럭시 S26 512GB',
+          'S948':'갤럭시 S25 Ultra','S948512':'갤럭시 S25 Ultra 512GB',
+          // 갤럭시 Z
+          'F741':'Z 플립6','F741512':'Z 플립6 512GB','F766':'Z 플립7','F966':'Z 폴드7',
+          // 갤럭시 A·M
+          'A166':'갤럭시 A16','A175':'갤럭시 A17',
+          'M140':'갤럭시 M14','M166':'갤럭시 M16','M366':'갤럭시 M36',
+          // 갤럭시 탭
+          'X236':'갤럭시 탭 A9+',
+          // 아이폰
+          'I-16E':'아이폰 16e','I-16S':'아이폰 16',
+          'I-17256':'아이폰 17 256GB','I-17512':'아이폰 17 512GB',
+          'I-17A256':'아이폰 17 Air 256GB',
+          'I-17P256':'아이폰 17 Pro 256GB','I-17P512':'아이폰 17 Pro 512GB',
+          'I-17PM256':'아이폰 17 Pro Max 256GB','I-17PM512':'아이폰 17 Pro Max 512GB',
+          // 통신 상품
+          '인+TV':'인터넷+TV','인터넷':'인터넷','유심':'유심',
+        };
+        const devParts = [];
+        if (c.device_model) {
+          const pet = DEVICE_PET[c.device_model];
+          devParts.push(`<b>${esc(c.device_model)}</b>${pet ? ` <span style="color:#86efac">(${pet})</span>` : ''}`);
+        }
+        if (c.device_color) devParts.push(esc(c.device_color));
+        document.getElementById('cm-r-device').innerHTML = devParts.join(' · ') || '-';
+        // 요금
+        const planParts = [];
+        if (c.plan_name) planParts.push(`<b>${esc(c.plan_name)}</b>`);
+        if (c.addon_services) planParts.push(`부가: ${esc(c.addon_services)}`);
+        document.getElementById('cm-r-plan').innerHTML = planParts.join('<br>') || '-';
+        // 금액
+        const moneyParts = [];
+        if (c.retail_price != null) moneyParts.push(`출고가 ${fmt(c.retail_price)}`);
+        if (c.public_subsidy != null) moneyParts.push(`공시 ${fmt(c.public_subsidy)}`);
+        if (c.extra_subsidy != null) moneyParts.push(`추가 ${fmt(c.extra_subsidy)}`);
+        if (c.cash_price != null) moneyParts.push(`<b style="color:#fde68a">현금가 ${fmt(c.cash_price)}</b>`);
+        if (c.installment_principal != null && c.installment_principal > 0) moneyParts.push(`할부원금 ${fmt(c.installment_principal)}`);
+        document.getElementById('cm-r-money').innerHTML = moneyParts.join(' · ') || '-';
+        // 매장
+        const storeParts = [];
+        if (c.store) storeParts.push(`<b>${esc(c.store)}</b>`);
+        if (c.dealer) storeParts.push(`판매: ${esc(c.dealer)}`);
+        if (c.agency_code) storeParts.push(`<span style="color:#94a3b8">대리점 ${esc(c.agency_code)}</span>`);
+        document.getElementById('cm-r-store').innerHTML = storeParts.join(' · ') || '-';
+
+        // 상담사 메모 (notes — 편집 가능, 아래 textarea에서 자동저장)
+        document.getElementById('cm-r-notes').textContent = c.notes ? esc(c.notes) : '(없음 — 아래 메모창에서 입력)';
+
+        // 🎯 권유 상품 분기
+        const rec1 = []; const rec2 = [];
+        if (c.tier === 1) {
+          rec1.push('🎁 <b style="color:#fde68a">인터넷 가입 시 현금 사은품 즉시 지급</b>');
+          rec1.push('✅ <b style="color:#86efac">인터넷+TV 결합 권유 가능</b>');
+          if (c.current_internet_status === 'subscribed' && c.current_internet_carrier) {
+            const others = ['SK','KT','LG'].filter(x => x !== c.current_internet_carrier);
+            rec1.push(`🎯 권유 통신사: <b>${others.join(' / ')}</b> <span style="color:#94a3b8">(현재 ${esc(c.current_internet_carrier)} 사용 중)</span>`);
+          } else if (c.current_internet_status === 'none') {
+            rec1.push(`🎯 인터넷 미가입자 — <b>3사 모두 권유 가능</b> (사은품 좋은 곳)`);
+          } else {
+            rec1.push(`⚠️ <b style="color:#fbbf24">현재 인터넷 통신사 청취 필수</b> (휴대폰 carrier 무관)`);
+            rec1.push(`<span style="color:#94a3b8">→ 청취 후 다른 통신사 권유 (3사 모두 같은 통신사 기변 불가, 사은품 0)</span>`);
+          }
+          if (c.category === '이동') rec1.push('🔥 <b>통신사 이동 고객</b> — 결합 깨기 좋음 · 성공률 高');
+          else if (c.category === '신규') rec1.push('✨ <b>신규 가입자</b> — 인터넷도 신규로 자유');
+          else if (c.category === '기변') rec1.push('⚠️ <b>기변</b> — 기존 결합 가능성, 신중 청취');
+          rec2.push('인터넷·TV 가입 후 <b>결합 렌탈 사은품 추가</b>');
+          rec2.push('<span style="color:#94a3b8">정수기·공기청정기·안마의자·세탁기·건조기 등</span>');
+        } else if (c.tier === 2) {
+          rec1.push('❌ <b style="color:#fca5a5">해당 없음</b> — 이미 인터넷·TV 가입 중');
+          if (c.notes) rec1.push(`<span style="color:#94a3b8;font-size:10px">${esc(c.notes).slice(0,100)}</span>`);
+          rec2.push('🏠 <b style="color:#e9d5ff">렌탈 권유 메인 타겟</b>');
+          rec2.push('정수기·공기청정기·안마의자·세탁기·건조기·비데 등');
+          rec2.push('<span style="color:#fbbf24">봉이 제로렌탈 — 1개월 후 소유권 이전 (사은품 즉시 지급)</span>');
+        } else {
+          rec1.push('-'); rec2.push('-');
+        }
+        document.getElementById('cm-rec-1').innerHTML = rec1.join('<br>');
+        document.getElementById('cm-rec-2').innerHTML = rec2.join('<br>');
+
+        // 🌐 현재 인터넷 청취 정보
+        const intEl = document.getElementById('cm-r-internet');
+        if (c.current_internet_status === 'subscribed' && c.current_internet_carrier) {
+          const others = ['SK','KT','LG'].filter(x => x !== c.current_internet_carrier);
+          const yr = c.current_internet_signup_year ? ` (${c.current_internet_signup_year}~)` : '';
+          const lis = c.current_internet_listened_at ? ` · 청취 ${(c.current_internet_listened_at||'').slice(5,10)}` : '';
+          intEl.innerHTML = `<b style="color:#86efac">${esc(c.current_internet_carrier)}${yr}</b>${lis} → 권유 가능: <b>${others.join(' / ')}</b>`;
+        } else if (c.current_internet_status === 'none') {
+          intEl.innerHTML = `<b style="color:#86efac">미가입</b> → 3사 자유 권유`;
+        } else if (c.current_internet_status === 'unknown') {
+          intEl.innerHTML = `<span style="color:#fbbf24">고객이 모른다고 답변</span>`;
+        } else {
+          intEl.innerHTML = `<span style="color:#fbbf24">미청취 — 청취 필요</span>`;
+        }
+
+        // 📞 분배·콜 상태
+        const assignParts = [];
+        if (c.assigned_agent?.name) assignParts.push(`<b>${esc(c.assigned_agent.name)}</b>` + (c.assigned_agent.center ? `(${esc(c.assigned_agent.center)})` : ''));
+        if (c.assigned_at) assignParts.push((c.assigned_at||'').slice(5,10) + ' 분배');
+        if (c.call_count) assignParts.push(`콜 ${c.call_count}회`);
+        if (c.last_contacted_at) assignParts.push('최근 ' + (c.last_contacted_at||'').slice(5,10));
+        if (c.callback_at) assignParts.push(`<b style="color:#60a5fa">콜백 ${(c.callback_at||'').slice(5,16).replace('T',' ')}</b>`);
+        document.getElementById('cm-r-assign').innerHTML = assignParts.length ? assignParts.join(' · ') : '<i style="color:#94a3b8">미배정</i>';
+
+        // ✅ 동의·출처
+        const metaExtParts = [];
+        const consentMap = { agreed: 'PIPA 동의', declined: '미동의', unknown: '동의 미확인' };
+        if (c.consent_status) metaExtParts.push(consentMap[c.consent_status] || c.consent_status);
+        if (c.db_source?.name) metaExtParts.push(esc(c.db_source.name));
+        if (c.is_dnt) metaExtParts.push('<b style="color:#dc2626">🚫 DNT</b>');
+        document.getElementById('cm-r-meta-ext').innerHTML = metaExtParts.join(' · ') || '-';
+
+      }
+    }
     // 고객 메모 prefill
     const notesEl = document.getElementById('cm-notes');
     if (notesEl) {
@@ -980,6 +1227,7 @@ function renderCallQueueSide(list) {
     callback: { txt:'콜백', bg:'#3b82f6' },
     no_answer: { txt:'부재', bg:'#64748b' },
   };
+  const esc = (s) => String(s||'').replace(/[<>&]/g,'');
   el.innerHTML = list.slice(0, 30).map(c => {
     const sm = statusMap[c.call_status] || { txt:c.call_status, bg:'#475569' };
     const isCur = String(c.id) === String(window.CALL_MODE_CUSTOMER_ID);
@@ -988,16 +1236,62 @@ function renderCallQueueSide(list) {
     const cls = (isCur ? 'cq-item current' : 'cq-item') + (isCb ? ' callback' : '') + (isVisited ? ' visited' : '');
     const cb = c.callback_at ? new Date(c.callback_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
     const visitedTag = isVisited ? '<span style="font-size:9px;color:#fbbf24;margin-left:4px">↻ 이미 시도</span>' : '';
-    return `<div class="${cls}" onclick="switchCallCustomer('${c.id}')" style="${isVisited?'opacity:0.5;':''}">
-      <div class="name">${(c.name||'-').replace(/[<>&]/g,'')}${c.age?` <span style="font-size:10px;color:#94a3b8">${c.age|0}세</span>`:''}<span class="badge" style="background:${sm.bg}">${sm.txt}</span>${visitedTag}</div>
-      <div class="phone">${(c.phone||'-').replace(/[<>&]/g,'')}</div>
-      <div class="meta-line">${(c.region||'').replace(/[<>&]/g,'')} ${c.carrier?'· '+(c.carrier||'').replace(/[<>&]/g,''):''}${cb?' · 🕒 '+cb:''}</div>
+
+    // tier·category 배지
+    let tierBadge = '';
+    if (c.tier === 1) tierBadge = '<span style="background:#16a34a;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800;margin-left:4px">1차</span>';
+    else if (c.tier === 2) tierBadge = '<span style="background:#a855f7;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800;margin-left:4px">2차</span>';
+    const catTxt = c.category ? `<span style="font-size:9px;color:#fbbf24;margin-left:3px">${esc(c.category)}</span>` : '';
+
+    // 권유 한 줄 (사이드바 — 짧게)
+    let recLine = '';
+    if (c.tier === 1) {
+      if (c.current_internet_status === 'subscribed' && c.current_internet_carrier) {
+        const others = ['SK','KT','LG'].filter(x => x !== c.current_internet_carrier);
+        recLine = `🎯 → <b style="color:#86efac">${others.join('/')}</b> 권유`;
+      } else if (c.current_internet_status === 'none') {
+        recLine = `🎯 인터넷 미가입 <b style="color:#86efac">자유 권유</b>`;
+      } else {
+        recLine = `🎯 <b style="color:#fbbf24">인터넷 청취</b> 후 권유`;
+      }
+    } else if (c.tier === 2) {
+      recLine = `🎯 <b style="color:#e9d5ff">렌탈</b> 권유`;
+    }
+
+    // 개통 + 단말
+    const days = c.activation_date ? Math.floor((Date.now() - new Date(c.activation_date).getTime()) / 86400000) : null;
+    const openLine = c.activation_date
+      ? `📅 ${(c.activation_date||'').slice(5)} <span style="color:#94a3b8">(${days}일·${esc(c.subscription_type||'-')})</span>`
+      : '';
+    const devLine = c.device_model
+      ? `📱 ${esc(c.device_model)}${c.plan_name ? ' · 💳 ' + esc(c.plan_name) : ''}`
+      : '';
+    const storeLine = c.store
+      ? `🏬 ${esc(c.store)}${c.dealer ? '·' + esc(c.dealer) : ''}${c.carrier ? ' · 📡 ' + esc(c.carrier) : ''}`
+      : (c.carrier ? `📡 ${esc(c.carrier)}` : '');
+    const memoLine = c.memo_etc ? `<div style="font-size:9.5px;color:#cbd5e1;margin-top:3px;background:rgba(0,0,0,0.25);padding:3px 6px;border-radius:3px;line-height:1.4">📝 ${esc(c.memo_etc).slice(0,80)}${c.memo_etc.length>80?'…':''}</div>` : '';
+
+    // 컴팩트 (가로 스크롤 작은 카드)
+    return `<div class="${cls}" onclick="switchCallCustomer('${c.id}')" style="${isVisited?'opacity:0.5;':''}" title="${esc(c.name)} · ${esc(c.phone)}${c.memo_etc?'\n📝 '+esc(c.memo_etc):''}">
+      <div class="name">${esc(c.name)||'-'}${c.age?` <span style="font-size:9.5px;color:#94a3b8;font-weight:600">${c.age|0}</span>`:''}${tierBadge}${catTxt}</div>
+      <div class="phone">${esc(c.phone)||'-'}${cb?` 🕒${cb}`:''}</div>
+      ${devLine ? `<div class="meta-line" style="color:#cbd5e1">${devLine}</div>` : ''}
+      ${storeLine ? `<div class="meta-line">${storeLine}</div>` : ''}
+      ${recLine ? `<div style="font-size:9.5px;margin-top:auto;padding:2px 5px;background:rgba(22,163,74,0.12);border-left:2px solid ${c.tier===2?'#a855f7':'#16a34a'};border-radius:2px;color:#cbd5e1;line-height:1.3">${recLine}</div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
+        <span class="badge" style="background:${sm.bg}">${sm.txt}</span>
+        ${visitedTag||'<span></span>'}
+      </div>
     </div>`;
   }).join('');
 }
 
-function switchCallCustomer(customerId) {
+async function switchCallCustomer(customerId) {
   if (String(customerId) === String(window.CALL_MODE_CUSTOMER_ID)) return;
+  // 🆕 이전 customer 메모 자동저장 강제 (800ms timer 진행 중인 거 즉시 flush)
+  if (typeof flushNotesNow === 'function') {
+    try { await flushNotesNow(); } catch {}
+  }
   const url = new URL(location.href);
   url.searchParams.set('customer_id', customerId);
   history.replaceState({}, '', url.toString());
