@@ -5,7 +5,7 @@
 //   - API (/api/*): network only (캐시 X — 실시간 데이터 보존)
 // 버전 변경 시 강제 갱신: SW_VERSION 숫자 올리고 배포
 
-const SW_VERSION = 'v2';
+const SW_VERSION = 'v3';
 const STATIC_CACHE = 'bongi-static-' + SW_VERSION;
 const RUNTIME_CACHE = 'bongi-runtime-' + SW_VERSION;
 
@@ -29,9 +29,9 @@ self.addEventListener('fetch', (event) => {
   // API 호출은 절대 캐시하지 않음 (실시간 데이터 보존)
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
 
-  // 다른 origin — cache-first (단 daumcdn은 SW 우회 — 빈 응답 캐시되면 주소 검색 안 됨)
+  // 다른 origin — cache-first (단 daumcdn·jsdelivr는 SW 우회 — 빈 응답 캐시되면 라이브러리 깨짐)
   if (url.origin !== self.location.origin) {
-    if (url.hostname.includes('daumcdn.net')) return; // SW 미관여 → 브라우저 직접 fetch
+    if (url.hostname.includes('daumcdn.net') || url.hostname.includes('jsdelivr.net')) return;
     event.respondWith(cacheFirst(req));
     return;
   }
