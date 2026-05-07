@@ -75,6 +75,19 @@ table td.r { text-align:right; font-family:monospace; }
   <div id="agent-table"></div>
 </div>
 
+<!-- 📊 상담사 × 출처 × 상태 cross-tab -->
+<div class="card" style="margin-top:14px">
+  <h3>📊 상담사 × 상태 분포 <span style="font-size:11px;color:#94a3b8;font-weight:400" id="ct-meta"></span></h3>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+    <label style="font-size:11px;color:#94a3b8">출처 필터:
+      <select id="ct-source" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:5px 9px;border-radius:5px;font-size:12px;margin-left:4px"><option value="">전체</option></select>
+    </label>
+    <button onclick="loadCrossTab()" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:11px;cursor:pointer">🔄 갱신</button>
+    <button onclick="exportCrossTabCsv()" style="background:#16a34a;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:11px;cursor:pointer">📥 CSV</button>
+  </div>
+  <div id="ct-table" style="overflow-x:auto"></div>
+</div>
+
 <div id="empty" style="display:none">기간 내 콜 데이터 없음</div>
 
 <script>
@@ -208,6 +221,121 @@ function renderAgentTable(agents) {
 }
 
 loadAll();
+
+// ═══ 📊 상담사 × 상태 cross-tab ═══
+let _ctRows = [];
+async function loadCrossTab() {
+  const r = await fetchAuth('/api/customer-db/stats/cross-tab');
+  if (!r.ok) {
+    document.getElementById('ct-table').innerHTML = `<div style="padding:14px;color:#f87171">조회 실패: ${r.status} (manager·admin 전용)</div>`;
+    return;
+  }
+  const d = await r.json();
+  _ctRows = d.rows || [];
+  // 출처 필터 옵션 채움
+  const sources = [...new Map(_ctRows.filter(r => r.db_source).map(r => [r.db_source.id, r.db_source])).values()];
+  const sel = document.getElementById('ct-source');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">전체</option>' + sources.map(s => `<option value="${s.id}">${(s.name||'-').replace(/[<>&]/g,'')}</option>`).join('');
+  if (cur) sel.value = cur;
+  sel.onchange = renderCrossTab;
+  renderCrossTab();
+}
+function renderCrossTab() {
+  const sourceId = document.getElementById('ct-source').value;
+  const rows = sourceId ? _ctRows.filter(r => String(r.db_source?.id) === sourceId) : _ctRows;
+  document.getElementById('ct-meta').textContent = `· 총 ${rows.length.toLocaleString()}건`;
+
+  // pivot: agent_id → { 미연락, 콜백, 부재, 거절, 전환, DNT, 합계 }
+  const STATUSES = [
+    { k:'pending',     label:'⏰ 미연락', color:'#94a3b8' },
+    { k:'callback',    label:'📞 콜백',   color:'#60a5fa' },
+    { k:'no_answer',   label:'📵 부재',   color:'#f59e0b' },
+    { k:'contacted',   label:'✅ 컨택',   color:'#22c55e' },
+    { k:'rejected',    label:'❌ 거절',   color:'#fca5a5' },
+    { k:'converted',   label:'🎉 전환',   color:'#86efac' },
+    { k:'dnt',         label:'🚫 DNT',    color:'#7f1d1d' },
+    { k:'wrong_number',label:'⚠ 잘못',    color:'#94a3b8' },
+  ];
+  const pivot = new Map();
+  for (const r of rows) {
+    const aid = r.agent?.id || '__unassigned';
+    const aname = r.agent?.name || '미배정';
+    const acenter = r.agent?.center || '-';
+    if (!pivot.has(aid)) pivot.set(aid, { name: aname, center: acenter, total: 0, byStatus: {} });
+    const cell = pivot.get(aid);
+    const s = r.is_dnt ? 'dnt' : r.call_status;
+    cell.byStatus[s] = (cell.byStatus[s] || 0) + 1;
+    cell.total++;
+  }
+  const sorted = [...pivot.values()].sort((a, b) => b.total - a.total);
+  if (!sorted.length) {
+    document.getElementById('ct-table').innerHTML = '<div style="padding:14px;color:#64748b;text-align:center">데이터 없음</div>';
+    return;
+  }
+  const totalRow = STATUSES.reduce((m, s) => { m[s.k] = sorted.reduce((sum, r) => sum + (r.byStatus[s.k]||0), 0); return m; }, {});
+  const grandTotal = sorted.reduce((s, r) => s + r.total, 0);
+
+  const headerCells = STATUSES.map(s => `<th style="padding:8px 6px;text-align:right;color:${s.color};font-size:10.5px;font-weight:800">${s.label}</th>`).join('');
+  const bodyRows = sorted.map(r => {
+    const cells = STATUSES.map(s => {
+      const v = r.byStatus[s.k] || 0;
+      const pct = r.total ? (v / r.total * 100) : 0;
+      return `<td style="padding:6px;text-align:right;font-size:11px"><b>${v}</b>${v ? `<span style="color:#64748b;font-size:9.5px"> (${pct.toFixed(0)}%)</span>` : ''}</td>`;
+    }).join('');
+    return `<tr style="border-bottom:1px solid #1e293b">
+      <td style="padding:8px;text-align:left"><b>${(r.name||'-').replace(/[<>&]/g,'')}</b></td>
+      <td style="padding:8px;text-align:left;color:#a5b4fc;font-size:11px">${(r.center||'-').replace(/[<>&]/g,'')}</td>
+      <td style="padding:8px;text-align:right;color:#fbbf24;font-weight:800">${r.total}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+  const totalCells = STATUSES.map(s => `<td style="padding:8px 6px;text-align:right;font-weight:800;color:${s.color}">${totalRow[s.k]}</td>`).join('');
+
+  document.getElementById('ct-table').innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:11.5px;min-width:900px">
+      <thead><tr style="background:#1e3a8a;color:#bfdbfe">
+        <th style="padding:8px;text-align:left">상담사</th>
+        <th style="padding:8px;text-align:left">센터</th>
+        <th style="padding:8px;text-align:right">총</th>
+        ${headerCells}
+      </tr></thead>
+      <tbody>${bodyRows}</tbody>
+      <tfoot><tr style="background:#0f172a;border-top:2px solid #475569">
+        <td style="padding:8px;text-align:left;font-weight:800">합계</td>
+        <td style="padding:8px"></td>
+        <td style="padding:8px;text-align:right;font-weight:800;color:#fde047">${grandTotal}</td>
+        ${totalCells}
+      </tr></tfoot>
+    </table>`;
+}
+function exportCrossTabCsv() {
+  if (!_ctRows.length) return;
+  const STATUSES = ['pending','callback','no_answer','contacted','rejected','converted','dnt','wrong_number'];
+  const sourceId = document.getElementById('ct-source').value;
+  const rows = sourceId ? _ctRows.filter(r => String(r.db_source?.id) === sourceId) : _ctRows;
+  const pivot = new Map();
+  for (const r of rows) {
+    const aid = r.agent?.id || '__';
+    if (!pivot.has(aid)) pivot.set(aid, { name: r.agent?.name||'미배정', center: r.agent?.center||'-', byStatus: {}, total: 0 });
+    const c = pivot.get(aid);
+    const s = r.is_dnt ? 'dnt' : r.call_status;
+    c.byStatus[s] = (c.byStatus[s]||0) + 1;
+    c.total++;
+  }
+  const headers = ['상담사','센터','총',...STATUSES];
+  const lines = [...pivot.values()].sort((a,b)=>b.total-a.total).map(r =>
+    [r.name, r.center, r.total, ...STATUSES.map(s => r.byStatus[s]||0)]
+      .map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')
+  );
+  const csv = '﻿' + [headers.join(','), ...lines].join('\r\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `상담사_상태분포_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+loadCrossTab();
 </script>
 </body>
 </html>

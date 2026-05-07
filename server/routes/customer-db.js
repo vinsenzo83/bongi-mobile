@@ -707,6 +707,28 @@ router.get('/export/csv', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// 8-4-1. GET /stats/cross-tab — 상담사 × 출처 × 상태 pivot 데이터
+// ═══════════════════════════════════════════════════════════════
+router.get('/stats/cross-tab', async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || (me.role !== 'admin' && me.role !== 'manager')) return res.status(403).json({ error: 'admin·manager 전용' });
+    let q = supabase.from('incentive_customer_db').select(
+      'assigned_agent_id, db_source_id, call_status, is_dnt, ' +
+      'agent:incentive_agents!incentive_customer_db_assigned_agent_id_fkey(id, name, center, role), ' +
+      'db_source:incentive_db_sources(id, name, color)'
+    ).is('deleted_at', null).eq('archived', false);
+    if (me.role === 'manager') {
+      const { data: members } = await supabase.from('incentive_agents').select('id').eq('center', me.center).eq('active', true);
+      q = q.in('assigned_agent_id', (members || []).map(x => x.id));
+    }
+    const { data, error } = await q.limit(50000);
+    if (error) throw error;
+    res.json({ rows: data || [] });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // 8-5. POST /recall — DB 회수 (admin·manager)
 //   body: { agent_id, status_filter?, days_inactive?, reason } 또는 { customer_ids[], reason }
 //   동작: assigned_agent_id·assigned_center 모두 NULL → 미배정 풀 복귀
