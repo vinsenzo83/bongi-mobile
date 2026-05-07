@@ -75,8 +75,8 @@ table td.r { text-align:right; font-family:monospace; }
   <div id="agent-table"></div>
 </div>
 
-<!-- 📊 상담사 × 출처 × 상태 cross-tab -->
-<div class="card" style="margin-top:14px">
+<!-- 📊 상담사 × 출처 × 상태 cross-tab — admin·manager 전용 (agent에겐 숨김) -->
+<div class="card" id="ct-section" style="margin-top:14px;display:none">
   <h3>📊 상담사 × 상태 분포 <span style="font-size:11px;color:#94a3b8;font-weight:400" id="ct-meta"></span></h3>
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
     <label style="font-size:11px;color:#94a3b8">출처 필터:
@@ -222,12 +222,23 @@ function renderAgentTable(agents) {
 
 loadAll();
 
-// ═══ 📊 상담사 × 상태 cross-tab ═══
+// ═══ 📊 상담사 × 상태 cross-tab (admin·manager 전용) ═══
 let _ctRows = [];
 async function loadCrossTab() {
+  // role 확인 — agent면 섹션 숨김 + fetch 안 함
+  const meR = await fetchAuth('/api/incentive/agents/me');
+  if (meR.ok) {
+    const me = (await meR.json()).agent;
+    if (me?.role === 'agent') {
+      const sec = document.getElementById('ct-section');
+      if (sec) sec.style.display = 'none';
+      return;
+    }
+    document.getElementById('ct-section').style.display = '';
+  }
   const r = await fetchAuth('/api/customer-db/stats/cross-tab');
   if (!r.ok) {
-    document.getElementById('ct-table').innerHTML = `<div style="padding:14px;color:#f87171">조회 실패: ${r.status} (manager·admin 전용)</div>`;
+    document.getElementById('ct-table').innerHTML = `<div style="padding:14px;color:#f87171">조회 실패: ${r.status}</div>`;
     return;
   }
   const d = await r.json();
