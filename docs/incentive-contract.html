@@ -1322,6 +1322,12 @@ function openEditModal(id) {
 
 // ═══ 🏪 접수 대리점 섹션 동적 삽입 ═══
 async function injectDealerSection(c) {
+  // role별 mutate 가능한 행에만 노출 (다른 사람 sale엔 dealer select 숨김)
+  const _me = window._myAgent || {};
+  const _canMutate = _me.role === 'admin' || _me.role === 'contract'
+    || (_me.role === 'manager' && c.agent?.center === _me.center)
+    || (_me.role === 'agent' && c.agent_id === _me.id);
+  if (!_canMutate) return;
   const p = c.product || {};
   const carrierMap = { 'SKT':'skt', 'KT':'kt', 'LGU+':'lgu', 'lgu+':'lgu' };
   const carrier = carrierMap[p.carrier] || (p.carrier || '').toLowerCase().replace('+','');

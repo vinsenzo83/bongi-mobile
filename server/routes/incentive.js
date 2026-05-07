@@ -1372,7 +1372,9 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
     if (me.role === 'agent') {
       q = q.eq('agent_id', me.id);
     } else if (me.role === 'manager') {
-      q = q.eq('agent.center', me.center);
+      // PostgREST는 join 컬럼 .eq()로 필터 안 됨 → agent_id IN (본인 센터 멤버) 패턴
+      const { data: members } = await supabase.from('incentive_agents').select('id').eq('center', me.center).eq('active', true);
+      q = q.in('agent_id', (members || []).map(x => x.id));
     }
 
     const orderField = trash ? 'deleted_at' : 'contract_date';
