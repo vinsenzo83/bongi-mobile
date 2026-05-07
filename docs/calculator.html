@@ -2427,7 +2427,7 @@ function renderTicketList() {
 }
 renderTicketList();
 renderDefaultControls();
-if (typeof renderSalesControls === 'function') renderSalesControls();
+// renderSalesControls는 SALES_DEFAULT(line 3068) 할당 이후 평가되어야 하므로 DOMContentLoaded 시점에 호출
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof renderSalesControls === 'function') renderSalesControls();
 });
@@ -3091,7 +3091,8 @@ function loadSalesOverrides() {
     // 깨진 데이터 자동 정리 (다음 로드부터 정상)
     try { localStorage.removeItem(SALES_KEY); } catch(_) {}
   }
-  return JSON.parse(JSON.stringify(SALES_DEFAULT));
+  // SALES_DEFAULT가 hoisting 시점에 undefined일 수 있어 || {} 방어
+  return JSON.parse(JSON.stringify(SALES_DEFAULT || {}));
 }
 function saveSalesOverrides(obj) {
   // undefined/null 저장 차단 (이전 버그로 "undefined" 문자열 저장된 케이스 방지)
