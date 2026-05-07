@@ -2589,27 +2589,29 @@ function calc() {
   wrapSec1IfBothSectorsPresent();
 }
 
-// 섹터 1과 섹터 2가 동시 렌더링된 경우 섹터 1을 <details>로 wrap (기본 접힘).
-// 섹터 2 없을 때(섹터 1 단독)는 그대로 — 결합 미적용 시 정상 보기.
+// 섹터 1·섹터 2 동시 표시 시 섹터 1을 접기/펴기 토글 (기존 UI 그대로 살림).
+// 섹터 1 헤더 div를 클릭 가능하게 만들고 본문은 hide. 섹터 2 없을 땐 미동작.
 function wrapSec1IfBothSectorsPresent() {
   const root = document.getElementById('c-result');
   if (!root) return;
-  if (root.querySelector('details.tm-sec1-wrap')) return; // 이미 처리됨
+  if (root.querySelector('.tm-sec1-body')) return; // 이미 처리됨
   const children = Array.from(root.children);
   const sec1Idx = children.findIndex(el => /섹터\s*1/.test(el.textContent || ''));
   const sec2Idx = children.findIndex(el => /섹터\s*2/.test(el.textContent || ''));
   if (sec2Idx === -1 || sec1Idx === -1 || sec2Idx <= sec1Idx) return;
 
-  const sec1HeaderTxt = (children[sec1Idx].textContent || '').trim().replace(/^[^—]*—\s*/, '');
-  const details = document.createElement('details');
-  details.className = 'tm-sec1-wrap';
-  details.style.cssText = 'margin-bottom:8px;background:rgba(59,130,246,0.05);border:1px solid rgba(147,197,253,0.18);border-radius:6px;padding:6px 10px';
-  const summary = document.createElement('summary');
-  summary.style.cssText = 'cursor:pointer;font-size:11.5px;color:#93c5fd;font-weight:800;list-style:none;outline:none;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0';
-  summary.innerHTML = '<span>🏠 섹터 1 — ' + sec1HeaderTxt + '</span><span style="font-size:10px;color:#94a3b8;font-weight:400">▼ 펼치기</span>';
-  details.appendChild(summary);
-  for (let i = sec1Idx; i < sec2Idx; i++) details.appendChild(children[i]); // appendChild가 기존 위치에서 자동 제거
-  root.insertBefore(details, children[sec2Idx]);
+  const header = children[sec1Idx];
+  header.style.cursor = 'pointer';
+  header.title = '클릭해서 펼치기/접기';
+  // 본문 div 만들기 (sec1 헤더 다음 ~ sec2 헤더 직전)
+  const body = document.createElement('div');
+  body.className = 'tm-sec1-body';
+  body.style.display = 'none'; // 기본 접힘
+  for (let i = sec1Idx + 1; i < sec2Idx; i++) body.appendChild(children[i]);
+  header.parentNode.insertBefore(body, header.nextSibling);
+  header.addEventListener('click', () => {
+    body.style.display = (body.style.display === 'none') ? '' : 'none';
+  });
 }
 
 // ╔════════════════════════════════════════════════════╗
