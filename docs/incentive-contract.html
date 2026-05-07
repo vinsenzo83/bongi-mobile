@@ -985,7 +985,7 @@ async function handleAction(id, act) {
     body = { status: 'completed' };
   }
 
-  if (window._readOnly) { showToast('👁 읽기 전용 — 매니저에게 요청하세요'); return; }
+  // role별 권한은 서버 PATCH/DELETE에서 검증 — UI는 _canMutate로 행 단위 차단
   try {
     const res = await fetch(API + '/sales/' + id, {
       method: 'PATCH',
