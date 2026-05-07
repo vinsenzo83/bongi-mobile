@@ -1,0 +1,53 @@
+name: Backup incentive_calculator_overrides (daily KST 03:00)
+
+on:
+  schedule:
+    # UTC 18:00 = KST 03:00 (다음 날) — 매일 한국시간 새벽 3시
+    - cron: '0 18 * * *'
+  workflow_dispatch: {} # 수동 실행 가능
+
+permissions:
+  contents: write # backups/ 폴더 자동 커밋
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 1
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install deps (only what backup script needs)
+        run: |
+          npm ci --omit=dev --ignore-scripts || npm install --omit=dev --ignore-scripts @supabase/supabase-js dotenv
+
+      - name: Run backup
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/backup-incentive-overrides.mjs
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "bongi-backup-bot"
+          git config user.email "backup@bongi-mobile.local"
+          if git diff --quiet --exit-code backups/incentive/ ; then
+            echo "= 변경 없음 — 커밋 생략 (직전 백업과 동일)"
+            exit 0
+          fi
+          STAMP=$(date -u -d '+9 hours' +'%Y-%m-%d %H:%M KST')
+          git add backups/incentive/
+          # [skip ci] 필수 — Railway 자동 재배포 방지
+          git commit -m "[skip ci] backup: incentive_calculator_overrides @ ${STAMP}
+
+자동 일일 백업. 직전 스냅샷과 다를 때만 커밋.
+복원: backups/incentive/YYYY-MM-DD_HHMMSS_KST_calc-overrides.json"
+          git push origin master
