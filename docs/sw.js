@@ -24,6 +24,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return; // POST/PATCH/PUT/DELETE는 네트워크
+  // 🆕 chrome-extension·moz-extension·data·blob 등 unsupported scheme 캐싱 차단
+  if (!req.url.startsWith('http://') && !req.url.startsWith('https://')) return;
   const url = new URL(req.url);
 
   // API 호출은 절대 캐시하지 않음 (실시간 데이터 보존)

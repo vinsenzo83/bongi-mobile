@@ -1551,7 +1551,7 @@ router.post('/calc-history', authenticateJWT, async (req, res) => {
 // calculator.html 6종 overrides 통합 저장 (localStorage → DB Phase 2)
 // section: 'tv' / 'bundle' / 'device' / 'install' / 'card' / 'gift' / 'gift-catalog-custom'
 // ═══════════════════════════════════════════════════════════════
-const CALC_OVERRIDE_SECTIONS = ['tv','bundle','device','install','card','gift','gift-catalog-custom'];
+const CALC_OVERRIDE_SECTIONS = ['tv','bundle','device','install','card','gift','gift-catalog-custom','sales'];
 
 // GET /api/incentive/calc-overrides — 모든 섹션 override 조회 (모든 logged-in user)
 router.get('/calc-overrides', authenticateJWT, async (req, res) => {

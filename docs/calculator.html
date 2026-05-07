@@ -2867,6 +2867,7 @@ var SECTION_TO_LS = {
   'card': 'bongi-partner-cards',
   'gift': 'bongi-gift-overrides',
   'gift-catalog-custom': 'bongi-gift-catalog-custom',
+  'sales': 'bongi-sales-overrides-v1',
 };
 
 // PUT 디바운스 큐 — 같은 섹션 짧은 시간 다중 호출 시 마지막 페이로드만 전송
@@ -3081,12 +3082,20 @@ var SALES_DEFAULT = {
 
 function loadSalesOverrides() {
   try {
-    var raw = JSON.parse(localStorage.getItem(SALES_KEY) || 'null');
-    if (raw && raw.priority && raw.contract) return raw;
-  } catch(e) {}
+    var v = localStorage.getItem(SALES_KEY);
+    if (v && v !== 'undefined' && v !== 'null') {
+      var raw = JSON.parse(v);
+      if (raw && raw.priority && raw.contract) return raw;
+    }
+  } catch(e) {
+    // 깨진 데이터 자동 정리 (다음 로드부터 정상)
+    try { localStorage.removeItem(SALES_KEY); } catch(_) {}
+  }
   return JSON.parse(JSON.stringify(SALES_DEFAULT));
 }
 function saveSalesOverrides(obj) {
+  // undefined/null 저장 차단 (이전 버그로 "undefined" 문자열 저장된 케이스 방지)
+  if (obj == null) { console.warn('[saveSalesOverrides] null/undefined 저장 시도 차단'); return; }
   try { localStorage.setItem(SALES_KEY, JSON.stringify(obj)); } catch(e) {}
   syncCalcOverrideToDb('sales', obj);
 }
