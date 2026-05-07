@@ -731,68 +731,6 @@ router.get('/stats/cross-tab', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// 8-4-2. POST /manual — 수동 고객 등록 (TM 상담 v2)
-// 본인에게 자동 분배 + db_source='수동' 표시
-// ═══════════════════════════════════════════════════════════════
-router.post('/manual', async (req, res) => {
-  try {
-    const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!me) return res.status(401).json({ error: 'unauthenticated' });
-    const { name, phone, region, carrier, db_source_id, notes, age, gender, category_1, category_2 } = req.body || {};
-    if (!name || !phone) return res.status(400).json({ error: '이름·전화 필수' });
-    // 길이 제한
-    const safe = (s, n) => (s == null ? null : String(s).trim().slice(0, n) || null);
-    const phoneClean = String(phone).replace(/[^0-9]/g, '');
-    if (phoneClean.length < 9) return res.status(400).json({ error: '전화번호 형식 오류' });
-
-    // 중복 체크 — 동일 phone + 동일 agent + active 인 row 있으면 거부
-    const { data: dup } = await supabase.from('incentive_customer_db')
-      .select('id, name').eq('phone', phoneClean).eq('assigned_agent_id', me.id).is('deleted_at', null).eq('archived', false).limit(1);
-    if (dup?.length) return res.status(409).json({ error: '이미 본인에게 분배된 동일 전화번호 고객이 있습니다 (' + dup[0].name + ')' });
-
-    const now = new Date().toISOString();
-    const insert = {
-      name: safe(name, 100),
-      phone: phoneClean,
-      region: safe(region, 100),
-      carrier: safe(carrier, 50),
-      age: age ? parseInt(age) : null,
-      gender: safe(gender, 10),
-      notes: safe(notes, 2000),
-      db_source_id: db_source_id ? parseInt(db_source_id) : null,
-      assigned_agent_id: me.id,
-      assigned_center: me.center,
-      assigned_at: now,
-      assigned_by_user_id: req.user.id,
-      imported_at: now,
-      imported_by_user_id: req.user.id,
-      call_status: 'pending',
-      priority_score: 100, // 수동 등록은 높은 우선순위
-    };
-    // category_1·category_2 컬럼 있으면 저장 (없으면 무시 — 추후 추가 시 자동 활용)
-    if (category_1) insert.category_1 = safe(category_1, 50);
-    if (category_2) insert.category_2 = safe(category_2, 50);
-
-    const { data, error } = await supabase.from('incentive_customer_db').insert(insert).select().single();
-    if (error) {
-      // category_* 컬럼 없으면 다시 시도
-      if (error.code === 'PGRST204' || /column.*does not exist/i.test(error.message || '')) {
-        delete insert.category_1; delete insert.category_2;
-        const r2 = await supabase.from('incentive_customer_db').insert(insert).select().single();
-        if (r2.error) throw r2.error;
-        return res.json({ customer: r2.data, note: 'category 컬럼 미존재 (1차/2차 분류 추후 적용 시 활용)' });
-      }
-      throw error;
-    }
-    logAccess({
-      user_id: req.user.id, customer_id: data.id, action: 'manual_create', ip: req.ip, ua: req.get('user-agent'),
-      metadata: { name: data.name, phone: data.phone, db_source_id: data.db_source_id },
-    });
-    res.json({ customer: data });
-  } catch (e) { console.error('[manual-create]', e); res.status(500).json({ error: sanitizeErr(e) }); }
-});
-
-// ═══════════════════════════════════════════════════════════════
 // 8-5. POST /recall — DB 회수 (admin·manager)
 //   body: { agent_id, status_filter?, days_inactive?, reason } 또는 { customer_ids[], reason }
 //   동작: assigned_agent_id·assigned_center 모두 NULL → 미배정 풀 복귀
