@@ -177,15 +177,33 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
 </div>
 
 <script>
-// 🚀 Service Worker — 개발 중 비활성 (localhost는 캐시 X, prod에서만 활성)
+// 🚀 Service Worker — 옛 v1·v2 stuck 강제 정리 후 새 v3 등록
 if ('serviceWorker' in navigator) {
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    // 로컬: 기존 SW 모두 제거 (개발 캐시 안 함)
     navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
     if (window.caches) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
   } else {
-    // 프로덕션: SW 등록
-    navigator.serviceWorker.register('/docs/sw.js', { scope: '/docs/' }).catch(() => {});
+    // 🔑 v3 cleanup — 옛 SW(v1·v2) 잔존 시 한 번만 unregister + 캐시 삭제 + reload
+    const SW_CLEANUP_KEY = 'sw-cleanup-2026-05-v3';
+    if (!localStorage.getItem(SW_CLEANUP_KEY)) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        if (regs.length === 0) {
+          // 첫 진입 — 옛 SW 없음, 바로 새 등록
+          localStorage.setItem(SW_CLEANUP_KEY, '1');
+          navigator.serviceWorker.register('/docs/sw.js', { scope: '/docs/' }).catch(() => {});
+        } else {
+          Promise.all(regs.map(r => r.unregister())).then(() => {
+            const c = window.caches ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))) : Promise.resolve();
+            return c;
+          }).then(() => {
+            localStorage.setItem(SW_CLEANUP_KEY, '1');
+            location.reload(); // 새 페이지 로드 → 다음 진입 시 v3 등록
+          });
+        }
+      });
+    } else {
+      navigator.serviceWorker.register('/docs/sw.js', { scope: '/docs/' }).catch(() => {});
+    }
   }
 }
 
