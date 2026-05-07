@@ -1,7 +1,32 @@
+// 🔴 Sentry 가장 먼저 초기화 (다른 import 전 — instrumentation 적용 위해)
+import * as Sentry from '@sentry/node';
+import dotenv from 'dotenv';
+import { fileURLToPath as _fu } from 'url';
+import { dirname as _dn, join as _jn } from 'path';
+const __sentry_dir = _dn(_fu(import.meta.url));
+dotenv.config({ path: _jn(__sentry_dir, '..', '.env') });
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0.5,
+    // 운영 모드는 PII 제거
+    sendDefaultPii: false,
+    beforeSend(event, hint) {
+      // 라우트 path만 보존 + body·headers 제거
+      if (event.request) {
+        delete event.request.cookies;
+        delete event.request.data;
+      }
+      return event;
+    },
+  });
+  console.log('🔴 Sentry 활성 (env:', process.env.NODE_ENV || 'dev', ')');
+}
+
 import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
@@ -230,6 +255,8 @@ app.get('/', (req, res) => {
 });
 
 // 전역 에러 핸들러
+// Sentry Express 에러 핸들러 (errorHandler보다 먼저 — 미처리 에러 캡처)
+if (process.env.SENTRY_DSN) Sentry.setupExpressErrorHandler(app);
 app.use(errorHandler);
 
 // 공시지원금 크롤링 스케줄 (매일 09:00 KST)
