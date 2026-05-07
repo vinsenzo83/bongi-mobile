@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✏️ TM 상담 v2 (수동 등록)</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Pretendard Variable',sans-serif; background:#0f172a; color:#e2e8f0; padding:18px 18px 80px; min-height:100vh; }
+.wrap { max-width:1100px; margin:0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid #334155; margin-bottom:14px; }
+h1 { font-size:20px; }
+.subtitle { font-size:11px; color:#94a3b8; margin-top:3px; }
+
+.banner { background:linear-gradient(90deg,#1e3a8a,#0f172a); color:#bfdbfe; padding:10px 16px; font-size:11.5px; border-radius:8px; margin-bottom:14px; line-height:1.5; }
+
+.section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:10px; padding:18px 22px; margin-bottom:14px; }
+.section h2 { font-size:14px; color:#fbbf24; font-weight:800; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #334155; }
+
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+@media (max-width:768px) { .grid-2, .grid-3 { grid-template-columns:1fr; } }
+
+label { display:block; font-size:11.5px; color:#cbd5e1; margin-bottom:4px; font-weight:700; }
+label .required { color:#ef4444; margin-left:3px; }
+input, select, textarea {
+  width:100%; background:#0f172a; border:1px solid #475569; color:#e2e8f0;
+  padding:9px 12px; border-radius:6px; font-size:13px; font-family:inherit; margin-bottom:10px;
+}
+input:focus, select:focus, textarea:focus { outline:none; border-color:#60a5fa; background:#1e293b; }
+textarea { resize:vertical; min-height:80px; }
+
+.btn-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.btn { background:#16a34a; color:#fff; border:none; padding:11px 24px; border-radius:6px; font-weight:800; cursor:pointer; font-size:13px; }
+.btn:hover { background:#15803d; }
+.btn.secondary { background:#475569; }
+.btn.muted { background:transparent; color:#94a3b8; border:1px solid #334155; padding:10px 20px; }
+
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:14px 24px; border-radius:10px; font-weight:800; z-index:99999; opacity:0; transition:opacity 0.2s; }
+#toast.show { opacity:1; }
+
+.recent-list { font-size:11.5px; }
+.recent-list .row { display:flex; gap:10px; padding:8px 6px; border-bottom:1px solid #1e293b; align-items:center; }
+.recent-list .row:hover { background:rgba(59,130,246,0.05); }
+.recent-list .name { font-weight:800; color:#f8fafc; min-width:80px; }
+.recent-list .phone { font-family:monospace; color:#94a3b8; min-width:120px; }
+.recent-list .when { color:#64748b; font-size:10.5px; }
+</style>
+<script>
+(function(){ if (window !== window.parent) { document.documentElement.classList.add('embedded-mode'); var s=document.createElement('style'); s.textContent='.embedded-mode header{display:none!important}body{padding-top:14px!important}'; document.head.appendChild(s); } })();
+</script>
+<script src="/docs/_security.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>✏️ TM 상담 v2 — 수동 등록</h1>
+      <div class="subtitle">콜 큐(자동 분배) 거치지 않고 직접 상담한 고객을 등록 · 본인에게 자동 분배</div>
+    </div>
+    <div id="user-info" style="font-size:12px;color:#cbd5e1"><span id="user-name">-</span></div>
+  </header>
+
+  <div id="main" style="display:none">
+    <div class="banner">
+      💡 v1(큐콜)과 차이: <b>DB에서 자동 호출 X</b> · 직접 입력한 고객 정보를 본인 콜 큐에 추가 → 견적·계약은 [📞 TM 상담 v1] 또는 [📋 계약 처리]에서 진행
+    </div>
+
+    <div class="section">
+      <h2>👤 고객 정보 입력</h2>
+      <div class="grid-2">
+        <div>
+          <label>이름<span class="required">*</span></label>
+          <input type="text" id="f-name" maxlength="100" placeholder="홍길동" autocomplete="off">
+        </div>
+        <div>
+          <label>전화번호<span class="required">*</span></label>
+          <input type="tel" id="f-phone" maxlength="20" placeholder="010-0000-0000">
+        </div>
+      </div>
+      <div class="grid-3">
+        <div>
+          <label>나이</label>
+          <input type="number" id="f-age" min="0" max="120" placeholder="30">
+        </div>
+        <div>
+          <label>성별</label>
+          <select id="f-gender">
+            <option value="">선택</option>
+            <option value="남">남</option>
+            <option value="여">여</option>
+          </select>
+        </div>
+        <div>
+          <label>현 통신사</label>
+          <select id="f-carrier">
+            <option value="">선택</option>
+            <option value="SKT">SKT</option>
+            <option value="KT">KT</option>
+            <option value="LGU+">LGU+</option>
+            <option value="알뜰폰">알뜰폰</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>지역</label>
+        <input type="text" id="f-region" maxlength="100" placeholder="광주 동구 / 전남 순천 ...">
+      </div>
+      <div>
+        <label>DB 출처<span class="required">*</span></label>
+        <select id="f-source"><option value="">로딩 중...</option></select>
+      </div>
+      <div>
+        <label>상담 메모</label>
+        <textarea id="f-notes" maxlength="2000" placeholder="고객 요청사항·관심상품·약정만료일·예상 가입일 등 자유 메모"></textarea>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn" onclick="submitForm()">💾 등록 + 본인 분배</button>
+        <button class="btn muted" onclick="resetForm()">초기화</button>
+        <span id="status-msg" style="font-size:11.5px;color:#94a3b8;margin-left:auto"></span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📋 최근 본인 수동 등록 (오늘) <span style="font-size:10px;color:#94a3b8;font-weight:400" id="recent-count">-</span></h2>
+      <div id="recent-list" class="recent-list"><div style="padding:14px;color:#64748b;text-align:center">없음</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api/customer-db';
+const TK_KEY = 'incentive-auth-token-v1';
+const tk = () => localStorage.getItem(TK_KEY);
+async function fetchAuth(url, opts={}) { return fetch(url, { ...opts, headers:{ ...(opts.headers||{}), Authorization:'Bearer '+tk() }}); }
+const esc = (s) => String(s ?? '').replace(/[<>&"']/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[ch]));
+function showToast(m, ok=true) { const t=document.getElementById('toast'); t.style.background=ok?'#16a34a':'#dc2626'; t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); }
+
+async function init() {
+  if (!tk()) { document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#64748b">로그인 후 이용</div>'; return; }
+  const r = await fetchAuth('/api/incentive/agents/me');
+  if (!r.ok) { document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#f87171">인증 실패</div>'; return; }
+  const me = (await r.json()).agent;
+  document.getElementById('user-name').textContent = me.name + ' (' + me.role + ')';
+  document.getElementById('main').style.display = '';
+  await loadSources();
+  loadRecent();
+}
+
+async function loadSources() {
+  const r = await fetchAuth('/api/incentive/db-sources');
+  if (!r.ok) return;
+  const d = await r.json();
+  const sel = document.getElementById('f-source');
+  const sources = (d.db_sources || []).filter(s => s.active !== false);
+  sel.innerHTML = '<option value="">선택...</option>' + sources.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  // '수동입력' 출처 자동 선택 (있으면)
+  const manual = sources.find(s => s.name?.includes('수동') || s.name?.includes('manual'));
+  if (manual) sel.value = manual.id;
+}
+
+async function submitForm() {
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const source = document.getElementById('f-source').value;
+  const status = document.getElementById('status-msg');
+  if (!name || !phone) { showToast('이름·전화 필수', false); return; }
+  if (!source) { showToast('DB 출처 선택 필요', false); return; }
+  status.textContent = '⏳ 등록 중...';
+  const body = {
+    name, phone,
+    region: document.getElementById('f-region').value.trim(),
+    carrier: document.getElementById('f-carrier').value,
+    age: document.getElementById('f-age').value || null,
+    gender: document.getElementById('f-gender').value || null,
+    db_source_id: source,
+    notes: document.getElementById('f-notes').value.trim() || null,
+  };
+  const r = await fetchAuth(API + '/manual', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body),
+  });
+  const d = await r.json();
+  if (!r.ok) {
+    status.textContent = '';
+    showToast('❌ ' + (d.error || r.status), false);
+    return;
+  }
+  status.textContent = '✅ 등록 완료 — id ' + d.customer.id;
+  showToast('💾 ' + name + ' 등록 + 본인 분배 완료');
+  resetForm();
+  loadRecent();
+}
+
+function resetForm() {
+  ['f-name','f-phone','f-region','f-age','f-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-gender').value = '';
+  document.getElementById('f-carrier').value = '';
+  document.getElementById('status-msg').textContent = '';
+  document.getElementById('f-name').focus();
+}
+
+async function loadRecent() {
+  // 본인 분배 + 오늘 imported_at
+  const today = new Date().toISOString().slice(0, 10);
+  const r = await fetchAuth(API + '?sort=recent&limit=20');
+  if (!r.ok) return;
+  const d = await r.json();
+  const todayCusts = (d.customers || []).filter(c => (c.imported_at||'').slice(0,10) >= today);
+  const wrap = document.getElementById('recent-list');
+  document.getElementById('recent-count').textContent = '· ' + todayCusts.length + '명';
+  if (!todayCusts.length) { wrap.innerHTML = '<div style="padding:14px;color:#64748b;text-align:center">오늘 등록한 고객 없음</div>'; return; }
+  wrap.innerHTML = todayCusts.map(c => {
+    const t = c.imported_at ? new Date(c.imported_at).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'}) : '-';
+    return `<div class="row">
+      <span class="name">${esc(c.name)}</span>
+      <span class="phone">${esc(c.phone)}</span>
+      <span style="color:#94a3b8;font-size:10.5px">${esc(c.region)||'-'} · ${esc(c.carrier)||'-'}</span>
+      <span class="when" style="margin-left:auto">${t}</span>
+    </div>`;
+  }).join('');
+}
+
+// 단축키 — Ctrl+Enter 또는 Cmd+Enter로 즉시 등록
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitForm(); }
+});
+
+init();
+</script>
+</body>
+</html>
