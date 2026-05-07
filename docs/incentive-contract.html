@@ -703,14 +703,13 @@ function renderTable(contracts) {
     const _canMutate = _me.role === 'admin' || _me.role === 'contract'
       || (_me.role === 'manager' && c.agent?.center === _me.center)
       || (_me.role === 'agent' && c.agent_id === _me.id);
-    // 액션 버튼 — 휴지통이면 [원복] [영구 삭제], 평상시 [편집] [🗑 삭제]
+    // 액션 버튼 — 평상시 [편집] (삭제는 [계약취소]로 대체), 휴지통은 admin 점검용
     const actionsHtml = !_canMutate
       ? '<span style="color:#64748b;font-size:10.5px">-</span>'
       : trashMode
       ? `<button class="btn-action" data-act="restore" data-id="${c.id}" style="background:#22c55e;color:#fff">🔄 원복</button>
          ${_me.role === 'admin' ? `<button class="btn-action" data-act="permanent-delete" data-id="${c.id}" style="background:#7f1d1d;color:#fff;margin-left:2px">🚫 영구</button>` : ''}`
-      : `<button class="btn-action btn-edit" data-act="edit" data-id="${c.id}">📝</button>
-         <button class="btn-action" data-act="soft-delete" data-id="${c.id}" style="background:#dc2626;color:#fff;margin-left:2px">🗑</button>`;
+      : `<button class="btn-action btn-edit" data-act="edit" data-id="${c.id}">📝</button>`;
 
     // 휴지통 모드 — 삭제 사유/시각/삭제자 추가 컬럼
     const fmtTrashDt = c.deleted_at ? new Date(c.deleted_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '-';
