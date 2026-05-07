@@ -92,22 +92,10 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
       <div class="user-meta"><span class="role-badge" id="g-role-badge">-</span><span id="g-user-center">-</span></div>
     </div>
     <div class="divider"></div>
-    <button class="icon-btn" id="g-2fa-btn" title="2단계 인증" onclick="g2faOpen()">🔑 2FA</button>
     <button class="icon-btn" id="g-changepw-btn" title="비밀번호 변경">🔐</button>
     <button class="icon-btn danger" id="g-logout-btn" title="로그아웃">⏻ 로그아웃</button>
   </div>
 </header>
-
-<!-- 2FA 모달 -->
-<div id="g-2fa-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:99998;justify-content:center;align-items:center" onclick="if(event.target===this)g2faClose()">
-  <div style="background:linear-gradient(135deg,#1e293b,#334155);border:1.5px solid #475569;border-radius:12px;padding:24px 28px;width:420px;max-width:92vw;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
-    <h2 style="font-size:16px;color:#60a5fa;font-weight:800;margin-bottom:14px">🔑 2단계 인증 (TOTP)</h2>
-    <div id="g-2fa-body" style="font-size:12px;color:#cbd5e1;line-height:1.6">로딩 중...</div>
-    <div style="display:flex;gap:6px;margin-top:14px;justify-content:flex-end">
-      <button onclick="g2faClose()" style="background:#475569;color:#fff;border:none;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:12px">닫기</button>
-    </div>
-  </div>
-</div>
 
 <!-- 비밀번호 변경 모달 -->
 <div id="g-pw-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:99998;justify-content:center;align-items:center">
@@ -169,7 +157,6 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
     </script>
     <input type="email" id="g-auth-email" placeholder="email" autocomplete="username">
     <input type="password" id="g-auth-pass" placeholder="비밀번호" autocomplete="current-password">
-    <input type="text" id="g-auth-totp" placeholder="🔑 2FA 코드 (활성 사용자만)" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="display:none;letter-spacing:0.3em;text-align:center;font-family:monospace;font-size:14px">
     <button id="g-auth-login-btn">로그인</button>
     <div class="auth-msg" id="g-auth-msg"></div>
     <div class="auth-hint" id="g-auth-hint">
@@ -213,24 +200,12 @@ const gClearToken = () => { localStorage.removeItem(G_TOKEN_KEY); localStorage.r
 window.G_currentAgent = null;
 
 async function gLogin(email, password) {
-  const totpInput = document.getElementById('g-auth-totp');
-  const totp_code = totpInput?.value?.trim() || undefined;
   const res = await fetch(G_AUTH + '/login', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({email, password, totp_code})
+    body: JSON.stringify({email, password})
   });
-  // 2FA 필요 응답
-  if (res.status === 202) {
-    if (totpInput) {
-      totpInput.style.display = '';
-      totpInput.value = '';
-      totpInput.focus();
-    }
-    throw new Error('2FA 코드를 입력하세요');
-  }
   if (!res.ok) throw new Error((await res.json()).error || '로그인 실패');
   const data = await res.json();
-  if (totpInput) { totpInput.style.display = 'none'; totpInput.value = ''; }
   gSetToken(data.access_token);
   if (data.refresh_token) localStorage.setItem(G_REFRESH_KEY, data.refresh_token);
   // 로그인 응답에 동봉된 role_menus 즉시 캐싱 (사이드바 fetch round-trip 1회 절약)
@@ -317,79 +292,7 @@ function gApplyMenuVisibility(allowedKeys) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 2FA 설정/해제 모달
-// ═══════════════════════════════════════════════════════════════
-async function g2faOpen() {
-  const m = document.getElementById('g-2fa-modal');
-  const body = document.getElementById('g-2fa-body');
-  m.style.display = 'flex';
-  body.innerHTML = '로딩 중...';
-  const tk = localStorage.getItem(G_TOKEN_KEY);
-  if (!tk) { body.innerHTML = '로그인 필요'; return; }
-  const r = await fetch('/api/auth/2fa/status', { headers: { Authorization: 'Bearer ' + tk }});
-  const d = await r.json();
-  if (d.enabled) {
-    body.innerHTML = `
-      <p style="color:#22c55e;font-weight:700;margin-bottom:8px">✅ 2FA 활성화됨</p>
-      <p style="font-size:11px;color:#94a3b8">활성 시각: ${d.enabled_at ? new Date(d.enabled_at).toLocaleString('ko-KR') : '-'}</p>
-      <hr style="border:none;border-top:1px solid #475569;margin:12px 0">
-      <p style="margin-bottom:8px">⚠️ 해제하려면 현재 OTP 코드 입력</p>
-      <input type="text" id="g-2fa-disable-code" placeholder="6자리 코드" maxlength="6" inputmode="numeric" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:5px;font-size:14px;font-family:monospace;letter-spacing:0.3em;text-align:center">
-      <button onclick="g2faDisable()" style="margin-top:8px;background:#dc2626;color:#fff;border:none;padding:8px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;width:100%">해제</button>
-    `;
-    return;
-  }
-  // 미활성 — setup
-  body.innerHTML = `
-    <p style="margin-bottom:8px">${d.recommended ? '⚠️ admin 계정은 2FA를 활성화하세요.' : '계정 보안 강화를 위해 2FA를 권장합니다.'}</p>
-    <button onclick="g2faSetup()" style="background:#3b82f6;color:#fff;border:none;padding:10px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:800;width:100%">🔑 2FA 활성화</button>
-  `;
-}
-async function g2faSetup() {
-  const tk = localStorage.getItem(G_TOKEN_KEY);
-  const body = document.getElementById('g-2fa-body');
-  body.innerHTML = '시크릿 생성 중...';
-  const r = await fetch('/api/auth/2fa/setup', { method:'POST', headers: { Authorization: 'Bearer ' + tk }});
-  const d = await r.json();
-  if (!r.ok) { body.innerHTML = '❌ 실패: ' + (d.error || ''); return; }
-  body.innerHTML = `
-    <p>📱 Google Authenticator / 1Password 등으로 QR 스캔:</p>
-    <div style="background:#fff;padding:12px;border-radius:8px;margin:10px 0;display:flex;justify-content:center"><img src="${d.qr_data_url}" alt="QR" style="width:200px;height:200px"></div>
-    <p style="font-size:10.5px;color:#94a3b8">또는 시크릿 직접 입력: <code style="background:#0f172a;padding:2px 6px;border-radius:3px;color:#fbbf24;font-family:monospace">${d.secret}</code></p>
-    <hr style="border:none;border-top:1px solid #475569;margin:12px 0">
-    <p style="margin-bottom:8px">앱에서 발급된 6자리 코드 입력:</p>
-    <input type="text" id="g-2fa-verify-code" placeholder="000000" maxlength="6" inputmode="numeric" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:5px;font-size:18px;font-family:monospace;letter-spacing:0.3em;text-align:center">
-    <button onclick="g2faVerify()" style="margin-top:8px;background:#22c55e;color:#fff;border:none;padding:10px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:800;width:100%">✅ 검증 + 활성화</button>
-  `;
-}
-async function g2faVerify() {
-  const code = document.getElementById('g-2fa-verify-code').value.trim();
-  if (!/^\d{6}$/.test(code)) { alert('6자리 숫자'); return; }
-  const tk = localStorage.getItem(G_TOKEN_KEY);
-  const r = await fetch('/api/auth/2fa/verify', {
-    method:'POST', headers:{'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
-    body: JSON.stringify({ code })
-  });
-  const d = await r.json();
-  if (!r.ok) { alert(d.error || '실패'); return; }
-  gShowToast('🔑 2FA 활성화 완료 — 다음 로그인부터 적용');
-  g2faOpen();
-}
-async function g2faDisable() {
-  const code = document.getElementById('g-2fa-disable-code').value.trim();
-  if (!code) { alert('OTP 코드 입력'); return; }
-  if (!confirm('2FA를 해제하시겠습니까?')) return;
-  const tk = localStorage.getItem(G_TOKEN_KEY);
-  const r = await fetch('/api/auth/2fa/disable', {
-    method:'POST', headers:{'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
-    body: JSON.stringify({ code })
-  });
-  const d = await r.json();
-  if (!r.ok) { alert(d.error || '실패'); return; }
-  gShowToast('🔓 2FA 해제됨');
-  g2faOpen();
-}
-function g2faClose() { document.getElementById('g-2fa-modal').style.display = 'none'; }
+// 2FA 기능 제거됨 — IP 화이트리스트로 보안 처리 (콜 DB 관리 페이지 [🔐 보안] 메뉴)
 
 function gShowToast(msg) {
   const t = document.getElementById('toast');
@@ -458,27 +361,7 @@ function gLoadTab(btn) {
 
 async function gOnLoggedIn(agent) {
   window.G_currentAgent = agent;
-  // 🔑 admin 2FA 강제 — 미설정 시 자동 모달
-  if (agent.role === 'admin') {
-    setTimeout(async () => {
-      try {
-        const tk = localStorage.getItem(G_TOKEN_KEY);
-        const r = await fetch('/api/auth/2fa/status', { headers: { Authorization: 'Bearer ' + tk }});
-        if (r.ok) {
-          const d = await r.json();
-          if (!d.enabled) {
-            const banner = document.createElement('div');
-            banner.id = 'g-2fa-nudge';
-            banner.style.cssText = 'background:linear-gradient(90deg,#7f1d1d,#0f172a);color:#fff;padding:12px 18px;border-bottom:2px solid #dc2626;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700';
-            banner.innerHTML = `<span>⚠️ <b>admin 계정 보안 위험</b> — 2FA 미설정 상태입니다. 즉시 활성화 권장.</span>
-              <span><button onclick="g2faOpen();this.parentElement.parentElement.remove()" style="background:#dc2626;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:800;margin-right:6px">🔑 지금 설정</button>
-              <button onclick="this.parentElement.parentElement.remove()" style="background:transparent;color:#cbd5e1;border:1px solid #475569;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:11px">나중에</button></span>`;
-            document.body.insertBefore(banner, document.body.firstChild);
-          }
-        }
-      } catch(e) {}
-    }, 1500);
-  }
+  // 2FA 기능 제거됨 — IP 화이트리스트로 보안 처리 (콜 DB 관리 페이지에서 등록)
   const name = agent.name || '-';
   document.getElementById('g-user-name').textContent = name;
   document.getElementById('g-user-avatar').textContent = name.trim().charAt(0).toUpperCase() || '?';
