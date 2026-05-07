@@ -203,6 +203,21 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <tbody id="agents-tbody"></tbody>
       </table>
     </div>
+
+    <!-- 🔐 IP 화이트리스트 (admin 전용 — 콜 DB 접근 IP 제한) -->
+    <div class="section" id="ip-whitelist-section" style="display:none">
+      <h2>🔐 IP 화이트리스트 <span style="font-size:11px;color:#94a3b8;font-weight:400">— 콜 DB 접근 IP 제한 (PIPA 보안)</span></h2>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:10px;background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:6px">
+        📌 등록된 IP만 <code>/api/customer-db</code> 접근 허용. 등록 0건이면 비활성 (모든 IP 통과).
+        localhost·private IP는 자동 통과. CIDR 표기(예: <code>1.2.3.4</code> 또는 <code>10.0.0.0/8</code>) 지원.
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <input type="text" id="ip-cidr" placeholder="CIDR (예: 1.2.3.4 또는 10.0.0.0/8)" style="flex:1;min-width:240px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 12px;border-radius:5px;font-size:12px;font-family:monospace">
+        <input type="text" id="ip-label" placeholder="라벨 (예: 본사 사무실)" style="flex:1;min-width:200px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 12px;border-radius:5px;font-size:12px">
+        <button onclick="addIpRule()" style="background:#22c55e;color:#fff;border:none;padding:8px 18px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700">➕ 추가</button>
+      </div>
+      <div id="ip-rules-body" style="font-size:11.5px"></div>
+    </div>
   </div>
 </div>
 
@@ -583,7 +598,55 @@ function onLoggedIn(agent) {
   document.getElementById('main-area').style.display = '';
   document.getElementById('user-info').style.display = '';
   document.getElementById('user-name').textContent = '👤 ' + agent.name + ' (' + agent.role + ')';
+  // admin 전용 IP 화이트리스트 섹션 노출
+  if (agent.role === 'admin') {
+    document.getElementById('ip-whitelist-section').style.display = '';
+    loadIpRules();
+  }
   loadAll();
+}
+
+// ═══ IP 화이트리스트 ═══
+async function loadIpRules() {
+  const tk = getToken(); if (!tk) return;
+  const r = await fetch('/api/customer-db/ip-whitelist', { headers: { Authorization: 'Bearer ' + tk }});
+  if (!r.ok) { document.getElementById('ip-rules-body').innerHTML = '<div style="color:#f87171;padding:8px">조회 실패</div>'; return; }
+  const d = await r.json();
+  const body = document.getElementById('ip-rules-body');
+  if (!d.rules?.length) { body.innerHTML = '<div style="padding:14px;color:#94a3b8;text-align:center;border:1px dashed #475569;border-radius:6px">규칙 없음 — 등록 0건이면 화이트리스트 비활성 (모든 IP 허용)</div>'; return; }
+  body.innerHTML = '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0f172a;color:#94a3b8"><th style="padding:8px;text-align:left">CIDR</th><th style="padding:8px;text-align:left">라벨</th><th style="padding:8px">활성</th><th style="padding:8px">생성</th><th style="padding:8px"></th></tr></thead><tbody>' +
+    d.rules.map(r => `<tr style="border-bottom:1px solid #334155">
+      <td style="padding:8px;font-family:monospace;color:#fbbf24">${r.cidr}</td>
+      <td style="padding:8px;color:#cbd5e1">${r.label || '-'}</td>
+      <td style="padding:8px;text-align:center"><label><input type="checkbox" ${r.active?'checked':''} onchange="toggleIpRule(${r.id}, this.checked)"></label></td>
+      <td style="padding:8px;color:#94a3b8;font-size:10.5px">${new Date(r.created_at).toLocaleDateString('ko-KR')}</td>
+      <td style="padding:8px;text-align:right"><button onclick="deleteIpRule(${r.id})" style="background:#dc2626;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:10.5px;cursor:pointer">삭제</button></td>
+    </tr>`).join('') + '</tbody></table>';
+}
+async function addIpRule() {
+  const tk = getToken();
+  const cidr = document.getElementById('ip-cidr').value.trim();
+  const label = document.getElementById('ip-label').value.trim();
+  if (!cidr) { alert('CIDR 입력하세요'); return; }
+  const r = await fetch('/api/customer-db/ip-whitelist', {
+    method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+tk},
+    body: JSON.stringify({ cidr, label })
+  });
+  if (!r.ok) { const d = await r.json(); alert('실패: ' + d.error); return; }
+  document.getElementById('ip-cidr').value = '';
+  document.getElementById('ip-label').value = '';
+  loadIpRules();
+}
+async function toggleIpRule(id, active) {
+  const tk = getToken();
+  await fetch('/api/customer-db/ip-whitelist/' + id, { method:'PATCH', headers:{'Content-Type':'application/json', Authorization:'Bearer '+tk}, body: JSON.stringify({ active }) });
+  loadIpRules();
+}
+async function deleteIpRule(id) {
+  if (!confirm('규칙 삭제?')) return;
+  const tk = getToken();
+  await fetch('/api/customer-db/ip-whitelist/' + id, { method:'DELETE', headers:{Authorization:'Bearer '+tk}});
+  loadIpRules();
 }
 
 document.getElementById('auth-login-btn').addEventListener('click', async () => {

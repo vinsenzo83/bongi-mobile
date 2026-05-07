@@ -231,22 +231,18 @@ tr:hover { background:#334155; }
         <button class="btn btn-secondary" onclick="runRetention()" title="converted 90일/rejected 30일 자동 archive + archived 90일 → soft delete + soft delete 3년 → purge" style="background:#7c3aed;color:#fff">🧹 retention</button>
         <button class="btn btn-secondary" onclick="runRedistribution()" title="분배 후 7일 미시도 + 14일 저활성 → 풀 복귀" style="background:#0d9488;color:#fff">♻️ 재배정</button>
         <button class="btn btn-secondary" onclick="openAdminRequests()" id="admin-req-btn" style="background:#16a34a;color:#fff">📋 분배 요청</button>
-        <button class="btn btn-secondary" onclick="openSecurityPanel()" style="background:#0891b2;color:#fff" title="액세스 로그 + IP 화이트리스트">🔐 보안</button>
+        <button class="btn btn-secondary" onclick="openSecurityPanel()" style="background:#0891b2;color:#fff" title="액세스 로그 (PIPA audit)">📜 액세스 로그</button>
       </div>
-      <!-- 보안 패널 (액세스 로그 + IP 화이트리스트) -->
+      <!-- 보안 패널 (액세스 로그 — IP 화이트리스트는 상담사 관리 페이지로 이동) -->
       <div id="sec-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99999;justify-content:center;align-items:center" onclick="if(event.target===this)closeSecurityPanel()">
         <div style="background:#1e293b;border:1.5px solid #475569;border-radius:14px;padding:20px 24px;width:920px;max-width:96vw;max-height:84vh;overflow-y:auto;color:#fff">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-            <h3 style="font-size:15px;color:#0891b2;font-weight:800">🔐 보안 — 액세스 로그 + IP 화이트리스트</h3>
+            <h3 style="font-size:15px;color:#0891b2;font-weight:800">📜 액세스 로그 (PIPA audit)</h3>
             <button onclick="closeSecurityPanel()" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px">닫기</button>
           </div>
-          <h4 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">📋 IP 화이트리스트</h4>
-          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-            <input type="text" id="ip-cidr" placeholder="CIDR (예: 1.2.3.4 또는 10.0.0.0/8)" style="flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:11.5px;font-family:monospace">
-            <input type="text" id="ip-label" placeholder="라벨 (예: 본사 사무실)" style="flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:11.5px">
-            <button onclick="addIpRule()" style="background:#22c55e;color:#fff;border:none;padding:7px 16px;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:700">➕ 추가</button>
+          <div style="font-size:10.5px;color:#94a3b8;margin-bottom:10px;background:rgba(0,0,0,0.3);padding:6px 10px;border-radius:5px">
+            🔐 IP 화이트리스트는 <b>상담사 관리</b> 페이지로 이동했습니다.
           </div>
-          <div id="ip-rules-body" style="font-size:11.5px;margin-bottom:18px"></div>
 
           <h4 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">📜 액세스 로그 (최근 7일)</h4>
           <div style="display:flex;gap:6px;margin-bottom:8px">
@@ -1007,50 +1003,12 @@ async function loadJobStatus() {
   } catch(e) {}
 }
 
-// 보안 패널
+// 보안 패널 — 액세스 로그만 (IP 화이트리스트는 상담사 관리 페이지로 이동)
 function openSecurityPanel() {
   document.getElementById('sec-modal').style.display = 'flex';
-  loadIpRules(); loadAccessLogs();
+  loadAccessLogs();
 }
 function closeSecurityPanel() { document.getElementById('sec-modal').style.display = 'none'; }
-
-async function loadIpRules() {
-  const r = await fetchAuth(CDB + '/ip-whitelist');
-  if (!r.ok) { document.getElementById('ip-rules-body').innerHTML = '<div style="color:#f87171;padding:8px">조회 실패</div>'; return; }
-  const d = await r.json();
-  const body = document.getElementById('ip-rules-body');
-  if (!d.rules.length) { body.innerHTML = '<div style="padding:10px;color:#94a3b8;text-align:center;border:1px dashed #475569;border-radius:6px">규칙 없음 — 등록 0건이면 화이트리스트 비활성 (모든 IP 허용)</div>'; return; }
-  body.innerHTML = '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0f172a;color:#94a3b8"><th style="padding:6px;text-align:left">CIDR</th><th style="padding:6px;text-align:left">라벨</th><th style="padding:6px">활성</th><th style="padding:6px">생성</th><th style="padding:6px"></th></tr></thead><tbody>' +
-    d.rules.map(r => `<tr style="border-bottom:1px solid #334155">
-      <td style="padding:6px;font-family:monospace;color:#fbbf24">${r.cidr}</td>
-      <td style="padding:6px;color:#cbd5e1">${r.label || '-'}</td>
-      <td style="padding:6px;text-align:center"><label style="display:inline-block"><input type="checkbox" ${r.active?'checked':''} onchange="toggleIpRule(${r.id}, this.checked)"></label></td>
-      <td style="padding:6px;color:#94a3b8;font-size:10.5px">${new Date(r.created_at).toLocaleDateString('ko-KR')}</td>
-      <td style="padding:6px;text-align:right"><button onclick="deleteIpRule(${r.id})" style="background:#dc2626;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer">삭제</button></td>
-    </tr>`).join('') + '</tbody></table>';
-}
-async function addIpRule() {
-  const cidr = document.getElementById('ip-cidr').value.trim();
-  const label = document.getElementById('ip-label').value.trim();
-  if (!cidr) { alert('CIDR 입력하세요'); return; }
-  const r = await fetchAuth(CDB + '/ip-whitelist', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ cidr, label })
-  });
-  if (!r.ok) { const d = await r.json(); alert('실패: ' + d.error); return; }
-  document.getElementById('ip-cidr').value = '';
-  document.getElementById('ip-label').value = '';
-  loadIpRules();
-}
-async function toggleIpRule(id, active) {
-  await fetchAuth(CDB + '/ip-whitelist/' + id, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ active }) });
-  loadIpRules();
-}
-async function deleteIpRule(id) {
-  if (!confirm('규칙 삭제?')) return;
-  await fetchAuth(CDB + '/ip-whitelist/' + id, { method:'DELETE' });
-  loadIpRules();
-}
 
 async function loadAccessLogs() {
   const action = document.getElementById('log-action').value;
