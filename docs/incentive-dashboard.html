@@ -1349,7 +1349,7 @@ document.getElementById('auth-login-btn').addEventListener('click', async () => 
   } catch (e) { msg.textContent = e.message; }
 });
 document.getElementById('logout-btn').addEventListener('click', () => { clearToken(); location.reload(); });
-document.getElementById('reload-btn').addEventListener('click', loadAll);
+document.getElementById('reload-btn').addEventListener('click', async () => { await loadAll(); if (typeof showToast === 'function') showToast('🔄 새로고침 완료'); });
 document.getElementById('filter-month').addEventListener('change', loadAll);
 
 // ─── Supabase Realtime — incentive_sales 변경 시 자동 갱신 ───

@@ -121,7 +121,7 @@ tr.row-callback:hover { background:rgba(251,191,36,0.14); }
         <option value="rejected">❌ 거절만</option>
         <option value="converted">🎉 계약완료</option>
       </select>
-      <button onclick="loadCustomers()">🔄 새로고침</button>
+      <button onclick="(async()=>{await loadCustomers();if(typeof showToast==='function')showToast('🔄 새로고침 완료')})()">🔄 새로고침</button>
       <button onclick="openRequestModal()" style="background:#16a34a;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📥 콜 분배 요청</button>
       <button onclick="loadMyRequests()" style="background:#475569;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px" id="btn-my-requests">📋 내 요청</button>
     </div>

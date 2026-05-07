@@ -1637,7 +1637,7 @@ document.getElementById('page-last').addEventListener('click', () => {
   renderTable(_currentContracts);
 });
 document.getElementById('page-size').addEventListener('change', () => { _currentPage = 1; renderTable(_currentContracts); });
-document.getElementById('reload-btn').addEventListener('click', loadContracts);
+document.getElementById('reload-btn').addEventListener('click', async () => { await loadContracts(); if (typeof showToast === 'function') showToast('🔄 새로고침 완료'); });
 
 // ─── 📁 휴지통 토글 ───
 function updateTrashButton() {

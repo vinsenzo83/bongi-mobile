@@ -44,7 +44,7 @@ table td.r { text-align:right; font-family:monospace; }
     <option value="60">최근 60일</option>
     <option value="90">최근 90일</option>
   </select>
-  <button onclick="loadAll()">🔄 새로고침</button>
+  <button onclick="(async()=>{await loadAll();if(typeof showToast==='function')showToast('🔄 새로고침 완료')})()">🔄 새로고침</button>
 </div>
 
 <div class="kpi-row">

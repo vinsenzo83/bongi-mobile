@@ -103,7 +103,7 @@ tr:hover td { background:rgba(59,130,246,0.05); }
         <option value="rejected">❌ 거부</option>
         <option value="cancelled">🚫 취소</option>
       </select>
-      <button class="muted" onclick="loadRequests()">🔄 새로고침</button>
+      <button class="muted" onclick="(async()=>{await loadRequests();if(typeof showToast==='function')showToast('🔄 새로고침 완료')})()">🔄 새로고침</button>
       <button class="success" id="btn-new-req" onclick="openRequestModal()" style="display:none">➕ 새 요청 만들기</button>
       <span id="auto-poll" style="margin-left:auto;font-size:10.5px;color:#64748b">⏱ 30초마다 자동 갱신</span>
     </div>

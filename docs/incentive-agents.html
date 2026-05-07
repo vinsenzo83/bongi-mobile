@@ -663,7 +663,7 @@ document.getElementById('auth-login-btn').addEventListener('click', async () => 
 });
 document.getElementById('logout-btn').addEventListener('click', () => { clearToken(); location.reload(); });
 document.getElementById('btn-create').addEventListener('click', createAgent);
-document.getElementById('reload-btn').addEventListener('click', loadAll);
+document.getElementById('reload-btn').addEventListener('click', async () => { await loadAll(); if (typeof showToast === 'function') showToast('🔄 새로고침 완료'); });
 document.getElementById('filter-role').addEventListener('change', () => renderAgents(_allAgents));
 document.getElementById('filter-active').addEventListener('change', () => renderAgents(_allAgents));
 document.getElementById('trash-toggle-btn').addEventListener('click', async () => {
