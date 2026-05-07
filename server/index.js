@@ -207,7 +207,7 @@ app.get('/api/health', async (req, res) => {
   checks.cors = process.env.CORS_ORIGIN || 'default';
   checks.duration_ms = Date.now() - t0;
   const ok = checks.supabase === 'ok' && checks.env_supabase_url && checks.env_service_key;
-  res.status(ok ? 200 : 503).json({ status: ok ? 'ok' : 'degraded', service: '리턴AI API', ...checks });
+  res.status(ok ? 200 : 503).json({ status: ok ? 'ok' : 'degraded', service: '봉이 TM CRM API', ...checks });
 });
 
 // 운영 환경 가드 — production일 때만 추가 보안 확인
@@ -285,5 +285,5 @@ cron.schedule('0 4 * * *', () => {
 // 정산은 RPC `incentive_calc_monthly_settlement(agent_id, ym)` 즉시 계산 — cron 불필요
 
 app.listen(PORT, () => {
-  console.log(`리턴AI 서버 실행: http://localhost:${PORT}`);
+  console.log(`📞 봉이 TM CRM 서버: http://localhost:${PORT}`);
 });

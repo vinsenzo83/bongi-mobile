@@ -1,4 +1,4 @@
-// 봉이 인센티브 어드민 Service Worker
+// 봉이 TM CRM Service Worker
 // 전략:
 //   - HTML/CSS/JS: stale-while-revalidate (즉시 캐시 표시 → 백그라운드 갱신)
 //   - 폰트/이미지/.docx: cache-first
