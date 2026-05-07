@@ -1314,6 +1314,8 @@ function openEditModal(id) {
   });
   // 🏪 접수 대리점 섹션 동적 삽입 (carrier 매칭 + URL 노출)
   injectDealerSection(c);
+  // 📜 변경 이력 섹션 동적 삽입 (감사·분쟁 대응)
+  injectHistorySection(c);
   } catch (err) {
     console.error('[openEditModal] 렌더링 오류:', err);
     alert('모달 표시 중 오류: ' + err.message);
@@ -1400,6 +1402,59 @@ async function injectDealerSection(c) {
   }
   // 초기 link 활성화
   window._updateDealerLink(wrap.querySelector('select'));
+}
+
+// ═══ 📜 변경 이력 섹션 (감사·분쟁 대응) ═══
+async function injectHistorySection(c) {
+  const tk = getToken();
+  const r = await fetch(API + '/sales/' + c.id + '/history', { headers: { Authorization:'Bearer '+tk }});
+  if (!r.ok) return;
+  const d = await r.json();
+  const history = d.history || [];
+  if (!history.length) return; // 첫 등록만 됐으면 표시 안 함
+
+  const escHtml = (s) => String(s ?? '').replace(/[<>&"']/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[ch]));
+  const actionLabel = { INSERT:'➕ 등록', UPDATE:'✏️ 수정', DELETE:'🗑 삭제', RESTORE:'🔄 원복' };
+  const actionColor = { INSERT:'#22c55e', UPDATE:'#3b82f6', DELETE:'#dc2626', RESTORE:'#fbbf24' };
+
+  const wrap = document.createElement('div');
+  wrap.className = 'sec-card';
+  wrap.style.cssText = 'background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1.5px solid #6366f1;border-radius:8px;padding:12px 16px;margin:10px 0';
+  const rows = history.map(h => {
+    const dt = new Date(h.changed_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    const fields = Array.isArray(h.changed_fields) ? h.changed_fields.join(', ') : (h.changed_fields || '-');
+    const reason = h.reason ? `<div style="font-size:10px;color:#fde047;margin-top:2px">💬 ${escHtml(h.reason)}</div>` : '';
+    return `<tr style="border-bottom:1px solid #312e81">
+      <td style="padding:6px 8px;font-size:10.5px;color:#94a3b8;white-space:nowrap">${dt}</td>
+      <td style="padding:6px 8px;text-align:center"><span style="background:${actionColor[h.action]||'#475569'};color:#fff;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700">${actionLabel[h.action]||h.action}</span></td>
+      <td style="padding:6px 8px;font-size:11px"><b>${escHtml(h.changed_by_name)||'-'}</b> <span style="color:#94a3b8;font-size:9.5px">(${escHtml(h.changed_by_role)||'-'})</span></td>
+      <td style="padding:6px 8px;font-size:10.5px;color:#cbd5e1">${escHtml(fields)}${reason}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <details>
+      <summary style="cursor:pointer;font-size:13px;font-weight:800;color:#a5b4fc;padding:2px 0;list-style:revert">📜 변경 이력 <span style="font-size:10.5px;color:#94a3b8;font-weight:400">— 클릭해 펼치기 (${history.length}건)</span></summary>
+      <table style="width:100%;border-collapse:collapse;margin-top:8px">
+        <thead><tr style="background:#1e1b4b;color:#a5b4fc">
+          <th style="padding:6px 8px;text-align:left;font-size:10.5px">시각</th>
+          <th style="padding:6px 8px;text-align:center;font-size:10.5px">액션</th>
+          <th style="padding:6px 8px;text-align:left;font-size:10.5px">변경자</th>
+          <th style="padding:6px 8px;text-align:left;font-size:10.5px">변경 필드 / 사유</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </details>
+  `;
+  // 대리점 섹션 다음에 삽입 (저장 버튼 직전)
+  const modalBody = document.getElementById('modal-body');
+  const saveBtn = modalBody.querySelector('[data-act="save-detail"]');
+  if (saveBtn) {
+    const saveWrap = saveBtn.closest('.sec-card') || saveBtn.parentNode;
+    saveWrap.parentNode.insertBefore(wrap, saveWrap);
+  } else {
+    modalBody.appendChild(wrap);
+  }
 }
 
 // [📍 조회하기] 클릭 — 고객 주소 클립보드 복사 후 외부 사이트 새 탭 열기

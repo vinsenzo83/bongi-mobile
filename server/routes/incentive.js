@@ -1960,7 +1960,17 @@ router.get('/sales/:id/history', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!isContractAccess(me)) return res.status(403).json({ error: 'contract/manager/admin 전용' });
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+    // 권한 — 대상 sale의 agent와 매칭 검증
+    const { data: sale } = await supabase.from('incentive_sales').select('agent_id').eq('id', req.params.id).single();
+    if (!sale) return res.status(404).json({ error: 'sale not found' });
+    if (me.role === 'agent') {
+      if (sale.agent_id !== me.id) return res.status(403).json({ error: '본인 계약만 조회 가능' });
+    } else if (me.role === 'manager') {
+      const { data: targetAgent } = await supabase.from('incentive_agents').select('center').eq('id', sale.agent_id).single();
+      if (!targetAgent || targetAgent.center !== me.center) return res.status(403).json({ error: '본인 센터 계약만 조회 가능' });
+    }
+    // admin·contract 통과
     const { data, error } = await supabase
       .from('incentive_sales_history')
       .select('*')
