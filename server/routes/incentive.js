@@ -869,7 +869,8 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id, dealer_id } = req.body || {};
+    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id, dealer_id,
+      birth_date, combo_type, combo_members, billing_method, billing_phone, billing_carrier, payment_method, waiting_person, waiting_phone, seller_phone, onestop_yn, current_carrier } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -934,6 +935,19 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (quote_full_html !== undefined) update.quote_full_html = quote_full_html;
     if (db_source_id !== undefined) update.db_source_id = db_source_id ? parseInt(db_source_id) : null;
     if (dealer_id !== undefined) update.dealer_id = dealer_id ? parseInt(dealer_id) : null;
+    // 🆕 11개 신규 필드 (계약 양식 확장)
+    if (birth_date !== undefined) update.birth_date = birth_date || null;
+    if (combo_type !== undefined) update.combo_type = combo_type;
+    if (combo_members !== undefined) update.combo_members = combo_members;
+    if (billing_method !== undefined) update.billing_method = billing_method;
+    if (billing_phone !== undefined) update.billing_phone = billing_phone;
+    if (billing_carrier !== undefined) update.billing_carrier = billing_carrier;
+    if (payment_method !== undefined) update.payment_method = payment_method;
+    if (waiting_person !== undefined) update.waiting_person = waiting_person;
+    if (waiting_phone !== undefined) update.waiting_phone = waiting_phone;
+    if (seller_phone !== undefined) update.seller_phone = seller_phone;
+    if (onestop_yn !== undefined) update.onestop_yn = onestop_yn;
+    if (current_carrier !== undefined) update.current_carrier = current_carrier;
 
     // product 변경 — pending 단계에서만 허용, snapshot 재계산
     // (계약 진행/완료 단계에서는 등록 시점 snapshot 락)

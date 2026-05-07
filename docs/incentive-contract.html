@@ -966,6 +966,13 @@ async function handleAction(id, act) {
         body[field] = parseInt(val) || 0;
       } else if (field === 'db_source_id' || field === 'dealer_id') {
         body[field] = val ? parseInt(val) : null;
+      } else if (field === '_combo_members_text') {
+        // 결합 구성원 textarea → JSON 변환 (한 줄당 1명, 형식: 이름 / 생년월일 / 전화)
+        const lines = val.split('\n').map(l => l.trim()).filter(Boolean);
+        body.combo_members = lines.map(l => {
+          const parts = l.split('/').map(p => p.trim());
+          return { name: parts[0] || '', birth: parts[1] || '', phone: parts[2] || '' };
+        });
       } else {
         body[field] = val || null;
       }
@@ -1114,9 +1121,13 @@ function openEditModal(id) {
           <input class="detail-input" data-field="customer_phone" value="${(c.customer_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678">
         </div>
         <div>
-          <label class="modal-field-label">주민번호</label>
-          <input class="detail-input" data-field="resident_id" value="${(c.resident_id || '').replace(/"/g, '&quot;')}" placeholder="000000-0000000" style="letter-spacing:0.04em">
+          <label class="modal-field-label">🎂 생년월일</label>
+          <input class="detail-input" data-field="birth_date" type="date" value="${c.birth_date || ''}">
         </div>
+      </div>
+      <div class="sec-row">
+        <label class="modal-field-label">주민번호 <span style="font-size:9.5px;color:#94a3b8">(최종계약시)</span></label>
+        <input class="detail-input" data-field="resident_id" value="${(c.resident_id || '').replace(/"/g, '&quot;')}" placeholder="000000-0000000" style="letter-spacing:0.04em">
       </div>
       <div class="sec-row">
         <label class="modal-field-label">📍 설치 주소 (기본) <span style="color:#dc2626">*</span></label>
@@ -1168,6 +1179,103 @@ function openEditModal(id) {
           <label class="modal-field-label">💰 추가 페이백 (₩)</label>
           <input class="detail-input" data-field="add_payback" type="number" min="0" max="50000" step="1000" value="${c.add_payback || 0}">
           <div class="modal-field-hint">회사 ≤30,000 / 상담사 차감 30,001~50K</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🔗 결합 · 청구 · 납부 -->
+    <div class="sec-card acc-purple">
+      <div class="sec-title"><span class="sec-icon">🔗</span>결합 · 청구 · 납부</div>
+      <div class="sec-row">
+        <label class="modal-field-label">결합 유형</label>
+        <input class="detail-input" data-field="combo_type" value="${(c.combo_type || '').replace(/"/g, '&quot;')}" placeholder="예: 가족결합 3회선 / 새로운가족결합 / 인터넷+모바일">
+      </div>
+      <div class="sec-row">
+        <label class="modal-field-label">결합 구성원 <span style="font-size:9.5px;color:#94a3b8">(성함 / 생년월일 / 번호 — 줄바꿈으로 여러 명)</span></label>
+        <textarea class="detail-input" data-field="_combo_members_text" rows="3" placeholder="예:&#10;홍길동 / 1980-05-12 / 010-1234-5678&#10;김영희 / 1985-08-20 / 010-9876-5432" style="font-family:inherit;resize:vertical">${
+          Array.isArray(c.combo_members)
+            ? c.combo_members.map(m => `${m.name||''} / ${m.birth||''} / ${m.phone||''}`).join('\n')
+            : ''
+        }</textarea>
+        <div class="modal-field-hint">💡 한 줄당 1명. 형식: 이름 / 생년월일 / 전화번호. 저장 시 자동 JSON 변환</div>
+      </div>
+      <div class="sec-row">
+        <label class="modal-field-label">📡 현재 사용 중인 통신사 <span style="font-size:9.5px;color:#94a3b8">(이전 통신사·해지 대상)</span></label>
+        <select class="detail-input" data-field="current_carrier">
+          <option value="">— 선택 —</option>
+          <option value="SK" ${c.current_carrier==='SK'?'selected':''}>SK</option>
+          <option value="KT" ${c.current_carrier==='KT'?'selected':''}>KT</option>
+          <option value="LG" ${c.current_carrier==='LG'?'selected':''}>LG U+</option>
+          <option value="알뜰폰" ${c.current_carrier==='알뜰폰'?'selected':''}>알뜰폰</option>
+          <option value="없음(신규)" ${c.current_carrier==='없음(신규)'?'selected':''}>없음 (신규)</option>
+        </select>
+      </div>
+      <div class="sec-grid-3 sec-row">
+        <div>
+          <label class="modal-field-label">📑 청구서 방식</label>
+          <select class="detail-input" data-field="billing_method">
+            <option value="">— 선택 —</option>
+            <option value="우편" ${c.billing_method==='우편'?'selected':''}>📮 우편</option>
+            <option value="MMS" ${c.billing_method==='MMS'?'selected':''}>📱 MMS (문자)</option>
+            <option value="이메일" ${c.billing_method==='이메일'?'selected':''}>✉️ 이메일</option>
+            <option value="카카오톡" ${c.billing_method==='카카오톡'?'selected':''}>💬 카카오톡</option>
+          </select>
+        </div>
+        <div>
+          <label class="modal-field-label">청구서 받을 번호 <span style="font-size:9.5px;color:#94a3b8">(MMS인 경우)</span></label>
+          <input class="detail-input" data-field="billing_phone" value="${(c.billing_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678">
+        </div>
+        <div>
+          <label class="modal-field-label">청구서 통신사</label>
+          <select class="detail-input" data-field="billing_carrier">
+            <option value="">— 선택 —</option>
+            <option value="SK" ${c.billing_carrier==='SK'?'selected':''}>SK</option>
+            <option value="KT" ${c.billing_carrier==='KT'?'selected':''}>KT</option>
+            <option value="LG" ${c.billing_carrier==='LG'?'selected':''}>LG U+</option>
+            <option value="알뜰폰" ${c.billing_carrier==='알뜰폰'?'selected':''}>알뜰폰</option>
+          </select>
+        </div>
+      </div>
+      <div class="sec-row">
+        <label class="modal-field-label">💳 납부 방법</label>
+        <select class="detail-input" data-field="payment_method">
+          <option value="">— 선택 —</option>
+          <option value="자동이체" ${c.payment_method==='자동이체'?'selected':''}>🏦 자동이체</option>
+          <option value="신용카드" ${c.payment_method==='신용카드'?'selected':''}>💳 신용카드</option>
+          <option value="지로" ${c.payment_method==='지로'?'selected':''}>📑 지로</option>
+          <option value="모바일결제" ${c.payment_method==='모바일결제'?'selected':''}>📱 모바일결제</option>
+          <option value="기타" ${c.payment_method==='기타'?'selected':''}>기타</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 👥 댁내 대기자 · 판매자 연락처 -->
+    <div class="sec-card acc-yellow">
+      <div class="sec-title"><span class="sec-icon">👥</span>댁내 대기자 · 판매자 연락처</div>
+      <div class="sec-grid-2 sec-row">
+        <div>
+          <label class="modal-field-label">🏠 댁내 대기자 성함 <span style="font-size:9.5px;color:#94a3b8">(설치 당일)</span></label>
+          <input class="detail-input" data-field="waiting_person" value="${(c.waiting_person || '').replace(/"/g, '&quot;')}" placeholder="예: 본인 / 배우자 김영희">
+        </div>
+        <div>
+          <label class="modal-field-label">📞 댁내 대기자 CTN</label>
+          <input class="detail-input" data-field="waiting_phone" value="${(c.waiting_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678">
+        </div>
+      </div>
+      <div class="sec-grid-2 sec-row">
+        <div>
+          <label class="modal-field-label">⭐ 판매자 연락처 <span style="color:#dc2626">*</span> <span style="font-size:9.5px;color:#fbbf24">(꼭 실제 소통 가능한 번호)</span></label>
+          <input class="detail-input" data-field="seller_phone" value="${(c.seller_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678" style="border-color:#fbbf24 !important">
+          <div class="modal-field-hint">💬 카톡 무응답 시 설치 일정·상품 변경 연락용 — 실제 받을 수 있는 번호</div>
+        </div>
+        <div>
+          <label class="modal-field-label">🚀 원스톱 여부</label>
+          <select class="detail-input" data-field="onestop_yn">
+            <option value="">— 선택 —</option>
+            <option value="원스톱" ${c.onestop_yn==='원스톱'?'selected':''}>✅ 원스톱 (상담→계약→설치 한 번에)</option>
+            <option value="투스톱" ${c.onestop_yn==='투스톱'?'selected':''}>📋 투스톱 (계약 후 별도 설치)</option>
+            <option value="해당없음" ${c.onestop_yn==='해당없음'?'selected':''}>해당 없음</option>
+          </select>
         </div>
       </div>
     </div>
