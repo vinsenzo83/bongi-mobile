@@ -281,9 +281,9 @@ tr:hover { background:#334155; }
       <table>
         <thead><tr>
           <th>#</th><th>이름</th><th>전화</th><th>지역</th><th>통신사</th>
-          <th>출처</th><th>분배</th><th>상태</th><th>시도</th><th>등록</th>
+          <th>출처</th><th>분배</th><th>상태</th><th>시도</th><th>등록</th><th>🚫 DNT</th>
         </tr></thead>
-        <tbody id="cust-tbody"><tr><td colspan="10" style="text-align:center;padding:20px;color:#64748b">로딩 중...</td></tr></tbody>
+        <tbody id="cust-tbody"><tr><td colspan="11" style="text-align:center;padding:20px;color:#64748b">로딩 중...</td></tr></tbody>
       </table>
       <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
         <button class="btn btn-secondary" onclick="prevPage()">← 이전</button>
@@ -801,7 +801,7 @@ async function loadCustomers() {
   document.getElementById('page-info').textContent = `${_state.offset+1}~${Math.min(_state.offset+_state.limit, _state.total)} / ${_state.total.toLocaleString()}`;
 
   const tbody = document.getElementById('cust-tbody');
-  if (!d.customers.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#64748b;padding:20px">고객 없음</td></tr>'; return; }
+  if (!d.customers.length) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#64748b;padding:20px">고객 없음</td></tr>'; return; }
   tbody.innerHTML = d.customers.map((c, i) => {
     const statusMap = {
       pending: { txt:'⏰ 미연락', bg:'#475569' },
@@ -816,7 +816,8 @@ async function loadCustomers() {
     const sm = statusMap[c.call_status] || { txt: c.call_status, bg: '#475569' };
     const src = c.db_source || {};
     const agent = _state.agents.find(a => a.id === c.assigned_agent_id);
-    return `<tr>
+    const dntChecked = c.is_dnt ? 'checked' : '';
+    return `<tr style="${c.is_dnt ? 'background:rgba(0,0,0,0.4)' : ''}">
       <td>${_state.offset + i + 1}</td>
       <td><b>${esc(c.name)}</b></td>
       <td style="font-family:monospace">${esc(c.phone)}</td>
@@ -827,8 +828,35 @@ async function loadCustomers() {
       <td><span style="background:${sm.bg};color:#fff;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">${sm.txt}</span></td>
       <td style="text-align:center">${c.call_count || 0}</td>
       <td style="font-size:10px;color:#94a3b8">${(c.imported_at||'').slice(5,10)}</td>
+      <td style="text-align:center"><label title="수신거부 영구 표시 — 향후 분배·재시도 자동 차단" style="cursor:pointer"><input type="checkbox" ${dntChecked} onchange="toggleDnt(${c.id}, this.checked, this)"></label></td>
     </tr>`;
   }).join('');
+}
+
+async function toggleDnt(customerId, checked, el) {
+  const action = checked ? '수신거부 등록' : '수신거부 해제';
+  if (!confirm(`${action}하시겠습니까?\n${checked ? '— 향후 분배·재시도에서 자동 제외됩니다.' : '— 다시 분배·재시도 가능 상태로 복귀합니다.'}`)) {
+    el.checked = !checked;
+    return;
+  }
+  try {
+    const r = await fetchAuth(CDB + '/' + customerId, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ is_dnt: checked, ...(checked ? { call_status: 'dnt' } : {}) })
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(()=>({}));
+      el.checked = !checked;
+      alert('실패: ' + (d.error || r.status));
+      return;
+    }
+    showToast(`${checked ? '🚫' : '✅'} ${action} 완료`);
+    loadStats();
+    loadCustomers();
+  } catch (e) {
+    el.checked = !checked;
+    alert('오류: ' + e.message);
+  }
 }
 
 function prevPage() { if (_state.offset > 0) { _state.offset = Math.max(0, _state.offset - _state.limit); loadCustomers(); }}
