@@ -171,6 +171,7 @@ const MENUS = [
   { key: 'call-stats',   label: '📈 콜 통계' },
   { key: 'settlements',  label: '💰 월별 정산' },
   { key: 'goals',        label: '🎯 월간 목표' },
+  { key: 'agents-roi',   label: '👥 상담사 ROI 비교' },
   { key: 'manual',       label: '📚 사용 매뉴얼' },
   { key: 'call-list',    label: '📋 내 콜 리스트' },
   { key: 'distribution-requests', label: '📥 분배 요청' },
@@ -185,8 +186,8 @@ const ADMIN_REQUIRED = new Set(['permissions', 'agents']);
 // 기본값 (DB 시드와 동일)
 const DEFAULTS = {
   agent:    ['dashboard', 'contract', 'tm-counselor', 'guide', 'call-list', 'distribution-requests'],
-  manager:  ['dashboard', 'contract', 'tm-counselor', 'tm-data', 'guide', 'call-list', 'distribution-requests'],
-  admin:    ['dashboard', 'contract', 'agents', 'products', 'rules', 'db-sources', 'tm-counselor', 'tm-data', 'permissions', 'guide', 'call-list', 'distribution-requests', 'customer-db', 'call-stats', 'settlements'],
+  manager:  ['dashboard', 'contract', 'tm-counselor', 'tm-data', 'guide', 'call-list', 'distribution-requests', 'agents-roi'],
+  admin:    ['dashboard', 'contract', 'agents', 'products', 'rules', 'db-sources', 'tm-counselor', 'tm-data', 'permissions', 'guide', 'call-list', 'distribution-requests', 'customer-db', 'call-stats', 'settlements', 'agents-roi'],
   contract: ['dashboard', 'contract', 'guide'],
 };
 

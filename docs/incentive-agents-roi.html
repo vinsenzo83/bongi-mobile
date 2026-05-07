@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>👥 상담사 ROI 비교</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Pretendard Variable',sans-serif; background:#0f172a; color:#e2e8f0; padding:18px 18px 80px; min-height:100vh; }
+.wrap { max-width:1500px; margin:0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid #334155; margin-bottom:14px; }
+h1 { font-size:20px; }
+.subtitle { font-size:11px; color:#94a3b8; margin-top:3px; }
+.toolbar { display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+.toolbar input, .toolbar select { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 12px; border-radius:6px; font-size:12px; font-family:inherit; }
+.toolbar button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:12px; }
+.toolbar button.muted { background:#475569; }
+.toolbar button.success { background:#16a34a; }
+.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+.kpi { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:10px; padding:12px 14px; }
+.kpi .label { font-size:10px; color:#94a3b8; font-weight:700; }
+.kpi .val { font-size:22px; color:#f8fafc; font-weight:900; margin-top:3px; }
+.kpi.profit .val { color:#86efac; }
+.section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:10px; padding:0; overflow:hidden; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { background:#1e3a8a; color:#bfdbfe; padding:10px 8px; text-align:right; font-weight:800; font-size:11.5px; cursor:pointer; user-select:none; white-space:nowrap; }
+th.left { text-align:left; }
+th.center { text-align:center; }
+th:hover { background:#1e40af; }
+th .arrow { font-size:9px; color:#fde047; margin-left:4px }
+td { padding:8px; border-bottom:1px solid #1e293b; vertical-align:middle; text-align:right; white-space:nowrap; }
+td.left { text-align:left; }
+td.center { text-align:center; }
+tr:hover td { background:rgba(59,130,246,0.06); }
+tr.rank-1 td { background:rgba(251,191,36,0.08); }
+.grade { padding:2px 8px; border-radius:4px; font-size:10px; font-weight:800; color:#fff; }
+.g-G3 { background:#16a34a; }
+.g-G2 { background:#3b82f6; }
+.g-G1 { background:#94a3b8; }
+.profit-pos { color:#86efac; font-weight:800; }
+.profit-neg { color:#fca5a5; font-weight:800; }
+.empty { text-align:center; padding:50px; color:#64748b; }
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:14px 24px; border-radius:10px; font-weight:800; z-index:99999; opacity:0; transition:opacity 0.2s; }
+#toast.show { opacity:1; }
+</style>
+<script>
+(function(){ if (window !== window.parent) { document.documentElement.classList.add('embedded-mode'); var s=document.createElement('style'); s.textContent='.embedded-mode header{display:none!important}body{padding-top:14px!important}'; document.head.appendChild(s); } })();
+</script>
+<script src="/docs/_security.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>👥 상담사 ROI 비교</h1>
+      <div class="subtitle">월별 상담사별 영업이익·P·인센티브 정렬·필터·CSV export</div>
+    </div>
+    <div id="user-info" style="font-size:12px;color:#cbd5e1"><span id="user-name">-</span></div>
+  </header>
+
+  <div id="main" style="display:none">
+    <div class="toolbar">
+      <label style="font-size:11px;color:#94a3b8">월:
+        <input type="month" id="f-ym" style="margin-left:4px">
+      </label>
+      <select id="f-center"><option value="">전체 센터</option></select>
+      <select id="f-role">
+        <option value="">전체 역할</option>
+        <option value="agent">agent</option>
+        <option value="manager">manager</option>
+      </select>
+      <input type="text" id="f-search" placeholder="🔍 이름 검색">
+      <button class="muted" onclick="loadData()">🔄 새로고침</button>
+      <button class="success" onclick="exportCsv()">📥 CSV 내보내기</button>
+      <span id="last-update" style="margin-left:auto;font-size:10.5px;color:#64748b"></span>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">👥 인원</div><div class="val" id="kpi-count">-</div></div>
+      <div class="kpi"><div class="label">📋 총 계약</div><div class="val" id="kpi-total">-</div></div>
+      <div class="kpi profit"><div class="label">💰 총 영업이익</div><div class="val" id="kpi-profit">-</div></div>
+      <div class="kpi"><div class="label">🎯 평균 이익률</div><div class="val" id="kpi-rate">-</div></div>
+    </div>
+
+    <div class="section">
+      <table>
+        <thead><tr id="thead">
+          <th class="left" data-sort="agent_name">상담사</th>
+          <th class="left" data-sort="agent_center">센터</th>
+          <th class="center" data-sort="agent_role">역할</th>
+          <th class="center" data-sort="grade_applied">등급</th>
+          <th data-sort="total_count">계약</th>
+          <th data-sort="total_points">P</th>
+          <th data-sort="premium_count">우수</th>
+          <th data-sort="incentive">인센티브</th>
+          <th data-sort="bonus">보너스</th>
+          <th data-sort="agent_total">총 수령</th>
+          <th data-sort="company_profit">💰 영업이익</th>
+          <th data-sort="profit_rate">이익률</th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="12" class="empty">로딩 중...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api/incentive';
+const TK_KEY = 'incentive-auth-token-v1';
+const tk = () => localStorage.getItem(TK_KEY);
+async function fetchAuth(url, opts={}) { return fetch(url, { ...opts, headers:{ ...(opts.headers||{}), Authorization:'Bearer '+tk() }}); }
+const esc = (s) => String(s ?? '').replace(/[<>&"']/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[ch]));
+const fmtN = (n) => (Math.round(n) || 0).toLocaleString();
+const fmtP = (n) => (n != null ? Number(n).toFixed(1) : '-');
+const fmtPct = (n) => (n != null ? Number(n).toFixed(1) + '%' : '-');
+function showToast(m, ok=true) { const t=document.getElementById('toast'); t.style.background=ok?'#16a34a':'#dc2626'; t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2500); }
+
+let _state = { rows: [], sort: 'company_profit', dir: 'desc' };
+
+async function init() {
+  if (!tk()) { document.body.innerHTML = '<div class="empty">로그인 필요</div>'; return; }
+  const r = await fetchAuth(API + '/agents/me');
+  if (!r.ok) { document.body.innerHTML = '<div class="empty">인증 실패</div>'; return; }
+  const me = (await r.json()).agent;
+  if (me.role === 'agent') { document.body.innerHTML = '<div class="empty">manager·admin 전용 페이지</div>'; return; }
+  window._myAgent = me;
+  document.getElementById('user-name').textContent = me.name + ' (' + me.role + ')';
+  document.getElementById('main').style.display = '';
+  document.getElementById('f-ym').value = new Date().toISOString().slice(0, 7);
+  document.getElementById('f-ym').addEventListener('change', loadData);
+  document.getElementById('f-center').addEventListener('change', renderTable);
+  document.getElementById('f-role').addEventListener('change', renderTable);
+  document.getElementById('f-search').addEventListener('input', renderTable);
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const k = th.dataset.sort;
+      if (_state.sort === k) _state.dir = _state.dir === 'desc' ? 'asc' : 'desc';
+      else { _state.sort = k; _state.dir = ['agent_name','agent_center','agent_role'].includes(k) ? 'asc' : 'desc'; }
+      renderTable();
+    });
+  });
+  loadData();
+}
+
+async function loadData() {
+  const ym = document.getElementById('f-ym').value || new Date().toISOString().slice(0, 7);
+  const r = await fetchAuth(API + '/manager/overview?month=' + ym);
+  if (!r.ok) { document.getElementById('tbody').innerHTML = '<tr><td colspan="12" class="empty" style="color:#f87171">조회 실패</td></tr>'; return; }
+  const d = await r.json();
+  // settlements 응답을 flat row로 변환
+  _state.rows = (d.settlements || []).map(s => ({
+    agent_id: s.agent?.id,
+    agent_name: s.agent?.name || '-',
+    agent_center: s.agent?.center || '-',
+    agent_role: s.agent?.role || '-',
+    total_count: s.total_count || 0,
+    total_points: Number(s.total_points || 0),
+    premium_count: s.premium_count || 0,
+    grade_applied: s.grade_applied || '-',
+    is_penalty: !!s.is_penalty,
+    incentive: s.incentive || 0,
+    bonus: s.bonus || 0,
+    agent_total: s.agent_total || 0,
+    company_profit: s.company_profit || 0,
+    profit_rate: s.profit_rate || 0,
+  }));
+  // center filter 옵션 자동 채움
+  const centers = [...new Set(_state.rows.map(r => r.agent_center).filter(Boolean))].sort();
+  const sel = document.getElementById('f-center');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">전체 센터</option>' + centers.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if (cur) sel.value = cur;
+  document.getElementById('last-update').textContent = '갱신 ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  renderTable();
+}
+
+function renderTable() {
+  const ctr = document.getElementById('f-center').value;
+  const role = document.getElementById('f-role').value;
+  const q = document.getElementById('f-search').value.trim().toLowerCase();
+  let rows = _state.rows.slice();
+  if (ctr) rows = rows.filter(r => r.agent_center === ctr);
+  if (role) rows = rows.filter(r => r.agent_role === role);
+  if (q) rows = rows.filter(r => r.agent_name.toLowerCase().includes(q));
+  // 정렬
+  const k = _state.sort, dir = _state.dir === 'desc' ? -1 : 1;
+  rows.sort((a, b) => {
+    const va = a[k], vb = b[k];
+    if (typeof va === 'number') return (va - vb) * dir;
+    return String(va||'').localeCompare(String(vb||''), 'ko') * dir;
+  });
+  // KPI
+  document.getElementById('kpi-count').textContent = rows.length.toLocaleString();
+  document.getElementById('kpi-total').textContent = rows.reduce((s,r) => s + (r.total_count||0), 0).toLocaleString();
+  const totalProfit = rows.reduce((s,r) => s + (r.company_profit||0), 0);
+  document.getElementById('kpi-profit').textContent = fmtN(totalProfit);
+  const avgRate = rows.length ? rows.reduce((s,r) => s + Number(r.profit_rate||0), 0) / rows.length : 0;
+  document.getElementById('kpi-rate').textContent = fmtPct(avgRate);
+  // 정렬 화살표
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    const arr = th.querySelector('.arrow');
+    if (arr) arr.remove();
+    if (th.dataset.sort === _state.sort) {
+      const sp = document.createElement('span');
+      sp.className = 'arrow';
+      sp.textContent = _state.dir === 'desc' ? '▼' : '▲';
+      th.appendChild(sp);
+    }
+  });
+  // tbody
+  const tbody = document.getElementById('tbody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="12" class="empty">조건에 맞는 데이터 없음</td></tr>'; return; }
+  tbody.innerHTML = rows.map((r, i) => {
+    const profitCls = r.company_profit >= 0 ? 'profit-pos' : 'profit-neg';
+    const rateCls = r.profit_rate >= 30 ? 'profit-pos' : r.profit_rate >= 0 ? '' : 'profit-neg';
+    return `<tr class="${i===0&&_state.dir==='desc'&&_state.sort==='company_profit'?'rank-1':''}">
+      <td class="left"><b>${esc(r.agent_name)}</b>${r.is_penalty?' <span style="background:#dc2626;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px">⚠️ 페널티</span>':''}</td>
+      <td class="left" style="color:#a5b4fc">${esc(r.agent_center)}</td>
+      <td class="center" style="color:#94a3b8">${esc(r.agent_role)}</td>
+      <td class="center"><span class="grade g-${r.grade_applied}">${r.grade_applied}</span></td>
+      <td>${r.total_count}</td>
+      <td><b>${fmtP(r.total_points)}</b></td>
+      <td>${r.premium_count}</td>
+      <td>${fmtN(r.incentive)}</td>
+      <td>${fmtN(r.bonus)}</td>
+      <td><b>${fmtN(r.agent_total)}</b></td>
+      <td class="${profitCls}">${fmtN(r.company_profit)}</td>
+      <td class="${rateCls}">${fmtPct(r.profit_rate)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportCsv() {
+  const rows = _state.rows;
+  if (!rows.length) { showToast('내보낼 데이터 없음', false); return; }
+  const headers = ['상담사','센터','역할','등급','계약','P','우수','인센티브','보너스','총수령','영업이익','이익률(%)'];
+  const lines = rows.map(r => [
+    r.agent_name, r.agent_center, r.agent_role, r.grade_applied,
+    r.total_count, r.total_points, r.premium_count,
+    r.incentive, r.bonus, r.agent_total, r.company_profit, r.profit_rate,
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = '﻿' + [headers.join(','), ...lines].join('\r\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ym = document.getElementById('f-ym').value || 'all';
+  a.href = url; a.download = `상담사_ROI_${ym}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showToast('✅ CSV 다운로드 완료');
+}
+
+init();
+</script>
+</body>
+</html>
