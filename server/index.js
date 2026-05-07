@@ -5,26 +5,30 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
-import productRoutes from './routes/products.js';
-import applicationRoutes from './routes/applications.js';
-import storeRoutes from './routes/stores.js';
-import crmRoutes from './routes/crm.js';
-import reviewRoutes from './routes/reviews.js';
-import ctiRoutes from './routes/cti.js';
-import aiRoutes from './routes/ai.js';
-import mockRoutes from './routes/mock.js';
+// ── TM CRM 코어 라우트 ──
 import authRoutes from './routes/auth.js';
-import dashboardRoutes from './routes/dashboard.js';
-import customerDbRoutes from './routes/customer-db.js';
-import { ipAllowlist } from './middleware/ipAllowlist.js';
-import chatRoutes from './routes/chat.js';
-import alarmRoutes from './routes/alarms.js';
-import referralRoutes from './routes/referrals.js';
-import cashRoutes from './routes/cash.js';
-import cacheRoutes from './routes/cache.js';
 import adminPlatformRoutes from './routes/admin-platform.js';
-import specialPromoRoutes from './routes/special-promo.js';
 import incentiveRoutes from './routes/incentive.js';
+import customerDbRoutes from './routes/customer-db.js';
+import dashboardRoutes from './routes/dashboard.js';
+import ctiRoutes from './routes/cti.js';
+import cacheRoutes from './routes/cache.js';
+import crmRoutes from './routes/crm.js';
+// ── 별도 운영 (특판 LP) ──
+import specialPromoRoutes from './routes/special-promo.js';
+// ── 옛 고객 SPA — 등록 안 됨, 파일만 보존 (추후 필요 시 재활성) ──
+// import productRoutes from './routes/products.js';
+// import applicationRoutes from './routes/applications.js';
+// import storeRoutes from './routes/stores.js';
+// import reviewRoutes from './routes/reviews.js';
+// import aiRoutes from './routes/ai.js';
+// import mockRoutes from './routes/mock.js';
+// import chatRoutes from './routes/chat.js';
+// import alarmRoutes from './routes/alarms.js';
+// import referralRoutes from './routes/referrals.js';
+// import cashRoutes from './routes/cash.js';
+
+import { ipAllowlist } from './middleware/ipAllowlist.js';
 import { sanitizeBody } from './middleware/sanitize.js';
 import { basicAuth } from './middleware/basicAuth.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -127,31 +131,13 @@ app.get('/view/:file', (req, res) => {
 import { resolve } from 'path';
 app.use('/reports', express.static(join(__dirname, 'public', 'reports')));
 
-// ── 공개 API (인증 불필요) ──
+// ════════════════════════════════════════════════════════════════
+// 봉이 TM CRM — 인증·인센티브·콜DB·계약 처리 전용
+// (옛 고객 SPA 라우트는 모두 비활성. 특판 LP는 별도 운영으로 보존)
+// ════════════════════════════════════════════════════════════════
+
+// ── 인증 ──
 app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/stores', storeRoutes);
-app.use('/api/applications', applicationLimiter, applicationRoutes);
-// special-promo: POST(신청)는 공개+rate-limit, 그 외(GET/PATCH/DELETE)는 인증
-app.use('/api/special-promo', (req, res, next) => {
-  if (req.method === 'POST') {
-    return applicationLimiter(req, res, () => next());
-  }
-  return basicAuth(req, res, next);
-}, specialPromoRoutes);
-app.use('/api/mock', mockRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/referrals', referralRoutes);
-app.use('/api/cash', optionalAuth, cashRoutes);
-
-// ── 채팅 (공개, 선택적 인증 — 돈지키미 set_alarm용) ──
-app.use('/api/chat', optionalAuth, chatRoutes);
-
-// ── 선택적 인증 ──
-app.use('/api/ai', optionalAuth, aiRoutes);
-
-// ── 인증 필요 (일반 유저) ──
-app.use('/api/alarms', optionalAuth, alarmRoutes);
 
 // ── 어드민 API (인증 없이 접근 — 어드민 HTML 정적 파일용) ──
 app.use('/api/admin/platform', adminPlatformRoutes);
@@ -159,6 +145,19 @@ app.use('/api/admin/platform', adminPlatformRoutes);
 // ── V5 인센티브 (라우터 내부에서 authenticateJWT/optionalAuth 자체 처리) ──
 app.use('/api/incentive', incentiveRoutes);
 app.use('/api/customer-db', ipAllowlist, authenticateJWT, customerDbRoutes);
+
+// ── 특판 LP (별도 운영 — 파이어니×에이스휴먼파워, project_bongi_special_promo) ──
+app.use('/api/special-promo', (req, res, next) => {
+  if (req.method === 'POST') {
+    return applicationLimiter(req, res, () => next());
+  }
+  return basicAuth(req, res, next);
+}, specialPromoRoutes);
+
+// ── 옛 고객 SPA 라우트 비활성 (2026-05-07 TM CRM 분리) ──
+// /api/products, /api/stores, /api/applications, /api/mock, /api/reviews,
+// /api/referrals, /api/cash, /api/chat, /api/ai, /api/alarms 모두 등록 제거
+// (파일은 보존 — 추후 필요 시 재활성)
 
 // ── 인증 필요 (agent 이상) ──
 app.use('/api/crm', authenticateJWT, requireMinRole('agent'), crmRoutes);
