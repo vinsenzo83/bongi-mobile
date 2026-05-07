@@ -219,6 +219,13 @@ const SECTIONS = [
 </ol>
 <h3>상태 변경</h3>
 <p>pending → in_progress → completed 단계별. 각 timestamp 자동 기록. 취소는 status='cancelled' (삭제 버튼 없음 — 계약취소가 대체).</p>
+<h3>📜 변경 이력 카드 (감사·분쟁 대응)</h3>
+<p>편집 모달 하단(저장 버튼 직전)에 자동 노출. 클릭해 펼치면 모든 INSERT·UPDATE·DELETE·RESTORE 이력 시간순.</p>
+<ul>
+<li>표시: 시각 · 액션 · 변경자 · 변경 필드 · 사유</li>
+<li>권한: agent 본인 / manager 본인 센터 / admin·contract 전체</li>
+<li>감사 시 SQL 직접 조회 안 하고 즉시 화면에서 확인</li>
+</ul>
 <h3>휴지통 (admin·manager·contract)</h3>
 <p>[📁 휴지통 보기] → 삭제된 계약 list → [🔄 원복] / [🚫 영구 삭제 (admin만)]</p>
 <div class="warn"><b>Optimistic locking</b>: 동시에 두 사용자가 같은 계약 편집 시 늦게 저장한 쪽이 409 에러 → 새로고침 후 재시도</div>`
