@@ -1336,7 +1336,10 @@ function bindShortcutKeys() {
 
   <!-- ═══ 우측 ═══ -->
   <aside class="tm-panel tm-result-panel">
-    <h2>💰 견적 결과</h2>
+    <h2 style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span>💰 견적 결과</span>
+      <a id="tm-install-check-btn" href="#" target="_blank" rel="noopener" style="display:none;background:#0891b2;color:#fff;padding:5px 12px;border-radius:5px;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:0">📍 설치가능 조회</a>
+    </h2>
     <div class="tm-ticket-lookup">
       <div class="tm-ticket-lookup-label">🎫 티켓번호로 빠른 조회</div>
       <div class="tm-ticket-lookup-row">
@@ -2587,6 +2590,28 @@ function calc() {
   document.getElementById('c-result').innerHTML = html;
   // 섹터 1·2 동시 표시 시 섹터 1만 드롭다운으로 접기 (긴 견적 한눈에 X 방지)
   wrapSec1IfBothSectorsPresent();
+  // 통신사별 설치가능지역 조회 버튼 갱신
+  updateInstallCheckBtn();
+}
+
+// 견적 결과 패널 헤더의 [📍 설치가능 조회] 버튼 carrier별 URL·라벨 갱신
+function updateInstallCheckBtn() {
+  const btn = document.getElementById('tm-install-check-btn');
+  if (!btn) return;
+  const c = document.getElementById('c-carrier')?.value;
+  const urls = {
+    skt: 'https://www.bworld.co.kr/myb/product/join/address/svcAveSearch.do',
+    kt:  'https://help.kt.com/serviceinfo/SearchHomePhone.do',
+    lgu: 'https://www.lguplus.com/support/online/coverage-check',
+  };
+  const labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  if (urls[c]) {
+    btn.href = urls[c];
+    btn.textContent = '📍 ' + labels[c] + ' 설치가능 조회';
+    btn.style.display = '';
+  } else {
+    btn.style.display = 'none';
+  }
 }
 
 // 섹터 1·섹터 2 동시 표시 시 섹터 1을 접기/펴기 토글 (기존 UI 그대로 살림).

@@ -1367,7 +1367,7 @@ async function injectDealerSection(c) {
     ${installUrl ? `
       <div style="display:flex;gap:8px;align-items:center;padding-top:8px;border-top:1px dashed rgba(134,239,172,0.25)">
         <span style="font-size:11px;color:#94a3b8">📍 설치 가능 지역 조회 (${p.carrier || carrier.toUpperCase()} 공식)</span>
-        <a href="${installUrl}" target="_blank" style="margin-left:auto;background:#0891b2;color:#fff;padding:6px 14px;border-radius:5px;text-decoration:none;font-size:11.5px;font-weight:700">📍 조회하기</a>
+        <button type="button" data-install-url="${installUrl}" data-customer-address="${(c.customer_address||'').replace(/"/g,'&quot;')}${c.customer_address_detail?(' '+c.customer_address_detail.replace(/"/g,'&quot;')):''}" onclick="window._installCheckClick(this)" style="margin-left:auto;background:#0891b2;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:700">📍 조회하기 <span style="font-size:9px;opacity:0.85">(주소 자동 복사)</span></button>
       </div>
     ` : ''}
   `;
@@ -1384,6 +1384,30 @@ async function injectDealerSection(c) {
   // 초기 link 활성화
   window._updateDealerLink(wrap.querySelector('select'));
 }
+
+// [📍 조회하기] 클릭 — 고객 주소 클립보드 복사 후 외부 사이트 새 탭 열기
+window._installCheckClick = function(btn) {
+  const url = btn.dataset.installUrl;
+  const addr = (btn.dataset.customerAddress || '').trim();
+  const open = () => window.open(url, '_blank', 'noopener');
+  if (!addr) { open(); return; }
+  // 클립보드 복사 시도
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(addr).then(() => {
+      showToast('📋 주소 복사됨 → 새 탭에서 Cmd+V (Ctrl+V)로 붙여넣기');
+      open();
+    }).catch(() => open());
+  } else {
+    // fallback — execCommand
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = addr; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+      showToast('📋 주소 복사됨 → 새 탭에서 붙여넣기');
+    } catch {}
+    open();
+  }
+};
 
 window._updateDealerLink = function(sel) {
   const opt = sel.options[sel.selectedIndex];
