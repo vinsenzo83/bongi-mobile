@@ -87,503 +87,402 @@ main .anchor { display:block; height:0; visibility:hidden; padding-top:60px; mar
 // 매뉴얼 데이터 — { id, title, roles[], group, html }
 // ═══════════════════════════════════════════════════════════════
 const SECTIONS = [
-  // ═════════ 시작하기 ═════════
+  // ══════════════════════ 1. 시작하기 ══════════════════════
   {
-    id: 'intro', group: '시작하기', title: '👋 환영합니다', roles: ['all'],
+    id: 'intro', group: '1️⃣ 시작하기', title: '👋 환영합니다', roles: ['all'],
     html: `<h2>봉이 운영 매뉴얼<span class="role-tag r-all">전체</span></h2>
-<p class="lead">봉이 모바일 어드민 사용자를 위한 종합 매뉴얼입니다. 좌측 메뉴에서 화면별 사용법을 찾거나 상단 검색을 사용하세요.</p>
-<h3>역할 (Role)</h3>
+<p class="lead">봉이 모바일 어드민 종합 매뉴얼. 좌측 메뉴/검색으로 화면별 사용법 조회.</p>
+<h3>역할 (Role) 4종</h3>
 <table>
-<tr><th>Role</th><th>권한</th><th>메뉴</th></tr>
-<tr><td><span class="role-tag r-admin">ADMIN</span></td><td>전체 관리·정책 결정</td><td>모든 메뉴 + 권한·DB 출처·정산 확정·보안</td></tr>
-<tr><td><span class="role-tag r-manager">MANAGER</span></td><td>본인 센터 운영</td><td>콜 분배 승인·팀 정산·팀 ROI</td></tr>
-<tr><td><span class="role-tag r-agent">AGENT</span></td><td>상담사 (TM 영업)</td><td>본인 콜·견적·정산</td></tr>
-<tr><td><span class="role-tag r-contract">CONTRACT</span></td><td>계약 후처리</td><td>계약 처리·대시보드</td></tr>
+<tr><th>Role</th><th>주 권한</th><th>주요 메뉴</th></tr>
+<tr><td><span class="role-tag r-admin">ADMIN</span></td><td>전체 관리·정책 결정·DB 관리·정산 확정</td><td>모든 메뉴</td></tr>
+<tr><td><span class="role-tag r-manager">MANAGER</span></td><td>본인 센터 운영·팀 정산·분배 승인·계약 처리</td><td>팀 KPI·분배 요청·계약 처리·월간 목표</td></tr>
+<tr><td><span class="role-tag r-agent">AGENT</span></td><td>본인 영업 (TM·견적·계약 등록)</td><td>대시보드·내 콜·TM·계약 처리(본인)·분배 요청</td></tr>
+<tr><td><span class="role-tag r-contract">CONTRACT</span></td><td>계약 후처리 전담 (도입 시 활성)</td><td>계약 처리·대시보드</td></tr>
 </table>
 <h3>환경</h3>
 <table>
 <tr><th>환경</th><th>URL</th><th>용도</th></tr>
 <tr><td>로컬</td><td><code>http://localhost:3001</code></td><td>개발자 1차 검증</td></tr>
-<tr><td>데브</td><td><code>dev-admin.prexymarket.com</code></td><td>QA·통합 테스트</td></tr>
-<tr><td>라이브</td><td><code>admin.prexymarket.com</code></td><td>운영</td></tr>
+<tr><td>데브</td><td><code>dev-admin.prexymarket.com</code></td><td>QA·통합 테스트 (라이브 데이터 클론)</td></tr>
+<tr><td>라이브</td><td><code>admin.prexymarket.com</code></td><td>실 운영</td></tr>
 </table>
-<div class="tip"><b>💡 좌측 메뉴 / 검색 활용</b><br>역할별로 보고 싶을 때는 우상단 [Admin / Manager / Agent / Contract] 버튼을, 키워드로 찾을 때는 검색을 사용하세요.</div>`
+<div class="tip"><b>💡 메뉴 가시성</b>는 admin이 [권한 관리]에서 role별 토글로 조절 가능. 본 문서의 "주 권한"은 기본값.</div>`
   },
   {
-    id: 'login', group: '시작하기', title: '🔐 로그인 & 2FA', roles: ['all'],
+    id: 'login', group: '1️⃣ 시작하기', title: '🔐 로그인 & 비밀번호', roles: ['all'],
     html: `<h2>로그인<span class="role-tag r-all">전체</span></h2>
-<p class="lead">통합 어드민 진입 시 이메일·비밀번호 입력. admin은 2FA 필수 활성 권장.</p>
+<p class="lead">통합 어드민 진입 시 이메일·비밀번호 입력. 2FA는 현재 미사용 (IP 화이트리스트로 보안 처리).</p>
 <h3>로그인 절차</h3>
 <div class="step"><span class="num">1</span><b>이메일·비밀번호</b> 입력 (관리자가 발급)</div>
-<div class="step"><span class="num">2</span><b>2FA 코드</b> 입력 (활성 사용자만 — 입력칸 자동 표시)</div>
-<div class="step"><span class="num">3</span>로그인 → 우상단에 본인 이름·역할·센터 표시</div>
-<h3>2FA (TOTP) 설정</h3>
-<p>우상단 <kbd>🔐</kbd> 버튼 → [2FA 활성화] → Google Authenticator/1Password 등으로 QR 스캔 → 6자리 코드 입력 → 검증.</p>
-<div class="warn"><b>⚠️ admin 보안</b><br>admin 로그인 시 2FA 미설정이면 빨간 banner로 권장. 즉시 활성화 권장.</div>
+<div class="step"><span class="num">2</span>로그인 → 우상단에 본인 이름·역할·센터 표시</div>
+<div class="step"><span class="num">3</span>좌측 사이드바에서 권한 메뉴만 노출</div>
 <h3>비밀번호 변경</h3>
-<p>우상단 <kbd>🔐 비번변경</kbd> → 현재 비밀번호 + 새 비밀번호 (8자 이상) → 변경.</p>
-<h3>자동 로그아웃</h3>
-<p>3분마다 토큰 헬스체크. 만료 시 자동 로그아웃 + 안내 메시지.</p>`
+<p>우상단 [🔐] 버튼 → 현재 비밀번호 → 새 비밀번호 (8자 이상). 새 비번이 현재와 동일하면 거부.</p>
+<h3>세션 만료</h3>
+<p>3분마다 토큰 헬스체크. 만료 시 자동 로그인 화면 + 토스트 안내. 다른 탭에서 로그아웃하면 모든 탭 동기화.</p>
+<div class="warn"><b>⚠️ admin 보안</b><br>2FA 대신 [상담사 관리] 페이지의 IP 화이트리스트로 본사 IP만 접근 허용 권장 (admin 진입 시).</div>`
   },
 
-  // ═════════ 대시보드 ═════════
+  // ══════════════════════ 2. 일일 운영 (상담사·매니저) ══════════════════════
   {
-    id: 'dashboard', group: '대시보드', title: '📊 대시보드', roles: ['all'],
+    id: 'dashboard', group: '2️⃣ 일일 운영', title: '📊 대시보드', roles: ['all'],
     html: `<h2>대시보드<span class="role-tag r-all">전체</span></h2>
-<p class="lead">로그인 직후 첫 화면. 본인 역할에 따라 다른 KPI·차트가 표시됩니다.</p>
-<h3>Agent 화면</h3>
+<p class="lead">role별 다른 KPI·차트 자동 노출.</p>
+<h3>공통 KPI (모든 role)</h3>
 <ul>
-<li><b>🎯 내 이번 달 누적</b> — 총수령(기본급+인센티브+보너스−페이백차감)·등급(G1/G2/G3)·누적 P·우수 건수·인센티브·보너스·페이백차감 7개 카드</li>
-<li><b>📈 등급 진행률</b> — 다음 등급까지 +N P 시각화 (G2: 16P / G3: 31P)</li>
-<li><b>📋 본인 영업 리스트</b> — 이번 달 등록한 견적 list (상태·페이백·계약일)</li>
+<li>이번 달 계약 건수·합계 P·인센티브 예상액·등급</li>
+<li>월별 추이 차트 / 상태별 분포 / 상품 TOP10</li>
 </ul>
-<h3>Manager 화면</h3>
+<h3>매니저 전용 카드 (manager·admin)</h3>
 <ul>
-<li><b>👨‍💼 팀장 전용 KPI</b> — 팀 인원 / 팀 매출 / 팀 인센티브 합 / 팀 이익률</li>
-<li>팀원 별 영업 monitoring · 우수 상담사 강조</li>
+<li>👤 내 정산 (본인 P·인센티브)</li>
+<li>🏢 내 센터 합계</li>
+<li>📊 매니징 KPI (팀 등급 분포·페널티 인원·우수 비율)</li>
+<li>💰 센터 영업이익 (admin만)</li>
+<li>🏢 V5.1 팀 오버라이드 (manager 전용)</li>
+<li>⚠️ 페널티 위험 상담사 list</li>
 </ul>
-<h3>Admin 화면</h3>
-<ul>
-<li><b>📊 매출 차트 5종</b> — 월별 추이·상태 분포·상품 TOP 10·DB 출처별·상담사 ROI</li>
-<li>기간 선택 (3·6·12개월)</li>
-</ul>
-<div class="tip"><b>💡 ROI 표 (admin)</b><br>이번 달 진행 중 정산을 V5 정식 RPC로 계산 (P·Grade·인센티브·보너스·최종지급액).</div>`
-  },
-
-  // ═════════ 콜 DB CRM ═════════
-  {
-    id: 'customer-db', group: '콜 DB CRM', title: '📞 콜 DB 관리 (Admin)', roles: ['admin'],
-    html: `<h2>콜 DB 관리<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">전체 콜DB 관리 — 엑셀 import / 분배 / archived / 보안.</p>
-<h3>1. 엑셀 import</h3>
-<div class="step"><span class="num">1</span>출처 선택 (네이버·카카오 등)</div>
-<div class="step"><span class="num">2</span><b>드래그 앤 드롭</b> 또는 파일 선택</div>
-<div class="step"><span class="num">3</span>자동 검증 → 유효 row insert + 중복 제외</div>
-<div class="step"><span class="num">4</span>완료 후 batch list에 신규 batch 표시</div>
-<h3>2. 분배 — 2단계</h3>
-<ol>
-<li><b>센터 분배</b> (admin) — 전사 미배정 풀 → 광주센터/본사 등 센터별 할당</li>
-<li><b>상담사 분배</b> (manager 또는 admin) — 센터 풀 → 상담사 분배 (round-robin / max_per_agent 옵션)</li>
-</ol>
-<h3>3. 분배 요청 승인</h3>
-<p>우상단 <kbd>📋 분배 요청</kbd> 클릭 (빨간 배지 = 대기 N건). 승인 시 자동 분배.</p>
-<h3>4. archived 토글</h3>
-<p>상태 필터에서 <code>archived만</code> 선택 → archived customer 보임. retention cron으로 converted 90일 / rejected 30일 후 자동 archive.</p>
-<h3>5. retention 실행</h3>
-<p><kbd>🧹 retention</kbd> — converted 90일/rejected 30일 → archive · archived 90일 → soft delete · 3년 → 영구 삭제. 매일 03:00 KST 자동.</p>
-<h3>6. 자동 재배정</h3>
-<p><kbd>♻️ 재배정</kbd> — 분배 후 7일 0시도 / 14일 ≤2회 시도 → 풀 복귀. 매일 04:00 KST 자동.</p>
-<h3>7. 🔐 보안 패널</h3>
-<p>우상단 <kbd>🔐 보안</kbd> → IP 화이트리스트 + 액세스 로그 (PIPA audit).</p>
-<h3>8. 일괄 rollback</h3>
-<p>batch list에서 [🗑] 버튼 → 미컨택만 또는 전체 → soft delete.</p>
-<div class="warn"><b>⚠️ PIPA 준수</b><br>개인정보 화면은 워터마크·인쇄 차단·복사 시 출처 stamp 자동 적용. 외부 유출 시 access_log로 추적.</div>`
+<h3>📞 실시간 콜 활동 위젯 (manager·admin · 30초 자동 갱신)</h3>
+<table>
+<tr><th>📦 미배정 풀</th><th>⏰ 미연락</th><th>📞 콜백</th><th>🎉 오늘 전환</th><th>🎯 컨택률</th></tr>
+</table>
+<p>오늘 전환은 KST 기준 자정~지금. 업데이트 시각이 우상단에 표시됨.</p>`
   },
   {
-    id: 'call-list', group: '콜 DB CRM', title: '📋 내 콜 리스트', roles: ['agent', 'manager'],
-    html: `<h2>내 콜 리스트<span class="role-tag r-agent">AGENT</span><span class="role-tag r-manager">MANAGER</span></h2>
-<p class="lead">본인에게 분배된 customer 목록. 우선순위 자동 정렬.</p>
+    id: 'call-list', group: '2️⃣ 일일 운영', title: '📋 내 콜 리스트', roles: ['agent', 'manager', 'admin'],
+    html: `<h2>내 콜 리스트<span class="role-tag r-agent">AGENT</span></h2>
+<p class="lead">role별 자동 필터: agent=본인 / manager=본인 센터 / admin=전체 (admin은 [팀]·[상담사] 칼럼 추가 노출).</p>
+<h3>KPI 5종</h3>
+<p>📋 전체 / 🔔 오늘 콜백 / ⏰ 미연락 / 📵 부재 / 🎉 전환</p>
 <h3>우선순위 정렬</h3>
-<ol>
-<li><b>callback_at 임박</b> 순 (지난 콜백 우선)</li>
-<li><b>priority_score</b> 큰 순</li>
-<li><b>imported_at</b> 최신 순</li>
-</ol>
-<h3>KPI</h3>
 <ul>
-<li>📋 전체 / 🔔 오늘 콜백 / ⏰ 미연락 / 📵 부재 / 🎉 전환</li>
+<li>callback 시간순 → priority_score → 신규 (imported_at)</li>
+<li>오늘 콜백 행은 노란 배경으로 강조</li>
 </ul>
-<h3>주요 액션</h3>
-<table>
-<tr><th>버튼</th><th>동작</th></tr>
-<tr><td><kbd>📥 콜 분배 요청</kbd></td><td>매니저에게 추가 분배 요청 (사유 + 건수)</td></tr>
-<tr><td><kbd>📋 내 요청</kbd></td><td>본인 요청 이력 (대기·승인·거부) 조회</td></tr>
-<tr><td>customer 행 클릭</td><td>TM 상담 콜 모드로 진입</td></tr>
-</table>
-<h3>콜백 알림</h3>
-<p>30분 이내 도래하는 콜백 → 브라우저 Notification + 비프음. 1분마다 자동 체크.</p>
-<h3>분배 요청 승인 (manager)</h3>
-<p>매니저 화면에서 [📋 분배 요청] 빨간 배지 → 모달 → 승인/거부.</p>
-<div class="ok"><b>✅ 자동 갱신</b><br>견적 등록 / 콜 결과 기록 시 콜 큐 자동 새로고침. 본인 통화 후 status 변경 즉시 반영.</div>`
+<h3>액션</h3>
+<div class="step"><span class="num">1</span>검색·상태 필터 적용 또는 [🔄 새로고침]</div>
+<div class="step"><span class="num">2</span>고객 행 클릭 → TM 콜 모드 자동 전환</div>
+<div class="step"><span class="num">3</span>매니저는 [🎯 팀 분배] 카드로 본인 센터 미분배 콜을 팀원에 분배</div>
+<div class="step"><span class="num">4</span>잔여 콜 부족 시 [📥 콜 분배 요청] → 매니저/admin 승인 대기</div>`
   },
   {
-    id: 'call-stats', group: '콜 DB CRM', title: '📈 콜 통계', roles: ['admin', 'manager', 'agent'],
-    html: `<h2>콜 통계<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span><span class="role-tag r-agent">AGENT</span></h2>
-<p class="lead">콜 결과 시간대·요일·일별·상담사별 분석. KST 기준.</p>
+    id: 'tm-counselor', group: '2️⃣ 일일 운영', title: '📞 TM 콜 모드', roles: ['agent', 'manager', 'admin'],
+    html: `<h2>TM 콜 모드<span class="role-tag r-agent">AGENT</span></h2>
+<p class="lead">고객 카드 + 상담 스크립트 + 메모 + 결과 기록 + 견적 패널 통합.</p>
 <h3>화면 구성</h3>
 <ul>
-<li><b>KPI 4개</b> — 총 콜 수 / 컨택률 / 전환률 / 최고 시간대</li>
-<li><b>시간대별 차트</b> — 24시간 콜 막대 + 컨택률 라인 (이중축)</li>
-<li><b>요일별 차트</b> — 일~토 콜 + 컨택률</li>
-<li><b>일별 추이</b> — 콜·컨택·전환 3개 라인</li>
-<li><b>상담사별 ROI 표</b> — 컨택률·전환률·분포 막대</li>
+<li>좌측 콜 큐 사이드바 (50건, 본인 분배 콜 우선순위 순)</li>
+<li>중앙 고객 카드 (고객명·전화·메모·이전 콜 이력)</li>
+<li>우측 견적 결과 패널 (실시간 calc + 통신사별 [📍 설치가능 조회])</li>
 </ul>
-<h3>기간 선택</h3>
-<p>최근 7 / 30 / 60 / 90일.</p>
-<h3>역할별 데이터 범위</h3>
+<h3>견적 결과 — 섹터 1·2 자동 토글</h3>
+<p>섹터 2 (결합·온가족·프리미엄)가 함께 나오면 섹터 1(인터넷·TV 기본)이 자동 접힘. 헤더 클릭으로 펴기/접기. 섹터 1 단독이면 그대로 표시.</p>
+<h3>설치가능지역 조회</h3>
+<p>견적 결과 헤더에 [📍 설치가능 조회] 버튼 — carrier에 맞춰 SKT/KT/LGU+ 공식 페이지 새 탭 자동 매핑.</p>
+<h3>콜 결과 기록</h3>
 <table>
-<tr><th>Role</th><th>표시</th></tr>
-<tr><td>agent</td><td>본인 콜 결과만</td></tr>
-<tr><td>manager</td><td>본인 센터 멤버 전체</td></tr>
-<tr><td>admin</td><td>전사</td></tr>
+<tr><th>결과</th><th>의미</th></tr>
+<tr><td>contacted</td><td>연락됨 (상담 진행)</td></tr>
+<tr><td>callback</td><td>콜백 약속 (콜백 시각 입력)</td></tr>
+<tr><td>no_answer</td><td>부재 (재시도 큐)</td></tr>
+<tr><td>rejected</td><td>거절</td></tr>
+<tr><td>converted</td><td>계약 완료 (자동 sales POST)</td></tr>
 </table>
-<div class="tip"><b>💡 컨택률 정의</b><br>컨택 = callback + rejected + converted (no_answer·wrong_number 제외). 즉 실제 통화 성공.</div>`
+<h3>📝 계약 완료 등록</h3>
+<p>견적 확정 → [📝 계약 완료] 버튼 → 고객명·주소·전화·페이백 입력 → POST /sales (incentive_sales) 자동 생성. customer_db도 converted로 자동 변환.</p>
+<div class="tip"><b>단축키</b>: 스페이스 = 다음 콜 / 1~5 = 결과 입력 / Esc = 모달 닫기</div>`
   },
-
-  // ═════════ TM 상담 ═════════
   {
-    id: 'tm-counselor', group: 'TM 상담', title: '📞 TM 콜 모드', roles: ['agent', 'manager'],
-    html: `<h2>TM 상담 콜 모드<span class="role-tag r-agent">AGENT</span><span class="role-tag r-manager">MANAGER</span></h2>
-<p class="lead">콜 리스트에서 customer 클릭 시 진입. 전화·결과 기록·견적 작성·메모 한 화면.</p>
-<h3>화면 구성</h3>
-<ul>
-<li><b>상단 콜 모드 bar</b> — 고객 정보·콜 결과 버튼·메모·통화 이력</li>
-<li><b>좌측 콜 큐</b> — 우선순위 30건 (현재 customer 강조)</li>
-<li><b>중앙 견적 폼</b> — 상품·금액·고객정보·페이백</li>
-<li><b>우측 인센티브 미리보기</b> — V5 단가·P·예상 인센티브</li>
-</ul>
-<h3>키보드 단축키</h3>
+    id: 'contract', group: '2️⃣ 일일 운영', title: '📋 계약 처리', roles: ['admin', 'manager', 'contract', 'agent'],
+    html: `<h2>계약 처리<span class="role-tag r-all">전체</span></h2>
+<p class="lead">TM 상담사가 따낸 영업 → 주소·서류 입력 → 최종 계약 진행. role별 처리 범위 다름.</p>
+<h3>role별 처리 범위</h3>
 <table>
-<tr><th>키</th><th>동작</th></tr>
-<tr><td><kbd>1</kbd></td><td>📵 부재</td></tr>
-<tr><td><kbd>2</kbd></td><td>📞 콜백 (시간 picker)</td></tr>
-<tr><td><kbd>3</kbd></td><td>❌ 거절 (사유 picker)</td></tr>
-<tr><td><kbd>4</kbd></td><td>⚠️ 잘못된 번호 (즉시 archive)</td></tr>
-<tr><td><kbd>0</kbd></td><td>🚫 DNT (재컨택 차단)</td></tr>
-<tr><td><kbd>Space</kbd> / <kbd>Enter</kbd></td><td>⏭️ 다음 고객</td></tr>
-<tr><td><kbd>C</kbd></td><td>📋 전화번호 복사</td></tr>
-<tr><td><kbd>M</kbd></td><td>📝 메모 focus</td></tr>
-<tr><td><kbd>H</kbd></td><td>📜 통화 이력 펼치기/접기</td></tr>
-<tr><td><kbd>?</kbd></td><td>도움말 토스트</td></tr>
+<tr><th>Role</th><th>조회</th><th>편집·취소</th></tr>
+<tr><td><span class="role-tag r-agent">AGENT</span></td><td>본인 계약만</td><td>본인 계약만</td></tr>
+<tr><td><span class="role-tag r-manager">MANAGER</span></td><td>본인 센터 전체</td><td>본인 센터 전체</td></tr>
+<tr><td><span class="role-tag r-contract">CONTRACT</span></td><td>전사 전체</td><td>전사 전체</td></tr>
+<tr><td><span class="role-tag r-admin">ADMIN</span></td><td>전사 전체</td><td>전사 전체 + 영구 삭제</td></tr>
 </table>
-<h3>콜 결과 흐름</h3>
-<div class="step"><span class="num">1</span>고객에게 전화 → 응답 결과 분류</div>
-<div class="step"><span class="num">2</span>메모 입력 (자동저장 + 콜 결과 시 stamp)</div>
-<div class="step"><span class="num">3</span>결과 버튼 클릭 → 상태 자동 변경 → 다음 고객으로 이동</div>
-<h3>계약 진행</h3>
+<h3>편집 모달 (행 클릭)</h3>
 <ol>
-<li>견적 폼 작성 (상품·고객·페이백·DB 출처는 자동 prefill)</li>
-<li>[✅ 이 견적으로 계약 완료] 클릭 → sale 등록</li>
-<li>customer 자동 <b>converted</b> 처리 → 콜 큐에서 자동 제거</li>
-<li>다음 고객 자동 진입 (1.5초)</li>
+<li>📦 계약 상품 정보 (carrier·tier·payback snapshot)</li>
+<li>🏪 접수 대리점 (carrier 매칭 자동 select + [🔗 접수 사이트 열기])</li>
+<li>📍 설치가능지역 조회 ([📍 조회하기] — 주소 자동 클립보드 복사 + 새 탭)</li>
+<li>👤 고객 정보 (이름·전화·주소·신분증)</li>
+<li>🏦 계좌 정보 (예금주·은행·계좌번호)</li>
+<li>📅 설치 일정·요청 메모</li>
+<li>📜 견적서 미리보기</li>
+<li>🗂️ 콜센터 상담 DB 출처 (상담완료 시 필수)</li>
+<li>💾 모든 변경사항 저장</li>
 </ol>
-<h3>통화 이력 timeline</h3>
-<p>고객 카드의 [📜 이력 펼치기] → 이전 시도 결과·메모·상담사 timeline. 메모 검색 가능. 계약 완료 row에 견적 #N 클릭 → 계약 처리 화면 deep-link.</p>
-<div class="tip"><b>💡 좌측 콜 큐 visited</b><br>이번 세션에서 이미 진입한 customer는 흐리게 + ↻ 표시. 한 바퀴 돌면 자동 reset.</div>`
-  },
-
-  // ═════════ V5 인센티브 ═════════
-  {
-    id: 'v5-policy', group: 'V5 인센티브', title: '💡 V5 정책 (전체)', roles: ['all'],
-    html: `<h2>V5 인센티브 정책<span class="role-tag r-all">전체</span></h2>
-<p class="lead">2026-05 시행. 가중치·등급·페이백·기본급으로 구성.</p>
-<h3>가중치 (P)</h3>
-<table>
-<tr><th>유형</th><th>P</th></tr>
-<tr><td>단독</td><td>1.0 P</td></tr>
-<tr><td>결합</td><td>1.5 P</td></tr>
-</table>
-<h3>등급</h3>
-<table>
-<tr><th>Grade</th><th>P 조건</th><th>우수 조건</th><th>단가</th></tr>
-<tr><td>G1</td><td>0~15 P</td><td>—</td><td>20,000원/P</td></tr>
-<tr><td>G2</td><td>16~30 P</td><td>우수 5건+</td><td>30,000원/P</td></tr>
-<tr><td>G3</td><td>31 P+</td><td>우수 10건+</td><td>40,000원/P</td></tr>
-</table>
-<div class="warn"><b>⚠️ 페널티</b><br>P 조건은 충족했는데 우수 미달 → 한 단계 강등 (G3→G2 or G2→G1).</div>
-<h3>우수 상품</h3>
-<p>마진 25만원+ 상품 → +10,000원/건 보너스.</p>
-<h3>페이백 분담</h3>
-<table>
-<tr><th>구간</th><th>회사 부담</th><th>상담사 부담</th></tr>
-<tr><td>0~30,000원</td><td>전액</td><td>0</td></tr>
-<tr><td>30,001~50,000원</td><td>30,000</td><td>초과분</td></tr>
-</table>
-<h3>최종 지급액</h3>
-<pre><code>최종 지급 = 기본급 + (단가 × P) + (우수 보너스) − 페이백 차감</code></pre>
-<div class="ok"><b>✅ 자동 계산</b><br>모든 화면(대시보드·정산·TM 미리보기)이 V5 정식 RPC로 동일하게 계산.</div>`
+<h3>상태 변경</h3>
+<p>pending → in_progress → completed 단계별. 각 timestamp 자동 기록. 취소는 status='cancelled' (삭제 버튼 없음 — 계약취소가 대체).</p>
+<h3>휴지통 (admin·manager·contract)</h3>
+<p>[📁 휴지통 보기] → 삭제된 계약 list → [🔄 원복] / [🚫 영구 삭제 (admin만)]</p>
+<div class="warn"><b>Optimistic locking</b>: 동시에 두 사용자가 같은 계약 편집 시 늦게 저장한 쪽이 409 에러 → 새로고침 후 재시도</div>`
   },
   {
-    id: 'settlements', group: 'V5 인센티브', title: '💰 월별 정산', roles: ['all'],
-    html: `<h2>월별 정산<span class="role-tag r-all">전체</span></h2>
-<p class="lead">매월 인센티브 정산. role별 데이터 범위 자동 필터.</p>
-<h3>화면 구성 (역할별)</h3>
+    id: 'distribution-requests', group: '2️⃣ 일일 운영', title: '📥 콜 분배 요청', roles: ['agent', 'manager', 'admin'],
+    html: `<h2>콜 분배 요청<span class="role-tag r-agent">AGENT</span><span class="role-tag r-manager">MANAGER</span><span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">상담사가 잔여 콜 부족 시 매니저/admin에 분배 요청. 사이드바 [📥 분배 요청] + admin.html 30초 폴링으로 푸시·배지 자동.</p>
+<h3>흐름</h3>
+<div class="step"><span class="num">1</span>agent/manager가 [➕ 새 요청 만들기] → 건수 + 사유</div>
+<div class="step"><span class="num">2</span>manager/admin은 사이드바 빨간 배지로 즉시 인지 + 브라우저 알림 + 사운드 + 토스트</div>
+<div class="step"><span class="num">3</span>승인: 분배 건수 입력 (요청 그대로 또는 일부) → RPC <code>approve_distribution_request</code> 트랜잭션 실행</div>
+<div class="step"><span class="num">4</span>거부: 사유 입력 (필수, 3자 이상)</div>
+<div class="step"><span class="num">5</span>agent는 본인 요청 결과 30초 폴링 → 승인되면 콜 큐 자동 갱신</div>
+<h3>역할별 페이지 자동 분기</h3>
 <table>
-<tr><th>Role</th><th>표시</th></tr>
-<tr><td>agent</td><td>본인 1행 + 등급 진행률 + 7개 KPI 카드</td></tr>
-<tr><td>manager</td><td>본인 + 팀원 + V5.1 오버라이드 보너스 카드</td></tr>
-<tr><td>admin</td><td>전사 + 회사이익·이익률 컬럼</td></tr>
+<tr><th>Role</th><th>표시 데이터</th><th>가능한 액션</th></tr>
+<tr><td>agent</td><td>본인 요청 이력</td><td>새 요청 / 본인 요청 취소</td></tr>
+<tr><td>manager</td><td>본인 센터 요청</td><td>승인·거부 + 본인도 새 요청</td></tr>
+<tr><td>admin</td><td>전사 전체 요청</td><td>승인·거부 (admin은 직접 분배 권장)</td></tr>
 </table>
-<h3>KPI 7개 (agent)</h3>
+<h3>중복 방지</h3>
+<p>UNIQUE constraint <code>uniq_cdb_req_agent_pending</code> — 한 사람이 동시에 2개 pending 요청 불가. 처리 후 다시 요청.</p>`
+  },
+  {
+    id: 'goals', group: '2️⃣ 일일 운영', title: '🎯 월간 목표 vs 실적', roles: ['agent', 'manager', 'admin'],
+    html: `<h2>월간 목표<span class="role-tag r-all">전체</span></h2>
+<p class="lead">상담사별 콜·전환·P 목표 설정 + 진척률 게이지 자동 계산.</p>
+<h3>3종 진척률</h3>
 <ul>
-<li>💰 총수령 (기본+인센+보너스−페이백)</li>
-<li>🏆 등급 + 단가</li>
-<li>📊 누적 P + 건수</li>
-<li>⭐ 우수 건수</li>
-<li>💵 인센티브 (단가 × P)</li>
-<li>🎁 우수 보너스</li>
-<li>💸 페이백 차감</li>
+<li>📞 콜 시도 — <code>incentive_customer_call_log</code> 월간 카운트</li>
+<li>🎉 전환 — <code>incentive_sales</code> 월간 contract_date 카운트 (status 무관)</li>
+<li>🏆 P — RPC <code>incentive_calc_monthly_settlement</code> 의 <code>total_points</code></li>
 </ul>
-<h3>매니저 V5.1 오버라이드</h3>
-<p>팀 인센티브 합 × 12% (이익률 ≥20% 시). 본인 영업 ≥10건 미달 시 페널티.</p>
+<h3>색상 단계</h3>
 <table>
-<tr><th>조건</th><th>결과</th></tr>
-<tr><td>이익률 &lt;20%</td><td>비활성 (지급 X)</td></tr>
-<tr><td>본인 &lt;10건</td><td>페널티 ×0 (미지급)</td></tr>
-<tr><td>본인 10~19건</td><td>일부 지급</td></tr>
-<tr><td>본인 ≥20건</td><td>full 지급</td></tr>
+<tr><th>진척률</th><th>색</th></tr>
+<tr><td>100%+</td><td>🟢 초록 (달성)</td></tr>
+<tr><td>70~99%</td><td>🟡 노랑 (가까움)</td></tr>
+<tr><td>~69%</td><td>🔴 빨강 (분발)</td></tr>
 </table>
-<h3>상태 흐름 (admin)</h3>
-<div class="step"><span class="num">1</span><b>draft</b> — admin이 [집계 실행] 또는 cron 자동 (매월 1일 02:00 시도)</div>
-<div class="step"><span class="num">2</span><b>locked (확정)</b> — admin이 [확정] 클릭 → 데이터 영구 박제</div>
-<div class="step"><span class="num">3</span><b>paid (지급완료)</b> — admin이 [지급] 클릭 → 정산 완료</div>
-<h3>정산 수정 요청</h3>
-<p><kbd>📩 수정 요청</kbd> 클릭 → 사유 입력 → admin 빨간 배지로 알림 → admin이 [해결] 또는 [거부]. agent 본인 정산만 가능.</p>
-<h3>CSV 다운로드</h3>
-<p><kbd>📥 CSV</kbd> — Excel 호환 (BOM 포함). 회사이익·이익률은 admin만 포함.</p>`
+<h3>role별 권한</h3>
+<table>
+<tr><th>Role</th><th>조회</th><th>편집</th></tr>
+<tr><td>agent</td><td>본인 목표</td><td>X (매니저에 요청)</td></tr>
+<tr><td>manager</td><td>본인 센터</td><td>본인 센터 상담사</td></tr>
+<tr><td>admin</td><td>전체</td><td>전체</td></tr>
+</table>`
   },
 
-  // ═════════ 계약 처리 ═════════
+  // ══════════════════════ 3. 관리자 (Admin) ══════════════════════
   {
-    id: 'contract', group: '계약', title: '📋 계약 처리', roles: ['admin', 'manager', 'contract', 'agent'],
-    html: `<h2>계약 처리<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span><span class="role-tag r-contract">CONTRACT</span><span class="role-tag r-agent">AGENT</span></h2>
-<p class="lead">계약 상태 흐름·후처리·정산 연결.</p>
-<h3>역할별 권한</h3>
+    id: 'customer-db', group: '3️⃣ 관리자', title: '📞 콜 DB 관리', roles: ['admin'],
+    html: `<h2>콜 DB 관리<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">엑셀 import → 센터 분배 → 자동 retention/redistribution → 통계·회수.</p>
+<h3>📊 KPI 13종 (상단)</h3>
+<p><b>1줄 (큰 카드 5)</b>: 📊 전체 DB · ✅ 사용 가능 · 📦 미배정 · 📞 분배됨 · 🗑 archived</p>
+<p><b>2줄 (작은 카드 8)</b>: ⏰ 미연락 · 📞 콜백 · 📵 부재 · 🎉 전환 · ❌ 거절 · 🚫 DNT · 📊 컨택률 · 🎯 전환율</p>
+<h3>🗂️ DB 출처별 컨버전 비교</h3>
+<p>출처별 전체 / 컨택 / 전환 / 컨택률 / 전환율 표 — 전환율 내림차순 자동 정렬. 어느 DB가 ROI 좋은지 한눈에.</p>
+<h3>⚠️ Aging (방치된 콜)</h3>
+<p>7일 이상 미연락 카운트 — 카드 클릭 시 list 자동 필터.</p>
+<h3>📈 30일 처리 추세 차트</h3>
+<p>일별 import · 콜 시도 · 전환 라인 그래프 (KST 기준 bucket).</p>
+<h3>📥 CSV export</h3>
+<p>전체 / 미연락 / 콜백 / 전환 4종 — UTF-8 BOM 엑셀 호환.</p>
+<h3>🔄 DB 회수 (퇴사·휴직·부진 회전)</h3>
+<div class="step"><span class="num">1</span>상담사 표 행에서 [🔄 회수] 빨간 버튼</div>
+<div class="step"><span class="num">2</span>범위: 전체 / pending / no_answer / rejected / 5·14·30일 미통화</div>
+<div class="step"><span class="num">3</span>사유 (3자 이상 필수) — access_log에 customer_ids 자체 보존</div>
+<div class="step"><span class="num">4</span>assigned_agent_id·assigned_center NULL → 풀 복귀 (전환된 콜 제외)</div>
+<h3>엑셀 import + 분배</h3>
+<ol>
+<li>DB 출처 선택 → 엑셀 업로드 → batch 생성 → <code>incentive_customer_db</code> INSERT</li>
+<li>centers별 분배 (admin) → assigned_center 설정</li>
+<li>매니저가 본인 센터 콜을 agent에 재분배 (또는 분배 요청 승인)</li>
+</ol>
+<h3>자동 cron (KST)</h3>
 <table>
-<tr><th>Role</th><th>권한</th></tr>
-<tr><td>agent</td><td>👁 본인 계약만 read-only — 수정·취소 X</td></tr>
-<tr><td>contract</td><td>본인 담당 후처리 (개통일·은행정보 입력)</td></tr>
-<tr><td>manager</td><td>팀 계약 수정·취소</td></tr>
-<tr><td>admin</td><td>전체 + 삭제·복구</td></tr>
+<tr><th>시각</th><th>작업</th></tr>
+<tr><td>03:00</td><td>retention — converted 90일/rejected 30일 → archive · archived 90일 → soft-delete · 3년 → purge</td></tr>
+<tr><td>04:00</td><td>redistribution — 분배 후 7일 0회 / 14일 ≤2회 → 풀 복귀</td></tr>
+<tr><td>매월 1일 02:00</td><td>월별 정산 자동 집계</td></tr>
 </table>
-<h3>계약 상태</h3>
-<table>
-<tr><th>상태</th><th>의미</th><th>전환</th></tr>
-<tr><td>pending</td><td>접수 (TM 등록 직후)</td><td>→ in_progress / cancelled</td></tr>
-<tr><td>in_progress</td><td>처리 중 (계약부서 작업)</td><td>→ completed / cancelled</td></tr>
-<tr><td>completed</td><td>완료</td><td>→ activated</td></tr>
-<tr><td>activated</td><td>개통완료</td><td>(종결)</td></tr>
-<tr><td>cancelled</td><td>취소</td><td>customer 자동 콜 큐 복귀</td></tr>
-</table>
-<h3>주요 액션</h3>
-<ul>
-<li><b>처리 시작</b> — pending → in_progress (status timestamp 자동 기록)</li>
-<li><b>완료</b> — in_progress → completed</li>
-<li><b>취소</b> — 사유 필수 / customer 자동 callback 복귀 (콜 큐 재진입)</li>
-<li><b>개통일 입력</b> — installation_date / activation_date</li>
-<li><b>은행정보 입력</b> — 페이백 지급 정보</li>
-</ul>
-<div class="tip"><b>💡 계약 취소 → 콜 큐 복귀</b><br>cancelled 처리 시 연결된 customer가 자동으로 callback 상태로 콜 큐에 다시 들어옴.</div>`
+<h3>📜 액세스 로그</h3>
+<p>[📜 액세스 로그] 버튼 — 최근 7일 PIPA audit 조회 (action 필터·user·IP·metadata)</p>`
   },
-
-  // ═════════ Admin 전용 ═════════
   {
-    id: 'agents', group: '관리자 전용', title: '👥 상담사 관리', roles: ['admin'],
+    id: 'agents', group: '3️⃣ 관리자', title: '👥 상담사 관리', roles: ['admin'],
     html: `<h2>상담사 관리<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">상담사 추가·역할 변경·센터 배정·기본급 설정.</p>
-<h3>주요 컬럼</h3>
+<p class="lead">신규 상담사 발급·역할 변경·휴지통·🔐 IP 화이트리스트.</p>
+<h3>신규 발급</h3>
+<div class="step"><span class="num">1</span>이메일·이름 입력 + 비밀번호 자동 생성 ([🎲 자동])</div>
+<div class="step"><span class="num">2</span>역할 선택 (agent/manager/contract/admin) + 센터 + 입사일 + 기본급</div>
+<div class="step"><span class="num">3</span>[➕ 발급] → Supabase Auth + incentive_agents 동시 생성</div>
+<h3>편집·휴지통</h3>
+<p>표 행 클릭 → 편집 모달 (역할·센터·기본급·활성 토글). 삭제 시 휴지통(soft-delete) → admin이 [📁 휴지통 보기]에서 원복/영구 삭제.</p>
+<h3>🔐 IP 화이트리스트 (admin 전용 섹션)</h3>
+<p>콜 DB(<code>/api/customer-db/*</code>) 접근 IP 제한 — PIPA 보안.</p>
 <ul>
-<li>이름 / role (admin·manager·agent·contract) / 센터</li>
-<li>기본급 (default 2,300,000)</li>
-<li>입사일 / 활성 여부</li>
-<li>2FA 활성 여부</li>
-</ul>
-<h3>새 상담사 추가</h3>
-<div class="step"><span class="num">1</span>이메일·이름·역할·센터 입력</div>
-<div class="step"><span class="num">2</span>임시 비밀번호 발급 → 본인에게 전달</div>
-<div class="step"><span class="num">3</span>최초 로그인 → 비밀번호 변경 → 2FA 활성 권장</div>
-<div class="warn"><b>⚠️ admin 추가</b><br>admin은 모든 데이터·정산 변경 권한. 신중히 부여.</div>`
+<li>CIDR 표기: <code>1.2.3.4</code> 또는 <code>10.0.0.0/8</code></li>
+<li>활성 토글 / 라벨 / 즉시 삭제</li>
+<li>등록 0건이면 비활성 (모든 IP 통과)</li>
+<li>localhost·private IP는 자동 통과</li>
+</ul>`
   },
   {
-    id: 'products', group: '관리자 전용', title: '📦 상품 관리', roles: ['admin'],
+    id: 'products', group: '3️⃣ 관리자', title: '📦 상품 관리 + 🏪 대리점', roles: ['admin'],
     html: `<h2>상품 관리<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">SKT/KT/LGU+ 상품 등록·페이백·리베이트·V5 가중치.</p>
-<h3>필드</h3>
+<p class="lead">63개 상품 (SKT 30 + KT 18 + LGU+ 15) 인라인 편집 + 대리점 관리.</p>
+<h3>상품 인라인 편집</h3>
 <ul>
-<li><b>carrier</b> — SKT/KT/LGU+</li>
-<li><b>type</b> — 단독·결합 (V5 가중치 자동: 1.0 / 1.5)</li>
-<li><b>name</b>·speed·tv_tier</li>
-<li><b>rebate</b> — 회사 매출</li>
-<li><b>payback</b> — 고객 지급</li>
-<li><b>point_weight</b> — V5 P (0.5/1.0/1.5/2.0)</li>
-<li><b>margin</b> — 자동 계산 (rebate × 0.9 − payback − P × 70,000)</li>
-<li><b>tier</b> — S/A/B/C 자동 (margin 기준)</li>
-<li><b>is_premium</b> — 마진 25만+ → 우수 상품 (보너스 +1만/건)</li>
+<li>통신사·종류·Tier·검색 필터</li>
+<li>페이백·리베이트·가중치 즉시 수정 → 신규 영업부터 적용 (기존은 snapshot 보존)</li>
+<li>[📜 변경 이력] / [📥 엑셀 다운로드] / [📤 엑셀 업로드]</li>
 </ul>
-<h3>변경 이력</h3>
-<p>모든 단가 변경은 history 테이블에 기록. 등록 시점의 sale은 snapshot으로 박제 (이후 변경 영향 X).</p>`
+<h3>🏪 통신사별 접수 대리점 (페이지 하단)</h3>
+<p>SKT 🔴 / KT 🟡 / LGU+ 🟣 3 카드. 등록한 대리점이 계약 처리 편집창에 자동 노출.</p>
+<div class="step"><span class="num">1</span>대리점명 + URL 입력 (URL은 http/https/mailto만 허용)</div>
+<div class="step"><span class="num">2</span>[+] 추가 → 활성 체크박스 자동 ON</div>
+<div class="step"><span class="num">3</span>활성 토글로 즉시 ON/OFF (계약 처리에서 비활성은 select 안 보임)</div>
+<div class="step"><span class="num">4</span>[URL] 편집 / [×] 삭제 (sales의 dealer_id는 ON DELETE SET NULL로 보존)</div>
+<div class="tip"><b>비활성 대리점</b>은 신규 계약 select에서 숨김. 기존 계약의 dealer가 비활성으로 변경되면 (비활성) 표기로 select 유지 (이력 보존).</div>`
   },
   {
-    id: 'rules', group: '관리자 전용', title: '⚙️ 정책 관리', roles: ['admin'],
-    html: `<h2>정책 관리 (V5 규칙)<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">기본급·등급 단가·우수 보너스 등 V5 정책 변경.</p>
-<h3>현재 활성 (V5.0)</h3>
-<table>
-<tr><th>항목</th><th>값</th></tr>
-<tr><td>기본급</td><td>2,300,000원</td></tr>
-<tr><td>우수 보너스</td><td>10,000원/건</td></tr>
-<tr><td>페이백 회사 한도</td><td>30,000원</td></tr>
-<tr><td>페이백 최대</td><td>50,000원</td></tr>
-<tr><td>G1 단가</td><td>20,000원/P</td></tr>
-<tr><td>G2 단가</td><td>30,000원/P (우수 5건+)</td></tr>
-<tr><td>G3 단가</td><td>40,000원/P (우수 10건+)</td></tr>
-<tr><td>우수상품 마진 기준</td><td>250,000원</td></tr>
-</table>
-<div class="warn"><b>⚠️ 정책 변경</b><br>새 버전(V5.1, V6.0 등) 추가 후 활성. 이전 정산 데이터는 기존 정책으로 박제됨.</div>`
-  },
-  {
-    id: 'permissions', group: '관리자 전용', title: '🔐 권한 관리', roles: ['admin'],
-    html: `<h2>권한 관리<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">역할별 메뉴 가시성 + 2FA 강제 정책.</p>
-<h3>메뉴 가시성</h3>
-<p>각 메뉴를 role별로 토글. 즉시 적용 (사용자 다음 진입 시 반영).</p>
-<h3>현재 메뉴</h3>
+    id: 'rules', group: '3️⃣ 관리자', title: '⚙️ 정책 관리 (V5)', roles: ['admin'],
+    html: `<h2>정책 관리<span class="role-tag r-admin">ADMIN</span></h2>
+<h3>V5 인센티브 규칙 (절대 변경 금지 핵심)</h3>
 <ul>
-<li>대시보드 / 계약 처리 / 콜 DB 관리 / 콜 통계 / 콜 리스트</li>
+<li>가중치: 단독 1.0P / 결합 1.5P</li>
+<li>Grade: G1(0~15P) / G2(16~30P, 우수 5건+) / G3(31P+, 우수 10건+)</li>
+<li>페널티: 우수 미달 시 한 단계 강등</li>
+<li>우수상품: 마진 25만+ → +1만/건 보너스</li>
+<li>페이백 분담: 회사 ≤30,000 / 상담사 30,001~50,000</li>
+<li>기본급 230만 / 단가 G1=2만 G2=3만 G3=4만</li>
+</ul>`
+  },
+  {
+    id: 'db-sources', group: '3️⃣ 관리자', title: '🗂️ DB 출처 관리', roles: ['admin'],
+    html: `<h2>DB 출처<span class="role-tag r-admin">ADMIN</span></h2>
+<p>콜 DB import 시 출처 라벨 + 색상. 콜 DB 통계 [🗂️ 출처별 컨버전 비교]에서 ROI 비교용.</p>
+<h3>관리</h3>
+<ul><li>이름·색상 추가/수정/삭제 (활성 토글)</li><li>display_order로 정렬</li></ul>`
+  },
+  {
+    id: 'permissions', group: '3️⃣ 관리자', title: '🔐 권한 관리 (메뉴 토글)', roles: ['admin'],
+    html: `<h2>권한 관리<span class="role-tag r-admin">ADMIN</span></h2>
+<p>role별 사이드바 메뉴 가시성 토글. DB <code>incentive_role_permissions.menus</code> jsonb 즉시 반영.</p>
+<h3>현재 메뉴 카탈로그</h3>
+<ul>
+<li>대시보드 / 계약 처리 / 콜 DB 관리 / 콜 통계 / 내 콜 리스트</li>
 <li>월별 정산 / 월간 목표 / TM 상담 / TM 데이터 관리</li>
 <li>분배 요청 (📥 사이드바 배지 + 30초 polling)</li>
 <li>상품·정책·DB 출처·상담사·권한 (admin 전용)</li>
 <li>급여 안내 (전체)</li>
 </ul>
-<div class="warn"><b>⚠️ admin lockout 방지</b><br>admin은 [permissions]·[agents] 메뉴 제거 불가 (자기 자신 잠금 방지).</div>`
+<div class="warn"><b>⚠️ admin lockout 방지</b><br>admin row의 [permissions]·[agents] 메뉴는 강제 체크 + 잠김 (자기 자신 잠금 방지)</div>`
   },
   {
-    id: 'db-sources', group: '관리자 전용', title: '🗂️ DB 출처', roles: ['admin'],
-    html: `<h2>DB 출처<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">콜DB import 시 분류 (네이버 광고·카카오 광고 등).</p>
-<h3>활용</h3>
+    id: 'settlements', group: '3️⃣ 관리자', title: '💰 월별 정산', roles: ['all'],
+    html: `<h2>월별 정산<span class="role-tag r-all">전체</span></h2>
+<p>월별 V5 정산 — agent별 P·우수·인센티브·매출·이익률 집계.</p>
+<h3>상태 흐름</h3>
+<table>
+<tr><th>상태</th><th>의미</th><th>편집 가능</th></tr>
+<tr><td>draft</td><td>집계됨</td><td>✅</td></tr>
+<tr><td>locked</td><td>확정 (admin 잠금)</td><td>X</td></tr>
+<tr><td>paid</td><td>지급 완료</td><td>X</td></tr>
+</table>
+<h3>액션</h3>
 <ul>
-<li>대시보드 차트 — DB 출처별 매출 분석</li>
-<li>콜DB import 시 출처 선택 (필수)</li>
-<li>견적 등록 시 자동 prefill (콜 모드 진입 시 customer의 db_source_id 사용)</li>
-</ul>
-<h3>필드</h3>
-<ul>
-<li>이름 / 색상 (대시보드 차트 막대 색) / 활성 여부</li>
+<li>[집계 실행] (admin) — 전월 sales 집계 → incentive_settlements INSERT</li>
+<li>[CSV export] / [인쇄]</li>
+<li>cron 자동: 매월 1일 02:00 KST</li>
 </ul>`
   },
   {
-    id: 'tm-data', group: '관리자 전용', title: '🧮 TM 데이터 관리', roles: ['admin'],
-    html: `<h2>TM 데이터 관리 (calculator)<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">TM 상담사가 사용하는 요금 계산기 데이터 편집. 모든 사용자에게 즉시 반영.</p>
-<h3>섹션 1~9</h3>
-<table>
-<tr><th>섹션</th><th>내용</th></tr>
-<tr><td>1. 인터넷·WiFi</td><td>속도별 요금·WiFi 옵션</td></tr>
-<tr><td>2. TV 상품</td><td>채널 수·기본료·할인</td></tr>
-<tr><td>3. 셋톱박스</td><td>모델별 가격·기능</td></tr>
-<tr><td>4. 결합 할인</td><td>3사 결합 정책 (가족·총액·정액·프리미엄)</td></tr>
-<tr><td>5. 설치비</td><td>3사 평일/주말</td></tr>
-<tr><td>6. 제휴카드</td><td>카드별 할인</td></tr>
-<tr><td>7. 영업 포인트</td><td>할인 우선순위·약정 비교</td></tr>
-<tr><td>8. 사은품</td><td>63개 카탈로그</td></tr>
-<tr><td>9. 티켓 리스트</td><td>속도×TV×WiFi 조합 자동 생성</td></tr>
-</table>
-<h3>편집 흐름</h3>
-<p>셀 클릭 → 인라인 편집 → 자동 저장 (localStorage + Supabase 동기화). 변경 이력은 섹션 10에 시간순 기록.</p>
-<div class="ok"><b>✅ 즉시 반영</b><br>편집 시 TM 상담사·계산기·티켓 리스트에 즉시 반영.</div>`
+    id: 'call-stats', group: '3️⃣ 관리자', title: '📈 콜 통계', roles: ['admin', 'manager'],
+    html: `<h2>콜 통계<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span></h2>
+<p>일별 콜 시도·연락·전환 차트. agent별 ROI / 출처별 conversion / 시간대별 응답률.</p>`
+  },
+  {
+    id: 'tm-data', group: '3️⃣ 관리자', title: '🧮 TM 데이터 관리', roles: ['admin'],
+    html: `<h2>TM 데이터 관리<span class="role-tag r-admin">ADMIN</span></h2>
+<p>calculator.html (어드민 1~8 + Supabase 동기화). 견적 단가·TV·옵션 데이터 직접 편집 → TM 상담 견적에 즉시 반영.</p>`
   },
 
-  // ═════════ 운영 ═════════
+  // ══════════════════════ 4. 운영·보안 ══════════════════════
   {
-    id: 'security', group: '운영·보안', title: '🛡 보안 (PIPA)', roles: ['admin', 'manager'],
-    html: `<h2>보안 (PIPA 준수)<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span></h2>
-<p class="lead">개인정보보호법 준수 + 외부 유출 방지.</p>
-<h3>자동 적용 보안</h3>
+    id: 'security', group: '4️⃣ 운영·보안', title: '🛡 보안 (PIPA 준수)', roles: ['admin', 'manager'],
+    html: `<h2>보안 (PIPA)<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">개인정보보호법 준수 — 5단계 보호.</p>
+<h3>1. 인증</h3>
+<ul><li>Supabase Auth + JWT 3분마다 헬스체크</li><li>refresh token 자동 갱신</li><li>비활성 사용자 자동 차단</li></ul>
+<h3>2. 권한 (RBAC)</h3>
+<ul><li>4 role × 라우트별 분기</li><li>incentive_role_permissions.menus 토글</li></ul>
+<h3>3. 네트워크 보호</h3>
+<ul><li><b>IP 화이트리스트</b> (상담사 관리 페이지) — <code>/api/customer-db/*</code> CIDR 제한</li><li>CSP / X-Frame-Options:SAMEORIGIN / Referrer-Policy</li><li>postMessage origin 검증 (same-origin only)</li></ul>
+<h3>4. 데이터 보호 (PIPA 모듈 — _security.js)</h3>
 <ul>
-<li><b>워터마크</b> — 모든 페이지에 사용자명·시각·호스트 반복 표시</li>
-<li><b>인쇄 차단</b> — Cmd/Ctrl+P 차단 + onbeforeprint alert</li>
-<li><b>PrintScreen 감지</b> — alert + clipboard 비우기</li>
-<li><b>우클릭 차단</b> — input/textarea 제외</li>
-<li><b>copy 시 출처 stamp</b> — 5자 이상 복사 시 자동 부착</li>
+<li>워터마크 (SVG repeat — 사용자명·시각)</li>
+<li>Ctrl+P 인쇄 차단 / PrintScreen 경고</li>
+<li>우클릭 차단 (input·textarea 제외)</li>
+<li>copy 시 워터마크 stamp 자동 삽입</li>
+<li>5초 폴링 + 다른 탭 storage 이벤트 동기화</li>
 </ul>
-<h3>retention 정책 (자동)</h3>
-<table>
-<tr><th>단계</th><th>조건</th></tr>
-<tr><td>archive</td><td>converted 90일 / rejected 30일</td></tr>
-<tr><td>soft delete</td><td>archived 90일 후</td></tr>
-<tr><td>물리 삭제</td><td>soft delete 후 3년 (PIPA 보존 만료)</td></tr>
-</table>
-<h3>IP 화이트리스트 (admin)</h3>
-<p>콜DB 관리 → <kbd>🔐 보안</kbd> → CIDR 추가. 등록 0건이면 비활성. localhost·사설망 자동 통과.</p>
-<h3>액세스 로그</h3>
-<p>모든 view·update·distribute·retention 액션은 audit 로그에 기록. admin이 보안 패널에서 7일치 조회.</p>
-<h3>2FA</h3>
-<p>admin 권장. 우상단 <kbd>🔐</kbd> 또는 강제 banner.</p>`
+<h3>5. 감사 로그</h3>
+<ul><li>incentive_customer_db_access_log (action: view·list_view·distribute·recall·export_csv·…)</li><li>recall 시 customer_ids array 자체 metadata 보존</li><li>incentive_sales_history (계약 변경 before/after JSON)</li></ul>`
   },
   {
-    id: 'environments', group: '운영·보안', title: '🌐 환경 (로컬·데브·라이브)', roles: ['admin'],
-    html: `<h2>환경<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">로컬 → 데브 → 라이브 흐름.</p>
-<h3>3단계 흐름</h3>
-<div class="step"><span class="num">1</span><b>로컬</b> (localhost:3001) — 개발자 1차 검증</div>
-<div class="step"><span class="num">2</span><b>데브</b> (dev-admin.prexymarket.com) — QA·통합 테스트 (별도 Supabase)</div>
-<div class="step"><span class="num">3</span><b>라이브</b> (admin.prexymarket.com) — 운영 (라이브 Supabase)</div>
+    id: 'environments', group: '4️⃣ 운영·보안', title: '🌐 환경 (로컬·데브·라이브)', roles: ['admin'],
+    html: `<h2>환경 분리<span class="role-tag r-admin">ADMIN</span></h2>
+<p>3 환경 + 자동 배포.</p>
+<table>
+<tr><th>환경</th><th>URL</th><th>Supabase</th><th>브랜치</th></tr>
+<tr><td>로컬</td><td>localhost:3001</td><td>데브 또는 라이브 (env 선택)</td><td>로컬 작업</td></tr>
+<tr><td>데브</td><td>dev-admin.prexymarket.com</td><td>sesgdqbmophgmombelmn</td><td><b>develop</b> push 자동 배포</td></tr>
+<tr><td>라이브</td><td>admin.prexymarket.com</td><td>dugaqvvnhsgenhmhuyju</td><td><b>master</b> push 자동 배포</td></tr>
+</table>
 <h3>배포 흐름</h3>
-<pre><code>git checkout develop      # 데브 브랜치
-git push origin develop   # → Railway 데브 자동 배포 (1~2분)
-
-# 데브 검증 통과 후
-git checkout master
-git merge develop
-git push origin master    # → Railway 라이브 자동 배포</code></pre>
-<h3>데브 테스트 계정</h3>
-<table>
-<tr><th>계정</th><th>비밀번호</th><th>역할</th></tr>
-<tr><td>admin1@bongi.dev</td><td>pass1234!</td><td>관리자 (본사)</td></tr>
-<tr><td>manager1@bongi.dev</td><td>pass1234!</td><td>박매니저 (광주센터)</td></tr>
-<tr><td>agent1@bongi.dev</td><td>pass1234!</td><td>김상담 (광주센터)</td></tr>
-<tr><td>agent2@bongi.dev</td><td>pass1234!</td><td>최상담 (광주센터)</td></tr>
-</table>
-<div class="warn"><b>⚠️ 라이브 직접 배포 금지</b><br>반드시 데브 검증 후 master로 merge. 라이브 데이터에 즉시 영향.</div>`
+<div class="step"><span class="num">1</span>로컬에서 작업 + 1차 검증</div>
+<div class="step"><span class="num">2</span>git push origin develop → Railway Native가 데브 자동 빌드 (1~2분)</div>
+<div class="step"><span class="num">3</span>데브에서 QA</div>
+<div class="step"><span class="num">4</span>git checkout master && git merge develop && git push → 라이브 자동 배포</div>
+<div class="warn"><b>⚠️ 라이브 직접 push 금지</b> — 반드시 데브 검증 후</div>`
   },
   {
-    id: 'troubleshooting', group: '운영·보안', title: '🔧 트러블슈팅', roles: ['all'],
-    html: `<h2>자주 발생하는 문제<span class="role-tag r-all">전체</span></h2>
-<table>
-<tr><th>증상</th><th>원인</th><th>해결</th></tr>
-<tr><td>로그인 후 빈 화면</td><td>토큰 만료</td><td>새로고침 → 재로그인</td></tr>
-<tr><td>변경한 코드가 안 보임</td><td>SW 캐시 또는 iframe 캐시</td><td>Cmd+Shift+R 하드 새로고침</td></tr>
-<tr><td>"풀 비어있음"</td><td>매니저 분배 안 됨 또는 admin import 안 됨</td><td>매니저에게 분배 요청 (콜 분배 요청 모달)</td></tr>
-<tr><td>"이미 대기 요청 있음"</td><td>이전 분배 요청 처리 안 됨</td><td>📋 내 요청 → 취소 후 새로 요청</td></tr>
-<tr><td>2FA 코드 안 받음</td><td>인증 앱 시간 동기화 X</td><td>스마트폰 시간 자동 설정 ON</td></tr>
-<tr><td>견적 등록 안 됨</td><td>전화번호 형식 오류 (010-1234-5678)</td><td>국번 정확히 입력</td></tr>
-<tr><td>"콜 큐 빈 상태"</td><td>모든 customer 한 번 시도함</td><td>다음 누르면 visited 자동 reset → 재순회</td></tr>
-<tr><td>대시보드 차트 0건</td><td>이번 달 데이터 부족</td><td>기간 변경 (3·6·12개월)</td></tr>
-<tr><td>인쇄 차단됨</td><td>PIPA 보안</td><td>의도된 동작 — 화면 캡처 대신 CSV 다운로드</td></tr>
-</table>
-<h3>긴급 문의</h3>
-<p>admin 또는 IT 담당자에게 연락. 액세스 로그(보안 패널)로 조사 가능.</p>`
+    id: 'troubleshooting', group: '4️⃣ 운영·보안', title: '🔧 트러블슈팅', roles: ['all'],
+    html: `<h2>트러블슈팅<span class="role-tag r-all">전체</span></h2>
+<h3>로그인 안 됨</h3>
+<ul>
+<li>이메일·비밀번호 확인 → 캡스락</li>
+<li>"401 인증 실패" → 다른 탭에서 로그아웃 후 재시도</li>
+<li>비밀번호 잊음 → admin에 비밀번호 reset 요청</li>
+<li>비활성 계정 ("비활성") → admin이 [상담사 관리]에서 활성화</li>
+</ul>
+<h3>주소 검색 안 됨</h3>
+<ul>
+<li>"주소 검색 API 로드 중..." → 자동 재로드 시도. 그래도 안 되면 새로고침 (Cmd+Shift+R)</li>
+<li>광고차단 확장이 t1.daumcdn.net 차단 가능</li>
+</ul>
+<h3>차트 안 보임</h3>
+<ul>
+<li>시크릿창 또는 Cmd+Shift+R로 강제 새로고침 (sw.js 캐시)</li>
+<li>Chart.js는 self-host (/docs/vendor/chart.umd.min.js)</li>
+</ul>
+<h3>분배 요청 배지 안 뜸</h3>
+<ul><li>30초 polling. manager·admin role에서만</li><li>본인이 보낸 요청은 본인 배지에서 제외</li></ul>
+<h3>"센터 외 상담사 조회 불가" 에러</h3>
+<p>manager는 본인 센터 데이터만. admin에 조회 요청.</p>
+<h3>대리점 select에 안 보임</h3>
+<ul><li>활성 대리점만 표시 — admin이 [상품 관리] 하단에서 활성화 확인</li><li>carrier 매칭 — 상품 carrier(SKT/KT/LGU+) 확인</li></ul>
+<h3>저장 시 409 에러</h3>
+<p>다른 사용자가 동시 편집 → 새로고침 후 다시 시도 (Optimistic locking)</p>`
   },
   {
-    id: 'shortcuts', group: '운영·보안', title: '⌨️ 단축키 모음', roles: ['all'],
-    html: `<h2>단축키 정리<span class="role-tag r-all">전체</span></h2>
+    id: 'shortcuts', group: '4️⃣ 운영·보안', title: '⌨️ 단축키 모음', roles: ['all'],
+    html: `<h2>단축키<span class="role-tag r-all">전체</span></h2>
+<h3>전역</h3>
+<ul><li>Cmd+Shift+R (Mac) / Ctrl+F5 (Win) — 강제 새로고침 (sw.js 우회)</li><li>Esc — 모달 닫기</li></ul>
 <h3>TM 콜 모드</h3>
-<table>
-<tr><th>키</th><th>동작</th></tr>
-<tr><td><kbd>1</kbd></td><td>📵 부재</td></tr>
-<tr><td><kbd>2</kbd></td><td>📞 콜백 (시간 picker)</td></tr>
-<tr><td><kbd>3</kbd></td><td>❌ 거절 (사유 picker)</td></tr>
-<tr><td><kbd>4</kbd></td><td>⚠️ 잘못된 번호</td></tr>
-<tr><td><kbd>0</kbd></td><td>🚫 DNT</td></tr>
-<tr><td><kbd>Space</kbd> / <kbd>Enter</kbd></td><td>⏭️ 다음 고객</td></tr>
-<tr><td><kbd>C</kbd></td><td>📋 전화번호 복사</td></tr>
-<tr><td><kbd>M</kbd></td><td>📝 메모 focus</td></tr>
-<tr><td><kbd>H</kbd></td><td>📜 이력 펼치기/접기</td></tr>
-<tr><td><kbd>?</kbd></td><td>도움말 토스트</td></tr>
-</table>
-<h3>모달 (콜백·거절·분배 요청)</h3>
-<table>
-<tr><th>키</th><th>동작</th></tr>
-<tr><td><kbd>Enter</kbd></td><td>확정</td></tr>
-<tr><td><kbd>Esc</kbd></td><td>취소·닫기</td></tr>
-</table>
-<h3>전체 어드민</h3>
-<table>
-<tr><th>키</th><th>동작</th></tr>
-<tr><td><kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd></td><td>하드 새로고침 (캐시 무시)</td></tr>
-<tr><td><kbd>F12</kbd></td><td>DevTools (개발자 모드)</td></tr>
-</table>`
+<ul><li>Space — 다음 콜로 자동 전환</li><li>1~5 — 콜 결과 입력 (contacted/callback/no_answer/rejected/converted)</li></ul>
+<h3>분배 요청 모달</h3>
+<ul><li>Enter (req-count input에서) — 즉시 제출</li><li>Ctrl+Enter / Cmd+Enter — textarea에서도 제출</li><li>Esc — 닫기</li></ul>`
   },
 ];
 
