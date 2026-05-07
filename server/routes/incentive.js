@@ -868,8 +868,6 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
-    // agent는 계약 수정 불가 (read-only) — 등록만 가능, 수정/취소는 매니저에게 요청
-    if (me.role === 'agent') return res.status(403).json({ error: '상담원은 계약 수정 불가 — 매니저에게 요청' });
 
     const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id } = req.body || {};
     const { data: existing } = await supabase
@@ -879,8 +877,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       .single();
     if (!existing) return res.status(404).json({ error: '영업 없음' });
 
-    // Optimistic locking — 클라이언트가 expected_updated_at 보내면 일치 여부 체크
-    // (동시 PATCH 시 last-write-wins 방지. 안 보내면 기존 동작 유지 = 하위 호환)
+    // Optimistic locking
     if (expected_updated_at && existing.updated_at !== expected_updated_at) {
       return res.status(409).json({
         error: '이미 다른 사용자가 수정했습니다. 새로고침 후 다시 시도하세요.',
@@ -888,10 +885,19 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       });
     }
 
-    // 본인 영업이거나 manager/admin만 수정 가능
-    if (existing.agent_id !== me.id && !isManagerOrAdmin(me)) {
-      return res.status(403).json({ error: '본인 영업만 수정 가능' });
+    // role별 권한:
+    //  agent  → 본인 계약만 (existing.agent_id === me.id)
+    //  manager → 본인 센터 상담사 계약만 (existing.agent의 center === me.center)
+    //  admin·contract → 전체
+    if (me.role === 'agent') {
+      if (existing.agent_id !== me.id) return res.status(403).json({ error: '본인 계약만 수정 가능' });
+    } else if (me.role === 'manager') {
+      const { data: targetAgent } = await supabase.from('incentive_agents').select('center').eq('id', existing.agent_id).single();
+      if (!targetAgent || targetAgent.center !== me.center) {
+        return res.status(403).json({ error: '본인 센터 상담사 계약만 수정 가능' });
+      }
     }
+    // admin·contract는 통과
 
     const update = {};
     if (status !== undefined) {
@@ -994,7 +1000,7 @@ router.delete('/sales/:id', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
     const permanent = req.query.permanent === '1' || req.query.permanent === 'true';
 
@@ -1009,7 +1015,19 @@ router.delete('/sales/:id', authenticateJWT, async (req, res) => {
       return res.json({ ok: true, permanent: true });
     }
 
-    // soft delete: deleted_at + deleted_by_user_id + deleted_reason + status='cancelled'
+    // soft delete role별:
+    //  agent → 본인 계약만 / manager → 본인 센터 / admin·contract → 전체
+    const { data: existing } = await supabase.from('incentive_sales').select('agent_id').eq('id', req.params.id).single();
+    if (!existing) return res.status(404).json({ error: '영업 없음' });
+    if (me.role === 'agent') {
+      if (existing.agent_id !== me.id) return res.status(403).json({ error: '본인 계약만 삭제 가능' });
+    } else if (me.role === 'manager') {
+      const { data: targetAgent } = await supabase.from('incentive_agents').select('center').eq('id', existing.agent_id).single();
+      if (!targetAgent || targetAgent.center !== me.center) {
+        return res.status(403).json({ error: '본인 센터 상담사 계약만 삭제 가능' });
+      }
+    }
+
     const { reason } = req.body || {};
     const { data, error } = await supabase
       .from('incentive_sales')
@@ -1043,16 +1061,25 @@ router.post('/sales/:id/restore', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    // 기존 row 조회 — status 결정용
     const { data: existing, error: selErr } = await supabase
       .from('incentive_sales')
-      .select('id, deleted_at, contract_pending_at, contract_in_progress_at, contract_completed_at, contract_cancelled_at')
+      .select('id, agent_id, deleted_at, contract_pending_at, contract_in_progress_at, contract_completed_at, contract_cancelled_at')
       .eq('id', req.params.id)
       .single();
     if (selErr || !existing) return res.status(404).json({ error: '영업 없음' });
     if (!existing.deleted_at) return res.status(400).json({ error: '이미 활성 상태입니다' });
+
+    // role별 원복 권한
+    if (me.role === 'agent') {
+      if (existing.agent_id !== me.id) return res.status(403).json({ error: '본인 계약만 원복 가능' });
+    } else if (me.role === 'manager') {
+      const { data: targetAgent } = await supabase.from('incentive_agents').select('center').eq('id', existing.agent_id).single();
+      if (!targetAgent || targetAgent.center !== me.center) {
+        return res.status(403).json({ error: '본인 센터 상담사 계약만 원복 가능' });
+      }
+    }
 
     // 가장 최근 timestamp의 status로 복원
     // 단, contract_cancelled_at은 삭제 시점에 자동 갱신되므로 제외 (실제 취소 vs 삭제 구분)
