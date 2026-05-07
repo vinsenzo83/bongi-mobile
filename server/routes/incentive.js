@@ -2207,6 +2207,15 @@ router.get('/dealers', authenticateJWT, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// URL scheme 화이트리스트 (javascript:·data:·file: 등 차단)
+function _safeDealerUrl(u) {
+  if (!u) return null;
+  try {
+    const p = new URL(String(u).trim());
+    return ['http:', 'https:', 'mailto:'].includes(p.protocol) ? String(u).trim().slice(0, 500) : null;
+  } catch { return null; }
+}
+
 // POST /dealers (admin)
 router.post('/dealers', authenticateJWT, async (req, res) => {
   try {
@@ -2215,9 +2224,10 @@ router.post('/dealers', authenticateJWT, async (req, res) => {
     const { carrier, name, url, notes, display_order } = req.body || {};
     if (!carrier || !name) return res.status(400).json({ error: 'carrier·name 필수' });
     if (!['skt', 'kt', 'lgu'].includes(carrier)) return res.status(400).json({ error: 'carrier는 skt/kt/lgu 중 하나' });
+    if (url && !_safeDealerUrl(url)) return res.status(400).json({ error: 'URL은 http/https/mailto만 허용' });
     const { data, error } = await supabase.from('incentive_dealers').insert({
       carrier, name: String(name).trim().slice(0, 100),
-      url: url ? String(url).trim().slice(0, 500) : null,
+      url: _safeDealerUrl(url),
       notes: notes ? String(notes).slice(0, 500) : null,
       display_order: parseInt(display_order) || 0,
       created_by: req.user.id,
@@ -2238,7 +2248,10 @@ router.patch('/dealers/:id(\\d+)', authenticateJWT, async (req, res) => {
     const update = { updated_at: new Date().toISOString() };
     const { name, url, active, notes, display_order } = req.body || {};
     if (name !== undefined) update.name = String(name).trim().slice(0, 100);
-    if (url !== undefined) update.url = url ? String(url).trim().slice(0, 500) : null;
+    if (url !== undefined) {
+      if (url && !_safeDealerUrl(url)) return res.status(400).json({ error: 'URL은 http/https/mailto만 허용' });
+      update.url = _safeDealerUrl(url);
+    }
     if (active !== undefined) update.active = !!active;
     if (notes !== undefined) update.notes = notes ? String(notes).slice(0, 500) : null;
     if (display_order !== undefined) update.display_order = parseInt(display_order) || 0;

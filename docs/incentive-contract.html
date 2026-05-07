@@ -1351,10 +1351,14 @@ async function injectDealerSection(c) {
   const wrap = document.createElement('div');
   wrap.className = 'sec-card';
   wrap.style.cssText = 'background:linear-gradient(135deg,#064e3b,#0f172a);border:1.5px solid #16a34a;border-radius:8px;padding:12px 16px;margin:10px 0';
+  const escHtml = (s) => String(s ?? '').replace(/[<>&"']/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[ch]));
+  // URL scheme 화이트리스트 (javascript: 등 차단)
+  const safeUrl = (u) => { if (!u) return ''; try { const p = new URL(u, location.origin); return ['http:','https:','mailto:'].includes(p.protocol) ? u : ''; } catch { return ''; } };
   const opts = dealers.map(x => {
     const sel = x.id === currentId ? 'selected' : '';
-    const label = x.name + (x.active ? '' : ' (비활성)');
-    const urlAttr = x.url ? `data-url="${x.url.replace(/"/g,'&quot;')}"` : '';
+    const label = escHtml(x.name) + (x.active ? '' : ' (비활성)');
+    const u = safeUrl(x.url);
+    const urlAttr = u ? `data-url="${escHtml(u)}"` : '';
     return `<option value="${x.id}" ${urlAttr} ${sel}>${label}</option>`;
   }).join('');
   // 통신사별 설치가능지역 조회 페이지 (3사 공식)

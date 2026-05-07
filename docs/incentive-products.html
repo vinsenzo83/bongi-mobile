@@ -399,17 +399,28 @@ async function loadDealers() {
     const wrap = document.getElementById('dealers-' + c);
     if (!wrap) return;
     if (!byCarrier[c].length) { wrap.innerHTML = '<div style="color:#64748b;text-align:center;padding:6px">대리점 없음</div>'; return; }
+    const escHtml = (s) => String(s ?? '').replace(/[<>&"']/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[ch]));
+    const safeUrl = (u) => { if (!u) return ''; try { const p = new URL(u, location.origin); return ['http:','https:','mailto:'].includes(p.protocol) ? u : ''; } catch { return ''; } };
     wrap.innerHTML = byCarrier[c].map(x => {
-      const nameEsc = String(x.name).replace(/[<>&"]/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
-      const urlEsc = x.url ? String(x.url).replace(/[<>&"]/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch])) : '';
+      const nameEsc = escHtml(x.name);
+      const u = safeUrl(x.url);
+      const urlEsc = escHtml(u);
       return `<div style="display:flex;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid #1e293b">
         <input type="checkbox" ${x.active?'checked':''} onchange="toggleDealer(${x.id}, this.checked)" title="활성/비활성">
         <span style="flex:1;font-weight:${x.active?'700':'400'};color:${x.active?'#f8fafc':'#64748b'}">${nameEsc}</span>
-        ${urlEsc ? `<a href="${urlEsc}" target="_blank" style="color:#60a5fa;font-size:10px;text-decoration:none" title="${urlEsc}">🔗</a>` : ''}
-        <button onclick="editDealerUrl(${x.id})" style="background:#475569;color:#fff;border:none;padding:2px 8px;border-radius:3px;font-size:10px;cursor:pointer">URL</button>
-        <button onclick="deleteDealer(${x.id},'${nameEsc}')" style="background:#dc2626;color:#fff;border:none;padding:2px 7px;border-radius:3px;font-size:10px;cursor:pointer">×</button>
+        ${u ? `<a href="${urlEsc}" target="_blank" rel="noopener" style="color:#60a5fa;font-size:10px;text-decoration:none" title="${urlEsc}">🔗</a>` : ''}
+        <button data-act="edit-url" data-id="${x.id}" style="background:#475569;color:#fff;border:none;padding:2px 8px;border-radius:3px;font-size:10px;cursor:pointer">URL</button>
+        <button data-act="delete" data-id="${x.id}" data-name="${nameEsc}" style="background:#dc2626;color:#fff;border:none;padding:2px 7px;border-radius:3px;font-size:10px;cursor:pointer">×</button>
       </div>`;
     }).join('');
+    // 이벤트 위임 (onclick 안전한 dataset 기반)
+    wrap.querySelectorAll('button[data-act]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        if (btn.dataset.act === 'edit-url') editDealerUrl(id);
+        else if (btn.dataset.act === 'delete') deleteDealer(id, btn.dataset.name);
+      });
+    });
   });
 }
 async function addDealer(carrier) {
