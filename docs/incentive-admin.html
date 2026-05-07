@@ -331,22 +331,26 @@ function gLoadTab(btn) {
   const src = btn.dataset.src;
   if (!src) return;
   const path = src.split('?')[0];
+  // 🔑 mode·customer_id 등 query string에 따라 별도 iframe key
+  // (예: tm-counselor.html vs tm-counselor.html?mode=manual은 별도 iframe)
+  let modeKey = '';
+  try {
+    const u = new URL(src, location.origin);
+    modeKey = u.searchParams.get('mode') || '';
+  } catch {}
+  const poolKey = modeKey ? (path + '|' + modeKey) : path;
   const container = document.querySelector('.content-area');
   const loading = document.getElementById('g-iframe-loading');
   // active 표시
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
-  try { localStorage.setItem(G_LAST_TAB_KEY, path); } catch(e) {}
+  try { localStorage.setItem(G_LAST_TAB_KEY, poolKey); } catch(e) {}
   // 모든 풀 iframe 숨김
   _iframePool.forEach(f => { f.style.display = 'none'; });
-  // 이미 로드한 iframe 재사용
-  let iframe = _iframePool.get(path);
+  // 이미 로드한 iframe 재사용 (poolKey 기준)
+  let iframe = _iframePool.get(poolKey);
   if (iframe) {
     iframe.style.display = 'block';
     loading.style.display = 'none';
-    // query만 다르면 iframe 안에 postMessage로 통보 (재로드 X)
-    if (src.includes('?')) {
-      try { iframe.contentWindow.postMessage({ type:'iframe-navigate', src }, location.origin); } catch(e) {}
-    }
     return;
   }
   // 신규
@@ -356,7 +360,7 @@ function gLoadTab(btn) {
   loading.style.display = 'flex';
   iframe.onload = () => { loading.style.display = 'none'; };
   container.appendChild(iframe);
-  _iframePool.set(path, iframe);
+  _iframePool.set(poolKey, iframe);
   const legacy = document.getElementById('g-iframe');
   if (legacy && legacy !== iframe) legacy.style.display = 'none';
 }
