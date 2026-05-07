@@ -1325,8 +1325,15 @@ async function injectDealerSection(c) {
   const r = await fetch(`/api/incentive/dealers?carrier=${carrier}`, { headers: { Authorization:'Bearer '+tk }});
   if (!r.ok) return;
   const d = await r.json();
-  const dealers = d.dealers || [];
-  const currentId = c.dealer_id;
+  const all = d.dealers || [];
+  // 활성 대리점만 노출 (단, 기존 계약의 dealer가 비활성이면 이력 보존용으로 함께 표시)
+  const dealers = all.filter(x => x.active || x.id === c.dealer_id);
+  // 신규(dealer_id 없음)면 첫 번째 활성 대리점 자동 선택
+  let currentId = c.dealer_id;
+  if (!currentId) {
+    const firstActive = dealers.find(x => x.active);
+    if (firstActive) currentId = firstActive.id;
+  }
 
   const wrap = document.createElement('div');
   wrap.className = 'sec-card';
@@ -1350,10 +1357,16 @@ async function injectDealerSection(c) {
       <a class="dealer-open-link" href="" target="_blank" style="display:none;background:#3b82f6;color:#fff;padding:8px 16px;border-radius:5px;text-decoration:none;font-size:12px;font-weight:700">🔗 접수 사이트 열기</a>
     </div>
   `;
-  // 첫 sec-card 다음 (📦 계약 상품 정보 카드 직후)에 삽입
-  const firstCard = document.querySelector('#modal-body .sec-card');
-  if (firstCard?.nextSibling) firstCard.parentNode.insertBefore(wrap, firstCard.nextSibling);
-  else document.getElementById('modal-body').appendChild(wrap);
+  // 모달 제일 아래에 삽입 — [💾 저장] 버튼 직전 (저장 버튼 자체보다 위)
+  const modalBody = document.getElementById('modal-body');
+  const saveBtn = modalBody.querySelector('[data-act="save-detail"]');
+  if (saveBtn) {
+    // 저장 버튼이 들어있는 wrapper의 직전에 삽입
+    const saveWrap = saveBtn.closest('.sec-card') || saveBtn.parentNode;
+    saveWrap.parentNode.insertBefore(wrap, saveWrap);
+  } else {
+    modalBody.appendChild(wrap);
+  }
   // 초기 link 활성화
   window._updateDealerLink(wrap.querySelector('select'));
 }
