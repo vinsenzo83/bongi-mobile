@@ -19,7 +19,8 @@ function loadJson(filename) {
   }
 }
 
+// ⚠️ 옛 React 고객 SPA 시절의 mock 데이터 — 봉이 어드민·인센티브 운영과 무관
+// 의존: applications.js / chat-tools.js / mock.js (현재 어드민 미사용)
+// 제거 시: 위 3개 라우트도 함께 정리 필요
 export const customers = loadJson('customers.json');
 export const tickets = loadJson('tickets.json');
-
-console.log(`✅ Mock Store 로드: 고객 ${customers.length}명, 티켓 ${tickets.length}개`);

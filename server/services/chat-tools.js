@@ -114,10 +114,8 @@ try {
 let storesUpdated = {};
 try {
   storesUpdated = JSON.parse(readFileSync(join(providerDir, 'stores_updated.json'), 'utf8'));
-  console.log(`  매장 로드: ${storesUpdated.stores?.length || 0}개`);
 } catch (e) {
-  console.log(`  ⚠️ stores_updated.json 로드 실패: ${e.message}`);
-  // 폴백: stores.js 사용
+  // 폴백: stores.js 사용 (어드민 운영 무관 — 옛 챗봇용)
   storesUpdated = { homepage: 'https://bong2mobile.com', stores: stores };
 }
 
@@ -144,8 +142,7 @@ try {
 
 const mobileCount = Object.values(mobilePrices.carriers || {}).reduce((s, c) => s + (c.plans?.length || 0), 0);
 const rentalCount = Object.values(rentalProducts).reduce((s, arr) => s + arr.length, 0);
-console.log(`✅ 3사 데이터 로드: 상품 ${Object.keys(productCatalog).length}개, 모바일요금제 ${mobilePlans.skt.length + mobilePlans.kt.length + mobilePlans.lg.length}개, 핸드폰시세 ${mobileCount}개, 중고폰매입 ${tradeinPhones.length}개, 가전렌탈 ${rentalCount}개, 렌탈카드 ${rentalCards.length}개`);
-console.log(`✅ 보강 데이터: 모바일상세 ${mobilePlansEnriched.length}개, 무선카드 ${wirelessCards.length}개, 매장 ${storesUpdated.stores?.length || 0}개, 렌트리 ${rentreProducts.data?.length || 0}개, 가이드 ${wirelessGuide.length + wiredGuide.length}개 섹션`);
+// 시작 로그 제거 — 어드민 운영과 무관한 챗봇용 데이터 (count 변수는 다른 곳에서 사용 가능성 유지)
 
 // Claude Tool Use 도구 정의
 export const TOOLS = [
