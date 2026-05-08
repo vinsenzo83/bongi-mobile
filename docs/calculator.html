@@ -244,6 +244,8 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
 }
 
 </style>
+<!-- 시드 데이터 동기화 공통 헬퍼 (calculator/tm/tm-counselor 공유) -->
+<script src="/docs/_calc-data-sync.js"></script>
 <script>
 // admin 모드 감지
 (function(){
@@ -279,52 +281,8 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   }
 })();
 
-// ── DB-first 안전 모드 인프라 함수 ──
-// bongiToast(msg, type, opts) — 우상단 4초 토스트 (error는 8초)
-//   opts.action(fn) + opts.actionLabel("재시도") 주면 액션 버튼 표시
-//   opts.durationMs (0이면 자동 제거 안 함)
-function bongiToast(msg, type, opts) {
-  type = type || 'success'; opts = opts || {};
-  var c = document.getElementById('bongi-toast-container');
-  if (!c) return null;
-  var el = document.createElement('div');
-  el.className = 'bongi-toast ' + type;
-  var label = document.createElement('span');
-  label.textContent = msg;
-  el.appendChild(label);
-  if (opts.action && opts.actionLabel) {
-    var btn = document.createElement('button');
-    btn.type = 'button'; btn.textContent = opts.actionLabel;
-    btn.onclick = function(){ try { opts.action(); } catch(e) {} try { el.remove(); } catch(_) {} };
-    el.appendChild(btn);
-  }
-  c.appendChild(el);
-  var ms = (opts.durationMs != null) ? opts.durationMs : (type === 'error' ? 8000 : 4000);
-  if (ms > 0) setTimeout(function(){ try { el.remove(); } catch(_) {} }, ms);
-  return el;
-}
-function bongiSetDbBanner(visible, htmlMsg) {
-  var b = document.getElementById('bongi-db-banner');
-  if (!b) return;
-  if (visible) {
-    if (htmlMsg) { var sp = b.querySelector('span'); if (sp) sp.innerHTML = htmlMsg; }
-    b.removeAttribute('hidden');
-  } else {
-    b.setAttribute('hidden', '');
-  }
-}
-function bongiSetEditingLocked(locked) {
-  if (locked) document.body.classList.add('bongi-edit-locked');
-  else document.body.classList.remove('bongi-edit-locked');
-}
-function bongiRetryDbFetch() {
-  bongiToast('재연결 시도 중…', 'warning', { durationMs: 2000 });
-  if (typeof bootstrapCalculator === 'function') {
-    Promise.resolve(bootstrapCalculator()).catch(function(e){
-      bongiToast('재시도 실패: ' + (e && e.message || e), 'error');
-    });
-  }
-}
+// 인프라 함수(bongiToast / bongiSetDbBanner / bongiSetEditingLocked / bongiRetryDbFetch)는
+// _calc-data-sync.js에서 정의되어 모든 페이지가 공유.
 </script>
 
 </head>
@@ -994,43 +952,8 @@ function saveGiftOverride(carrier, bucket, speed, value) {
 }
 applyGiftOverrides();
 
-// ╔════════════════════════════════════════════════════╗
-// ║  사은품 동기화 — incentive_products.payback → D.gift ║
-// ╚════════════════════════════════════════════════════╝
-// admin이 상품 관리에서 페이백 변경 시 TM 계산기에도 자동 반영
-async function applyIncentivePaybackSync() {
-  try {
-    const res = await fetch('/api/incentive/products');
-    if (!res.ok) return;
-    const { products } = await res.json();
-    if (!products || !Array.isArray(products)) return;
-
-    const carrierMap = { 'SKT': 'skt', 'KT': 'kt', 'LGU+': 'lgu' };
-    products.forEach(p => {
-      const cKey = carrierMap[p.carrier];
-      if (!cKey || !window.D || !window.D[cKey]) return;
-      if (!window.D[cKey].gift) window.D[cKey].gift = { solo: {}, combo: {} };
-      const bucket = p.type === '단독' ? 'solo' : 'combo';
-      if (p.speed && p.payback != null) {
-        if (!window.D[cKey].gift[bucket]) window.D[cKey].gift[bucket] = {};
-        // 결합 상품 여러 개 (같은 속도) → 가장 마지막 값 적용. 보통 동일.
-        window.D[cKey].gift[bucket][p.speed] = p.payback;
-      }
-    });
-
-    // calc 다시 호출 (사은품 표시 갱신)
-    if (typeof calc === 'function') calc();
-  } catch (e) { console.warn('[gift sync]', e); }
-}
-
-// 페이지 로드 시 동기화 + 5분마다 자동 새로고침
-setTimeout(() => {
-  if (typeof D !== 'undefined') {
-    window.D = D;
-    applyIncentivePaybackSync();
-  }
-}, 1000);
-setInterval(() => { if (typeof applyIncentivePaybackSync === 'function') applyIncentivePaybackSync(); }, 5 * 60 * 1000);
+// 사은품 동기화(applyIncentivePaybackSync) + polling은 _calc-data-sync.js의
+// startSeedAutoSync()로 통합. bootstrapCalculator 끝에서 호출.
 
 
 function getGiftAmount(d, sp, tvIdx) {
@@ -2951,111 +2874,8 @@ function renderCardControls() {
 
 var EDIT_HISTORY_KEY = 'bongi-edit-history';
 var EDIT_HISTORY_FILTER = 'all';
-var INCENTIVE_TOKEN_KEY = 'incentive-auth-token-v1';
-
-// ═══════════════════════════════════════════════════════════════
-// Phase 2: calculator overrides DB 통합 — section ↔ localStorage key 매핑
-// DB가 source of truth, localStorage는 캐시 (오프라인/비로그인 폴백)
-// ═══════════════════════════════════════════════════════════════
-var SECTION_TO_LS = {
-  'tv': 'bongi-tv-overrides',
-  'bundle': 'bongi-bundle-overrides',
-  'device': 'bongi-device-overrides',
-  'install': 'bongi-install-fees',
-  'card': 'bongi-partner-cards',
-  'gift': 'bongi-gift-overrides',
-  'gift-catalog-custom': 'bongi-gift-catalog-custom',
-  'sales': 'bongi-sales-overrides-v1',
-};
-
-// ── B 모드: DB-first PUT ──
-// syncCalcOverrideToDbNow — 즉시 PUT, Promise<{ok|skipped}|throws Error>
-//   토큰 없음 → { skipped: 'no-token' } resolve (조용히)
-//   응답 200 OK → { ok: true, response } resolve
-//   응답 4xx/5xx → reject(Error) — 호출자가 toast + 롤백 처리
-async function syncCalcOverrideToDbNow(section, payload) {
-  var tk = null;
-  try { tk = localStorage.getItem(INCENTIVE_TOKEN_KEY); } catch(_) {}
-  if (!tk) return { skipped: 'no-token' };
-  var res;
-  try {
-    res = await fetch('/api/incentive/calc-overrides/' + encodeURIComponent(section), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-      body: JSON.stringify({ data: payload == null ? {} : payload }),
-    });
-  } catch (netErr) {
-    throw new Error('네트워크 오류 (' + section + '): ' + (netErr && netErr.message || netErr));
-  }
-  if (!res.ok) {
-    var bodyText = '';
-    try { bodyText = await res.text(); } catch(_) {}
-    var msg = 'PUT ' + section + ' ' + res.status;
-    if (bodyText) msg += ' — ' + bodyText.slice(0, 200);
-    throw new Error(msg);
-  }
-  var json = null;
-  try { json = await res.json(); } catch(_) {}
-  return { ok: true, response: json };
-}
-
-// 디바운스 큐 — oninput 등 빠른 입력에서 마지막 호출만 PUT.
-//   같은 섹션 새 호출 들어오면 이전 Promise는 { skipped: 'debounced' }로 resolve.
-//   호출자는 await 가능: 디바운스로 취소된 호출은 skipped, 마지막 호출만 진짜 PUT 결과.
-var _calcOverridePutTimers = {};
-function syncCalcOverrideToDb(section, payload, debounceMs) {
-  var ms = (typeof debounceMs === 'number') ? debounceMs : 600;
-  if (_calcOverridePutTimers[section]) {
-    clearTimeout(_calcOverridePutTimers[section].timer);
-    try { _calcOverridePutTimers[section].resolve({ skipped: 'debounced' }); } catch(_) {}
-  }
-  return new Promise(function(resolve, reject) {
-    _calcOverridePutTimers[section] = {
-      resolve: resolve,
-      timer: setTimeout(function(){
-        delete _calcOverridePutTimers[section];
-        syncCalcOverrideToDbNow(section, payload).then(resolve, reject);
-      }, ms)
-    };
-  });
-}
-
-// 헬퍼 — save 함수에서 한 줄로 호출. PUT 성공 시 LS 갱신 + 초록 토스트, 실패 시 빨간 토스트(재시도 버튼).
-//   LS는 PUT 성공 후에만 갱신 → "조용한 손실" 발생 불가능.
-//   sectionLabel: 토스트에 표시할 한글명 (예: 'TV', '결합할인')
-//   lsKey: localStorage 키 (실패 시에도 LS 안 건드림 — 옛 값 유지)
-//   payload: PUT 본문
-//   options.silent: true이면 성공 토스트 표시 안 함 (조용한 저장)
-async function persistOverride(section, sectionLabel, lsKey, payload, options) {
-  options = options || {};
-  try {
-    var r;
-    if (options.debounceMs) {
-      // oninput 폭주 방지용 디바운스 — 디바운스 취소된 호출은 후속 호출이 처리
-      r = await syncCalcOverrideToDb(section, payload, options.debounceMs);
-    } else {
-      r = await syncCalcOverrideToDbNow(section, payload);
-    }
-    // 디바운스로 취소된 호출 — LS 갱신 X (후속 호출이 진짜 결과 처리)
-    if (r.skipped === 'debounced') return { ok: false, skipped: 'debounced' };
-    // 토큰 없음: LS만 갱신 (호환성 — 비로그인 견적기 모드)
-    if (r.skipped === 'no-token') {
-      try { localStorage.setItem(lsKey, JSON.stringify(payload)); } catch(_) {}
-      return { ok: false, skipped: 'no-token' };
-    }
-    // PUT 성공: LS 갱신 + 토스트
-    try { localStorage.setItem(lsKey, JSON.stringify(payload)); } catch(_) {}
-    if (!options.silent) bongiToast(sectionLabel + ' 저장 완료', 'success', { durationMs: 1800 });
-    return { ok: true };
-  } catch (e) {
-    // PUT 실패 → LS·DB 옛 값 그대로. 사용자 화면만 새 값 보임. 새로고침 시 옛 값 복구.
-    bongiToast('❌ ' + sectionLabel + ' DB 저장 실패: ' + (e && e.message || e), 'error', {
-      actionLabel: '재시도',
-      action: function(){ persistOverride(section, sectionLabel, lsKey, payload, options); }
-    });
-    return { ok: false, error: e };
-  }
-}
+// INCENTIVE_TOKEN_KEY / SECTION_TO_LS / syncCalcOverrideToDbNow / syncCalcOverrideToDb /
+// persistOverride 는 _calc-data-sync.js에서 정의되어 모든 페이지가 공유.
 
 // section 표시명 → DB 표준 코드 매핑 (서버 audit log 표준화)
 var SECTION_DB_CODE = {
@@ -3785,40 +3605,27 @@ function renderGiftControls() {
   html += '</tbody></table></div>';
   container.innerHTML = html;
 }
-// ═══════════════════════════════════════════════════════════════
-// Phase 2: DB의 6종 overrides를 우선 fetch → localStorage 동기화
-// (모든 logged-in user 가능 — 견적 계산에 필요한 데이터)
-// 실패 시 localStorage 캐시로 폴백 (오프라인/비로그인 모드)
-// ═══════════════════════════════════════════════════════════════
-// fetch 결과 분류 — bootstrapCalculator가 배너·잠금 결정에 사용
-//   'no-token'   → 익명 사용자 (배너 X, 편집 잠금 X — D default 폴백)
-//   'ok'         → DB GET 성공
-//   'failed'     → 토큰 있는데 GET 실패 → 배너 + 편집 잠금
-var _lastDbFetchStatus = 'unknown';
-async function fetchCalcOverridesFromDb() {
-  var tk = null;
-  try { tk = localStorage.getItem(INCENTIVE_TOKEN_KEY); } catch(_) {}
-  if (!tk) { _lastDbFetchStatus = 'no-token'; return false; }
-  try {
-    var res = await fetch('/api/incentive/calc-overrides', {
-      headers: { Authorization: 'Bearer ' + tk }
-    });
-    if (!res.ok) { _lastDbFetchStatus = 'failed'; return false; }
-    var json = await res.json();
-    var overrides = (json && json.overrides) || {};
-    Object.keys(SECTION_TO_LS).forEach(function(section) {
-      var lsKey = SECTION_TO_LS[section];
-      if (overrides[section] !== undefined && overrides[section] !== null) {
-        try { localStorage.setItem(lsKey, JSON.stringify(overrides[section])); } catch(e) {}
-      }
-    });
-    _lastDbFetchStatus = 'ok';
-    return true;
-  } catch (e) {
-    console.warn('[calc-overrides DB fetch]', e);
-    _lastDbFetchStatus = 'failed';
-    return false;
+// fetchCalcOverridesFromDb / _lastDbFetchStatus 는 _calc-data-sync.js에서 정의.
+
+// 페이지별 D 갱신 훅 — fetchCalcOverridesFromDb가 LS를 갱신한 후 D에 반영.
+function applyAllSeedToD() {
+  applyDeviceOverrides();
+  applyTVOverrides();
+  applyBundleOverrides();
+  applyGiftOverrides();
+  if (typeof loadInstallFees === 'function') {
+    try { INSTALL_FEES = loadInstallFees(); } catch(e) {}
   }
+  if (typeof loadPartnerCards === 'function') {
+    try { PARTNER_CARDS = loadPartnerCards(); } catch(e) {}
+  }
+  // 화면 갱신
+  if (typeof renderDefaultControls === 'function') renderDefaultControls();
+  if (typeof renderTVControls === 'function') renderTVControls();
+  if (typeof renderBundleControls === 'function') renderBundleControls();
+  if (typeof renderInstallControls === 'function') renderInstallControls();
+  if (typeof renderCardControls === 'function') renderCardControls();
+  if (typeof renderGiftControls === 'function') renderGiftControls();
 }
 
 async function bootstrapCalculator() {
@@ -3853,7 +3660,7 @@ async function bootstrapCalculator() {
   if (typeof calc === 'function') calc();
 
   // 4) DB 연결 상태에 따라 배너·편집 잠금 토글
-  //    'failed'  → 토큰 있는데 GET 실패: 배너 + 편집 잠금 (저장 시도하면 PUT도 실패할 가능성 큼)
+  //    'failed'  → 토큰 있는데 GET 실패: 배너 + 편집 잠금
   //    'no-token' → 익명: 평상시 (D default 폴백)
   //    'ok'       → DB 정상: 평상시
   if (_lastDbFetchStatus === 'failed') {
@@ -3866,6 +3673,13 @@ async function bootstrapCalculator() {
 }
 
 bootstrapCalculator();
+
+// 통합 자동 동기화 — 1초 후 첫 tick + 60초 polling + visibilitychange + storage event + BroadcastChannel
+//   기존: setTimeout 1초 + setInterval 5분
+//   신규: 60초 polling 단축 + 탭 활성화 즉시 fetch + 다른 탭/iframe LS 변경 자동 반영
+if (typeof startSeedAutoSync === 'function') {
+  startSeedAutoSync({ pageName: 'calculator', applyOverridesHook: applyAllSeedToD });
+}
 </script>
 
 </div>

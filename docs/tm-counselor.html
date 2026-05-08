@@ -393,6 +393,8 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script src="/docs/_security.js" defer></script>
+<!-- 시드 데이터 동기화 공통 헬퍼 (calculator/tm/tm-counselor 공유) -->
+<script src="/docs/_calc-data-sync.js"></script>
 </head>
 <body>
 
@@ -1984,59 +1986,12 @@ function applyGiftOverrides() {
 }
 applyGiftOverrides();
 
-// ╔════════════════════════════════════════════════════╗
-// ║  사은품 동기화 — incentive_products.payback → D.gift ║
-// ╚════════════════════════════════════════════════════╝
-// admin이 상품 관리에서 페이백 변경 시 TM 계산기에도 자동 반영
-async function applyIncentivePaybackSync() {
-  try {
-    const res = await fetch('/api/incentive/products');
-    if (!res.ok) return;
-    const { products } = await res.json();
-    if (!products || !Array.isArray(products)) return;
-
-    const carrierMap = { 'SKT': 'skt', 'KT': 'kt', 'LGU+': 'lgu' };
-    products.forEach(p => {
-      const cKey = carrierMap[p.carrier];
-      if (!cKey || !window.D || !window.D[cKey]) return;
-      if (!window.D[cKey].gift) window.D[cKey].gift = { solo: {}, combo: {} };
-      const bucket = p.type === '단독' ? 'solo' : 'combo';
-      if (p.speed && p.payback != null) {
-        if (!window.D[cKey].gift[bucket]) window.D[cKey].gift[bucket] = {};
-        // 결합 상품 여러 개 (같은 속도) → 가장 마지막 값 적용. 보통 동일.
-        window.D[cKey].gift[bucket][p.speed] = p.payback;
-      }
-    });
-
-    // calc 다시 호출 (사은품 표시 갱신)
-    if (typeof calc === 'function') calc();
-  } catch (e) { console.warn('[gift sync]', e); }
+// 사은품 동기화 + polling + BroadcastChannel은 _calc-data-sync.js의 startSeedAutoSync()로 통합.
+// 60초 polling + visibilitychange + storage event + BroadcastChannel('incentive-products') 모두 헬퍼가 처리.
+if (typeof startSeedAutoSync === 'function') {
+  if (typeof D !== 'undefined') window.D = D;
+  startSeedAutoSync({ pageName: 'tm-counselor' });
 }
-
-// 페이지 로드 시 동기화 + 5분마다 자동 새로고침 (안전망)
-setTimeout(() => {
-  if (typeof D !== 'undefined') {
-    window.D = D;
-    applyIncentivePaybackSync();
-  }
-}, 1000);
-setInterval(() => { if (typeof applyIncentivePaybackSync === 'function') applyIncentivePaybackSync(); }, 5 * 60 * 1000);
-
-// ─── BroadcastChannel: 같은 브라우저의 상품 관리 탭에서 변경 → 즉시 반영 ───
-try {
-  const _bc = new BroadcastChannel('incentive-products');
-  _bc.onmessage = (ev) => {
-    if (!ev.data || ev.data.type !== 'product-updated') return;
-    console.log('[products bc] 변경 감지', ev.data);
-    applyIncentivePaybackSync();
-    // 토스트
-    const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7c3aed;color:#fff;padding:8px 16px;border-radius:8px;font-size:11.5px;font-weight:700;z-index:99999;box-shadow:0 4px 16px rgba(124,58,237,0.4)';
-    t.textContent = '🔄 상품 데이터 업데이트됨';
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2500);
-  };
-} catch (e) { console.warn('[products bc] 미지원', e); }
 
 
 function getGiftAmount(d, sp, tvIdx) {
