@@ -276,7 +276,6 @@ function startSeedAutoSync(opts) {
     var bc = new BroadcastChannel('incentive-products');
     bc.onmessage = function(ev) {
       if (!ev.data || ev.data.type !== 'product-updated') return;
-      console.log('[seed sync ' + pageName + ' bc]', ev.data);
       tickOnce('broadcast');
     };
   } catch (e) { /* unsupported */ }
