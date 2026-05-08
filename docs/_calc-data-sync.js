@@ -206,7 +206,15 @@ async function applyIncentivePaybackSync() {
       }
     });
 
-    // calc 다시 호출 (사은품 표시 갱신)
+    // 9번 티켓 조합 리스트(TICKETS 배열)는 사은품 값이 스냅샷으로 박혀있어 재생성 필수.
+    // calculator·tm·tm-counselor 3 페이지 모두 generateTickets/renderTicketList 보유 (typeof 가드).
+    if (typeof generateTickets === 'function') {
+      try { window.TICKETS = generateTickets(); } catch(e) { console.warn('[gift sync gen]', e); }
+    }
+    if (typeof renderTicketList === 'function') {
+      try { renderTicketList(); } catch(e) { console.warn('[gift sync render]', e); }
+    }
+    // 견적 결과 박스 갱신
     if (typeof calc === 'function') calc();
   } catch (e) { console.warn('[gift sync]', e); }
 }
