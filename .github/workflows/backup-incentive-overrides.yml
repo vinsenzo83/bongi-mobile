@@ -46,8 +46,7 @@ jobs:
           STAMP=$(date -u -d '+9 hours' +'%Y-%m-%d %H:%M KST')
           git add backups/incentive/
           # [skip ci] 필수 — Railway 자동 재배포 방지
-          git commit -m "[skip ci] backup: incentive_calculator_overrides @ ${STAMP}
-
-자동 일일 백업. 직전 스냅샷과 다를 때만 커밋.
-복원: backups/incentive/YYYY-MM-DD_HHMMSS_KST_calc-overrides.json"
+          git commit -m "[skip ci] backup: incentive_calculator_overrides @ ${STAMP}" \
+                     -m "자동 일일 백업. 직전 스냅샷과 다를 때만 커밋." \
+                     -m "복원: backups/incentive/YYYY-MM-DD_HHMMSS_KST_calc-overrides.json"
           git push origin master
