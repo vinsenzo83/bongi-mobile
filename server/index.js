@@ -76,15 +76,17 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   // CSP — 봉이 어드민·고객 사이트 공통
+  // Kakao Postcode: daumcdn.net (CDN) + daum.net + kakao.com (postcode.map.kakao.com — 신 도메인) 모두 허용
+  // 단 postcode.map.kakao.com은 http 응답 → http: 스킴도 frame-src에 명시
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://t1.daumcdn.net",
-    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://*.googleapis.com",
-    "img-src 'self' data: https:",
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://t1.daumcdn.net https://*.daum.net https://*.kakao.com",
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://*.googleapis.com https://*.daum.net https://*.kakao.com",
+    "img-src 'self' data: https: http://*.kakao.com",
     "font-src 'self' https://cdn.jsdelivr.net data:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.daumcdn.net https://t1.daumcdn.net",
-    "frame-src 'self' https://*.daumcdn.net https://t1.daumcdn.net",
-    "child-src 'self' https://*.daumcdn.net https://t1.daumcdn.net",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.daumcdn.net https://t1.daumcdn.net https://*.daum.net https://*.kakao.com https://cdn.jsdelivr.net",
+    "frame-src 'self' https://*.daumcdn.net https://t1.daumcdn.net https://*.daum.net https://*.kakao.com http://*.kakao.com",
+    "child-src 'self' https://*.daumcdn.net https://t1.daumcdn.net https://*.daum.net https://*.kakao.com http://*.kakao.com",
     "frame-ancestors 'self'",
     "base-uri 'self'",
     "form-action 'self'",
