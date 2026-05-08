@@ -187,17 +187,13 @@ async function fetchCalcOverridesFromDb() {
 //   incentive_products.payback → window.D[carrier].gift[bucket][speed]
 //   admin이 상품 관리에서 페이백 변경 시 모든 페이지에 자동 반영
 async function applyIncentivePaybackSync() {
-  console.log('[gift sync] ① 시작 — typeof D =', typeof window.D);
   try {
     const res = await fetch('/api/incentive/products');
-    console.log('[gift sync] ② fetch status =', res.status);
-    if (!res.ok) { console.warn('[gift sync] fetch 실패'); return; }
+    if (!res.ok) return;
     const { products } = await res.json();
-    console.log('[gift sync] ③ products 수 =', products && products.length);
     if (!products || !Array.isArray(products)) return;
 
     const carrierMap = { 'SKT': 'skt', 'KT': 'kt', 'LGU+': 'lgu' };
-    let updated = 0;
     products.forEach(p => {
       const cKey = carrierMap[p.carrier];
       if (!cKey || !window.D || !window.D[cKey]) return;
@@ -206,27 +202,18 @@ async function applyIncentivePaybackSync() {
       if (p.speed && p.payback != null) {
         if (!window.D[cKey].gift[bucket]) window.D[cKey].gift[bucket] = {};
         window.D[cKey].gift[bucket][p.speed] = p.payback;
-        updated++;
       }
     });
-    console.log('[gift sync] ④ D.gift 갱신 항목 =', updated, '· SKT 단독 100M =', window.D && window.D.skt && window.D.skt.gift && window.D.skt.gift.solo && window.D.skt.gift.solo['100M']);
 
-    // 9번 티켓 조합 리스트 재생성 + 렌더
+    // 9번 티켓 조합 리스트 재생성 + 렌더 (사은품 값이 표시에 박혀 있음)
     if (typeof generateTickets === 'function') {
-      try { window.TICKETS = generateTickets(); console.log('[gift sync] ⑤ TICKETS 재생성 완료'); }
-      catch(e) { console.warn('[gift sync gen]', e); }
-    } else {
-      console.log('[gift sync] ⑤ generateTickets 함수 없음 (skip)');
+      try { window.TICKETS = generateTickets(); } catch(e) {}
     }
     if (typeof renderTicketList === 'function') {
-      try { renderTicketList(); console.log('[gift sync] ⑥ renderTicketList 호출 완료'); }
-      catch(e) { console.warn('[gift sync render]', e); }
-    } else {
-      console.log('[gift sync] ⑥ renderTicketList 함수 없음 (skip)');
+      try { renderTicketList(); } catch(e) {}
     }
     if (typeof calc === 'function') calc();
-    console.log('[gift sync] ⑦ 끝');
-  } catch (e) { console.warn('[gift sync] 예외:', e); }
+  } catch (e) { console.warn('[gift sync]', e); }
 }
 
 // ── 즉시 반영 강화 — 통합 신규 ──
