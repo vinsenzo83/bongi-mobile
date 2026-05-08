@@ -342,6 +342,7 @@ const SECTIONS = [
 <li>페이백·리베이트·가중치 즉시 수정 → 신규 영업부터 적용 (기존은 snapshot 보존)</li>
 <li>[📜 변경 이력] / [📥 엑셀 다운로드] / [📤 엑셀 업로드]</li>
 </ul>
+<div class="tip">📌 <b>사은품 페이백 변경 시 모든 화면 자동 동기화</b> — TM 데이터관리 9번 티켓 조합 리스트, TM 상담 v1·v2 견적 결과, 같은 PC 다른 탭 모두 60초 이내 반영 (탭 활성화 시 즉시). 박제된 기존 계약(snapshot)은 영향 없음.</div>
 <h3>🏪 통신사별 접수 대리점 (페이지 하단)</h3>
 <p>SKT 🔴 / KT 🟡 / LGU+ 🟣 3 카드. 등록한 대리점이 계약 처리 편집창에 자동 노출.</p>
 <div class="step"><span class="num">1</span>대리점명 + URL 입력 (URL은 http/https/mailto만 허용)</div>
@@ -410,7 +411,34 @@ const SECTIONS = [
   {
     id: 'tm-data', group: '3️⃣ 관리자', title: '🧮 TM 데이터 관리', roles: ['admin'],
     html: `<h2>TM 데이터 관리<span class="role-tag r-admin">ADMIN</span></h2>
-<p>calculator.html (어드민 1~8 + Supabase 동기화). 견적 단가·TV·옵션 데이터 직접 편집 → TM 상담 견적에 즉시 반영.</p>`
+<p class="lead">견적 단가·TV·결합·설치비·제휴카드·영업포인트를 직접 편집. 모든 페이지(TM 상담 v1·v2)의 견적에 자동 반영.</p>
+
+<h3>편집 가능 섹션 7종</h3>
+<ul>
+<li><b>1. 인터넷·WiFi</b> — 통신사별 기본 요금</li>
+<li><b>2. TV 상품</b> — 채널·기본료·할인 (편집·추가·삭제)</li>
+<li><b>3. 셋톱박스</b> — 모델별 임대료·할인 규칙</li>
+<li><b>4. 결합할인</b> — 가족결합·총액·정액·프리미엄</li>
+<li><b>5. 설치비</b> — 단품·결합 정가</li>
+<li><b>6. 제휴카드</b> — 카드사별 할인율</li>
+<li><b>7. 영업포인트</b> — 우선순위·계약 비교 표</li>
+</ul>
+<p>※ <b>8. 사은품</b>은 <b>상품 관리</b>에서 편집 (이 페이지에서 숨김)</p>
+
+<h3>저장 흐름 (B 모드 — DB-first)</h3>
+<div class="step"><span class="num">1</span>값 수정 → 자동 저장 시도</div>
+<div class="step"><span class="num">2</span>DB 응답 200 → <span style="background:#059669;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px">초록 토스트</span> "○○ 저장 완료" + LS 캐시 갱신</div>
+<div class="step"><span class="num">3</span>실패 시 <span style="background:#dc2626;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px">빨간 토스트</span> + 재시도 버튼 + 옛 값 자동 복구</div>
+<p>→ 변경이 DB까지 갔는지 토스트 한 번에 확인 가능 ("조용한 손실" 발생 불가능).</p>
+
+<h3>DB 연결 실패 시</h3>
+<p>상단에 <span style="background:#fef3c7;border:1px solid #f59e0b;padding:2px 10px;border-radius:4px;font-size:11px;color:#92400e">⚠️ 노란 배너</span> + 모든 input/button 회색 잠금. ↻ 재시도 버튼으로 재연결.</p>
+
+<h3>9. 티켓 조합 리스트 (전체 105개)</h3>
+<p>속도×TV×WiFi 조합으로 자동 생성. <b>사은품 컬럼은 상품 관리값 자동 반영</b> (상품관리에서 변경 → 60초 이내 자동 갱신).</p>
+
+<h3>10. 변경 이력</h3>
+<p>모든 편집이 시간순 기록 (최대 500건). [DB 새로고침] 버튼으로 다른 사용자 변경 즉시 동기화.</p>`
   },
 
   // ══════════════════════ 4. 운영·보안 ══════════════════════
@@ -453,6 +481,46 @@ const SECTIONS = [
 <div class="warn"><b>⚠️ 라이브 직접 push 금지</b> — 반드시 데브 검증 후</div>`
   },
   {
+    id: 'safety', group: '4️⃣ 운영·보안', title: '🛡 데이터 안전장치', roles: ['admin', 'manager'],
+    html: `<h2>데이터 안전장치<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span></h2>
+<p class="lead">2026-05-08 시드 데이터 손실 사고 대응으로 도입된 4중 안전장치.</p>
+
+<h3>1. B 모드 — 조용한 손실 차단</h3>
+<p>TM 데이터관리·상품관리에서 값 편집 시:</p>
+<ul>
+<li>DB 응답 200 OK 받은 후에만 화면·LS 갱신</li>
+<li>성공 → <span style="background:#059669;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px">초록 토스트</span> "○○ 저장 완료"</li>
+<li>실패 → <span style="background:#dc2626;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px">빨간 토스트</span> + 재시도 버튼 + 옛 값 자동 복구</li>
+</ul>
+<div class="tip">변경이 DB까지 갔는지 토스트 한 번에 확인 가능 — 옛 사고 같은 "저장된 줄 알았는데 안 됨" 발생 불가능.</div>
+
+<h3>2. DB 연결 실패 시 자동 잠금</h3>
+<ul>
+<li>토큰 있는데 DB GET 실패 → 상단 <span style="background:#fef3c7;border:1px solid #f59e0b;padding:2px 10px;border-radius:4px;font-size:11px;color:#92400e">⚠️ 노란 배너</span></li>
+<li>모든 input/button 회색 disabled — 유효하지 않은 데이터로 저장 시도 차단</li>
+<li>↻ 재시도 버튼으로 재연결</li>
+</ul>
+
+<h3>3. 시드 데이터 자동 동기화</h3>
+<p>상품 관리·TM 데이터관리에서 변경 → 모든 페이지 자동 반영:</p>
+<ul>
+<li><b>BroadcastChannel</b> — 같은 브라우저 다른 탭 즉시</li>
+<li><b>storage 이벤트</b> — 같은 origin 다른 탭/iframe 즉시</li>
+<li><b>visibilitychange</b> — 탭 활성화 시 즉시 fetch</li>
+<li><b>polling</b> — 5분마다 (백업용 안전망)</li>
+</ul>
+<p>대상 페이지: TM 데이터관리, TM 상담 v1·v2 (3곳).</p>
+
+<h3>4. 일일 자동 백업 (매일 KST 03:00)</h3>
+<ul>
+<li>GitHub Actions cron이 incentive_calculator_overrides 전체 → JSON 덤프</li>
+<li>변경분 있을 때만 master에 [skip ci] 자동 commit</li>
+<li>경로: <code>backups/incentive/YYYY-MM-DD_HHMMSS_KST_calc-overrides.json</code></li>
+<li>데이터 손실 시 git에서 그날치 복원 가능</li>
+</ul>
+<div class="warn"><b>운영자 책임</b>: 매일 03:00 백업 실행 결과는 GitHub Actions 탭에서 ✓ 초록 확인. 빨간 X면 조치 필요 (Secrets 만료 등).</div>`
+  },
+  {
     id: 'troubleshooting', group: '4️⃣ 운영·보안', title: '🔧 트러블슈팅', roles: ['all'],
     html: `<h2>트러블슈팅<span class="role-tag r-all">전체</span></h2>
 <h3>로그인 안 됨</h3>
@@ -464,9 +532,17 @@ const SECTIONS = [
 </ul>
 <h3>주소 검색 안 됨</h3>
 <ul>
-<li>"주소 검색 API 로드 중..." → 자동 재로드 시도. 그래도 안 되면 새로고침 (Cmd+Shift+R)</li>
-<li>광고차단 확장이 t1.daumcdn.net 차단 가능</li>
+<li>2026-05-08 부터 <b>모달 형태</b>(반투명 배경 + 가운데 흰색)로 표시 — popup 새 창 X</li>
+<li>"이 콘텐츠는 차단되어 있습니다" → 아래 <b>새 코드 안 보임</b> 절차 수행</li>
+<li>광고차단 확장이 kakao.com·daumcdn.net 차단 가능 → 확장 일시 OFF</li>
 </ul>
+
+<h3>새 코드 안 보임 (배포 직후)</h3>
+<p>Service Worker가 옛 코드 캐시 들고 있을 때:</p>
+<div class="step"><span class="num">1</span>F12 → Application → Service Workers → "Unregister"</div>
+<div class="step"><span class="num">2</span>Storage → "Clear site data"</div>
+<div class="step"><span class="num">3</span>Cmd + Shift + R (강력 새로고침)</div>
+<p>또는 시크릿 창(Cmd+Shift+N)에서 직접 URL 진입 — 모든 캐시 우회.</p>
 <h3>차트 안 보임</h3>
 <ul>
 <li>시크릿창 또는 Cmd+Shift+R로 강제 새로고침 (sw.js 캐시)</li>
