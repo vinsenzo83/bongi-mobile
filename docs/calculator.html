@@ -842,6 +842,15 @@ var D = {
           { v: 110000, label: '110,000원 (슈퍼플랜 스페셜 Plus/초이스)', dc: 27500, prem: true },
           { v: 130000, label: '130,000원 (슈퍼플랜 프리미엄/초이스)', dc: 32500, prem: true }
         ]
+      },
+      // 💎 프리미엄 싱글결합 (1회선 · 별도 결합조건)
+      // 카탈로그(요금제별 dc)는 premium.planCatalog의 prem===true 항목 공유
+      premium_single: {
+        internet_solo: 5500,           // TV 미가입 시 인터넷 단독 추가 할인 (원/월)
+        min_speed: '500M',             // 최소 인터넷 속도 ('100M' | '500M' | '1G')
+        min_plan: 77000,               // 최소 휴대폰 요금제 (원, 이상)
+        max_lines: 1,                  // 최대 결합 회선 수
+        mobile_dc_label: '25% 할인'    // 휴대폰 할인 표시 라벨 (실제 할인은 카탈로그 dc 값)
       }
     }
   },
@@ -3275,6 +3284,29 @@ function addKtPremRow() {
   logEdit('결합할인', 'KT 프리미엄 요금제 추가', '-', label);
   persistBundle('kt'); renderBundleControls();
 }
+// KT premium_single (1회선 별도 결합조건)
+function updKtPremSingle(field, val) {
+  if (!D.kt.bundle.premium_single) {
+    D.kt.bundle.premium_single = { internet_solo: 5500, min_speed: '500M', min_plan: 77000, max_lines: 1, mobile_dc_label: '25% 할인' };
+  }
+  var ps = D.kt.bundle.premium_single;
+  var old = ps[field];
+  if (field === 'min_speed' || field === 'mobile_dc_label') {
+    ps[field] = String(val || '').trim();
+  } else {
+    ps[field] = parseInt(String(val).replace(/[^0-9]/g,''))||0;
+  }
+  var labels = {
+    internet_solo: '인터넷 단독 추가 할인',
+    min_speed: '최소 인터넷 속도',
+    min_plan: '최소 휴대폰 요금제',
+    max_lines: '최대 결합 회선',
+    mobile_dc_label: '휴대폰 할인 라벨'
+  };
+  logEdit('결합할인', 'KT 프리미엄 싱글 / ' + (labels[field] || field), old, ps[field]);
+  persistBundle('kt');
+}
+
 function delKtPremRow(idx) {
   if (!confirm('이 요금제를 삭제하시겠습니까?')) return;
   var label = D.kt.bundle.premium.planCatalog[idx].label;
@@ -3431,6 +3463,54 @@ function renderBundleControls() {
     html += '</tr>';
   });
   html += '</tbody></table>';
+
+  // ━━━━━━━━ 💎 KT 프리미엄 싱글결합 (별도 결합조건 · 편집 가능) ━━━━━━━━
+  if (!D.kt.bundle.premium_single) {
+    D.kt.bundle.premium_single = { internet_solo: 5500, min_speed: '500M', min_plan: 77000, max_lines: 1, mobile_dc_label: '25% 할인' };
+  }
+  var ps = D.kt.bundle.premium_single;
+  html += '<div class="st2" style="margin-top:18px"><span class="badge b-kt">KT</span> 💎 프리미엄 싱글결합 (별도 결합조건)</div>';
+  html += '<div style="font-size:11px;color:#fde68a;background:rgba(251,191,36,0.08);border-left:3px solid #fbbf24;padding:8px 10px;border-radius:4px;margin-bottom:8px;line-height:1.55">';
+  html += '<b>2022.2.23부터 패밀리(유유선 결합) 필수 조건 폐기</b> → 1인 가정도 가입 가능. 휴대폰 1대 + 인터넷 500M 이상이면 결합 성립.<br>';
+  html += '<b>인터넷 단독(TV 없음)도 가능</b> — 인터넷 500M 단독 + 휴대폰 77,000원↑이면 휴대폰 25% 할인.';
+  html += '</div>';
+  // 가입 조건 (편집 가능)
+  html += '<div style="overflow-x:auto;margin-bottom:8px"><table style="margin:0"><thead><tr><th colspan="3" style="background:#1e293b;color:#e2e8f0;text-align:left;padding:8px 10px">📋 가입 조건</th></tr><tr><th style="width:200px">항목</th><th style="width:130px">값</th><th>설명</th></tr></thead><tbody>';
+  html += '<tr><td><b>최대 결합 회선</b></td>' + bundleInputCell(ps.max_lines, 'updKtPremSingle(\'max_lines\', this.value)') + '<td style="font-size:11px;color:#94a3b8">회선 — 1회선(싱글) 전용</td></tr>';
+  html += '<tr><td><b>최소 인터넷 속도</b></td>';
+  html += '<td><select onchange="updKtPremSingle(\'min_speed\', this.value)" style="width:100%;padding:5px 7px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:center">';
+  ['100M','500M','1G'].forEach(function(opt){
+    html += '<option value="' + opt + '"' + (ps.min_speed === opt ? ' selected' : '') + '>' + opt + ' 이상</option>';
+  });
+  html += '</select></td>';
+  html += '<td style="font-size:11px;color:#94a3b8">현재: <b style="color:#fde68a">' + (ps.min_speed||'500M') + ' 이상</b> (1G 포함)</td></tr>';
+  html += '<tr><td><b>최소 휴대폰 요금제</b></td>' + bundleInputCell(ps.min_plan, 'updKtPremSingle(\'min_plan\', this.value)') + '<td style="font-size:11px;color:#94a3b8">원 — 이상 (예: 77,000)</td></tr>';
+  html += '</tbody></table></div>';
+  // 할인 혜택 (편집 가능)
+  html += '<div style="overflow-x:auto;margin-bottom:8px"><table style="margin:0"><thead><tr><th colspan="3" style="background:#1e293b;color:#e2e8f0;text-align:left;padding:8px 10px">💰 할인 혜택</th></tr><tr><th style="width:200px">항목</th><th style="width:130px">값</th><th>설명</th></tr></thead><tbody>';
+  html += '<tr><td><b>인터넷 단독 추가 할인</b></td>' + bundleInputCell(ps.internet_solo, 'updKtPremSingle(\'internet_solo\', this.value)') + '<td style="font-size:11px;color:#94a3b8">원/월 — TV 미가입 시만 적용 (TV 결합 시 0)</td></tr>';
+  html += '<tr><td><b>휴대폰 할인 라벨</b></td><td><input type="text" value="' + (ps.mobile_dc_label || '') + '" onchange="updKtPremSingle(\'mobile_dc_label\', this.value)" style="width:100%;padding:5px 7px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:center"></td>';
+  html += '<td style="font-size:11px;color:#94a3b8">표시 라벨만 — 실제 할인액은 카탈로그 <code>dc</code> 값 사용</td></tr>';
+  html += '</tbody></table></div>';
+  // 적용 가능 요금제 (위 카탈로그에서 prem===true만 동적 추출)
+  var psPlans = (D.kt.bundle.premium.planCatalog || []).filter(function(p){ return p && p.prem && p.v >= (ps.min_plan||0); });
+  html += '<div style="font-size:11px;color:#94a3b8;margin-bottom:4px">📊 적용 가능 요금제 (' + psPlans.length + '종) — 위 가족결합 카탈로그 <b>✓ 가능</b> 항목 + 최소 요금제(' + (ps.min_plan||0).toLocaleString() + '원) 필터 자동 반영</div>';
+  html += '<table style="margin:0"><thead><tr><th style="width:110px">월정액</th><th>요금제명</th><th style="width:140px">할인액 (월)</th><th style="width:90px">실효 할인율</th></tr></thead><tbody>';
+  if (psPlans.length === 0) {
+    html += '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:10px">조건 충족 요금제가 없습니다.</td></tr>';
+  } else {
+    psPlans.forEach(function(p){
+      var rate = (p.v > 0) ? ((p.dc / p.v * 100).toFixed(1) + '%') : '-';
+      html += '<tr>';
+      html += '<td style="text-align:right;font-family:\'SF Mono\',Monaco,monospace">' + (p.v||0).toLocaleString() + '원</td>';
+      html += '<td>' + (p.label || '') + '</td>';
+      html += '<td style="text-align:right;color:#16a34a;font-weight:700;font-family:\'SF Mono\',Monaco,monospace">-' + (p.dc||0).toLocaleString() + '원</td>';
+      html += '<td style="text-align:center;color:#94a3b8;font-size:10px">' + rate + '</td>';
+      html += '</tr>';
+    });
+  }
+  html += '</tbody></table>';
+  html += '<div style="font-size:10px;color:#94a3b8;margin-top:6px;line-height:1.55">ℹ️ 적용 가능 요금제는 <b>위 가족결합 카탈로그의 ✓ 가능 항목 + 최소 요금제 필터</b>로 자동 결정 (single source). 카탈로그 편집은 위 표에서.<br>ℹ️ 변경 시 즉시 LS · DB 동기화 → 견적 계산기(TM 상담 도구) 자동 반영.</div>';
 
   container.innerHTML = html;
 }

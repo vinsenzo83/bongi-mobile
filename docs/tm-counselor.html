@@ -1994,11 +1994,79 @@ function applyGiftOverrides() {
 }
 applyGiftOverrides();
 
-// 사은품 동기화 + polling + BroadcastChannel은 _calc-data-sync.js의 startSeedAutoSync()로 통합.
-// 60초 polling + visibilitychange + storage event + BroadcastChannel('incentive-products') 모두 헬퍼가 처리.
+// ── 시드 데이터 override 적용 (calculator.html?admin=1 어드민 편집 → 견적 동기화) ──
+// PR-2(3feda60)에서 hook 등록 누락 → 복구. calculator.html L2256·L3170·L3528과 동일 로직.
+var DEVICE_OVERRIDES_KEY_TM = 'bongi-device-overrides';
+var BUNDLE_OVERRIDES_KEY_TM = 'bongi-bundle-overrides';
+var TV_OVERRIDES_KEY_TM = 'bongi-tv-overrides';
+var INSTALL_FEES_KEY_TM = 'bongi-install-fees';
+function applyDeviceOverrides_TM() {
+  try {
+    var ov = JSON.parse(localStorage.getItem(DEVICE_OVERRIDES_KEY_TM) || '{}');
+    ['skt','kt','lgu'].forEach(function(k){
+      if (ov[k] && D[k]) {
+        if (ov[k].setTopOptions) D[k].setTopOptions = ov[k].setTopOptions;
+        if (ov[k].wifiOptions) D[k].wifiOptions = ov[k].wifiOptions;
+      }
+    });
+  } catch(e) {}
+}
+function applyBundleOverrides_TM() {
+  try {
+    var ov = JSON.parse(localStorage.getItem(BUNDLE_OVERRIDES_KEY_TM) || '{}');
+    ['skt','kt','lgu'].forEach(function(k){
+      if (ov[k] && ov[k].bundle && D[k] && D[k].bundle) {
+        Object.keys(ov[k].bundle).forEach(function(key){
+          D[k].bundle[key] = ov[k].bundle[key];
+        });
+      }
+    });
+  } catch(e) {}
+}
+function applyTVOverrides_TM() {
+  try {
+    var ov = JSON.parse(localStorage.getItem(TV_OVERRIDES_KEY_TM) || '{}');
+    ['skt','kt','lgu'].forEach(function(k){
+      if (ov[k] && Array.isArray(ov[k]) && D[k]) D[k].tv = ov[k];
+    });
+  } catch(e) {}
+}
+// 설치비: calculator의 INSTALL_FEES (columns + weekday/weekend 배열) → D[k].install / installWeekend (solo/combo) 매핑
+// 컬럼 인덱스 0 = 인터넷 단독 (solo), 2 = 인터넷+TV (combo)
+function applyInstallOverrides_TM() {
+  try {
+    var ov = JSON.parse(localStorage.getItem(INSTALL_FEES_KEY_TM) || 'null');
+    if (!ov) return;
+    ['skt','kt','lgu'].forEach(function(k){
+      if (!ov[k] || !D[k]) return;
+      var weekday = ov[k].weekday || [];
+      var weekend = ov[k].weekend || [];
+      if (D[k].install) {
+        if (typeof weekday[0] === 'number') D[k].install.solo = weekday[0];
+        if (typeof weekday[2] === 'number') D[k].install.combo = weekday[2];
+      }
+      if (D[k].installWeekend) {
+        if (typeof weekend[0] === 'number') D[k].installWeekend.solo = weekend[0];
+        if (typeof weekend[2] === 'number') D[k].installWeekend.combo = weekend[2];
+      }
+    });
+  } catch(e) {}
+}
+function applyAllSeedToD_TM() {
+  applyDeviceOverrides_TM();
+  applyTVOverrides_TM();
+  applyBundleOverrides_TM();
+  applyInstallOverrides_TM();
+  applyGiftOverrides();
+  // calc 재실행 (storage event / polling 후 견적 즉시 갱신)
+  try { if (typeof calc === 'function') calc(); } catch(_) {}
+}
+applyAllSeedToD_TM();
+
+// 사은품 + 시드 override 통합 동기화 — 60초 polling + visibilitychange + storage event + BroadcastChannel
 if (typeof startSeedAutoSync === 'function') {
   if (typeof D !== 'undefined') window.D = D;
-  startSeedAutoSync({ pageName: 'tm-counselor' });
+  startSeedAutoSync({ pageName: 'tm-counselor', applyOverridesHook: applyAllSeedToD_TM });
 }
 
 
@@ -2516,16 +2584,21 @@ function calc() {
   } else {
     var addWifi = wf ? wifiForSp : 0;
     var subTotal = netBase + addWifi;
-    // KT 프리미엄 싱글결합 인터넷 추가 할인 (TV 미가입 + 500M↑ + 휴대폰 77K↑)
+    // KT 프리미엄 싱글결합 인터넷 추가 할인 (어드민 4번 D.kt.bundle.premium_single 데이터 참조)
     var bundleTypeNow = document.getElementById('c-bundle') ? document.getElementById('c-bundle').value : '';
     var psPlanForInetDc = 0;
     if (bundleTypeNow === 'kt-premium-single') {
       var psSelNow = document.getElementById('c-prem-single-plan');
       psPlanForInetDc = parseInt(psSelNow ? psSelNow.value : 0) || 0;
     }
+    var psCfg1 = (D.kt && D.kt.bundle && D.kt.bundle.premium_single) || {};
+    var psMinSpeed1 = psCfg1.min_speed || '500M';
+    var psMinPlan1 = psCfg1.min_plan || 77000;
+    var psInetSolo1 = (psCfg1.internet_solo != null ? psCfg1.internet_solo : 5500);
+    var psSpeedOk1 = (psMinSpeed1 === '100M') || (psMinSpeed1 === '500M' && (sp === '500M' || sp === '1G')) || (psMinSpeed1 === '1G' && sp === '1G');
     var inetSoloDcSec1 = (c === 'kt' && bundleTypeNow === 'kt-premium-single'
-                         && (sp === '500M' || sp === '1G')
-                         && psPlanForInetDc >= 77000) ? 5500 : 0;
+                         && psSpeedOk1
+                         && psPlanForInetDc >= psMinPlan1) ? psInetSolo1 : 0;
     var totalAfterInetDc = subTotal - inetSoloDcSec1;
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')</span><span class="v">' + fmt(netBase) + '</span></div>';
     if (wf) html += '<div class="calc-line"><span class="l">WiFi' + (d.wifiName ? ' (' + d.wifiName + ')' : '') + '</span><span class="v">+' + fmt(wifiForSp) + (wifiForSp === 0 ? ' (무료)' : '') + '</span></div>';
@@ -2666,15 +2739,20 @@ function calc() {
     var warnEl = document.getElementById('c-prem-single-warn');
     var psPlanV = parseInt(psSel ? psSel.value : 0) || 0;
     var psDc = psSel && psSel.options[psSel.selectedIndex] ? (parseInt(psSel.options[psSel.selectedIndex].dataset.dc) || 0) : 0;
-    var psSpeedOk = (sp === '500M' || sp === '1G');
-    var psPlanOk = psPlanV >= 77000;
-    var inetSoloDc = !hasTv ? 5500 : 0;
+    var psCfg = (D.kt && D.kt.bundle && D.kt.bundle.premium_single) || {};
+    var psMinSpeed = psCfg.min_speed || '500M';
+    var psMinPlan = psCfg.min_plan || 77000;
+    var psInetSoloVal = (psCfg.internet_solo != null ? psCfg.internet_solo : 5500);
+    var psMobLabel = psCfg.mobile_dc_label || '25% 할인';
+    var psSpeedOk = (psMinSpeed === '100M') || (psMinSpeed === '500M' && (sp === '500M' || sp === '1G')) || (psMinSpeed === '1G' && sp === '1G');
+    var psPlanOk = psPlanV >= psMinPlan;
+    var inetSoloDc = !hasTv ? psInetSoloVal : 0;
     var psTotalDc = psDc + inetSoloDc;
 
     if (warnEl) {
       var warnMsgs = [];
-      if (!psSpeedOk) warnMsgs.push('⚠️ 인터넷 500M 이상 필수 (현재 ' + sp + ')');
-      if (!psPlanOk) warnMsgs.push('⚠️ 휴대폰 요금제 77,000원 이상 필수');
+      if (!psSpeedOk) warnMsgs.push('⚠️ 인터넷 ' + psMinSpeed + ' 이상 필수 (현재 ' + sp + ')');
+      if (!psPlanOk) warnMsgs.push('⚠️ 휴대폰 요금제 ' + psMinPlan.toLocaleString() + '원 이상 필수');
       if (warnMsgs.length) { warnEl.innerHTML = warnMsgs.join('<br>'); warnEl.style.display = ''; }
       else { warnEl.style.display = 'none'; }
     }
@@ -2683,14 +2761,14 @@ function calc() {
       '<div style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:4px">💎 섹터 2 — KT 프리미엄 싱글결합 (1회선)</div>';
     if (!psSpeedOk || !psPlanOk) {
       html += '<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:#fca5a5">' +
-        (psSpeedOk ? '' : '⚠️ 인터넷 <b>500M 이상</b> 필수 (현재 ' + sp + ')<br>') +
-        (psPlanOk ? '' : '⚠️ 휴대폰 요금제 <b>77,000원 이상</b> 필수 (현재 ' + psPlanV.toLocaleString() + '원)') +
+        (psSpeedOk ? '' : '⚠️ 인터넷 <b>' + psMinSpeed + ' 이상</b> 필수 (현재 ' + sp + ')<br>') +
+        (psPlanOk ? '' : '⚠️ 휴대폰 요금제 <b>' + psMinPlan.toLocaleString() + '원 이상</b> 필수 (현재 ' + psPlanV.toLocaleString() + '원)') +
         '</div>';
     }
     html += '<div class="calc-line"><span class="l">📱 휴대폰 요금제 (정가)</span><span class="v">' + fmt(psPlanV) + '</span></div>';
     if (psPlanOk) {
       var psPlanAfter = psPlanV - psDc;
-      html += '<div class="calc-line discount"><span class="l">└ 25% 할인 (휴대폰 고지서)</span><span class="v">-' + fmt(psDc) + '</span></div>';
+      html += '<div class="calc-line discount"><span class="l">└ ' + psMobLabel + ' (휴대폰 고지서)</span><span class="v">-' + fmt(psDc) + '</span></div>';
       html += '<div class="calc-line sub"><span class="l">→ 휴대폰 할인 후 월요금</span><span class="v" style="color:#a5b4fc;font-weight:800">' + fmt(psPlanAfter) + '</span></div>';
     }
     if (!hasTv && inetSoloDc > 0) {
