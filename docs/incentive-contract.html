@@ -1499,19 +1499,13 @@ async function injectDealerSection(c) {
       <div style="font-size:13px;font-weight:800;color:#86efac">🏪 접수 대리점 (${p.carrier || carrier.toUpperCase()})</div>
       <a href="/docs/incentive-products.html" target="_blank" style="font-size:10px;color:#94a3b8;text-decoration:none">⚙ 대리점 관리</a>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <select class="detail-input" data-field="dealer_id" style="flex:1;min-width:220px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:5px;font-size:12.5px" onchange="window._updateDealerLink(this)">
         <option value="">대리점 선택...</option>
         ${opts}
       </select>
       <a class="dealer-open-link" href="" target="_blank" style="display:none;background:#3b82f6;color:#fff;padding:8px 16px;border-radius:5px;text-decoration:none;font-size:12px;font-weight:700">🔗 접수 사이트 열기</a>
     </div>
-    ${installUrl ? `
-      <div style="display:flex;gap:8px;align-items:center;padding-top:8px;border-top:1px dashed rgba(134,239,172,0.25)">
-        <span style="font-size:11px;color:#94a3b8">📍 설치 가능 지역 조회 (${p.carrier || carrier.toUpperCase()} 공식)</span>
-        <button type="button" data-install-url="${installUrl}" data-customer-address="${(c.customer_address||'').replace(/"/g,'&quot;')}${c.customer_address_detail?(' '+c.customer_address_detail.replace(/"/g,'&quot;')):''}" onclick="window._installCheckClick(this)" style="margin-left:auto;background:#0891b2;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:700">📍 조회하기 <span style="font-size:9px;opacity:0.85">(주소 자동 복사)</span></button>
-      </div>
-    ` : ''}
   `;
   // 모달 제일 아래에 삽입 — [💾 저장] 버튼 직전 (저장 버튼 자체보다 위)
   const modalBody = document.getElementById('modal-body');
@@ -1525,6 +1519,30 @@ async function injectDealerSection(c) {
   }
   // 초기 link 활성화
   window._updateDealerLink(wrap.querySelector('select'));
+
+  // ── [📍 조회하기] 버튼을 고객 정보 카드의 설치 주소 옆으로 inject ──
+  if (installUrl) {
+    const addrInput = document.getElementById('addr-input-' + c.id);
+    const existed = document.getElementById('install-check-btn-' + c.id);
+    if (addrInput && !existed) {
+      const addrParent = addrInput.parentElement; // <div style="display:flex;gap:8px">
+      const installBtn = document.createElement('button');
+      installBtn.type = 'button';
+      installBtn.id = 'install-check-btn-' + c.id;
+      installBtn.dataset.installUrl = installUrl;
+      installBtn.title = '주소 자동 복사 후 ' + (p.carrier || carrier.toUpperCase()) + ' 공식 설치가능 조회 페이지 새 탭';
+      installBtn.style.cssText = 'padding:0 14px;background:#0891b2;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap';
+      installBtn.innerHTML = '📍 ' + (p.carrier || carrier.toUpperCase()) + ' 조회';
+      installBtn.addEventListener('click', () => {
+        const addr = (document.getElementById('addr-input-' + c.id)?.value || '');
+        const detailEl = document.querySelector('#modal-body [data-field="customer_address_detail"]');
+        const detail = detailEl?.value || '';
+        installBtn.dataset.customerAddress = addr + (detail ? ' ' + detail : '');
+        window._installCheckClick(installBtn);
+      });
+      addrParent.appendChild(installBtn);
+    }
+  }
 }
 
 // ═══ 📜 변경 이력 섹션 (감사·분쟁 대응) ═══
