@@ -140,12 +140,13 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 
 /* ═══ 모달 통일 카드 시스템 ═══ */
 .sec-card {
-  background: linear-gradient(180deg, rgba(30,41,59,0.5), rgba(15,23,42,0.6));
+  background: rgba(15,23,42,0.55);
   border: 1px solid #334155;
   border-left: 4px solid var(--acc, #60a5fa);
   border-radius: 10px;
   padding: 18px 22px;
   margin-bottom: 16px;
+  contain: layout style;
 }
 .sec-card.acc-yellow { --acc: #fbbf24; }
 .sec-card.acc-blue   { --acc: #60a5fa; }
@@ -430,8 +431,8 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 </style>
 
 <!-- ═══ 팝업 모달 (상세 편집) ═══ -->
-<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:9999;justify-content:center;align-items:flex-start;padding:30px 20px;overflow-y:auto">
-  <div id="modal-content" style="background:linear-gradient(135deg,#1e293b,#0f172a);border:1.5px solid #475569;border-radius:14px;max-width:1100px;width:95%;box-shadow:0 20px 60px rgba(0,0,0,0.6);position:relative">
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;justify-content:center;align-items:flex-start;padding:30px 20px;overflow-y:auto">
+  <div id="modal-content" style="background:#0f172a;border:1.5px solid #475569;border-radius:14px;max-width:1100px;width:95%;box-shadow:0 8px 24px rgba(0,0,0,0.5);position:relative;contain:layout style">
     <!-- 헤더 -->
     <div style="position:sticky;top:0;background:linear-gradient(135deg,#1e293b,#0f172a);border-bottom:2px solid #475569;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:14px 14px 0 0;z-index:1">
       <div>
@@ -973,6 +974,7 @@ async function handleAction(id, act) {
   if (act === 'save-detail') {
     // 모달의 모든 input/textarea 값 수집
     const modalBody = document.getElementById('modal-body');
+    const peBank = {}, peCard = {}; let comboCustom = null;
     modalBody.querySelectorAll('.detail-input').forEach(inp => {
       const field = inp.dataset.field;
       if (!field) return;
@@ -988,10 +990,31 @@ async function handleAction(id, act) {
           const parts = l.split('/').map(p => p.trim());
           return { name: parts[0] || '', birth: parts[1] || '', phone: parts[2] || '' };
         });
-      } else {
+      } else if (field === 'combo_type_custom') {
+        // 결합유형 select === '__custom__'일 때만 적용 (아래에서 합침)
+        comboCustom = val || null;
+      } else if (field === '_pe_bank_name') { peBank.name = val || null; }
+      else if (field === '_pe_bank_holder') { peBank.holder = val || null; }
+      else if (field === '_pe_bank_account') { peBank.account = val || null; }
+      else if (field === '_pe_card_holder') { peCard.holder = val || null; }
+      else if (field === '_pe_card_company') { peCard.company = val || null; }
+      else if (field === '_pe_card_number') { peCard.number = val || null; }
+      else if (field === '_pe_card_expiry') { peCard.expiry = val || null; }
+      else {
         body[field] = val || null;
       }
     });
+    // 결합유형: '__custom__' select 값을 자유 입력으로 대체
+    if (body.combo_type === '__custom__') body.combo_type = comboCustom;
+    // 납부방법별 payment_extra 합치기 (선택된 method 외엔 null로 정리)
+    const pm = body.payment_method;
+    let pe = null;
+    if (pm === '자동이체' && (peBank.name || peBank.holder || peBank.account)) {
+      pe = { bank: peBank };
+    } else if (pm === '신용카드' && (peCard.holder || peCard.company || peCard.number || peCard.expiry)) {
+      pe = { card: peCard };
+    }
+    body.payment_extra = pe;
     if (body.add_payback < 0 || body.add_payback > 50000) {
       alert('추가 페이백은 0~50,000원 범위'); return;
     }
@@ -1202,8 +1225,44 @@ function openEditModal(id) {
     <div class="sec-card acc-purple">
       <div class="sec-title"><span class="sec-icon">🔗</span>결합 · 청구 · 납부</div>
       <div class="sec-row">
-        <label class="modal-field-label">결합 유형</label>
-        <input class="detail-input" data-field="combo_type" value="${(c.combo_type || '').replace(/"/g, '&quot;')}" placeholder="예: 가족결합 3회선 / 새로운가족결합 / 인터넷+모바일">
+        <label class="modal-field-label">결합 유형 <span style="font-size:9.5px;color:#94a3b8">(통신사: ${p.carrier || '-'} 기준 자동 추출 — "기타" 선택 시 자유 입력)</span></label>
+        ${(() => {
+          // 통신사별 결합할인 종류 (4번 결합할인 카테고리 기준 — calculator.html 동기화)
+          const COMBO_OPTIONS = {
+            'SK': ['SKT 요즘가족결합', 'SKT 온가족할인'],
+            'KT': ['KT 총액결합', 'KT 정액결합', 'KT 프리미엄 가족결합', 'KT 프리미엄 싱글결합'],
+            'LG': ['LGU+ 참쉬운 가족결합', 'LGU+ 투게더 결합'],
+          };
+          // p.carrier 정규화 — 다양한 표기 모두 매핑
+          // SK / SKT / SK텔레콤 / SK 알뜰 / 에스케이      → 'SK'
+          // KT / KT M / KT 알뜰 / 케이티                  → 'KT'
+          // LG / LGU / LGU+ / LG U+ / LG 알뜰 / 엘지 / U+ → 'LG'
+          function normalizeCarrier(raw) {
+            if (!raw) return '';
+            const s = String(raw).trim();
+            if (/^(SK|SKT|에스케이)/i.test(s)) return 'SK';
+            if (/^(KT|케이티)/i.test(s)) return 'KT';
+            if (/^(LG|엘지|U\+|U ?PLUS)/i.test(s)) return 'LG';
+            return '';
+          }
+          const carrier = normalizeCarrier(p.carrier);
+          const opts = COMBO_OPTIONS[carrier] || [];   // SK/KT/LG 중 하나로 인식된 경우만 노출
+          const cur = c.combo_type || '';
+          const isCustom = cur && !opts.includes(cur);
+          const customId = `combo-type-custom-${c.id}`;
+          const fallbackHint = (opts.length === 0)
+            ? `<div style="font-size:10px;color:#fbbf24;margin-top:4px">⚠️ 통신사 "${p.carrier || '-'}" SK/KT/LG로 인식 안 됨 — "기타"로 직접 입력 (운영팀: 상품 carrier 값 확인)</div>`
+            : '';
+          return `
+            <select class="detail-input" data-field="combo_type" data-id="${c.id}" data-custom-target="${customId}" onchange="(function(s){var t=document.getElementById(s.dataset.customTarget);if(!t)return;t.style.display=s.value==='__custom__'?'block':'none';if(s.value!=='__custom__')t.value='';})(this)">
+              <option value="">— 선택 —</option>
+              ${opts.map(o => `<option value="${o}" ${cur===o?'selected':''}>${o}</option>`).join('')}
+              <option value="__custom__" ${isCustom?'selected':''}>📝 기타 (직접 입력)</option>
+            </select>
+            <input id="${customId}" class="detail-input" data-field="combo_type_custom" data-id="${c.id}" value="${isCustom ? cur.replace(/"/g, '&quot;') : ''}" placeholder="예: 인터넷+모바일 패키지" style="margin-top:6px;display:${isCustom?'block':'none'}">
+            ${fallbackHint}
+          `;
+        })()}
       </div>
       <div class="sec-row">
         <label class="modal-field-label">결합 구성원 <span style="font-size:9.5px;color:#94a3b8">(성함 / 생년월일 / 번호 — 줄바꿈으로 여러 명)</span></label>
@@ -1253,15 +1312,17 @@ function openEditModal(id) {
       </div>
       <div class="sec-row">
         <label class="modal-field-label">💳 납부 방법</label>
-        <select class="detail-input" data-field="payment_method">
+        <select class="detail-input" data-field="payment_method" data-id="${c.id}" onchange="renderPaymentExtra(this.dataset.id, this.value)">
           <option value="">— 선택 —</option>
           <option value="자동이체" ${c.payment_method==='자동이체'?'selected':''}>🏦 자동이체</option>
-          <option value="신용카드" ${c.payment_method==='신용카드'?'selected':''}>💳 신용카드</option>
+          <option value="신용카드" ${c.payment_method==='신용카드'?'selected':''}>💳 카드이체</option>
           <option value="지로" ${c.payment_method==='지로'?'selected':''}>📑 지로</option>
           <option value="모바일결제" ${c.payment_method==='모바일결제'?'selected':''}>📱 모바일결제</option>
           <option value="기타" ${c.payment_method==='기타'?'selected':''}>기타</option>
         </select>
       </div>
+      <!-- 🏦/💳 납부방법별 추가 정보 (lazy 렌더 — payment_method 선택 시에만 채움) -->
+      <div id="pe-container-${c.id}" data-pe-bank='${JSON.stringify((c.payment_extra && c.payment_extra.bank) || {}).replace(/'/g, "&apos;")}' data-pe-card='${JSON.stringify((c.payment_extra && c.payment_extra.card) || {}).replace(/'/g, "&apos;")}'></div>
     </div>
 
     <!-- 👥 댁내 대기자 · 판매자 연락처 -->
@@ -1394,6 +1455,9 @@ function openEditModal(id) {
   document.querySelectorAll('#modal-footer-actions .btn-action').forEach(btn => {
     btn.addEventListener('click', () => handleAction(btn.dataset.id, btn.dataset.act));
   });
+
+  // 납부방법별 추가 정보 lazy 렌더 (자동이체/신용카드 선택 시에만 DOM 생성)
+  renderPaymentExtra(c.id, c.payment_method);
 
   document.getElementById('modal-overlay').style.display = 'flex';
 
@@ -1630,6 +1694,74 @@ window._updateDealerLink = function(sel) {
   if (url) { linkEl.href = url; linkEl.style.display = ''; }
   else { linkEl.style.display = 'none'; linkEl.href = ''; }
 };
+
+// ── 납부방법별 추가 정보 lazy 렌더 (모달 가벼움 유지) ──
+const PE_BANK_OPTIONS = ['국민은행','신한은행','우리은행','하나은행','NH농협은행','IBK기업은행','SC제일은행','카카오뱅크','토스뱅크','케이뱅크','광주은행','전북은행','새마을금고','신협','우체국','수협은행','부산은행','경남은행','대구은행','제주은행','산업은행','외환은행'];
+const PE_CARD_OPTIONS = ['삼성카드','신한카드','KB국민카드','현대카드','하나카드','우리카드','롯데카드','BC카드','NH농협카드','IBK기업카드','씨티카드','카카오뱅크카드','토스카드'];
+function _peEsc(s) { return String(s ?? '').replace(/"/g, '&quot;'); }
+function renderPaymentExtra(id, method) {
+  const cont = document.getElementById('pe-container-' + id);
+  if (!cont) return;
+  if (method === '자동이체') {
+    let bank = {};
+    try { bank = JSON.parse((cont.dataset.peBank || '{}').replace(/&apos;/g, "'")); } catch(_) {}
+    cont.innerHTML = `
+      <div style="background:rgba(34,197,94,0.06);border:1px dashed rgba(34,197,94,0.3);border-radius:6px;padding:10px 12px;margin-top:8px">
+        <div style="font-size:10.5px;color:#86efac;font-weight:800;margin-bottom:8px;letter-spacing:0.04em">🏦 자동이체 정보</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:10px">
+          <div>
+            <label class="modal-field-label">은행</label>
+            <select class="detail-input" data-field="_pe_bank_name">
+              <option value="">— 선택 —</option>
+              ${PE_BANK_OPTIONS.map(b => `<option value="${b}" ${bank.name===b?'selected':''}>${b}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="modal-field-label">예금주</label>
+            <input class="detail-input" data-field="_pe_bank_holder" value="${_peEsc(bank.holder)}" placeholder="홍길동">
+          </div>
+          <div>
+            <label class="modal-field-label">계좌번호</label>
+            <input class="detail-input" data-field="_pe_bank_account" value="${_peEsc(bank.account)}" placeholder="000-0000-0000-00" style="letter-spacing:0.04em;font-family:'SF Mono',Monaco,monospace">
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (method === '신용카드') {
+    let card = {};
+    try { card = JSON.parse((cont.dataset.peCard || '{}').replace(/&apos;/g, "'")); } catch(_) {}
+    cont.innerHTML = `
+      <div style="background:rgba(168,85,247,0.06);border:1px dashed rgba(168,85,247,0.3);border-radius:6px;padding:10px 12px;margin-top:8px">
+        <div style="font-size:10.5px;color:#c4b5fd;font-weight:800;margin-bottom:8px;letter-spacing:0.04em">💳 카드이체 정보 <span style="font-size:9px;color:#94a3b8;font-weight:500">⚠️ 외부 노출 금지 — 내부 어드민 전용</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+          <div>
+            <label class="modal-field-label">명의자 이름</label>
+            <input class="detail-input" data-field="_pe_card_holder" value="${_peEsc(card.holder)}" placeholder="홍길동">
+          </div>
+          <div>
+            <label class="modal-field-label">카드사</label>
+            <select class="detail-input" data-field="_pe_card_company">
+              <option value="">— 선택 —</option>
+              ${PE_CARD_OPTIONS.map(b => `<option value="${b}" ${card.company===b?'selected':''}>${b}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px">
+          <div>
+            <label class="modal-field-label">카드번호 (전체)</label>
+            <input class="detail-input" data-field="_pe_card_number" value="${_peEsc(card.number)}" placeholder="0000-0000-0000-0000" style="letter-spacing:0.06em;font-family:'SF Mono',Monaco,monospace">
+          </div>
+          <div>
+            <label class="modal-field-label">유효기간 (MM/YY)</label>
+            <input class="detail-input" data-field="_pe_card_expiry" value="${_peEsc(card.expiry)}" placeholder="12/28" maxlength="5" style="font-family:'SF Mono',Monaco,monospace">
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    cont.innerHTML = '';
+  }
+}
 
 function closeModal() {
   document.getElementById('modal-overlay').style.display = 'none';
