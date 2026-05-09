@@ -754,7 +754,12 @@ async function loadCallCustomer(customerId) {
           const days = Math.floor((Date.now() - new Date(c.activation_date).getTime()) / 86400000);
           openParts.push(`<b>${esc(c.activation_date)}</b> <span style="color:#94a3b8">(${days}일 전)</span>`);
         }
-        if (c.subscription_type) openParts.push(`유형: <b>${esc(c.subscription_type)}</b>`);
+        if (c.subscription_type) {
+          // carrier 약어 prefix — "SKT 이동" / "KT 이동" / "LGU+ 이동" 식
+          const _carrierMap = { 'SKT':'SKT', 'SK':'SKT', 'KT':'KT', 'LGU+':'LGU+', 'LG U+':'LGU+', 'LG':'LGU+' };
+          const _cShort = c.carrier ? (_carrierMap[c.carrier.toUpperCase().trim()] || c.carrier) : '';
+          openParts.push(`유형: <b>${_cShort ? esc(_cShort) + ' ' : ''}${esc(c.subscription_type)}</b>`);
+        }
         if (c.payment_type) openParts.push(`결제: ${esc(c.payment_type)}`);
         if (c.subsidy_type) openParts.push(`지원: ${esc(c.subsidy_type)}`);
         document.getElementById('cm-r-open').innerHTML = openParts.join(' · ') || '-';
@@ -1262,8 +1267,11 @@ function renderCallQueueSide(list) {
 
     // 개통 + 단말
     const days = c.activation_date ? Math.floor((Date.now() - new Date(c.activation_date).getTime()) / 86400000) : null;
+    const _carrierMap2 = { 'SKT':'SKT', 'SK':'SKT', 'KT':'KT', 'LGU+':'LGU+', 'LG U+':'LGU+', 'LG':'LGU+' };
+    const _cShort2 = c.carrier ? (_carrierMap2[c.carrier.toUpperCase().trim()] || c.carrier) : '';
+    const _typeLabel = c.subscription_type ? `${_cShort2 ? _cShort2 + ' ' : ''}${esc(c.subscription_type)}` : '-';
     const openLine = c.activation_date
-      ? `📅 ${(c.activation_date||'').slice(5)} <span style="color:#94a3b8">(${days}일·${esc(c.subscription_type||'-')})</span>`
+      ? `📅 ${(c.activation_date||'').slice(5)} <span style="color:#94a3b8">(${days}일·${_typeLabel})</span>`
       : '';
     const devLine = c.device_model
       ? `📱 ${esc(c.device_model)}${c.plan_name ? ' · 💳 ' + esc(c.plan_name) : ''}`
