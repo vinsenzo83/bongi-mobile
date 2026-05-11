@@ -431,7 +431,7 @@ router.post('/distribute/equal', async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
 
-    const { center, max_per_agent = 0, grades = ['S','A','B'] } = req.body || {};
+    const { center, max_per_agent = 0, grades = ['S','A','B','R','C'] } = req.body || {};
     const targetCenter = me.role === 'manager' ? me.center : (center || null);
 
     let aq = supabase.from('incentive_agents').select('id, name, center').eq('active', true).in('role', ['agent','manager']);

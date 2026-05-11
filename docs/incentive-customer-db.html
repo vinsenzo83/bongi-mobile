@@ -332,7 +332,17 @@ tr:hover { background:#334155; }
         <!-- 2️⃣ 균등 분배 -->
         <div style="background:linear-gradient(135deg,rgba(22,163,74,0.15),rgba(0,0,0,0.3));border:1.5px solid #16a34a;border-radius:8px;padding:14px">
           <div style="font-size:13px;color:#86efac;font-weight:800;margin-bottom:6px">2️⃣ 균등 분배 (1클릭 자동)</div>
-          <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.5">콜센터 active 상담사 전원에게 미배정 풀 라운드로빈 균등 분배. <b>S→A→B→R→C</b> 우선순위 자동 정렬 (S/A/B/C=인터넷 X / R=인터넷 O).</div>
+          <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.5">콜센터 active 상담사 전원에게 미배정 풀 라운드로빈 균등 분배. <b>priority_score DESC</b> → S(100)→A(80)→B(60)→R(50)→C(0) 자동 정렬.</div>
+          <div style="margin-bottom:10px">
+            <div style="font-size:11px;color:#cbd5e1;font-weight:600;margin-bottom:4px">분배할 등급 선택:</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <label style="font-size:11px;color:#fbbf24;font-weight:700;cursor:pointer"><input type="checkbox" class="eq-grade" value="S" checked style="margin-right:3px"> S (이동·인터넷)</label>
+              <label style="font-size:11px;color:#86efac;font-weight:700;cursor:pointer"><input type="checkbox" class="eq-grade" value="A" checked style="margin-right:3px"> A (신규·인터넷)</label>
+              <label style="font-size:11px;color:#93c5fd;font-weight:700;cursor:pointer"><input type="checkbox" class="eq-grade" value="B" checked style="margin-right:3px"> B (기변·인터넷)</label>
+              <label style="font-size:11px;color:#c4b5fd;font-weight:700;cursor:pointer"><input type="checkbox" class="eq-grade" value="R" checked style="margin-right:3px"> R (렌탈)</label>
+              <label style="font-size:11px;color:#cbd5e1;font-weight:700;cursor:pointer"><input type="checkbox" class="eq-grade" value="C" style="margin-right:3px"> C (default·제외 권장)</label>
+            </div>
+          </div>
           <div style="margin-bottom:8px">
             <label style="font-size:11px;color:#cbd5e1">상담사당 최대 (옵션):
               <input type="number" id="eq-max" min="0" placeholder="0 = 무제한" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 6px;border-radius:4px;font-size:11px;width:120px;margin-left:6px">
@@ -1174,12 +1184,14 @@ async function loadCenterAllocations() {
 
 async function executeEqualDistribute() {
   const max_per_agent = parseInt(document.getElementById('eq-max').value) || 0;
+  const grades = Array.from(document.querySelectorAll('.eq-grade:checked')).map(c => c.value);
+  if (!grades.length) { alert('분배할 등급을 1개 이상 선택하세요'); return; }
   const resEl = document.getElementById('eq-result');
-  resEl.textContent = '⏳ 분배 중...';
+  resEl.textContent = `⏳ 분배 중 (등급 ${grades.join('·')})...`;
   try {
     const r = await fetchAuth(CDB + '/distribute/equal', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ max_per_agent })  // 등급 옵션 생략 → 서버 default ['S','A','B']
+      body: JSON.stringify({ max_per_agent, grades })
     });
     const d = await r.json();
     if (!r.ok) { resEl.innerHTML = `<span style="color:#fca5a5">❌ ${d.error || '실패'}</span>`; return; }
