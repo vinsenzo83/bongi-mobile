@@ -270,12 +270,15 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     return { reply: mockReply, ui_elements: [] };
   }
 
-  // Claude Tool Use 호출
+  // Claude Tool Use 호출 — prompt caching (시스템 + 도구) 적용. 5분 TTL ephemeral.
+  // 시스템 프롬프트 1,200+ 토큰 + TOOLS 정의 큼 → 캐시로 입력 토큰 약 90% 절감 가능.
+  const _cachedSystem = [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }];
+  const _cachedTools = TOOLS.map((t, i) => i === TOOLS.length - 1 ? { ...t, cache_control: { type: 'ephemeral' } } : t);
   let response = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1024,
-    system: systemPrompt,
-    tools: TOOLS,
+    system: _cachedSystem,
+    tools: _cachedTools,
     messages: session.messages.map(m => ({
       role: m.role,
       content: m.content,
@@ -311,8 +314,8 @@ export async function processMessage(sessionId, userMessage, context = {}) {
     response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
-      system: systemPrompt,
-      tools: TOOLS,
+      system: _cachedSystem,
+      tools: _cachedTools,
       messages: session.messages.map(m => ({
         role: m.role,
         content: m.content,
@@ -738,13 +741,15 @@ export async function processMessageStream(sessionId, userMessage, context = {},
   };
 }
 
-// Claude 스트리밍 호출 헬퍼
+// Claude 스트리밍 호출 헬퍼 (prompt caching 적용)
 async function streamClaudeResponse(session, onChunk, sysPrompt = SYSTEM_PROMPT) {
+  const cachedSys = [{ type: 'text', text: sysPrompt, cache_control: { type: 'ephemeral' } }];
+  const cachedTools = TOOLS.map((t, i) => i === TOOLS.length - 1 ? { ...t, cache_control: { type: 'ephemeral' } } : t);
   const stream = client.messages.stream({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1024,
-    system: sysPrompt,
-    tools: TOOLS,
+    system: cachedSys,
+    tools: cachedTools,
     messages: session.messages.map(m => ({
       role: m.role,
       content: m.content,
