@@ -1727,18 +1727,31 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
     source_data: c.source_data, archived: false,
   }));
 
-  // UPSERT + ignoreDuplicates — chunk 단위 한 번에 처리 (each-row retry 제거)
-  // PG가 UNIQUE(db_source_id, phone) 위반 row를 INSERT 안 하고 silently skip
-  // dup 카운트 = chunk.length - 실제 INSERT된 row 수
-  let inserted = 0, dups = 0, failed = 0;
-  for (let i = 0; i < insertRows.length; i += 500) {
-    const chunk = insertRows.slice(i, i + 500);
+  // 1) cross-source phone 중복 사전 검사 — 출처 다른데 같은 phone이면 dup으로 처리
+  //    (UNIQUE(db_source_id, phone)는 같은 출처 안에서만 작동 → 출처 넘는 중복 못 잡음)
+  const phoneList = insertRows.map(r => r.phone);
+  const existingPhonesSet = new Set();
+  // 1000개씩 청크로 IN 조회 (PG 인자 제한 대응)
+  for (let i = 0; i < phoneList.length; i += 1000) {
+    const slice = phoneList.slice(i, i + 1000);
+    const { data: existing } = await supabase.from('incentive_customer_db')
+      .select('phone').in('phone', slice).is('deleted_at', null);
+    (existing || []).forEach(r => existingPhonesSet.add(r.phone));
+  }
+  // 신규 row만 분리, 기존 phone은 dup 카운트
+  const newRows = insertRows.filter(r => !existingPhonesSet.has(r.phone));
+  const crossSourceDups = insertRows.length - newRows.length;
+
+  // 2) UPSERT chunk 200 — Railway timeout 안전 + 매 chunk 후 batch 통계 즉시 update
+  let inserted = 0, dups = crossSourceDups, failed = 0;
+  const CHUNK = 200;
+  for (let i = 0; i < newRows.length; i += CHUNK) {
+    const chunk = newRows.slice(i, i + CHUNK);
     const { data, error } = await supabase
       .from('incentive_customer_db')
       .upsert(chunk, { onConflict: 'db_source_id,phone', ignoreDuplicates: true })
       .select('id');
     if (error) {
-      // fallback — upsert 실패 시 단건 처리 (partial unique 미지원 등 예외)
       console.error('[import upsert chunk fail]', error.code, error.message);
       for (const row of chunk) {
         const { error: e1 } = await supabase.from('incentive_customer_db').insert(row);
@@ -1750,11 +1763,11 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
       inserted += (data || []).length;
       dups += chunk.length - (data || []).length;
     }
+    // 매 chunk 즉시 batch 통계 update — timeout 끊겨도 부분 통계 보존
+    await supabase.from('incentive_customer_import_batch').update({
+      valid_count: inserted, invalid_count: failed, duplicate_count: dups,
+    }).eq('id', batchId);
   }
-
-  await supabase.from('incentive_customer_import_batch').update({
-    valid_count: inserted, invalid_count: failed, duplicate_count: dups,
-  }).eq('id', batchId);
 
   logAccess({
     user_id: userId, action: 'import_closing_ledger', ip, ua,
