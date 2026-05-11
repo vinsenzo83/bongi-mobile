@@ -1508,8 +1508,7 @@ const DEFAULT_IMPORT_RULES = {
   age_min: 19,
   age_max: 100,
   phone_regex: '^01[016789][0-9]{7,8}$',
-  // 인터넷·TV 회선 판정 — 단말이 정확히 '인터넷' 또는 '인+TV'인 경우만
-  // (메모·결제유형·prefix 매칭은 false positive 위험으로 사용 안 함)
+  // 인터넷·TV 회선 판정 — 단말이 '인+TV' 또는 '인터넷' 정확히 일치할 때만
   internet_types: [],
   internet_models: ['인+TV', '인터넷'],
   internet_model_prefix: '',
@@ -1542,8 +1541,7 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
 
   const watchRegex = new RegExp('^' + (R.watch_prefix || 'L'));
   const isWatch = (d) => watchRegex.test(String(d || ''));
-  // 인터넷·TV row 판단 — 단말 정확 매칭만 ('인터넷' 또는 '인+TV')
-  // 메모·결제유형·prefix 매칭은 false positive 위험으로 제외
+  // 인터넷·TV row 판단 — 단말 정확 매칭만 ('인+TV' 또는 '인터넷')
   const isInternetTV = (row) => {
     if (!row || typeof row !== 'object') return false;
     const model = String(row['단말'] || '').trim();
