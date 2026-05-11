@@ -391,7 +391,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
-<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
 <script src="/docs/_security.js" defer></script>
 <!-- 시드 데이터 동기화 공통 헬퍼 (calculator/tm/tm-counselor 공유) -->
 <script src="/docs/_calc-data-sync.js?v=4"></script>
@@ -605,10 +605,10 @@ window.CALL_MODE_VISITED = new Set(); // 이번 세션 이미 진입한 customer
     });
   }
   // 콜 큐 사이드바 — agent/manager 자동 표시 (cid 없어도)
+  // 800ms 지연 제거 — 즉시 init (페이지 로딩 속도 개선 2026-05-12)
   document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(initQueueSide, 800);
+    initQueueSide();
     initLayoutObservers();
-    // 🆕 상단 fixed bar → 메인 카드로 이동
     moveCallBarIntoMain();
   });
 })();
@@ -681,17 +681,20 @@ async function initQueueSide() {
   const tk = localStorage.getItem('incentive-auth-token-v1');
   if (!tk) return;
   try {
-    const r = await fetch('/api/incentive/agents/me', { headers: { Authorization: 'Bearer ' + tk } });
-    if (!r.ok) return;
-    const me = (await r.json()).agent;
+    // 병렬화 — agents/me + queue 동시 호출 (페이지 로딩 속도 개선 2026-05-12)
+    // role 확인 전에 queue도 미리 호출. 서버 권한 체크로 안전.
+    const [meRes, queueResult] = await Promise.all([
+      fetch('/api/incentive/agents/me', { headers: { Authorization: 'Bearer ' + tk } }),
+      prefetchNextQueue(),  // 비동기로 큐 prefetch (결과는 내부 state에 저장)
+    ]);
+    if (!meRes.ok) return;
+    const me = (await meRes.json()).agent;
     if (!me || (me.role !== 'agent' && me.role !== 'manager' && me.role !== 'admin')) return;
     document.body.classList.add('queue-side-active');
-    // 접힘 상태 복원
     if (localStorage.getItem('cq-side-collapsed') === '1') {
       document.body.classList.add('queue-side-collapsed');
       const btn = document.getElementById('cq-toggle-btn'); if (btn) btn.textContent = '▶';
     }
-    await prefetchNextQueue();
     bindShortcutKeys();
   } catch {}
 }
