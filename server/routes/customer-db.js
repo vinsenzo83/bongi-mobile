@@ -1731,15 +1731,13 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
     source_data: c.source_data, archived: false,
   }));
 
-  // 1) cross-source phone 중복 사전 검사 — 출처 다른데 같은 phone이면 dup으로 처리
-  //    (UNIQUE(db_source_id, phone)는 같은 출처 안에서만 작동 → 출처 넘는 중복 못 잡음)
-  // chunk 500 + .limit(2000) 명시 — PostgREST 기본 max-rows 1000 cap 회피
+  // 1) cross-source phone 중복 사전 검사 — chunk 1000 + .limit(5000) (PostgREST cap 회피)
   const phoneList = insertRows.map(r => r.phone);
   const existingPhonesSet = new Set();
-  for (let i = 0; i < phoneList.length; i += 500) {
-    const slice = phoneList.slice(i, i + 500);
+  for (let i = 0; i < phoneList.length; i += 1000) {
+    const slice = phoneList.slice(i, i + 1000);
     const { data: existing, error: e0 } = await supabase.from('incentive_customer_db')
-      .select('phone').in('phone', slice).is('deleted_at', null).limit(2000);
+      .select('phone').in('phone', slice).is('deleted_at', null).limit(5000);
     if (e0) console.error('[import phone scan]', e0.code, e0.message);
     (existing || []).forEach(r => existingPhonesSet.add(r.phone));
   }
@@ -1771,13 +1769,9 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
       inserted += (data || []).length;
       dups += chunk.length - (data || []).length;
     }
-    // 매 chunk 즉시 batch 통계 update — timeout 끊겨도 부분 통계 보존
-    await supabase.from('incentive_customer_import_batch').update({
-      valid_count: inserted, invalid_count: failed, duplicate_count: dups,
-    }).eq('id', batchId);
   }
 
-  // 최종 batch 통계 보장 — newRows가 0이라 loop 안 돌아도 cross-source dups 등 반영
+  // batch 통계 update — loop 끝난 후 한 번만 (RPC 부하 최소화)
   await supabase.from('incentive_customer_import_batch').update({
     valid_count: inserted, invalid_count: failed, duplicate_count: dups,
   }).eq('id', batchId);
