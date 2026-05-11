@@ -130,10 +130,10 @@ tr.row-callback:hover { background:rgba(251,191,36,0.14); }
       <h2>📋 콜 큐 <span id="cust-total" style="font-weight:400;color:#94a3b8">-</span></h2>
       <table>
         <thead><tr id="cust-thead">
-          <th>우선</th><th>이름</th><th>전화</th><th>지역</th><th>통신사</th>
+          <th>우선</th><th>등급</th><th>이름</th><th>전화</th><th>지역</th><th>통신사</th>
           <th>출처</th><th>상태</th><th>이전</th><th>📝 메모</th><th>다음</th>
         </tr></thead>
-        <tbody id="cust-tbody"><tr><td colspan="10" style="text-align:center;padding:20px;color:#64748b">로딩 중...</td></tr></tbody>
+        <tbody id="cust-tbody"><tr><td colspan="11" style="text-align:center;padding:20px;color:#64748b">로딩 중...</td></tr></tbody>
       </table>
       <div style="display:flex;gap:8px;justify-content:center;padding:12px">
         <button onclick="prevPage()" style="background:#475569;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:11px">← 이전</button>
@@ -339,7 +339,7 @@ async function loadCustomers() {
   document.getElementById('page-info').textContent = `${Math.min(_state.offset+1, _state.total)}~${Math.min(_state.offset+_state.limit, _state.total)} / ${_state.total.toLocaleString()}`;
 
   const tbody = document.getElementById('cust-tbody');
-  const cspan = window._myAgent?.role === 'admin' ? 12 : 10;
+  const cspan = window._myAgent?.role === 'admin' ? 13 : 11;
   if (!d.customers.length) {
     tbody.innerHTML = `<tr><td colspan="${cspan}" style="text-align:center;padding:50px">
       <div style="font-size:50px;margin-bottom:10px">🎉</div>
@@ -375,8 +375,21 @@ async function loadCustomers() {
     const adminCols = isAdmin
       ? `<td style="font-size:10.5px;color:#cbd5e1">${esc(a.center)||'<i style=\"color:#64748b\">미배정</i>'}</td><td style="font-size:10.5px;color:#cbd5e1"><b>${esc(a.name)||'<i style=\"color:#64748b\">미배정</i>'}</b></td>`
       : '';
+    // 등급 배지 (S/A/B/R/C — basePriority 색상 동일)
+    const grade = c.quality_grade || '';
+    const gradeStyles = {
+      S: 'background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a',
+      A: 'background:linear-gradient(135deg,#86efac,#22c55e);color:#0f172a',
+      B: 'background:linear-gradient(135deg,#93c5fd,#3b82f6);color:#fff',
+      R: 'background:linear-gradient(135deg,#a855f7,#c084fc);color:#fff',
+      C: 'background:#475569;color:#fff',
+    };
+    const gradeBadge = grade
+      ? `<span style="${gradeStyles[grade] || gradeStyles.C};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:900">${grade}</span>`
+      : '<i style="color:#64748b">-</i>';
     return `<tr class="row-call ${isToday?'row-callback':''}" onclick="openCallScreen('${c.id}','${(c.name||'').replace(/['"<>&]/g,'')}')">
       <td class="${pCls}">${pIcon}</td>
+      <td>${gradeBadge}</td>
       <td><b>${esc(c.name)}</b>${c.age?' · '+esc(c.age):''}${c.gender?' · '+esc(c.gender):''}</td>
       <td style="font-family:monospace;color:#cbd5e1">${esc(c.phone)}</td>
       <td>${esc(c.region)||'-'}</td>
