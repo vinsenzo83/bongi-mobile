@@ -28,6 +28,8 @@ var SECTION_TO_LS = {
   'gift': 'bongi-gift-overrides',
   'gift-catalog-custom': 'bongi-gift-catalog-custom',
   'sales': 'bongi-sales-overrides-v1',
+  'tvpolicy': 'bongi-tvpolicy-overrides',  // 추가 TV 정책 (additionalTvPolicy 3사)
+  'lgubonus': 'bongi-lgubonus-overrides',  // LGU+ 500M·1G 기본 제공 옵션
 };
 
 // fetch 결과 분류 — bootstrap이 배너·잠금 결정에 사용
@@ -293,6 +295,8 @@ function applyTMSeedOverrides(D) {
     bundle: 'bongi-bundle-overrides',
     tv: 'bongi-tv-overrides',
     install: 'bongi-install-fees',
+    tvpolicy: 'bongi-tvpolicy-overrides',
+    lgubonus: 'bongi-lgubonus-overrides',
   };
   // device — setTopOptions / wifiOptions
   try {
@@ -338,6 +342,18 @@ function applyTMSeedOverrides(D) {
         }
       });
     }
+  } catch(_) {}
+  // tvpolicy — D[k].additionalTvPolicy 통째로 교체
+  try {
+    const ov = JSON.parse(localStorage.getItem(KEYS.tvpolicy) || '{}');
+    ['skt','kt','lgu'].forEach(k => {
+      if (ov[k] && D[k]) D[k].additionalTvPolicy = ov[k];
+    });
+  } catch(_) {}
+  // lgubonus — LGU+ 전용 500M·1G 기본 제공 옵션
+  try {
+    const ov = JSON.parse(localStorage.getItem(KEYS.lgubonus) || 'null');
+    if (ov && D.lgu) D.lgu.lguBonusOption = ov;
   } catch(_) {}
 }
 // 전역 노출 (tm.html / tm-counselor.html에서 호출)

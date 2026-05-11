@@ -497,6 +497,7 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   <a class="nav-link" href="#sec-6">💳 제휴카드</a>
   <a class="nav-link" href="#sec-7">💡 영업포인트</a>
   <a class="nav-link" href="#sec-9">🎫 티켓</a>
+  <a class="nav-link" href="#sec-11">🎁 추가 정책</a>
   <a class="nav-link" href="#sec-10">📜 변경이력</a>
 </nav>
 <header class="admin-topbar">
@@ -838,10 +839,18 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   <div id="gift-history"></div>
 </div>
 
+<!-- ═══ 11. 추가 정책 (TV 추가 / LGU+ 기본 제공) ═══ -->
+<div class="section">
+  <div class="st">🎁 11. 추가 정책 (TV 추가 정책 · LGU+ 500M↑ 기본 제공)</div>
+  <div class="note">현재 계산기 코드에 박혀있던 데이터를 어드민에서 편집 가능하게 분리. 변경 즉시 LS·DB 저장, 모든 페이지(견적·계약·신청) 자동 반영.</div>
+  <div id="tvpolicy-controls"></div>
+  <div id="lgubonus-controls" style="margin-top:18px"></div>
+</div>
+
 <!-- ═══ 10. 변경 이력 ═══ -->
 <div class="section">
   <div class="st">📜 10. 변경 이력 (전체 섹션 통합)</div>
-  <div class="note">1·2·3·4·5·6·8번 섹션의 모든 데이터 변경 사항을 시간순으로 기록. localStorage 영구 저장 (최대 500건).</div>
+  <div class="note">1·2·3·4·5·6·8·11번 섹션의 모든 데이터 변경 사항을 시간순으로 기록. localStorage 영구 저장 (최대 500건).</div>
   <div id="edit-history"></div>
 </div>
 
@@ -1116,6 +1125,16 @@ var D = {
       tv2PriceConstraint: 'leq',             // TV2 월정액 ≤ TV1
       tv3PriceConstraint: 'leq',             // TV3도 동일
       enabled: true
+    },
+    // LGU+ 500M·1G 기본 제공 옵션 (무료 사은품 — 고객이 옵션 중 1개 선택)
+    lguBonusOption: {
+      enabled: true,
+      appliedSpeeds: ['500M', '1G'],
+      label: '프리미엄 안심 (무료 기본제공)',
+      options: [
+        { id: 'wifi2',        label: '와이파이 2대',                       price: 0, active: true },
+        { id: 'wifi-speaker', label: '와이파이 1대 + 🔊 스마트홈 스피커',  price: 0, active: true }
+      ]
     },
     install: { solo: 36300, combo: 56100 },
     gift: {
@@ -3887,11 +3906,122 @@ function renderGiftControls() {
 // fetchCalcOverridesFromDb / _lastDbFetchStatus 는 _calc-data-sync.js에서 정의.
 
 // 페이지별 D 갱신 훅 — fetchCalcOverridesFromDb가 LS를 갱신한 후 D에 반영.
+// ─── 11. TV 추가 정책 + LGU+ 500M↑ 기본 제공 ───
+var TVPOLICY_KEY = 'bongi-tvpolicy-overrides';
+var LGUBONUS_KEY = 'bongi-lgubonus-overrides';
+
+function applyTvPolicyOverrides() {
+  try {
+    var ov = JSON.parse(localStorage.getItem(TVPOLICY_KEY) || '{}');
+    ['skt','kt','lgu'].forEach(function(k){
+      if (ov[k] && D[k]) D[k].additionalTvPolicy = ov[k];
+    });
+  } catch(e) {}
+}
+function applyLguBonusOverrides() {
+  try {
+    var ov = JSON.parse(localStorage.getItem(LGUBONUS_KEY) || 'null');
+    if (ov && D.lgu) D.lgu.lguBonusOption = ov;
+  } catch(e) {}
+}
+function persistTvPolicy(carrier) {
+  if (typeof persistOverride !== 'function') return;
+  var ov = {};
+  try { ov = JSON.parse(localStorage.getItem(TVPOLICY_KEY) || '{}'); } catch(e) {}
+  if (carrier) ov[carrier] = D[carrier].additionalTvPolicy;
+  else ['skt','kt','lgu'].forEach(function(k){ ov[k] = D[k].additionalTvPolicy; });
+  persistOverride('tvpolicy', '추가 TV 정책', TVPOLICY_KEY, ov);
+}
+function persistLguBonus() {
+  if (typeof persistOverride !== 'function') return;
+  persistOverride('lgubonus', 'LGU+ 기본 제공', LGUBONUS_KEY, D.lgu.lguBonusOption || null);
+}
+function updTvPolicy(carrier, field, val) {
+  if (!D[carrier] || !D[carrier].additionalTvPolicy) return;
+  var p = D[carrier].additionalTvPolicy;
+  var old = p[field];
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  if (field === 'maxTvCount' || field === 'additionalTvInstallFee') p[field] = parseInt(String(val).replace(/[^0-9]/g,''))||0;
+  else if (field === 'settopDiscountRate' || field === 'installDiscountRate') p[field] = parseFloat(val) || 0;
+  else if (field === 'tv1KeepsRegularDiscount' || field === 'enabled') p[field] = (val === true || val === 'true');
+  else p[field] = String(val || '');
+  logEdit('추가 TV 정책', labels[carrier] + ' / ' + field, old, p[field]);
+  persistTvPolicy(carrier);
+}
+function updLguBonus(field, val, idx) {
+  if (!D.lgu.lguBonusOption) return;
+  var b = D.lgu.lguBonusOption;
+  var old;
+  if (field === 'label' || field === 'enabled') {
+    old = b[field];
+    b[field] = (field === 'enabled') ? (val === true || val === 'true') : String(val || '');
+    logEdit('LGU+ 기본 제공', field, old, b[field]);
+  } else if (field === 'opt-label' && typeof idx === 'number') {
+    old = b.options[idx].label;
+    b.options[idx].label = String(val || '');
+    logEdit('LGU+ 기본 제공', '옵션 ' + (idx+1) + ' 라벨', old, b.options[idx].label);
+  } else if (field === 'opt-active' && typeof idx === 'number') {
+    old = b.options[idx].active;
+    b.options[idx].active = (val === true || val === 'true');
+    logEdit('LGU+ 기본 제공', '옵션 ' + (idx+1) + ' 활성', old, b.options[idx].active);
+  }
+  persistLguBonus();
+}
+function renderTvPolicyControls() {
+  var cont = document.getElementById('tvpolicy-controls');
+  if (!cont) return;
+  var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
+  var html = '<div class="st2" style="margin-top:6px">📺 TV 추가 시 정책 (3사 · 견적·설치비 계산에 사용)</div>';
+  html += '<div class="note" style="font-size:11px;color:#94a3b8;margin-bottom:8px">현재 계산기 견적·설치비 줄에 자동 적용. TV1 기본 결합할인 유지·TV2/TV3 가격 제약·추가 설치비 50% 할인 등.</div>';
+  ['skt','kt','lgu'].forEach(function(k){
+    var p = (D[k] && D[k].additionalTvPolicy) || {};
+    html += '<div class="st2" style="margin-top:12px"><span class="badge b-'+k+'">'+labels[k]+'</span> 추가 TV 정책</div>';
+    html += '<table style="margin:0"><thead><tr><th style="width:220px">항목</th><th style="width:120px">값</th><th>설명</th></tr></thead><tbody>';
+    html += '<tr><td><b>활성</b></td><td><select class="detail-input" onchange="updTvPolicy(\''+k+'\', \'enabled\', this.value)"><option value="true"'+(p.enabled?' selected':'')+'>✓ 활성</option><option value="false"'+(!p.enabled?' selected':'')+'>✗ 비활성</option></select></td><td style="font-size:11px;color:#94a3b8">정책 자체 on/off</td></tr>';
+    html += '<tr><td><b>TV 최대 가입</b></td>' + bundleInputCell(p.maxTvCount, 'updTvPolicy(\''+k+'\', \'maxTvCount\', this.value)') + '<td style="font-size:11px;color:#94a3b8">대 (1대~)</td></tr>';
+    html += '<tr><td><b>추가 TV 설치비</b></td>' + bundleInputCell(p.additionalTvInstallFee, 'updTvPolicy(\''+k+'\', \'additionalTvInstallFee\', this.value)') + '<td style="font-size:11px;color:#94a3b8">원 — TV 추가 1대당 정가</td></tr>';
+    html += '<tr><td><b>추가 설치비 할인율</b></td><td><input type="text" class="detail-input" value="'+(p.installDiscountRate ?? 0)+'" onchange="updTvPolicy(\''+k+'\', \'installDiscountRate\', this.value)" style="width:90px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:right;color:#dc2626;font-weight:700"></td><td style="font-size:11px;color:#94a3b8">0~1 (0.5 = 50%)</td></tr>';
+    html += '<tr><td><b>셋톱 할인율</b></td><td><input type="text" class="detail-input" value="'+(p.settopDiscountRate ?? 0)+'" onchange="updTvPolicy(\''+k+'\', \'settopDiscountRate\', this.value)" style="width:90px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:right;color:#dc2626;font-weight:700"></td><td style="font-size:11px;color:#94a3b8">0~1 (LGU+ 0 = 없음)</td></tr>';
+    html += '<tr><td><b>TV1 기본 결합할인 유지</b></td><td><select class="detail-input" onchange="updTvPolicy(\''+k+'\', \'tv1KeepsRegularDiscount\', this.value)"><option value="true"'+(p.tv1KeepsRegularDiscount?' selected':'')+'>✓ 유지</option><option value="false"'+(!p.tv1KeepsRegularDiscount?' selected':'')+'>✗ 미적용</option></select></td><td style="font-size:11px;color:#94a3b8">TV1은 기존 결합할인 그대로</td></tr>';
+    html += '<tr><td><b>TV2 가격 제약</b></td><td><input type="text" class="detail-input" value="'+(p.tv2PriceConstraint || '')+'" onchange="updTvPolicy(\''+k+'\', \'tv2PriceConstraint\', this.value)" style="width:90px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:center"></td><td style="font-size:11px;color:#94a3b8">예: leq (TV2 월정액 ≤ TV1)</td></tr>';
+    html += '<tr><td><b>TV3 가격 제약</b></td><td><input type="text" class="detail-input" value="'+(p.tv3PriceConstraint || '')+'" onchange="updTvPolicy(\''+k+'\', \'tv3PriceConstraint\', this.value)" style="width:90px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:center"></td><td style="font-size:11px;color:#94a3b8">예: leq</td></tr>';
+    html += '</tbody></table>';
+  });
+  cont.innerHTML = html;
+}
+function renderLguBonusControls() {
+  var cont = document.getElementById('lgubonus-controls');
+  if (!cont) return;
+  if (!D.lgu.lguBonusOption) D.lgu.lguBonusOption = { enabled:true, appliedSpeeds:['500M','1G'], label:'프리미엄 안심 (무료 기본제공)', options:[] };
+  var b = D.lgu.lguBonusOption;
+  var html = '<div class="st2"><span class="badge b-lgu">LGU+</span> 🎁 인터넷 500M·1G 기본 제공 옵션 (무료 사은품)</div>';
+  html += '<div class="note" style="font-size:11px;color:#94a3b8;margin-bottom:8px">LGU+ 인터넷 500M·1G 가입 시 자동 따라오는 무료 사은품. 고객이 옵션 중 1개 선택. 견적 화면·계약 입력에 자동 노출.</div>';
+  html += '<table style="margin:0"><thead><tr><th style="width:160px">항목</th><th style="width:180px">값</th><th>설명</th></tr></thead><tbody>';
+  html += '<tr><td><b>활성</b></td><td><select class="detail-input" onchange="updLguBonus(\'enabled\', this.value)"><option value="true"'+(b.enabled?' selected':'')+'>✓ 활성</option><option value="false"'+(!b.enabled?' selected':'')+'>✗ 비활성</option></select></td><td style="font-size:11px;color:#94a3b8">전체 정책 on/off</td></tr>';
+  html += '<tr><td><b>표시 라벨</b></td><td><input type="text" class="detail-input" value="'+(b.label||'').replace(/"/g,'&quot;')+'" onchange="updLguBonus(\'label\', this.value)" style="width:100%;padding:5px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px"></td><td style="font-size:11px;color:#94a3b8">견적·계약 화면 라벨 (예: "🎁 프리미엄 안심")</td></tr>';
+  html += '<tr><td><b>적용 속도</b></td><td>'+(b.appliedSpeeds||[]).join(' · ')+'</td><td style="font-size:11px;color:#94a3b8">현재 LGU+ 500M·1G 자동 적용 (코드 박힘)</td></tr>';
+  html += '</tbody></table>';
+  // 옵션 목록
+  html += '<div class="st2" style="margin-top:12px">📋 옵션 목록 (고객이 1개 선택)</div>';
+  html += '<table style="margin:0"><thead><tr><th style="width:50px">#</th><th>옵션 라벨</th><th style="width:90px">활성</th></tr></thead><tbody>';
+  (b.options || []).forEach(function(o, idx){
+    html += '<tr>';
+    html += '<td style="text-align:center">'+(idx+1)+'</td>';
+    html += '<td><input type="text" class="detail-input" value="'+(o.label||'').replace(/"/g,'&quot;')+'" onchange="updLguBonus(\'opt-label\', this.value, '+idx+')" style="width:100%;padding:5px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px"></td>';
+    html += '<td><select class="detail-input" onchange="updLguBonus(\'opt-active\', this.value, '+idx+')"><option value="true"'+(o.active!==false?' selected':'')+'>✓ 활성</option><option value="false"'+(o.active===false?' selected':'')+'>✗ 비활성</option></select></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  cont.innerHTML = html;
+}
+
 function applyAllSeedToD() {
   applyDeviceOverrides();
   applyTVOverrides();
   applyBundleOverrides();
   applyGiftOverrides();
+  applyTvPolicyOverrides();
+  applyLguBonusOverrides();
   if (typeof loadInstallFees === 'function') {
     try { INSTALL_FEES = loadInstallFees(); } catch(e) {}
   }
@@ -3905,6 +4035,8 @@ function applyAllSeedToD() {
   if (typeof renderInstallControls === 'function') renderInstallControls();
   if (typeof renderCardControls === 'function') renderCardControls();
   if (typeof renderGiftControls === 'function') renderGiftControls();
+  if (typeof renderTvPolicyControls === 'function') renderTvPolicyControls();
+  if (typeof renderLguBonusControls === 'function') renderLguBonusControls();
 }
 
 async function bootstrapCalculator() {
@@ -3916,6 +4048,8 @@ async function bootstrapCalculator() {
   applyTVOverrides();
   applyBundleOverrides();
   applyGiftOverrides();
+  applyTvPolicyOverrides();
+  applyLguBonusOverrides();
   // install/card는 모듈 변수가 이미 페이지 로드 시 초기화되었으므로 재로드
   if (typeof loadInstallFees === 'function') {
     try { INSTALL_FEES = loadInstallFees(); } catch(e) {}
@@ -3932,6 +4066,8 @@ async function bootstrapCalculator() {
   renderInstallControls();
   renderCardControls();
   renderGiftControls();
+  renderTvPolicyControls();
+  renderLguBonusControls();
   renderGiftHistory();
   renderEditHistory();
   // DB 변경이력 통합 (admin/manager 토큰 있을 때만 — Phase 1 마이그레이션)
