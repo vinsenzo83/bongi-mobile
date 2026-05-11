@@ -249,19 +249,16 @@ tr:hover { background:#334155; }
             </label>
           </div>
 
-          <div class="rule-card">
-            <h3 style="color:#fde68a">⭐ basePriority (category별 기본 점수)</h3>
-            <div class="rule-help" style="margin-bottom:10px">콜DB 분배 시 priority_score = basePriority + 나이가중치. 점수 높을수록 먼저 분배</div>
-            <div id="r-base-priority" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
-          </div>
-
-          <div class="rule-card">
-            <h3 style="color:#a5b4fc">🎂 나이 가중치 (priority 추가 점수)</h3>
-            <div class="rule-help" style="margin-bottom:10px">연령대별 priority_score에 더할 값. min~max 범위에 들면 bonus 적용. 추가/삭제 가능</div>
-            <div id="r-age-bonus" style="display:flex;flex-direction:column;gap:4px"></div>
+          <div class="rule-card" style="grid-column:span 2">
+            <h3 style="color:#a5b4fc">🎂 나이 가중치 (모든 등급 공통 · priority 추가 점수)</h3>
+            <div class="rule-help" style="margin-bottom:10px">예: 35세 + S등급(100) = 100 + 25 = 125점</div>
+            <div id="r-age-bonus" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px"></div>
             <button class="toolbar-btn" style="background:#3b82f6;color:#fff;margin-top:8px;padding:5px 10px;font-size:11px" onclick="addAgeBand()">➕ 구간 추가</button>
           </div>
         </div>
+
+        <!-- 외부 basePriority 카드 제거 — 등급 카드 안에 통합 -->
+        <div id="r-base-priority" style="display:none"></div>
 
         <!-- 🏆 등급별 카드 (S/A/B/C — 등급별 조건 묶음) -->
         <div style="margin-top:14px">
@@ -689,13 +686,13 @@ function renderImportRules(R) {
   document.getElementById('r-net-models').value = (R.internet_models || []).join(', ');
   document.getElementById('r-net-prefix').value = R.internet_model_prefix ?? '';
 
-  const bp = R.base_priority || {};
+  // basePriority — 등급 카드 내부에서만 표시·편집. window 변수에 저장
+  window._currentBasePriority = R.base_priority || {};
+  // hidden div는 collectImportRules에서 사용
   document.getElementById('r-base-priority').innerHTML =
-    ['이동','신규','렌탈권유','기변','기타'].map(cat => `
-      <label style="font-size:11px;color:#cbd5e1;font-weight:600">${cat}
-        <input type="number" data-bp="${cat}" value="${bp[cat] ?? 0}" oninput="markDirty()" class="rule-input" style="width:100%;margin-top:3px">
-      </label>
-    `).join('');
+    Object.entries(R.base_priority || {}).map(([cat, val]) =>
+      `<input type="hidden" data-bp="${cat}" value="${val}">`
+    ).join('');
 
   const ab = R.age_bonus || [];
   renderAgeBonus(ab);
@@ -774,40 +771,84 @@ function renderGradeCards(grades) {
   document.getElementById('r-grade-cards').innerHTML = html;
 }
 
+// 라이브 등급 통계 (renderOneGradeCard에서 표시)
+let _gradeStats = {}; // {S:{count:564,avg:117}, A:{count:497,avg:70}, ...}
+
 function renderOneGradeCard(grade, conditions) {
   const cls = GRADE_COLORS[grade] || 'gr-C';
   const label = GRADE_LABELS[grade] || `${grade} 등급`;
   const cats = ['', '이동', '신규', '렌탈권유', '기변', '기타'];
+  const borderColor = grade==='S'?'#f59e0b':grade==='A'?'#22c55e':grade==='B'?'#3b82f6':'#64748b';
+  const stats = _gradeStats[grade] || {};
+  const statsHtml = stats.count != null
+    ? `<span style="color:${borderColor};font-weight:700">현재 ${stats.count}명 · 평균 ${stats.avg}점</span>`
+    : `<span style="color:#64748b">통계 로딩 중...</span>`;
+
   return `
-    <div class="rule-card" data-grade-card="${grade}" style="border-color:${grade==='S'?'#f59e0b':grade==='A'?'#22c55e':grade==='B'?'#3b82f6':'#64748b'}">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <span class="grade-badge ${cls}" style="font-size:14px;padding:6px 14px">${grade}</span>
-        <div style="flex:1;font-size:11.5px;font-weight:700;color:#cbd5e1">${label}</div>
+    <div class="rule-card" data-grade-card="${grade}" style="border-color:${borderColor};border-width:2px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span class="grade-badge ${cls}" style="font-size:16px;padding:6px 14px">${grade}</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:800;color:#cbd5e1">${label}</div>
+          <div style="font-size:10.5px;margin-top:2px">${statsHtml}</div>
+        </div>
         <button onclick="removeGradeCard('${grade}')" title="이 등급 자체 삭제" style="background:#dc2626;color:#fff;border:none;padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer">🗑</button>
       </div>
-      <div class="rule-help" style="margin-bottom:8px">다음 조건 중 <b>하나라도 매칭</b>되면 ${grade} 부여</div>
-      <div data-conditions="${grade}" style="display:flex;flex-direction:column;gap:6px">
-        ${conditions.map((c, i) => renderCondition(grade, i, c, cats)).join('') || '<div style="font-size:11px;color:#64748b;padding:8px;text-align:center">조건 없음 — 추가해 주세요</div>'}
+      <div data-conditions="${grade}" style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+        ${conditions.map((c, i) => renderCondition(grade, i, c, cats)).join('') || '<div style="font-size:11px;color:#64748b;padding:8px;text-align:center;border:1px dashed #475569;border-radius:4px">조건 없음 — 추가 버튼 클릭</div>'}
       </div>
-      <button class="toolbar-btn" style="background:#3b82f6;color:#fff;margin-top:8px;padding:5px 10px;font-size:11px" onclick="addCondition('${grade}')">➕ 조건 추가</button>
+      <button class="toolbar-btn" style="background:#3b82f6;color:#fff;margin-top:8px;padding:5px 10px;font-size:11px;width:100%" onclick="addCondition('${grade}')">➕ 조건 추가</button>
     </div>
   `;
 }
 
 function renderCondition(grade, idx, c, cats) {
+  // basePriority — 현재 선택된 category에 매핑되는 값
+  const bpAll = window._currentBasePriority || {};
+  const currentBP = c.category ? (bpAll[c.category] ?? 0) : 0;
   return `
-    <div data-cond-row="${grade}-${idx}" style="display:grid;grid-template-columns:1fr 1fr 32px;gap:6px;align-items:center;background:rgba(0,0,0,0.25);padding:6px;border-radius:4px">
-      <select data-cond-tier="${grade}-${idx}" class="rule-input" onchange="markDirty()" style="padding:4px 8px;font-size:11px">
+    <div data-cond-row="${grade}-${idx}" style="display:grid;grid-template-columns:90px 110px 80px 28px;gap:5px;align-items:center;background:rgba(0,0,0,0.3);padding:6px 8px;border-radius:6px">
+      <select data-cond-tier="${grade}-${idx}" class="rule-input" onchange="markDirty()" style="padding:4px 6px;font-size:11px">
         <option value="">tier 모두</option>
-        <option value="1" ${c.tier===1?'selected':''}>tier 1 (휴대폰)</option>
-        <option value="2" ${c.tier===2?'selected':''}>tier 2 (인터넷·TV)</option>
+        <option value="1" ${c.tier===1?'selected':''}>tier 1</option>
+        <option value="2" ${c.tier===2?'selected':''}>tier 2</option>
       </select>
-      <select data-cond-cat="${grade}-${idx}" class="rule-input" onchange="markDirty()" style="padding:4px 8px;font-size:11px">
-        ${cats.map(cat => `<option value="${cat}" ${c.category===cat?'selected':''}>${cat||'category 모두'}</option>`).join('')}
+      <select data-cond-cat="${grade}-${idx}" class="rule-input" onchange="markDirty();onCategoryChange(this,'${grade}',${idx})" style="padding:4px 6px;font-size:11px">
+        ${cats.map(cat => `<option value="${cat}" ${c.category===cat?'selected':''}>${cat||'모든 category'}</option>`).join('')}
       </select>
-      <button onclick="removeCondition('${grade}', ${idx})" style="background:#dc2626;color:#fff;border:none;padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer">✕</button>
+      <div style="display:flex;align-items:center;gap:2px;background:#0f172a;border:1px solid #475569;border-radius:4px;padding:2px 4px" title="이 category의 basePriority (점수)">
+        <input type="number" data-cond-bp="${grade}-${idx}" value="${currentBP}" oninput="onBpChange(this,'${grade}',${idx})" style="width:100%;background:transparent;border:none;color:#fbbf24;font-size:11px;font-weight:700;text-align:center;padding:2px">
+        <span style="font-size:9px;color:#94a3b8">점</span>
+      </div>
+      <button onclick="removeCondition('${grade}', ${idx})" style="background:#dc2626;color:#fff;border:none;padding:4px 6px;border-radius:4px;font-size:10px;cursor:pointer">✕</button>
     </div>
   `;
+}
+
+// category 변경 시 그 category의 basePriority 표시
+function onCategoryChange(sel, grade, idx) {
+  const cat = sel.value;
+  const bp = (window._currentBasePriority || {})[cat] ?? 0;
+  const bpInput = document.querySelector(`[data-cond-bp="${grade}-${idx}"]`);
+  if (bpInput) bpInput.value = bp;
+}
+
+// basePriority input 변경 시 그 category의 값을 모든 카드에 sync
+function onBpChange(input, grade, idx) {
+  const catEl = document.querySelector(`[data-cond-cat="${grade}-${idx}"]`);
+  const cat = catEl?.value;
+  if (!cat) return;
+  const newVal = parseInt(input.value) || 0;
+  window._currentBasePriority = window._currentBasePriority || {};
+  window._currentBasePriority[cat] = newVal;
+  // 모든 같은 category input sync
+  document.querySelectorAll(`[data-cond-bp]`).forEach(el => {
+    const cardGrade = el.dataset.condBp.split('-')[0];
+    const cardIdx = el.dataset.condBp.split('-')[1];
+    const sib = document.querySelector(`[data-cond-cat="${cardGrade}-${cardIdx}"]`);
+    if (sib?.value === cat && el !== input) el.value = newVal;
+  });
+  markDirty();
 }
 
 function collectGradeCards() {
@@ -884,8 +925,15 @@ function renderGradeCardsFromObj(cards) {
 
 function collectImportRules() {
   const parseCSV = (s) => s.split(',').map(x => x.trim()).filter(Boolean);
-  const bp = {};
-  document.querySelectorAll('[data-bp]').forEach(el => { bp[el.dataset.bp] = parseInt(el.value) || 0; });
+  // basePriority — 등급 카드 안 data-cond-bp input에서 수집 (category별로 sync됨)
+  const bp = { ...(window._currentBasePriority || {}) };
+  document.querySelectorAll('[data-cond-bp]').forEach(el => {
+    const parts = el.dataset.condBp.split('-');
+    const cardGrade = parts[0]; const idx = parts[1];
+    const catEl = document.querySelector(`[data-cond-cat="${cardGrade}-${idx}"]`);
+    const cat = catEl?.value;
+    if (cat) bp[cat] = parseInt(el.value) || 0;
+  });
   return {
     watch_prefix: document.getElementById('r-watch-prefix').value.trim() || 'L',
     age_min: parseInt(document.getElementById('r-age-min').value) || 19,
@@ -959,15 +1007,24 @@ function runSimulation() {
   `;
 }
 
-// === 분포 미리보기 ===
+// === 분포 미리보기 + 등급별 통계 (등급 카드 안에 표시) ===
 async function loadDistPreview() {
   try {
     const r = await fetchAuth(CDB + '/stats/summary');
     if (!r.ok) return;
     const d = await r.json();
     const dist = d.grade_dist || d.distribution?.grade || {};
+    const avg = d.grade_avg_priority || {};
     const total = Object.values(dist).reduce((s, c) => s + (c || 0), 0) || 1;
     const grades = ['S', 'A', 'B', 'C'];
+
+    // 등급 카드 통계 저장 (renderOneGradeCard에서 사용)
+    _gradeStats = {};
+    grades.forEach(g => {
+      _gradeStats[g] = { count: dist[g] || 0, avg: avg[g] ?? '-' };
+    });
+
+    // 분포 미리보기 (하단 카드)
     document.getElementById('r-dist-preview').innerHTML = grades.map(g => {
       const cnt = dist[g] || 0;
       const pct = ((cnt / total) * 100).toFixed(1);
@@ -981,6 +1038,11 @@ async function loadDistPreview() {
         </div>
       `;
     }).join('');
+
+    // 등급 카드 통계 재렌더 (이미 카드가 그려진 경우만)
+    if (document.querySelector('[data-grade-card]')) {
+      renderGradeCardsFromObj(readCurrentGradeCards());
+    }
   } catch (e) { /* silent */ }
 }
 
