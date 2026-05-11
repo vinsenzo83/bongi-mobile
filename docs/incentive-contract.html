@@ -1323,7 +1323,7 @@ function openEditModal(id) {
         </select>
       </div>
       <!-- 🏦/💳 납부방법별 추가 정보 (lazy 렌더 — payment_method 선택 시에만 채움) -->
-      <div id="pe-container-${c.id}" data-pe-bank='${JSON.stringify((c.payment_extra && c.payment_extra.bank) || {}).replace(/'/g, "&apos;")}' data-pe-card='${JSON.stringify((c.payment_extra && c.payment_extra.card) || {}).replace(/'/g, "&apos;")}'></div>
+      <div id="pe-container-${c.id}" data-pe-bank='${JSON.stringify((c.payment_extra && c.payment_extra.bank) || {}).replace(/'/g, "&apos;")}' data-pe-card='${JSON.stringify((c.payment_extra && c.payment_extra.card) || {}).replace(/'/g, "&apos;")}' data-card-masked-at='${c.card_masked_at || ''}'></div>
     </div>
 
     <!-- 👥 댁내 대기자 · 판매자 연락처 -->
@@ -1732,17 +1732,24 @@ function renderPaymentExtra(id, method) {
   } else if (method === '신용카드') {
     let card = {};
     try { card = JSON.parse((cont.dataset.peCard || '{}').replace(/&apos;/g, "'")); } catch(_) {}
+    const maskedAt = cont.dataset.cardMaskedAt || '';
+    const isMasked = !!maskedAt;
+    const ro = isMasked ? 'readonly disabled' : '';
+    const maskedNotice = isMasked
+      ? `<div style="background:rgba(251,191,36,0.10);border:1px solid rgba(251,191,36,0.3);border-radius:4px;padding:6px 10px;margin-bottom:8px;font-size:10.5px;color:#fde68a">🔒 계약완료 7일 경과 — 카드번호·유효기간 자동 마스킹됨 (${(maskedAt || '').slice(0,10)}). 재등록 시 신규 입력 필요.</div>`
+      : '';
     cont.innerHTML = `
       <div style="background:rgba(168,85,247,0.06);border:1px dashed rgba(168,85,247,0.3);border-radius:6px;padding:10px 12px;margin-top:8px">
         <div style="font-size:10.5px;color:#c4b5fd;font-weight:800;margin-bottom:8px;letter-spacing:0.04em">💳 카드이체 정보 <span style="font-size:9px;color:#94a3b8;font-weight:500">⚠️ 외부 노출 금지 — 내부 어드민 전용</span></div>
+        ${maskedNotice}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
           <div>
             <label class="modal-field-label">명의자 이름</label>
-            <input class="detail-input" data-field="_pe_card_holder" value="${_peEsc(card.holder)}" placeholder="홍길동">
+            <input class="detail-input" data-field="_pe_card_holder" value="${_peEsc(card.holder)}" placeholder="홍길동" ${ro}>
           </div>
           <div>
             <label class="modal-field-label">카드사</label>
-            <select class="detail-input" data-field="_pe_card_company">
+            <select class="detail-input" data-field="_pe_card_company" ${ro}>
               <option value="">— 선택 —</option>
               ${PE_CARD_OPTIONS.map(b => `<option value="${b}" ${card.company===b?'selected':''}>${b}</option>`).join('')}
             </select>
@@ -1750,12 +1757,12 @@ function renderPaymentExtra(id, method) {
         </div>
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px">
           <div>
-            <label class="modal-field-label">카드번호 (전체)</label>
-            <input class="detail-input" data-field="_pe_card_number" value="${_peEsc(card.number)}" placeholder="0000-0000-0000-0000" style="letter-spacing:0.06em;font-family:'SF Mono',Monaco,monospace">
+            <label class="modal-field-label">카드번호${isMasked ? ' (마스킹됨)' : ' (전체)'}</label>
+            <input class="detail-input" data-field="_pe_card_number" value="${_peEsc(card.number)}" placeholder="0000-0000-0000-0000" style="letter-spacing:0.06em;font-family:'SF Mono',Monaco,monospace" ${ro}>
           </div>
           <div>
             <label class="modal-field-label">유효기간 (MM/YY)</label>
-            <input class="detail-input" data-field="_pe_card_expiry" value="${_peEsc(card.expiry)}" placeholder="12/28" maxlength="5" style="font-family:'SF Mono',Monaco,monospace">
+            <input class="detail-input" data-field="_pe_card_expiry" value="${_peEsc(card.expiry)}" placeholder="12/28" maxlength="5" style="font-family:'SF Mono',Monaco,monospace" ${ro}>
           </div>
         </div>
       </div>

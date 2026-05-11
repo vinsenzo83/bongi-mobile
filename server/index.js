@@ -285,6 +285,13 @@ cron.schedule('0 4 * * *', () => {
   runRedistributionJob().catch(e => console.error('redistribution 에러:', e.message));
 }, { timezone: 'Asia/Seoul' });
 
+// 카드정보 자동 마스킹 (매일 03:30 KST) — contract_completed_at + 7일 경과 시 payment_extra.card 마스킹
+import { runCardMaskingJob } from './jobs/card-masking.js';
+cron.schedule('30 3 * * *', () => {
+  console.log('⏰ 카드정보 마스킹 시작 (03:30 KST)');
+  runCardMaskingJob().catch(e => console.error('card-masking 에러:', e.message));
+}, { timezone: 'Asia/Seoul' });
+
 // 정산은 RPC `incentive_calc_monthly_settlement(agent_id, ym)` 즉시 계산 — cron 불필요
 
 app.listen(PORT, () => {
