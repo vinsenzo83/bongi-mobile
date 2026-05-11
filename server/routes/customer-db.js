@@ -1727,20 +1727,29 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
     source_data: c.source_data, archived: false,
   }));
 
+  // UPSERT + ignoreDuplicates — chunk 단위 한 번에 처리 (each-row retry 제거)
+  // PG가 UNIQUE(db_source_id, phone) 위반 row를 INSERT 안 하고 silently skip
+  // dup 카운트 = chunk.length - 실제 INSERT된 row 수
   let inserted = 0, dups = 0, failed = 0;
   for (let i = 0; i < insertRows.length; i += 500) {
     const chunk = insertRows.slice(i, i + 500);
-    const { data, error } = await supabase.from('incentive_customer_db').insert(chunk).select('id');
+    const { data, error } = await supabase
+      .from('incentive_customer_db')
+      .upsert(chunk, { onConflict: 'db_source_id,phone', ignoreDuplicates: true })
+      .select('id');
     if (error) {
-      if (error.code === '23505') {
-        for (const row of chunk) {
-          const { error: e1 } = await supabase.from('incentive_customer_db').insert(row);
-          if (e1 && e1.code === '23505') dups++;
-          else if (!e1) inserted++;
-          else failed++;
-        }
-      } else { failed += chunk.length; }
-    } else inserted += data.length;
+      // fallback — upsert 실패 시 단건 처리 (partial unique 미지원 등 예외)
+      console.error('[import upsert chunk fail]', error.code, error.message);
+      for (const row of chunk) {
+        const { error: e1 } = await supabase.from('incentive_customer_db').insert(row);
+        if (e1 && e1.code === '23505') dups++;
+        else if (!e1) inserted++;
+        else failed++;
+      }
+    } else {
+      inserted += (data || []).length;
+      dups += chunk.length - (data || []).length;
+    }
   }
 
   await supabase.from('incentive_customer_import_batch').update({
