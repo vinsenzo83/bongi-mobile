@@ -596,6 +596,431 @@ a:hover { text-decoration:underline; }
   </table>
 </div>
 
+<!-- ===== 실 시나리오 ===== -->
+<div class="step-label" style="background:var(--green)">🎬 실 시나리오 — 고객 김민수(45세·KT 100M) 콜DB 진입 → 정산까지</div>
+<div class="step-card">
+  <div style="font-size:11px;color:var(--text2);margin-bottom:14px">실제 운영 사례 1건이 시스템을 어떻게 통과하는지 단계별로</div>
+
+  <div class="grid2" style="gap:14px">
+    <div>
+      <div style="font-weight:900;color:var(--green);font-size:13px;margin-bottom:8px">📥 2026-05-01 09:30 — DB 인입</div>
+      <div class="card-mock" style="border:2px solid var(--green)">
+        마감원장 4월 import (admin·빈센조)<br><br>
+        <span class="mono">id: 12345<br>name: 김민수<br>birth: 1980-05-15 (45세)<br>phone: 010-1234-5678<br>tier: 1 (인터넷 회선)<br>category: 이동<br>매장: 봉이매장 / 호성판매</span><br><br>
+        <b>자동 등급</b>: S급 (이동 + 30~40대 +25)<br>
+        <b>priority_score</b>: 100 + 25 = <b>125</b>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:900;color:var(--orange);font-size:13px;margin-bottom:8px">📤 09:35 — 분배 (manager 박매니저)</div>
+      <div class="card-mock" style="border:2px solid var(--orange)">
+        균등 분배 1클릭 (priority DESC 라운드로빈)<br><br>
+        active agent: 김상담·이상담·최상담·홍상담·김상담2<br>
+        priority 125 — 가장 높음 → 첫 자리<br><br>
+        <span class="mono">UPDATE incentive_customer_db<br>SET assigned_agent_id = 'agent-1' (김상담)<br>    assigned_at = '2026-05-01T09:35'</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow" style="margin-top:14px">
+    <div class="fb fb-user">10:15 김상담 콜</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral">"봉이매장 호성씨께 KT 100M 가입하셨던 김민수 고객님 맞으시죠?"</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral">현재 인터넷 청취: KT</div>
+    <div class="fa">기변 X</div>
+    <div class="fb fb-pink">→ KT 외 통신사로 이동 권유 (예: SK 500M+B tv 올)</div>
+  </div>
+
+  <div class="grid2" style="margin-top:14px;gap:14px">
+    <div>
+      <div style="font-weight:900;color:var(--blue);font-size:13px;margin-bottom:8px">🧮 10:22 — 견적 (SK 500M + B tv 올)</div>
+      <div class="card-mock" style="border:2px solid var(--blue);font-family:'JetBrains Mono',monospace;font-size:10px">
+        통신사 SK / 속도 500M / WiFi 포함<br>
+        ─ 인터넷+TV ─<br>
+        인터넷 28,600원 (+WiFi 1,100)<br>
+        B tv 올 18,700원 - 결합할인 2,200 = 16,500<br>
+        셋톱 스마트3 +4,400원<br>
+        <b>월 합계: 49,500원</b><br><br>
+        ─ 결합할인 ─<br>
+        요즘가족결합 (휴대폰 결합)<br>
+        ─ 사은품 (즉시지급) ─<br>
+        결합·500M·B tv 올 → <b>현금 470,000원</b>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:900;color:var(--purple);font-size:13px;margin-bottom:8px">💰 인센티브 V5 미리보기 (agent 화면)</div>
+      <div class="card-mock" style="border:2px solid var(--purple);font-family:'JetBrains Mono',monospace;font-size:10px">
+        상품: SK 500M + B tv 올 (결합) · Tier S<br>
+        가중치: 1.5P (결합)<br>
+        우수상품: ✓ (마진 25만+ 가정)<br><br>
+        이번 달 김상담 누적: 12건 = 18P<br>
+        → Grade <b>G2</b> (16~30P) · 우수 5건+<br>
+        → 단가 <b>3만/건</b><br>
+        → 1건 추가 시: +3만 + 우수 보너스 1만<br>
+        <b>예상 본 건 인센티브: 4만원</b><br>
+        (페이백 47만 → 회사 30k + 상담사 17k 부담)
+      </div>
+    </div>
+  </div>
+
+  <div class="flow" style="margin-top:14px">
+    <div class="fb fb-user">10:35 계약 완료 클릭</div>
+    <div class="fa">→</div>
+    <div class="fb fb-api">POST /api/incentive/sales</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db">incentive_sales INSERT (status=pending)</div>
+    <div class="fa">→</div>
+    <div class="fb fb-crm">contract 인계 (고혜인)</div>
+  </div>
+
+  <div class="grid2" style="margin-top:14px;gap:14px">
+    <div>
+      <div style="font-weight:900;color:var(--purple);font-size:13px;margin-bottom:8px">📋 14:00 — contract 처리</div>
+      <div class="card-mock" style="border:2px solid var(--purple);font-size:10px">
+        주소 입력 (Daum 검색): 광주광역시 ○○○<br>
+        설치 일정: 2026-05-05 14:00<br>
+        결합·청구·납부:<br>
+        • 결합유형: SKT 요즘가족결합<br>
+        • 청구서: 이메일<br>
+        • 납부: 자동이체 (국민은행 김민수 ***-***)<br>
+        사은품: 현금 47만 → 김민수 계좌 (즉시 입금)<br><br>
+        <b>status: in_progress</b><br>
+        <span class="mono">contract_in_progress_at = 2026-05-01T14:00</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:900;color:var(--red);font-size:13px;margin-bottom:8px">🔒 2026-05-08 03:30 — 카드 마스킹 (cron)</div>
+      <div class="card-mock" style="border:2px solid var(--red);font-size:10px">
+        ※ 자동이체라 카드정보 없음 → skip<br><br>
+        (참고: 카드이체였다면 ↓)<br>
+        <span class="mono">contract_completed_at + 7일 < NOW()<br>+ payment_extra.card.number IS NOT NULL</span><br>
+        → 마스킹: 1234-5678-9012-3456 → ••••-••••-••••-3456<br>
+        → expiry: null<br>
+        → card_masked_at = NOW()
+      </div>
+    </div>
+  </div>
+
+  <div class="flow" style="margin-top:14px">
+    <div class="fb fb-crm">2026-05-05 설치 완료</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db">status=completed<br>contract_completed_at</div>
+    <div class="fa">→</div>
+    <div class="fb fb-pink">incentive_customer_db.call_status=converted</div>
+    <div class="fa">→</div>
+    <div class="fb fb-api">2026-06-01 02:00 — 정산 cron</div>
+    <div class="fa">→</div>
+    <div class="fb fb-admin">김상담 5월 정산<br>(이번 건 +40,000원)</div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== 화면 mockup ===== -->
+<div class="step-label" style="background:#6366f1">🖥️ 핵심 화면 mockup (실 UI 흉내)</div>
+<div class="step-card">
+  <div class="grid2" style="gap:14px">
+    <div>
+      <h3 style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:6px">메뉴 #14 TM 상담 v1 (큐콜)</h3>
+      <div style="background:#1a2744;color:#cbd5e1;border-radius:10px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1.6">
+┌──────────────────────────────────────────┐<br>
+│ 📞 봉이 TM CRM    [김상담 · ADMIN · 본사] │<br>
+├──────┬───────────────────────────────────┤<br>
+│ 📊대시│ <span style="color:#fbbf24">📞 TM 상담 v1 (큐콜)              </span>│<br>
+│ 📋계약│                                   │<br>
+│ ⚙️정책│ ┌────┬────┬────┬────┐            │<br>
+│ ... │ │S125│김민수│45세│010-1234│ ← 콜큐 │<br>
+│ <span style="color:#60a5fa">📞TMv1</span>│ │이동│KT100M│봉이│호성   │   │<br>
+│ 📞TMv2│ ├────┴────┴────┴────┤            │<br>
+│ 🧮TM관│ │ 🎯 1차 권유: 인터넷·TV 결합 │   │<br>
+│ ...  │ │ 💵 사은품 즉시지급 강조        │   │<br>
+│      │ ├──────────────────┤            │<br>
+│      │ │ [견적 계산]  [계약 완료]      │   │<br>
+│      │ └──────────────────┘            │<br>
+└──────┴───────────────────────────────────┘
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:6px">메뉴 #02 계약 처리 모달 (7 섹션)</h3>
+      <div style="background:#1a2744;color:#cbd5e1;border-radius:10px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1.6">
+┌─────────────────────────────────────┐<br>
+│ 📝 계약 상세 정보 입력 / 수정   [×] │<br>
+├─────────────────────────────────────┤<br>
+│ 📦 상품 상세 (read-only · SNAPSHOT) │<br>
+│   SK · 결합 · 500M · TV 올 · 페이백 47만│<br>
+│ 👤 고객 정보                          │<br>
+│   김민수 · 010-1234-5678 · 주소···  │<br>
+│ 📅 설치 일정                          │<br>
+│   2026-05-05 14:00 · 평일             │<br>
+│ <span style="color:#fbbf24">🔗 결합·청구·납부</span>                       │<br>
+│   결합: SKT 요즘가족결합 [▾]          │<br>
+│   청구서: 이메일 [▾]                  │<br>
+│   납부: 자동이체 [▾]                  │<br>
+│     ↓ 추가 입력                       │<br>
+│     은행 [국민은행▾] 예금주 김민수   │<br>
+│     계좌 ***-***-***-**              │<br>
+│ 👥 댁내 대기자·판매자 (생략)         │<br>
+│ 🏦 사은품 입금 (생략)                │<br>
+│ 🚦 status: <span style="color:#16a34a">in_progress</span>                  │<br>
+├─────────────────────────────────────┤<br>
+│           [💾 모든 변경사항 저장]    │<br>
+└─────────────────────────────────────┘
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:13px;font-weight:800;color:var(--navy);margin:14px 0 6px">메뉴 #16 TM 데이터 관리 (어드민)</h3>
+  <div style="background:#0f172a;color:#cbd5e1;border-radius:10px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1.6">
+┌──────────────────────────────────────────────────────────┐<br>
+│ ⚡ TM 데이터 관리      [🟢 로컬 / 🟡 데브 / 🔴 라이브] env │<br>
+├──────┬───────────────────────────────────────────────────┤<br>
+│ 📡인W│ 📡 인터넷·WiFi                                    │<br>
+│ <span style="color:#fbbf24">📺TV </span>│  ① 인터넷 단독 요금 (3사)                        │<br>
+│ 📦셋  │     SKT: 22,000 / 33,000 / 38,500                 │<br>
+│ 🤝결  │  ② WiFi 공유기 (속도별 / 단종·신규)              │<br>
+│ 🔧설  │     SKT GIGA WiFi · KT GIGA WAVE2 · LGU+ 기가와이파이│<br>
+│ 💳카  │  🎁 LGU+ 500M↑ 기본 제공 옵션 ← 이번 신설         │<br>
+│ 💡영  │     · 와이파이 2대 · 와이파이 1대 + 스마트홈 스피커│<br>
+│ 🎫티  │                                                   │<br>
+│ 📜이력│ 📺 TV 상품 (SKT 9·KT 5·LGU+ 4)                   │<br>
+│      │  🆕 TV 추가 시 정책 (3사) ← 이번 신설             │<br>
+└──────┴───────────────────────────────────────────────────┘
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== 예외·엣지 케이스 ===== -->
+<div class="step-label" style="background:var(--orange)">⚠️ 예외·엣지 케이스 처리</div>
+<div class="step-card">
+  <table>
+    <thead><tr><th style="width:200px">케이스</th><th>발생 조건</th><th>시스템 동작</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>같은 phone 다른 customer</b></td>
+        <td>마감원장 import 시 동일 전화번호로 다른 사람 매핑</td>
+        <td>priority 높은 1명만 active · 나머지 <span class="mono">call_status='on_hold'</span></td>
+      </tr>
+      <tr>
+        <td><b>인터넷+TV 같은 통신사 기변</b></td>
+        <td>고객 현재 KT 인터넷·TV → KT 가입 권유 시도</td>
+        <td>견적 화면에 ⚠️ 경고 + 다른 통신사 권유 분기. 3사 공통 룰</td>
+      </tr>
+      <tr>
+        <td><b>callback 재진입</b></td>
+        <td>콜 종료 시 call_status=callback · callback_at 미래 시각</td>
+        <td>해당 시각에 콜큐에 다시 등장. 미컨택 7일 → 풀 자동 복귀</td>
+      </tr>
+      <tr>
+        <td><b>rejected (DNT)</b></td>
+        <td>고객이 거절 의사 표시</td>
+        <td>30일 → archived (DNT 영구 보존) · 다시 분배 X · soft delete 후 3년(1095일) 물리 삭제</td>
+      </tr>
+      <tr>
+        <td><b>계약 취소</b></td>
+        <td>contract 단계에서 cancellation_reason 입력</td>
+        <td>status=cancelled · contract_cancelled_at 자동 · 정산 집계 제외</td>
+      </tr>
+      <tr>
+        <td><b>상품 변경 시도</b></td>
+        <td>계약 진행/완료 단계에서 product_id 변경</td>
+        <td>❌ <b>차단</b> — pending 단계만 product 변경 가능. 등록 시점 payback_snapshot 보호</td>
+      </tr>
+      <tr>
+        <td><b>DB 출처 누락</b></td>
+        <td>status=completed 변경 시 db_source_id 없음</td>
+        <td>❌ <b>차단</b> — "콜센터 상담 DB 출처 필수" alert · select에 포커스</td>
+      </tr>
+      <tr>
+        <td><b>휴대폰 권유 시도</b></td>
+        <td>콜센터 상담사가 휴대폰 추천</td>
+        <td>운영 룰 위반 (매장 전담 영역) · QC 점검 항목</td>
+      </tr>
+      <tr>
+        <td><b>미성년·100세 이상</b></td>
+        <td>마감원장 import 시 birth_date 기준 &lt;19 또는 ≥100</td>
+        <td>자동 필터 — DB 진입 X (외부 노출 차단)</td>
+      </tr>
+      <tr>
+        <td><b>카드 마스킹 cron 실패</b></td>
+        <td>cron 미실행·예외 발생</td>
+        <td>card_masked_at IS NULL 행은 다음 cron(다음날 03:30)에 재시도 (멱등)</td>
+      </tr>
+      <tr>
+        <td><b>같은 통신사 ID 충돌</b></td>
+        <td>incentive_products.carrier 'SKT'/'LGU+' (옛) vs 'SK'/'LG' (신)</td>
+        <td>현재 신 표기 통일 완료 · normalizeCarrier로 다양한 입력 자동 매핑</td>
+      </tr>
+      <tr>
+        <td><b>iframe 캐시</b></td>
+        <td>어드민 변경 후 iframe 안 calculator.html 옛 코드 보임</td>
+        <td>SW_VERSION + ?v=N + iframe pool 3중 캐시 우회 (feedback_dev_cache_busting.md)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== API 응답 예시 ===== -->
+<div class="step-label" style="background:#0891b2">📨 주요 API 응답 예시 (JSON)</div>
+<div class="step-card">
+  <div class="grid2" style="gap:14px">
+    <div>
+      <h3 style="font-size:12px;font-weight:800;color:var(--navy);margin-bottom:6px">GET /api/incentive/customer-db?limit=10</h3>
+      <div style="background:#1a2744;color:#cbd5e1;border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1.7;white-space:pre-wrap">{
+  "customers": [
+    {
+      "id": 12345,
+      "name": "김민수",
+      "phone": "010-1234-5678",
+      "birth_date": "1980-05-15",
+      "tier": 1,
+      "category": "이동",
+      "quality_grade": "S",
+      "priority_score": 125,
+      "call_status": "assigned",
+      "assigned_agent_id": "agent-1",
+      "assigned_at": "2026-05-01T09:35Z",
+      "carrier": "KT",
+      "store": "봉이매장"
+    }
+  ],
+  "total": 3113
+}</div>
+    </div>
+    <div>
+      <h3 style="font-size:12px;font-weight:800;color:var(--navy);margin-bottom:6px">POST /api/incentive/sales</h3>
+      <div style="background:#1a2744;color:#cbd5e1;border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1.7;white-space:pre-wrap">{
+  "id": 9876,
+  "agent_id": "agent-1",
+  "customer_db_id": 12345,
+  "product_id": 42,
+  "payback_snapshot": 470000,
+  "point_weight_snapshot": 1.5,
+  "tier_snapshot": "S",
+  "is_premium_snapshot": true,
+  "contract_date": "2026-05-01",
+  "status": "pending",
+  "monthly_fee": 49500,
+  "customer_name": "김민수",
+  "customer_phone": "010-1234-5678",
+  "created_at": "2026-05-01T10:35Z"
+}</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="gap:14px;margin-top:14px">
+    <div>
+      <h3 style="font-size:12px;font-weight:800;color:var(--navy);margin-bottom:6px">PATCH /api/incentive/sales/9876 (contract)</h3>
+      <div style="background:#1a2744;color:#cbd5e1;border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1.7;white-space:pre-wrap">{
+  "id": 9876,
+  "status": "in_progress",
+  "contract_in_progress_at": "2026-05-01T14:00Z",
+  "combo_type": "SKT 요즘가족결합",
+  "billing_method": "이메일",
+  "payment_method": "자동이체",
+  "payment_extra": {
+    "bank": {
+      "name": "국민은행",
+      "holder": "김민수",
+      "account": "***-***-***-**"
+    }
+  },
+  "installation_date": "2026-05-05",
+  "card_masked_at": null
+}</div>
+    </div>
+    <div>
+      <h3 style="font-size:12px;font-weight:800;color:var(--navy);margin-bottom:6px">RPC incentive_calc_monthly_settlement</h3>
+      <div style="background:#1a2744;color:#cbd5e1;border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1.7;white-space:pre-wrap">{
+  "agent_id": "agent-1",
+  "year_month": "2026-05",
+  "total_count": 13,
+  "total_points": 19.5,
+  "premium_count": 6,
+  "grade_target": "G2",
+  "grade_applied": "G2",
+  "is_penalty": false,
+  "applied_rate": 30000,
+  "total_revenue": 6110000,
+  "total_payback": 4700000,
+  "total_company_payback_burden": 390000,
+  "total_agent_payback_deduct": 220000,
+  "base_salary": 2300000,
+  "incentive": 390000,
+  "bonus": 60000,
+  "agent_total": 2530000,
+  "company_profit": 1487830,
+  "profit_rate": 24.34
+}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 큰 데이터 라이프사이클 다이어그램 ===== -->
+<div class="step-label" style="background:var(--navy)">📊 전체 데이터 라이프사이클 (한눈에)</div>
+<div class="step-card">
+  <div style="background:#fafafa;padding:18px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.6;color:var(--text2);white-space:pre">
+                    [외부 출처]
+   마감원장 import · 광고 인입 · DB 구매 · 콜 후 retention
+                          │
+                          ▼
+   ┌──────────────────────────────────────────────┐
+   │  <span style="color:var(--green);font-weight:700">incentive_customer_db</span>  (3,113명 active · S/A/B/C 등급)│
+   │   ↑ calc_customer_grade · calc_age_bonus  RPC 자동           │
+   └──────────────────────────────────────────────┘
+                          │
+                  ┌───────┼────────┐
+                  ▼       ▼        ▼
+              지정 분배  균등 분배  분배 요청 승인
+                  └───────┼────────┘
+                          ▼
+   ┌──────────────────────────────────────────────┐
+   │  agent <span style="color:var(--blue);font-weight:700">.assigned_agent_id</span> 채움 → 내 콜 리스트 표시          │
+   └──────────────────────────────────────────────┘
+                          │
+                          ▼
+                   TM 큐콜 (#14·#15)
+                          │
+                  ┌───────┼────────┐
+                  ▼       ▼        ▼
+             converted  callback  rejected
+                  │       │        │
+                  │       └─→ callback_at 후 재진입
+                  │                │
+                  │                └─→ 30일 → archived (DNT 영구)
+                  ▼
+   ┌──────────────────────────────────────────────┐
+   │  <span style="color:var(--red);font-weight:700">incentive_sales</span>  INSERT (status=pending · snapshot 박제)   │
+   │   + payback_snapshot · point_weight_snapshot · tier_snapshot │
+   └──────────────────────────────────────────────┘
+                          │
+                          ▼
+                 contract 후속 처리
+                          │
+              ┌───────────┼───────────┐
+              ▼           ▼           ▼
+          completed   cancelled   (in_progress)
+              │
+              ├─→ 카드 마스킹 cron (계약완료 +7일 03:30 KST)
+              │   card_masked_at 자동
+              │
+              ▼
+                매월 1일 02:00 KST
+        cron 또는 admin 수동 (#09 월별 정산)
+                          │
+                          ▼
+   ┌──────────────────────────────────────────────┐
+   │  <span style="color:var(--purple);font-weight:700">incentive_settlements</span>  UPSERT (status=draft)             │
+   │   RPC incentive_calc_monthly_settlement                       │
+   │   = 가중치 + Grade + 페널티 + 보너스 + 페이백 분담            │
+   └──────────────────────────────────────────────┘
+                          │
+                          ▼
+              admin: draft → locked → paid
+                  (CSV·인쇄·지급)
+  </div>
+</div>
+
 <div style="background:linear-gradient(135deg,#1a2744,#3617ce);color:#fff;border-radius:14px;padding:16px 22px;margin-top:32px;text-align:center;font-size:13px;font-weight:700">
   📞 봉이 TM CRM — 광주 콜센터 인터넷·TV·렌탈 영업 전담 · 인센티브 V5 자동 정산
 </div>
