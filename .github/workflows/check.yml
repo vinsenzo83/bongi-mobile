@@ -1,0 +1,19 @@
+name: Auth helpers & static checks
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+  auth-helpers:
+    name: 인증 헬퍼 누락 검사
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run check-auth-helpers
+        run: node scripts/check-auth-helpers.js
