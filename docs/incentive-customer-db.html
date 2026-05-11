@@ -1792,6 +1792,9 @@ async function handleFile(file) {
     loadAll();
   } catch (e) {
     result.innerHTML = `<div style="color:#fca5a5">❌ ${e.message}</div>`;
+  } finally {
+    // file input reset — 같은 파일 재선택 가능하게 (브라우저는 동일 value면 change 이벤트 안 발생)
+    document.getElementById('file-input').value = '';
   }
 }
 
