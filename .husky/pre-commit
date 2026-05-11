@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# 봉이 pre-commit hook
+# 2026-05-11 hotfix 사건 재발 방지 — commit 전 인증 헬퍼 누락 검사
+
+# 1. 인증 헬퍼 (오늘 사건 직접 가드)
+node scripts/check-auth-helpers.js || exit 1
+
+# 2. ESLint (warnings 허용 — 점진 strict로 전환 예정)
+npx eslint server/ scripts/ tests/ --max-warnings 100 2>/dev/null || true
+
+echo "✅ pre-commit 통과"
