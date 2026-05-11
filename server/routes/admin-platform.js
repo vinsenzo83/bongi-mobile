@@ -82,7 +82,7 @@ router.delete('/products/:id', async (req, res) => {
 
 // ── 사은품 관리 ──
 
-// GET /admin/platform/gifts — 사은품 목록 (회원+신청 정보 매칭)
+// GET /admin/platform/gifts — 사은품 목록 (회원+신청 정보 매칭, N+1 제거)
 router.get('/gifts', async (req, res) => {
   try {
     const { status } = req.query;
@@ -91,32 +91,43 @@ router.get('/gifts', async (req, res) => {
     const { data: gifts, error } = await query;
     if (error) throw error;
 
-    // DB에 직접 있는 필드 우선, 없으면 이름 기반 매칭
-    const enriched = [];
+    // DB에 이미 있는 row와 매칭 필요한 row 분리
+    const ready = [], needsMatch = [];
     for (const g of (gifts || [])) {
-      // DB에 이미 있으면 그대로 사용
-      if (g.phone && g.user_type) {
-        enriched.push(g);
-        continue;
-      }
+      if (g.phone && g.user_type) ready.push(g);
+      else needsMatch.push(g);
+    }
 
-      // 없으면 이름 기반 매칭
+    // ⚡ N+1 → batch fetch: needsMatch 이름들로 한 번에 profiles·applications 조회
+    let profilesByName = {}, appsByPhone = {};
+    if (needsMatch.length > 0) {
+      const names = [...new Set(needsMatch.map(g => g.name || g.account_holder || '').filter(Boolean))];
+      if (names.length > 0) {
+        const { data: profiles } = await supabase
+          .from('bongi_user_profiles')
+          .select('phone,user_type,channel,carrier,verified_at,display_name')
+          .in('display_name', names);  // 정확 매칭 (이전 ilike '%...%'는 N+1 불가피)
+        (profiles || []).forEach(p => { if (p.display_name) profilesByName[p.display_name] = p; });
+      }
+      const phones = [...new Set(needsMatch.map(g => g.phone).filter(Boolean)
+        .concat(Object.values(profilesByName).map(p => p.phone).filter(Boolean)))];
+      if (phones.length > 0) {
+        const { data: apps } = await supabase
+          .from('bongi_applications')
+          .select('phone,product_ticket,product_name,type,status,created_at')
+          .in('phone', phones)
+          .order('created_at', { ascending: false });
+        // 가장 최근 application per phone
+        (apps || []).forEach(a => { if (a.phone && !appsByPhone[a.phone]) appsByPhone[a.phone] = a; });
+      }
+    }
+
+    const enriched = [...ready, ...needsMatch.map(g => {
       const name = g.name || g.account_holder || '';
-      let profile = null;
-      let app = null;
-
-      if (name) {
-        const { data: p } = await supabase.from('bongi_user_profiles').select('phone,user_type,channel,carrier,verified_at').ilike('display_name', `%${name}%`).limit(1);
-        if (p && p[0]) profile = p[0];
-
-        const phone = profile?.phone || g.phone;
-        if (phone) {
-          const { data: a } = await supabase.from('bongi_applications').select('product_ticket,product_name,type,status').eq('phone', phone).order('created_at', { ascending: false }).limit(1);
-          if (a && a[0]) app = a[0];
-        }
-      }
-
-      enriched.push({
+      const profile = name ? profilesByName[name] : null;
+      const phone = profile?.phone || g.phone;
+      const app = phone ? appsByPhone[phone] : null;
+      return {
         ...g,
         phone: g.phone || profile?.phone || null,
         user_type: g.user_type || profile?.user_type || null,
@@ -124,8 +135,8 @@ router.get('/gifts', async (req, res) => {
         product_ticket: g.ticket_no || g.product_ticket || app?.product_ticket || null,
         product_name: g.product_name || app?.product_name || g.memo || null,
         verified: g.auth_status || (profile?.verified_at ? '인증완료' : '미인증'),
-      });
-    }
+      };
+    })];
 
     res.json({ gifts: enriched });
   } catch (e) {
@@ -326,27 +337,30 @@ router.get('/referrals', async (req, res) => {
 
 // ── 리턴캐쉬 관리 ──
 
-// GET /admin/platform/cash/history — 포인트 적립/출금 내역 (어드민 전체)
+// GET /admin/platform/cash/history — 포인트 적립/출금 내역 (어드민 전체, N+1 제거)
 router.get('/cash/history', async (req, res) => {
   try {
     const { data: history, error } = await supabase.from('bongi_cash_history').select('*').order('created_at', { ascending: false }).limit(200);
     if (error) throw error;
 
-    // user_id → 회원 정보 매칭
-    const enriched = [];
-    for (const h of (history || [])) {
-      let profile = null;
-      if (h.user_id) {
-        const { data: p } = await supabase.from('bongi_user_profiles').select('display_name,phone,channel').eq('id', h.user_id).maybeSingle();
-        if (p) profile = p;
-      }
-      enriched.push({
-        ...h,
-        name: profile?.display_name || '-',
-        phone: profile?.phone || '-',
-        channel: profile?.channel || '-',
-      });
+    // ⚡ N+1 → batch: user_id를 한 번에 fetch
+    const userIds = [...new Set((history || []).map(h => h.user_id).filter(Boolean))];
+    let profilesById = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('bongi_user_profiles')
+        .select('id,display_name,phone,channel').in('id', userIds);
+      (profiles || []).forEach(p => { profilesById[p.id] = p; });
     }
+
+    const enriched = (history || []).map(h => {
+      const p = h.user_id ? profilesById[h.user_id] : null;
+      return {
+        ...h,
+        name: p?.display_name || '-',
+        phone: p?.phone || '-',
+        channel: p?.channel || '-',
+      };
+    });
 
     res.json({ history: enriched });
   } catch (e) {
@@ -363,14 +377,18 @@ router.get('/cash/withdrawals', async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    const enriched = [];
-    for (const w of (data || [])) {
-      let profile = null;
-      if (w.user_id) {
-        const { data: p } = await supabase.from('bongi_user_profiles').select('display_name,phone,channel,verified_at,point_balance,total_conversions').eq('id', w.user_id).maybeSingle();
-        if (p) profile = p;
-      }
-      enriched.push({
+    // ⚡ N+1 → batch
+    const userIds = [...new Set((data || []).map(w => w.user_id).filter(Boolean))];
+    let profilesById = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('bongi_user_profiles')
+        .select('id,display_name,phone,channel,verified_at,point_balance,total_conversions').in('id', userIds);
+      (profiles || []).forEach(p => { profilesById[p.id] = p; });
+    }
+
+    const enriched = (data || []).map(w => {
+      const profile = w.user_id ? profilesById[w.user_id] : null;
+      return {
         ...w,
         name: profile?.display_name || w.account_holder || '-',
         phone: profile?.phone || '-',
@@ -379,8 +397,8 @@ router.get('/cash/withdrawals', async (req, res) => {
         verified: profile?.verified_at ? '인증완료' : '미인증',
         contract_count: (profile?.total_conversions || 0) + '회',
         condition: (profile?.point_balance >= 50000 && profile?.verified_at && w.bank_name) ? '충족' : '미충족',
-      });
-    }
+      };
+    });
 
     res.json({ withdrawals: enriched });
   } catch (e) {
@@ -983,19 +1001,18 @@ router.get('/don-jikimi', async (req, res) => {
     const { data, error } = await supabase.from('bongi_user_alarms').select('*').order('target_date', { ascending: true }).limit(200);
     if (error) throw error;
 
-    const enriched = [];
-    for (const a of (data || [])) {
-      let profile = null;
-      if (a.user_id) {
-        const { data: p } = await supabase.from('bongi_user_profiles').select('display_name,phone').eq('id', a.user_id).maybeSingle();
-        if (p) profile = p;
-      }
-      enriched.push({
-        ...a,
-        name: profile?.display_name || '-',
-        phone: profile?.phone || '-',
-      });
+    // ⚡ N+1 → batch
+    const userIds = [...new Set((data || []).map(a => a.user_id).filter(Boolean))];
+    let profilesById = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('bongi_user_profiles')
+        .select('id,display_name,phone').in('id', userIds);
+      (profiles || []).forEach(p => { profilesById[p.id] = p; });
     }
+    const enriched = (data || []).map(a => {
+      const profile = a.user_id ? profilesById[a.user_id] : null;
+      return { ...a, name: profile?.display_name || '-', phone: profile?.phone || '-' };
+    });
 
     res.json({ alarms: enriched, total: enriched.length });
   } catch (e) {
@@ -1038,19 +1055,22 @@ router.get('/notifications', async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    const enriched = [];
-    for (const n of (data || [])) {
-      let profile = null;
-      if (n.recipient_id) {
-        const { data: p } = await supabase.from('bongi_user_profiles').select('display_name,phone').eq('id', n.recipient_id).maybeSingle();
-        if (p) profile = p;
-      }
-      enriched.push({
+    // ⚡ N+1 → batch
+    const recipientIds = [...new Set((data || []).map(n => n.recipient_id).filter(Boolean))];
+    let profilesById = {};
+    if (recipientIds.length > 0) {
+      const { data: profiles } = await supabase.from('bongi_user_profiles')
+        .select('id,display_name,phone').in('id', recipientIds);
+      (profiles || []).forEach(p => { profilesById[p.id] = p; });
+    }
+    const enriched = (data || []).map(n => {
+      const profile = n.recipient_id ? profilesById[n.recipient_id] : null;
+      return {
         ...n,
         recipient_name: profile?.display_name || '-',
         recipient_phone: profile?.phone || '-',
-      });
-    }
+      };
+    });
 
     res.json({ notifications: enriched, total: enriched.length });
   } catch (e) {
