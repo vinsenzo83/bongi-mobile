@@ -155,10 +155,20 @@ const SECTIONS = [
 <p class="lead">role별 자동 필터: agent=본인 / manager=본인 센터 / admin=전체 (admin은 [팀]·[상담사] 칼럼 추가 노출).</p>
 <h3>KPI 5종</h3>
 <p>📋 전체 / 🔔 오늘 콜백 / ⏰ 미연락 / 📵 부재 / 🎉 전환</p>
+<h3>🏆 등급 컬럼 (5단계 배지)</h3>
+<p>각 행에 quality_grade 배지가 자동 표시됨:</p>
+<ul>
+<li><b style="color:#fbbf24">S</b> — 이동·인터넷 1순위 (가장 강조)</li>
+<li><b style="color:#22c55e">A</b> — 신규·인터넷 1순위</li>
+<li><b style="color:#3b82f6">B</b> — 기변·인터넷 1순위</li>
+<li><b style="color:#a855f7">R</b> — 인터넷 보유·렌탈 2순위</li>
+<li><b style="color:#64748b">C</b> — 기타·후순위</li>
+</ul>
 <h3>우선순위 정렬</h3>
 <ul>
-<li>callback 시간순 → priority_score → 신규 (imported_at)</li>
+<li>callback 시간순 → priority_score DESC → 신규 (imported_at)</li>
 <li>오늘 콜백 행은 노란 배경으로 강조</li>
+<li>등급 S/A/B는 자동으로 R/C보다 먼저 노출 (basePriority 100/80/60 vs 50/10)</li>
 </ul>
 <h3>액션</h3>
 <div class="step"><span class="num">1</span>검색·상태 필터 적용 또는 [🔄 새로고침]</div>
@@ -169,13 +179,14 @@ const SECTIONS = [
   {
     id: 'tm-counselor', group: '2️⃣ 일일 운영', title: '📞 TM 콜 모드', roles: ['agent', 'manager', 'admin'],
     html: `<h2>TM 콜 모드<span class="role-tag r-agent">AGENT</span></h2>
-<p class="lead">고객 카드 + 상담 스크립트 + 메모 + 결과 기록 + 견적 패널 통합.</p>
+<p class="lead">고객 카드 + 상담 스크립트 + 메모 + 결과 기록 + 견적 패널 통합. v1=큐콜 모드(자동 다음 콜), v2=수동 모드(고객 직접 선택).</p>
 <h3>화면 구성</h3>
 <ul>
 <li>좌측 콜 큐 사이드바 (50건, 본인 분배 콜 우선순위 순)</li>
-<li>중앙 고객 카드 (고객명·전화·메모·이전 콜 이력)</li>
+<li>중앙 고객 카드 (고객명·전화·메모·이전 콜 이력 + <b>⭐ S/A/B/R/C 등급 배지</b> + 📡 통신사 + 1차·2차 tier 배지)</li>
 <li>우측 견적 결과 패널 (실시간 calc + 통신사별 [📍 설치가능 조회])</li>
 </ul>
+<div class="tip">💡 등급 배지가 보이면 영업 방향 즉시 판단: <b>S/A/B</b>(보라/녹/파)는 인터넷·TV 권유, <b>R</b>(보라 그라데이션)는 렌탈 가전 권유. <b>C</b>는 후순위.</div>
 <h3>견적 결과 — 섹터 1·2 자동 토글</h3>
 <p>섹터 2 (결합·온가족·프리미엄)가 함께 나오면 섹터 1(인터넷·TV 기본)이 자동 접힘. 헤더 클릭으로 펴기/접기. 섹터 1 단독이면 그대로 표시.</p>
 <h3>설치가능지역 조회</h3>
@@ -280,10 +291,22 @@ const SECTIONS = [
   {
     id: 'customer-db', group: '3️⃣ 관리자', title: '📞 콜 DB 관리', roles: ['admin'],
     html: `<h2>콜 DB 관리<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">엑셀 import → 센터 분배 → 자동 retention/redistribution → 통계·회수.</p>
+<p class="lead">엑셀 import → 등급 자동 매핑 → 센터 분배 → 자동 retention/redistribution → 통계·회수.</p>
 <h3>📊 KPI 13종 (상단)</h3>
 <p><b>1줄 (큰 카드 5)</b>: 📊 전체 DB · ✅ 사용 가능 · 📦 미배정 · 📞 분배됨 · 🗑 archived</p>
 <p><b>2줄 (작은 카드 8)</b>: ⏰ 미연락 · 📞 콜백 · 📵 부재 · 🎉 전환 · ❌ 거절 · 🚫 DNT · 📊 컨택률 · 🎯 전환율</p>
+
+<h3>🏆 등급(quality_grade) 5종 — 영업 우선순위 분류</h3>
+<table>
+<tr><th>등급</th><th>의미</th><th>tier</th><th>category</th><th>basePriority</th><th>영업 방향</th></tr>
+<tr><td><b style="color:#fbbf24">S</b></td><td>이동·인터넷 없음</td><td>1</td><td>이동</td><td>100</td><td>🥇 1순위 — 인터넷·TV 권유 (통신사 이동·결합 자유)</td></tr>
+<tr><td><b style="color:#22c55e">A</b></td><td>신규 가입·인터넷 없음</td><td>1</td><td>신규</td><td>80</td><td>🥈 1순위 — 인터넷·TV 권유 (신규·결합 자유)</td></tr>
+<tr><td><b style="color:#3b82f6">B</b></td><td>기변·인터넷 없음</td><td>1</td><td>기변</td><td>60</td><td>🥉 1순위 — 인터넷·TV 권유 (기존 결합 해지 협의)</td></tr>
+<tr><td><b style="color:#a855f7">R</b></td><td>인터넷 보유</td><td>2</td><td>렌탈권유</td><td>50</td><td>🏠 2순위 — 렌탈 가전 권유 (이미 결합 中)</td></tr>
+<tr><td><b style="color:#64748b">C</b></td><td>기타·default</td><td>1</td><td>기타</td><td>0~10</td><td>후순위 — 옛 데이터·분류 미확정</td></tr>
+</table>
+<p>📌 등급은 마감원장 import 시 <b>tier × category</b> 조합으로 자동 결정. 분배 정렬은 <code>priority_score DESC</code> (basePriority) 단일 기준. → 자동으로 S → A → B → R → C 순서 노출.</p>
+
 <h3>🗂️ DB 출처별 컨버전 비교</h3>
 <p>출처별 전체 / 컨택 / 전환 / 컨택률 / 전환율 표 — 전환율 내림차순 자동 정렬. 어느 DB가 ROI 좋은지 한눈에.</p>
 <h3>⚠️ Aging (방치된 콜)</h3>
@@ -292,17 +315,29 @@ const SECTIONS = [
 <p>일별 import · 콜 시도 · 전환 라인 그래프 (KST 기준 bucket).</p>
 <h3>📥 CSV export</h3>
 <p>전체 / 미연락 / 콜백 / 전환 4종 — UTF-8 BOM 엑셀 호환.</p>
+<h3>🎯 분배 (지정 / 균등 / 분배 요청 승인)</h3>
+<table>
+<tr><th>모드</th><th>흐름</th><th>등급 필터</th></tr>
+<tr><td>지정 분배</td><td>센터 + 등급 체크박스 (S/A/B/R/C) + max/agent → 라운드로빈</td><td>5등급 다중 선택 가능</td></tr>
+<tr><td>균등 분배</td><td>전체 active agent에 균등 라운드로빈</td><td>등급 체크박스로 풀 좁힘</td></tr>
+<tr><td>분배 요청 승인</td><td>agent/manager가 요청 → 사이드바 배지 → 승인 시 자동 분배</td><td>요청 시 등급 지정 가능</td></tr>
+</table>
+<p>정렬 기준: <code>priority_score DESC NULLS LAST</code> → <code>imported_at ASC</code>. 분배 직후 콜은 24시간 retention 보호 (즉시 회수 불가).</p>
+
 <h3>🔄 DB 회수 (퇴사·휴직·부진 회전)</h3>
 <div class="step"><span class="num">1</span>상담사 표 행에서 [🔄 회수] 빨간 버튼</div>
 <div class="step"><span class="num">2</span>범위: 전체 / pending / no_answer / rejected / 5·14·30일 미통화</div>
 <div class="step"><span class="num">3</span>사유 (3자 이상 필수) — access_log에 customer_ids 자체 보존</div>
 <div class="step"><span class="num">4</span>assigned_agent_id·assigned_center NULL → 풀 복귀 (전환된 콜 제외)</div>
+
 <h3>엑셀 import + 분배</h3>
 <ol>
-<li>DB 출처 선택 → 엑셀 업로드 → batch 생성 → <code>incentive_customer_db</code> INSERT</li>
+<li>DB 출처 선택 → 엑셀 업로드 → 9단계 필터 + 등급 매핑 → batch 생성</li>
 <li>centers별 분배 (admin) → assigned_center 설정</li>
 <li>매니저가 본인 센터 콜을 agent에 재분배 (또는 분배 요청 승인)</li>
 </ol>
+<div class="tip">📖 import 자동 필터링 룰의 전체 규칙·등급 매핑·중복 방지 4단계 등 디테일은 다음 섹션 <b>"📥 인풋데이터 필터링 가이드"</b>에서 확인.</div>
+
 <h3>자동 cron (KST)</h3>
 <table>
 <tr><th>시각</th><th>작업</th></tr>
@@ -312,6 +347,117 @@ const SECTIONS = [
 </table>
 <h3>📜 액세스 로그</h3>
 <p>[📜 액세스 로그] 버튼 — 최근 7일 PIPA audit 조회 (action 필터·user·IP·metadata)</p>`
+  },
+  {
+    id: 'import-filter', group: '3️⃣ 관리자', title: '📥 인풋데이터 필터링 가이드', roles: ['admin'],
+    html: `<h2>인풋데이터 필터링 가이드<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">마감원장 엑셀을 콜 DB로 import할 때 적용되는 <b>9단계 자동 필터 + 등급 매핑 + 4중 중복 방지</b>의 완전한 동작 명세. 룰은 모두 [콜 DB 관리] 페이지의 <b>📋 마감원장 import 룰 설정</b> 카드에서 실시간 편집 가능 (다음 import부터 즉시 적용).</p>
+
+<h3>0. 입력 엑셀 형식</h3>
+<table>
+<tr><th>필수 컬럼</th><th>설명</th><th>예시</th></tr>
+<tr><td>고객명</td><td>공백/null이면 row 제외</td><td>홍길동</td></tr>
+<tr><td>생년월일</td><td>Excel 날짜 형식 (시리얼)</td><td>1985-03-21</td></tr>
+<tr><td>전화번호</td><td>숫자만 자동 추출 후 phone_regex 검증</td><td>010-1234-5678</td></tr>
+<tr><td>단말</td><td>watch_prefix·인터넷 모델 판단용</td><td>갤럭시 / 인+TV / 유선</td></tr>
+<tr><td>유형</td><td>이동·신규·기변·유선 등 (category 결정)</td><td>이동</td></tr>
+<tr><td>개통날짜</td><td>YYYY. M. D 형식</td><td>2026. 5. 10</td></tr>
+</table>
+<p><b>선택 컬럼</b>: 통신사 · 요금제 · 매장 · 판매처 · 부가 · 현/할 · 공/선 · 출고가 · 공시지원금 · 추가지원금 · 현금가 · 할부원금 · 기타 · 개통실 메모 · 색상 · 일련번호</p>
+
+<h3>1. 9단계 필터 (제외 룰)</h3>
+<div class="step"><span class="num">1</span><b>워치 필터</b> — 단말명이 <code>watch_prefix</code>(기본 "L")로 시작하면 제외. → 갤럭시 워치·애플 워치 등 부속 라인 차단.</div>
+<div class="step"><span class="num">2</span><b>나이 필터</b> — 생년월일 기반 만 나이가 <code>age_min</code>(기본 19) 미만 또는 <code>age_max</code>(기본 100) 초과면 제외. 미성년·DNC 대상 자동 차단.</div>
+<div class="step"><span class="num">3</span><b>전화번호 정규식</b> — <code>^01[016789][0-9]{7,8}$</code> 패턴만 통과. 하이픈·공백은 자동 제거 후 검증. 070·02·해외번호 차단.</div>
+<div class="step"><span class="num">4</span><b>이름 빈값 필터</b> — 공백·null 제외.</div>
+<div class="step"><span class="num">5</span><b>생년월일 빈값 필터</b> — null 제외 (나이 미산정 → 등급 부정확 위험).</div>
+<div class="step"><span class="num">6</span><b>같은 사람 통합</b> — 이름+생년월일 동일 row 그룹화. 한 사람 여러 회선 → 우선순위 높은 1건 대표 + 나머지 회선은 customer 메타데이터로 보존.</div>
+<div class="step"><span class="num">7</span><b>인터넷·TV 회선 식별</b> — 그룹 내 한 회선이라도 <code>internet_types</code>(기본 "유선") 또는 <code>internet_models</code>(인+TV·인터넷·유선) 또는 <code>internet_model_prefix</code>(기본 "인") 매칭 시 → 그 사람 tier=2.</div>
+<div class="step"><span class="num">8</span><b>category 결정</b> — tier=2면 "렌탈권유". tier=1이면 유형에서 이동(우선) → 신규 → 기변 → 기타 순으로 첫 매칭.</div>
+<div class="step"><span class="num">9</span><b>등급(quality_grade) 매핑</b> — grades 룰 객체에서 tier·category 매칭하는 첫 키의 첫 글자(S/A/B/R/C).</div>
+
+<h3>2. 등급 매핑 룰 (calcGrade)</h3>
+<table>
+<tr><th>등급</th><th>조건</th><th>설명</th></tr>
+<tr><td><b style="color:#fbbf24">S</b></td><td>tier=1 AND category="이동"</td><td>인터넷 없음 + 이동 — 최우선 영업</td></tr>
+<tr><td><b style="color:#22c55e">A</b></td><td>tier=1 AND category="신규"</td><td>인터넷 없음 + 신규 — 결합 자유</td></tr>
+<tr><td><b style="color:#3b82f6">B</b></td><td>tier=1 AND category="기변"</td><td>인터넷 없음 + 기변 — 결합 협의 필요</td></tr>
+<tr><td><b style="color:#a855f7">R</b></td><td>tier=2 (인터넷·TV 회선 포함)</td><td>인터넷 보유 → 렌탈 가전 2순위 영업</td></tr>
+<tr><td><b style="color:#64748b">C</b></td><td>default (위 미매칭)</td><td>기타·미분류</td></tr>
+</table>
+<div class="warn"><b>⚠️ 등급 = 영업 우선순위만</b>. 인센티브 Grade(G1/G2/G3)·상품 Tier(S/A/B/C)와 <b>완전히 별개</b>. 같은 글자 쓰지만 의미 다름:
+<ul><li><b>quality_grade</b> (콜 DB): 콜 분배 우선순위</li><li><b>인센티브 Grade</b> (정산): 월간 P 누적 등급 (1/2/3)</li><li><b>상품 Tier</b> (상품 관리): 마진 분류 (S/A/B/C)</li></ul></div>
+
+<h3>3. priority_score 계산식</h3>
+<pre><code>priority_score = basePriority(category) + ageBonus(age)</code></pre>
+<table>
+<tr><th>category</th><th>basePriority</th></tr>
+<tr><td>이동</td><td>100</td></tr>
+<tr><td>신규</td><td>80</td></tr>
+<tr><td>기변</td><td>60</td></tr>
+<tr><td>렌탈권유</td><td>50</td></tr>
+<tr><td>기타</td><td>10 (또는 0)</td></tr>
+</table>
+<p><b>ageBonus는 현재 비활성 ([] 빈 배열)</b> — basePriority만으로 분배. 향후 룰 카드에서 다시 활성화 가능.</p>
+<p>분배 정렬: <code>priority_score DESC NULLS LAST → imported_at ASC</code>. → 인터넷·TV 권유(S/A/B) 항상 렌탈(R)보다 먼저 노출.</p>
+
+<h3>4. 중복 방지 4중 (Dedup)</h3>
+<div class="step"><span class="num">1</span><b>이름+생년월일 통합</b> — 같은 사람 여러 회선은 1건으로 합쳐서 그룹 내 우선순위 가장 높은 회선이 대표.</div>
+<div class="step"><span class="num">2</span><b>전화번호 충돌 해제</b> — 같은 phone에 다른 이름이 있으면 priority_score 높은 1건만 <code>available</code>. 나머지는 <code>call_status='on_hold'</code> + reason="phone 충돌 — [우선 고객명]에 우선 배정".</div>
+<div class="step"><span class="num">3</span><b>DB UNIQUE 제약</b> — <code>UNIQUE(db_source_id, phone)</code>. 같은 DB 출처에 동일 phone 두 번 INSERT 시 PostgreSQL 23505 → duplicate count 증가, row skip.</div>
+<div class="step"><span class="num">4</span><b>마감원장 내부 dups</b> — 한 batch 안에서 동일 (이름+생년월일) 또는 동일 phone은 step 1·2에서 제거됨.</div>
+
+<h3>5. Import 결과 반환값</h3>
+<pre><code>{
+  batch_id: UUID,
+  excel_rows:    원본 행 수,
+  filtered:      9단계 필터 통과 수,
+  customers:     이름+생일 통합 후 고객 수,
+  inserted:      DB 성공 INSERT 건수,
+  duplicates:    UNIQUE 위반·phone 충돌 건수,
+  on_hold:       phone 충돌 on_hold 전환 건수,
+  failed:        기타 에러 건수,
+  tier_dist:     {1: n, 2: n},
+  category_dist: {이동, 신규, 기변, 렌탈권유, 기타},
+  grade_dist:    {S, A, B, R, C},
+  filter_stats:  {watch, age, phone, name, birth},
+  rules_applied: {...현재 적용 룰 스냅샷}
+}</code></pre>
+<p>UI 모달에 위 값이 즉시 표시. 어느 단계에서 몇 건 빠졌는지 한눈에 확인.</p>
+
+<h3>6. 룰 설정 UI — 4 카드 (📋 마감원장 import 룰 설정)</h3>
+<table>
+<tr><th>카드</th><th>편집 필드</th><th>저장 대상</th></tr>
+<tr><td><b>1️⃣ 필터 (제외 룰)</b></td><td>watch_prefix · age_min/max · phone_regex</td><td>data.watch_prefix · age_min · age_max · phone_regex</td></tr>
+<tr><td><b>2️⃣ 인터넷·TV 판별</b></td><td>internet_types · internet_models (쉼표 구분) · internet_model_prefix</td><td>data.internet_types[] · internet_models[] · internet_model_prefix</td></tr>
+<tr><td><b>3️⃣ 등급 (S/A/B/R/C)</b></td><td>각 등급별 tier + category · basePriority sync · default 등급</td><td>data.grades{} · base_priority{}</td></tr>
+<tr><td><b>4️⃣ 나이 가중치</b> (현재 비활성)</td><td>나이대별 bonus 배열 (향후 활성화 시)</td><td>data.age_bonus[]</td></tr>
+</table>
+
+<h3>7. 룰 저장·시뮬·이력</h3>
+<ul>
+<li><b>💾 저장</b> — PUT <code>/api/incentive/calc-overrides/import_rules</code> → 즉시 적용 + audit log 기록</li>
+<li><b>🧪 시뮬레이션</b> — 임의 row 한 줄 입력 → 현재 룰로 분류 결과 미리보기 (저장 전 테스트)</li>
+<li><b>📜 변경 이력</b> — 최근 20건 (시각·변경자·section·action·data 스냅샷) — PIPA audit 대비</li>
+<li><b>⚠️ Dirty 감지</b> — 편집 중인 필드 카운트 badge 자동 표시. 저장 전 페이지 떠나면 confirm</li>
+<li><b>🔄 기본값 복원</b> — 화면만 reset. DB 미적용 (저장해야 적용)</li>
+<li><b>📊 라이브 분포</b> — 룰 카드 옆에 현재 DB 5등급 분포·총 건수 실시간 표시</li>
+</ul>
+
+<h3>8. 실전 시나리오</h3>
+<div class="step"><span class="num">A</span><b>인터넷 보유 식별 강화</b> — 새로운 단말명 "와이파이"도 인터넷으로 잡고 싶음 → 인터넷·TV 판별 카드의 <code>internet_models</code>에 "와이파이" 추가 → 저장 → 다음 import부터 해당 단말은 tier=2 (R 등급) 자동 매핑.</div>
+<div class="step"><span class="num">B</span><b>고령자 제외</b> — 70세 이상도 영업 부담 커 제외 → 필터 카드의 <code>age_max</code>를 100 → 70 변경 → 저장. filter_stats.age 카운트로 실제 제외된 인원 확인.</div>
+<div class="step"><span class="num">C</span><b>기변 우선순위 상향</b> — 기변 고객도 인터넷 권유 가능성 높다고 판단 → 등급 카드 B의 basePriority를 60 → 80 변경 → 저장. 다음 import부터 B 등급도 priority_score 80으로 들어와 신규 A와 동급 노출.</div>
+<div class="step"><span class="num">D</span><b>등급 재정의</b> — tier=1+기타도 영업 가치 있음 → 등급 카드에서 C 조건에 <code>tier:1, category:'기타'</code> 추가 (또는 기타용 신규 등급 정의) → 저장.</div>
+<div class="warn"><b>⚠️ 룰 변경의 영향 범위</b><br>1) <b>신규 import 한정</b> — 룰 변경은 다음 마감원장부터 적용. <b>이미 DB에 있는 customer의 quality_grade·priority_score는 변하지 않음</b>.<br>2) 기존 DB 일괄 재매핑은 SQL 마이그레이션 필요 (admin이 supabase에서 직접 또는 개발자 요청).<br>3) 룰 변경 후 [📊 라이브 분포]는 변하지 않음 (저장된 grade 그대로). 신규 import 후 분포에 반영.</div>
+
+<h3>9. PIPA·감사 대응</h3>
+<ul>
+<li>모든 import 작업은 <code>incentive_customer_db_access_log</code>에 user·IP·UA·결과 카운트 기록</li>
+<li>룰 편집은 <code>incentive_calculator_history</code>에 action='update' · field='grades/base_priority/...' · before/after 기록</li>
+<li>마감원장 원본 엑셀 파일은 서버에 저장하지 않음 (메모리 처리). 결과 통계만 보존</li>
+<li>customer_db 모든 조회·분배·회수도 access_log에 자동 기록 (PIPA 컴플라이언스)</li>
+</ul>`
   },
   {
     id: 'agents', group: '3️⃣ 관리자', title: '👥 상담사 관리', roles: ['admin'],
@@ -354,6 +500,7 @@ const SECTIONS = [
   {
     id: 'rules', group: '3️⃣ 관리자', title: '⚙️ 정책 관리 (V5)', roles: ['admin'],
     html: `<h2>정책 관리<span class="role-tag r-admin">ADMIN</span></h2>
+<p class="lead">V5 인센티브 정책 + V5.1 매니저 오버라이드 보너스 + 우수상품·페이백 분담 정책 통합 편집.</p>
 <h3>V5 인센티브 규칙 (절대 변경 금지 핵심)</h3>
 <ul>
 <li>가중치: 단독 1.0P / 결합 1.5P</li>
@@ -362,7 +509,15 @@ const SECTIONS = [
 <li>우수상품: 마진 25만+ → +1만/건 보너스</li>
 <li>페이백 분담: 회사 ≤30,000 / 상담사 30,001~50,000</li>
 <li>기본급 230만 / 단가 G1=2만 G2=3만 G3=4만</li>
-</ul>`
+</ul>
+<div class="warn"><b>⚠️ "Grade" 용어 3종 — 혼동 금지</b>
+<table style="margin-top:8px">
+<tr><th>이름</th><th>값</th><th>의미</th><th>편집 위치</th></tr>
+<tr><td>인센티브 <b>Grade</b></td><td>G1 / G2 / G3</td><td>월간 P 누적 등급 (정산용)</td><td>[정책 관리]</td></tr>
+<tr><td>콜 DB <b>quality_grade</b></td><td>S / A / B / R / C</td><td>콜 분배 우선순위</td><td>[콜 DB 관리] → 룰 설정</td></tr>
+<tr><td>상품 <b>Tier</b></td><td>S / A / B / C</td><td>마진 기준 분류</td><td>[상품 관리]</td></tr>
+</table>
+세 개념은 같은 글자(S/A/B/C)를 쓰지만 <b>완전히 독립</b>. 화면에서 헷갈리지 않도록 색상·아이콘으로 구분.</div>`
   },
   {
     id: 'db-sources', group: '3️⃣ 관리자', title: '🗂️ DB 출처 관리', roles: ['admin'],
@@ -406,7 +561,37 @@ const SECTIONS = [
   {
     id: 'call-stats', group: '3️⃣ 관리자', title: '📈 콜 통계', roles: ['admin', 'manager'],
     html: `<h2>콜 통계<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span></h2>
-<p>일별 콜 시도·연락·전환 차트. agent별 ROI / 출처별 conversion / 시간대별 응답률.</p>`
+<p class="lead">콜 활동·전환·등급별 성과 종합 통계.</p>
+<h3>주요 차트</h3>
+<ul>
+<li>일별 콜 시도·연락·전환 추세 (30일)</li>
+<li>agent별 ROI (콜 1건당 평균 마진)</li>
+<li>출처별 conversion (DB 출처 ROI 비교)</li>
+<li>시간대별 응답률 (콜 효율 시간 식별)</li>
+<li><b>등급(S/A/B/R/C)별 컨택률·전환율</b> — 어느 등급이 실제 영업 효과 큰지</li>
+</ul>
+<h3>필터</h3>
+<ul><li>기간 (오늘·7일·30일·월 선택)</li><li>센터 (manager는 본인 센터 고정)</li><li>출처</li><li>등급</li></ul>`
+  },
+  {
+    id: 'agents-roi', group: '3️⃣ 관리자', title: '👥 상담사 ROI 비교', roles: ['admin', 'manager'],
+    html: `<h2>상담사 ROI 비교<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span></h2>
+<p class="lead">상담사별 수익성 분석 — 콜 1건당 평균 마진·인센티브 대비 회사 수익·총 마진 순위.</p>
+<h3>주요 지표</h3>
+<ul>
+<li>총 마진 (매출 - 페이백 - 비용)</li>
+<li>콜 1건당 평균 마진 (효율 지표)</li>
+<li>인센티브 지급 대비 회사 순수익</li>
+<li>전환율 + 우수상품 비율</li>
+<li>ROI 순위 (전체 / 본인 센터)</li>
+</ul>
+<h3>주요 액션</h3>
+<ul>
+<li>월 선택 → 자동 순위 계산</li>
+<li>상담사 이름 클릭 → 개인 상세 보기 (계약 list · 추세 차트)</li>
+<li>CSV export — 인사평가·승급 자료</li>
+</ul>
+<div class="tip"><b>활용 시점</b>: 분기·반기 평가, 인센티브 정책 조정, 부진 상담사 1:1 코칭 대상 선정.</div>`
   },
   {
     id: 'tm-data', group: '3️⃣ 관리자', title: '🧮 TM 데이터 관리', roles: ['admin'],
