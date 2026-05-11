@@ -302,15 +302,11 @@ app.get('/api/rental', (req, res) => {
   res.json({ count: items.length, items });
 });
 
-// 봉이 어드민 정적 파일 서빙 (리턴AI 고객 SPA 제거 — admin 서브도메인 전용)
-app.use('/docs', express.static(join(__dirname, 'public', 'docs')));
-app.use('/reports', express.static(join(__dirname, 'public', 'reports')));
-// root → 어드민 직접 서빙 (redirect 안 함 — URL 그대로 유지)
-// docs/ (실제 최신본) 우선, server/public/docs/ (백업)는 fallback
-const ADMIN_HTML_PRIMARY = join(__dirname, '..', 'docs', 'incentive-admin.html');
-const ADMIN_HTML_FALLBACK = join(__dirname, 'public', 'docs', 'incentive-admin.html');
+// 봉이 어드민 정적 파일 서빙 (server/public/docs/ 옛 사본 제거 — docs/만 사용)
+// /reports는 line 216에 이미 마운트됨
+// root → 어드민 직접 서빙
 app.get('/', (req, res) => {
-  res.sendFile(existsSync(ADMIN_HTML_PRIMARY) ? ADMIN_HTML_PRIMARY : ADMIN_HTML_FALLBACK);
+  res.sendFile(join(__dirname, '..', 'docs', 'incentive-admin.html'));
 });
 
 // 전역 에러 핸들러
