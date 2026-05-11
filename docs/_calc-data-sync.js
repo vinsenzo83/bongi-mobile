@@ -283,6 +283,66 @@ function startSeedAutoSync(opts) {
   return _cleanup;
 }
 
+// ─── tm·tm-counselor 공통 시드 override 적용 (calculator.html은 자체 함수 유지) ───
+// 통합 전: 두 파일에 동일 함수 4종(apply{Device,Bundle,TV,Install}Overrides_TM) + KEY 4종 중복
+// 통합 후: applyTMSeedOverrides(D) 단일 호출. applyGiftOverrides는 각 파일 자체 정의 유지(폴백)
+function applyTMSeedOverrides(D) {
+  if (!D) return;
+  const KEYS = {
+    device: 'bongi-device-overrides',
+    bundle: 'bongi-bundle-overrides',
+    tv: 'bongi-tv-overrides',
+    install: 'bongi-install-fees',
+  };
+  // device — setTopOptions / wifiOptions
+  try {
+    const ov = JSON.parse(localStorage.getItem(KEYS.device) || '{}');
+    ['skt','kt','lgu'].forEach(k => {
+      if (ov[k] && D[k]) {
+        if (ov[k].setTopOptions) D[k].setTopOptions = ov[k].setTopOptions;
+        if (ov[k].wifiOptions) D[k].wifiOptions = ov[k].wifiOptions;
+      }
+    });
+  } catch(_) {}
+  // bundle — deep merge
+  try {
+    const ov = JSON.parse(localStorage.getItem(KEYS.bundle) || '{}');
+    ['skt','kt','lgu'].forEach(k => {
+      if (ov[k] && ov[k].bundle && D[k] && D[k].bundle) {
+        Object.keys(ov[k].bundle).forEach(key => { D[k].bundle[key] = ov[k].bundle[key]; });
+      }
+    });
+  } catch(_) {}
+  // tv — array 그대로 교체
+  try {
+    const ov = JSON.parse(localStorage.getItem(KEYS.tv) || '{}');
+    ['skt','kt','lgu'].forEach(k => {
+      if (ov[k] && Array.isArray(ov[k]) && D[k]) D[k].tv = ov[k];
+    });
+  } catch(_) {}
+  // install — INSTALL_FEES 배열 → D[k].install.{solo,combo} 매핑 (인덱스 0=solo, 2=combo)
+  try {
+    const ov = JSON.parse(localStorage.getItem(KEYS.install) || 'null');
+    if (ov) {
+      ['skt','kt','lgu'].forEach(k => {
+        if (!ov[k] || !D[k]) return;
+        const weekday = ov[k].weekday || [];
+        const weekend = ov[k].weekend || [];
+        if (D[k].install) {
+          if (typeof weekday[0] === 'number') D[k].install.solo = weekday[0];
+          if (typeof weekday[2] === 'number') D[k].install.combo = weekday[2];
+        }
+        if (D[k].installWeekend) {
+          if (typeof weekend[0] === 'number') D[k].installWeekend.solo = weekend[0];
+          if (typeof weekend[2] === 'number') D[k].installWeekend.combo = weekend[2];
+        }
+      });
+    }
+  } catch(_) {}
+}
+// 전역 노출 (tm.html / tm-counselor.html에서 호출)
+window.applyTMSeedOverrides = applyTMSeedOverrides;
+
 // 페이지에서 명시적 재시도 호출용
 window.refreshSeedData = function() {
   return Promise.all([

@@ -1994,71 +1994,10 @@ function applyGiftOverrides() {
 }
 applyGiftOverrides();
 
-// ── 시드 데이터 override 적용 (calculator.html?admin=1 어드민 편집 → 견적 동기화) ──
-// PR-2(3feda60)에서 hook 등록 누락 → 복구. calculator.html L2256·L3170·L3528과 동일 로직.
-var DEVICE_OVERRIDES_KEY_TM = 'bongi-device-overrides';
-var BUNDLE_OVERRIDES_KEY_TM = 'bongi-bundle-overrides';
-var TV_OVERRIDES_KEY_TM = 'bongi-tv-overrides';
-var INSTALL_FEES_KEY_TM = 'bongi-install-fees';
-function applyDeviceOverrides_TM() {
-  try {
-    var ov = JSON.parse(localStorage.getItem(DEVICE_OVERRIDES_KEY_TM) || '{}');
-    ['skt','kt','lgu'].forEach(function(k){
-      if (ov[k] && D[k]) {
-        if (ov[k].setTopOptions) D[k].setTopOptions = ov[k].setTopOptions;
-        if (ov[k].wifiOptions) D[k].wifiOptions = ov[k].wifiOptions;
-      }
-    });
-  } catch(e) {}
-}
-function applyBundleOverrides_TM() {
-  try {
-    var ov = JSON.parse(localStorage.getItem(BUNDLE_OVERRIDES_KEY_TM) || '{}');
-    ['skt','kt','lgu'].forEach(function(k){
-      if (ov[k] && ov[k].bundle && D[k] && D[k].bundle) {
-        Object.keys(ov[k].bundle).forEach(function(key){
-          D[k].bundle[key] = ov[k].bundle[key];
-        });
-      }
-    });
-  } catch(e) {}
-}
-function applyTVOverrides_TM() {
-  try {
-    var ov = JSON.parse(localStorage.getItem(TV_OVERRIDES_KEY_TM) || '{}');
-    ['skt','kt','lgu'].forEach(function(k){
-      if (ov[k] && Array.isArray(ov[k]) && D[k]) D[k].tv = ov[k];
-    });
-  } catch(e) {}
-}
-// 설치비: calculator의 INSTALL_FEES (columns + weekday/weekend 배열) → D[k].install / installWeekend (solo/combo) 매핑
-// 컬럼 인덱스 0 = 인터넷 단독 (solo), 2 = 인터넷+TV (combo)
-function applyInstallOverrides_TM() {
-  try {
-    var ov = JSON.parse(localStorage.getItem(INSTALL_FEES_KEY_TM) || 'null');
-    if (!ov) return;
-    ['skt','kt','lgu'].forEach(function(k){
-      if (!ov[k] || !D[k]) return;
-      var weekday = ov[k].weekday || [];
-      var weekend = ov[k].weekend || [];
-      if (D[k].install) {
-        if (typeof weekday[0] === 'number') D[k].install.solo = weekday[0];
-        if (typeof weekday[2] === 'number') D[k].install.combo = weekday[2];
-      }
-      if (D[k].installWeekend) {
-        if (typeof weekend[0] === 'number') D[k].installWeekend.solo = weekend[0];
-        if (typeof weekend[2] === 'number') D[k].installWeekend.combo = weekend[2];
-      }
-    });
-  } catch(e) {}
-}
+// ── 시드 데이터 override 적용 (PR-2 hook 누락 복구, _calc-data-sync.js로 통합) ──
 function applyAllSeedToD_TM() {
-  applyDeviceOverrides_TM();
-  applyTVOverrides_TM();
-  applyBundleOverrides_TM();
-  applyInstallOverrides_TM();
+  if (typeof applyTMSeedOverrides === 'function') applyTMSeedOverrides(D);
   applyGiftOverrides();
-  // calc 재실행 (storage event / polling 후 견적 즉시 갱신)
   try { if (typeof calc === 'function') calc(); } catch(_) {}
 }
 applyAllSeedToD_TM();
