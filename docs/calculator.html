@@ -497,7 +497,6 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   <a class="nav-link" href="#sec-6">💳 제휴카드</a>
   <a class="nav-link" href="#sec-7">💡 영업포인트</a>
   <a class="nav-link" href="#sec-9">🎫 티켓</a>
-  <a class="nav-link" href="#sec-11">🎁 추가 정책</a>
   <a class="nav-link" href="#sec-10">📜 변경이력</a>
 </nav>
 <header class="admin-topbar">
@@ -752,6 +751,9 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   <div id="ctrl-wifi-kt"></div>
   <div style="margin-top:14px"><span class="badge b-lgu">LGU+</span> WiFi</div>
   <div id="ctrl-wifi-lgu"></div>
+
+  <!-- LGU+ 500M↑ 인터넷 가입 시 자동 무료 사은품 (옵션 1개 선택) -->
+  <div id="lgubonus-controls" style="margin-top:18px"></div>
 </div>
 
 <!-- ═══ 2. TV 상품 ═══ -->
@@ -759,6 +761,9 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   <div class="st">2. TV 상품 (편집 · 추가 · 삭제)</div>
   <div class="note">상품 변경 시 사은품 카탈로그·티켓 리스트 자동 재생성. 단종 시 행 삭제 또는 비활성화.</div>
   <div id="tv-controls"></div>
+
+  <!-- TV 추가 시 정책 (3사 — 최대 대수·추가 설치비·할인율·TV2/TV3 제약) -->
+  <div id="tvpolicy-controls" style="margin-top:18px"></div>
 </div>
 
 <!-- ═══ 3. 셋톱박스 ═══ -->
@@ -839,18 +844,10 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   <div id="gift-history"></div>
 </div>
 
-<!-- ═══ 11. 추가 정책 (TV 추가 / LGU+ 기본 제공) ═══ -->
-<div class="section">
-  <div class="st">🎁 11. 추가 정책 (TV 추가 정책 · LGU+ 500M↑ 기본 제공)</div>
-  <div class="note">현재 계산기 코드에 박혀있던 데이터를 어드민에서 편집 가능하게 분리. 변경 즉시 LS·DB 저장, 모든 페이지(견적·계약·신청) 자동 반영.</div>
-  <div id="tvpolicy-controls"></div>
-  <div id="lgubonus-controls" style="margin-top:18px"></div>
-</div>
-
 <!-- ═══ 10. 변경 이력 ═══ -->
 <div class="section">
   <div class="st">📜 10. 변경 이력 (전체 섹션 통합)</div>
-  <div class="note">1·2·3·4·5·6·8·11번 섹션의 모든 데이터 변경 사항을 시간순으로 기록. localStorage 영구 저장 (최대 500건).</div>
+  <div class="note">1·2·3·4·5·6·8번 섹션의 모든 데이터 변경 사항을 시간순으로 기록. localStorage 영구 저장 (최대 500건).</div>
   <div id="edit-history"></div>
 </div>
 
