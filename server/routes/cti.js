@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { cti } from '../cti/adapter.js';
+import { authenticateJWT } from '../middleware/auth.js';
 
 const router = Router();
+
+// 🔒 모든 CTI 라우트 인증 필수 (현재 Mock·미운영 — 향후 NHN Contiple 연동 시에도 보호)
+router.use(authenticateJWT);
 
 // 발신
 router.post('/call', (req, res) => {

@@ -23,10 +23,29 @@ router.get('/products', async (req, res) => {
   }
 });
 
+// 🔒 bongi_products 허용 필드 whitelist — req.body 직접 insert/update 방지
+const BONGI_PRODUCT_FIELDS = [
+  'ticket', 'carrier', 'name', 'category', 'policy', 'product_type',
+  'speed', 'contract_period',
+  'monthly_fee', 'actual_price', 'base_fee', 'gift', 'install_fee', 'total_payback', 'cashback',
+  'discounts', 'extras', 'features', 'guide', 'regions',
+  'is_popular', 'is_active',
+];
+function pickProductFields(body) {
+  if (!body || typeof body !== 'object') return {};
+  const out = {};
+  for (const k of BONGI_PRODUCT_FIELDS) if (body[k] !== undefined) out[k] = body[k];
+  return out;
+}
+
 // POST /admin/platform/products — 상품 등록
 router.post('/products', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('bongi_products').insert(req.body).select();
+    const payload = pickProductFields(req.body);
+    if (!payload.name && !payload.carrier) {
+      return res.status(400).json({ error: '필수 필드 누락 — name 또는 carrier 필요' });
+    }
+    const { data, error } = await supabase.from('bongi_products').insert(payload).select();
     if (error) throw error;
     res.json({ product: data[0] });
   } catch (e) {
@@ -37,7 +56,12 @@ router.post('/products', async (req, res) => {
 // PATCH /admin/platform/products/:id — 상품 수정
 router.patch('/products/:id', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('bongi_products').update(req.body).eq('id', req.params.id).select();
+    const payload = pickProductFields(req.body);
+    if (Object.keys(payload).length === 0) {
+      return res.status(400).json({ error: '수정할 필드 없음' });
+    }
+    payload.updated_at = new Date().toISOString();
+    const { data, error } = await supabase.from('bongi_products').update(payload).eq('id', req.params.id).select();
     if (error) throw error;
     res.json({ product: data[0] });
   } catch (e) {
