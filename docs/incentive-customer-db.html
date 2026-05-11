@@ -168,72 +168,160 @@ tr:hover { background:#334155; }
       <div id="import-result" style="margin-top:14px;font-size:11.5px;color:#94a3b8"></div>
 
       <!-- 📋 마감원장 룰 설정 (접힘) -->
-      <details style="margin-top:18px;background:rgba(0,0,0,0.3);border:1.5px solid #475569;border-radius:8px;padding:14px">
-        <summary style="cursor:pointer;font-size:13px;font-weight:700;color:#fbbf24">📋 마감원장 import 룰 설정 (admin)</summary>
-        <div style="margin-top:12px;font-size:11px;color:#94a3b8;line-height:1.6">변경 즉시 다음 마감원장 import부터 적용. 코드 수정 없이 admin이 직접 조정.</div>
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- 📋 마감원장 import 룰 설정 (admin) — 매트릭스·미리보기·시뮬·이력 -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <style>
+        .rule-card { background:linear-gradient(135deg,rgba(15,23,42,0.6),rgba(0,0,0,0.4)); border:1.5px solid #334155; border-radius:10px; padding:14px; }
+        .rule-card h3 { font-size:12.5px; font-weight:800; margin:0 0 10px; display:flex; align-items:center; gap:6px; }
+        .rule-input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:6px 10px; border-radius:6px; font-size:12px; transition:border 0.15s; }
+        .rule-input:focus { border-color:#3b82f6; outline:none; box-shadow:0 0 0 3px rgba(59,130,246,0.15); }
+        .rule-input.dirty { border-color:#fbbf24 !important; background:rgba(251,191,36,0.05); }
+        .rule-help { font-size:10px; color:#64748b; margin-top:2px; }
+        .grade-badge { display:inline-block; padding:3px 10px; border-radius:6px; font-weight:900; font-size:12px; min-width:32px; text-align:center; }
+        .gr-S { background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#0f172a; box-shadow:0 2px 8px rgba(251,191,36,0.3); }
+        .gr-A { background:linear-gradient(135deg,#86efac,#22c55e); color:#0f172a; box-shadow:0 2px 8px rgba(34,197,94,0.3); }
+        .gr-B { background:linear-gradient(135deg,#93c5fd,#3b82f6); color:#fff; box-shadow:0 2px 8px rgba(59,130,246,0.3); }
+        .gr-C { background:linear-gradient(135deg,#cbd5e1,#64748b); color:#fff; }
+        .gr-empty { background:transparent; border:1.5px dashed #475569; color:#475569; }
+        .matrix-cell { padding:10px; text-align:center; border:1px solid #1e293b; transition:background 0.15s; cursor:pointer; }
+        .matrix-cell:hover { background:rgba(59,130,246,0.1); }
+        .toolbar-btn { padding:8px 14px; border-radius:6px; font-size:12px; font-weight:700; border:none; cursor:pointer; transition:all 0.15s; }
+        .toolbar-btn:hover { transform:translateY(-1px); box-shadow:0 4px 8px rgba(0,0,0,0.3); }
+        .toolbar-btn.dirty { background:#fbbf24; color:#0f172a; animation:pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(251,191,36,0.5); } 50% { box-shadow:0 0 0 6px rgba(251,191,36,0); } }
+        .dist-bar { height:24px; border-radius:4px; transition:width 0.4s; display:flex; align-items:center; padding:0 8px; font-size:11px; font-weight:700; color:#0f172a; min-width:30px; }
+        .age-band { display:grid; grid-template-columns:60px 60px 70px 1fr; gap:6px; align-items:center; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:4px; }
+      </style>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px">
-          <!-- 🚫 필터 -->
-          <div>
-            <div style="font-size:12px;font-weight:700;color:#fca5a5;margin-bottom:8px">🚫 필터 (제외 룰)</div>
-            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">워치 prefix (정규식 시작 글자)
-              <input type="text" id="r-watch-prefix" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:100%;margin-top:2px">
+      <details style="margin-top:18px" id="rules-details" ontoggle="if(this.open) loadImportRulesHistory()">
+        <summary style="cursor:pointer;font-size:14px;font-weight:800;color:#fbbf24;padding:12px 14px;background:linear-gradient(90deg,rgba(251,191,36,0.1),rgba(0,0,0,0.3));border-radius:8px;border:1px solid #475569;list-style:none;display:flex;align-items:center;gap:8px">
+          <span>📋 마감원장 import 룰 설정 (admin)</span>
+          <span id="r-dirty-badge" style="display:none;background:#fbbf24;color:#0f172a;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:900">⚠️ 변경 0건</span>
+        </summary>
+
+        <!-- 🛠️ 툴바 -->
+        <div style="display:flex;gap:8px;align-items:center;padding:12px 0 14px;border-bottom:1px solid #334155;margin-bottom:14px;flex-wrap:wrap">
+          <button id="r-save-btn" class="toolbar-btn" style="background:#475569;color:#fff" onclick="saveImportRules()">💾 저장</button>
+          <button class="toolbar-btn" style="background:#475569;color:#fff" onclick="resetImportRules()">🔄 기본값 복원</button>
+          <button class="toolbar-btn" style="background:#475569;color:#fff" onclick="document.getElementById('r-sim-panel').style.display='block'">🧪 시뮬레이션</button>
+          <button class="toolbar-btn" style="background:#475569;color:#fff" onclick="document.getElementById('r-history-panel').style.display='block';loadImportRulesHistory()">📜 변경 이력</button>
+          <span style="flex:1"></span>
+          <span id="r-msg" style="font-size:11.5px;color:#94a3b8"></span>
+        </div>
+
+        <!-- 🎯 4 카드 (필터·인터넷·우선순위·나이가중치) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="rule-card">
+            <h3 style="color:#fca5a5">🚫 필터 (제외 룰)</h3>
+            <label style="display:block;margin-bottom:10px;font-size:11px;color:#cbd5e1;font-weight:600">단말 워치 prefix
+              <input type="text" id="r-watch-prefix" class="rule-input" data-orig="" style="width:100%;margin-top:3px">
+              <div class="rule-help">예: <code>L</code> → 단말 코드가 L로 시작하면 제외 (갤럭시 워치 등)</div>
             </label>
-            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">연령 min ~ max
-              <div style="display:flex;gap:6px;margin-top:2px">
-                <input type="number" id="r-age-min" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:50%">
-                <input type="number" id="r-age-max" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:50%">
+            <label style="display:block;margin-bottom:10px;font-size:11px;color:#cbd5e1;font-weight:600">연령 범위
+              <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+                <input type="number" id="r-age-min" class="rule-input" data-orig="" style="width:80px;text-align:center">
+                <span style="color:#64748b">~</span>
+                <input type="number" id="r-age-max" class="rule-input" data-orig="" style="width:80px;text-align:center">
+                <span style="color:#94a3b8;font-size:11px">세</span>
               </div>
+              <div class="rule-help">이 범위 밖은 제외 (미성년·100세+ PIPA 보호)</div>
             </label>
-            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">phone 정규식
-              <input type="text" id="r-phone-regex" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:100%;font-family:monospace;margin-top:2px">
-            </label>
-          </div>
-
-          <!-- 🌐 인터넷·TV 판별 -->
-          <div>
-            <div style="font-size:12px;font-weight:700;color:#86efac;margin-bottom:8px">🌐 인터넷·TV 판별 (tier=2 조건)</div>
-            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">internet_types (콤마 구분)
-              <input type="text" id="r-net-types" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:100%;margin-top:2px">
-            </label>
-            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">internet_models (콤마 구분)
-              <input type="text" id="r-net-models" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:100%;margin-top:2px">
-            </label>
-            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">internet_model_prefix
-              <input type="text" id="r-net-prefix" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:100%;margin-top:2px">
+            <label style="display:block;font-size:11px;color:#cbd5e1;font-weight:600">전화번호 정규식
+              <input type="text" id="r-phone-regex" class="rule-input" data-orig="" style="width:100%;font-family:'JetBrains Mono',monospace;margin-top:3px">
+              <div class="rule-help">예: <code>^01[016789][0-9]{7,8}$</code> — 한국 휴대폰만</div>
             </label>
           </div>
 
-          <!-- ⭐ basePriority -->
-          <div>
-            <div style="font-size:12px;font-weight:700;color:#fde68a;margin-bottom:8px">⭐ basePriority (category 별 기본 점수)</div>
-            <div id="r-base-priority" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+          <div class="rule-card">
+            <h3 style="color:#86efac">🌐 인터넷·TV 판별 (tier=2 조건)</h3>
+            <label style="display:block;margin-bottom:10px;font-size:11px;color:#cbd5e1;font-weight:600">유형 (콤마 구분)
+              <input type="text" id="r-net-types" class="rule-input" data-orig="" style="width:100%;margin-top:3px">
+              <div class="rule-help">예: <code>유선</code> — 마감원장의 "유형" 컬럼 값 일치 시</div>
+            </label>
+            <label style="display:block;margin-bottom:10px;font-size:11px;color:#cbd5e1;font-weight:600">단말 모델명 (콤마)
+              <input type="text" id="r-net-models" class="rule-input" data-orig="" style="width:100%;margin-top:3px">
+              <div class="rule-help">예: <code>인+TV, 인터넷, 유선</code> — 완전 일치 단말명</div>
+            </label>
+            <label style="display:block;font-size:11px;color:#cbd5e1;font-weight:600">단말 시작 문자
+              <input type="text" id="r-net-prefix" class="rule-input" data-orig="" style="width:80px;text-align:center;margin-top:3px">
+              <div class="rule-help">예: <code>인</code> — '인터넷·인+TV·인터넷500M' 등 모두 매칭</div>
+            </label>
           </div>
 
-          <!-- 🎂 나이 가중치 -->
-          <div>
-            <div style="font-size:12px;font-weight:700;color:#a5b4fc;margin-bottom:8px">🎂 나이 가중치 (priority 추가 점수)</div>
+          <div class="rule-card">
+            <h3 style="color:#fde68a">⭐ basePriority (category별 기본 점수)</h3>
+            <div class="rule-help" style="margin-bottom:10px">콜DB 분배 시 priority_score = basePriority + 나이가중치. 점수 높을수록 먼저 분배</div>
+            <div id="r-base-priority" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+          </div>
+
+          <div class="rule-card">
+            <h3 style="color:#a5b4fc">🎂 나이 가중치 (priority 추가 점수)</h3>
+            <div class="rule-help" style="margin-bottom:10px">연령대별 priority_score에 더할 값. min~max 범위에 들면 bonus 적용. 추가/삭제 가능</div>
             <div id="r-age-bonus" style="display:flex;flex-direction:column;gap:4px"></div>
+            <button class="toolbar-btn" style="background:#3b82f6;color:#fff;margin-top:8px;padding:5px 10px;font-size:11px" onclick="addAgeBand()">➕ 구간 추가</button>
           </div>
         </div>
 
-        <!-- 🏆 등급 매핑 (별도 행 — 전체 폭) -->
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #334155">
-          <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:8px">🏆 등급 매핑 (tier × category → 등급)</div>
-          <div style="font-size:10.5px;color:#94a3b8;margin-bottom:8px;line-height:1.6">각 등급의 조건 (tier·category). 매칭 순서대로 평가 — 위가 우선. 매칭 안 되면 default 등급 부여.</div>
-          <div id="r-grades" style="display:flex;flex-direction:column;gap:6px"></div>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-            <label style="font-size:11px;color:#cbd5e1">default 등급:
-              <input type="text" id="r-grade-default" maxlength="2" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:50px;margin-left:4px;text-align:center">
+        <!-- 🏆 등급별 카드 (S/A/B/C — 등급별 조건 묶음) -->
+        <div style="margin-top:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <h3 style="font-size:13px;font-weight:800;color:#fbbf24;margin:0">🏆 등급 설정 (조건 매칭 순서대로)</h3>
+            <button class="toolbar-btn" style="background:#3b82f6;color:#fff;padding:5px 10px;font-size:11px" onclick="addGradeCard()">➕ 새 등급 카드</button>
+          </div>
+          <div class="rule-help" style="margin-bottom:10px">각 등급 카드의 조건이 위에서부터 평가됩니다. 한 row가 어느 등급 조건도 매칭 X 시 default 등급 부여.</div>
+
+          <!-- 등급 카드 컨테이너 (S·A·B는 카드, default는 별도) -->
+          <div id="r-grade-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+
+          <!-- Default 등급 (별도) -->
+          <div class="rule-card" style="margin-top:12px;background:linear-gradient(135deg,rgba(100,116,139,0.2),rgba(0,0,0,0.4));border-color:#64748b">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span class="grade-badge gr-C" id="r-default-badge">C</span>
+              <div style="flex:1">
+                <div style="font-size:12px;font-weight:700;color:#cbd5e1">기본 등급 (default)</div>
+                <div class="rule-help">위 카드 어느 조건도 매칭 안 되는 모든 row에 부여</div>
+              </div>
+              <input type="text" id="r-grade-default" class="rule-input" maxlength="2" data-orig="" style="width:70px;text-align:center;font-weight:900;font-size:14px" oninput="document.getElementById('r-default-badge').textContent=this.value.toUpperCase()||'C';markDirty()">
+            </div>
+          </div>
+        </div>
+
+        <!-- 📊 실시간 분포 미리보기 -->
+        <div class="rule-card" style="margin-top:14px">
+          <h3 style="color:#a5b4fc">📊 현재 콜DB 등급 분포 (라이브 데이터)</h3>
+          <div id="r-dist-preview" style="display:flex;flex-direction:column;gap:6px"></div>
+          <div class="rule-help" style="margin-top:8px">⚠️ 분포는 현재 DB 데이터 기준. 룰 변경은 <b>다음 마감원장 import부터</b> 적용</div>
+        </div>
+
+        <!-- 🧪 시뮬레이션 패널 (숨김) -->
+        <div id="r-sim-panel" class="rule-card" style="margin-top:14px;display:none;border-color:#3b82f6">
+          <h3 style="color:#93c5fd;display:flex;align-items:center;justify-content:space-between">
+            🧪 시뮬레이션 — 한 명 가상 import
+            <button onclick="document.getElementById('r-sim-panel').style.display='none'" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px">✕</button>
+          </h3>
+          <div class="rule-help" style="margin-bottom:10px">현재 화면의 룰로 한 사람 분류 결과 — 저장 안 해도 미리보기 가능</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+            <label style="font-size:11px;color:#cbd5e1">단말<input type="text" id="r-sim-device" class="rule-input" placeholder="SM-S921N" style="width:100%;margin-top:2px"></label>
+            <label style="font-size:11px;color:#cbd5e1">나이<input type="number" id="r-sim-age" placeholder="35" class="rule-input" style="width:100%;margin-top:2px"></label>
+            <label style="font-size:11px;color:#cbd5e1">전화<input type="text" id="r-sim-phone" placeholder="010-1234-5678" class="rule-input" style="width:100%;margin-top:2px"></label>
+            <label style="font-size:11px;color:#cbd5e1">유형
+              <select id="r-sim-type" class="rule-input" style="width:100%;margin-top:2px">
+                <option value="이동">이동</option><option value="신규">신규</option><option value="기변">기변</option><option value="유선">유선</option>
+              </select>
             </label>
-            <button class="btn" style="font-size:10.5px;padding:4px 10px;background:#3b82f6;color:#fff" onclick="addGradeRow()">➕ 등급 룰 추가</button>
           </div>
+          <button class="toolbar-btn" style="background:#3b82f6;color:#fff;margin-top:10px" onclick="runSimulation()">🎯 분류 결과 보기</button>
+          <div id="r-sim-result" style="margin-top:12px;font-size:12px"></div>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:14px">
-          <button class="btn btn-success" onclick="saveImportRules()">💾 저장</button>
-          <button class="btn" style="background:#475569;color:#fff" onclick="resetImportRules()">🔄 기본값 복원</button>
-          <span id="r-msg" style="font-size:11px;color:#94a3b8;align-self:center"></span>
+        <!-- 📜 변경 이력 패널 (숨김) -->
+        <div id="r-history-panel" class="rule-card" style="margin-top:14px;display:none;border-color:#a5b4fc">
+          <h3 style="color:#c4b5fd;display:flex;align-items:center;justify-content:space-between">
+            📜 변경 이력 (incentive_calculator_history)
+            <button onclick="document.getElementById('r-history-panel').style.display='none'" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px">✕</button>
+          </h3>
+          <div id="r-history-list" style="font-size:11px;color:#94a3b8">불러오는 중...</div>
         </div>
       </details>
     </div>
@@ -566,6 +654,32 @@ async function loadImportRules() {
   } catch (e) { console.warn('loadImportRules', e); }
 }
 
+// === dirty 감지 ===
+let _initialSnapshot = null;
+function markDirty() {
+  if (!_initialSnapshot) return;
+  const now = JSON.stringify(collectImportRules());
+  const changed = now !== _initialSnapshot;
+  const badge = document.getElementById('r-dirty-badge');
+  const saveBtn = document.getElementById('r-save-btn');
+  if (changed) {
+    const cnt = diffCount(JSON.parse(_initialSnapshot), JSON.parse(now));
+    badge.textContent = `⚠️ 변경 ${cnt}건`;
+    badge.style.display = '';
+    saveBtn.classList.add('dirty');
+  } else {
+    badge.style.display = 'none';
+    saveBtn.classList.remove('dirty');
+  }
+}
+function diffCount(a, b) {
+  let n = 0;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  keys.forEach(k => { if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) n++; });
+  return n;
+}
+function snapshotInitial() { _initialSnapshot = JSON.stringify(collectImportRules()); markDirty(); }
+
 function renderImportRules(R) {
   document.getElementById('r-watch-prefix').value = R.watch_prefix ?? 'L';
   document.getElementById('r-age-min').value = R.age_min ?? 19;
@@ -578,91 +692,48 @@ function renderImportRules(R) {
   const bp = R.base_priority || {};
   document.getElementById('r-base-priority').innerHTML =
     ['이동','신규','렌탈권유','기변','기타'].map(cat => `
-      <label style="font-size:11px;color:#cbd5e1">${cat}
-        <input type="number" data-bp="${cat}" value="${bp[cat] ?? 0}" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:3px 6px;border-radius:4px;font-size:11px;width:100%;margin-top:2px">
+      <label style="font-size:11px;color:#cbd5e1;font-weight:600">${cat}
+        <input type="number" data-bp="${cat}" value="${bp[cat] ?? 0}" oninput="markDirty()" class="rule-input" style="width:100%;margin-top:3px">
       </label>
     `).join('');
 
   const ab = R.age_bonus || [];
+  renderAgeBonus(ab);
+  renderGradeCards(R.grades || {});
+
+  document.getElementById('r-grade-default').value = typeof (R.grades || {}).default === 'string' ? R.grades.default : 'C';
+  document.getElementById('r-default-badge').textContent = document.getElementById('r-grade-default').value || 'C';
+
+  // dirty 이벤트 바인딩
+  document.querySelectorAll('#rules-details .rule-input').forEach(el => {
+    if (!el.dataset.bound) {
+      el.addEventListener('input', markDirty);
+      el.dataset.bound = '1';
+    }
+  });
+  snapshotInitial();
+  loadDistPreview();
+}
+
+function renderAgeBonus(ab) {
   document.getElementById('r-age-bonus').innerHTML = ab.map((b, i) => `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;align-items:center">
-      <input type="number" data-ab-min="${i}" value="${b.min}" placeholder="min" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:3px 6px;border-radius:4px;font-size:11px">
-      <input type="number" data-ab-max="${i}" value="${b.max}" placeholder="max" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:3px 6px;border-radius:4px;font-size:11px">
-      <input type="number" data-ab-bonus="${i}" value="${b.bonus}" placeholder="bonus" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:3px 6px;border-radius:4px;font-size:11px">
-    </div>
-  `).join('');
-
-  // 등급 매핑 — grades 객체에서 key(default 제외)·tier·category 추출하여 row로 렌더
-  const grades = R.grades || {};
-  const rows = Object.entries(grades).filter(([k]) => k !== 'default').map(([key, val]) => {
-    if (typeof val !== 'object' || !val) return null;
-    return { key, grade: key.charAt(0), tier: val.tier ?? '', category: val.category ?? '' };
-  }).filter(Boolean);
-  renderGradeRows(rows);
-  document.getElementById('r-grade-default').value = typeof grades.default === 'string' ? grades.default : 'C';
-}
-
-function renderGradeRows(rows) {
-  const cats = ['', '이동', '신규', '렌탈권유', '기변', '기타'];
-  document.getElementById('r-grades').innerHTML = rows.map((r, i) => `
-    <div style="display:grid;grid-template-columns:60px 80px 1fr 30px;gap:6px;align-items:center;background:rgba(0,0,0,0.2);padding:6px;border-radius:4px">
-      <input type="text" data-g-grade="${i}" value="${r.grade}" maxlength="2" placeholder="S" style="background:#0f172a;border:1px solid #475569;color:#fbbf24;padding:4px 6px;border-radius:4px;font-size:12px;font-weight:800;text-align:center">
-      <select data-g-tier="${i}" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 6px;border-radius:4px;font-size:11px">
-        <option value="">tier any</option>
-        <option value="1" ${r.tier===1?'selected':''}>tier 1</option>
-        <option value="2" ${r.tier===2?'selected':''}>tier 2</option>
-      </select>
-      <select data-g-cat="${i}" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 6px;border-radius:4px;font-size:11px">
-        ${cats.map(c => `<option value="${c}" ${r.category===c?'selected':''}>${c||'category any'}</option>`).join('')}
-      </select>
-      <button onclick="removeGradeRow(${i})" style="background:#dc2626;color:#fff;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer">✕</button>
+    <div class="age-band">
+      <input type="number" data-ab-min="${i}" value="${b.min}" placeholder="min" oninput="markDirty()" class="rule-input" style="padding:4px 6px;font-size:11px">
+      <input type="number" data-ab-max="${i}" value="${b.max}" placeholder="max" oninput="markDirty()" class="rule-input" style="padding:4px 6px;font-size:11px">
+      <input type="number" data-ab-bonus="${i}" value="${b.bonus}" placeholder="bonus" oninput="markDirty()" class="rule-input" style="padding:4px 6px;font-size:11px">
+      <button onclick="removeAgeBand(${i})" style="background:#dc2626;color:#fff;border:none;padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer">✕</button>
     </div>
   `).join('');
 }
-
-function addGradeRow() {
-  const rows = collectGradeRows();
-  rows.push({ grade: 'S', tier: '', category: '' });
-  renderGradeRows(rows);
+function addAgeBand() {
+  const ab = collectAgeBonus(); ab.push({ min: 0, max: 99, bonus: 0 });
+  renderAgeBonus(ab); markDirty();
 }
-
-function removeGradeRow(i) {
-  const rows = collectGradeRows();
-  rows.splice(i, 1);
-  renderGradeRows(rows);
+function removeAgeBand(i) {
+  const ab = collectAgeBonus(); ab.splice(i, 1);
+  renderAgeBonus(ab); markDirty();
 }
-
-function collectGradeRows() {
-  const rows = [];
-  document.querySelectorAll('[data-g-grade]').forEach((el, i) => {
-    rows.push({
-      grade: el.value.trim() || 'C',
-      tier: document.querySelector(`[data-g-tier="${i}"]`)?.value,
-      category: document.querySelector(`[data-g-cat="${i}"]`)?.value || '',
-    });
-  });
-  return rows;
-}
-
-function buildGradesObject() {
-  const rows = collectGradeRows();
-  const grades = {};
-  rows.forEach((r, i) => {
-    // 키 유일화: grade가 같으면 _2·_3 suffix
-    const baseKey = r.grade.toUpperCase();
-    let key = baseKey, n = 2;
-    while (grades[key]) { key = `${baseKey}_${n++}`; }
-    const rule = {};
-    if (r.tier !== '' && r.tier != null) rule.tier = parseInt(r.tier);
-    if (r.category) rule.category = r.category;
-    grades[key] = rule;
-  });
-  grades.default = document.getElementById('r-grade-default').value.trim().toUpperCase() || 'C';
-  return grades;
-}
-
-function collectImportRules() {
-  const parseCSV = (s) => s.split(',').map(x => x.trim()).filter(Boolean);
+function collectAgeBonus() {
   const ab = [];
   document.querySelectorAll('[data-ab-min]').forEach((el, i) => {
     ab.push({
@@ -671,6 +742,148 @@ function collectImportRules() {
       bonus: parseInt(document.querySelector(`[data-ab-bonus="${i}"]`).value) || 0,
     });
   });
+  return ab;
+}
+
+// === 등급 카드 (S/A/B/C 별 묶음) ===
+const GRADE_COLORS = { S: 'gr-S', A: 'gr-A', B: 'gr-B', C: 'gr-C' };
+const GRADE_LABELS = { S: '⭐⭐⭐ S — 최우선', A: '⭐⭐ A — 우선', B: '⭐ B — 일반', C: 'C — 후순위' };
+
+function gradesToCards(grades) {
+  // {S:{tier:1,category:'이동'}, A_tier1_new:{...}, A_tier2:{...}, B:{...}, default:'C'}
+  // → {S:[{tier:1,category:'이동'}], A:[{tier:1,category:'신규'},{tier:2}], B:[{tier:1,category:'기변'}]}
+  const cards = {};
+  Object.entries(grades || {}).forEach(([key, val]) => {
+    if (key === 'default') return;
+    if (typeof val !== 'object' || !val) return;
+    const grade = key.charAt(0).toUpperCase();
+    cards[grade] = cards[grade] || [];
+    cards[grade].push({ tier: val.tier ?? '', category: val.category ?? '' });
+  });
+  return cards;
+}
+
+function renderGradeCards(grades) {
+  const cards = gradesToCards(grades);
+  // S·A·B는 기본 표시, 카드가 없으면 빈 카드라도 만듦. C는 default라 표시 X (별도 카드)
+  const order = ['S', 'A', 'B'];
+  // 동적 추가된 등급도 포함
+  Object.keys(cards).forEach(g => { if (!order.includes(g) && g !== 'C') order.push(g); });
+
+  const html = order.map(g => renderOneGradeCard(g, cards[g] || [])).join('');
+  document.getElementById('r-grade-cards').innerHTML = html;
+}
+
+function renderOneGradeCard(grade, conditions) {
+  const cls = GRADE_COLORS[grade] || 'gr-C';
+  const label = GRADE_LABELS[grade] || `${grade} 등급`;
+  const cats = ['', '이동', '신규', '렌탈권유', '기변', '기타'];
+  return `
+    <div class="rule-card" data-grade-card="${grade}" style="border-color:${grade==='S'?'#f59e0b':grade==='A'?'#22c55e':grade==='B'?'#3b82f6':'#64748b'}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span class="grade-badge ${cls}" style="font-size:14px;padding:6px 14px">${grade}</span>
+        <div style="flex:1;font-size:11.5px;font-weight:700;color:#cbd5e1">${label}</div>
+        <button onclick="removeGradeCard('${grade}')" title="이 등급 자체 삭제" style="background:#dc2626;color:#fff;border:none;padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer">🗑</button>
+      </div>
+      <div class="rule-help" style="margin-bottom:8px">다음 조건 중 <b>하나라도 매칭</b>되면 ${grade} 부여</div>
+      <div data-conditions="${grade}" style="display:flex;flex-direction:column;gap:6px">
+        ${conditions.map((c, i) => renderCondition(grade, i, c, cats)).join('') || '<div style="font-size:11px;color:#64748b;padding:8px;text-align:center">조건 없음 — 추가해 주세요</div>'}
+      </div>
+      <button class="toolbar-btn" style="background:#3b82f6;color:#fff;margin-top:8px;padding:5px 10px;font-size:11px" onclick="addCondition('${grade}')">➕ 조건 추가</button>
+    </div>
+  `;
+}
+
+function renderCondition(grade, idx, c, cats) {
+  return `
+    <div data-cond-row="${grade}-${idx}" style="display:grid;grid-template-columns:1fr 1fr 32px;gap:6px;align-items:center;background:rgba(0,0,0,0.25);padding:6px;border-radius:4px">
+      <select data-cond-tier="${grade}-${idx}" class="rule-input" onchange="markDirty()" style="padding:4px 8px;font-size:11px">
+        <option value="">tier 모두</option>
+        <option value="1" ${c.tier===1?'selected':''}>tier 1 (휴대폰)</option>
+        <option value="2" ${c.tier===2?'selected':''}>tier 2 (인터넷·TV)</option>
+      </select>
+      <select data-cond-cat="${grade}-${idx}" class="rule-input" onchange="markDirty()" style="padding:4px 8px;font-size:11px">
+        ${cats.map(cat => `<option value="${cat}" ${c.category===cat?'selected':''}>${cat||'category 모두'}</option>`).join('')}
+      </select>
+      <button onclick="removeCondition('${grade}', ${idx})" style="background:#dc2626;color:#fff;border:none;padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer">✕</button>
+    </div>
+  `;
+}
+
+function collectGradeCards() {
+  // grades 객체 재구성 — 카드 순서대로 키 부여
+  const grades = {};
+  document.querySelectorAll('[data-grade-card]').forEach(card => {
+    const grade = card.dataset.gradeCard;
+    const conds = card.querySelectorAll('[data-cond-tier]');
+    conds.forEach((sel, i) => {
+      const tier = sel.value;
+      const cat = card.querySelector(`[data-cond-cat="${grade}-${i}"]`)?.value || '';
+      const rule = {};
+      if (tier !== '') rule.tier = parseInt(tier);
+      if (cat) rule.category = cat;
+      // 키 유일화
+      let key = grade, n = 2;
+      while (grades[key]) { key = `${grade}_${n++}`; }
+      grades[key] = rule;
+    });
+  });
+  grades.default = document.getElementById('r-grade-default').value.trim().toUpperCase() || 'C';
+  return grades;
+}
+
+function addCondition(grade) {
+  const cards = readCurrentGradeCards();
+  cards[grade] = cards[grade] || [];
+  cards[grade].push({ tier: '', category: '' });
+  renderGradeCardsFromObj(cards); markDirty();
+}
+function removeCondition(grade, idx) {
+  const cards = readCurrentGradeCards();
+  cards[grade].splice(idx, 1);
+  renderGradeCardsFromObj(cards); markDirty();
+}
+function removeGradeCard(grade) {
+  if (!confirm(`${grade} 등급을 완전히 제거할까요? (조건 모두 삭제됨)`)) return;
+  const cards = readCurrentGradeCards();
+  delete cards[grade];
+  renderGradeCardsFromObj(cards); markDirty();
+}
+function addGradeCard() {
+  const g = prompt('등급 글자 (한 글자):', 'S+');
+  if (!g) return;
+  const grade = g.trim().charAt(0).toUpperCase();
+  const cards = readCurrentGradeCards();
+  if (cards[grade]) { alert(`${grade} 카드 이미 있음 — 그 카드에 조건 추가`); return; }
+  cards[grade] = [];
+  renderGradeCardsFromObj(cards); markDirty();
+}
+
+function readCurrentGradeCards() {
+  const cards = {};
+  document.querySelectorAll('[data-grade-card]').forEach(card => {
+    const grade = card.dataset.gradeCard;
+    cards[grade] = [];
+    card.querySelectorAll('[data-cond-tier]').forEach((sel, i) => {
+      cards[grade].push({
+        tier: sel.value ? parseInt(sel.value) : '',
+        category: card.querySelector(`[data-cond-cat="${grade}-${i}"]`)?.value || '',
+      });
+    });
+  });
+  return cards;
+}
+
+function renderGradeCardsFromObj(cards) {
+  // cards = {S:[{tier,category}], A:[...], ...}
+  const order = ['S', 'A', 'B'];
+  Object.keys(cards).forEach(g => { if (!order.includes(g) && g !== 'C') order.push(g); });
+  document.getElementById('r-grade-cards').innerHTML =
+    order.filter(g => cards[g] !== undefined).map(g => renderOneGradeCard(g, cards[g])).join('');
+}
+
+function collectImportRules() {
+  const parseCSV = (s) => s.split(',').map(x => x.trim()).filter(Boolean);
   const bp = {};
   document.querySelectorAll('[data-bp]').forEach(el => { bp[el.dataset.bp] = parseInt(el.value) || 0; });
   return {
@@ -682,9 +895,115 @@ function collectImportRules() {
     internet_models: parseCSV(document.getElementById('r-net-models').value),
     internet_model_prefix: document.getElementById('r-net-prefix').value.trim() || '인',
     base_priority: bp,
-    age_bonus: ab,
-    grades: buildGradesObject(),
+    age_bonus: collectAgeBonus(),
+    grades: collectGradeCards(),
   };
+}
+
+// === 시뮬레이션 ===
+function runSimulation() {
+  const R = collectImportRules();
+  const device = document.getElementById('r-sim-device').value.trim();
+  const age = parseInt(document.getElementById('r-sim-age').value);
+  const phone = document.getElementById('r-sim-phone').value.replace(/[^0-9]/g, '');
+  const type = document.getElementById('r-sim-type').value;
+  const result = document.getElementById('r-sim-result');
+
+  // 필터
+  const reasons = [];
+  if (device && new RegExp('^' + R.watch_prefix).test(device)) reasons.push(`워치(${R.watch_prefix}*)`);
+  if (age < R.age_min || age >= R.age_max) reasons.push(`연령 범위 밖 (${R.age_min}~${R.age_max-1})`);
+  if (!new RegExp(R.phone_regex).test(phone)) reasons.push(`phone 정규식 X`);
+
+  if (reasons.length) {
+    result.innerHTML = `<div style="color:#fca5a5;background:rgba(220,38,38,0.15);padding:10px;border-radius:6px;border:1px solid #dc2626">❌ <b>제외</b> — ${reasons.join(' · ')}</div>`;
+    return;
+  }
+
+  // 분류
+  const isInternet = R.internet_types.includes(type) || R.internet_models.includes(device) || (device && device.startsWith(R.internet_model_prefix));
+  let tier, category;
+  if (isInternet) { tier = 2; category = '렌탈권유'; }
+  else {
+    tier = 1;
+    category = ['이동', '신규', '기변'].includes(type) ? type : '기타';
+  }
+  const basePri = R.base_priority[category] ?? 10;
+  // 등급
+  let grade = R.grades.default || 'C';
+  for (const [key, rule] of Object.entries(R.grades)) {
+    if (key === 'default') continue;
+    if (typeof rule !== 'object') continue;
+    if (rule.tier != null && rule.tier !== tier) continue;
+    if (rule.category && rule.category !== category) continue;
+    grade = key.charAt(0);
+    break;
+  }
+  // 나이 가중치
+  let ageBonus = 0;
+  for (const b of R.age_bonus) { if (age >= b.min && age <= b.max) { ageBonus = b.bonus; break; } }
+  const priority = basePri + ageBonus;
+
+  const gradeCls = GRADE_COLORS[grade] || 'gr-C';
+  result.innerHTML = `
+    <div style="background:rgba(34,197,94,0.15);padding:12px;border-radius:6px;border:1px solid #22c55e">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <span class="grade-badge ${gradeCls}" style="font-size:18px;padding:6px 16px">${grade}</span>
+        <div>
+          <div style="font-size:11px;color:#94a3b8">분류 결과</div>
+          <div style="font-size:13px;color:#e2e8f0;font-weight:700">tier ${tier} · ${category}</div>
+        </div>
+      </div>
+      <div style="font-size:11.5px;color:#cbd5e1">priority_score = <b>${priority}</b> (basePriority ${basePri} + 나이가중치 ${ageBonus>=0?'+':''}${ageBonus})</div>
+    </div>
+  `;
+}
+
+// === 분포 미리보기 ===
+async function loadDistPreview() {
+  try {
+    const r = await fetchAuth(CDB + '/stats/summary');
+    if (!r.ok) return;
+    const d = await r.json();
+    const dist = d.grade_dist || d.distribution?.grade || {};
+    const total = Object.values(dist).reduce((s, c) => s + (c || 0), 0) || 1;
+    const grades = ['S', 'A', 'B', 'C'];
+    document.getElementById('r-dist-preview').innerHTML = grades.map(g => {
+      const cnt = dist[g] || 0;
+      const pct = ((cnt / total) * 100).toFixed(1);
+      const color = g==='S'?'#fbbf24':g==='A'?'#22c55e':g==='B'?'#3b82f6':'#64748b';
+      return `
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="grade-badge ${GRADE_COLORS[g]}" style="min-width:36px">${g}</span>
+          <div style="flex:1;background:rgba(0,0,0,0.3);height:24px;border-radius:4px;overflow:hidden">
+            <div class="dist-bar" style="background:${color};width:${pct}%">${cnt} (${pct}%)</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) { /* silent */ }
+}
+
+// === 변경 이력 ===
+async function loadImportRulesHistory() {
+  const list = document.getElementById('r-history-list');
+  if (!list) return;
+  list.innerHTML = '불러오는 중...';
+  try {
+    const r = await fetchAuth(API + '/calc-history?section=import_rules&limit=20');
+    if (!r.ok) { list.innerHTML = '<div style="color:#fca5a5">권한 없음 또는 조회 실패</div>'; return; }
+    const d = await r.json();
+    const hist = d.history || [];
+    if (!hist.length) { list.innerHTML = '<div style="color:#94a3b8;padding:8px">변경 이력 없음</div>'; return; }
+    list.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px">' + hist.map(h => `
+      <div style="background:rgba(0,0,0,0.25);padding:8px 10px;border-radius:4px;border-left:3px solid ${h.action==='INSERT'?'#22c55e':'#3b82f6'}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#cbd5e1;font-weight:700">${h.action || 'UPDATE'} by <span style="color:#fbbf24">${h.changed_by_name || '?'}</span></span>
+          <span style="font-size:10px;color:#94a3b8">${(h.changed_at||'').slice(0,16).replace('T',' ')}</span>
+        </div>
+      </div>
+    `).join('') + '</div>';
+  } catch (e) { list.innerHTML = '<div style="color:#fca5a5">에러: ' + e.message + '</div>'; }
 }
 
 async function saveImportRules() {
