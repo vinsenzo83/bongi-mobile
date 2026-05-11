@@ -215,22 +215,25 @@ tr:hover { background:#334155; }
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div class="rule-card">
             <h3 style="color:#fca5a5">🚫 필터 (제외 룰)</h3>
-            <label style="display:block;margin-bottom:10px;font-size:11px;color:#cbd5e1;font-weight:600">단말 워치 prefix
+            <div style="background:rgba(248,113,113,0.1);border-left:3px solid #fca5a5;padding:8px 11px;border-radius:5px;margin-bottom:12px;font-size:11px;color:#e2e8f0;line-height:1.6">
+              📌 <b>현행 정책</b> — 마감원장 import 시 아래 3개 룰 중 하나라도 걸리면 row를 <b>DB에 넣지 않음</b> (filter_stats 카운트만). 변경은 <b>다음 import부터</b> 적용되며 기존 customer엔 영향 없음.
+            </div>
+            <label style="display:block;margin-bottom:12px;font-size:11px;color:#cbd5e1;font-weight:600">📱 단말 워치 prefix
               <input type="text" id="r-watch-prefix" class="rule-input" data-orig="" style="width:100%;margin-top:3px">
-              <div class="rule-help">예: <code>L</code> → 단말 코드가 L로 시작하면 제외 (갤럭시 워치 등)</div>
+              <div class="rule-help"><b>현재 값</b>: <code>L</code> — 단말 컬럼이 이 글자로 시작하면 제외 (갤럭시 워치·애플 워치 등 부속 라인 차단)</div>
             </label>
-            <label style="display:block;margin-bottom:10px;font-size:11px;color:#cbd5e1;font-weight:600">연령 범위
+            <label style="display:block;margin-bottom:12px;font-size:11px;color:#cbd5e1;font-weight:600">🎂 연령 범위 (만 나이 기준)
               <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
                 <input type="number" id="r-age-min" class="rule-input" data-orig="" style="width:80px;text-align:center">
                 <span style="color:#64748b">~</span>
                 <input type="number" id="r-age-max" class="rule-input" data-orig="" style="width:80px;text-align:center">
                 <span style="color:#94a3b8;font-size:11px">세</span>
               </div>
-              <div class="rule-help">이 범위 밖은 제외 (미성년·100세+ PIPA 보호)</div>
+              <div class="rule-help"><b>현재 값</b>: <code>19 ~ 100</code>세 — 생년월일 기준 만 나이가 이 범위 밖이면 제외 (미성년 PIPA 보호·고령 데이터 오류 차단)</div>
             </label>
-            <label style="display:block;font-size:11px;color:#cbd5e1;font-weight:600">전화번호 정규식
+            <label style="display:block;font-size:11px;color:#cbd5e1;font-weight:600">📞 전화번호 정규식
               <input type="text" id="r-phone-regex" class="rule-input" data-orig="" style="width:100%;font-family:'JetBrains Mono',monospace;margin-top:3px">
-              <div class="rule-help">예: <code>^01[016789][0-9]{7,8}$</code> — 한국 휴대폰만</div>
+              <div class="rule-help"><b>현재 값</b>: <code>^01[016789][0-9]{7,8}$</code> — 한국 휴대폰(010·011·016·017·018·019)만 통과. 070·02·해외번호 자동 차단. 하이픈·공백은 자동 제거 후 검증.</div>
             </label>
           </div>
 
