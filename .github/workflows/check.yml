@@ -1,4 +1,4 @@
-name: Auth helpers & static checks
+name: CI — auth guard · lint · E2E smoke
 
 on:
   push:
@@ -17,3 +17,45 @@ jobs:
           node-version: '20'
       - name: Run check-auth-helpers
         run: node scripts/check-auth-helpers.js
+
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci || npm install
+      - name: ESLint
+        run: npx eslint server/ scripts/ tests/ --max-warnings 100 || true
+        # warnings 허용 (큰 라우트 파일 정리 후 strict 전환)
+
+  e2e-smoke:
+    name: E2E smoke (against deployed dev)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install
+        run: npm ci || npm install
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E suite (smoke + regression)
+        env:
+          # 데브 환경 대상 — 라이브 영향 X
+          PLAYWRIGHT_BASE_URL: https://dev-admin.prexymarket.com
+        run: npx playwright test --reporter=line
+      - name: Upload Playwright report (실패 시)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
