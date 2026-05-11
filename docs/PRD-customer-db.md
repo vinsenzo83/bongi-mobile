@@ -207,14 +207,22 @@ const isInternetTV = (row) => {
 **변경 audit**: `incentive_calculator_history`
 **적용 시점**: 다음 마감원장 import부터 (기존 customer 영향 없음)
 
-#### 4.1.4 중복 방지 4중
+#### 4.1.4 중복 방지 5중 (2026-05-12 강화)
 
 | 단계 | 방식 | 처리 |
 |:---:|:---|:---|
 | 1 | 이름+생년월일 통합 | 같은 사람 → 우선순위 높은 1건 대표 |
-| 2 | 전화번호 충돌 | priority_score 높은 1건 `available`, 나머지 `on_hold` |
-| 3 | DB UNIQUE(db_source_id, phone) | INSERT 시 23505 → duplicate++ |
-| 4 | batch 내부 dups | 1·2단계에서 제거 |
+| 2 | 전화번호 충돌 (batch 내부) | priority_score 높은 1건 `available`, 나머지 `on_hold` |
+| 3 | **출처 무관 phone 사전 검사 (cross-source dedup)** | import 전 `SELECT phone IN (...)` chunk 1000으로 기존 phone 파악 → 신규만 UPSERT 시도 |
+| 4 | DB UNIQUE(db_source_id, phone) + UPSERT | `.upsert(onConflict, ignoreDuplicates: true)` → 같은 출처 동일 phone silently skip |
+| 5 | batch 내부 dups | 1·2단계에서 제거 |
+
+**Cross-source dedup 정책** (3단계): 같은 사람이 다른 출처로 import돼도 두 번 contact 방지. 같은 마감원장을 다른 db_source_id로 재import해도 customer 추가 0건.
+
+**Import 성능** (2026-05-12 라이브 검증, 3099 row):
+- UPSERT chunk 200 + ignoreDuplicates → each-row retry 제거 → Railway 60초 timeout 안전
+- newRows=0 (모두 dup)이어도 최종 batch update 보장 → 통계 정상 기록
+- file input 자동 reset → 같은 파일 재import 가능 (새로고침 불필요)
 
 ### 4.2 `incentive_customer_call_log` (월별 파티션)
 ```sql
