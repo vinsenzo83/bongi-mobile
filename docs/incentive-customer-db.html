@@ -182,6 +182,7 @@ tr:hover { background:#334155; }
         .gr-S { background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#0f172a; box-shadow:0 2px 8px rgba(251,191,36,0.3); }
         .gr-A { background:linear-gradient(135deg,#86efac,#22c55e); color:#0f172a; box-shadow:0 2px 8px rgba(34,197,94,0.3); }
         .gr-B { background:linear-gradient(135deg,#93c5fd,#3b82f6); color:#fff; box-shadow:0 2px 8px rgba(59,130,246,0.3); }
+        .gr-R { background:linear-gradient(135deg,#f0abfc,#a855f7); color:#fff; box-shadow:0 2px 8px rgba(168,85,247,0.3); }
         .gr-C { background:linear-gradient(135deg,#cbd5e1,#64748b); color:#fff; }
         .gr-empty { background:transparent; border:1.5px dashed #475569; color:#475569; }
         .matrix-cell { padding:10px; text-align:center; border:1px solid #1e293b; transition:background 0.15s; cursor:pointer; }
@@ -249,16 +250,11 @@ tr:hover { background:#334155; }
             </label>
           </div>
 
-          <div class="rule-card" style="grid-column:span 2">
-            <h3 style="color:#a5b4fc">🎂 나이 가중치 (모든 등급 공통 · priority 추가 점수)</h3>
-            <div class="rule-help" style="margin-bottom:10px">예: 35세 + S등급(100) = 100 + 25 = 125점</div>
-            <div id="r-age-bonus" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px"></div>
-            <button class="toolbar-btn" style="background:#3b82f6;color:#fff;margin-top:8px;padding:5px 10px;font-size:11px" onclick="addAgeBand()">➕ 구간 추가</button>
-          </div>
         </div>
 
-        <!-- 외부 basePriority 카드 제거 — 등급 카드 안에 통합 -->
+        <!-- 외부 basePriority·나이가중치 카드 제거 — 등급 카드 안 통합·향후 통계 기반 결정 -->
         <div id="r-base-priority" style="display:none"></div>
+        <div id="r-age-bonus" style="display:none"></div>
 
         <!-- 🏆 등급별 카드 (S/A/B/C — 등급별 조건 묶음) -->
         <div style="margin-top:14px">
@@ -630,14 +626,16 @@ const DEFAULT_IMPORT_RULES = {
   internet_models: ['인+TV', '인터넷', '유선'],
   internet_model_prefix: '인',
   base_priority: { '이동': 100, '신규': 80, '렌탈권유': 50, '기변': 30, '기타': 10 },
-  age_bonus: [
-    { min: 0,  max: 29, bonus: 20 },
-    { min: 30, max: 39, bonus: 25 },
-    { min: 40, max: 49, bonus: 25 },
-    { min: 50, max: 59, bonus: 15 },
-    { min: 60, max: 69, bonus: 0 },
-    { min: 70, max: 999, bonus: -30 },
-  ],
+  age_bonus: [],
+  // S·A·B·C = 인터넷 X 고객 (1순위 영업 = 인터넷·TV 판매)
+  // R = 인터넷 O 고객 (2순위 영업 = 렌탈 가전)
+  grades: {
+    S: { tier: 1, category: '이동' },
+    A: { tier: 1, category: '신규' },
+    B: { tier: 1, category: '기변' },
+    R: { tier: 2 },
+    default: 'C',
+  },
 };
 
 async function loadImportRules() {
@@ -743,8 +741,14 @@ function collectAgeBonus() {
 }
 
 // === 등급 카드 (S/A/B/C 별 묶음) ===
-const GRADE_COLORS = { S: 'gr-S', A: 'gr-A', B: 'gr-B', C: 'gr-C' };
-const GRADE_LABELS = { S: '⭐⭐⭐ S — 최우선', A: '⭐⭐ A — 우선', B: '⭐ B — 일반', C: 'C — 후순위' };
+const GRADE_COLORS = { S: 'gr-S', A: 'gr-A', B: 'gr-B', R: 'gr-R', C: 'gr-C' };
+const GRADE_LABELS = {
+  S: '⭐⭐⭐ S — 인터넷·TV 1순위 (통신사 이동·결합 자유)',
+  A: '⭐⭐ A — 인터넷·TV 권유 (신규 가입·결합 자유)',
+  B: '⭐ B — 인터넷·TV 권유 (기변·기존 결합 깨야)',
+  R: '🏠 R — 렌탈 가전 권유 (이미 인터넷 보유)',
+  C: 'C — 후순위 (옛 데이터·기타)',
+};
 
 function gradesToCards(grades) {
   // {S:{tier:1,category:'이동'}, A_tier1_new:{...}, A_tier2:{...}, B:{...}, default:'C'}
@@ -762,8 +766,9 @@ function gradesToCards(grades) {
 
 function renderGradeCards(grades) {
   const cards = gradesToCards(grades);
-  // S·A·B는 기본 표시, 카드가 없으면 빈 카드라도 만듦. C는 default라 표시 X (별도 카드)
-  const order = ['S', 'A', 'B'];
+  // 사용자 정의 등급 체계 순서: S → A → B (인터넷 X·1순위) · R (인터넷 O·2순위)
+  // C는 default라 등급 카드 X (하단 default 카드)
+  const order = ['S', 'A', 'B', 'R'];
   // 동적 추가된 등급도 포함
   Object.keys(cards).forEach(g => { if (!order.includes(g) && g !== 'C') order.push(g); });
 
@@ -916,8 +921,8 @@ function readCurrentGradeCards() {
 }
 
 function renderGradeCardsFromObj(cards) {
-  // cards = {S:[{tier,category}], A:[...], ...}
-  const order = ['S', 'A', 'B'];
+  // cards = {S:[{tier,category}], A:[...], B:[...], R:[...]}
+  const order = ['S', 'A', 'B', 'R'];
   Object.keys(cards).forEach(g => { if (!order.includes(g) && g !== 'C') order.push(g); });
   document.getElementById('r-grade-cards').innerHTML =
     order.filter(g => cards[g] !== undefined).map(g => renderOneGradeCard(g, cards[g])).join('');
@@ -1016,7 +1021,7 @@ async function loadDistPreview() {
     const dist = d.grade_dist || d.distribution?.grade || {};
     const avg = d.grade_avg_priority || {};
     const total = Object.values(dist).reduce((s, c) => s + (c || 0), 0) || 1;
-    const grades = ['S', 'A', 'B', 'C'];
+    const grades = ['S', 'A', 'B', 'R', 'C'];
 
     // 등급 카드 통계 저장 (renderOneGradeCard에서 사용)
     _gradeStats = {};
