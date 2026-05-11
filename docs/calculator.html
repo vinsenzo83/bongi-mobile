@@ -98,7 +98,7 @@
 <style>
 /* ═══ ADMIN 모드 다크 테마 — 모든 inline style 강제 override ═══ */
 body.admin-only { background: #0f172a !important; color: #e2e8f0 !important; }
-body.admin-only .section { background: linear-gradient(135deg, #1e293b, #0f172a) !important; border: 1px solid #475569 !important; color: #e2e8f0 !important; }
+body.admin-only .section { background: #1e293b !important; border: 1px solid #334155 !important; color: #e2e8f0 !important; }
 body.admin-only .section .st { color: #fbbf24 !important; background: transparent !important; }
 body.admin-only .section .note { color: #94a3b8 !important; background: rgba(148,163,184,0.06) !important; padding: 6px 10px; border-radius: 6px; border-left: 2px solid #475569; }
 body.admin-only .section .st2 { color: #fbbf24 !important; opacity: 0.85; }
@@ -134,7 +134,24 @@ body.admin-only input, body.admin-only select, body.admin-only textarea {
 body.admin-only input:focus, body.admin-only select:focus, body.admin-only textarea:focus {
   border-color: #60a5fa !important; outline: none !important; box-shadow: 0 0 0 2px rgba(96,165,250,0.18) !important;
 }
-body.admin-only button { color: #fff !important; }
+body.admin-only button { color: #e2e8f0 !important; }
+/* 흰 배경 인라인 버튼·div → 다크 슬레이트 */
+body.admin-only button[style*="background:#fff"],
+body.admin-only button[style*="background: #fff"],
+body.admin-only div[style*="background:#fff"],
+body.admin-only div[style*="background: #fff"] {
+  background: #1e293b !important;
+  border-color: #475569 !important;
+}
+/* 인라인 라이트 보더(라이트 그레이·반투명 흰) → 다크 슬레이트 */
+body.admin-only [style*="border:1px solid #e5e7eb"],
+body.admin-only [style*="border: 1px solid #e5e7eb"],
+body.admin-only [style*="border:1px solid #d1d5db"],
+body.admin-only [style*="border:1.5px solid rgba(255,255,255,0.2)"],
+body.admin-only [style*="border:1.5px solid rgba(255, 255, 255, 0.2)"],
+body.admin-only [style*="border:1px solid rgba(255,255,255"] {
+  border-color: #475569 !important;
+}
 body.admin-only button[disabled] { opacity: 0.4; cursor: not-allowed; }
 body.admin-only .calc { display: none !important; }
 body.admin-only .section:has(.diag-cards),
@@ -196,7 +213,153 @@ body.admin-only .section .st::before {
   transition: transform 0.18s;
 }
 body.admin-only .section.sec-collapsed .st::before { transform: translateY(-50%) rotate(-90deg); }
-body.admin-only .section.sec-collapsed > *:not(.st) { display: none !important; }
+/* sec-collapsed 섹션 — 사이드바로 navigation하므로 메인에서 완전 hide (st 헤더도 hide) */
+body.admin-only .section.sec-collapsed { display: none !important; }
+
+/* 활성 섹션 — 메인 카드 형태 (색상 통일) */
+body.admin-only .section:not(.sec-collapsed) {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  border-radius: 12px !important;
+  padding: 24px 28px !important;
+  margin-bottom: 16px !important;
+}
+body.admin-only .section .st {
+  cursor: default !important;
+  padding-left: 0 !important;
+  font-size: 18px !important;
+  color: #fde68a !important;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 14px !important;
+  margin-bottom: 18px !important;
+  border-radius: 0 !important;
+}
+body.admin-only .section .st::before { display: none !important; }
+body.admin-only .section .st:hover { background: transparent !important; }
+
+/* ═══ 어드민 페이지 레이아웃 — 좌측 사이드바 + 상단 헤더 + 메인 ═══ */
+body.admin-only { margin: 0; padding-left: 220px; padding-top: 56px; }
+body.admin-only .wrap { max-width: none !important; padding: 16px 24px; }
+
+/* admin-nav-bar → 좌측 세로 사이드바로 변환 (브랜드 yellow 통일) */
+body.admin-only .admin-nav-bar {
+  display: flex !important;
+  flex-direction: column;
+  position: fixed; left: 0; top: 0;
+  width: 220px; height: 100vh;
+  background: #0f172a;
+  border-right: 1px solid #334155;
+  border-bottom: none;
+  padding: 16px 10px;
+  gap: 2px;
+  overflow-y: auto;
+  box-shadow: none;
+  z-index: 100;
+}
+body.admin-only .admin-nav-bar .nav-title {
+  font-size: 13px; padding: 8px 10px 14px; margin: 0 0 8px;
+  border-bottom: 1px solid #334155; color: #fbbf24; letter-spacing: 0.02em;
+}
+body.admin-only .admin-nav-bar .nav-link {
+  padding: 10px 12px; font-size: 12.5px; border-radius: 8px;
+  background: transparent; border: 1px solid transparent;
+  text-align: left; color: #94a3b8;
+  display: flex; align-items: center; gap: 6px;
+  transition: background .12s, color .12s;
+}
+body.admin-only .admin-nav-bar .nav-link:hover {
+  background: rgba(251,191,36,0.06);
+  color: #fde68a;
+}
+body.admin-only .admin-nav-bar .nav-link.active {
+  background: rgba(251,191,36,0.14);
+  color: #fbbf24;
+  border-color: rgba(251,191,36,0.35);
+  font-weight: 800;
+}
+
+/* 상단 헤더 (브랜드 yellow 라인 통일) */
+body.admin-only .admin-topbar {
+  display: flex !important;
+  position: fixed; left: 220px; right: 0; top: 0;
+  height: 56px;
+  background: #0f172a;
+  border-bottom: 1px solid #334155;
+  align-items: center;
+  padding: 0 24px;
+  z-index: 90;
+  gap: 12px;
+}
+body.admin-only .admin-topbar .topbar-title {
+  font-size: 15px; font-weight: 800; color: #fde68a;
+}
+body.admin-only .admin-topbar .topbar-env {
+  margin-left: auto;
+  padding: 4px 12px; border-radius: 12px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+}
+body.admin-only .admin-topbar .topbar-env.env-local {
+  background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4); color: #86efac;
+}
+body.admin-only .admin-topbar .topbar-env.env-dev {
+  background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.4); color: #fde68a;
+}
+body.admin-only .admin-topbar .topbar-env.env-live {
+  background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;
+}
+.admin-topbar { display: none; }
+
+/* 섹션 — 어드민 모드에서 scroll margin 조정 */
+body.admin-only .section { scroll-margin-top: 76px; }
+
+/* ─── 어드민: 통신사별 색상 통일 (badge·border만 통신사 식별 유지) ─── */
+/* 통신사 카드(.diag-card) — 배경 slate 통일, border만 통신사 색 */
+body.admin-only .diag-card { background: #1e293b !important; color: #e2e8f0 !important; }
+body.admin-only .diag-card.skt { border-color: rgba(239,68,68,0.4) !important; }
+body.admin-only .diag-card.kt { border-color: rgba(96,165,250,0.4) !important; }
+body.admin-only .diag-card.lgu { border-color: rgba(244,114,182,0.4) !important; }
+body.admin-only .diag-card h3,
+body.admin-only .diag-card.skt h3 { color: #fca5a5 !important; font-weight: 800; }
+body.admin-only .diag-card.kt h3 { color: #93c5fd !important; }
+body.admin-only .diag-card.lgu h3 { color: #f9a8d4 !important; }
+
+/* 통신사 badge — 어드민 다크 톤 */
+body.admin-only .badge.b-skt { background: rgba(239,68,68,0.15) !important; color: #fca5a5 !important; border: 1px solid rgba(239,68,68,0.3); }
+body.admin-only .badge.b-kt { background: rgba(96,165,250,0.15) !important; color: #93c5fd !important; border: 1px solid rgba(96,165,250,0.3); }
+body.admin-only .badge.b-lgu { background: rgba(244,114,182,0.15) !important; color: #f9a8d4 !important; border: 1px solid rgba(244,114,182,0.3); }
+
+/* 노란 활성 행 / 라이트 통신사 배경 → slate 통일 */
+body.admin-only [style*="background:#fef3c7"],
+body.admin-only [style*="background: #fef3c7"] {
+  background: rgba(251,191,36,0.08) !important; color: #fde68a !important;
+}
+body.admin-only [style*="background:#fef2f2"],
+body.admin-only [style*="background:#eff6ff"],
+body.admin-only [style*="background:#fdf2f8"],
+body.admin-only [style*="background:#dbeafe"],
+body.admin-only [style*="background:#fee2e2"],
+body.admin-only [style*="background:#fce7f3"] {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+/* 표 셀(td)의 라이트 inline 배경 — slate 통일 */
+body.admin-only table td[style*="background:#"],
+body.admin-only table th[style*="background:#"] {
+  background: #1a2744 !important; color: #e2e8f0 !important;
+}
+
+/* sec-card (notes·sec-card 등 인라인 gradient·라이트 배경) */
+body.admin-only [style*="background:linear-gradient"] {
+  background: rgba(255,255,255,0.02) !important;
+}
+
+/* 좁은 화면 — 사이드바 가림(추후 toggle 보강) */
+@media (max-width: 900px) {
+  body.admin-only { padding-left: 0; }
+  body.admin-only .admin-nav-bar { transform: translateX(-100%); transition: transform .25s; }
+  body.admin-only .admin-nav-bar.open { transform: translateX(0); }
+  body.admin-only .admin-topbar { left: 0; }
+}
 
 /* ── DB-first 안전 모드 인프라 ── (토스트·배너·편집잠금) */
 #bongi-toast-container {
@@ -270,13 +433,45 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
           s.classList.toggle('sec-collapsed');
         });
       });
-      // 네비 링크 클릭 시 자동으로 펼침
+      // ─── 사이드바 클릭 — 단일 섹션만 활성 (다른 모두 collapse) + active 토글 + 헤더 갱신 ───
+      function _adminActivate(navLink) {
+        const target = document.querySelector(navLink.getAttribute('href'));
+        if (!target) return;
+        // 다른 모든 section collapse, 선택만 펼침
+        document.querySelectorAll('.section[id^="sec-"]').forEach(s => {
+          if (s !== target) s.classList.add('sec-collapsed');
+        });
+        target.classList.remove('sec-collapsed');
+        // 사이드바 active 토글
+        document.querySelectorAll('.admin-nav-bar .nav-link').forEach(l => l.classList.remove('active'));
+        navLink.classList.add('active');
+        // 헤더 제목
+        const t = document.getElementById('admin-topbar-title');
+        if (t) t.textContent = (navLink.textContent || '').trim();
+      }
       document.querySelectorAll('.admin-nav-bar .nav-link').forEach(a => {
         a.addEventListener('click', (e) => {
+          e.preventDefault();
+          _adminActivate(a);
           const target = document.querySelector(a.getAttribute('href'));
-          if (target) target.classList.remove('sec-collapsed');
+          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       });
+
+      // 첫 진입 시 sec-1 자동 활성 (또는 URL hash 우선)
+      const _hash = location.hash || '#sec-1';
+      const _firstLink = document.querySelector(`.admin-nav-bar .nav-link[href="${_hash}"]`)
+        || document.querySelector('.admin-nav-bar .nav-link');
+      if (_firstLink) _adminActivate(_firstLink);
+
+      // 상단 헤더 환경 인디케이터 (host로 자동 판별)
+      const _envEl = document.getElementById('admin-topbar-env');
+      if (_envEl) {
+        const h = location.hostname;
+        if (h === 'localhost' || h === '127.0.0.1') { _envEl.textContent = '🟢 로컬'; _envEl.classList.add('env-local'); }
+        else if (h.startsWith('dev-')) { _envEl.textContent = '🟡 데브'; _envEl.classList.add('env-dev'); }
+        else { _envEl.textContent = '🔴 라이브'; _envEl.classList.add('env-live'); }
+      }
     });
   }
 })();
@@ -304,6 +499,10 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   <a class="nav-link" href="#sec-9">🎫 티켓</a>
   <a class="nav-link" href="#sec-10">📜 변경이력</a>
 </nav>
+<header class="admin-topbar">
+  <span class="topbar-title" id="admin-topbar-title">📡 인터넷·WiFi</span>
+  <span class="topbar-env" id="admin-topbar-env">로컬</span>
+</header>
 
 <div class="wrap">
 
