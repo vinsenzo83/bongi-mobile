@@ -161,18 +161,7 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
     <input type="password" id="g-auth-pass" placeholder="비밀번호" autocomplete="current-password">
     <button id="g-auth-login-btn">로그인</button>
     <div class="auth-msg" id="g-auth-msg"></div>
-    <div class="auth-hint" id="g-auth-hint">
-      manager / admin / agent / contract 권한.<br>
-      <span id="g-auth-hint-accounts"></span>
-    </div>
-    <script>
-      (function() {
-        const isDev = location.hostname.includes('dev-admin') || location.hostname.includes('staging');
-        const envLabel = isDev ? '🧪 데브 (라이브 데이터 클론)' : '🟢 라이브';
-        document.getElementById('g-auth-hint-accounts').innerHTML =
-          `<b>${envLabel}</b><br>테스트: <code>admin1@bongi.test</code> / <code>manager1@bongi.test</code> / <code>agent1@bongi.test</code> (비번 <code>pass1234!</code>)`;
-      })();
-    </script>
+    <div class="auth-hint" id="g-auth-hint" style="display:none"></div>
   </div>
 </div>
 
