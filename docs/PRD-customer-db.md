@@ -88,7 +88,16 @@ CREATE TABLE incentive_customer_db (
   gender TEXT,
   region TEXT,
   carrier TEXT,
-  notes TEXT,
+  notes TEXT,  -- 상담사 콜 메모 전용 (import 시 자동 박지 않음)
+  -- 등급 시스템 (2026-05-12 확정 — S/A/B/R/C 5단계)
+  tier SMALLINT,  -- 1=인터넷 없음(휴대폰 영업) / 2=인터넷 보유(렌탈 영업)
+  category TEXT,  -- 이동·신규·기변·렌탈권유·기타
+  quality_grade TEXT CHECK (quality_grade IN ('S','A','B','R','C')),
+  -- 마감원장 원본 메모
+  memo_etc TEXT,         -- '기타' 컬럼
+  memo_activation TEXT,  -- '개통실 메모' 컬럼 (분류 룰엔 사용하지 않음)
+  -- 마감원장 원본 row 보존 (jsonb array)
+  source_data JSONB,
   -- 개인정보보호
   consent_status TEXT DEFAULT 'unknown',  -- 'agreed'/'declined'/'unknown'
   consent_date DATE,
@@ -145,6 +154,67 @@ CREATE INDEX idx_cust_phone_trgm ON incentive_customer_db USING gin (phone gin_t
 -- UNIQUE: 같은 출처 같은 전화번호 1건
 CREATE UNIQUE INDEX uq_cust_source_phone ON incentive_customer_db(db_source_id, phone) WHERE deleted_at IS NULL;
 ```
+
+#### 4.1.1 등급 시스템 (quality_grade) — 2026-05-12 확정
+
+마감원장 import 시 자동 분류되는 5단계 영업 우선순위.
+
+| 등급 | tier | category | basePriority | 영업 방향 |
+|:---:|:---:|:---|:---:|:---|
+| **S** | 1 | 이동 | 100 | 🥇 1순위 — 인터넷·TV 권유 (통신사 이동·결합 자유) |
+| **A** | 1 | 신규 | 80 | 🥈 1순위 — 인터넷·TV 권유 (신규·결합 자유) |
+| **B** | 1 | 기변 | 60 | 🥉 1순위 — 인터넷·TV 권유 (기존 결합 협의) |
+| **R** | 2 | 렌탈권유 | 50 | 🏠 2순위 — 렌탈 가전 권유 (이미 결합 中) |
+| **C** | 1 | 기타 | 10 | 후순위 — 분류 미확정 |
+
+**분배 정렬**: `priority_score DESC NULLS LAST → imported_at ASC` 단일 기준.
+→ S→A→B→R→C 순서 자동 노출 (priority_score 100→80→60→50→10).
+
+#### 4.1.2 인터넷·TV 회선 식별 룰 (R 등급 조건) — 2026-05-12 확정
+
+마감원장 row의 **단말 컬럼이 정확히 "인+TV" 또는 "인터넷"** 인 경우만 tier=2 (R 등급) 분류.
+
+```js
+const isInternetTV = (row) => {
+  const model = String(row['단말'] || '').trim();
+  return ['인+TV', '인터넷'].includes(model);
+};
+```
+
+**의도적으로 사용하지 않는 매칭 (false positive 위험)**:
+- ❌ 유형 = "유선" → 휴대폰 약정유형 표기와 혼동
+- ❌ 단말 prefix "인" → '인'으로 시작하는 다른 단말 광범위 매칭
+- ❌ 결제유형 컬럼(공/선·현/할) = "유선" → 휴대폰 약정 표기
+- ❌ 메모(기타·개통실 메모·비고) "유선"·"결합" 키워드 → 다른 사람 인터넷에 본인 결합되는 케이스 다수 (예: "개통후결합-박종국" = 박종국 인터넷에 본인 휴대폰만 합류)
+
+**한계**: 단말 정확 매칭만으로는 "다른 사람 인터넷에 결합된 휴대폰 가입자"를 자동 식별 불가. TM 상담 시 상담사가 `memo_etc` 메모를 보고 판단.
+
+#### 4.1.3 9단계 import 필터 (제외 룰)
+
+| 단계 | 룰 | 기본값 | 동작 |
+|:---:|:---|:---|:---|
+| 1 | 워치 prefix | `L` | 단말이 이 글자로 시작하면 row 제외 |
+| 2 | 연령 min | `19` | 만 나이가 이 값 미만 제외 (PIPA) |
+| 3 | 연령 max | `100` | 이 값 초과 제외 |
+| 4 | 전화 정규식 | `^01[016789][0-9]{7,8}$` | 한국 휴대폰만 통과 |
+| 5 | 이름 빈값 | — | 공백·null 제외 |
+| 6 | 생년월일 빈값 | — | null 제외 |
+| 7 | 이름+생년월일 통합 | — | 같은 사람 여러 회선 → 우선순위 높은 1건 |
+| 8 | category 결정 | 이동→신규→기변→기타 | tier=1만 적용 (tier=2는 '렌탈권유') |
+| 9 | quality_grade 매핑 | 위 표 4.1.1 | tier·category → S/A/B/R/C |
+
+**룰 저장 위치**: `incentive_calculator_overrides.section='import_rules'` (jsonb)
+**변경 audit**: `incentive_calculator_history`
+**적용 시점**: 다음 마감원장 import부터 (기존 customer 영향 없음)
+
+#### 4.1.4 중복 방지 4중
+
+| 단계 | 방식 | 처리 |
+|:---:|:---|:---|
+| 1 | 이름+생년월일 통합 | 같은 사람 → 우선순위 높은 1건 대표 |
+| 2 | 전화번호 충돌 | priority_score 높은 1건 `available`, 나머지 `on_hold` |
+| 3 | DB UNIQUE(db_source_id, phone) | INSERT 시 23505 → duplicate++ |
+| 4 | batch 내부 dups | 1·2단계에서 제거 |
 
 ### 4.2 `incentive_customer_call_log` (월별 파티션)
 ```sql
