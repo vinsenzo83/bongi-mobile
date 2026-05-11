@@ -1718,7 +1718,8 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
     cash_price: c.cash_price, installment_principal: c.installment_principal,
     carrier: c.carrier, store: c.store, store_code: c.store_code, dealer: c.dealer, agency_code: c.agency_code,
     memo_etc: c.memo_etc, memo_activation: c.memo_activation,
-    notes: c.internet_info ? `[기존 인터넷/TV] ${c.internet_info}` : null,
+    // notes는 상담사 콜 메모 전용 — import 시 자동 박지 않음
+    notes: null,
     tier: c.tier, category: c.category, quality_grade: c.quality_grade, priority_score: c.priority_score,
     on_hold_reason: c.on_hold_reason || null,
     call_status: c.status === 'on_hold' ? 'on_hold' : 'pending',
