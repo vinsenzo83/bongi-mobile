@@ -692,18 +692,22 @@ router.get('/stats/summary', async (req, res) => {
       baseFilter = (q) => q.is('deleted_at', null).in('assigned_agent_id', ids);
     }
 
-    // 상태별 카운트
+    // 상태별 카운트 — 8 statuses + total + archived 모두 병렬화 (옛 순차 8 await → 10 Promise.all)
     const statuses = ['pending', 'contacted', 'callback', 'rejected', 'converted', 'no_answer', 'wrong_number', 'dnt'];
-    const result = {};
-    for (const s of statuses) {
-      const { count } = await baseFilter(supabase.from('incentive_customer_db').select('id', { count: 'exact', head: true }))
-        .eq('call_status', s);
-      result[s] = count || 0;
-    }
-    const { count: totalActive } = await baseFilter(supabase.from('incentive_customer_db').select('id', { count: 'exact', head: true }))
-      .eq('archived', false);
-    const { count: archived } = await baseFilter(supabase.from('incentive_customer_db').select('id', { count: 'exact', head: true }))
-      .eq('archived', true);
+    const [statusCounts, totalActiveResult, archivedResult] = await Promise.all([
+      Promise.all(statuses.map(s =>
+        baseFilter(supabase.from('incentive_customer_db').select('id', { count: 'exact', head: true }))
+          .eq('call_status', s)
+          .then(({ count }) => [s, count || 0])
+      )),
+      baseFilter(supabase.from('incentive_customer_db').select('id', { count: 'exact', head: true }))
+        .eq('archived', false),
+      baseFilter(supabase.from('incentive_customer_db').select('id', { count: 'exact', head: true }))
+        .eq('archived', true),
+    ]);
+    const result = Object.fromEntries(statusCounts);
+    const totalActive = totalActiveResult.count;
+    const archived = archivedResult.count;
 
     // 🆕 그룹별 실적 (head:true count — 1000 row 제한 무관)
     const CONTACT = ['contacted','callback','rejected','converted'];
