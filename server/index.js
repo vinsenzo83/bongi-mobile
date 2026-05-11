@@ -6,22 +6,69 @@ import { dirname as _dn, join as _jn } from 'path';
 const __sentry_dir = _dn(_fu(import.meta.url));
 dotenv.config({ path: _jn(__sentry_dir, '..', '.env') });
 if (process.env.SENTRY_DSN) {
+  // PII·금융정보 자동 sanitize 정규식 (이벤트 전체 재귀 탐색)
+  const PII_PATTERNS = [
+    { re: /\b\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}\b/g, replace: '[card-redacted]' },     // 카드번호
+    { re: /\b\d{6}[\s\-]?\d{7}\b/g, replace: '[rrn-redacted]' },                              // 주민번호
+    { re: /\b\d{2,4}-?\d{2,4}-?\d{4,7}\b/g, replace: '[account-redacted]' },                  // 계좌번호 (느슨)
+    { re: /\b01[016789][\s\-]?\d{3,4}[\s\-]?\d{4}\b/g, replace: '[phone-redacted]' },         // 휴대폰
+    { re: /([?&](password|card_number|account_number|resident_id|cvv|expiry)=)[^&\s]+/gi, replace: '$1[redacted]' }, // URL 파라미터
+  ];
+  function sanitizeStr(s) {
+    if (typeof s !== 'string') return s;
+    let out = s;
+    for (const { re, replace } of PII_PATTERNS) out = out.replace(re, replace);
+    return out;
+  }
+  function sanitizeDeep(obj, depth = 0) {
+    if (depth > 6 || obj == null) return obj;
+    if (typeof obj === 'string') return sanitizeStr(obj);
+    if (Array.isArray(obj)) return obj.map(v => sanitizeDeep(v, depth + 1));
+    if (typeof obj === 'object') {
+      const out = {};
+      for (const k of Object.keys(obj)) {
+        // 민감 필드명은 키 기준으로도 redact
+        if (/password|cvv|card.*number|account.*number|resident.*id|expiry|secret|token/i.test(k)) {
+          out[k] = '[redacted]';
+        } else {
+          out[k] = sanitizeDeep(obj[k], depth + 1);
+        }
+      }
+      return out;
+    }
+    return obj;
+  }
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV || 'development',
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0.5,
-    // 운영 모드는 PII 제거
     sendDefaultPii: false,
     beforeSend(event, hint) {
-      // 라우트 path만 보존 + body·headers 제거
+      // 라우트 path만 보존 + body·headers·query 제거
       if (event.request) {
         delete event.request.cookies;
         delete event.request.data;
+        delete event.request.query_string;
+        if (event.request.headers) {
+          for (const k of Object.keys(event.request.headers)) {
+            if (/auth|cookie|token|key/i.test(k)) event.request.headers[k] = '[redacted]';
+          }
+        }
       }
+      // 메시지·예외·breadcrumb 모두 PII 정규식 sanitize
+      if (event.message) event.message = sanitizeStr(event.message);
+      if (event.exception && event.exception.values) {
+        event.exception.values = event.exception.values.map(ex => ({
+          ...ex,
+          value: sanitizeStr(ex.value),
+        }));
+      }
+      if (event.breadcrumbs) event.breadcrumbs = sanitizeDeep(event.breadcrumbs);
+      if (event.extra) event.extra = sanitizeDeep(event.extra);
       return event;
     },
   });
-  console.log('🔴 Sentry 활성 (env:', process.env.NODE_ENV || 'dev', ')');
+  console.log('🔴 Sentry 활성 (env:', process.env.NODE_ENV || 'dev', ', PII sanitize ON)');
 }
 
 import express from 'express';
