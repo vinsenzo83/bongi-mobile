@@ -245,41 +245,42 @@ function startSeedAutoSync(opts) {
     } catch (e) { console.warn('[seed sync ' + reason + ']', e); }
   }
 
-  // 1. 첫 동기화 (D 정의 + bootstrap 끝난 시점)
-  setTimeout(function(){ tickOnce('first'); }, FIRST_DELAY);
-
-  // 2. polling 60초
-  setInterval(function(){ tickOnce('poll'); }, POLL_MS);
-
-  // 3. visibilitychange — 탭 활성화 시 즉시
+  // ─── 모든 핸들·리스너·타이머 참조 보존 + pagehide/beforeunload 시 cleanup ───
+  var _firstTimer = setTimeout(function(){ tickOnce('first'); }, FIRST_DELAY);
+  var _pollTimer = setInterval(function(){ tickOnce('poll'); }, POLL_MS);
+  var _visHandler = function(){ if (!document.hidden) tickOnce('visible'); };
+  var _storageHandler = function(e){
+    if (!e || !e.key) return;
+    var lsKeys = Object.values(SECTION_TO_LS);
+    if (lsKeys.indexOf(e.key) >= 0 && applyOverridesHook) {
+      try { applyOverridesHook(); } catch(e2) {}
+      if (typeof calc === 'function') calc();
+    }
+  };
+  var _bc = null;
+  try { document.addEventListener('visibilitychange', _visHandler); } catch(e) {}
+  try { window.addEventListener('storage', _storageHandler); } catch(e) {}
   try {
-    document.addEventListener('visibilitychange', function(){
-      if (!document.hidden) tickOnce('visible');
-    });
-  } catch (e) {}
-
-  // 4. storage event — 같은 origin 다른 탭/iframe LS 변경 자동 반영
-  //    (LS 키가 SECTION_TO_LS에 속하면 D에 다시 적용)
-  try {
-    window.addEventListener('storage', function(e){
-      if (!e || !e.key) return;
-      // SECTION_TO_LS의 값(LS 키) 중 하나면 → overrides apply (calculator만)
-      var lsKeys = Object.values(SECTION_TO_LS);
-      if (lsKeys.indexOf(e.key) >= 0 && applyOverridesHook) {
-        try { applyOverridesHook(); } catch(e2) {}
-        if (typeof calc === 'function') calc();
-      }
-    });
-  } catch (e) {}
-
-  // 5. BroadcastChannel — 같은 브라우저 다른 탭에서 상품관리 변경 시
-  try {
-    var bc = new BroadcastChannel('incentive-products');
-    bc.onmessage = function(ev) {
+    _bc = new BroadcastChannel('incentive-products');
+    _bc.onmessage = function(ev) {
       if (!ev.data || ev.data.type !== 'product-updated') return;
       tickOnce('broadcast');
     };
-  } catch (e) { /* unsupported */ }
+  } catch(e) { /* unsupported */ }
+
+  // 페이지 종료 시 cleanup — 메모리 누수·중복 핸들러 방지 (SPA 페이지 전환·iframe 재로드 포함)
+  function _cleanup() {
+    try { clearTimeout(_firstTimer); } catch(_) {}
+    try { clearInterval(_pollTimer); } catch(_) {}
+    try { document.removeEventListener('visibilitychange', _visHandler); } catch(_) {}
+    try { window.removeEventListener('storage', _storageHandler); } catch(_) {}
+    try { if (_bc) { _bc.onmessage = null; _bc.close(); _bc = null; } } catch(_) {}
+  }
+  try { window.addEventListener('pagehide', _cleanup, { once: true }); } catch(_) {}
+  try { window.addEventListener('beforeunload', _cleanup, { once: true }); } catch(_) {}
+
+  // 디버깅용 — 페이지에서 명시적 cleanup 호출 가능
+  return _cleanup;
 }
 
 // 페이지에서 명시적 재시도 호출용

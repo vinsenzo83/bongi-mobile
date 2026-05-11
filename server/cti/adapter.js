@@ -47,15 +47,24 @@ class CTIAdapter {
     this.calls.set(callId, call);
     this.agents.set(agentId, { status: 'on_call', callId });
 
-    // Mock: 2초 후 자동 연결
-    setTimeout(() => {
+    // Mock: 2초 후 자동 연결 — 타이머 핸들 call 객체에 보존 (cleanup 가능)
+    call._connectTimer = setTimeout(() => {
       if (this.calls.has(callId) && this.calls.get(callId).status === 'ringing') {
         this.calls.get(callId).status = 'connected';
         this.calls.get(callId).connectedAt = new Date().toISOString();
       }
+      call._connectTimer = null;
     }, 2000);
 
     return call;
+  }
+
+  // 통화 종료 시 미실행 setTimeout 정리 (메모리 누수 차단)
+  _clearCallTimers(call) {
+    if (call && call._connectTimer) {
+      try { clearTimeout(call._connectTimer); } catch(_) {}
+      call._connectTimer = null;
+    }
   }
 
   // 수신 응답
@@ -98,6 +107,7 @@ class CTIAdapter {
   async hangupCall(callId) {
     const call = this.calls.get(callId);
     if (!call) throw new Error('통화를 찾을 수 없습니다');
+    this._clearCallTimers(call);
     call.status = 'ended';
     call.endedAt = new Date().toISOString();
     if (call.connectedAt) {
