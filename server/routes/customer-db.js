@@ -1773,6 +1773,11 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
     }).eq('id', batchId);
   }
 
+  // 최종 batch 통계 보장 — newRows가 0이라 loop 안 돌아도 cross-source dups 등 반영
+  await supabase.from('incentive_customer_import_batch').update({
+    valid_count: inserted, invalid_count: failed, duplicate_count: dups,
+  }).eq('id', batchId);
+
   logAccess({
     user_id: userId, action: 'import_closing_ledger', ip, ua,
     metadata: { batch_id: batchId, db_source_id, total: rows.length, customers: customers.length, inserted, dups, on_hold: onHold, failed },
