@@ -1234,15 +1234,16 @@ function openEditModal(id) {
             'LG': ['LGU+ 참쉬운 가족결합', 'LGU+ 투게더 결합'],
           };
           // p.carrier 정규화 — 다양한 표기 모두 매핑
-          // SK / SKT / SK텔레콤 / SK 알뜰 / 에스케이      → 'SK'
-          // KT / KT M / KT 알뜰 / 케이티                  → 'KT'
-          // LG / LGU / LGU+ / LG U+ / LG 알뜰 / 엘지 / U+ → 'LG'
+          //   공백·하이픈·언더스코어·대소문자 무시 후 prefix 매칭
+          //   SK 계열: SK / SKT / SK텔레콤 / SK Telecom / SK알뜰 / 에스케이(텔레콤) / 에스케이티
+          //   KT 계열: KT / KTM / KT M / KT 알뜰 / 케이티 / olleh / 올레
+          //   LG 계열: LG / LGU / LGU+ / LG U+ / LG알뜰 / 엘지(유플러스) / 유플러스 / U+ / UPLUS
           function normalizeCarrier(raw) {
             if (!raw) return '';
-            const s = String(raw).trim();
-            if (/^(SK|SKT|에스케이)/i.test(s)) return 'SK';
-            if (/^(KT|케이티)/i.test(s)) return 'KT';
-            if (/^(LG|엘지|U\+|U ?PLUS)/i.test(s)) return 'LG';
+            const s = String(raw).trim().toUpperCase().replace(/[\s\-_]/g, '');
+            if (/^(SKT|SK|에스케이)/.test(s)) return 'SK';
+            if (/^(KT|케이티|OLLEH|올레)/.test(s)) return 'KT';
+            if (/^(LG|엘지|UPLUS|U\+|유플러스)/.test(s)) return 'LG';
             return '';
           }
           const carrier = normalizeCarrier(p.carrier);
