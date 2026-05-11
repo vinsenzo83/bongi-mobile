@@ -217,6 +217,19 @@ tr:hover { background:#334155; }
           </div>
         </div>
 
+        <!-- 🏆 등급 매핑 (별도 행 — 전체 폭) -->
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #334155">
+          <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:8px">🏆 등급 매핑 (tier × category → 등급)</div>
+          <div style="font-size:10.5px;color:#94a3b8;margin-bottom:8px;line-height:1.6">각 등급의 조건 (tier·category). 매칭 순서대로 평가 — 위가 우선. 매칭 안 되면 default 등급 부여.</div>
+          <div id="r-grades" style="display:flex;flex-direction:column;gap:6px"></div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+            <label style="font-size:11px;color:#cbd5e1">default 등급:
+              <input type="text" id="r-grade-default" maxlength="2" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:50px;margin-left:4px;text-align:center">
+            </label>
+            <button class="btn" style="font-size:10.5px;padding:4px 10px;background:#3b82f6;color:#fff" onclick="addGradeRow()">➕ 등급 룰 추가</button>
+          </div>
+        </div>
+
         <div style="display:flex;gap:10px;margin-top:14px">
           <button class="btn btn-success" onclick="saveImportRules()">💾 저장</button>
           <button class="btn" style="background:#475569;color:#fff" onclick="resetImportRules()">🔄 기본값 복원</button>
@@ -578,6 +591,74 @@ function renderImportRules(R) {
       <input type="number" data-ab-bonus="${i}" value="${b.bonus}" placeholder="bonus" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:3px 6px;border-radius:4px;font-size:11px">
     </div>
   `).join('');
+
+  // 등급 매핑 — grades 객체에서 key(default 제외)·tier·category 추출하여 row로 렌더
+  const grades = R.grades || {};
+  const rows = Object.entries(grades).filter(([k]) => k !== 'default').map(([key, val]) => {
+    if (typeof val !== 'object' || !val) return null;
+    return { key, grade: key.charAt(0), tier: val.tier ?? '', category: val.category ?? '' };
+  }).filter(Boolean);
+  renderGradeRows(rows);
+  document.getElementById('r-grade-default').value = typeof grades.default === 'string' ? grades.default : 'C';
+}
+
+function renderGradeRows(rows) {
+  const cats = ['', '이동', '신규', '렌탈권유', '기변', '기타'];
+  document.getElementById('r-grades').innerHTML = rows.map((r, i) => `
+    <div style="display:grid;grid-template-columns:60px 80px 1fr 30px;gap:6px;align-items:center;background:rgba(0,0,0,0.2);padding:6px;border-radius:4px">
+      <input type="text" data-g-grade="${i}" value="${r.grade}" maxlength="2" placeholder="S" style="background:#0f172a;border:1px solid #475569;color:#fbbf24;padding:4px 6px;border-radius:4px;font-size:12px;font-weight:800;text-align:center">
+      <select data-g-tier="${i}" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 6px;border-radius:4px;font-size:11px">
+        <option value="">tier any</option>
+        <option value="1" ${r.tier===1?'selected':''}>tier 1</option>
+        <option value="2" ${r.tier===2?'selected':''}>tier 2</option>
+      </select>
+      <select data-g-cat="${i}" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 6px;border-radius:4px;font-size:11px">
+        ${cats.map(c => `<option value="${c}" ${r.category===c?'selected':''}>${c||'category any'}</option>`).join('')}
+      </select>
+      <button onclick="removeGradeRow(${i})" style="background:#dc2626;color:#fff;border:none;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer">✕</button>
+    </div>
+  `).join('');
+}
+
+function addGradeRow() {
+  const rows = collectGradeRows();
+  rows.push({ grade: 'S', tier: '', category: '' });
+  renderGradeRows(rows);
+}
+
+function removeGradeRow(i) {
+  const rows = collectGradeRows();
+  rows.splice(i, 1);
+  renderGradeRows(rows);
+}
+
+function collectGradeRows() {
+  const rows = [];
+  document.querySelectorAll('[data-g-grade]').forEach((el, i) => {
+    rows.push({
+      grade: el.value.trim() || 'C',
+      tier: document.querySelector(`[data-g-tier="${i}"]`)?.value,
+      category: document.querySelector(`[data-g-cat="${i}"]`)?.value || '',
+    });
+  });
+  return rows;
+}
+
+function buildGradesObject() {
+  const rows = collectGradeRows();
+  const grades = {};
+  rows.forEach((r, i) => {
+    // 키 유일화: grade가 같으면 _2·_3 suffix
+    const baseKey = r.grade.toUpperCase();
+    let key = baseKey, n = 2;
+    while (grades[key]) { key = `${baseKey}_${n++}`; }
+    const rule = {};
+    if (r.tier !== '' && r.tier != null) rule.tier = parseInt(r.tier);
+    if (r.category) rule.category = r.category;
+    grades[key] = rule;
+  });
+  grades.default = document.getElementById('r-grade-default').value.trim().toUpperCase() || 'C';
+  return grades;
 }
 
 function collectImportRules() {
@@ -602,13 +683,7 @@ function collectImportRules() {
     internet_model_prefix: document.getElementById('r-net-prefix').value.trim() || '인',
     base_priority: bp,
     age_bonus: ab,
-    grades: {
-      S: { tier: 1, category: '이동' },
-      A_tier1_new: { tier: 1, category: '신규' },
-      A_tier2: { tier: 2 },
-      B: { tier: 1, category: '기변' },
-      default: 'C',
-    },
+    grades: buildGradesObject(),
   };
 }
 
