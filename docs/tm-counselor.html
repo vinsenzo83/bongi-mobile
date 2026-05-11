@@ -716,10 +716,12 @@ async function loadCallCustomer(customerId) {
     if (tierEl) {
       const tags = [];
       // 등급 배지 (가장 강조)
+      // S·A·B·C = 인터넷 X (1순위 영업) / R = 인터넷 O (2순위·렌탈)
       const gradeStyles = {
         S: 'background:linear-gradient(135deg,#dc2626,#f59e0b);color:#fff',
         A: 'background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff',
         B: 'background:#475569;color:#fff',
+        R: 'background:linear-gradient(135deg,#a855f7,#c084fc);color:#fff',
         C: 'background:#1e293b;color:#94a3b8;border:1px solid #475569',
       };
       if (c.quality_grade) {

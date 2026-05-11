@@ -332,7 +332,7 @@ tr:hover { background:#334155; }
         <!-- 2️⃣ 균등 분배 -->
         <div style="background:linear-gradient(135deg,rgba(22,163,74,0.15),rgba(0,0,0,0.3));border:1.5px solid #16a34a;border-radius:8px;padding:14px">
           <div style="font-size:13px;color:#86efac;font-weight:800;margin-bottom:6px">2️⃣ 균등 분배 (1클릭 자동)</div>
-          <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.5">콜센터 active 상담사 전원에게 미배정 풀 라운드로빈 균등 분배. S→A→B 우선순위로 자동 정렬.</div>
+          <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.5">콜센터 active 상담사 전원에게 미배정 풀 라운드로빈 균등 분배. <b>S→A→B→R→C</b> 우선순위 자동 정렬 (S/A/B/C=인터넷 X / R=인터넷 O).</div>
           <div style="margin-bottom:8px">
             <label style="font-size:11px;color:#cbd5e1">상담사당 최대 (옵션):
               <input type="number" id="eq-max" min="0" placeholder="0 = 무제한" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 6px;border-radius:4px;font-size:11px;width:120px;margin-left:6px">
@@ -1738,7 +1738,7 @@ async function handleFile(file) {
         <div>엑셀 ${d.excel_rows} → 필터 ${d.filtered} → 통합 customer ${d.customers}</div>
         <div>적재 <b style="color:#fbbf24">${d.inserted}</b> · 중복 ${d.duplicates} · on_hold ${d.on_hold} · 실패 ${d.failed}</div>
         <div style="margin-top:6px">📊 1차 ${d.tier_dist?.[1] || 0}명 (이동 ${cd['이동']||0} · 신규 ${cd['신규']||0} · 기변 ${cd['기변']||0} · 기타 ${cd['기타']||0}) · 2차 렌탈 ${d.tier_dist?.[2] || 0}명</div>
-        <div style="margin-top:6px">🏆 등급 — <span style="color:#fbbf24">S ${gd.S||0}</span> · <span style="color:#86efac">A ${gd.A||0}</span> · <span style="color:#93c5fd">B ${gd.B||0}</span> · <span style="color:#cbd5e1">C ${gd.C||0}</span></div>
+        <div style="margin-top:6px">🏆 등급 — <span style="color:#fbbf24">S ${gd.S||0}</span> · <span style="color:#86efac">A ${gd.A||0}</span> · <span style="color:#93c5fd">B ${gd.B||0}</span> · <span style="color:#c4b5fd">R ${gd.R||0}</span> · <span style="color:#cbd5e1">C ${gd.C||0}</span></div>
         <div style="margin-top:6px;font-size:10.5px;color:#fca5a5">🚫 제외 — 워치 ${fs.watch||0} · 연령 ${fs.age||0} · phone ${fs.phone||0} · 이름누락 ${fs.name||0} · 생일누락 ${fs.birth||0}</div>
         <div style="margin-top:6px;color:#94a3b8">batch_id: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">${d.batch_id}</code></div>
       `;
