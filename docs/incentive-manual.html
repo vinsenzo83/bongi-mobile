@@ -372,9 +372,10 @@ const SECTIONS = [
 <div class="step"><span class="num">4</span><b>이름 빈값 필터</b> — 공백·null 제외.</div>
 <div class="step"><span class="num">5</span><b>생년월일 빈값 필터</b> — null 제외 (나이 미산정 → 등급 부정확 위험).</div>
 <div class="step"><span class="num">6</span><b>같은 사람 통합</b> — 이름+생년월일 동일 row 그룹화. 한 사람 여러 회선 → 우선순위 높은 1건 대표 + 나머지 회선은 customer 메타데이터로 보존.</div>
-<div class="step"><span class="num">7</span><b>인터넷·TV 회선 식별</b> — 그룹 내 한 회선이라도 <code>internet_types</code>(기본 "유선") 또는 <code>internet_models</code>(인+TV·인터넷·유선) 또는 <code>internet_model_prefix</code>(기본 "인") 매칭 시 → 그 사람 tier=2.</div>
+<div class="step"><span class="num">7</span><b>인터넷·TV 회선 식별</b> — <b>단말 정확 매칭</b>만: <code>internet_models</code>의 값(기본 <b>"인+TV" / "인터넷"</b>)과 정확히 같으면 그 사람 tier=2. <br>※ 메모·결제유형·prefix 매칭은 false positive 위험이 커서 사용하지 않음 (예: "공/선=유선"은 휴대폰 약정유형이라 무관).</div>
 <div class="step"><span class="num">8</span><b>category 결정</b> — tier=2면 "렌탈권유". tier=1이면 유형에서 이동(우선) → 신규 → 기변 → 기타 순으로 첫 매칭.</div>
 <div class="step"><span class="num">9</span><b>등급(quality_grade) 매핑</b> — grades 룰 객체에서 tier·category 매칭하는 첫 키의 첫 글자(S/A/B/R/C).</div>
+<div class="warn"><b>⚠️ R 등급 분류 정책 (2026-05-12 확정)</b><br>R = 인터넷 보유자. 분류 기준은 <b>마감원장 단말 = "인터넷" 또는 "인+TV"</b> 정확히 둘 중 하나일 때만. 메모(기타·개통실 메모·비고)에 "유선"·"결합" 같은 키워드가 있어도 다른 사람과 결합되는 케이스가 섞여 있어 본인 인터넷 보유로 단정 불가 → R 분류에서 제외.</div>
 
 <h3>2. 등급 매핑 룰 (calcGrade)</h3>
 <table>
