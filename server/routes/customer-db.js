@@ -1501,14 +1501,49 @@ router.get('/stats/timeseries', async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // 마감원장(closing_ledger) import 헬퍼
 // ═══════════════════════════════════════════════════════════════
+// 마감원장 import 룰 기본값 — DB(incentive_calculator_overrides.section='import_rules') 없을 때 폴백
+const DEFAULT_IMPORT_RULES = {
+  watch_prefix: 'L',
+  age_min: 19,
+  age_max: 100,
+  phone_regex: '^01[016789][0-9]{7,8}$',
+  internet_types: ['유선'],
+  internet_models: ['인+TV', '인터넷', '유선'],
+  internet_model_prefix: '인',
+  grades: {
+    S: { tier: 1, category: '이동' },
+    A_tier1_new: { tier: 1, category: '신규' },
+    A_tier2: { tier: 2 },
+    B: { tier: 1, category: '기변' },
+    default: 'C',
+  },
+  base_priority: { '이동': 100, '신규': 80, '렌탈권유': 50, '기변': 30, '기타': 10 },
+  age_bonus: [
+    { min: 0,  max: 29, bonus: 20 },
+    { min: 30, max: 39, bonus: 25 },
+    { min: 40, max: 49, bonus: 25 },
+    { min: 50, max: 59, bonus: 15 },
+    { min: 60, max: 69, bonus: 0 },
+    { min: 70, max: 999, bonus: -30 },
+  ],
+};
+
 async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
-  const isWatch = (d) => /^L/.test(String(d || ''));
-  // 인터넷·TV row 판단 — type='유선' 또는 model이 '인+TV'/'인터넷'/'유선' (유심·기타 안 잡음)
+  // 동적 룰 로드 — DB에서 import_rules 가져오기. 없으면 default
+  const { data: rulesRow } = await supabase.from('incentive_calculator_overrides')
+    .select('data').eq('section', 'import_rules').maybeSingle();
+  const R = { ...DEFAULT_IMPORT_RULES, ...(rulesRow?.data || {}) };
+
+  const watchRegex = new RegExp('^' + (R.watch_prefix || 'L'));
+  const isWatch = (d) => watchRegex.test(String(d || ''));
+  // 인터넷·TV row 판단 — settings 기반 동적
   const isInternetTV = (model, type) => {
-    if (type === '유선') return true;
+    if ((R.internet_types || []).includes(type)) return true;
     const m = String(model || '').trim();
-    return m === '인+TV' || m === '인터넷' || m === '유선' || m.startsWith('인');
+    if ((R.internet_models || []).includes(m)) return true;
+    return R.internet_model_prefix && m.startsWith(R.internet_model_prefix);
   };
+  const phoneRegex = new RegExp(R.phone_regex || '^01[016789][0-9]{7,8}$');
   const excelToDate = (s) => {
     if (typeof s !== 'number' || s < 1) return null;
     const d = new Date((s - 25569) * 86400 * 1000);
@@ -1531,14 +1566,16 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
   const intOrNull = (v) => { const n = parseInt(v); return isNaN(n) ? null : n; };
   const REF = new Date();
 
+  // 필터 사유 카운트 (UI에 표시용)
+  const filterStats = { watch: 0, age: 0, phone: 0, name: 0, birth: 0 };
   const filtered = rows.filter(r => {
-    if (isWatch(r.단말)) return false;
+    if (isWatch(r.단말)) { filterStats.watch++; return false; }
     const a = ageAt(r.생년월일, REF);
-    if (a === null || a < 19 || a >= 100) return false;
+    if (a === null || a < R.age_min || a >= R.age_max) { filterStats.age++; return false; }
     const ph = cleanPhone(r.전화번호);
-    if (!/^01[016789][0-9]{7,8}$/.test(ph)) return false;
-    if (!String(r.고객명 || '').trim()) return false;
-    if (!r.생년월일) return false;
+    if (!phoneRegex.test(ph)) { filterStats.phone++; return false; }
+    if (!String(r.고객명 || '').trim()) { filterStats.name++; return false; }
+    if (!r.생년월일) { filterStats.birth++; return false; }
     return true;
   });
 
@@ -1563,35 +1600,40 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
   //      - 그 외 → '기타' (priority 10)
   // 3) 한 사람의 여러 회선 → 우선순위 높은 유형 1개로 통합
   // ═════════════════════════════════════════════════════════════
-  // 등급 + 나이 가중치 헬퍼
+  // 등급 + 나이 가중치 헬퍼 (settings 기반 동적)
   const calcGrade = (t, c) => {
-    if (t === 1 && c === '이동') return 'S';
-    if (t === 1 && c === '신규') return 'A';
-    if (t === 2) return 'A';
-    if (t === 1 && c === '기변') return 'B';
-    return 'C';
+    const g = R.grades || {};
+    for (const [grade, rule] of Object.entries(g)) {
+      if (grade === 'default') continue;
+      if (typeof rule !== 'object') continue;
+      if (rule.tier != null && rule.tier !== t) continue;
+      if (rule.category != null && rule.category !== c) continue;
+      // grade 키 형식: 'S'·'A_tier1_new'·'A_tier2'·'B' — 첫 글자만 추출
+      return grade.charAt(0);
+    }
+    return typeof g.default === 'string' ? g.default : 'C';
   };
   const calcAgeBonus = (a) => {
     if (a == null) return 0;
-    if (a < 30) return 20;
-    if (a < 40) return 25;
-    if (a < 50) return 25;
-    if (a < 60) return 15;
-    if (a < 70) return 0;
-    return -30;
+    const bands = R.age_bonus || [];
+    for (const b of bands) {
+      if (a >= (b.min ?? 0) && a <= (b.max ?? 999)) return b.bonus ?? 0;
+    }
+    return 0;
   };
+  const basePri = (cat) => (R.base_priority || {})[cat] ?? 10;
 
   const customers = [];
   groups.forEach((gRows, key) => {
     const hasInternet = gRows.some(r => isInternetTV(r.단말, r.유형));
     let tier, category, basePriority;
-    if (hasInternet) { tier = 2; category = '렌탈권유'; basePriority = 50; }
+    if (hasInternet) { tier = 2; category = '렌탈권유'; basePriority = basePri('렌탈권유'); }
     else {
       const types = gRows.map(r => r.유형);
-      if (types.includes('이동')) { tier = 1; category = '이동'; basePriority = 100; }
-      else if (types.includes('신규')) { tier = 1; category = '신규'; basePriority = 80; }
-      else if (types.includes('기변')) { tier = 1; category = '기변'; basePriority = 30; }
-      else { tier = 1; category = '기타'; basePriority = 10; }
+      if (types.includes('이동')) { tier = 1; category = '이동'; basePriority = basePri('이동'); }
+      else if (types.includes('신규')) { tier = 1; category = '신규'; basePriority = basePri('신규'); }
+      else if (types.includes('기변')) { tier = 1; category = '기변'; basePriority = basePri('기변'); }
+      else { tier = 1; category = '기타'; basePriority = basePri('기타'); }
     }
     const sorted = [...gRows].sort((a, b) => {
       const da = parseActDate(a.개통날짜); const db = parseActDate(b.개통날짜);
@@ -1710,6 +1752,9 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
       2: customers.filter(c => c.tier === 2).length,
     },
     category_dist: customers.reduce((m, c) => { m[c.category] = (m[c.category] || 0) + 1; return m; }, {}),
+    grade_dist: customers.reduce((m, c) => { m[c.quality_grade] = (m[c.quality_grade] || 0) + 1; return m; }, {}),
+    filter_stats: filterStats,
+    rules_applied: R,
   };
 }
 

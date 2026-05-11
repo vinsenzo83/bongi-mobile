@@ -1552,7 +1552,7 @@ router.post('/calc-history', authenticateJWT, async (req, res) => {
 // calculator.html 6종 overrides 통합 저장 (localStorage → DB Phase 2)
 // section: 'tv' / 'bundle' / 'device' / 'install' / 'card' / 'gift' / 'gift-catalog-custom'
 // ═══════════════════════════════════════════════════════════════
-const CALC_OVERRIDE_SECTIONS = ['tv','bundle','device','install','card','gift','gift-catalog-custom','sales'];
+const CALC_OVERRIDE_SECTIONS = ['tv','bundle','device','install','card','gift','gift-catalog-custom','sales','import_rules','tvpolicy','lgubonus'];
 
 // GET /api/incentive/calc-overrides — 모든 섹션 override 조회 (모든 logged-in user)
 router.get('/calc-overrides', authenticateJWT, async (req, res) => {
@@ -1583,6 +1583,12 @@ router.put('/calc-overrides/:section', authenticateJWT, async (req, res) => {
       return res.status(400).json({ error: 'invalid section' });
     }
     const { data: payload } = req.body || {};
+
+    // 변경 전 데이터 — history 기록용
+    const { data: before } = await supabase
+      .from('incentive_calculator_overrides')
+      .select('data').eq('section', section).maybeSingle();
+
     const { data, error } = await supabase
       .from('incentive_calculator_overrides')
       .upsert({
@@ -1595,6 +1601,21 @@ router.put('/calc-overrides/:section', authenticateJWT, async (req, res) => {
       .select()
       .single();
     if (error) throw error;
+
+    // 변경 이력 기록 (실패해도 main 응답 막지 X)
+    try {
+      await supabase.from('incentive_calculator_history').insert({
+        section,
+        action: before?.data ? 'UPDATE' : 'INSERT',
+        field: 'data',
+        before_value: before?.data ? JSON.stringify(before.data) : null,
+        after_value: JSON.stringify(data.data),
+        changed_by_user_id: req.user.id,
+        changed_by_name: me.name,
+        changed_at: new Date().toISOString(),
+      });
+    } catch (e) { console.warn('[calc-history] insert fail', e.message); }
+
     res.json({ override: data });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);

@@ -166,6 +166,63 @@ tr:hover { background:#334155; }
         <label style="font-size:11.5px;color:#fbbf24"><input type="radio" name="import-mode" value="closing_ledger"> 📊 마감원장 (개통날짜·통신사·매장·단말·요금제·기타) → 자동 1차/2차 분류 + 워치/미성년/100세 제외 + 이름+생일 통합 + phone 충돌 on_hold</label>
       </div>
       <div id="import-result" style="margin-top:14px;font-size:11.5px;color:#94a3b8"></div>
+
+      <!-- 📋 마감원장 룰 설정 (접힘) -->
+      <details style="margin-top:18px;background:rgba(0,0,0,0.3);border:1.5px solid #475569;border-radius:8px;padding:14px">
+        <summary style="cursor:pointer;font-size:13px;font-weight:700;color:#fbbf24">📋 마감원장 import 룰 설정 (admin)</summary>
+        <div style="margin-top:12px;font-size:11px;color:#94a3b8;line-height:1.6">변경 즉시 다음 마감원장 import부터 적용. 코드 수정 없이 admin이 직접 조정.</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px">
+          <!-- 🚫 필터 -->
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fca5a5;margin-bottom:8px">🚫 필터 (제외 룰)</div>
+            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">워치 prefix (정규식 시작 글자)
+              <input type="text" id="r-watch-prefix" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:100%;margin-top:2px">
+            </label>
+            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">연령 min ~ max
+              <div style="display:flex;gap:6px;margin-top:2px">
+                <input type="number" id="r-age-min" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:50%">
+                <input type="number" id="r-age-max" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:50%">
+              </div>
+            </label>
+            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">phone 정규식
+              <input type="text" id="r-phone-regex" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:100%;font-family:monospace;margin-top:2px">
+            </label>
+          </div>
+
+          <!-- 🌐 인터넷·TV 판별 -->
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#86efac;margin-bottom:8px">🌐 인터넷·TV 판별 (tier=2 조건)</div>
+            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">internet_types (콤마 구분)
+              <input type="text" id="r-net-types" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:100%;margin-top:2px">
+            </label>
+            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">internet_models (콤마 구분)
+              <input type="text" id="r-net-models" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:100%;margin-top:2px">
+            </label>
+            <label style="display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px">internet_model_prefix
+              <input type="text" id="r-net-prefix" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;width:100%;margin-top:2px">
+            </label>
+          </div>
+
+          <!-- ⭐ basePriority -->
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fde68a;margin-bottom:8px">⭐ basePriority (category 별 기본 점수)</div>
+            <div id="r-base-priority" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+          </div>
+
+          <!-- 🎂 나이 가중치 -->
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#a5b4fc;margin-bottom:8px">🎂 나이 가중치 (priority 추가 점수)</div>
+            <div id="r-age-bonus" style="display:flex;flex-direction:column;gap:4px"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button class="btn btn-success" onclick="saveImportRules()">💾 저장</button>
+          <button class="btn" style="background:#475569;color:#fff" onclick="resetImportRules()">🔄 기본값 복원</button>
+          <span id="r-msg" style="font-size:11px;color:#94a3b8;align-self:center"></span>
+        </div>
+      </details>
     </div>
 
     <!-- 🎯 분배 (지정 + 균등 hybrid) -->
@@ -463,6 +520,126 @@ async function init() {
 
 async function loadAll() {
   loadStats(); loadDbSources(); loadBatches(); loadAgents(); loadCustomers(); loadCenterAllocations(); loadJobStatus();
+  loadImportRules();
+}
+
+// ═══ 마감원장 import 룰 ═══════════════════════════════════════
+const DEFAULT_IMPORT_RULES = {
+  watch_prefix: 'L',
+  age_min: 19, age_max: 100,
+  phone_regex: '^01[016789][0-9]{7,8}$',
+  internet_types: ['유선'],
+  internet_models: ['인+TV', '인터넷', '유선'],
+  internet_model_prefix: '인',
+  base_priority: { '이동': 100, '신규': 80, '렌탈권유': 50, '기변': 30, '기타': 10 },
+  age_bonus: [
+    { min: 0,  max: 29, bonus: 20 },
+    { min: 30, max: 39, bonus: 25 },
+    { min: 40, max: 49, bonus: 25 },
+    { min: 50, max: 59, bonus: 15 },
+    { min: 60, max: 69, bonus: 0 },
+    { min: 70, max: 999, bonus: -30 },
+  ],
+};
+
+async function loadImportRules() {
+  try {
+    const r = await fetchAuth(API + '/calc-overrides');
+    if (!r.ok) return;
+    const d = await r.json();
+    const row = (d.sections || []).find(s => s.section === 'import_rules');
+    const rules = row?.data || DEFAULT_IMPORT_RULES;
+    renderImportRules(rules);
+  } catch (e) { console.warn('loadImportRules', e); }
+}
+
+function renderImportRules(R) {
+  document.getElementById('r-watch-prefix').value = R.watch_prefix ?? 'L';
+  document.getElementById('r-age-min').value = R.age_min ?? 19;
+  document.getElementById('r-age-max').value = R.age_max ?? 100;
+  document.getElementById('r-phone-regex').value = R.phone_regex ?? '';
+  document.getElementById('r-net-types').value = (R.internet_types || []).join(', ');
+  document.getElementById('r-net-models').value = (R.internet_models || []).join(', ');
+  document.getElementById('r-net-prefix').value = R.internet_model_prefix ?? '';
+
+  const bp = R.base_priority || {};
+  document.getElementById('r-base-priority').innerHTML =
+    ['이동','신규','렌탈권유','기변','기타'].map(cat => `
+      <label style="font-size:11px;color:#cbd5e1">${cat}
+        <input type="number" data-bp="${cat}" value="${bp[cat] ?? 0}" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:3px 6px;border-radius:4px;font-size:11px;width:100%;margin-top:2px">
+      </label>
+    `).join('');
+
+  const ab = R.age_bonus || [];
+  document.getElementById('r-age-bonus').innerHTML = ab.map((b, i) => `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;align-items:center">
+      <input type="number" data-ab-min="${i}" value="${b.min}" placeholder="min" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:3px 6px;border-radius:4px;font-size:11px">
+      <input type="number" data-ab-max="${i}" value="${b.max}" placeholder="max" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:3px 6px;border-radius:4px;font-size:11px">
+      <input type="number" data-ab-bonus="${i}" value="${b.bonus}" placeholder="bonus" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:3px 6px;border-radius:4px;font-size:11px">
+    </div>
+  `).join('');
+}
+
+function collectImportRules() {
+  const parseCSV = (s) => s.split(',').map(x => x.trim()).filter(Boolean);
+  const ab = [];
+  document.querySelectorAll('[data-ab-min]').forEach((el, i) => {
+    ab.push({
+      min: parseInt(el.value) || 0,
+      max: parseInt(document.querySelector(`[data-ab-max="${i}"]`).value) || 999,
+      bonus: parseInt(document.querySelector(`[data-ab-bonus="${i}"]`).value) || 0,
+    });
+  });
+  const bp = {};
+  document.querySelectorAll('[data-bp]').forEach(el => { bp[el.dataset.bp] = parseInt(el.value) || 0; });
+  return {
+    watch_prefix: document.getElementById('r-watch-prefix').value.trim() || 'L',
+    age_min: parseInt(document.getElementById('r-age-min').value) || 19,
+    age_max: parseInt(document.getElementById('r-age-max').value) || 100,
+    phone_regex: document.getElementById('r-phone-regex').value.trim() || '^01[016789][0-9]{7,8}$',
+    internet_types: parseCSV(document.getElementById('r-net-types').value),
+    internet_models: parseCSV(document.getElementById('r-net-models').value),
+    internet_model_prefix: document.getElementById('r-net-prefix').value.trim() || '인',
+    base_priority: bp,
+    age_bonus: ab,
+    grades: {
+      S: { tier: 1, category: '이동' },
+      A_tier1_new: { tier: 1, category: '신규' },
+      A_tier2: { tier: 2 },
+      B: { tier: 1, category: '기변' },
+      default: 'C',
+    },
+  };
+}
+
+async function saveImportRules() {
+  const msg = document.getElementById('r-msg');
+  try {
+    const data = collectImportRules();
+    const r = await fetchAuth(API + '/calc-overrides/import_rules', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data }),
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.error || '저장 실패');
+    }
+    msg.textContent = '✅ 저장 완료 — 다음 마감원장 import부터 적용';
+    msg.style.color = '#86efac';
+    showToast('✅ 마감원장 룰 저장');
+  } catch (e) {
+    msg.textContent = '❌ ' + e.message;
+    msg.style.color = '#fca5a5';
+  }
+}
+
+function resetImportRules() {
+  if (!confirm('기본값으로 복원할까요? (저장 버튼 누르기 전에는 DB 반영 X)')) return;
+  renderImportRules(DEFAULT_IMPORT_RULES);
+  const msg = document.getElementById('r-msg');
+  msg.textContent = '🔄 화면만 기본값 — 저장 버튼 눌러야 DB 반영';
+  msg.style.color = '#fbbf24';
 }
 
 let _monthlyChart = null;
@@ -1088,11 +1265,15 @@ async function handleFile(file) {
     if (!r.ok) throw new Error(d.error || '실패');
     if (mode === 'closing_ledger') {
       const cd = d.category_dist || {};
+      const gd = d.grade_dist || {};
+      const fs = d.filter_stats || {};
       result.innerHTML = `
         <div style="color:#86efac;font-weight:700">✅ 마감원장 import 완료</div>
         <div>엑셀 ${d.excel_rows} → 필터 ${d.filtered} → 통합 customer ${d.customers}</div>
         <div>적재 <b style="color:#fbbf24">${d.inserted}</b> · 중복 ${d.duplicates} · on_hold ${d.on_hold} · 실패 ${d.failed}</div>
-        <div style="margin-top:6px">📊 1차 ${d.tier_dist?.[1] || 0}명 (이동 ${cd['이동']||0} · 신규 ${cd['신규']||0} · 기변 ${cd['기변']||0}) · 2차 렌탈 ${d.tier_dist?.[2] || 0}명</div>
+        <div style="margin-top:6px">📊 1차 ${d.tier_dist?.[1] || 0}명 (이동 ${cd['이동']||0} · 신규 ${cd['신규']||0} · 기변 ${cd['기변']||0} · 기타 ${cd['기타']||0}) · 2차 렌탈 ${d.tier_dist?.[2] || 0}명</div>
+        <div style="margin-top:6px">🏆 등급 — <span style="color:#fbbf24">S ${gd.S||0}</span> · <span style="color:#86efac">A ${gd.A||0}</span> · <span style="color:#93c5fd">B ${gd.B||0}</span> · <span style="color:#cbd5e1">C ${gd.C||0}</span></div>
+        <div style="margin-top:6px;font-size:10.5px;color:#fca5a5">🚫 제외 — 워치 ${fs.watch||0} · 연령 ${fs.age||0} · phone ${fs.phone||0} · 이름누락 ${fs.name||0} · 생일누락 ${fs.birth||0}</div>
         <div style="margin-top:6px;color:#94a3b8">batch_id: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">${d.batch_id}</code></div>
       `;
       showToast('✅ 마감원장 import — ' + d.inserted + '명');
