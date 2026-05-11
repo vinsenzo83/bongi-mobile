@@ -1511,11 +1511,13 @@ const DEFAULT_IMPORT_RULES = {
   internet_types: ['유선'],
   internet_models: ['인+TV', '인터넷', '유선'],
   internet_model_prefix: '인',
+  // S/A/B/C = 인터넷 X (1순위 영업: 인터넷·TV 권유)
+  // R       = 인터넷 O (2순위 영업: 렌탈 가전 권유)
   grades: {
     S: { tier: 1, category: '이동' },
-    A_tier1_new: { tier: 1, category: '신규' },
-    A_tier2: { tier: 2 },
+    A: { tier: 1, category: '신규' },
     B: { tier: 1, category: '기변' },
+    R: { tier: 2 },
     default: 'C',
   },
   // S(100)→A(80)→B(60)→R(50)→C(0) 순으로 분배 — 인터넷·TV 1순위, 렌탈 2순위 보장
