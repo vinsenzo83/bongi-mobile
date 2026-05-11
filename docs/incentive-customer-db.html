@@ -182,6 +182,7 @@ tr:hover { background:#334155; }
         .gr-S { background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#0f172a; box-shadow:0 2px 8px rgba(251,191,36,0.3); }
         .gr-A { background:linear-gradient(135deg,#86efac,#22c55e); color:#0f172a; box-shadow:0 2px 8px rgba(34,197,94,0.3); }
         .gr-B { background:linear-gradient(135deg,#93c5fd,#3b82f6); color:#fff; box-shadow:0 2px 8px rgba(59,130,246,0.3); }
+        .gr-R { background:linear-gradient(135deg,#f0abfc,#a855f7); color:#fff; box-shadow:0 2px 8px rgba(168,85,247,0.3); }
         .gr-C { background:linear-gradient(135deg,#cbd5e1,#64748b); color:#fff; }
         .gr-empty { background:transparent; border:1.5px dashed #475569; color:#475569; }
         .matrix-cell { padding:10px; text-align:center; border:1px solid #1e293b; transition:background 0.15s; cursor:pointer; }
@@ -194,7 +195,7 @@ tr:hover { background:#334155; }
         .age-band { display:grid; grid-template-columns:60px 60px 70px 1fr; gap:6px; align-items:center; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:4px; }
       </style>
 
-      <details style="margin-top:18px" id="rules-details" ontoggle="if(this.open) loadImportRulesHistory()">
+      <details style="margin-top:18px" id="rules-details" ontoggle="if(this.open) { loadImportRules(); loadImportRulesHistory(); }">
         <summary style="cursor:pointer;font-size:14px;font-weight:800;color:#fbbf24;padding:12px 14px;background:linear-gradient(90deg,rgba(251,191,36,0.1),rgba(0,0,0,0.3));border-radius:8px;border:1px solid #475569;list-style:none;display:flex;align-items:center;gap:8px">
           <span>📋 마감원장 import 룰 설정 (admin)</span>
           <span id="r-dirty-badge" style="display:none;background:#fbbf24;color:#0f172a;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:900">⚠️ 변경 0건</span>
@@ -249,16 +250,11 @@ tr:hover { background:#334155; }
             </label>
           </div>
 
-          <div class="rule-card" style="grid-column:span 2">
-            <h3 style="color:#a5b4fc">🎂 나이 가중치 (모든 등급 공통 · priority 추가 점수)</h3>
-            <div class="rule-help" style="margin-bottom:10px">예: 35세 + S등급(100) = 100 + 25 = 125점</div>
-            <div id="r-age-bonus" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px"></div>
-            <button class="toolbar-btn" style="background:#3b82f6;color:#fff;margin-top:8px;padding:5px 10px;font-size:11px" onclick="addAgeBand()">➕ 구간 추가</button>
-          </div>
         </div>
 
-        <!-- 외부 basePriority 카드 제거 — 등급 카드 안에 통합 -->
+        <!-- 외부 basePriority·나이가중치 카드 제거 — 등급 카드 안 통합·향후 통계 기반 결정 -->
         <div id="r-base-priority" style="display:none"></div>
+        <div id="r-age-bonus" style="display:none"></div>
 
         <!-- 🏆 등급별 카드 (S/A/B/C — 등급별 조건 묶음) -->
         <div style="margin-top:14px">
@@ -336,7 +332,17 @@ tr:hover { background:#334155; }
         <!-- 2️⃣ 균등 분배 -->
         <div style="background:linear-gradient(135deg,rgba(22,163,74,0.15),rgba(0,0,0,0.3));border:1.5px solid #16a34a;border-radius:8px;padding:14px">
           <div style="font-size:13px;color:#86efac;font-weight:800;margin-bottom:6px">2️⃣ 균등 분배 (1클릭 자동)</div>
-          <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.5">콜센터 active 상담사 전원에게 미배정 풀 라운드로빈 균등 분배. S→A→B 우선순위로 자동 정렬.</div>
+          <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.5">콜센터 active 상담사 전원에게 미배정 풀 라운드로빈 균등 분배. <b>priority_score DESC</b> → S(100)→A(80)→B(60)→R(50)→C(0) 자동 정렬.</div>
+          <div style="margin-bottom:10px">
+            <div style="font-size:11px;color:#cbd5e1;font-weight:600;margin-bottom:4px">분배할 등급 선택:</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <label style="font-size:11px;color:#fbbf24;font-weight:700;cursor:pointer"><input type="checkbox" class="eq-grade" value="S" checked style="margin-right:3px"> S (이동·인터넷)</label>
+              <label style="font-size:11px;color:#86efac;font-weight:700;cursor:pointer"><input type="checkbox" class="eq-grade" value="A" checked style="margin-right:3px"> A (신규·인터넷)</label>
+              <label style="font-size:11px;color:#93c5fd;font-weight:700;cursor:pointer"><input type="checkbox" class="eq-grade" value="B" checked style="margin-right:3px"> B (기변·인터넷)</label>
+              <label style="font-size:11px;color:#c4b5fd;font-weight:700;cursor:pointer"><input type="checkbox" class="eq-grade" value="R" checked style="margin-right:3px"> R (렌탈)</label>
+              <label style="font-size:11px;color:#cbd5e1;font-weight:700;cursor:pointer"><input type="checkbox" class="eq-grade" value="C" style="margin-right:3px"> C (default·제외 권장)</label>
+            </div>
+          </div>
           <div style="margin-bottom:8px">
             <label style="font-size:11px;color:#cbd5e1">상담사당 최대 (옵션):
               <input type="number" id="eq-max" min="0" placeholder="0 = 무제한" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 6px;border-radius:4px;font-size:11px;width:120px;margin-left:6px">
@@ -466,10 +472,10 @@ tr:hover { background:#334155; }
       </div>
       <table>
         <thead><tr>
-          <th>#</th><th>이름</th><th>전화</th><th>지역</th><th>통신사</th>
+          <th>#</th><th>등급</th><th>이름</th><th>전화</th><th>지역</th><th>통신사</th>
           <th>출처</th><th>분배</th><th>상태</th><th>시도</th><th>등록</th><th>🚫 DNT</th>
         </tr></thead>
-        <tbody id="cust-tbody"><tr><td colspan="11" style="text-align:center;padding:20px;color:#64748b">로딩 중...</td></tr></tbody>
+        <tbody id="cust-tbody"><tr><td colspan="12" style="text-align:center;padding:20px;color:#64748b">로딩 중...</td></tr></tbody>
       </table>
       <!-- (옛 detail/v2 위젯·import-mode 토글·hybrid 분배 카드 모두 제거) -->
       <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
@@ -528,11 +534,12 @@ tr:hover { background:#334155; }
         </div>
         <div>
           <label style="font-size:11.5px;color:#94a3b8;font-weight:700;display:block;margin-bottom:4px">⭐ 등급 선택</label>
-          <div style="display:flex;gap:6px;padding-top:5px">
-            <label style="font-size:11px;color:#cbd5e1;cursor:pointer"><input type="checkbox" class="dist-grade" value="S" checked style="margin-right:2px"> S</label>
-            <label style="font-size:11px;color:#cbd5e1;cursor:pointer"><input type="checkbox" class="dist-grade" value="A" checked style="margin-right:2px"> A</label>
-            <label style="font-size:11px;color:#cbd5e1;cursor:pointer"><input type="checkbox" class="dist-grade" value="B" checked style="margin-right:2px"> B</label>
-            <label style="font-size:11px;color:#cbd5e1;cursor:pointer"><input type="checkbox" class="dist-grade" value="C" style="margin-right:2px"> C</label>
+          <div style="display:flex;gap:5px;padding-top:5px;flex-wrap:wrap">
+            <label style="font-size:11px;color:#fbbf24;cursor:pointer;font-weight:700"><input type="checkbox" class="dist-grade" value="S" checked style="margin-right:2px"> S</label>
+            <label style="font-size:11px;color:#86efac;cursor:pointer;font-weight:700"><input type="checkbox" class="dist-grade" value="A" checked style="margin-right:2px"> A</label>
+            <label style="font-size:11px;color:#93c5fd;cursor:pointer;font-weight:700"><input type="checkbox" class="dist-grade" value="B" checked style="margin-right:2px"> B</label>
+            <label style="font-size:11px;color:#c4b5fd;cursor:pointer;font-weight:700"><input type="checkbox" class="dist-grade" value="R" checked style="margin-right:2px"> R</label>
+            <label style="font-size:11px;color:#cbd5e1;cursor:pointer;font-weight:700"><input type="checkbox" class="dist-grade" value="C" style="margin-right:2px"> C</label>
           </div>
         </div>
         <div>
@@ -629,15 +636,17 @@ const DEFAULT_IMPORT_RULES = {
   internet_types: ['유선'],
   internet_models: ['인+TV', '인터넷', '유선'],
   internet_model_prefix: '인',
-  base_priority: { '이동': 100, '신규': 80, '렌탈권유': 50, '기변': 30, '기타': 10 },
-  age_bonus: [
-    { min: 0,  max: 29, bonus: 20 },
-    { min: 30, max: 39, bonus: 25 },
-    { min: 40, max: 49, bonus: 25 },
-    { min: 50, max: 59, bonus: 15 },
-    { min: 60, max: 69, bonus: 0 },
-    { min: 70, max: 999, bonus: -30 },
-  ],
+  base_priority: { '이동': 100, '신규': 80, '기변': 60, '렌탈권유': 50, '기타': 0 },
+  age_bonus: [],
+  // S·A·B·C = 인터넷 X 고객 (1순위 영업 = 인터넷·TV 판매)
+  // R = 인터넷 O 고객 (2순위 영업 = 렌탈 가전)
+  grades: {
+    S: { tier: 1, category: '이동' },
+    A: { tier: 1, category: '신규' },
+    B: { tier: 1, category: '기변' },
+    R: { tier: 2 },
+    default: 'C',
+  },
 };
 
 async function loadImportRules() {
@@ -743,8 +752,14 @@ function collectAgeBonus() {
 }
 
 // === 등급 카드 (S/A/B/C 별 묶음) ===
-const GRADE_COLORS = { S: 'gr-S', A: 'gr-A', B: 'gr-B', C: 'gr-C' };
-const GRADE_LABELS = { S: '⭐⭐⭐ S — 최우선', A: '⭐⭐ A — 우선', B: '⭐ B — 일반', C: 'C — 후순위' };
+const GRADE_COLORS = { S: 'gr-S', A: 'gr-A', B: 'gr-B', R: 'gr-R', C: 'gr-C' };
+const GRADE_LABELS = {
+  S: '⭐⭐⭐ S — 인터넷·TV 1순위 (통신사 이동·결합 자유)',
+  A: '⭐⭐ A — 인터넷·TV 권유 (신규 가입·결합 자유)',
+  B: '⭐ B — 인터넷·TV 권유 (기변·기존 결합 깨야)',
+  R: '🏠 R — 렌탈 가전 권유 (이미 인터넷 보유)',
+  C: 'C — 후순위 (옛 데이터·기타)',
+};
 
 function gradesToCards(grades) {
   // {S:{tier:1,category:'이동'}, A_tier1_new:{...}, A_tier2:{...}, B:{...}, default:'C'}
@@ -762,8 +777,9 @@ function gradesToCards(grades) {
 
 function renderGradeCards(grades) {
   const cards = gradesToCards(grades);
-  // S·A·B는 기본 표시, 카드가 없으면 빈 카드라도 만듦. C는 default라 표시 X (별도 카드)
-  const order = ['S', 'A', 'B'];
+  // 사용자 정의 등급 체계 순서: S → A → B (인터넷 X·1순위) · R (인터넷 O·2순위)
+  // C는 default라 등급 카드 X (하단 default 카드)
+  const order = ['S', 'A', 'B', 'R'];
   // 동적 추가된 등급도 포함
   Object.keys(cards).forEach(g => { if (!order.includes(g) && g !== 'C') order.push(g); });
 
@@ -778,10 +794,12 @@ function renderOneGradeCard(grade, conditions) {
   const cls = GRADE_COLORS[grade] || 'gr-C';
   const label = GRADE_LABELS[grade] || `${grade} 등급`;
   const cats = ['', '이동', '신규', '렌탈권유', '기변', '기타'];
-  const borderColor = grade==='S'?'#f59e0b':grade==='A'?'#22c55e':grade==='B'?'#3b82f6':'#64748b';
+  const borderColor = grade==='S'?'#f59e0b':grade==='A'?'#22c55e':grade==='B'?'#3b82f6':grade==='R'?'#a855f7':'#64748b';
   const stats = _gradeStats[grade] || {};
-  const statsHtml = stats.count != null
-    ? `<span style="color:${borderColor};font-weight:700">현재 ${stats.count}명 · 평균 ${stats.avg}점</span>`
+  const statsHtml = stats.count != null && stats.count > 0
+    ? `<span style="color:${borderColor};font-weight:700">현재 ${stats.count.toLocaleString()}명${stats.avg && stats.avg !== '-' ? ` · 평균 ${stats.avg}점` : ''}</span>`
+    : stats.count === 0
+    ? `<span style="color:#64748b">현재 0명</span>`
     : `<span style="color:#64748b">통계 로딩 중...</span>`;
 
   return `
@@ -916,8 +934,8 @@ function readCurrentGradeCards() {
 }
 
 function renderGradeCardsFromObj(cards) {
-  // cards = {S:[{tier,category}], A:[...], ...}
-  const order = ['S', 'A', 'B'];
+  // cards = {S:[{tier,category}], A:[...], B:[...], R:[...]}
+  const order = ['S', 'A', 'B', 'R'];
   Object.keys(cards).forEach(g => { if (!order.includes(g) && g !== 'C') order.push(g); });
   document.getElementById('r-grade-cards').innerHTML =
     order.filter(g => cards[g] !== undefined).map(g => renderOneGradeCard(g, cards[g])).join('');
@@ -1013,10 +1031,13 @@ async function loadDistPreview() {
     const r = await fetchAuth(CDB + '/stats/summary');
     if (!r.ok) return;
     const d = await r.json();
-    const dist = d.grade_dist || d.distribution?.grade || {};
-    const avg = d.grade_avg_priority || {};
+    // 서버 응답: by_grade = {S: {total, contacted, converted, ...}, A: {...}}
+    const byGrade = d.by_grade || {};
+    const dist = {};
+    Object.keys(byGrade).forEach(g => { dist[g] = byGrade[g].total || 0; });
+    const avg = {}; // 평균 점수는 서버에서 별도 집계 필요 — 일단 카운트만
     const total = Object.values(dist).reduce((s, c) => s + (c || 0), 0) || 1;
-    const grades = ['S', 'A', 'B', 'C'];
+    const grades = ['S', 'A', 'B', 'R', 'C'];
 
     // 등급 카드 통계 저장 (renderOneGradeCard에서 사용)
     _gradeStats = {};
@@ -1164,12 +1185,14 @@ async function loadCenterAllocations() {
 
 async function executeEqualDistribute() {
   const max_per_agent = parseInt(document.getElementById('eq-max').value) || 0;
+  const grades = Array.from(document.querySelectorAll('.eq-grade:checked')).map(c => c.value);
+  if (!grades.length) { alert('분배할 등급을 1개 이상 선택하세요'); return; }
   const resEl = document.getElementById('eq-result');
-  resEl.textContent = '⏳ 분배 중...';
+  resEl.textContent = `⏳ 분배 중 (등급 ${grades.join('·')})...`;
   try {
     const r = await fetchAuth(CDB + '/distribute/equal', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ max_per_agent })  // 등급 옵션 생략 → 서버 default ['S','A','B']
+      body: JSON.stringify({ max_per_agent, grades })
     });
     const d = await r.json();
     if (!r.ok) { resEl.innerHTML = `<span style="color:#fca5a5">❌ ${d.error || '실패'}</span>`; return; }
@@ -1539,7 +1562,14 @@ async function loadCustomers() {
   document.getElementById('page-info').textContent = `${_state.offset+1}~${Math.min(_state.offset+_state.limit, _state.total)} / ${_state.total.toLocaleString()}`;
 
   const tbody = document.getElementById('cust-tbody');
-  if (!d.customers.length) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#64748b;padding:20px">고객 없음</td></tr>'; return; }
+  if (!d.customers.length) { tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#64748b;padding:20px">고객 없음</td></tr>'; return; }
+  const gradeStyles = {
+    S: 'background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a',
+    A: 'background:linear-gradient(135deg,#86efac,#22c55e);color:#0f172a',
+    B: 'background:linear-gradient(135deg,#93c5fd,#3b82f6);color:#fff',
+    R: 'background:linear-gradient(135deg,#a855f7,#c084fc);color:#fff',
+    C: 'background:#475569;color:#fff',
+  };
   tbody.innerHTML = d.customers.map((c, i) => {
     const statusMap = {
       pending: { txt:'⏰ 미연락', bg:'#475569' },
@@ -1555,8 +1585,13 @@ async function loadCustomers() {
     const src = c.db_source || {};
     const agent = _state.agents.find(a => a.id === c.assigned_agent_id);
     const dntChecked = c.is_dnt ? 'checked' : '';
+    const grade = c.quality_grade || '';
+    const gradeBadge = grade
+      ? `<span style="${gradeStyles[grade] || gradeStyles.C};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:900">${grade}</span>`
+      : '<i style="color:#64748b">-</i>';
     return `<tr style="${c.is_dnt ? 'background:rgba(0,0,0,0.4)' : ''}">
       <td>${_state.offset + i + 1}</td>
+      <td>${gradeBadge}</td>
       <td><b>${esc(c.name)}</b></td>
       <td style="font-family:monospace">${esc(c.phone)}</td>
       <td>${esc(c.region) || '-'}</td>
@@ -1728,7 +1763,7 @@ async function handleFile(file) {
         <div>엑셀 ${d.excel_rows} → 필터 ${d.filtered} → 통합 customer ${d.customers}</div>
         <div>적재 <b style="color:#fbbf24">${d.inserted}</b> · 중복 ${d.duplicates} · on_hold ${d.on_hold} · 실패 ${d.failed}</div>
         <div style="margin-top:6px">📊 1차 ${d.tier_dist?.[1] || 0}명 (이동 ${cd['이동']||0} · 신규 ${cd['신규']||0} · 기변 ${cd['기변']||0} · 기타 ${cd['기타']||0}) · 2차 렌탈 ${d.tier_dist?.[2] || 0}명</div>
-        <div style="margin-top:6px">🏆 등급 — <span style="color:#fbbf24">S ${gd.S||0}</span> · <span style="color:#86efac">A ${gd.A||0}</span> · <span style="color:#93c5fd">B ${gd.B||0}</span> · <span style="color:#cbd5e1">C ${gd.C||0}</span></div>
+        <div style="margin-top:6px">🏆 등급 — <span style="color:#fbbf24">S ${gd.S||0}</span> · <span style="color:#86efac">A ${gd.A||0}</span> · <span style="color:#93c5fd">B ${gd.B||0}</span> · <span style="color:#c4b5fd">R ${gd.R||0}</span> · <span style="color:#cbd5e1">C ${gd.C||0}</span></div>
         <div style="margin-top:6px;font-size:10.5px;color:#fca5a5">🚫 제외 — 워치 ${fs.watch||0} · 연령 ${fs.age||0} · phone ${fs.phone||0} · 이름누락 ${fs.name||0} · 생일누락 ${fs.birth||0}</div>
         <div style="margin-top:6px;color:#94a3b8">batch_id: <code style="background:#0f172a;padding:1px 5px;border-radius:3px">${d.batch_id}</code></div>
       `;

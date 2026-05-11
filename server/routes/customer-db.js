@@ -431,7 +431,7 @@ router.post('/distribute/equal', async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
 
-    const { center, max_per_agent = 0, grades = ['S','A','B'] } = req.body || {};
+    const { center, max_per_agent = 0, grades = ['S','A','B','R','C'] } = req.body || {};
     const targetCenter = me.role === 'manager' ? me.center : (center || null);
 
     let aq = supabase.from('incentive_agents').select('id, name, center').eq('active', true).in('role', ['agent','manager']);
@@ -447,8 +447,9 @@ router.post('/distribute/equal', async (req, res) => {
       .select('id, quality_grade, priority_score').is('deleted_at', null).is('assigned_agent_id', null).eq('archived', false)
       .in('quality_grade', grades);
     if (me.role === 'manager') q = q.eq('assigned_center', me.center);
-    q = q.order('quality_grade', { ascending: true })
-         .order('priority_score', { ascending: false, nullsFirst: false })
+    // priority_score DESC만으로 사용자 의도 순서: S(100)→A(80)→B(60)→R(50)→C(0)
+    // quality_grade ASC는 알파벳 순(A→B→C→R→S)이 의도와 어긋나 제거
+    q = q.order('priority_score', { ascending: false, nullsFirst: false })
          .order('imported_at', { ascending: true })
          .limit(totalLimit);
     const { data: targets, error: e1 } = await q;
@@ -509,7 +510,7 @@ router.post('/distribute', async (req, res) => {
     if (Array.isArray(grades) && grades.length) q = q.in('quality_grade', grades);
     if (me.role === 'manager') q = q.eq('assigned_center', me.center);
 
-    q = q.order('quality_grade', { ascending: true }).order('priority_score', { ascending: false }).order('imported_at', { ascending: true }).limit(totalLimit);
+    q = q.order('priority_score', { ascending: false, nullsFirst: false }).order('imported_at', { ascending: true }).limit(totalLimit);
     const { data: targets, error: e1 } = await q;
     if (e1) throw e1;
     if (!targets.length) return res.json({ ok: true, distributed: 0, message: '분배할 customer 없음 (미배정 풀 비어있음)' });
@@ -726,8 +727,8 @@ router.get('/stats/summary', async (req, res) => {
     };
 
     const carriers = ['SK','KT','LG'];
-    const grades = ['S','A','B','C'];
-    const categories = ['이동','신규','기변','렌탈권유'];
+    const grades = ['S','A','B','R','C'];
+    const categories = ['이동','신규','기변','렌탈권유','기타'];
     const tiers = [1, 2];
 
     const [byCarrier, byGrade, byCategory, byTier] = await Promise.all([
@@ -1510,14 +1511,17 @@ const DEFAULT_IMPORT_RULES = {
   internet_types: ['유선'],
   internet_models: ['인+TV', '인터넷', '유선'],
   internet_model_prefix: '인',
+  // S/A/B/C = 인터넷 X (1순위 영업: 인터넷·TV 권유)
+  // R       = 인터넷 O (2순위 영업: 렌탈 가전 권유)
   grades: {
     S: { tier: 1, category: '이동' },
-    A_tier1_new: { tier: 1, category: '신규' },
-    A_tier2: { tier: 2 },
+    A: { tier: 1, category: '신규' },
     B: { tier: 1, category: '기변' },
+    R: { tier: 2 },
     default: 'C',
   },
-  base_priority: { '이동': 100, '신규': 80, '렌탈권유': 50, '기변': 30, '기타': 10 },
+  // S(100)→A(80)→B(60)→R(50)→C(0) 순으로 분배 — 인터넷·TV 1순위, 렌탈 2순위 보장
+  base_priority: { '이동': 100, '신규': 80, '기변': 60, '렌탈권유': 50, '기타': 0 },
   age_bonus: [
     { min: 0,  max: 29, bonus: 20 },
     { min: 30, max: 39, bonus: 25 },
@@ -1596,7 +1600,7 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
   //    tier=1:
   //      - '이동' 우선 (priority 100, 통신사 이동 = 결합 깨기 좋음)
   //      - '신규' (priority 80, 신규 가입자 = 인터넷도 신규 자유)
-  //      - '기변' (priority 30, 기존 결합 가능성 높음)
+  //      - '기변' (priority 60, 기존 결합 가능성 높음 — R 50보다 우선)
   //      - 그 외 → '기타' (priority 10)
   // 3) 한 사람의 여러 회선 → 우선순위 높은 유형 1개로 통합
   // ═════════════════════════════════════════════════════════════

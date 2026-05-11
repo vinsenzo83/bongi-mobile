@@ -1640,7 +1640,7 @@ async function loadCallDbPerf() {
       </table>`;
     };
     renderPerf('dash-perf-carrier', s.by_carrier);
-    renderPerf('dash-perf-grade', s.by_grade, { S:'⭐ S (이동)', A:'⭐ A (신규·렌탈)', B:'⭐ B (기변)', C:'⭐ C' });
+    renderPerf('dash-perf-grade', s.by_grade, { S:'⭐⭐⭐ S (이동·인터넷)', A:'⭐⭐ A (신규·인터넷)', B:'⭐ B (기변·인터넷)', R:'🏠 R (렌탈)', C:'C (default)' });
     renderPerf('dash-perf-category', s.by_category, { '이동':'🔥 이동', '신규':'✨ 신규', '기변':'⚠️ 기변', '렌탈권유':'🏠 렌탈권유' });
     renderPerf('dash-perf-tier', s.by_tier, { '1':'1차 인터넷·TV', '2':'2차 렌탈' });
   } catch (e) { console.warn('[loadCallDbPerf]', e); }
