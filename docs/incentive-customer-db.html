@@ -472,10 +472,10 @@ tr:hover { background:#334155; }
       </div>
       <table>
         <thead><tr>
-          <th>#</th><th>이름</th><th>전화</th><th>지역</th><th>통신사</th>
+          <th>#</th><th>등급</th><th>이름</th><th>전화</th><th>지역</th><th>통신사</th>
           <th>출처</th><th>분배</th><th>상태</th><th>시도</th><th>등록</th><th>🚫 DNT</th>
         </tr></thead>
-        <tbody id="cust-tbody"><tr><td colspan="11" style="text-align:center;padding:20px;color:#64748b">로딩 중...</td></tr></tbody>
+        <tbody id="cust-tbody"><tr><td colspan="12" style="text-align:center;padding:20px;color:#64748b">로딩 중...</td></tr></tbody>
       </table>
       <!-- (옛 detail/v2 위젯·import-mode 토글·hybrid 분배 카드 모두 제거) -->
       <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
@@ -1562,7 +1562,14 @@ async function loadCustomers() {
   document.getElementById('page-info').textContent = `${_state.offset+1}~${Math.min(_state.offset+_state.limit, _state.total)} / ${_state.total.toLocaleString()}`;
 
   const tbody = document.getElementById('cust-tbody');
-  if (!d.customers.length) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#64748b;padding:20px">고객 없음</td></tr>'; return; }
+  if (!d.customers.length) { tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#64748b;padding:20px">고객 없음</td></tr>'; return; }
+  const gradeStyles = {
+    S: 'background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a',
+    A: 'background:linear-gradient(135deg,#86efac,#22c55e);color:#0f172a',
+    B: 'background:linear-gradient(135deg,#93c5fd,#3b82f6);color:#fff',
+    R: 'background:linear-gradient(135deg,#a855f7,#c084fc);color:#fff',
+    C: 'background:#475569;color:#fff',
+  };
   tbody.innerHTML = d.customers.map((c, i) => {
     const statusMap = {
       pending: { txt:'⏰ 미연락', bg:'#475569' },
@@ -1578,8 +1585,13 @@ async function loadCustomers() {
     const src = c.db_source || {};
     const agent = _state.agents.find(a => a.id === c.assigned_agent_id);
     const dntChecked = c.is_dnt ? 'checked' : '';
+    const grade = c.quality_grade || '';
+    const gradeBadge = grade
+      ? `<span style="${gradeStyles[grade] || gradeStyles.C};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:900">${grade}</span>`
+      : '<i style="color:#64748b">-</i>';
     return `<tr style="${c.is_dnt ? 'background:rgba(0,0,0,0.4)' : ''}">
       <td>${_state.offset + i + 1}</td>
+      <td>${gradeBadge}</td>
       <td><b>${esc(c.name)}</b></td>
       <td style="font-family:monospace">${esc(c.phone)}</td>
       <td>${esc(c.region) || '-'}</td>
