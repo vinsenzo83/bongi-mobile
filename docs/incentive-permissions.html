@@ -312,6 +312,37 @@ function applyCellDirtyVisuals() {
 }
 
 // ═══ API 호출 ═══
+const API = '/api/incentive';
+const AUTH = '/api/auth';
+const TOKEN_KEY = 'incentive-auth-token-v1';
+const REFRESH_KEY = 'incentive-refresh-token-v1';
+function getToken() { return localStorage.getItem(TOKEN_KEY); }
+function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+async function login(email, password) {
+  const res = await fetch(AUTH + '/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || '로그인 실패');
+  if (data.token) setToken(data.token);
+  if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token);
+  return data;
+}
+async function fetchAgent() {
+  const tk = getToken();
+  if (!tk) return null;
+  const res = await fetch(API + '/agents/me', { headers: { Authorization: 'Bearer ' + tk } });
+  if (!res.ok) return null;
+  const d = await res.json().catch(() => null);
+  return d?.agent || d || null;
+}
+
 async function loadAll() {
   const tk = getToken();
   const res = await fetch(API + '/role-permissions', { headers: { Authorization: 'Bearer ' + tk } });
