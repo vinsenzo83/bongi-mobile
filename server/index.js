@@ -115,6 +115,15 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
+// 🔒 필수 환경변수 검증 — 누락 시 서버 시작 차단 (운영 사고 방지)
+const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_SERVICE_KEY'];
+const _missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (_missing.length > 0) {
+  console.error('\n❌ 필수 환경변수 누락:', _missing.join(', '));
+  console.error('   .env 또는 .env.staging 확인. 서버 시작 차단.\n');
+  process.exit(1);
+}
+
 // 보안 헤더 (CSP / X-Frame / 등) — HTML 응답에 한정
 app.use((req, res, next) => {
   // HTML/문서 페이지에만 적용 (API JSON·정적 자산 영향 X)
