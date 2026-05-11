@@ -417,11 +417,13 @@ const SECTIONS = [
 <p><b>ageBonus는 현재 비활성 ([] 빈 배열)</b> — basePriority만으로 분배. 향후 룰 카드에서 다시 활성화 가능.</p>
 <p>분배 정렬: <code>priority_score DESC NULLS LAST → imported_at ASC</code>. → 인터넷·TV 권유(S/A/B) 항상 렌탈(R)보다 먼저 노출.</p>
 
-<h3>4. 중복 방지 4중 (Dedup)</h3>
+<h3>4. 중복 방지 5중 (Dedup) — 2026-05-12 강화</h3>
 <div class="step"><span class="num">1</span><b>이름+생년월일 통합</b> — 같은 사람 여러 회선은 1건으로 합쳐서 그룹 내 우선순위 가장 높은 회선이 대표.</div>
 <div class="step"><span class="num">2</span><b>전화번호 충돌 해제</b> — 같은 phone에 다른 이름이 있으면 priority_score 높은 1건만 <code>available</code>. 나머지는 <code>call_status='on_hold'</code> + reason="phone 충돌 — [우선 고객명]에 우선 배정".</div>
-<div class="step"><span class="num">3</span><b>DB UNIQUE 제약</b> — <code>UNIQUE(db_source_id, phone)</code>. 같은 DB 출처에 동일 phone 두 번 INSERT 시 PostgreSQL 23505 → duplicate count 증가, row skip.</div>
-<div class="step"><span class="num">4</span><b>마감원장 내부 dups</b> — 한 batch 안에서 동일 (이름+생년월일) 또는 동일 phone은 step 1·2에서 제거됨.</div>
+<div class="step"><span class="num">3</span><b>출처 무관 phone 사전 검사 (cross-source dedup)</b> — import 전에 phone IN 조회로 <b>다른 출처에 이미 있는 phone</b> 파악. 신규로 분류된 row만 INSERT 시도. → 같은 사람이 출처만 바꿔서 두 번 들어오는 일 차단.</div>
+<div class="step"><span class="num">4</span><b>DB UNIQUE 제약 + UPSERT</b> — <code>UNIQUE(db_source_id, phone)</code> + <code>upsert(onConflict, ignoreDuplicates: true)</code>로 같은 출처 안 동일 phone은 silently skip.</div>
+<div class="step"><span class="num">5</span><b>마감원장 내부 dups</b> — 한 batch 안에서 동일 (이름+생년월일) 또는 동일 phone은 step 1·2에서 제거됨.</div>
+<div class="tip"><b>📌 운영 팁</b> — 같은 마감원장을 다른 출처(예: 일타폰DB)로 재import해도 step 3에서 모두 dup으로 잡힘. customer 추가 0건. → 출처를 바꿔도 같은 사람을 두 번 contact할 위험 차단.</div>
 
 <h3>5. Import 결과 반환값</h3>
 <pre><code>{
