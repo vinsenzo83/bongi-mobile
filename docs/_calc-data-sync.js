@@ -193,7 +193,8 @@ async function applyIncentivePaybackSync() {
     const { products } = await res.json();
     if (!products || !Array.isArray(products)) return;
 
-    const carrierMap = { 'SKT': 'skt', 'KT': 'kt', 'LGU+': 'lgu' };
+    // 'SK'/'LG'(신표기) + 'SKT'/'LGU+'(구표기 backward compat) 둘 다 허용
+    const carrierMap = { 'SK': 'skt', 'SKT': 'skt', 'KT': 'kt', 'LG': 'lgu', 'LGU+': 'lgu' };
     products.forEach(p => {
       const cKey = carrierMap[p.carrier];
       if (!cKey || !window.D || !window.D[cKey]) return;

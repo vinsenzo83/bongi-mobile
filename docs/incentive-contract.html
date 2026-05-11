@@ -1519,7 +1519,8 @@ async function injectDealerSection(c) {
     || (_me.role === 'agent' && c.agent_id === _me.id);
   if (!_canMutate) return;
   const p = c.product || {};
-  const carrierMap = { 'SKT':'skt', 'KT':'kt', 'LGU+':'lgu', 'lgu+':'lgu' };
+  // 'SK'/'LG'(신표기) + 'SKT'/'LGU+'(구표기 backward compat) 둘 다 허용
+  const carrierMap = { 'SK':'skt', 'SKT':'skt', 'KT':'kt', 'LG':'lgu', 'LGU+':'lgu', 'lgu+':'lgu' };
   const carrier = carrierMap[p.carrier] || (p.carrier || '').toLowerCase().replace('+','');
   if (!['skt','kt','lgu'].includes(carrier)) return;
 
