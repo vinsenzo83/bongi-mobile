@@ -1511,6 +1511,13 @@ const DEFAULT_IMPORT_RULES = {
   internet_types: ['유선'],
   internet_models: ['인+TV', '인터넷', '유선'],
   internet_model_prefix: '인',
+  // 인터넷 결합 흔적 추가 검출 — 컬럼값 정확 매칭
+  // 마감원장에서 휴대폰 row만 있어도 결제유형 컬럼이 "유선"이면 결합 가입자
+  internet_payment_columns: ['공/선', '현/할'],
+  internet_payment_value: '유선',
+  // 메모 컬럼 키워드 매칭 — "유선청약후결합", "본인약갱유선", "유선설치후결합" 등
+  internet_memo_columns: ['기타', '개통실 메모', '비고'],
+  internet_memo_keywords: ['유선'],
   // S/A/B/C = 인터넷 X (1순위 영업: 인터넷·TV 권유)
   // R       = 인터넷 O (2순위 영업: 렌탈 가전 권유)
   grades: {
@@ -1541,11 +1548,31 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
   const watchRegex = new RegExp('^' + (R.watch_prefix || 'L'));
   const isWatch = (d) => watchRegex.test(String(d || ''));
   // 인터넷·TV row 판단 — settings 기반 동적
-  const isInternetTV = (model, type) => {
+  // 1) 단말·유형: 명시적 인터넷 회선
+  // 2) 결제유형 컬럼: 공/선·현/할 = "유선" → 결합 가입자 (휴대폰 row여도)
+  // 3) 메모 컬럼: 기타/개통실 메모/비고에 "유선" 키워드 → 결합 흔적
+  const isInternetTV = (row) => {
+    if (!row || typeof row !== 'object') return false;
+    const model = String(row['단말'] || '').trim();
+    const type = row['유형'];
     if ((R.internet_types || []).includes(type)) return true;
-    const m = String(model || '').trim();
-    if ((R.internet_models || []).includes(m)) return true;
-    return R.internet_model_prefix && m.startsWith(R.internet_model_prefix);
+    if ((R.internet_models || []).includes(model)) return true;
+    if (R.internet_model_prefix && model.startsWith(R.internet_model_prefix)) return true;
+    // 결제유형 컬럼 정확 매칭
+    const payCols = R.internet_payment_columns || [];
+    const payVal = R.internet_payment_value || '유선';
+    if (payCols.some(c => row[c] === payVal)) return true;
+    // 메모 컬럼 키워드 매칭
+    const memoCols = R.internet_memo_columns || [];
+    const memoKeys = R.internet_memo_keywords || [];
+    if (memoCols.length && memoKeys.length) {
+      for (const c of memoCols) {
+        const v = String(row[c] || '');
+        if (!v) continue;
+        if (memoKeys.some(k => v.includes(k))) return true;
+      }
+    }
+    return false;
   };
   const phoneRegex = new RegExp(R.phone_regex || '^01[016789][0-9]{7,8}$');
   const excelToDate = (s) => {
@@ -1629,7 +1656,7 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
 
   const customers = [];
   groups.forEach((gRows, key) => {
-    const hasInternet = gRows.some(r => isInternetTV(r.단말, r.유형));
+    const hasInternet = gRows.some(r => isInternetTV(r));
     let tier, category, basePriority;
     if (hasInternet) { tier = 2; category = '렌탈권유'; basePriority = basePri('렌탈권유'); }
     else {
@@ -1644,8 +1671,8 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
       return (db || '').localeCompare(da || '');
     });
     const base = sorted[0];
-    const mobileBase = sorted.find(r => !isInternetTV(r.단말, r.유형)) || base;
-    const internetRow = sorted.find(r => isInternetTV(r.단말, r.유형));
+    const mobileBase = sorted.find(r => !isInternetTV(r)) || base;
+    const internetRow = sorted.find(r => isInternetTV(r));
     customers.push({
       key, tier, category, basePriority, gRows,
       name: String(base.고객명).trim(),
