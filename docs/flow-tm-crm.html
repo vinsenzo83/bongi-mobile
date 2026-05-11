@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이모바일 — TM CRM 통합 플로우</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#f8f7f4; --bg2:#fff; --border:#e2ddd6; --navy:#1a2744; --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5; --orange:#d97706; --orange2:#fef3c7; --red:#dc2626; --red2:#fee2e2; --purple:#7c3aed; --purple2:#f3e8ff; --pink:#db2777; --pink2:#fce7f3; --text:#1a1a1a; --text2:#4a4a4a; --text3:#8a8a8a; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; padding:40px; max-width:1200px; margin:0 auto; }
+h1 { font-size:28px; font-weight:900; color:var(--navy); margin-bottom:4px; }
+.subtitle { font-size:12px; color:var(--text3); margin-bottom:40px; font-family:'JetBrains Mono',monospace; }
+.step-label { background:var(--navy); color:#fff; padding:6px 16px; border-radius:8px; font-size:12px; font-weight:700; display:inline-block; margin-bottom:12px; }
+.step-card { background:var(--bg2); border:1.5px solid var(--border); border-radius:14px; padding:20px; margin-bottom:8px; }
+.arrow-down { text-align:center; color:var(--text3); font-size:22px; margin:4px 0; }
+.flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:8px 0; }
+.fb { padding:8px 14px; border-radius:10px; font-size:11px; font-weight:600; text-align:center; min-width:90px; }
+.fa { color:var(--text3); font-size:16px; font-weight:700; flex-shrink:0; }
+.fb-user { background:#eff6ff; border:2px solid var(--blue); color:var(--blue); }
+.fb-api { background:var(--orange2); border:2px solid var(--orange); color:var(--orange); }
+.fb-db { background:var(--green2); border:2px solid var(--green); color:var(--green); }
+.fb-admin { background:var(--red2); border:2px solid var(--red); color:var(--red); }
+.fb-crm { background:var(--purple2); border:2px solid var(--purple); color:var(--purple); }
+.fb-neutral { background:#f8f7f4; border:2px solid var(--navy); color:var(--navy); }
+.fb-pink { background:var(--pink2); border:2px solid var(--pink); color:var(--pink); }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700; }
+.b-blue { background:var(--blue2); color:var(--blue); } .b-green { background:var(--green2); color:var(--green); }
+.b-orange { background:var(--orange2); color:var(--orange); } .b-red { background:var(--red2); color:var(--red); }
+.b-purple { background:var(--purple2); color:var(--purple); } .b-gray { background:#f3f4f6; color:#6b7280; }
+.b-pink { background:var(--pink2); color:var(--pink); }
+.note { background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:8px 14px; font-size:10.5px; color:var(--navy); line-height:1.7; margin-top:8px; }
+.warn { background:var(--orange2); border:1.5px solid var(--orange); border-radius:8px; padding:8px 14px; font-size:10.5px; color:var(--orange); line-height:1.7; margin-top:8px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.card-mock { background:#fafafa; border:1.5px dashed var(--border); border-radius:10px; padding:12px; font-size:10.5px; color:var(--text2); line-height:1.6; }
+.mono { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text2); }
+table { width:100%; border-collapse:collapse; font-size:11.5px; margin:8px 0; }
+th { background:var(--navy); color:#fff; padding:7px 10px; text-align:left; font-weight:700; font-size:11px; }
+td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+tr:nth-child(even) td { background:#fafafa; }
+.kpi { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:12px 0 24px; }
+.kpi-card { background:var(--bg2); border:1.5px solid var(--border); border-radius:10px; padding:14px; text-align:center; }
+.kpi-num { font-size:22px; font-weight:900; color:var(--navy); }
+.kpi-label { font-size:10px; color:var(--text3); margin-top:4px; }
+a { color:var(--blue); text-decoration:none; }
+a:hover { text-decoration:underline; }
+.menu-num { display:inline-block; width:24px; height:24px; line-height:24px; text-align:center; background:var(--navy); color:#fff; border-radius:50%; font-size:11px; font-weight:700; margin-right:6px; }
+</style>
+</head>
+<body>
+
+<h1>📞 봉이 TM CRM 통합 플로우</h1>
+<div class="subtitle">incentive-admin.html · 4 role · 18 menu · 광주센터 콜DB 영업 전담</div>
+
+<div style="background:linear-gradient(135deg,#1a2744,#3617ce);color:#fff;border-radius:14px;padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+  <div>
+    <div style="font-size:11px;opacity:0.7;font-weight:700;letter-spacing:1px;margin-bottom:4px">🎯 TM CRM SYSTEM</div>
+    <div style="font-size:15px;font-weight:900;margin-bottom:4px">광주 콜센터 TM 영업 → 견적 → 계약 → 정산 통합 시스템</div>
+    <div style="font-size:11px;opacity:0.85;line-height:1.6">매장 영업과 별개 · 인터넷·TV·렌탈 전담 · 인센티브 V5 자동 정산 · 26+ incentive_* 테이블</div>
+  </div>
+  <a href="https://admin.prexymarket.com/docs/incentive-admin.html" style="background:#fff;color:#1a2744;padding:10px 20px;border-radius:8px;font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap">열기 →</a>
+</div>
+
+<div class="kpi">
+  <div class="kpi-card"><div class="kpi-num">4</div><div class="kpi-label">사용자 역할 (role)</div></div>
+  <div class="kpi-card"><div class="kpi-num">18</div><div class="kpi-label">사이드바 메뉴</div></div>
+  <div class="kpi-card"><div class="kpi-num">26+</div><div class="kpi-label">incentive_* DB 테이블</div></div>
+  <div class="kpi-card"><div class="kpi-num">3,113</div><div class="kpi-label">콜DB active (2026-04)</div></div>
+</div>
+
+<!-- ===== STEP 0: 사용자 역할 ===== -->
+<div class="step-label">STEP 0 — 사용자 역할 (4 role) · 권한별 메뉴 자동 노출</div>
+<div class="step-card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">TM CRM의 4가지 역할 — 본사 vs 광주센터 분리</div>
+  <div class="grid4">
+    <div class="card-mock" style="border:2px solid var(--red)">
+      <div style="font-weight:900;color:var(--red);font-size:12px;margin-bottom:6px">🔴 admin</div>
+      소속: <b>본사</b><br>
+      권한: <b>전체</b><br>
+      <span class="mono">시드·룰·DB import·rollback</span><br>
+      예: <b>빈센조</b>
+    </div>
+    <div class="card-mock" style="border:2px solid var(--orange)">
+      <div style="font-weight:900;color:var(--orange);font-size:12px;margin-bottom:6px">🟠 manager</div>
+      소속: <b>광주센터</b><br>
+      권한: <b>본인 센터</b><br>
+      <span class="mono">분배 승인·정산·목표</span><br>
+      예: <b>박매니저</b>
+    </div>
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">🔵 agent</div>
+      소속: <b>광주센터 (5명)</b><br>
+      권한: <b>본인 분배만</b><br>
+      <span class="mono">콜·메모·계약 등록</span><br>
+      예: <b>김상담·이상담·최상담·홍상담·김상담2</b>
+    </div>
+    <div class="card-mock" style="border:2px solid var(--purple)">
+      <div style="font-weight:900;color:var(--purple);font-size:12px;margin-bottom:6px">🟣 contract</div>
+      소속: <b>본사</b><br>
+      권한: <b>전체 (콜·분배 X)</b><br>
+      <span class="mono">서류·설치 일정·후속</span><br>
+      예: <b>고혜인·최계약</b>
+    </div>
+  </div>
+  <div class="warn">
+    <strong>매장 vs 콜센터 분리</strong>: 8개 매장 상담사(봉이·송이·상무·홍이·순천·목포·여수·익산)는 <b>매장 휴대폰 개통 전담</b>이며 TM CRM 접근 X.
+    콜센터 상담사(광주센터 5명)는 <b>인터넷·TV·렌탈 부가 영업</b> 전담. 휴대폰 권유 차단 룰 적용.
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== 시스템 흐름 총정리 ===== -->
+<div class="step-label" style="background:var(--purple)">🔄 시스템 흐름 총정리 (DB 라이프사이클 한눈에)</div>
+<div class="step-card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:12px">하나의 콜DB가 정산까지 가는 전체 경로 — 누가·언제·어떤 API·어떤 DB 변화</div>
+
+  <table>
+    <thead><tr><th style="width:40px">STEP</th><th>사용자 액션</th><th>API · 트리거</th><th>DB 변화 (테이블 · 컬럼)</th><th>다음 단계 조건</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>1</b></td>
+        <td>마감원장 import / 광고 인입</td>
+        <td class="mono">POST /api/customer-db/import<br>RPC <span class="badge b-green">calc_customer_grade</span> + <span class="badge b-green">calc_age_bonus</span></td>
+        <td class="mono">incentive_customer_db<br>INSERT (call_status=null)<br>quality_grade · priority_score 자동</td>
+        <td>active=true · 미배정 풀 진입</td>
+      </tr>
+      <tr>
+        <td><b>2</b></td>
+        <td>manager: 분배 (지정 or 균등)</td>
+        <td class="mono">POST /distribute<br>POST /distribute/equal<br>또는 RPC <span class="badge b-green">approve_distribution_request</span></td>
+        <td class="mono">incentive_customer_db<br>UPDATE assigned_agent_id · assigned_at</td>
+        <td>agent.내 콜 리스트에 표시</td>
+      </tr>
+      <tr>
+        <td><b>3</b></td>
+        <td>agent: TM 콜 (큐콜 또는 수동)</td>
+        <td class="mono">POST /api/incentive/customer-call-log<br>PATCH /customer-db/:id (call_status·notes·callback_at)</td>
+        <td class="mono">incentive_customer_call_log<br>INSERT<br>incentive_customer_db<br>UPDATE call_status · last_contacted_at</td>
+        <td>call_status=converted → STEP 5<br>callback → STEP 3 재진입<br>rejected → retention (30일 후 archive)</td>
+      </tr>
+      <tr>
+        <td><b>4</b></td>
+        <td>agent: 견적 계산 (client-side)</td>
+        <td>D 객체 read · LS·DB sync via <span class="mono">_calc-data-sync.js</span></td>
+        <td>(DB 변화 없음 · 어드민 #16에서 시드 편집 시만 UPSERT)</td>
+        <td>견적 결과 → STEP 5 모달 prefill</td>
+      </tr>
+      <tr>
+        <td><b>5</b></td>
+        <td>agent: 계약 완료 클릭</td>
+        <td class="mono">POST /api/incentive/sales</td>
+        <td class="mono">incentive_sales INSERT<br>(status=pending<br>+ payback_snapshot 박제<br>+ point_weight_snapshot)<br>incentive_customer_db<br>UPDATE call_status=converted</td>
+        <td>contract role에 인계</td>
+      </tr>
+      <tr>
+        <td><b>6</b></td>
+        <td>contract: 서류·통신사 등록·설치 협의</td>
+        <td class="mono">PATCH /api/incentive/sales/:id<br>(status·결합·납부·메모 등 전부)<br>+ cron <span class="badge b-orange">card-masking</span> (03:30 KST 매일)</td>
+        <td class="mono">incentive_sales<br>UPDATE status · contract_*_at<br>UPDATE customer_address · payment_extra<br>UPDATE card_masked_at (7일 경과)</td>
+        <td>status=completed → STEP 7 집계 대상</td>
+      </tr>
+      <tr>
+        <td><b>7</b></td>
+        <td>cron 자동 (매월 1일 02:00) 또는 admin 수동</td>
+        <td class="mono">RPC <span class="badge b-green">incentive_calc_monthly_settlement</span><br>(agent_id, year_month)<br>POST /settlements/run (admin)</td>
+        <td class="mono">incentive_settlements<br>UPSERT (status=draft)<br>+ 가중치·Grade·페널티·보너스·페이백 분담 자동</td>
+        <td>admin: locked → paid 전환</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="flow" style="margin-top:14px;justify-content:center">
+    <div class="fb fb-db" style="font-size:10px">incentive_customer_db</div>
+    <div class="fa">①분배</div>
+    <div class="fb fb-user" style="font-size:10px">분배 풀 (agent)</div>
+    <div class="fa">③콜</div>
+    <div class="fb fb-crm" style="font-size:10px">customer_call_log</div>
+    <div class="fa">⑤계약</div>
+    <div class="fb fb-admin" style="font-size:10px">incentive_sales</div>
+    <div class="fa">⑦정산</div>
+    <div class="fb fb-pink" style="font-size:10px">incentive_settlements</div>
+  </div>
+
+  <div class="warn">
+    <strong>자동 트리거 5종 (cron)</strong>:<br>
+    • 매월 1일 <b>02:00</b> — 인센티브 월별 정산 (incentive_settlement.js)<br>
+    • 매일 <b>03:00</b> — customer-db retention (converted 90일·rejected 30일·archive·purge)<br>
+    • 매일 <b>03:30</b> — 카드정보 마스킹 (계약완료 +7일)<br>
+    • 매일 <b>04:00</b> — customer-db 재배정 (미컨택 7일·저활성 14일 풀 복귀)<br>
+    • 매일 <b>09:00</b> — 공시지원금 크롤링 (subsidy-crawler)
+  </div>
+  <div class="note">
+    <strong>핵심 상태 전이</strong>:<br>
+    • <span class="mono">incentive_customer_db.call_status</span>: null → assigned → contacted → converted | callback | rejected | no_answer<br>
+    • <span class="mono">incentive_sales.status</span>: pending → in_progress → completed (또는 cancelled)<br>
+    • <span class="mono">incentive_settlements.status</span>: draft → locked → paid
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 1: DB 수집·등급화 ===== -->
+<div class="step-label">STEP 1 — 콜DB 수집·자동 등급화 (incentive_customer_db)</div>
+<div class="step-card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">출처별 DB 수집 → RPC가 자동 등급·나이가중치 부여</div>
+  <div class="flow">
+    <div class="fb fb-neutral">광고 인입</div>
+    <div class="fb fb-neutral">마감원장 import (월 1회)</div>
+    <div class="fb fb-neutral">외부 DB</div>
+    <div class="fb fb-neutral">콜 후 retention</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db" style="font-size:10px"><span class="mono">incentive_customer_db</span><br>+ <span class="mono">calc_customer_grade()</span><br>+ <span class="mono">calc_age_bonus()</span></div>
+    <div class="fa">→</div>
+    <div class="fb fb-user">S/A/B/C 등급 자동</div>
+  </div>
+
+  <div class="grid4" style="margin-top:14px">
+    <div class="card-mock" style="border:2px solid #fbbf24">
+      <div style="font-weight:900;color:#d97706;font-size:12px;margin-bottom:6px">⭐⭐⭐ S급</div>
+      priority <b>100</b><br>
+      tier=1 + <b>이동</b><br>
+      <span class="mono">최우선 분배</span><br>
+      2026-04: <b>565명</b>
+    </div>
+    <div class="card-mock" style="border:2px solid var(--green)">
+      <div style="font-weight:900;color:var(--green);font-size:12px;margin-bottom:6px">⭐⭐ A급</div>
+      priority <b>80 / 50</b><br>
+      tier=1 신규 OR<br>tier=2 렌탈권유<br>
+      2026-04: <b>497명</b>
+    </div>
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">⭐ B급</div>
+      priority <b>30</b><br>
+      tier=1 + <b>기변</b><br>
+      <span class="mono">기변 권유</span><br>
+      2026-04: <b>2,035명</b>
+    </div>
+    <div class="card-mock" style="border:2px solid var(--text3)">
+      <div style="font-weight:900;color:var(--text3);font-size:12px;margin-bottom:6px">C급</div>
+      priority <b>10</b><br>
+      그 외 (옛 customer)<br>
+      <span class="mono">참고용</span><br>
+      2026-04: <b>15명</b>
+    </div>
+  </div>
+  <div class="note">
+    <strong>나이 가중치</strong> (priority_score에 추가): 30~40대 <b>+25</b> ⭐ 최적 / 20대 +20 / 50대 +15 / 60대 0 / 70+ <b>-30</b><br>
+    <strong>마감원장 import 룰</strong>: 워치(L*) 제외 · 미성년·100세 이상 제외 · 이름+생년월일 키로 통합 (한 사람 여러 회선 → 1건)
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 2: DB 분배 ===== -->
+<div class="step-label">STEP 2 — DB 분배 (hybrid) · 메뉴 #07·#13 · manager·admin</div>
+<div class="step-card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">2가지 분배 방식 — 지정 (manager 직접) · 균등 (1클릭 자동)</div>
+  <div class="grid2">
+    <div class="card-mock" style="border:2px solid var(--red)">
+      <div style="font-weight:900;color:var(--red);font-size:12px;margin-bottom:6px">1️⃣ 지정 분배 <span class="mono" style="font-size:9px">POST /distribute</span></div>
+      manager/admin이 직접 선택:<br>
+      • batch (마감원장·광고 등)<br>
+      • 등급 (S/A/B/C 멀티 선택)<br>
+      • 상담사 (광주센터 active)<br>
+      • 1인당 max 건수<br>
+      → <b>라운드로빈 분배</b>
+    </div>
+    <div class="card-mock" style="border:2px solid var(--green)">
+      <div style="font-weight:900;color:var(--green);font-size:12px;margin-bottom:6px">2️⃣ 균등 분배 <span class="mono" style="font-size:9px">POST /distribute/equal</span></div>
+      <b>1 클릭 자동</b>:<br>
+      • active agent 자동 조회<br>
+      • 미배정 풀 (priority DESC)<br>
+      • 라운드로빈 자동<br>
+      • manager: 본인 센터 강제<br>
+      • admin: 전체 가능
+    </div>
+  </div>
+  <div class="flow" style="margin-top:14px">
+    <div class="fb fb-user">agent 분배 요청</div>
+    <div class="fa">→</div>
+    <div class="fb fb-admin">manager 승인 (#13)</div>
+    <div class="fa">→</div>
+    <div class="fb fb-api"><span class="mono">approve_distribution_request</span> RPC</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db">S→A→B→C 우선순위 자동</div>
+  </div>
+  <div class="note">
+    <strong>분배 후 retention</strong>: 미컨택 7일·저활성 14일 → 풀 자동 복귀 (재배정 cron 매일 04:00 KST)
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 3: TM 큐콜 ===== -->
+<div class="step-label">STEP 3 — TM 큐콜 (메뉴 #12·#14·#15) · agent</div>
+<div class="step-card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">사이드바 가로 카드 list + 좌측 fixed 풍부 카드 + 견적·스크립트</div>
+  <div class="flow">
+    <div class="fb fb-user">📋 내 콜 리스트 (#12)</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user">📞 TM 상담 v1 큐콜 (#14)</div>
+    <div class="fa">또는</div>
+    <div class="fb fb-user">✏️ TM 상담 v2 수동 (#15)</div>
+  </div>
+
+  <div class="grid3" style="margin-top:14px">
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">고객 카드 표시</div>
+      이름 · tier 배지 · 전화<br>
+      🎯 1차/2차 권유 자동 분기<br>
+      마감원장 정보 (개통·단말·요금)<br>
+      🌐 인터넷 청취 결과<br>
+      통화 이력
+    </div>
+    <div class="card-mock" style="border:2px solid var(--green)">
+      <div style="font-weight:900;color:var(--green);font-size:12px;margin-bottom:6px">스크립트 6단계</div>
+      ① 인사<br>
+      ② 사용 상품 파악<br>
+      ③ 니즈 파악<br>
+      ④ 견적 안내<br>
+      ⑤ 결합 혜택 강조<br>
+      ⑥ 클로징
+    </div>
+    <div class="card-mock" style="border:2px solid var(--orange)">
+      <div style="font-weight:900;color:var(--orange);font-size:12px;margin-bottom:6px">콜 종료 직후</div>
+      통화 요약 텍스트 <b>필수</b><br>
+      call_status 분기:<br>
+      converted·callback·rejected<br>
+      callback_at 설정<br>
+      메모 (특이사항)
+    </div>
+  </div>
+  <div class="warn">
+    <strong>봉이 콜센터 룰</strong>: CTI/녹음 시스템 <b>미연동</b> · 상담사가 직접 발신·수신 · 통화 요약 텍스트가 유일 증거.<br>
+    <strong>차단 룰</strong>: 휴대폰 권유 X (매장 전담) · 인터넷+TV 같은 통신사 기변 X (3사 공통)
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 4: 견적 계산 ===== -->
+<div class="step-label">STEP 4 — 견적 계산 (메뉴 #16 TM 데이터 관리 ↔ #14/#15)</div>
+<div class="step-card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">3사 통신사 · 결합 8종 · 인센티브 V5 미리보기</div>
+  <div class="flow">
+    <div class="fb fb-admin">🧮 TM 데이터 관리 (#16)<br><span style="font-size:9px">calculator.html?admin=1</span></div>
+    <div class="fa">시드 8 카테고리</div>
+    <div class="fb fb-db">LS + Supabase</div>
+    <div class="fa">자동 sync</div>
+    <div class="fb fb-user">TM 상담 v1/v2 (#14/#15)<br><span style="font-size:9px">tm-counselor.html</span></div>
+  </div>
+
+  <div class="grid2" style="margin-top:14px">
+    <div class="card-mock" style="border:2px solid var(--red)">
+      <div style="font-weight:900;color:var(--red);font-size:12px;margin-bottom:6px">시드 8 카테고리 (어드민 편집)</div>
+      <b>1.</b> 인터넷·WiFi (+LGU+ 500M↑ 기본 제공)<br>
+      <b>2.</b> TV 상품 (+TV 추가 정책 3사)<br>
+      <b>3.</b> 셋톱박스 (+discountRules)<br>
+      <b>4.</b> 결합할인 8종<br>
+      <b>5.</b> 설치비<br>
+      <b>6.</b> 제휴카드<br>
+      <b>7.</b> 영업포인트<br>
+      <b>8.</b> 사은품 (63 카탈로그)
+    </div>
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">결합할인 8종</div>
+      <b>SKT</b> 요즘가족결합 · 온가족할인<br>
+      <b>KT</b> 총액·정액·프리미엄 가족·프리미엄 싱글<br>
+      <b>LGU+</b> 참쉬운 가족·투게더<br>
+      <br>
+      <span class="mono">D[carrier].bundle.*</span><br>
+      카탈로그 dc + 자격 조건 자동
+    </div>
+  </div>
+
+  <div class="flow" style="margin-top:14px">
+    <div class="fb fb-pink">계산기 견적 결과</div>
+    <div class="fa">+</div>
+    <div class="fb fb-pink">💰 인센티브 V5 미리보기</div>
+  </div>
+  <div class="note">
+    <strong>동기화 4단</strong>: storage event · 60초 polling · visibilitychange · BroadcastChannel('incentive-products')
+    → 어드민 편집 즉시 모든 견적 탭 자동 반영<br>
+    <strong>인센티브 V5 미리보기</strong>: agent 화면(P·우수·Tier만, 마진 숨김) vs admin 화면(+마진·Grade 단가)
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 5: 계약 접수 ===== -->
+<div class="step-label">STEP 5 — 계약 접수 (메뉴 #02 계약 처리) · incentive_sales</div>
+<div class="step-card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">상세 모달 — 7개 섹션 통합 입력 + 시점 스냅샷 박제</div>
+  <div class="flow">
+    <div class="fb fb-user">agent: 계약 완료 클릭</div>
+    <div class="fa">→</div>
+    <div class="fb fb-api">POST /sales</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db">incentive_sales (status=pending)</div>
+    <div class="fa">→</div>
+    <div class="fb fb-crm">contract 인계</div>
+  </div>
+
+  <div class="grid3" style="margin-top:14px">
+    <div class="card-mock" style="border:2px solid var(--navy)">
+      <div style="font-weight:900;color:var(--navy);font-size:12px;margin-bottom:6px">📦 상품 정보 (read-only)</div>
+      통신사·종류·속도·TV 등급<br>
+      가중치·Tier·우수상품<br>
+      <b>페이백 SNAPSHOT</b><br>
+      <span class="mono">payback_snapshot</span>
+    </div>
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">👤 고객 정보</div>
+      이름·전화·생년월일·주민<br>
+      주소 (Daum 검색)<br>
+      설치 일정·일시·입주 형태
+    </div>
+    <div class="card-mock" style="border:2px solid var(--green)">
+      <div style="font-weight:900;color:var(--green);font-size:12px;margin-bottom:6px">🔗 결합·청구·납부</div>
+      결합유형 (carrier 자동 필터)<br>
+      결합 구성원 JSON<br>
+      청구서 방식·번호·통신사<br>
+      <b>납부방법별 추가정보</b>:<br>
+      • 자동이체: 은행·예금주·계좌<br>
+      • 카드이체: 명의자·카드사·번호·유효기간
+    </div>
+    <div class="card-mock" style="border:2px solid var(--orange)">
+      <div style="font-weight:900;color:var(--orange);font-size:12px;margin-bottom:6px">👥 댁내 대기자·판매자</div>
+      댁내 대기자 성함<br>
+      대기자 전화<br>
+      판매자 전화
+    </div>
+    <div class="card-mock" style="border:2px solid var(--purple)">
+      <div style="font-weight:900;color:var(--purple);font-size:12px;margin-bottom:6px">🏦 사은품 입금 정보</div>
+      예금주·은행·계좌<br>
+      <span class="mono">bank_account_*</span><br>
+      현금 페이백용
+    </div>
+    <div class="card-mock" style="border:2px solid var(--red)">
+      <div style="font-weight:900;color:var(--red);font-size:12px;margin-bottom:6px">🚦 상태 + 메모</div>
+      pending → in_progress → completed<br>
+      cancellation_reason<br>
+      상담사 메모 / 계약부서 메모<br>
+      <b>DB 출처 필수</b> (completed 시)
+    </div>
+  </div>
+  <div class="warn">
+    <strong>카드정보 자동 마스킹</strong>: 계약완료 + 7일 경과 시 cron(매일 03:30 KST)이 자동 마스킹 (••••-••••-••••-1234).
+    7일 동안 운영팀이 통신사 자동이체 등록 처리 → 이후 평문 보관 차단.
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 6: contract 후속 ===== -->
+<div class="step-label">STEP 6 — Contract 후속 처리 (contract role · 메뉴 #02)</div>
+<div class="step-card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">서류·설치 일정·승인 → 통신사 등록·사은품 지급</div>
+  <div class="flow">
+    <div class="fb fb-crm">contract: 서류 확인</div>
+    <div class="fa">→</div>
+    <div class="fb fb-crm">통신사 자동이체 등록</div>
+    <div class="fa">→</div>
+    <div class="fb fb-crm">설치 일정 협의</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db">status=in_progress → completed</div>
+    <div class="fa">→</div>
+    <div class="fb fb-pink">사은품·페이백 지급</div>
+  </div>
+  <div class="grid3" style="margin-top:14px">
+    <div class="card-mock">
+      <div style="font-weight:900;color:var(--navy);font-size:12px;margin-bottom:6px">자동 트리거</div>
+      contract_pending_at<br>
+      contract_in_progress_at<br>
+      contract_completed_at<br>
+      contract_cancelled_at<br>
+      <span class="mono">PATCH /sales/:id</span>
+    </div>
+    <div class="card-mock">
+      <div style="font-weight:900;color:var(--navy);font-size:12px;margin-bottom:6px">사은품 지급 방식</div>
+      인터넷+TV 결합 → <b>즉시지급</b><br>
+      • 현금 → 사은품 입금 계좌<br>
+      • 가전 → 직배송<br>
+      • 제로렌탈 → 1개월 후 소유권 이전
+    </div>
+    <div class="card-mock">
+      <div style="font-weight:900;color:var(--navy);font-size:12px;margin-bottom:6px">취소·환불</div>
+      cancellation_reason 기록<br>
+      cancelled_at 자동<br>
+      pending 단계만 product 변경 가능<br>
+      (등록 시점 snapshot 보호)
+    </div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== STEP 7: 정산 ===== -->
+<div class="step-label">STEP 7 — 정산 (V5 룰) · 메뉴 #09·#11 · cron 매월 1일</div>
+<div class="step-card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">RPC <span class="mono">incentive_calc_monthly_settlement</span> · 자동 cron + 수동 집계 · draft → locked → paid</div>
+  <div class="flow">
+    <div class="fb fb-db">incentive_sales (계약완료)</div>
+    <div class="fa">→</div>
+    <div class="fb fb-api">RPC incentive_calc_monthly_settlement</div>
+    <div class="fa">→</div>
+    <div class="fb fb-admin">incentive_settlements</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral">CSV / 인쇄 / 지급</div>
+  </div>
+
+  <div class="grid2" style="margin-top:14px">
+    <div class="card-mock" style="border:2px solid var(--blue)">
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">가중치 + Grade</div>
+      <b>가중치</b>: 단독 <b>1.0P</b> / 결합 <b>1.5P</b><br>
+      <b>Grade</b>:<br>
+      • G1 (0~15P) → 건당 <b>2만</b><br>
+      • G2 (16~30P, 우수 5건+) → <b>3만</b><br>
+      • G3 (31P+, 우수 10건+) → <b>4만</b><br>
+      <b>페널티</b>: 우수 미달 → 한 단계 강등
+    </div>
+    <div class="card-mock" style="border:2px solid var(--green)">
+      <div style="font-weight:900;color:var(--green);font-size:12px;margin-bottom:6px">보너스 + 페이백</div>
+      <b>우수상품 보너스</b>: 마진 25만+ → <b>+1만/건</b><br>
+      <b>페이백 분담</b>:<br>
+      • 회사 ≤ <b>30,000</b><br>
+      • 상담사 30,001~<b>50,000</b><br>
+      <b>기본급</b>: <b>230만</b><br>
+      <b>cron</b>: 매월 1일 02:00 KST
+    </div>
+  </div>
+  <div class="note">
+    <strong>상태 전환</strong>: draft → locked (manager·admin) → paid (지급 완료)
+    <strong> · 월간 목표 (#10)</strong>: agent별 콜·전환·P 목표 + 진척률 게이지 (70%/100% 단계 색상)
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ===== FINAL: 어드민 메뉴 18개 ===== -->
+<div class="step-label" style="background:var(--red)">FINAL — 어드민 사이드바 메뉴 18개 (incentive-admin.html)</div>
+<div class="step-card">
+  <table>
+    <thead><tr><th style="width:40px">#</th><th>메뉴</th><th>경로</th><th>주요 DB·도메인</th><th>주 사용자</th></tr></thead>
+    <tbody>
+      <tr><td>01</td><td><span class="menu-num">📊</span> 대시보드</td><td class="mono">incentive-dashboard.html</td><td>전체 집계·차트 5종·실시간 콜 위젯</td><td><span class="badge b-red">admin</span> <span class="badge b-orange">manager</span></td></tr>
+      <tr><td>02</td><td><span class="menu-num">📋</span> 계약 처리</td><td class="mono">incentive-contract.html</td><td class="mono">incentive_sales</td><td><span class="badge b-purple">contract</span> <span class="badge b-red">admin</span></td></tr>
+      <tr><td>03</td><td><span class="menu-num">👥</span> 상담사 관리</td><td class="mono">incentive-agents.html</td><td class="mono">incentive_agents</td><td><span class="badge b-red">admin</span> <span class="badge b-orange">manager</span></td></tr>
+      <tr><td>04</td><td><span class="menu-num">📦</span> 상품 관리</td><td class="mono">incentive-products.html</td><td class="mono">incentive_products (63)</td><td><span class="badge b-red">admin</span></td></tr>
+      <tr><td>05</td><td><span class="menu-num">⚙️</span> 정책 관리</td><td class="mono">incentive-rules.html</td><td class="mono">incentive_rules (V5)</td><td><span class="badge b-red">admin</span></td></tr>
+      <tr><td>06</td><td><span class="menu-num">🗂️</span> DB 출처</td><td class="mono">incentive-db-sources.html</td><td class="mono">incentive_db_sources</td><td><span class="badge b-red">admin</span></td></tr>
+      <tr><td>07</td><td><span class="menu-num">📞</span> 콜 DB 관리</td><td class="mono">incentive-customer-db.html</td><td class="mono">incentive_customer_db (3,113)</td><td><span class="badge b-red">admin</span> <span class="badge b-orange">manager</span></td></tr>
+      <tr><td>08</td><td><span class="menu-num">📈</span> 콜 통계</td><td class="mono">incentive-call-stats.html</td><td class="mono">incentive_customer_call_log</td><td><span class="badge b-red">admin</span> <span class="badge b-orange">manager</span></td></tr>
+      <tr><td>09</td><td><span class="menu-num">💰</span> 월별 정산</td><td class="mono">incentive-settlements.html</td><td class="mono">incentive_monthly_settlements</td><td><span class="badge b-red">admin</span></td></tr>
+      <tr><td>10</td><td><span class="menu-num">🎯</span> 월간 목표</td><td class="mono">incentive-goals.html</td><td class="mono">incentive_monthly_goals</td><td><span class="badge b-red">admin</span> <span class="badge b-orange">manager</span></td></tr>
+      <tr><td>11</td><td><span class="menu-num">👥</span> 상담사 ROI 비교</td><td class="mono">incentive-agents-roi.html</td><td>집계·ROI</td><td><span class="badge b-red">admin</span></td></tr>
+      <tr><td>12</td><td><span class="menu-num">📋</span> 내 콜 리스트</td><td class="mono">incentive-call-list.html</td><td>본인 분배</td><td><span class="badge b-blue">agent</span></td></tr>
+      <tr><td>13</td><td><span class="menu-num">📥</span> 분배 요청</td><td class="mono">incentive-distribution-requests.html</td><td class="mono">incentive_distribution_requests</td><td><span class="badge b-orange">manager</span> <span class="badge b-blue">agent</span></td></tr>
+      <tr><td>14</td><td><span class="menu-num">📞</span> TM 상담 v1 (큐콜)</td><td class="mono">tm-counselor.html</td><td>견적·결합·계약</td><td><span class="badge b-blue">agent</span></td></tr>
+      <tr><td>15</td><td><span class="menu-num">✏️</span> TM 상담 v2 (수동)</td><td class="mono">tm-counselor.html?mode=manual</td><td>수동 모드</td><td><span class="badge b-blue">agent</span></td></tr>
+      <tr><td>16</td><td><span class="menu-num">🧮</span> TM 데이터 관리</td><td class="mono">calculator.html?admin=1</td><td>시드 8 카테고리</td><td><span class="badge b-red">admin</span></td></tr>
+      <tr><td>17</td><td><span class="menu-num">📖</span> 급여 안내</td><td class="mono">incentive-guide.html</td><td>V5 룰 설명</td><td>전체</td></tr>
+      <tr><td>18</td><td><span class="menu-num">📚</span> 사용 매뉴얼</td><td class="mono">incentive-manual.html</td><td>운영팀 매뉴얼</td><td>전체</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== 부록 ===== -->
+<div class="step-label" style="background:#6b7280">부록 — 보안·환경·회귀 방어</div>
+<div class="step-card">
+  <div class="grid2">
+    <div>
+      <h3 style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:6px">🔒 보안</h3>
+      <ul style="padding-left:20px;font-size:11px;line-height:1.8">
+        <li>JWT 인증 (<span class="mono">incentive-auth-token-v1</span>)</li>
+        <li>RLS — incentive_* 26개 + bongi_* 41개 활성</li>
+        <li>Sentry PII sanitize (카드·주민·계좌·휴대폰 자동 redact)</li>
+        <li>카드 마스킹 cron (계약완료 +7일)</li>
+        <li>2FA · IP allowlist · CSP · PIPA 보존</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:6px">🌐 환경·배포</h3>
+      <ul style="padding-left:20px;font-size:11px;line-height:1.8">
+        <li>로컬: <span class="mono">localhost:3001</span></li>
+        <li>데브: <span class="mono">dev-admin.prexymarket.com</span> (Supabase <span class="mono">sesgdqbmophgmombelmn</span>)</li>
+        <li>라이브: <span class="mono">admin.prexymarket.com</span> (Supabase <span class="mono">dugaqvvnhsgenhmhuyju</span>)</li>
+        <li>배포 7단계: 로컬 → 데브 → 데브 검증 → 라이브 신호 → 라이브 → 라이브 검증 → 교차 검증</li>
+        <li>Railway 자동 빌드 (~90초) · Cloudflare CDN 캐시 우회</li>
+      </ul>
+    </div>
+  </div>
+  <h3 style="font-size:13px;font-weight:800;color:var(--navy);margin:14px 0 6px">🧪 회귀 방어 E2E (Playwright)</h3>
+  <table>
+    <thead><tr><th>Suite</th><th>시나리오</th><th>보호 대상</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">sync-verify</td><td>3</td><td>어드민 → 견적 동기화 (Bundle·Install·Default 폴백)</td></tr>
+      <tr><td class="mono">04-quote-regression</td><td>5</td><td>D 객체 default · KT 프리미엄 싱글결합 · 설치비 · TV 상품</td></tr>
+      <tr><td class="mono">05-contract-flow</td><td>3</td><td>normalizeCarrier · 카드 마스킹 함수 · 모달 핵심 함수</td></tr>
+      <tr><td><strong>합계</strong></td><td><strong>11</strong></td><td>핵심 비즈니스 로직 자동 회귀 감지</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="background:linear-gradient(135deg,#1a2744,#3617ce);color:#fff;border-radius:14px;padding:16px 22px;margin-top:32px;text-align:center;font-size:13px;font-weight:700">
+  📞 봉이 TM CRM — 광주 콜센터 인터넷·TV·렌탈 영업 전담 · 인센티브 V5 자동 정산
+</div>
+
+</body>
+</html>
