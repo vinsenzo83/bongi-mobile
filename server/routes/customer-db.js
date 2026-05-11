@@ -726,8 +726,8 @@ router.get('/stats/summary', async (req, res) => {
     };
 
     const carriers = ['SK','KT','LG'];
-    const grades = ['S','A','B','C'];
-    const categories = ['이동','신규','기변','렌탈권유'];
+    const grades = ['S','A','B','R','C'];
+    const categories = ['이동','신규','기변','렌탈권유','기타'];
     const tiers = [1, 2];
 
     const [byCarrier, byGrade, byCategory, byTier] = await Promise.all([

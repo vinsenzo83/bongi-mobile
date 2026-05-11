@@ -195,7 +195,7 @@ tr:hover { background:#334155; }
         .age-band { display:grid; grid-template-columns:60px 60px 70px 1fr; gap:6px; align-items:center; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:4px; }
       </style>
 
-      <details style="margin-top:18px" id="rules-details" ontoggle="if(this.open) loadImportRulesHistory()">
+      <details style="margin-top:18px" id="rules-details" ontoggle="if(this.open) { loadImportRules(); loadImportRulesHistory(); }">
         <summary style="cursor:pointer;font-size:14px;font-weight:800;color:#fbbf24;padding:12px 14px;background:linear-gradient(90deg,rgba(251,191,36,0.1),rgba(0,0,0,0.3));border-radius:8px;border:1px solid #475569;list-style:none;display:flex;align-items:center;gap:8px">
           <span>📋 마감원장 import 룰 설정 (admin)</span>
           <span id="r-dirty-badge" style="display:none;background:#fbbf24;color:#0f172a;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:900">⚠️ 변경 0건</span>
@@ -783,10 +783,12 @@ function renderOneGradeCard(grade, conditions) {
   const cls = GRADE_COLORS[grade] || 'gr-C';
   const label = GRADE_LABELS[grade] || `${grade} 등급`;
   const cats = ['', '이동', '신규', '렌탈권유', '기변', '기타'];
-  const borderColor = grade==='S'?'#f59e0b':grade==='A'?'#22c55e':grade==='B'?'#3b82f6':'#64748b';
+  const borderColor = grade==='S'?'#f59e0b':grade==='A'?'#22c55e':grade==='B'?'#3b82f6':grade==='R'?'#a855f7':'#64748b';
   const stats = _gradeStats[grade] || {};
-  const statsHtml = stats.count != null
-    ? `<span style="color:${borderColor};font-weight:700">현재 ${stats.count}명 · 평균 ${stats.avg}점</span>`
+  const statsHtml = stats.count != null && stats.count > 0
+    ? `<span style="color:${borderColor};font-weight:700">현재 ${stats.count.toLocaleString()}명${stats.avg && stats.avg !== '-' ? ` · 평균 ${stats.avg}점` : ''}</span>`
+    : stats.count === 0
+    ? `<span style="color:#64748b">현재 0명</span>`
     : `<span style="color:#64748b">통계 로딩 중...</span>`;
 
   return `
@@ -1018,8 +1020,11 @@ async function loadDistPreview() {
     const r = await fetchAuth(CDB + '/stats/summary');
     if (!r.ok) return;
     const d = await r.json();
-    const dist = d.grade_dist || d.distribution?.grade || {};
-    const avg = d.grade_avg_priority || {};
+    // 서버 응답: by_grade = {S: {total, contacted, converted, ...}, A: {...}}
+    const byGrade = d.by_grade || {};
+    const dist = {};
+    Object.keys(byGrade).forEach(g => { dist[g] = byGrade[g].total || 0; });
+    const avg = {}; // 평균 점수는 서버에서 별도 집계 필요 — 일단 카운트만
     const total = Object.values(dist).reduce((s, c) => s + (c || 0), 0) || 1;
     const grades = ['S', 'A', 'B', 'R', 'C'];
 
