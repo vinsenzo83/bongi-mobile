@@ -831,7 +831,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         const num = raw.replace(/[^0-9]/g, '');
         const fmt = num.length === 11 ? `${num.slice(0,3)}-${num.slice(3,7)}-${num.slice(7)}` : raw;
         const { data: matched } = await supabase.from('incentive_customer_db')
-          .select('id')
+          .select('id, db_source_id')
           .or(`phone.eq.${raw},phone.eq.${num},phone.eq.${fmt}`)
           .is('deleted_at', null)
           .neq('call_status', 'converted')
@@ -846,6 +846,14 @@ router.post('/sales', authenticateJWT, async (req, res) => {
             last_contacted_at: nowIso,
             updated_at: nowIso,
           }).in('id', ids);
+          // sale.db_source_id 자동 보충 — sale에 출처 안 보냈는데 customer엔 출처 있으면 복사
+          if (!data.db_source_id) {
+            const customerSourceId = matched.find(c => c.db_source_id)?.db_source_id;
+            if (customerSourceId) {
+              await supabase.from('incentive_sales').update({ db_source_id: customerSourceId }).eq('id', data.id);
+              data.db_source_id = customerSourceId;
+            }
+          }
           await supabase.from('incentive_customer_call_log').insert(
             ids.map(id => ({ customer_id: id, agent_id: targetAgentId, result:'converted', notes:`자동 변환 (sale ${data.id})` }))
           );
