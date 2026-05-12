@@ -680,6 +680,21 @@ if (_isManualMode) {
   `;
   document.head.appendChild(s);
 }
+if (_isReQuoteMode) {
+  document.documentElement.classList.add('tm-requote-mode');
+  // re-quote 모드 — 상담 스크립트·메모·고객 카드 숨김. 견적 panel만 표시
+  const s = document.createElement('style');
+  s.textContent = `
+    .tm-requote-mode .tm-app > aside.tm-panel,
+    .tm-requote-mode .tm-app .tm-info-section,
+    .tm-requote-mode #call-mode-bar,
+    .tm-requote-mode header,
+    .tm-requote-mode footer { display:none !important; }
+    .tm-requote-mode .tm-app { grid-template-columns: 1fr !important; grid-template-areas: "main" !important; padding:0 !important; }
+    .tm-requote-mode body { background:#0f172a !important; padding:8px !important; }
+  `;
+  document.head.appendChild(s);
+}
 
 async function initQueueSide() {
   if (_isManualMode) return; // 수동 모드 — 콜 큐 비활성
