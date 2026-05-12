@@ -654,12 +654,17 @@ function toggleQueueSide() {
 }
 
 // 모드 감지: ?mode=manual 또는 부모창에서 인자 주입 — 큐콜·DB출처 비활성
+// ?sale_id=XXX 추가 시 — 상품 변경 모드 (계약 처리 편집 모달에서 iframe 진입)
+const _saleIdReQuote = (() => {
+  try { return new URL(location.href).searchParams.get('sale_id'); } catch { return null; }
+})();
 const _isManualMode = (() => {
   try {
     const u = new URL(location.href);
-    return u.searchParams.get('mode') === 'manual';
+    return u.searchParams.get('mode') === 'manual' || !!_saleIdReQuote;
   } catch { return false; }
 })();
+const _isReQuoteMode = !!_saleIdReQuote;
 if (_isManualMode) {
   document.documentElement.classList.add('tm-manual-mode');
   // 콜 큐·DB출처 숨김 CSS 즉시 주입
@@ -4076,16 +4081,51 @@ function incApplyAuthState() {
     el.style.background = hasState ? '#f3f4f6' : '#fff';
     el.title = hasState ? '로그인된 상담사의 실제 누적 데이터 (자동 갱신)' : '';
   });
-  // 계약 완료 버튼
+  // 계약 완료 버튼 — re-quote 모드면 "상품 변경 적용"으로 변경
   const dealBtn = document.getElementById('inc-close-deal-btn');
   if (dealBtn) {
     dealBtn.disabled = !loggedIn;
     dealBtn.style.opacity = loggedIn ? '1' : '0.5';
     dealBtn.style.cursor = loggedIn ? 'pointer' : 'not-allowed';
-    dealBtn.textContent = loggedIn
-      ? '📝 이 견적으로 계약 완료'
-      : '📝 이 견적으로 계약 완료 (로그인 필요)';
+    if (_isReQuoteMode) {
+      dealBtn.textContent = loggedIn
+        ? '💾 상품 변경 적용 (사유 입력)'
+        : '💾 상품 변경 적용 (로그인 필요)';
+      dealBtn.dataset.mode = 're-quote';
+    } else {
+      dealBtn.textContent = loggedIn
+        ? '📝 이 견적으로 계약 완료'
+        : '📝 이 견적으로 계약 완료 (로그인 필요)';
+    }
   }
+}
+
+// re-quote 모드 진입 시 sale 데이터로 계산기 옵션 자동 채움
+async function loadSaleForReQuote() {
+  if (!_isReQuoteMode || !_saleIdReQuote) return;
+  const tk = localStorage.getItem('incentive-auth-token-v1');
+  if (!tk) return;
+  try {
+    const r = await fetch('/api/incentive/sales/' + _saleIdReQuote, { headers: { Authorization: 'Bearer ' + tk }});
+    if (!r.ok) return;
+    const { sale } = await r.json();
+    if (!sale) return;
+    const p = sale.product || {};
+    // carrier select (skt/kt/lgu) 매핑
+    const reverseMap = { 'SK':'skt', 'KT':'kt', 'LG':'lgu' };
+    const cKey = reverseMap[p.carrier];
+    if (cKey) {
+      const carrierBtns = document.querySelectorAll('.tm-option[data-value]');
+      carrierBtns.forEach(b => { if (b.dataset.value === cKey) b.click(); });
+    }
+    // speed·tv 등 추가 매핑은 계산기 init 후 별도 처리 필요 — 향후 보강
+    // 사용자 안내
+    const msg = document.getElementById('inc-msg');
+    if (msg) msg.innerHTML = `<div style="color:#fbbf24;font-weight:700;padding:8px;background:rgba(251,191,36,0.1);border-radius:4px">📝 상품 변경 모드 — 기존 계약 ${_saleIdReQuote.slice(0,8)}... 의 새 견적 작성 중</div>`;
+  } catch {}
+}
+if (_isReQuoteMode) {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(loadSaleForReQuote, 500));
 }
 
 
@@ -4255,6 +4295,49 @@ async function incSubmitDeal() {
 
   try {
     submitBtn.disabled = true; submitBtn.textContent = '저장 중...';
+
+    // re-quote 모드 — POST 신규 sale 대신 PATCH 기존 sale + 사유 필수
+    if (_isReQuoteMode && _saleIdReQuote) {
+      const reason = prompt('상품 변경 사유를 입력하세요:\n· 고객 요구\n· 시공 불가\n· 재고 없음\n· 기타 (직접 입력)');
+      if (!reason || !reason.trim()) {
+        submitBtn.disabled = false; submitBtn.textContent = '💾 상품 변경 적용 (사유 입력)';
+        msg.style.color = '#dc2626'; msg.textContent = '⚠️ 사유 입력 취소됨';
+        return;
+      }
+      const patchBody = {
+        product_id: payload.product_id,
+        product_change_reason: reason.trim(),
+        quote_full_html: payload.quote_full_html,
+        quote_summary: payload.quote_summary,
+        monthly_fee: payload.monthly_fee,
+        tv_count: payload.tv_count,
+        additional_products: payload.additional_products,
+        wifi_option: payload.wifi_option,
+        gift_received: payload.gift_received,
+        add_payback: payload.add_payback,
+      };
+      const res2 = await fetch(INC_API + '/sales/' + _saleIdReQuote, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify(patchBody)
+      });
+      if (!res2.ok) {
+        const err = await res2.json().catch(() => ({}));
+        throw new Error(err.error || '변경 실패');
+      }
+      msg.style.color = '#16a34a';
+      msg.innerHTML = '✅ 상품 변경 완료 — parent 새로고침';
+      // parent(계약 처리 모달)에 신호
+      try { window.parent.postMessage({ type:'sale-product-changed', sale_id: _saleIdReQuote }, '*'); } catch {}
+      try {
+        const bc = new BroadcastChannel('contract-update');
+        bc.postMessage({ type:'sale-product-changed', sale_id: _saleIdReQuote });
+        bc.close();
+      } catch {}
+      submitBtn.disabled = false; submitBtn.textContent = '✅ 변경 완료';
+      return;
+    }
+
     const res = await fetch(INC_API + '/sales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },

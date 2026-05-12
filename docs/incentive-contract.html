@@ -1049,81 +1049,26 @@ async function handleAction(id, act) {
   }
 }
 
-// ─── 상품 변경 (pending·in_progress 단계만) ───
-let _pcProductsCache = null;
-async function pcLoadProducts() {
-  if (_pcProductsCache) return _pcProductsCache;
-  const tk = localStorage.getItem('incentive-auth-token-v1');
-  const res = await fetch(API + '/products', { headers: { Authorization: 'Bearer ' + tk } });
-  if (!res.ok) return [];
-  const d = await res.json();
-  _pcProductsCache = (d.products || []).filter(p => p.active);
-  return _pcProductsCache;
-}
-async function toggleProductChange(saleId) {
-  const form = document.getElementById('product-change-form-' + saleId);
-  if (!form) return;
-  const open = form.style.display !== 'none';
-  form.style.display = open ? 'none' : 'block';
-  if (!open) {
-    // 첫 펼침 시 TV select 채움 + carrier 변경 listener
-    const products = await pcLoadProducts();
-    const carrierSel = document.getElementById('pc-carrier-' + saleId);
-    const speedSel = document.getElementById('pc-speed-' + saleId);
-    const tvSel = document.getElementById('pc-tv-' + saleId);
-    const refreshTv = () => {
-      const carrier = carrierSel.value, speed = speedSel.value;
-      const tvs = [...new Set(products.filter(p => p.carrier === carrier && p.speed === speed && p.tv_tier).map(p => p.tv_tier))];
-      tvSel.innerHTML = '<option value="">TV (선택 안 하면 단독)</option>' + tvs.map(t => `<option value="${t}">${t}</option>`).join('');
-      pcUpdatePreview(saleId);
-    };
-    carrierSel.onchange = refreshTv;
-    speedSel.onchange = refreshTv;
-    tvSel.onchange = () => pcUpdatePreview(saleId);
+// ─── 상품 변경 — V2 계산기 iframe 임베드 ───
+function toggleProductCalc(saleId) {
+  const box = document.getElementById('product-calc-' + saleId);
+  const iframe = document.getElementById('product-calc-iframe-' + saleId);
+  if (!box || !iframe) return;
+  const open = box.style.display !== 'none';
+  box.style.display = open ? 'none' : 'block';
+  if (!open && !iframe.src) {
+    // 첫 펼침 시 iframe load — V2 manual 모드 + sale_id 진입
+    iframe.src = '/docs/tm-counselor.html?mode=manual&sale_id=' + encodeURIComponent(saleId);
   }
 }
-function pcUpdatePreview(saleId) {
-  const carrier = document.getElementById('pc-carrier-' + saleId).value;
-  const speed = document.getElementById('pc-speed-' + saleId).value;
-  const tv = document.getElementById('pc-tv-' + saleId).value;
-  const preview = document.getElementById('pc-preview-' + saleId);
-  if (!carrier || !speed) { preview.textContent = ''; return; }
-  const products = _pcProductsCache || [];
-  const found = products.find(p => p.carrier === carrier && p.speed === speed && (tv ? p.tv_tier === tv : !p.tv_tier));
-  preview.textContent = found
-    ? `→ 매칭: ${found.name} · 페이백 ${(found.payback||0).toLocaleString()}원 · ${found.point_weight}P · tier ${found.tier}`
-    : '⚠️ 매칭 상품 없음 (해당 조합 등록 안 됨)';
-  preview.style.color = found ? '#86efac' : '#fca5a5';
-}
-async function applyProductChange(saleId) {
-  const carrier = document.getElementById('pc-carrier-' + saleId).value;
-  const speed = document.getElementById('pc-speed-' + saleId).value;
-  const tv = document.getElementById('pc-tv-' + saleId).value;
-  const reasonSel = document.getElementById('pc-reason-' + saleId).value;
-  const reasonCustom = document.getElementById('pc-reason-custom-' + saleId).value.trim();
-  const reason = reasonSel === '기타' ? reasonCustom : reasonSel;
-  if (!carrier || !speed) { alert('통신사·속도 선택 필수'); return; }
-  if (!reason) { alert('변경 사유 필수 (select 또는 기타 직접 입력)'); return; }
-  const products = await pcLoadProducts();
-  const found = products.find(p => p.carrier === carrier && p.speed === speed && (tv ? p.tv_tier === tv : !p.tv_tier));
-  if (!found) { alert('⚠️ 매칭 상품 없음 — 다른 조합 선택'); return; }
-  if (!confirm(`상품을 변경하시겠습니까?\n\n→ ${found.name}\n사유: ${reason}\n\n페이백·snapshot 4종이 새 상품 기준으로 재계산됩니다.`)) return;
-  const tk = localStorage.getItem('incentive-auth-token-v1');
-  try {
-    const res = await fetch(API + '/sales/' + saleId, {
-      method: 'PATCH',
-      headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
-      body: JSON.stringify({ product_id: found.id, product_change_reason: reason })
-    });
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(d.error || '저장 실패');
-    showToast('✅ 상품 변경 완료 — ' + found.name);
-    await loadContracts();
-    closeModal();
-  } catch (e) {
-    alert('오류: ' + e.message);
+// postMessage 리스너 — 계산기에서 변경 완료 시 모달 닫고 list 새로고침
+window.addEventListener('message', (e) => {
+  if (e.origin !== location.origin) return;
+  if (e.data && e.data.type === 'sale-product-changed') {
+    showToast('✅ 상품 변경 완료 — ' + e.data.sale_id.slice(0,8));
+    setTimeout(() => { loadContracts(); closeModal(); }, 600);
   }
-}
+});
 
 // ─── 모달 열기/닫기 ───
 let _currentContracts = [];
@@ -1201,37 +1146,12 @@ function openEditModal(id) {
       </div>
 
       ${(['pending','in_progress'].includes(c.status)) ? `
-      <!-- 📝 상품 변경 (pending·in_progress 단계만) -->
+      <!-- 📝 상품 변경 (pending·in_progress 단계만) — V2 계산기 iframe 임베드 -->
       <div style="margin-top:12px;padding:10px 12px;background:rgba(59,130,246,0.08);border-left:3px solid #3b82f6;border-radius:5px">
-        <button id="btn-toggle-product-change-${c.id}" type="button" onclick="toggleProductChange('${c.id}')" style="background:#1d4ed8;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">📝 상품 변경</button>
+        <button type="button" onclick="toggleProductCalc('${c.id}')" style="background:#1d4ed8;color:#fff;border:none;padding:6px 14px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer">🧮 계산기로 상품 변경</button>
         <span style="font-size:10.5px;color:#94a3b8;margin-left:8px">${c.status === 'in_progress' ? '계약진행 단계 — 변경 시 정산 영향 재계산' : '계약대기 단계 — 자유 변경'}</span>
-        <div id="product-change-form-${c.id}" style="display:none;margin-top:10px;padding:10px;background:#0f172a;border-radius:5px">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
-            <select id="pc-carrier-${c.id}" data-pc-field="carrier" style="background:#1e293b;color:#e2e8f0;border:1px solid #475569;padding:5px;border-radius:4px;font-size:11px">
-              <option value="">통신사</option>
-              <option value="SK">SK</option><option value="KT">KT</option><option value="LG">LG</option>
-            </select>
-            <select id="pc-speed-${c.id}" data-pc-field="speed" style="background:#1e293b;color:#e2e8f0;border:1px solid #475569;padding:5px;border-radius:4px;font-size:11px">
-              <option value="">속도</option>
-              <option value="100M">100M</option><option value="500M">500M</option><option value="1G">1G</option>
-            </select>
-            <select id="pc-tv-${c.id}" data-pc-field="tv_tier" style="background:#1e293b;color:#e2e8f0;border:1px solid #475569;padding:5px;border-radius:4px;font-size:11px">
-              <option value="">TV (선택 안 하면 단독)</option>
-            </select>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 2fr;gap:6px;margin-bottom:8px">
-            <select id="pc-reason-${c.id}" style="background:#1e293b;color:#e2e8f0;border:1px solid #475569;padding:5px;border-radius:4px;font-size:11px">
-              <option value="">사유 선택</option>
-              <option value="고객 요구">고객 요구</option>
-              <option value="시공 불가">시공 불가</option>
-              <option value="재고 없음">재고 없음</option>
-              <option value="기타">기타 (직접 입력)</option>
-            </select>
-            <input id="pc-reason-custom-${c.id}" type="text" placeholder="기타 사유 (선택 시)" style="background:#1e293b;color:#e2e8f0;border:1px solid #475569;padding:5px 8px;border-radius:4px;font-size:11px">
-          </div>
-          <div id="pc-preview-${c.id}" style="font-size:10.5px;color:#86efac;margin-bottom:8px;min-height:14px"></div>
-          <button type="button" onclick="applyProductChange('${c.id}')" style="background:#16a34a;color:#fff;border:none;padding:5px 14px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">✅ 변경 적용</button>
-          <button type="button" onclick="toggleProductChange('${c.id}')" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-size:11px;margin-left:6px;cursor:pointer">취소</button>
+        <div id="product-calc-${c.id}" style="display:none;margin-top:10px;border:1px solid #334155;border-radius:5px;overflow:hidden;background:#0f172a">
+          <iframe id="product-calc-iframe-${c.id}" style="width:100%;height:800px;border:0;background:#0f172a" title="V2 계산기"></iframe>
         </div>
       </div>
       ` : ''}
