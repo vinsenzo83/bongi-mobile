@@ -1672,15 +1672,38 @@ async function injectHistorySection(c) {
   const wrap = document.createElement('div');
   wrap.className = 'sec-card';
   wrap.style.cssText = 'background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1.5px solid #6366f1;border-radius:8px;padding:12px 16px;margin:10px 0';
+  // products map (id → carrier·speed·tv_tier 라벨) — 1회만 fetch
+  let pMap = null;
+  try {
+    const pr = await fetch(API + '/products', { headers: { Authorization:'Bearer '+tk }});
+    if (pr.ok) {
+      const pd = await pr.json();
+      pMap = new Map((pd.products || []).map(p => [p.id, p]));
+    }
+  } catch {}
+  const labelP = (pid) => {
+    if (!pMap || !pid) return `id=${pid || '?'}`;
+    const p = pMap.get(pid);
+    if (!p) return `id=${pid}`;
+    return `${p.carrier} ${p.speed}${p.tv_tier?'+'+p.tv_tier:''}`;
+  };
+
   const rows = history.map(h => {
     const dt = new Date(h.changed_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
     const fields = Array.isArray(h.changed_fields) ? h.changed_fields.join(', ') : (h.changed_fields || '-');
     const reason = h.reason ? `<div style="font-size:10px;color:#fde047;margin-top:2px">💬 ${escHtml(h.reason)}</div>` : '';
+    // 상품 변경 강조 — product_id 변화 감지 시 before → after 카드
+    let productChange = '';
+    const beforePid = h.before_data?.product_id;
+    const afterPid = h.after_data?.product_id;
+    if (h.action === 'UPDATE' && beforePid && afterPid && beforePid !== afterPid) {
+      productChange = `<div style="margin-top:4px;padding:4px 8px;background:rgba(59,130,246,0.12);border-left:2px solid #3b82f6;border-radius:3px;font-size:10.5px;color:#bfdbfe">📦 <b>${escHtml(labelP(beforePid))}</b> → <b style="color:#86efac">${escHtml(labelP(afterPid))}</b></div>`;
+    }
     return `<tr style="border-bottom:1px solid #312e81">
       <td style="padding:6px 8px;font-size:10.5px;color:#94a3b8;white-space:nowrap">${dt}</td>
       <td style="padding:6px 8px;text-align:center"><span style="background:${actionColor[h.action]||'#475569'};color:#fff;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700">${actionLabel[h.action]||h.action}</span></td>
       <td style="padding:6px 8px;font-size:11px"><b>${escHtml(h.changed_by_name)||'-'}</b> <span style="color:#94a3b8;font-size:9.5px">(${escHtml(h.changed_by_role)||'-'})</span></td>
-      <td style="padding:6px 8px;font-size:10.5px;color:#cbd5e1">${escHtml(fields)}${reason}</td>
+      <td style="padding:6px 8px;font-size:10.5px;color:#cbd5e1">${escHtml(fields)}${productChange}${reason}</td>
     </tr>`;
   }).join('');
 
