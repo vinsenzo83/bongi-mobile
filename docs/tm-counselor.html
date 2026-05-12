@@ -713,6 +713,8 @@ if (_isReQuoteMode) {
       .tm-requote-mode .tm-app > aside:last-child { flex: 0 0 auto; width: 100%; }
     }
     .tm-requote-mode body { background:#0f172a !important; padding:14px !important; }
+    /* 고객 계약정보 입력 폼 자체를 숨김 — 사유만 prompt로 받음 */
+    .tm-requote-mode #inc-deal-form { display: none !important; }
   `;
   document.head.appendChild(s);
 }
@@ -4274,6 +4276,10 @@ async function incCloseDeal() {
     alert('⚠️ 견적 매칭된 상품이 없습니다.\n\n견적 카드에서 통신사·속도·TV를 먼저 선택하고 잠시 후 다시 시도하세요.');
     return;
   }
+  // re-quote 모드 — 고객 정보 폼 우회. 사유만 prompt 받고 바로 incSubmitDeal 호출 (PATCH 분기)
+  if (_isReQuoteMode) {
+    return incSubmitDeal();  // 내부에서 _isReQuoteMode 분기 → 사유 prompt + PATCH
+  }
   const form = document.getElementById('inc-deal-form');
   if (form) form.style.display = '';
   const btn = document.getElementById('inc-close-deal-btn');
@@ -4283,6 +4289,59 @@ async function incCloseDeal() {
 async function incSubmitDeal() {
   const token = (typeof authGetToken === 'function') ? authGetToken() : null;
   if (!token || !_incLastMatchedProduct) return;
+
+  // re-quote 모드 — 폼·validation 건너뛰고 사유 prompt + PATCH 분기 직행
+  if (_isReQuoteMode && _saleIdReQuote) {
+    const reason = prompt('상품 변경 사유를 입력하세요:\n· 고객 요구\n· 시공 불가\n· 재고 없음\n· 기타 (직접 입력)');
+    if (!reason || !reason.trim()) return;
+    // 견적 결과 HTML 추출
+    let quoteFullHtml = null, monthlyFee = null;
+    try {
+      if (typeof calc === 'function') calc();
+      const resultEl = document.getElementById('c-result');
+      if (resultEl && resultEl.innerHTML.trim()) {
+        quoteFullHtml = resultEl.innerHTML;
+        const patterns = [
+          /월\s*실질요금[\s\S]*?<span[^>]*class="v"[^>]*>\s*([\d,]+)/,
+          /월\s*합계[\s\S]*?<span[^>]*class="v"[^>]*>\s*([\d,]+)/,
+        ];
+        for (const re of patterns) {
+          const m = quoteFullHtml.match(re);
+          if (m) { monthlyFee = parseInt(m[1].replace(/,/g, '')) || null; break; }
+        }
+      }
+    } catch {}
+    try {
+      const res = await fetch(INC_API + '/sales/' + _saleIdReQuote, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', Authorization:'Bearer '+token },
+        body: JSON.stringify({
+          product_id: _incLastMatchedProduct.id,
+          product_change_reason: reason.trim(),
+          quote_full_html: quoteFullHtml,
+          monthly_fee: monthlyFee,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert('❌ 변경 실패: ' + (err.error || res.status));
+        return;
+      }
+      // 부모 창에 신호 + 자동 닫기
+      try { window.opener && window.opener.postMessage({ type:'sale-product-changed', sale_id:_saleIdReQuote }, '*'); } catch {}
+      try {
+        const bc = new BroadcastChannel('contract-update');
+        bc.postMessage({ type:'sale-product-changed', sale_id:_saleIdReQuote });
+        bc.close();
+      } catch {}
+      alert('✅ 상품 변경 완료');
+      setTimeout(() => { try { window.close(); } catch {} }, 200);
+    } catch (e) {
+      alert('❌ ' + e.message);
+    }
+    return;
+  }
+
   const msg = document.getElementById('inc-deal-msg');
   const submitBtn = document.getElementById('inc-deal-submit');
   msg.textContent = '';
@@ -4331,48 +4390,6 @@ async function incSubmitDeal() {
 
   try {
     submitBtn.disabled = true; submitBtn.textContent = '저장 중...';
-
-    // re-quote 모드 — POST 신규 sale 대신 PATCH 기존 sale + 사유 필수
-    if (_isReQuoteMode && _saleIdReQuote) {
-      const reason = prompt('상품 변경 사유를 입력하세요:\n· 고객 요구\n· 시공 불가\n· 재고 없음\n· 기타 (직접 입력)');
-      if (!reason || !reason.trim()) {
-        submitBtn.disabled = false; submitBtn.textContent = '💾 상품 변경 적용 (사유 입력)';
-        msg.style.color = '#dc2626'; msg.textContent = '⚠️ 사유 입력 취소됨';
-        return;
-      }
-      const patchBody = {
-        product_id: payload.product_id,
-        product_change_reason: reason.trim(),
-        quote_full_html: payload.quote_full_html,
-        quote_summary: payload.quote_summary,
-        monthly_fee: payload.monthly_fee,
-        tv_count: payload.tv_count,
-        additional_products: payload.additional_products,
-        wifi_option: payload.wifi_option,
-        gift_received: payload.gift_received,
-        add_payback: payload.add_payback,
-      };
-      const res2 = await fetch(INC_API + '/sales/' + _saleIdReQuote, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-        body: JSON.stringify(patchBody)
-      });
-      if (!res2.ok) {
-        const err = await res2.json().catch(() => ({}));
-        throw new Error(err.error || '변경 실패');
-      }
-      msg.style.color = '#16a34a';
-      msg.innerHTML = '✅ 상품 변경 완료 — parent 새로고침';
-      // parent(계약 처리 모달)에 신호
-      try { window.parent.postMessage({ type:'sale-product-changed', sale_id: _saleIdReQuote }, '*'); } catch {}
-      try {
-        const bc = new BroadcastChannel('contract-update');
-        bc.postMessage({ type:'sale-product-changed', sale_id: _saleIdReQuote });
-        bc.close();
-      } catch {}
-      submitBtn.disabled = false; submitBtn.textContent = '✅ 변경 완료';
-      return;
-    }
 
     const res = await fetch(INC_API + '/sales', {
       method: 'POST',
