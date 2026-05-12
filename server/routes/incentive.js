@@ -992,8 +992,13 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       .select('*, product:incentive_products(*)')
       .single();
     if (error) throw error;
-    // 변경 감사 로그
-    logSaleHistory({ sale_id: data.id, action: 'UPDATE', before: existing, after: data, user_id: req.user.id, user_name: me.name, user_role: me.role });
+    // 변경 감사 로그 — 상품 변경 시 사유까지 reason 컬럼에 기록
+    logSaleHistory({
+      sale_id: data.id, action: 'UPDATE',
+      before: existing, after: data,
+      user_id: req.user.id, user_name: me.name, user_role: me.role,
+      reason: req.body.product_change_reason || null,
+    });
 
     // 🆕 sale 취소/실패 시 customer-db 자동 되돌림 — 콜 큐로 복귀
     if (status && status !== existing.status && (status === 'cancelled' || status === 'failed')) {
