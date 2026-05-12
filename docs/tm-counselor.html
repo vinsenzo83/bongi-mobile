@@ -682,8 +682,8 @@ if (_isManualMode) {
 }
 if (_isReQuoteMode) {
   document.documentElement.classList.add('tm-requote-mode');
-  // re-quote 모드 — 팝업창에서 견적 메인(왼) + 견적 결과(우측) 둘 다 표시
-  // (상담 스크립트·메모·고객 카드·헤더만 숨김)
+  // re-quote 모드 — flexbox로 main + 우측 견적 결과만 표시
+  // (상담 스크립트·메모·고객 카드·헤더는 숨김)
   const s = document.createElement('style');
   s.textContent = `
     .tm-requote-mode .tm-app > aside.tm-panel,
@@ -692,15 +692,25 @@ if (_isReQuoteMode) {
     .tm-requote-mode header,
     .tm-requote-mode footer { display:none !important; }
     .tm-requote-mode .tm-app {
-      grid-template-columns: minmax(0, 1fr) 360px !important;
-      grid-template-areas: "main right" !important;
-      padding:0 !important;
+      display: flex !important;
+      gap: 12px !important;
+      padding: 0 !important;
+      grid-template-columns: unset !important;
+      grid-template-areas: unset !important;
+    }
+    .tm-requote-mode .tm-app > main {
+      flex: 1 1 0;
+      min-width: 0;
+      grid-area: unset !important;
+    }
+    .tm-requote-mode .tm-app > aside:last-child {
+      flex: 0 0 360px;
+      grid-area: unset !important;
+      display: block !important;
     }
     @media (max-width: 900px) {
-      .tm-requote-mode .tm-app {
-        grid-template-columns: 1fr !important;
-        grid-template-areas: "main" "right" !important;
-      }
+      .tm-requote-mode .tm-app { flex-direction: column !important; }
+      .tm-requote-mode .tm-app > aside:last-child { flex: 0 0 auto; width: 100%; }
     }
     .tm-requote-mode body { background:#0f172a !important; padding:14px !important; }
   `;
