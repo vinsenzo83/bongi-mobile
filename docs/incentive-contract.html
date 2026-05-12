@@ -858,9 +858,15 @@ function renderTable(contracts) {
             </div>
           </div>
 
-          <!-- 📝 메모 -->
+          <!-- 📝 메모 + 유선청약요청 양식 도구 -->
           <div style="margin-bottom:14px">
-            <label style="font-size:10px;color:#94a3b8;font-weight:700">메모 / 비고</label>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+              <label style="font-size:10px;color:#94a3b8;font-weight:700">메모 / 비고</label>
+              <div style="display:flex;gap:6px">
+                <button type="button" class="btn-action" data-act="memo-parse" data-id="${c.id}" style="background:#2563eb;color:#fff;padding:3px 9px;font-size:10px">📥 유선청약요청 → 폼 추출</button>
+                <button type="button" class="btn-action" data-act="memo-copy" data-id="${c.id}" style="background:#059669;color:#fff;padding:3px 9px;font-size:10px">📋 폼 → 유선청약요청 복사</button>
+              </div>
+            </div>
             <textarea class="detail-input" data-field="notes" data-id="${c.id}" rows="3" placeholder="신분증 수령 여부, 계좌, 특이사항 등 자유 기입" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;margin-top:3px;resize:vertical;font-family:inherit">${(c.notes || '').replace(/</g, '&lt;')}</textarea>
           </div>
 
@@ -888,6 +894,90 @@ function renderTable(contracts) {
   });
 }
 
+// ─── 유선청약요청 메모 파서/생성기 (SK 양식 기준) ───
+function parseLineRequestMemo(text) {
+  if (!text) return {};
+  // 라인별 "N. 키 : 값" 형식 (한자릿수~두자릿수 번호)
+  const lines = text.replace(/\r/g, '').split('\n');
+  const map = {};
+  for (const line of lines) {
+    const m = line.match(/^\s*(\d{1,2})\.\s*([^:]+?)\s*:\s*(.*)$/);
+    if (!m) continue;
+    const no = parseInt(m[1], 10);
+    const val = m[3].trim();
+    if (!val || val === 'X' || val === 'x') continue;  // 빈값/X 제외
+    map[no] = val;
+  }
+  // 양식 외 추가 정보 (★유선청약요청★, 하나로/동판, 티게이트)
+  const extras = [];
+  const headerMatch = text.match(/하나로\s*\/\s*동판\s*:\s*([^\n]+)/);
+  const tgateMatch = text.match(/티게이트접수여부\s*:\s*([^\n]+)/);
+  if (headerMatch) extras.push('하나로/동판: ' + headerMatch[1].trim());
+  if (tgateMatch) extras.push('티게이트접수: ' + tgateMatch[1].trim());
+
+  // 결과 필드 매핑
+  const out = {};
+  if (map[1]) out.customer_name = map[1];
+  if (map[2]) out.resident_id = map[2];
+  if (map[3]) out.customer_phone = map[3];
+  if (map[4]) out.customer_address = map[4];
+  if (map[11]) out.gift_received = map[11];
+
+  // 나머지(상품·결합·설치연락처·판매처 등)는 notes에 정리
+  const notesParts = [];
+  if (extras.length) notesParts.push(extras.join(' · '));
+  if (map[5]) notesParts.push('인터넷: ' + map[5]);
+  if (map[6]) notesParts.push('TV①: ' + map[6]);
+  if (map[7]) notesParts.push('TV②: ' + map[7]);
+  if (map[8]) notesParts.push('결합/회선: ' + map[8]);
+  if (map[9]) notesParts.push('시내전화: ' + map[9]);
+  if (map[10]) notesParts.push('인터넷전화: ' + map[10]);
+  if (map[12]) notesParts.push('설치연락처: ' + map[12]);
+  if (map[13]) notesParts.push('기타: ' + map[13]);
+  if (map[14]) notesParts.push('판매처: ' + map[14]);
+  if (notesParts.length) out.notes = notesParts.join('\n');
+  return out;
+}
+
+function buildLineRequestMemo(d) {
+  // notes에서 추가 정보 역추출 (한 줄씩 "키: 값" 패턴)
+  const extraMap = {};
+  const noteLines = (d.notes || '').split('\n');
+  const noteKeys = {
+    '인터넷': 5, 'TV①': 6, 'TV②': 7, '결합/회선': 8,
+    '시내전화': 9, '인터넷전화': 10, '설치연락처': 12, '기타': 13, '판매처': 14,
+  };
+  for (const ln of noteLines) {
+    const m = ln.match(/^([^:]+?)\s*:\s*(.+)$/);
+    if (!m) continue;
+    const key = m[1].trim();
+    const val = m[2].trim();
+    if (noteKeys[key] != null) extraMap[noteKeys[key]] = val;
+  }
+  const rows = [
+    [1, '고객명', d.customer_name],
+    [2, '주민번호', d.resident_id],
+    [3, '휴대폰번호', d.customer_phone],
+    [4, '설치주소', d.customer_address],
+    [5, '인터넷상품', extraMap[5]],
+    [6, 'TV상품 / 셋탑 ①', extraMap[6] || 'X'],
+    [7, 'TV상품 / 셋탑 ②', extraMap[7] || 'X'],
+    [8, '결합상품 / 회선수', extraMap[8]],
+    [9, '시내전화', extraMap[9]],
+    [10, '인터넷전화', extraMap[10]],
+    [11, '사은품종류 / 금액', d.gift_received],
+    [12, '설치연락처', extraMap[12] || d.customer_phone],
+    [13, '기타 요청건', extraMap[13]],
+    [14, '판매처/연락처', extraMap[14]],
+  ];
+  // 없는 값 제외 (사용자 지시: 빈 값은 제외해도 OK)
+  const body = rows
+    .filter(([_, __, v]) => v != null && v !== '')
+    .map(([n, k, v]) => `${n}. ${k} : ${v}`)
+    .join('\n');
+  return `★유선청약요청★\n하나로 / 동판 : 하나로\n티게이트접수여부 : O\n\n${body}`;
+}
+
 async function handleAction(id, act) {
   const tk = getToken();
 
@@ -898,6 +988,48 @@ async function handleAction(id, act) {
   }
   if (act === 'close-detail') {
     closeModal();
+    return;
+  }
+
+  // ─── 📥 유선청약요청 메모 → 폼 자동 추출 ───
+  if (act === 'memo-parse') {
+    const memo = prompt('★유선청약요청★ 메모 전체를 붙여넣으세요:\n(없는 값은 무시됩니다)', '');
+    if (!memo) return;
+    const parsed = parseLineRequestMemo(memo);
+    let filled = 0;
+    Object.entries(parsed).forEach(([field, val]) => {
+      if (val == null || val === '') return;
+      const inp = document.querySelector(`.detail-input[data-field="${field}"][data-id="${id}"]`);
+      if (inp) { inp.value = val; filled++; }
+    });
+    showToast(`📥 ${filled}개 필드 추출됨 (저장 버튼 눌러야 DB 반영)`);
+    return;
+  }
+
+  // ─── 📋 폼 → 유선청약요청 메모 클립보드 복사 ───
+  if (act === 'memo-copy') {
+    const getVal = (field) => {
+      const inp = document.querySelector(`.detail-input[data-field="${field}"][data-id="${id}"]`);
+      return inp ? (inp.value || '').trim() : '';
+    };
+    const memo = buildLineRequestMemo({
+      customer_name: getVal('customer_name'),
+      resident_id: getVal('resident_id'),
+      customer_phone: getVal('customer_phone'),
+      customer_address: getVal('customer_address'),
+      gift_received: getVal('gift_received'),
+      notes: getVal('notes'),
+    });
+    try {
+      await navigator.clipboard.writeText(memo);
+      showToast('📋 유선청약요청 양식 복사됨 (클립보드)');
+    } catch (e) {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = memo; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      showToast('📋 복사됨 (fallback)');
+    }
     return;
   }
 
