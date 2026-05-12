@@ -3620,7 +3620,8 @@ async function incLoadProducts() {
 }
 
 async function incFindProduct(carrier, speed, tvName) {
-  const carrierMap = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' };
+  // DB 실제 carrier 값에 매칭 — incentive_products.carrier IN ('SK','KT','LG')
+  const carrierMap = { skt: 'SK', kt: 'KT', lgu: 'LG' };
   const c = carrierMap[carrier];
   const tier = incGetTvTier(carrier, tvName);
   const products = await incLoadProducts();
