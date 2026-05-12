@@ -1688,9 +1688,36 @@ async function injectHistorySection(c) {
     return `${p.carrier} ${p.speed}${p.tv_tier?'+'+p.tv_tier:''}`;
   };
 
+  // 컬럼명 → 한국어 라벨
+  const FIELD_LABELS = {
+    status: '상태', cancellation_reason: '취소 사유',
+    contract_pending_at: '계약대기 시각', contract_in_progress_at: '계약진행 시각',
+    contract_completed_at: '계약완료 시각', contract_cancelled_at: '계약취소 시각',
+    product_id: '상품', payback_snapshot: '페이백', rebate_snapshot: '리베이트',
+    point_weight_snapshot: '가중치', is_premium_snapshot: '우수상품',
+    db_source_id: 'DB 출처', dealer_id: '대리점',
+    customer_name: '고객명', customer_phone: '전화',
+    customer_address: '주소', customer_address_detail: '상세주소',
+    bank_account_holder: '예금주', bank_name: '은행', bank_account_number: '계좌번호',
+    birth_date: '생년월일', resident_id: '신분증',
+    combo_type: '결합 종류', combo_members: '결합 가족',
+    billing_method: '결제 방식', billing_phone: '결제 전화', billing_carrier: '결제 통신사',
+    payment_method: '결제 수단', payment_extra: '결제 상세',
+    contract_notes: '계약부서 메모', notes: '메모',
+    add_payback: '추가 페이백', company_payback_burden: '회사 페이백', agent_payback_deduct: '상담사 차감',
+    tv_count: 'TV 개수', wifi_option: 'WiFi 옵션', additional_products: '추가 상품',
+    monthly_fee: '월 요금', installation_date: '설치일', installation_time: '설치 시간',
+    activation_date: '개통일', gift_received: '사은품',
+    quote_summary: '견적 요약', quote_full_html: '견적서',
+    waiting_person: '대기자', waiting_phone: '대기자 전화', seller_phone: '판매자 전화',
+    onestop_yn: '원스톱', current_carrier: '현재 통신사',
+  };
+  const labelF = (f) => FIELD_LABELS[f] || f;
   const rows = history.map(h => {
     const dt = new Date(h.changed_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
-    const fields = Array.isArray(h.changed_fields) ? h.changed_fields.join(', ') : (h.changed_fields || '-');
+    const fields = Array.isArray(h.changed_fields)
+      ? h.changed_fields.map(labelF).join(' · ')
+      : (h.changed_fields || '-');
     const reason = h.reason ? `<div style="font-size:10px;color:#fde047;margin-top:2px">💬 ${escHtml(h.reason)}</div>` : '';
     // 상품 변경 강조 — product_id 변화 감지 시 before → after 카드
     let productChange = '';
