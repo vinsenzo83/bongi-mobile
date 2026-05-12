@@ -4292,7 +4292,7 @@ async function incSubmitDeal() {
 
   // re-quote 모드 — 폼·validation 건너뛰고 사유 prompt + PATCH 분기 직행
   if (_isReQuoteMode && _saleIdReQuote) {
-    const reason = prompt('상품 변경 사유를 입력하세요:\n· 고객 요구\n· 시공 불가\n· 재고 없음\n· 기타 (직접 입력)');
+    const reason = prompt('상품 변경 사유를 입력하세요:\n· 고객 요구\n· 시공 불가\n· 기타 (직접 입력)');
     if (!reason || !reason.trim()) return;
     // 견적 결과 HTML 추출
     let quoteFullHtml = null, monthlyFee = null;

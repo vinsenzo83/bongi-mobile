@@ -977,12 +977,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       update.rebate_snapshot = newProd.rebate;
       update.point_weight_snapshot = newProd.point_weight;
       update.is_premium_snapshot = newProd.is_premium;
-      // contract_notes에 자동 append (timestamp + 옛/새 상품 + 사유)
-      const ts = new Date().toLocaleString('ko-KR', { timeZone:'Asia/Seoul' });
-      const oldLabel = oldProd ? `${oldProd.carrier} ${oldProd.speed}${oldProd.tv_tier?'+'+oldProd.tv_tier:''}` : `id=${existing.product_id}`;
-      const newLabel = `${newProd.carrier} ${newProd.speed}${newProd.tv_tier?'+'+newProd.tv_tier:''}`;
-      const memo = `[${ts}] 상품 변경: ${oldLabel} → ${newLabel} / 사유: ${reason} (변경자: ${me.name})`;
-      update.contract_notes = (existing.contract_notes ? existing.contract_notes + '\n' : '') + memo;
+      // contract_notes 자동 append 제거 — 변경 이력 카드(📜)에만 기록 (메모 깔끔하게 유지)
     }
 
     const { data, error } = await supabase
