@@ -991,40 +991,47 @@ async function handleAction(id, act) {
     return;
   }
 
-  // ─── 📥 유선청약요청 메모 → 폼 자동 추출 ───
-  if (act === 'memo-parse') {
+  // ─── 📥 유선청약요청 메모 → 폼 자동 추출 (inline + modal) ───
+  if (act === 'memo-parse' || act === 'memo-parse-modal') {
+    const isModal = (act === 'memo-parse-modal');
     const memo = prompt('★유선청약요청★ 메모 전체를 붙여넣으세요:\n(없는 값은 무시됩니다)', '');
     if (!memo) return;
     const parsed = parseLineRequestMemo(memo);
+    // 모달: contract_notes(notes 대신) / inline: notes
+    const fieldMap = isModal ? { ...parsed, contract_notes: parsed.notes, notes: undefined } : parsed;
     let filled = 0;
-    Object.entries(parsed).forEach(([field, val]) => {
+    Object.entries(fieldMap).forEach(([field, val]) => {
       if (val == null || val === '') return;
-      const inp = document.querySelector(`.detail-input[data-field="${field}"][data-id="${id}"]`);
+      // 모달은 data-id 없음
+      const sel = isModal ? `.detail-input[data-field="${field}"]` : `.detail-input[data-field="${field}"][data-id="${id}"]`;
+      const inp = document.querySelector(sel);
       if (inp) { inp.value = val; filled++; }
     });
     showToast(`📥 ${filled}개 필드 추출됨 (저장 버튼 눌러야 DB 반영)`);
     return;
   }
 
-  // ─── 📋 폼 → 유선청약요청 메모 클립보드 복사 ───
-  if (act === 'memo-copy') {
+  // ─── 📋 폼 → 유선청약요청 메모 클립보드 복사 (inline + modal) ───
+  if (act === 'memo-copy' || act === 'memo-copy-modal') {
+    const isModal = (act === 'memo-copy-modal');
     const getVal = (field) => {
-      const inp = document.querySelector(`.detail-input[data-field="${field}"][data-id="${id}"]`);
+      const sel = isModal ? `.detail-input[data-field="${field}"]` : `.detail-input[data-field="${field}"][data-id="${id}"]`;
+      const inp = document.querySelector(sel);
       return inp ? (inp.value || '').trim() : '';
     };
+    const notesField = isModal ? 'contract_notes' : 'notes';
     const memo = buildLineRequestMemo({
       customer_name: getVal('customer_name'),
       resident_id: getVal('resident_id'),
       customer_phone: getVal('customer_phone'),
       customer_address: getVal('customer_address'),
       gift_received: getVal('gift_received'),
-      notes: getVal('notes'),
+      notes: getVal(notesField),
     });
     try {
       await navigator.clipboard.writeText(memo);
       showToast('📋 유선청약요청 양식 복사됨 (클립보드)');
     } catch (e) {
-      // fallback
       const ta = document.createElement('textarea');
       ta.value = memo; document.body.appendChild(ta); ta.select();
       document.execCommand('copy'); document.body.removeChild(ta);
@@ -1618,6 +1625,10 @@ function openEditModal(id) {
       </div>
       <div class="sec-card acc-blue" style="margin-bottom:0">
         <div class="sec-title"><span class="sec-icon">📋</span>계약부서 메모 <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">편집 가능</span></div>
+        <div style="display:flex;gap:6px;margin:4px 0 6px">
+          <button type="button" class="btn-action" data-act="memo-parse-modal" data-id="${c.id}" style="background:#2563eb;color:#fff;padding:4px 10px;font-size:11px">📥 유선청약요청 → 폼 추출</button>
+          <button type="button" class="btn-action" data-act="memo-copy-modal" data-id="${c.id}" style="background:#059669;color:#fff;padding:4px 10px;font-size:11px">📋 폼 → 유선청약요청 복사</button>
+        </div>
         <textarea class="detail-input" data-field="contract_notes" rows="5" placeholder="신분증 수령 여부, 계좌번호, 설치 일정 협의 결과, 고객 변심 사유 등">${(c.contract_notes || '').replace(/</g, '&lt;')}</textarea>
       </div>
     </div>
@@ -1631,6 +1642,10 @@ function openEditModal(id) {
   `;
   // 푸터 버튼 핸들러
   document.querySelectorAll('#modal-footer-actions .btn-action').forEach(btn => {
+    btn.addEventListener('click', () => handleAction(btn.dataset.id, btn.dataset.act));
+  });
+  // 모달 본문 안 메모 파서/복사 버튼 핸들러
+  document.querySelectorAll('#modal-body .btn-action[data-act^="memo-"]').forEach(btn => {
     btn.addEventListener('click', () => handleAction(btn.dataset.id, btn.dataset.act));
   });
 
