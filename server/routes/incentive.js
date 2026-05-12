@@ -60,8 +60,10 @@ async function logSaleHistory({ sale_id, action, before, after, user_id, user_na
   if (!supabase) return;
   try {
     let changed_fields = null;
+    // 비교에서 제외할 키 — updated_at(자동), product/db_source/agent/dealer (join 객체, 실제 컬럼은 *_id로 추적)
+    const SKIP_FIELDS = new Set(['updated_at', 'product', 'db_source', 'agent', 'dealer']);
     if (action === 'UPDATE' && before && after) {
-      changed_fields = Object.keys(after).filter(k => k !== 'updated_at' && JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+      changed_fields = Object.keys(after).filter(k => !SKIP_FIELDS.has(k) && JSON.stringify(before[k]) !== JSON.stringify(after[k]));
       if (changed_fields.length === 0) return; // 실제 변경 없으면 skip
     }
     await supabase.from('incentive_sales_history').insert({
