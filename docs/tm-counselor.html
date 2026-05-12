@@ -682,7 +682,8 @@ if (_isManualMode) {
 }
 if (_isReQuoteMode) {
   document.documentElement.classList.add('tm-requote-mode');
-  // re-quote 모드 — 상담 스크립트·메모·고객 카드 숨김. 견적 panel만 표시
+  // re-quote 모드 — 팝업창에서 견적 panel·인센티브·계약 폼만 표시
+  // (상담 스크립트·메모·고객 카드·헤더 모두 숨김)
   const s = document.createElement('style');
   s.textContent = `
     .tm-requote-mode .tm-app > aside.tm-panel,
@@ -691,7 +692,7 @@ if (_isReQuoteMode) {
     .tm-requote-mode header,
     .tm-requote-mode footer { display:none !important; }
     .tm-requote-mode .tm-app { grid-template-columns: 1fr !important; grid-template-areas: "main" !important; padding:0 !important; }
-    .tm-requote-mode body { background:#0f172a !important; padding:8px !important; }
+    .tm-requote-mode body { background:#0f172a !important; padding:14px !important; }
   `;
   document.head.appendChild(s);
 }

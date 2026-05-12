@@ -1049,26 +1049,42 @@ async function handleAction(id, act) {
   }
 }
 
-// ─── 상품 변경 — V2 계산기 iframe 임베드 ───
-function toggleProductCalc(saleId) {
-  const box = document.getElementById('product-calc-' + saleId);
-  const iframe = document.getElementById('product-calc-iframe-' + saleId);
-  if (!box || !iframe) return;
-  const open = box.style.display !== 'none';
-  box.style.display = open ? 'none' : 'block';
-  if (!open && !iframe.src) {
-    // 첫 펼침 시 iframe load — V2 manual 모드 + sale_id 진입
-    iframe.src = '/docs/tm-counselor.html?mode=manual&sale_id=' + encodeURIComponent(saleId);
+// ─── 상품 변경 — V2 계산기 팝업창 ───
+let _productCalcPopup = null;
+function openProductCalcPopup(saleId) {
+  const url = '/docs/tm-counselor.html?mode=manual&sale_id=' + encodeURIComponent(saleId);
+  // 화면 가운데 + 큰 크기 (계산기 풀 사용)
+  const w = Math.min(1400, screen.availWidth - 40);
+  const h = Math.min(900, screen.availHeight - 60);
+  const x = Math.round((screen.availWidth - w) / 2);
+  const y = Math.round((screen.availHeight - h) / 2);
+  try { if (_productCalcPopup && !_productCalcPopup.closed) _productCalcPopup.close(); } catch {}
+  _productCalcPopup = window.open(url, 'product-change-' + saleId,
+    `width=${w},height=${h},left=${x},top=${y},toolbar=no,location=no,menubar=no,scrollbars=yes,resizable=yes`);
+  if (!_productCalcPopup) {
+    alert('⚠️ 팝업 차단됨 — 브라우저 설정에서 팝업 허용 후 다시 시도하세요.');
+    return;
   }
+  _productCalcPopup.focus();
 }
-// postMessage 리스너 — 계산기에서 변경 완료 시 모달 닫고 list 새로고침
+// postMessage + BroadcastChannel 리스너 — 팝업에서 변경 완료 시 모달 닫고 list 새로고침
 window.addEventListener('message', (e) => {
-  if (e.origin !== location.origin) return;
   if (e.data && e.data.type === 'sale-product-changed') {
     showToast('✅ 상품 변경 완료 — ' + e.data.sale_id.slice(0,8));
-    setTimeout(() => { loadContracts(); closeModal(); }, 600);
+    try { _productCalcPopup && _productCalcPopup.close(); } catch {}
+    setTimeout(() => { loadContracts(); closeModal(); }, 400);
   }
 });
+try {
+  const bc = new BroadcastChannel('contract-update');
+  bc.onmessage = (e) => {
+    if (e.data && e.data.type === 'sale-product-changed') {
+      showToast('✅ 상품 변경 완료 — ' + e.data.sale_id.slice(0,8));
+      try { _productCalcPopup && _productCalcPopup.close(); } catch {}
+      setTimeout(() => { loadContracts(); closeModal(); }, 400);
+    }
+  };
+} catch {}
 
 // ─── 모달 열기/닫기 ───
 let _currentContracts = [];
@@ -1146,13 +1162,10 @@ function openEditModal(id) {
       </div>
 
       ${(['pending','in_progress'].includes(c.status)) ? `
-      <!-- 📝 상품 변경 (pending·in_progress 단계만) — V2 계산기 iframe 임베드 -->
+      <!-- 📝 상품 변경 (pending·in_progress 단계만) — V2 계산기 팝업 -->
       <div style="margin-top:12px;padding:10px 12px;background:rgba(59,130,246,0.08);border-left:3px solid #3b82f6;border-radius:5px">
-        <button type="button" onclick="toggleProductCalc('${c.id}')" style="background:#1d4ed8;color:#fff;border:none;padding:6px 14px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer">🧮 계산기로 상품 변경</button>
+        <button type="button" onclick="openProductCalcPopup('${c.id}')" style="background:#1d4ed8;color:#fff;border:none;padding:6px 14px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer">🧮 계산기로 상품 변경 ↗</button>
         <span style="font-size:10.5px;color:#94a3b8;margin-left:8px">${c.status === 'in_progress' ? '계약진행 단계 — 변경 시 정산 영향 재계산' : '계약대기 단계 — 자유 변경'}</span>
-        <div id="product-calc-${c.id}" style="display:none;margin-top:10px;border:1px solid #334155;border-radius:5px;overflow:hidden;background:#0f172a">
-          <iframe id="product-calc-iframe-${c.id}" style="width:100%;height:800px;border:0;background:#0f172a" title="V2 계산기"></iframe>
-        </div>
       </div>
       ` : ''}
 
