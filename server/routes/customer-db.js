@@ -1731,20 +1731,19 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
     source_data: c.source_data, archived: false,
   }));
 
-  // 1) cross-source phone 중복 사전 검사 — 출처 다른데 같은 phone이면 dup으로 처리
-  //    (UNIQUE(db_source_id, phone)는 같은 출처 안에서만 작동 → 출처 넘는 중복 못 잡음)
+  // 1) cross-source phone 중복 사전 검사 — chunk 1000 + .limit(5000) (PostgREST cap 회피)
   const phoneList = insertRows.map(r => r.phone);
   const existingPhonesSet = new Set();
-  // 1000개씩 청크로 IN 조회 (PG 인자 제한 대응)
   for (let i = 0; i < phoneList.length; i += 1000) {
     const slice = phoneList.slice(i, i + 1000);
-    const { data: existing } = await supabase.from('incentive_customer_db')
-      .select('phone').in('phone', slice).is('deleted_at', null);
+    const { data: existing, error: e0 } = await supabase.from('incentive_customer_db')
+      .select('phone').in('phone', slice).is('deleted_at', null).limit(5000);
+    if (e0) console.error('[import phone scan]', e0.code, e0.message);
     (existing || []).forEach(r => existingPhonesSet.add(r.phone));
   }
-  // 신규 row만 분리, 기존 phone은 dup 카운트
   const newRows = insertRows.filter(r => !existingPhonesSet.has(r.phone));
   const crossSourceDups = insertRows.length - newRows.length;
+  console.log('[import] customers=' + insertRows.length + ' crossSourceDups=' + crossSourceDups + ' newRows=' + newRows.length);
 
   // 2) UPSERT chunk 200 — Railway timeout 안전 + 매 chunk 후 batch 통계 즉시 update
   let inserted = 0, dups = crossSourceDups, failed = 0;
@@ -1756,24 +1755,23 @@ async function importClosingLedger({ rows, db_source_id, me, userId, ip, ua }) {
       .upsert(chunk, { onConflict: 'db_source_id,phone', ignoreDuplicates: true })
       .select('id');
     if (error) {
-      console.error('[import upsert chunk fail]', error.code, error.message);
+      console.error('[import upsert chunk fail]', error.code, error.message, 'chunk_size=' + chunk.length);
       for (const row of chunk) {
         const { error: e1 } = await supabase.from('incentive_customer_db').insert(row);
         if (e1 && e1.code === '23505') dups++;
         else if (!e1) inserted++;
-        else failed++;
+        else {
+          failed++;
+          console.error('[import row fail]', e1?.code, e1?.message, 'phone=' + row.phone + ' name=' + row.name);
+        }
       }
     } else {
       inserted += (data || []).length;
       dups += chunk.length - (data || []).length;
     }
-    // 매 chunk 즉시 batch 통계 update — timeout 끊겨도 부분 통계 보존
-    await supabase.from('incentive_customer_import_batch').update({
-      valid_count: inserted, invalid_count: failed, duplicate_count: dups,
-    }).eq('id', batchId);
   }
 
-  // 최종 batch 통계 보장 — newRows가 0이라 loop 안 돌아도 cross-source dups 등 반영
+  // 최종 batch 통계 — newRows=0이어도 cross-source dups 등 반영 + RPC 부하 최소화
   await supabase.from('incentive_customer_import_batch').update({
     valid_count: inserted, invalid_count: failed, duplicate_count: dups,
   }).eq('id', batchId);

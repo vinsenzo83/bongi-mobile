@@ -654,12 +654,17 @@ function toggleQueueSide() {
 }
 
 // 모드 감지: ?mode=manual 또는 부모창에서 인자 주입 — 큐콜·DB출처 비활성
+// ?sale_id=XXX 추가 시 — 상품 변경 모드 (계약 처리 편집 모달에서 iframe 진입)
+const _saleIdReQuote = (() => {
+  try { return new URL(location.href).searchParams.get('sale_id'); } catch { return null; }
+})();
 const _isManualMode = (() => {
   try {
     const u = new URL(location.href);
-    return u.searchParams.get('mode') === 'manual';
+    return u.searchParams.get('mode') === 'manual' || !!_saleIdReQuote;
   } catch { return false; }
 })();
+const _isReQuoteMode = !!_saleIdReQuote;
 if (_isManualMode) {
   document.documentElement.classList.add('tm-manual-mode');
   // 콜 큐·DB출처 숨김 CSS 즉시 주입
@@ -672,6 +677,44 @@ if (_isManualMode) {
     .tm-manual-mode #deal-db-source,
     .tm-manual-mode label[for="deal-db-source"],
     .tm-manual-mode label:has(#deal-db-source) { display:none !important; }
+  `;
+  document.head.appendChild(s);
+}
+if (_isReQuoteMode) {
+  document.documentElement.classList.add('tm-requote-mode');
+  // re-quote 모드 — flexbox로 main + 우측 견적 결과만 표시
+  // (상담 스크립트·메모·고객 카드·헤더는 숨김)
+  const s = document.createElement('style');
+  s.textContent = `
+    .tm-requote-mode .tm-app > aside.tm-panel,
+    .tm-requote-mode .tm-app .tm-info-section,
+    .tm-requote-mode #call-mode-bar,
+    .tm-requote-mode header,
+    .tm-requote-mode footer { display:none !important; }
+    .tm-requote-mode .tm-app {
+      display: flex !important;
+      gap: 12px !important;
+      padding: 0 !important;
+      grid-template-columns: unset !important;
+      grid-template-areas: unset !important;
+    }
+    .tm-requote-mode .tm-app > main {
+      flex: 1 1 0;
+      min-width: 0;
+      grid-area: unset !important;
+    }
+    .tm-requote-mode .tm-app > aside:last-child {
+      flex: 0 0 360px;
+      grid-area: unset !important;
+      display: block !important;
+    }
+    @media (max-width: 900px) {
+      .tm-requote-mode .tm-app { flex-direction: column !important; }
+      .tm-requote-mode .tm-app > aside:last-child { flex: 0 0 auto; width: 100%; }
+    }
+    .tm-requote-mode body { background:#0f172a !important; padding:14px !important; }
+    /* 고객 계약정보 입력 폼 자체를 숨김 — 사유만 prompt로 받음 */
+    .tm-requote-mode #inc-deal-form { display: none !important; }
   `;
   document.head.appendChild(s);
 }
@@ -4076,16 +4119,51 @@ function incApplyAuthState() {
     el.style.background = hasState ? '#f3f4f6' : '#fff';
     el.title = hasState ? '로그인된 상담사의 실제 누적 데이터 (자동 갱신)' : '';
   });
-  // 계약 완료 버튼
+  // 계약 완료 버튼 — re-quote 모드면 "상품 변경 적용"으로 변경
   const dealBtn = document.getElementById('inc-close-deal-btn');
   if (dealBtn) {
     dealBtn.disabled = !loggedIn;
     dealBtn.style.opacity = loggedIn ? '1' : '0.5';
     dealBtn.style.cursor = loggedIn ? 'pointer' : 'not-allowed';
-    dealBtn.textContent = loggedIn
-      ? '📝 이 견적으로 계약 완료'
-      : '📝 이 견적으로 계약 완료 (로그인 필요)';
+    if (_isReQuoteMode) {
+      dealBtn.textContent = loggedIn
+        ? '💾 상품 변경 적용 (사유 입력)'
+        : '💾 상품 변경 적용 (로그인 필요)';
+      dealBtn.dataset.mode = 're-quote';
+    } else {
+      dealBtn.textContent = loggedIn
+        ? '📝 이 견적으로 계약 완료'
+        : '📝 이 견적으로 계약 완료 (로그인 필요)';
+    }
   }
+}
+
+// re-quote 모드 진입 시 sale 데이터로 계산기 옵션 자동 채움
+async function loadSaleForReQuote() {
+  if (!_isReQuoteMode || !_saleIdReQuote) return;
+  const tk = localStorage.getItem('incentive-auth-token-v1');
+  if (!tk) return;
+  try {
+    const r = await fetch('/api/incentive/sales/' + _saleIdReQuote, { headers: { Authorization: 'Bearer ' + tk }});
+    if (!r.ok) return;
+    const { sale } = await r.json();
+    if (!sale) return;
+    const p = sale.product || {};
+    // carrier select (skt/kt/lgu) 매핑
+    const reverseMap = { 'SK':'skt', 'KT':'kt', 'LG':'lgu' };
+    const cKey = reverseMap[p.carrier];
+    if (cKey) {
+      const carrierBtns = document.querySelectorAll('.tm-option[data-value]');
+      carrierBtns.forEach(b => { if (b.dataset.value === cKey) b.click(); });
+    }
+    // speed·tv 등 추가 매핑은 계산기 init 후 별도 처리 필요 — 향후 보강
+    // 사용자 안내
+    const msg = document.getElementById('inc-msg');
+    if (msg) msg.innerHTML = `<div style="color:#fbbf24;font-weight:700;padding:8px;background:rgba(251,191,36,0.1);border-radius:4px">📝 상품 변경 모드 — 기존 계약 ${_saleIdReQuote.slice(0,8)}... 의 새 견적 작성 중</div>`;
+  } catch {}
+}
+if (_isReQuoteMode) {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(loadSaleForReQuote, 500));
 }
 
 
@@ -4198,6 +4276,10 @@ async function incCloseDeal() {
     alert('⚠️ 견적 매칭된 상품이 없습니다.\n\n견적 카드에서 통신사·속도·TV를 먼저 선택하고 잠시 후 다시 시도하세요.');
     return;
   }
+  // re-quote 모드 — 고객 정보 폼 우회. 사유만 prompt 받고 바로 incSubmitDeal 호출 (PATCH 분기)
+  if (_isReQuoteMode) {
+    return incSubmitDeal();  // 내부에서 _isReQuoteMode 분기 → 사유 prompt + PATCH
+  }
   const form = document.getElementById('inc-deal-form');
   if (form) form.style.display = '';
   const btn = document.getElementById('inc-close-deal-btn');
@@ -4207,6 +4289,59 @@ async function incCloseDeal() {
 async function incSubmitDeal() {
   const token = (typeof authGetToken === 'function') ? authGetToken() : null;
   if (!token || !_incLastMatchedProduct) return;
+
+  // re-quote 모드 — 폼·validation 건너뛰고 사유 prompt + PATCH 분기 직행
+  if (_isReQuoteMode && _saleIdReQuote) {
+    const reason = prompt('상품 변경 사유를 입력하세요:\n· 고객 요구\n· 시공 불가\n· 기타 (직접 입력)');
+    if (!reason || !reason.trim()) return;
+    // 견적 결과 HTML 추출
+    let quoteFullHtml = null, monthlyFee = null;
+    try {
+      if (typeof calc === 'function') calc();
+      const resultEl = document.getElementById('c-result');
+      if (resultEl && resultEl.innerHTML.trim()) {
+        quoteFullHtml = resultEl.innerHTML;
+        const patterns = [
+          /월\s*실질요금[\s\S]*?<span[^>]*class="v"[^>]*>\s*([\d,]+)/,
+          /월\s*합계[\s\S]*?<span[^>]*class="v"[^>]*>\s*([\d,]+)/,
+        ];
+        for (const re of patterns) {
+          const m = quoteFullHtml.match(re);
+          if (m) { monthlyFee = parseInt(m[1].replace(/,/g, '')) || null; break; }
+        }
+      }
+    } catch {}
+    try {
+      const res = await fetch(INC_API + '/sales/' + _saleIdReQuote, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', Authorization:'Bearer '+token },
+        body: JSON.stringify({
+          product_id: _incLastMatchedProduct.id,
+          product_change_reason: reason.trim(),
+          quote_full_html: quoteFullHtml,
+          monthly_fee: monthlyFee,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert('❌ 변경 실패: ' + (err.error || res.status));
+        return;
+      }
+      // 부모 창에 신호 + 자동 닫기
+      try { window.opener && window.opener.postMessage({ type:'sale-product-changed', sale_id:_saleIdReQuote }, '*'); } catch {}
+      try {
+        const bc = new BroadcastChannel('contract-update');
+        bc.postMessage({ type:'sale-product-changed', sale_id:_saleIdReQuote });
+        bc.close();
+      } catch {}
+      alert('✅ 상품 변경 완료');
+      setTimeout(() => { try { window.close(); } catch {} }, 200);
+    } catch (e) {
+      alert('❌ ' + e.message);
+    }
+    return;
+  }
+
   const msg = document.getElementById('inc-deal-msg');
   const submitBtn = document.getElementById('inc-deal-submit');
   msg.textContent = '';
@@ -4255,6 +4390,7 @@ async function incSubmitDeal() {
 
   try {
     submitBtn.disabled = true; submitBtn.textContent = '저장 중...';
+
     const res = await fetch(INC_API + '/sales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },

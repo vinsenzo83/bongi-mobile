@@ -639,6 +639,13 @@ async function showHistory(productId) {
     html += '<th style="padding:8px;text-align:left;border-bottom:1px solid #475569;font-size:11px">변경자</th>';
     html += '</tr></thead><tbody>';
     const fmtNum = v => (v == null) ? '-' : (typeof v === 'number' ? v.toLocaleString() : String(v));
+    // 상품 history 필드 한국어 라벨
+    const PROD_FIELD_LABELS = {
+      carrier: '통신사', name: '상품명', speed: '속도', tv_tier: 'TV 단계', type: '종류',
+      rebate: '리베이트', payback: '페이백', point_weight: '가중치',
+      is_premium: '우수상품', tier: '등급', active: '활성 상태', margin: '마진',
+    };
+    const labelP = (f) => PROD_FIELD_LABELS[f] || f;
     history.forEach(h => {
       const dt = new Date(h.changed_at);
       const ts = dt.toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
@@ -648,7 +655,7 @@ async function showHistory(productId) {
         const pname = h.product ? (h.product.carrier + ' ' + h.product.name) : '#' + h.product_id;
         html += '<td style="padding:6px 8px;font-size:11px">' + pname + '</td>';
       }
-      html += '<td style="padding:6px 8px;font-size:11px;color:#fbbf24;font-weight:700">' + h.field_name + '</td>';
+      html += '<td style="padding:6px 8px;font-size:11px;color:#fbbf24;font-weight:700">' + labelP(h.field_name) + '</td>';
       html += '<td style="padding:6px 8px;font-size:11px;text-align:right;color:#fca5a5">' + fmtNum(h.old_value) + '</td>';
       html += '<td style="padding:6px 8px;font-size:11px;text-align:center;color:#64748b">→</td>';
       html += '<td style="padding:6px 8px;font-size:11px;text-align:right;color:#86efac;font-weight:700">' + fmtNum(h.new_value) + '</td>';

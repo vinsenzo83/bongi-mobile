@@ -60,8 +60,10 @@ async function logSaleHistory({ sale_id, action, before, after, user_id, user_na
   if (!supabase) return;
   try {
     let changed_fields = null;
+    // 비교에서 제외할 키 — updated_at(자동), product/db_source/agent/dealer (join 객체, 실제 컬럼은 *_id로 추적)
+    const SKIP_FIELDS = new Set(['updated_at', 'product', 'db_source', 'agent', 'dealer']);
     if (action === 'UPDATE' && before && after) {
-      changed_fields = Object.keys(after).filter(k => k !== 'updated_at' && JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+      changed_fields = Object.keys(after).filter(k => !SKIP_FIELDS.has(k) && JSON.stringify(before[k]) !== JSON.stringify(after[k]));
       if (changed_fields.length === 0) return; // 실제 변경 없으면 skip
     }
     await supabase.from('incentive_sales_history').insert({
@@ -831,7 +833,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         const num = raw.replace(/[^0-9]/g, '');
         const fmt = num.length === 11 ? `${num.slice(0,3)}-${num.slice(3,7)}-${num.slice(7)}` : raw;
         const { data: matched } = await supabase.from('incentive_customer_db')
-          .select('id')
+          .select('id, db_source_id')
           .or(`phone.eq.${raw},phone.eq.${num},phone.eq.${fmt}`)
           .is('deleted_at', null)
           .neq('call_status', 'converted')
@@ -846,6 +848,14 @@ router.post('/sales', authenticateJWT, async (req, res) => {
             last_contacted_at: nowIso,
             updated_at: nowIso,
           }).in('id', ids);
+          // sale.db_source_id 자동 보충 — sale에 출처 안 보냈는데 customer엔 출처 있으면 복사
+          if (!data.db_source_id) {
+            const customerSourceId = matched.find(c => c.db_source_id)?.db_source_id;
+            if (customerSourceId) {
+              await supabase.from('incentive_sales').update({ db_source_id: customerSourceId }).eq('id', data.id);
+              data.db_source_id = customerSourceId;
+            }
+          }
           await supabase.from('incentive_customer_call_log').insert(
             ids.map(id => ({ customer_id: id, agent_id: targetAgentId, result:'converted', notes:`자동 변환 (sale ${data.id})` }))
           );
@@ -950,17 +960,25 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (onestop_yn !== undefined) update.onestop_yn = onestop_yn;
     if (current_carrier !== undefined) update.current_carrier = current_carrier;
 
-    // product 변경 — pending 단계에서만 허용, snapshot 재계산
-    // (계약 진행/완료 단계에서는 등록 시점 snapshot 락)
+    // product 변경 — pending·in_progress 단계까지 허용 (completed·cancelled 차단)
+    // 변경 시 snapshot 재계산 + 사유 필수 + contract_notes에 자동 timestamp 기록
     if (product_id !== undefined && product_id !== existing.product_id) {
-      if (existing.status !== 'pending') {
-        return res.status(400).json({ error: '계약 진행/완료된 영업은 상품 변경 불가 (등록 시점 단가 보존)' });
+      if (!['pending','in_progress'].includes(existing.status)) {
+        return res.status(400).json({ error: '계약완료·취소된 영업은 상품 변경 불가 (정산·이력 보호)' });
       }
-      const { data: newProd, error: newProdErr } = await supabase
-        .from('incentive_products')
-        .select('payback, rebate, point_weight, is_premium')
-        .eq('id', product_id)
-        .single();
+      // 변경 사유 필수 (요구사항 C — 감사·분쟁 대응)
+      const reason = (req.body.product_change_reason || '').trim();
+      if (!reason) {
+        return res.status(400).json({ error: '상품 변경 사유 필수 (예: 고객 요구·시공 불가·재고 없음·기타)' });
+      }
+      // 새 상품 정보 조회 + 옛 상품 정보 (자동 메모 텍스트용)
+      const [{ data: newProd, error: newProdErr }, { data: oldProd }] = await Promise.all([
+        supabase.from('incentive_products')
+          .select('id, carrier, speed, tv_tier, payback, rebate, point_weight, is_premium')
+          .eq('id', product_id).single(),
+        supabase.from('incentive_products')
+          .select('carrier, speed, tv_tier').eq('id', existing.product_id).maybeSingle(),
+      ]);
       if (newProdErr || !newProd) {
         return res.status(400).json({ error: '존재하지 않는 product_id' });
       }
@@ -969,6 +987,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       update.rebate_snapshot = newProd.rebate;
       update.point_weight_snapshot = newProd.point_weight;
       update.is_premium_snapshot = newProd.is_premium;
+      // contract_notes 자동 append 제거 — 변경 이력 카드(📜)에만 기록 (메모 깔끔하게 유지)
     }
 
     const { data, error } = await supabase
@@ -978,8 +997,13 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       .select('*, product:incentive_products(*)')
       .single();
     if (error) throw error;
-    // 변경 감사 로그
-    logSaleHistory({ sale_id: data.id, action: 'UPDATE', before: existing, after: data, user_id: req.user.id, user_name: me.name, user_role: me.role });
+    // 변경 감사 로그 — 상품 변경 시 사유까지 reason 컬럼에 기록
+    logSaleHistory({
+      sale_id: data.id, action: 'UPDATE',
+      before: existing, after: data,
+      user_id: req.user.id, user_name: me.name, user_role: me.role,
+      reason: req.body.product_change_reason || null,
+    });
 
     // 🆕 sale 취소/실패 시 customer-db 자동 되돌림 — 콜 큐로 복귀
     if (status && status !== existing.status && (status === 'cancelled' || status === 'failed')) {
