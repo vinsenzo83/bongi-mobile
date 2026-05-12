@@ -950,17 +950,25 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (onestop_yn !== undefined) update.onestop_yn = onestop_yn;
     if (current_carrier !== undefined) update.current_carrier = current_carrier;
 
-    // product 변경 — pending 단계에서만 허용, snapshot 재계산
-    // (계약 진행/완료 단계에서는 등록 시점 snapshot 락)
+    // product 변경 — pending·in_progress 단계까지 허용 (completed·cancelled 차단)
+    // 변경 시 snapshot 재계산 + 사유 필수 + contract_notes에 자동 timestamp 기록
     if (product_id !== undefined && product_id !== existing.product_id) {
-      if (existing.status !== 'pending') {
-        return res.status(400).json({ error: '계약 진행/완료된 영업은 상품 변경 불가 (등록 시점 단가 보존)' });
+      if (!['pending','in_progress'].includes(existing.status)) {
+        return res.status(400).json({ error: '계약완료·취소된 영업은 상품 변경 불가 (정산·이력 보호)' });
       }
-      const { data: newProd, error: newProdErr } = await supabase
-        .from('incentive_products')
-        .select('payback, rebate, point_weight, is_premium')
-        .eq('id', product_id)
-        .single();
+      // 변경 사유 필수 (요구사항 C — 감사·분쟁 대응)
+      const reason = (req.body.product_change_reason || '').trim();
+      if (!reason) {
+        return res.status(400).json({ error: '상품 변경 사유 필수 (예: 고객 요구·시공 불가·재고 없음·기타)' });
+      }
+      // 새 상품 정보 조회 + 옛 상품 정보 (자동 메모 텍스트용)
+      const [{ data: newProd, error: newProdErr }, { data: oldProd }] = await Promise.all([
+        supabase.from('incentive_products')
+          .select('id, carrier, speed, tv_tier, payback, rebate, point_weight, is_premium')
+          .eq('id', product_id).single(),
+        supabase.from('incentive_products')
+          .select('carrier, speed, tv_tier').eq('id', existing.product_id).maybeSingle(),
+      ]);
       if (newProdErr || !newProd) {
         return res.status(400).json({ error: '존재하지 않는 product_id' });
       }
@@ -969,6 +977,12 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       update.rebate_snapshot = newProd.rebate;
       update.point_weight_snapshot = newProd.point_weight;
       update.is_premium_snapshot = newProd.is_premium;
+      // contract_notes에 자동 append (timestamp + 옛/새 상품 + 사유)
+      const ts = new Date().toLocaleString('ko-KR', { timeZone:'Asia/Seoul' });
+      const oldLabel = oldProd ? `${oldProd.carrier} ${oldProd.speed}${oldProd.tv_tier?'+'+oldProd.tv_tier:''}` : `id=${existing.product_id}`;
+      const newLabel = `${newProd.carrier} ${newProd.speed}${newProd.tv_tier?'+'+newProd.tv_tier:''}`;
+      const memo = `[${ts}] 상품 변경: ${oldLabel} → ${newLabel} / 사유: ${reason} (변경자: ${me.name})`;
+      update.contract_notes = (existing.contract_notes ? existing.contract_notes + '\n' : '') + memo;
     }
 
     const { data, error } = await supabase
