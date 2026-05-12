@@ -429,13 +429,13 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
               </div>
               <!-- 공식 박스 -->
               <div style="background:#fff;border:1px solid #c7d2fe;border-radius:6px;padding:7px 9px;margin-top:4px;font-size:9px;color:#1a2744;line-height:1.5">
-                <strong style="color:#3617ce">공식:</strong> 출고가 − 공시지원금 = 할부개통금액 + 현금 페이백<br>
-                <strong style="color:#3617ce">매장:</strong> 1,300K = 640K (할부원금) + 660K (페이백)<br>
-                <strong style="color:#3617ce">온라인:</strong> 1,300K = 590K (할부원금) + 710K (페이백)
+                <strong style="color:#3617ce">공식:</strong> 출고가 − 공시지원금 = 현금가 + 봉이지원금<br>
+                <strong style="color:#3617ce">매장:</strong> 1,300K = 640K (현금가) + 660K (봉이지원금)<br>
+                <strong style="color:#3617ce">온라인:</strong> 1,300K = 590K (현금가) + 710K (봉이지원금)
               </div>
               <div style="font-size:10px;color:#666;line-height:1.5;margin-top:6px">24개월 할부 (수수료 5.9% 원리금균등)</div>
-              <div style="font-size:10px;color:#1a2744;font-weight:700;line-height:1.6">📍 매장: 월 <strong>28,300원</strong> + 페이백 <strong>660,000원</strong><br>🌐 온라인: 월 <strong>26,100원</strong> + 페이백 <strong>710,000원</strong></div>
-              <div style="font-size:9px;color:#999;margin-top:3px">※ 페이백은 개통 14일 후 별도 현금 지급</div>
+              <div style="font-size:10px;color:#1a2744;font-weight:700;line-height:1.6">📍 매장: 월 <strong>28,300원</strong> + 봉이지원금 <strong>660,000원</strong><br>🌐 온라인: 월 <strong>26,100원</strong> + 봉이지원금 <strong>710,000원</strong></div>
+              <div style="font-size:9px;color:#999;margin-top:3px">※ 봉이지원금(=할부 페이백)은 개통 14일 후 별도 현금 지급</div>
             </div>
           </div>
         </div>
@@ -502,7 +502,7 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
                 <div style="margin-top:4px;padding-top:4px;border-top:1px dashed #cbd5e1;font-size:9px;color:#059669;font-weight:700">24개월 할부 · 월 26,100원</div>
               </div>
             </div>
-            <!-- 타입 조합별 시세 매트릭스 (지원금 × 결제) — 봉이 공식: 할부원금 + 페이백 = 가격 -->
+            <!-- 타입 조합별 시세 매트릭스 (지원금 × 결제) — 봉이 공식: 현금가 + 봉이지원금 = 가격 -->
             <div style="background:#fafafa;border:1px solid #e8e8e8;border-radius:8px;padding:8px;margin-bottom:8px">
               <div style="font-size:9px;color:#666;font-weight:700;margin-bottom:5px">📊 지원금 × 결제 조합 (★ = 현재 선택 · PB = 현금 페이백)</div>
               <!-- 헤더 -->
@@ -541,10 +541,10 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
                 </div>
               </div>
               <div style="font-size:7px;color:#999;margin-top:6px;line-height:1.5;background:#fff;border:1px solid #e8e8e8;border-radius:5px;padding:5px 7px">
-                <strong style="color:#1a2744">봉이 공식 (할부):</strong><br>
-                · <strong>공시</strong>: 출고가 1,800K − 공시 500K = <strong>할부원금 + 페이백 (1,300K)</strong><br>
-                · <strong>선약</strong>: 출고가 1,800K = <strong>할부원금 + 페이백 (1,800K)</strong><br>
-                · 페이백: 매장 660K / 온라인 710K (개통 14일 후 현금 별도 지급)<br>
+                <strong style="color:#1a2744">봉이 공식:</strong><br>
+                · <strong>공시</strong>: 출고가 1,800K − 공시 500K = <strong>현금가 + 봉이지원금 (1,300K)</strong><br>
+                · <strong>선약</strong>: 출고가 1,800K = <strong>현금가 + 봉이지원금 (1,800K)</strong><br>
+                · 봉이지원금 = 할부 페이백: 매장 660K / 온라인 710K (개통 14일 후 별도 현금 지급)<br>
                 · 할부수수료 5.9% (원리금균등 · 24개월 기준)
               </div>
             </div>
@@ -1523,13 +1523,14 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     </div>
     <!-- 봉이 공식 박스 -->
     <div style="background:#fff;border:2px solid #3617ce;border-radius:8px;padding:10px 12px;margin-bottom:10px">
-      <div style="font-size:11px;font-weight:900;color:#3617ce;margin-bottom:6px">💡 봉이 거래 공식 (할부 기준 · 입력값 기반 자동 계산)</div>
+      <div style="font-size:11px;font-weight:900;color:#3617ce;margin-bottom:6px">💡 봉이 거래 공식 · 봉이지원금(역산) = 할부 페이백</div>
       <div style="font-size:10px;color:#1a2744;line-height:1.7">
-        · <strong style="color:#3617ce">공시 적용:</strong> 출고가 − 공시지원금 = 할부원금 + 현금 페이백<br>
-        &nbsp;&nbsp;예) 180만 − 50만 = <strong>130만</strong> = 할부원금 + 페이백 (매장 66만 / 온라인 71만)<br>
-        · <strong style="color:#059669">선택약정 25%:</strong> 출고가 = 할부원금 + 현금 페이백<br>
-        &nbsp;&nbsp;예) 180만 = 할부원금 + 페이백 (매장 66만 / 온라인 71만) + 월 요금 25% 할인<br>
-        · <strong style="color:#dc2626">번이 / 기변 컬럼 값 = 현금 페이백</strong> (개통 14일 후 별도 지급)<br>
+        · <strong style="color:#3617ce">공시 적용:</strong> 출고가 − 공시지원금 = 현금가 + 봉이지원금<br>
+        &nbsp;&nbsp;예①) 180만 − 50만 − 봉이지원금 = 10만 → <strong>봉이지원금 120만</strong> (= 할부 페이백)<br>
+        &nbsp;&nbsp;예②) 180만 − 50만 − 봉이지원금 = −10만 → <strong>봉이지원금 140만</strong> (현금가 음수 = 매장이 고객에 페이백 → 봉이가 매장에 더 보상)<br>
+        · <strong style="color:#059669">선택약정 25%:</strong> 출고가 = 현금가 + 봉이지원금 (공시 미적용)<br>
+        &nbsp;&nbsp;예) 180만 − 봉이지원금 = 30만 → <strong>봉이지원금 150만</strong> + 월 요금 25%↓<br>
+        · <strong style="color:#dc2626">번이/기변 현금가 입력 → 봉이지원금 자동 계산</strong> (개통 14일 후 별도 지급)<br>
         · 할부 수수료 <strong>5.9%</strong> (원리금균등 · 24개월 기준) · 공시 ↔ 선약 동시 적용 불가
       </div>
     </div>
