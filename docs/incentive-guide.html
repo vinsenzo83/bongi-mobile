@@ -166,13 +166,22 @@ td { font-size:12px; color:#e2e8f0; padding:10px 12px; border-bottom:1px solid #
   <!-- 4. 가중치(P) -->
   <div class="section">
     <h2>④ 가중치 (Point) — 상품별 환산</h2>
+    <h3 style="font-size:13px;color:#93c5fd;margin-top:8px">📡 인터넷+TV</h3>
     <table>
-      <thead><tr><th>예시 상품</th><th>가중치</th><th>설명</th></tr></thead>
+      <thead><tr><th>상품 종류</th><th>가중치</th><th>설명</th></tr></thead>
       <tbody>
-        <tr><td>일반 인터넷 (500M)</td><td><b>1.0 P</b></td><td>기본 단위</td></tr>
-        <tr><td>인터넷 1G + TV 결합</td><td><b>1.5 P</b></td><td>고가 결합 우대</td></tr>
-        <tr><td>프리미엄 결합</td><td><b>2.0 P</b></td><td>최상위 상품</td></tr>
-        <tr><td colspan="3" style="color:#94a3b8;font-size:11px;font-style:italic">정확한 가중치는 상품별로 admin이 설정 — 견적 시 자동 계산</td></tr>
+        <tr><td>인터넷 단독 (100M/500M/1G)</td><td><b>1.0 P</b></td><td>기본 단위</td></tr>
+        <tr><td>인터넷+TV 결합 (지니/U+tv/B올 등)</td><td><b>1.5 P</b></td><td>결합 우대</td></tr>
+      </tbody>
+    </table>
+    <h3 style="font-size:13px;color:#fbbf24;margin-top:14px">🏠 가전렌탈 (rebate 분위수 기반)</h3>
+    <table>
+      <thead><tr><th>rebate 범위</th><th>가중치</th><th>예시 모델</th></tr></thead>
+      <tbody>
+        <tr><td>350,000원 미만</td><td><b>1.0 P</b></td><td>소형·슬림·미니</td></tr>
+        <tr><td>350,000 ~ 580,000원</td><td><b>1.5 P</b></td><td>일반 정수기·비데</td></tr>
+        <tr><td>580,000원 이상</td><td><b>2.0 P</b></td><td>대용량·고가 정수기·바리스타</td></tr>
+        <tr><td colspan="3" style="color:#94a3b8;font-size:11px;font-style:italic">상품별 가중치는 admin이 설정 — 견적 시 자동 계산</td></tr>
       </tbody>
     </table>
   </div>
@@ -242,6 +251,52 @@ td { font-size:12px; color:#e2e8f0; padding:10px 12px; border-bottom:1px solid #
     <div class="tip-box" style="margin-top:14px">
       ⚡ <b>실시간 갱신</b>: 계약처리 부서가 상태를 'completed'로 바꾸면 본인 대시보드에 즉시 반영됩니다.
     </div>
+  </div>
+
+  <!-- 🏠 가전렌탈 정책 (하이브리드 영업) -->
+  <div class="section" style="background:linear-gradient(135deg,rgba(245,158,11,0.08),#1e293b);border:2px solid #f59e0b;margin-top:28px">
+    <h2 style="color:#fbbf24;font-size:17px">🏠 가전렌탈 추가 정책 — 하이브리드 영업</h2>
+    <div style="font-size:12px;color:#fde68a;margin-bottom:16px;line-height:1.7;padding:10px 14px;background:rgba(0,0,0,0.3);border-radius:8px">
+      <b>가전렌탈은 인터넷+TV와 별도 시스템</b>이지만 <b style="color:#86efac">누적 P + 우수건수는 통합 정산</b>되어 단일 Grade가 양쪽에 적용됩니다.<br>
+      마진 공식은 동일 (`rebate × 0.9 − payback − P × 70,000`)하되 **단가는 각자** 적용.
+    </div>
+
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:8px">Ⓐ Grade 단가 (가전렌탈)</h2>
+    <table>
+      <thead><tr><th>Grade</th><th>가전렌탈 단가</th><th>인터넷+TV 단가</th></tr></thead>
+      <tbody>
+        <tr><td>G1 (기본)</td><td><b>15,000원/P</b></td><td>20,000원/P</td></tr>
+        <tr><td>G2</td><td><b>22,000원/P</b></td><td>30,000원/P</td></tr>
+        <tr><td>G3 (최고)</td><td><b style="color:#fbbf24">30,000원/P</b></td><td>40,000원/P</td></tr>
+        <tr><td colspan="3" style="color:#94a3b8;font-size:11px;font-style:italic">가전렌탈은 인터넷+TV의 약 75% 수준 (마진 규모 반영)</td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓑ Tier 임계값 (가전렌탈)</h2>
+    <table>
+      <thead><tr><th>Tier</th><th>가전렌탈 마진 임계</th><th>인터넷+TV 마진 임계</th></tr></thead>
+      <tbody>
+        <tr><td>S (우수상품)</td><td><b style="color:#fbbf24">130,000원</b></td><td>250,000원</td></tr>
+        <tr><td>A</td><td>120,000원</td><td>180,000원</td></tr>
+        <tr><td>B</td><td>100,000원</td><td>120,000원</td></tr>
+        <tr><td>C</td><td>그 외</td><td>그 외</td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓒ 환수 정책 (브랜드 공통)</h2>
+    <div style="background:rgba(34,197,94,0.08);border-left:4px solid #22c55e;padding:10px 14px;border-radius:6px;font-size:12px;color:#86efac;line-height:1.8">
+      ✅ <b>1년 유지 시 100% 수수료 확정</b> (약정 길이 36/60/72/84 무관)<br>
+      ⚠️ 1년 이내 반환·연체 시 환수 (대부분 3연체 기준, 코웨이 5연체)
+    </div>
+
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓓ 하이브리드 영업 예시</h2>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">조건: 인터넷+TV 15건 + 가전렌탈 10건 (모두 P=1.5, 우수 합산 8건)</div>
+    <div class="example-row"><div class="label">통합 누적 P</div><div class="calc">15×1.5 + 10×1.5</div><div class="val">37.5 P</div></div>
+    <div class="example-row"><div class="label">통합 우수</div><div class="calc">G3 임계 10건 미달</div><div class="val">8건 → G2</div></div>
+    <div class="example-row"><div class="label">인터넷+TV 인센</div><div class="calc">22.5P × 30,000 (G2)</div><div class="val">+ 675,000</div></div>
+    <div class="example-row"><div class="label">가전렌탈 인센</div><div class="calc">15P × 22,000 (G2)</div><div class="val">+ 330,000</div></div>
+    <div class="example-row"><div class="label">우수 보너스</div><div class="calc">8건 × 10,000</div><div class="val">+ 80,000</div></div>
+    <div class="example-row last"><div class="label">총 인센티브</div><div class="calc">기본급 + 위 합산</div><div class="val">기본급 + 1,085,000</div></div>
   </div>
 
   <!-- 🏢 팀장 전용 정책 -->

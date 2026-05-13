@@ -55,6 +55,40 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   opacity: 0.8;
 }
 
+/* ─── 정책 탭 (인터넷+TV / 가전렌탈) ─── */
+.policy-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 18px 0 14px;
+  border-bottom: 2px solid #1e293b;
+  padding-bottom: 0;
+}
+.policy-tab-btn {
+  background: #0f172a;
+  color: #94a3b8;
+  border: 1.5px solid #1e293b;
+  border-bottom: none;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  position: relative;
+  bottom: -2px;
+  transition: all .15s;
+  letter-spacing: 0.02em;
+}
+.policy-tab-btn:hover { color: #cbd5e1; background: #1e293b; }
+.policy-tab-btn.active {
+  color: #f8fafc;
+  background: #1e293b;
+  border-color: #3b82f6;
+  border-bottom-color: #1e293b;
+}
+.policy-tab-btn.active[data-tab="rental"] { border-color: #f59e0b; color: #fbbf24; }
+.policy-tab-pane { display: none; }
+.policy-tab-pane.active { display: block; }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 <script src="/docs/_shared/incentive-auth.js"></script>
@@ -258,6 +292,15 @@ async function fetchAgent() {
       </details>
     </div>
 
+    <!-- ─── 정책 탭 ─── -->
+    <div class="policy-tabs">
+      <button type="button" class="policy-tab-btn active" data-tab="it">📡 인터넷+TV 정책</button>
+      <button type="button" class="policy-tab-btn" data-tab="rental">🏠 가전렌탈 정책</button>
+    </div>
+
+    <!-- ─── 탭: 인터넷+TV ─── -->
+    <div id="policy-tab-it" class="policy-tab-pane active">
+
     <!-- 활성 정책 편집 -->
     <div class="section">
       <h2>📌 활성 정책 (현재 적용 중)</h2>
@@ -451,10 +494,42 @@ async function fetchAgent() {
 
     <!-- 🧪 영업이익 시뮬레이터 (기획서 기반) -->
     <div class="section">
-      <h2>🧪 영업이익 시뮬레이터 — 회사 마진 / 인센티브 분리</h2>
+      <h2 style="display:flex;justify-content:space-between;align-items:center">
+        🧪 영업이익 시뮬레이터 — 회사 마진 / 인센티브 분리
+        <label style="font-size:11.5px;font-weight:700;cursor:pointer;background:rgba(245,158,11,0.15);padding:6px 12px;border:1px solid #f59e0b;border-radius:6px;display:inline-flex;align-items:center;gap:6px">
+          <input type="checkbox" id="sim-hybrid-toggle" style="width:16px;height:16px;cursor:pointer">
+          <span style="color:#fbbf24">🏠 가전렌탈 추가 (하이브리드 영업)</span>
+        </label>
+      </h2>
       <div style="font-size:11px;color:#94a3b8;margin-bottom:12px">
         💡 V5 기획서 공식 그대로 — 정책·영업 가정 조정 시 회사 영업이익과 상담사 수령액 즉시 계산.
-        추후 정책 변경 사전 영향 평가에 사용.
+        하이브리드 토글 ON → 가전렌탈 영업 입력 추가 + 통합 누적 P/Grade 자동.
+      </div>
+
+      <!-- 🏠 가전렌탈 영업 입력 (하이브리드 모드일 때만 표시) -->
+      <div id="sim-rental-block" style="display:none;background:rgba(245,158,11,0.06);border:1.5px solid rgba(245,158,11,0.4);border-radius:8px;padding:14px 16px;margin-bottom:14px">
+        <div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:10px;letter-spacing:0.04em">🏠 가전렌탈 영업 가정 (per 상담사 1명)</div>
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;font-size:11px">
+          <label>월 가전렌탈 영업
+            <input id="sim-rt-sales" type="number" min="0" value="10" class="sim-input"></label>
+          <label>평균 P (1.0/1.5/2.0)
+            <input id="sim-rt-weight" type="number" min="0.5" step="0.5" value="1.5" class="sim-input"></label>
+          <label>평균 rebate (₩)
+            <input id="sim-rt-rebate" type="number" min="0" step="10000" value="430000" class="sim-input"></label>
+          <label>평균 페이백 (₩)
+            <input id="sim-rt-payback" type="number" min="0" step="10000" value="160000" class="sim-input"></label>
+          <label>우수상품 비율 (%)
+            <input id="sim-rt-premium-pct" type="number" min="0" max="100" value="25" class="sim-input"></label>
+          <label>G1 단가 (₩/P)
+            <input id="sim-rt-g1" type="number" min="0" step="1000" value="15000" class="sim-input"></label>
+          <label>G2 단가 (₩/P)
+            <input id="sim-rt-g2" type="number" min="0" step="1000" value="22000" class="sim-input"></label>
+          <label>G3 단가 (₩/P)
+            <input id="sim-rt-g3" type="number" min="0" step="1000" value="30000" class="sim-input"></label>
+        </div>
+        <div style="font-size:10px;color:#cbd5e1;margin-top:8px;line-height:1.5">
+          ⚙️ 가전렌탈 마진 공식: <code>rebate × 인식률 − payback − P × 70,000</code> · 가중치 비용 70,000원/P · 가입보너스 없음 · 기본급분담 없음
+        </div>
       </div>
 
       <!-- 빠른 프리셋 -->
@@ -535,20 +610,35 @@ async function fetchAgent() {
         <!-- 회사 -->
         <div style="background:rgba(34,197,94,0.06);border:1.5px solid rgba(34,197,94,0.4);border-radius:10px;padding:14px 16px">
           <div style="font-size:12px;color:#22c55e;font-weight:800;margin-bottom:10px;letter-spacing:0.04em">🏢 회사 손익</div>
-          <div style="display:flex;flex-direction:column;gap:8px;font-size:11.5px">
-            <div style="display:flex;justify-content:space-between"><span>인식 영업이익 (리베이트 × 인식률)</span><b id="sim-out-net-rev" style="color:#86efac">-</b></div>
-            <div style="display:flex;justify-content:space-between"><span>− 페이백 정가</span><b id="sim-out-payback" style="color:#fca5a5">-</b></div>
-            <div style="display:flex;justify-content:space-between"><span>− 회사 부담 추가페이백</span><b id="sim-out-burden" style="color:#fca5a5">-</b></div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:11.5px">
+            <!-- 매출 분해 -->
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#93c5fd"><span>📡 IT 매출</span><b id="sim-out-rev-it">-</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#fbbf24"><span>🏠 렌탈 매출</span><b id="sim-out-rev-rt">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>인식 매출 합계 (×인식률)</span><b id="sim-out-net-rev" style="color:#86efac">-</b></div>
+            <!-- 페이백 분해 -->
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#fca5a5"><span>  ├ − IT 페이백</span><b id="sim-out-payback-it">-</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#fca5a5"><span>  └ − 렌탈 페이백</span><b id="sim-out-payback-rt">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>− 페이백 합계</span><b id="sim-out-payback" style="color:#fca5a5">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>− 회사 부담 추가페이백 (IT)</span><b id="sim-out-burden" style="color:#fca5a5">-</b></div>
             <div style="display:flex;justify-content:space-between"><span>− 인건비 합계</span><b id="sim-out-labor" style="color:#fca5a5">-</b></div>
             <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1.5px solid #475569;font-size:14px">
               <span style="font-weight:800">🟢 영업이익</span>
               <b id="sim-out-profit" style="color:#22c55e;font-size:18px;font-weight:900">-</b>
             </div>
+            <!-- 시스템별 영업이익 분해 -->
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#93c5fd"><span>  ├ IT 부분 이익</span><b id="sim-out-profit-it">-</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#fbbf24"><span>  └ 렌탈 부분 이익</span><b id="sim-out-profit-rt">-</b></div>
             <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
               <span>이익률</span><b id="sim-out-profit-rate">-</b>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
-              <span>건당 회사 마진</span><b id="sim-out-per-deal">-</b>
+              <span>건당 회사 마진 (IT)</span><b id="sim-out-per-deal">-</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
+              <span>건당 회사 마진 (렌탈)</span><b id="sim-out-per-deal-rt">-</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
+              <span>인센티브/매출 비율</span><b id="sim-out-inc-ratio">-</b>
             </div>
           </div>
         </div>
@@ -556,14 +646,27 @@ async function fetchAgent() {
         <!-- 상담사 -->
         <div style="background:rgba(251,191,36,0.06);border:1.5px solid rgba(251,191,36,0.4);border-radius:10px;padding:14px 16px">
           <div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:10px;letter-spacing:0.04em">👤 상담사 수령 (per 1명)</div>
-          <div style="display:flex;flex-direction:column;gap:8px;font-size:11.5px">
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:11.5px">
             <div style="display:flex;justify-content:space-between"><span>+ 기본급</span><b id="sim-out-base" style="color:#86efac">-</b></div>
-            <div style="display:flex;justify-content:space-between"><span>+ 인센티브 (P × 단가)</span><b id="sim-out-inc" style="color:#86efac">-</b></div>
+            <!-- 인센티브 분해 -->
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#93c5fd"><span>+ IT 인센 (P×단가)</span><b id="sim-out-inc-it">-</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#fbbf24"><span>+ 렌탈 인센 (P×단가)</span><b id="sim-out-inc-rt">-</b></div>
+            <div style="display:flex;justify-content:space-between"><span>+ 인센티브 합계</span><b id="sim-out-inc" style="color:#86efac">-</b></div>
             <div style="display:flex;justify-content:space-between"><span>+ 우수 보너스</span><b id="sim-out-bonus" style="color:#86efac">-</b></div>
             <div style="display:flex;justify-content:space-between"><span>− 본인 페이백 차감</span><b id="sim-out-deduct" style="color:#fca5a5">-</b></div>
             <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1.5px solid #475569;font-size:14px">
               <span style="font-weight:800">💰 총 수령</span>
               <b id="sim-out-agent-total" style="color:#fbbf24;font-size:18px;font-weight:900">-</b>
+            </div>
+            <!-- 추가 지표 -->
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
+              <span>인센 + 보너스 합</span><b id="sim-out-inc-bonus-total">-</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
+              <span>기본급 대비 인센 비율</span><b id="sim-out-inc-vs-base">-</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
+              <span>건당 평균 수령</span><b id="sim-out-per-agent-deal">-</b>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8">
               <span>적용 Grade</span><b id="sim-out-grade">-</b>
@@ -597,6 +700,750 @@ async function fetchAgent() {
         label { color:#cbd5e1; font-weight:600; }
       </style>
     </div>
+
+    </div><!-- /policy-tab-it -->
+
+    <!-- ─── 탭: 가전렌탈 ─── -->
+    <div id="policy-tab-rental" class="policy-tab-pane">
+
+    <!-- ★ 가전렌탈 정책 (별도 시스템) -->
+    <div class="section" style="background:linear-gradient(135deg,rgba(245,158,11,0.08),#0f172a);border:1.5px solid #f59e0b">
+      <h2 style="color:#fbbf24;display:flex;justify-content:space-between;align-items:center">
+        🏠 가전렌탈 정책 (V1)
+        <button type="button" id="rp-save-btn" class="btn btn-primary" style="font-size:11.5px;padding:7px 16px">💾 가전렌탈 정책 저장</button>
+      </h2>
+      <div style="font-size:10.5px;color:#cbd5e1;margin-bottom:12px;line-height:1.55">
+        · 인터넷+TV와 <strong>별도 시스템</strong>이지만 누적 P · Grade는 통합 정산<br>
+        · 회사 영업이익율 10% 목표 · 페이백 자동 산출 · 마진=리베×0.9−페이백−가중치비용−기본급분담−보너스
+      </div>
+
+      <!-- 📌 활성 정책 (인터넷+TV와 동일 구조) -->
+      <h2 style="margin-top:10px;color:#fbbf24;font-size:14px">📌 활성 정책 (현재 적용 중)</h2>
+      <div class="row">
+        <div class="field"><label>버전</label>
+          <input type="text" id="rp-version" class="sim-input" placeholder="V1">
+          <div class="hint">고유 식별자 (V1, V2 등)</div>
+        </div>
+        <div class="field"><label>적용 시작일</label>
+          <input type="date" id="rp-effective" class="sim-input">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>우수상품 건당 보너스 (₩)</label>
+          <input type="number" id="rp-bonus-prem" class="sim-input" min="0" step="1000">
+          <div class="hint">마진 ≥ 임계값인 영업 1건당 추가</div>
+        </div>
+        <div class="field"><label>비고</label>
+          <input type="text" id="rp-notes" class="sim-input" placeholder="(선택) 변경 사유 등">
+        </div>
+      </div>
+      <div style="background:rgba(96,165,250,0.06);border-left:3px solid #60a5fa;padding:8px 12px;margin-bottom:14px;font-size:11px;color:#94a3b8;border-radius:4px">
+        💡 <b>기본급</b>은 가전렌탈은 정책 통합 관리 (인터넷+TV와 달리 상담사 공통).
+      </div>
+      <div class="row">
+        <div class="field"><label>회사 페이백 부담 한도 (₩)</label>
+          <input type="number" id="rp-payback-company" class="sim-input" min="0" step="1000">
+          <div class="hint">이 금액 이하는 회사 자동 부담</div>
+        </div>
+        <div class="field"><label>최대 페이백 cap (₩)</label>
+          <input type="number" id="rp-payback-cap" class="sim-input" min="0" step="10000">
+          <div class="hint">초과 입력 불가</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>우수상품 마진 임계값 (₩)</label>
+          <input type="number" id="rp-prem-margin" class="sim-input" min="0" step="10000">
+          <div class="hint">이 마진 이상이면 우수상품 (S Tier 자동)</div>
+        </div>
+        <div class="field"><label>변경 사유 (이력 audit)</label>
+          <input type="text" id="rp-change-reason-row" class="sim-input" placeholder="예: 영업이익율 8%로 인하">
+        </div>
+      </div>
+
+      <!-- 가전렌탈 전용 — 영업이익율 + 기본급 분담 (숨김 — 인터넷+TV 단순화) -->
+      <div style="display:none">
+        <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">📈 가전렌탈 전용 — 영업이익율 + 기본급 분담</h3>
+        <div class="form-grid">
+          <div class="field"><label>영업이익율 (%) — 페이백 자동 산출용</label><input id="rp-target-profit" class="sim-input" type="number" step="0.1" min="0" max="100"></div>
+          <div class="field"><label>기본급 (₩/월)</label><input id="rp-base-salary" class="sim-input" type="number" step="100000"></div>
+          <div class="field"><label>표준 영업건수 (월)</label><input id="rp-standard-sales" class="sim-input" type="number" step="1"></div>
+          <div class="field"><label>1건 기본급 분담 (자동)</label><input id="rp-base-share" class="sim-input" type="text" readonly></div>
+        </div>
+      </div>
+
+      <!-- 약정별 가중치 P (숨김 — 단순화: 상품별 고정 point_weight 사용) -->
+      <div style="display:none">
+        <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">⚖️ 가중치 P (약정 + 보정) — 가전렌탈 전용</h3>
+        <div class="form-grid">
+          <div class="field"><label>36개월 P</label><input id="rp-p36" class="sim-input" type="number" step="0.1"></div>
+          <div class="field"><label>60개월 P</label><input id="rp-p60" class="sim-input" type="number" step="0.1"></div>
+          <div class="field"><label>72개월 P</label><input id="rp-p72" class="sim-input" type="number" step="0.1"></div>
+          <div class="field"><label>84개월 P</label><input id="rp-p84" class="sim-input" type="number" step="0.1"></div>
+          <div class="field"><label>우수상품 +P</label><input id="rp-premium-bonus-p" class="sim-input" type="number" step="0.1"></div>
+          <div class="field"><label>방문케어 +P</label><input id="rp-care-visit-p" class="sim-input" type="number" step="0.1"></div>
+        </div>
+      </div>
+
+      <h2 style="margin-top:14px;color:#fbbf24;font-size:14px">🎯 Grade 단가 (₩/P)</h2>
+      <div style="font-size:10px;color:#cbd5e1;margin-bottom:8px;line-height:1.5">· 가전렌탈+인터넷TV 합산 누적 기준 · 두 조건 모두 충족 시 승급 · 기본 G1</div>
+      <div class="grade-grid">
+        <div class="grade-card">
+          <div class="grade-title">G1 (기본)</div>
+          <div class="field"><label>단가 (₩/P)</label><input type="number" id="rp-g1" class="sim-input" min="0" step="500"></div>
+        </div>
+        <div class="grade-card">
+          <div class="grade-title">G2</div>
+          <div class="field"><label>단가 (₩/P)</label><input type="number" id="rp-g2" class="sim-input" min="0" step="500"></div>
+          <div class="row" style="margin-top:8px;grid-template-columns:1fr 1fr">
+            <div class="field"><label>임계 P</label><input type="number" id="rp-g2-p" class="sim-input" min="0" step="0.5"></div>
+            <div class="field"><label>우수 의무</label><input type="number" id="rp-g2-prem" class="sim-input" min="0" step="1"></div>
+          </div>
+        </div>
+        <div class="grade-card">
+          <div class="grade-title">G3 (최고)</div>
+          <div class="field"><label>단가 (₩/P)</label><input type="number" id="rp-g3" class="sim-input" min="0" step="500"></div>
+          <div class="row" style="margin-top:8px;grid-template-columns:1fr 1fr">
+            <div class="field"><label>임계 P</label><input type="number" id="rp-g3-p" class="sim-input" min="0" step="0.5"></div>
+            <div class="field"><label>우수 의무</label><input type="number" id="rp-g3-prem" class="sim-input" min="0" step="1"></div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">💰 가중치 비용 (₩/P)</h3>
+      <div class="form-grid">
+        <div class="field"><label>가중치 비용 (₩/P) — 인터넷+TV와 동일 단가</label><input id="rp-weight-cost" class="sim-input" type="number" step="5000"></div>
+        <!-- 가입 보너스 숨김 (인터넷+TV에 없음) -->
+        <div style="display:none"><input id="rp-signup-bonus" type="number"></div>
+      </div>
+
+      <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">🏷️ Tier 임계값 (마진 기준 자동 분류)</h3>
+      <div class="form-grid">
+        <div class="field"><label>S Tier (≥)</label><input id="rp-tier-s" class="sim-input" type="number" step="10000"></div>
+        <div class="field"><label>A Tier (≥)</label><input id="rp-tier-a" class="sim-input" type="number" step="10000"></div>
+        <div class="field"><label>B Tier (≥)</label><input id="rp-tier-b" class="sim-input" type="number" step="10000"></div>
+        <div class="field"><label>그 외 = C Tier</label><input class="sim-input" type="text" value="자동" readonly style="background:#1e293b;color:#94a3b8"></div>
+      </div>
+
+      <!-- 🏢 팀장(manager) 인센티브 V5.1 — 인터넷+TV와 동일 구조 -->
+      <div class="section" style="background:linear-gradient(135deg,#1e3a8a,#0f172a);border:1.5px solid #3b82f6;margin-top:18px;border-radius:8px;padding:14px 16px">
+        <h2 style="color:#93c5fd;display:flex;justify-content:space-between;align-items:center;font-size:14px;margin:0">
+          <span>🏢 가전렌탈 팀장 인센티브 V5.1 (manager role)</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(0,0,0,0.3);padding:6px 14px;border-radius:8px">
+            <input type="checkbox" id="rp-mgr-enabled" style="width:18px;height:18px;cursor:pointer">
+            <span id="rp-mgr-enabled-label" style="color:#fbbf24">활성</span>
+          </label>
+        </h2>
+        <div style="font-size:11px;color:#cbd5e1;margin:10px 0;line-height:1.6">
+          본인 영업은 agent와 동일 적용 + <b style="color:#fbbf24">팀 오버라이드</b> 추가. 페널티는 오버라이드에만 적용.<br>
+          <span style="color:#94a3b8">⚙️ 비활성 시 팀장은 본인 영업 정책만 적용 (오버라이드 0원)</span>
+        </div>
+        <div class="row" style="grid-template-columns:repeat(4, 1fr);gap:10px">
+          <div class="field">
+            <label>팀 오버라이드율 (0~1)</label>
+            <input type="number" id="rp-mgr-override" class="sim-input" min="0" max="1" step="0.01" placeholder="0.12">
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
+              <b style="color:#cbd5e1">팀원 인센+보너스 합계 × 이 비율</b><br>
+              예: 0.12 = 12%. 팀원 인센 100만원 → 12만원 raw 오버라이드<br>
+              <span style="color:#fbbf24">↑ 올리면 팀장 인센티브 증가 / 회사 부담 ↑</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>본인 영업 의무 건수</label>
+            <input type="number" id="rp-mgr-obligation" class="sim-input" min="0" step="1" placeholder="20">
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
+              <b style="color:#cbd5e1">월 본인 'completed' 영업 최소 의무</b><br>
+              이상 → 100% / 미달 → 페널티 발동<br>
+              <span style="color:#fbbf24">↑ 올리면 페널티 발동 빈번 (압박 강화)</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>부분 페널티 임계 (50%)</label>
+            <input type="number" id="rp-mgr-partial" class="sim-input" min="0" step="1" placeholder="10">
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
+              <b style="color:#cbd5e1">"절반은 받을 수 있는 최소 영업 건수"</b><br>
+              이 건수 ~ 의무-1 → 50% 차감<br>
+              미만 → 0% (전액 미지급)<br>
+              <span style="color:#fbbf24">↑ 올리면 안전망 좁아짐</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>팀 영업이익률 임계 (0~1)</label>
+            <input type="number" id="rp-mgr-profit-rate" class="sim-input" min="0" max="1" step="0.01" placeholder="0.20">
+            <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
+              <b style="color:#cbd5e1">(팀 매출 − 팀 페이백) ÷ 팀 매출</b><br>
+              미달 시 본인 영업 무관하게 0% 강제<br>
+              <span style="color:#fbbf24">팀 페이백 과다 시 팀장 책임 압박</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 페널티 매트릭스 (입력값 실시간 반영) -->
+        <div style="margin-top:14px">
+          <div style="font-size:11px;color:#fde047;font-weight:800;margin-bottom:6px">📋 페널티 계수 매트릭스 (입력값 실시간 반영)</div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead>
+              <tr style="background:#0f172a;color:#fbbf24">
+                <th style="padding:6px 10px;border:1px solid #334155;text-align:left">본인 영업 (completed)</th>
+                <th style="padding:6px 10px;border:1px solid #334155">팀 영업이익률</th>
+                <th style="padding:6px 10px;border:1px solid #334155">계수</th>
+                <th style="padding:6px 10px;border:1px solid #334155">결과</th>
+              </tr>
+            </thead>
+            <tbody style="color:#cbd5e1">
+              <tr><td style="padding:5px 10px;border:1px solid #334155">≥ <b id="rp-mtx-oblig-1">20</b>건</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center">≥ <b id="rp-mtx-pr-1">20</b>%</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center;color:#86efac;font-weight:800">100%</td><td style="padding:5px 10px;border:1px solid #334155">정상 지급</td></tr>
+              <tr><td style="padding:5px 10px;border:1px solid #334155">≥ <b id="rp-mtx-oblig-2">20</b>건</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center">&lt; <b id="rp-mtx-pr-2">20</b>%</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center;color:#fca5a5;font-weight:800">0%</td><td style="padding:5px 10px;border:1px solid #334155">팀 부진 → 미지급</td></tr>
+              <tr><td style="padding:5px 10px;border:1px solid #334155"><b id="rp-mtx-partial-1">10</b> ~ <b id="rp-mtx-oblig-m1">19</b>건</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center">≥ <b id="rp-mtx-pr-3">20</b>%</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center;color:#fbbf24;font-weight:800">50%</td><td style="padding:5px 10px;border:1px solid #334155">절반 차감</td></tr>
+              <tr><td style="padding:5px 10px;border:1px solid #334155"><b id="rp-mtx-partial-2">10</b> ~ <b id="rp-mtx-oblig-m2">19</b>건</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center">&lt; <b id="rp-mtx-pr-4">20</b>%</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center;color:#fca5a5;font-weight:800">0%</td><td style="padding:5px 10px;border:1px solid #334155">두 페널티 동시 → 미지급</td></tr>
+              <tr><td style="padding:5px 10px;border:1px solid #334155">&lt; <b id="rp-mtx-partial-3">10</b>건</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center">(무관)</td><td style="padding:5px 10px;border:1px solid #334155;text-align:center;color:#fca5a5;font-weight:800">0%</td><td style="padding:5px 10px;border:1px solid #334155">본인 영업 부족 → 미지급</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 🧮 라이브 시뮬레이터 -->
+        <div style="margin-top:14px;padding:14px 16px;background:linear-gradient(135deg,#064e3b,#0f172a);border:1.5px solid #16a34a;border-radius:10px">
+          <div style="font-size:12px;color:#86efac;font-weight:800;margin-bottom:8px">🧮 라이브 시뮬레이터 — 입력값 즉시 계산</div>
+          <div class="row" style="grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
+            <div class="field"><label style="font-size:11px">본인 영업 (건)</label>
+              <input type="number" id="rp-sim-mycount" class="sim-input" min="0" step="1" placeholder="예: 15"></div>
+            <div class="field"><label style="font-size:11px">팀 매출 (₩)</label>
+              <input type="number" id="rp-sim-team-rev" class="sim-input" min="0" step="100000" placeholder="예: 5000000"></div>
+            <div class="field"><label style="font-size:11px">팀 페이백 (₩)</label>
+              <input type="number" id="rp-sim-team-pay" class="sim-input" min="0" step="10000" placeholder="예: 1000000"></div>
+            <div class="field"><label style="font-size:11px">팀원 인센+보너스 합 (₩)</label>
+              <input type="number" id="rp-sim-team-inc" class="sim-input" min="0" step="10000" placeholder="예: 3000000"></div>
+          </div>
+
+          <div id="rp-sim-result" style="background:rgba(0,0,0,0.4);border-radius:6px;padding:10px 12px;font-size:11.5px;color:#cbd5e1;line-height:1.7">
+            입력값을 채우면 자동 계산됩니다.
+          </div>
+        </div>
+      </div>
+
+      <!-- 🧪 가전렌탈 영업이익 시뮬레이터 (숨김 — 단순화) -->
+      <div style="display:none" class="section" style="background:linear-gradient(135deg,#7c2d12,#0f172a);border:1.5px solid #ea580c;border-radius:8px;padding:14px 16px;margin-top:18px">
+        <h3 style="color:#fb923c;margin:0 0 8px;font-size:14px">🧪 가전렌탈 영업이익 시뮬레이터</h3>
+        <div style="font-size:11px;color:#cbd5e1;margin-bottom:12px;line-height:1.55">
+          💡 정책·영업 가정 조정 시 회사 영업이익과 상담사 수령액 즉시 계산. 정책 변경 사전 영향 평가.
+        </div>
+        <div class="row" style="grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">
+          <div class="field"><label style="font-size:11px">월 영업 건수</label>
+            <input type="number" id="rp-pl-sales" class="sim-input" min="0" step="1" value="20"></div>
+          <div class="field"><label style="font-size:11px">평균 리베이트 (₩)</label>
+            <input type="number" id="rp-pl-rebate" class="sim-input" min="0" step="10000" value="600000"></div>
+          <div class="field"><label style="font-size:11px">평균 약정 (개월)</label>
+            <select id="rp-pl-months" class="sim-input">
+              <option value="36">36개월</option>
+              <option value="60" selected>60개월</option>
+              <option value="72">72개월</option>
+              <option value="84">84개월</option>
+            </select></div>
+          <div class="field"><label style="font-size:11px">우수상품 비율 (%)</label>
+            <input type="number" id="rp-pl-prem-rate" class="sim-input" min="0" max="100" step="5" value="30"></div>
+          <div class="field"><label style="font-size:11px">방문 케어 비율 (%)</label>
+            <input type="number" id="rp-pl-care-rate" class="sim-input" min="0" max="100" step="5" value="50"></div>
+        </div>
+        <div id="rp-pl-result" style="background:rgba(0,0,0,0.4);border-radius:6px;padding:12px 14px;font-size:12px;color:#cbd5e1;line-height:1.7">
+          입력값을 채우면 자동 계산됩니다.
+        </div>
+      </div>
+
+      <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">📝 변경 사유 (이력 audit log)</h3>
+      <input id="rp-change-reason" class="sim-input" placeholder="예: 영업이익율 8%로 인하, 가중치 P 상향" style="margin-bottom:6px">
+      <div id="rp-msg" style="font-size:11px;color:#fbbf24;margin-top:6px"></div>
+
+      <div style="margin-top:14px;padding:10px 12px;background:rgba(167,139,250,0.08);border:1px solid #a78bfa;border-radius:6px">
+        <div style="font-size:11.5px;font-weight:800;color:#a78bfa;margin-bottom:6px">🔁 정책 기준 일괄 재산출</div>
+        <div style="font-size:10px;color:#cbd5e1;margin-bottom:8px;line-height:1.6">
+          · <b>페이백 재산출</b>: 영업이익율·가중치·기본급 변경 시 옵션 페이백 갱신 (→ 자동으로 마진/Tier/우수상품도 체인 재산출)<br>
+          · <b>마진만 재산출</b>: Tier 임계값·우수마진 임계값만 변경 시 페이백은 유지하고 마진/Tier/우수상품만 다시 분류
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button type="button" id="rp-recalc-auto-btn" style="background:#3617ce;color:#fff;border:none;padding:7px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">⚙️ 자동 페이백만 재산출 (NULL 상태)</button>
+          <button type="button" id="rp-recalc-all-btn" style="background:#dc2626;color:#fff;border:none;padding:7px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">⚠️ 페이백 전체 재산출 (수동 override 포함)</button>
+          <button type="button" id="rp-recalc-margins-btn" style="background:#16a34a;color:#fff;border:none;padding:7px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">🏷️ 마진·Tier·우수상품만 재산출</button>
+          <span id="rp-recalc-msg" style="font-size:10.5px;color:#22c55e"></span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    (function(){
+      const F2 = id => document.getElementById(id);
+      async function recalc(allFlag) {
+        const tk = localStorage.getItem('incentive-auth-token-v1');
+        if (!tk) return alert('로그인 필요');
+        if (allFlag && !confirm('⚠️ 수동 override된 페이백도 모두 정책 기준으로 덮어씁니다. 진행할까요?')) return;
+        F2('rp-recalc-msg').textContent = '재산출 중...';
+        try {
+          const res = await fetch('/api/rental/recalculate-paybacks', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+            body: JSON.stringify({ only_auto: !allFlag }),
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error || '실패');
+          const m = d.margin_tier_recalc;
+          let extra = '';
+          if (m && m.ok) {
+            extra = ` · 마진 ${m.updated_options}옵션 · 우수 ${m.premium_products}상품`;
+          }
+          F2('rp-recalc-msg').textContent = `✅ ${d.updated_target} 재산출 완료 · 페이백 채워진 옵션 ${d.count_with_payback}건${extra}`;
+        } catch (e) { F2('rp-recalc-msg').textContent = '❌ ' + e.message; }
+      }
+      async function recalcMargins() {
+        const tk = localStorage.getItem('incentive-auth-token-v1');
+        if (!tk) return alert('로그인 필요');
+        F2('rp-recalc-msg').textContent = '마진/Tier/우수상품 재산출 중...';
+        try {
+          const res = await fetch('/api/rental/recalculate-margins', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error || '실패');
+          const r = d.result || {};
+          F2('rp-recalc-msg').textContent = `✅ 마진/Tier 재산출 완료 · 옵션 ${r.updated_options||0}건 · 상품 ${r.updated_products||0}건 · ⭐ 우수 ${r.premium_products||0}건`;
+        } catch (e) { F2('rp-recalc-msg').textContent = '❌ ' + e.message; }
+      }
+      F2('rp-recalc-auto-btn')?.addEventListener('click', () => recalc(false));
+      F2('rp-recalc-all-btn')?.addEventListener('click', () => recalc(true));
+      F2('rp-recalc-margins-btn')?.addEventListener('click', recalcMargins);
+    })();
+    </script>
+
+    <!-- 가전렌탈 정책 JS -->
+    <script>
+    (function(){
+      const RP_API = '/api/rental';
+      let _rp = null;
+      const F = (id) => document.getElementById(id);
+      const fmtKor = n => n == null ? '-' : Number(n).toLocaleString();
+
+      async function loadRP() {
+        const tk = localStorage.getItem('incentive-auth-token-v1');
+        const res = await fetch(RP_API + '/policy', tk ? { headers: { Authorization: 'Bearer ' + tk } } : {}).then(r => r.json()).catch(e => ({error: e.message}));
+        if (!res.policy) {
+          F('rp-msg').textContent = '정책 로드 실패: ' + (res.error || 'unknown');
+          return;
+        }
+        _rp = res.policy;
+        F('rp-target-profit').value = _rp.target_profit_rate;
+        F('rp-base-salary').value = _rp.base_salary;
+        F('rp-standard-sales').value = _rp.base_salary_standard_sales;
+        updateBaseShare();
+        F('rp-p36').value = _rp.weight_p_36m;
+        F('rp-p60').value = _rp.weight_p_60m;
+        F('rp-p72').value = _rp.weight_p_72m;
+        F('rp-p84').value = _rp.weight_p_84m;
+        F('rp-premium-bonus-p').value = _rp.premium_bonus_p;
+        F('rp-care-visit-p').value = _rp.care_visit_bonus_p;
+        F('rp-g1').value = _rp.grade_g1_unit;
+        F('rp-g2').value = _rp.grade_g2_unit;
+        F('rp-g3').value = _rp.grade_g3_unit;
+        F('rp-signup-bonus').value = _rp.signup_bonus_per_sale;
+        F('rp-payback-cap').value = _rp.payback_cap;
+        F('rp-weight-cost').value = _rp.weight_cost_per_p;
+        F('rp-tier-s').value = _rp.tier_s_min_margin;
+        F('rp-tier-a').value = _rp.tier_a_min_margin;
+        F('rp-tier-b').value = _rp.tier_b_min_margin;
+        F('rp-g2-p').value = _rp.grade_g2_p_threshold;
+        F('rp-g2-prem').value = _rp.grade_g2_premium_threshold;
+        F('rp-g3-p').value = _rp.grade_g3_p_threshold;
+        F('rp-g3-prem').value = _rp.grade_g3_premium_threshold;
+        // 인터넷+TV 통일 항목
+        F('rp-version').value = _rp.version || 'V1';
+        F('rp-effective').value = _rp.effective_at || '';
+        F('rp-bonus-prem').value = _rp.bonus_per_premium ?? '';
+        F('rp-notes').value = _rp.notes || '';
+        F('rp-payback-company').value = _rp.payback_company_max ?? '';
+        F('rp-prem-margin').value = _rp.premium_min_margin ?? '';
+        // 팀장 V5.1 (가전렌탈)
+        F('rp-mgr-enabled').checked = !!_rp.manager_v51_enabled;
+        F('rp-mgr-enabled-label').textContent = _rp.manager_v51_enabled ? '활성 ✅' : '비활성';
+        F('rp-mgr-override').value = _rp.manager_override_rate ?? '';
+        F('rp-mgr-obligation').value = _rp.manager_obligation_count ?? '';
+        F('rp-mgr-partial').value = _rp.manager_penalty_partial_min ?? '';
+        F('rp-mgr-profit-rate').value = _rp.manager_team_profit_rate_min ?? '';
+        updateMgrMatrix();
+      }
+      // 페널티 매트릭스 실시간 갱신
+      function updateMgrMatrix() {
+        const oblig = Number(F('rp-mgr-obligation').value) || 20;
+        const partial = Number(F('rp-mgr-partial').value) || 10;
+        const pr = Math.round((Number(F('rp-mgr-profit-rate').value) || 0.20) * 100);
+        F('rp-mtx-oblig-1').textContent = oblig;
+        F('rp-mtx-oblig-2').textContent = oblig;
+        F('rp-mtx-oblig-m1').textContent = oblig - 1;
+        F('rp-mtx-oblig-m2').textContent = oblig - 1;
+        F('rp-mtx-partial-1').textContent = partial;
+        F('rp-mtx-partial-2').textContent = partial;
+        F('rp-mtx-partial-3').textContent = partial;
+        F('rp-mtx-pr-1').textContent = pr;
+        F('rp-mtx-pr-2').textContent = pr;
+        F('rp-mtx-pr-3').textContent = pr;
+        F('rp-mtx-pr-4').textContent = pr;
+      }
+      ['rp-mgr-obligation','rp-mgr-partial','rp-mgr-profit-rate'].forEach(id => {
+        F(id)?.addEventListener('input', () => { updateMgrMatrix(); runMgrSim(); });
+      });
+      ['rp-mgr-override'].forEach(id => F(id)?.addEventListener('input', runMgrSim));
+      F('rp-mgr-enabled')?.addEventListener('change', (e) => {
+        F('rp-mgr-enabled-label').textContent = e.target.checked ? '활성 ✅' : '비활성';
+        runMgrSim();
+      });
+
+      // 🧮 라이브 시뮬레이터 — 입력값 즉시 페널티/오버라이드 계산
+      function runMgrSim() {
+        const resEl = F('rp-sim-result');
+        if (!resEl) return;
+        const myCount = Number(F('rp-sim-mycount').value) || 0;
+        const teamRev = Number(F('rp-sim-team-rev').value) || 0;
+        const teamPay = Number(F('rp-sim-team-pay').value) || 0;
+        const teamInc = Number(F('rp-sim-team-inc').value) || 0;
+        const enabled = F('rp-mgr-enabled').checked;
+        const overrideRate = Number(F('rp-mgr-override').value) || 0.12;
+        const oblig = Number(F('rp-mgr-obligation').value) || 20;
+        const partial = Number(F('rp-mgr-partial').value) || 10;
+        const prMin = Number(F('rp-mgr-profit-rate').value) || 0.20;
+
+        if (!enabled) {
+          resEl.innerHTML = '<span style="color:#fca5a5;font-weight:800">⚙️ 팀장 V5.1 비활성 — 오버라이드 0원</span>';
+          return;
+        }
+        if (myCount === 0 && teamRev === 0 && teamInc === 0) {
+          resEl.innerHTML = '<span style="color:#94a3b8">입력값을 채우면 자동 계산됩니다.</span>';
+          return;
+        }
+
+        const teamPr = teamRev > 0 ? (teamRev - teamPay) / teamRev : 0;
+        const overrideRaw = Math.round(teamInc * overrideRate);
+
+        let factor = 0;
+        let reason = '';
+        if (myCount >= oblig) {
+          if (teamPr < prMin) { factor = 0; reason = `팀 영업이익률 ${(teamPr*100).toFixed(1)}% < ${(prMin*100).toFixed(0)}% — 미지급`; }
+          else { factor = 1; reason = '정상 지급 (100%)'; }
+        } else if (myCount >= partial) {
+          if (teamPr < prMin) { factor = 0; reason = `팀 영업이익률 미달 → 0%`; }
+          else { factor = 0.5; reason = `본인 영업 ${myCount}건 (의무 ${oblig}건 미달) → 50% 차감`; }
+        } else {
+          factor = 0; reason = `본인 영업 ${myCount}건 (${partial}건 미만) — 0% 미지급`;
+        }
+        const overrideFinal = Math.round(overrideRaw * factor);
+        const factorColor = factor === 1 ? '#86efac' : factor === 0.5 ? '#fbbf24' : '#fca5a5';
+        const factorPct = (factor * 100).toFixed(0);
+        resEl.innerHTML = `
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 14px;margin-bottom:8px">
+            <div>팀 영업이익률: <b style="color:${teamPr >= prMin ? '#86efac' : '#fca5a5'}">${(teamPr*100).toFixed(1)}%</b> <span style="color:#94a3b8;font-size:10px">(임계 ${(prMin*100).toFixed(0)}%)</span></div>
+            <div>오버라이드 raw: <b style="color:#fbbf24">${overrideRaw.toLocaleString()}원</b></div>
+            <div>페널티 계수: <b style="color:${factorColor};font-size:14px">${factorPct}%</b></div>
+          </div>
+          <div style="padding:6px 10px;background:rgba(${factor===1?'34,197,94':factor===0.5?'251,191,36':'239,68,68'},0.15);border-left:3px solid ${factorColor};border-radius:4px">
+            <div style="font-size:11px;color:${factorColor};font-weight:700">${reason}</div>
+            <div style="font-size:13px;color:#fff;font-weight:900;margin-top:3px">→ 최종 오버라이드: ${overrideFinal.toLocaleString()}원</div>
+          </div>
+        `;
+      }
+      ['rp-sim-mycount','rp-sim-team-rev','rp-sim-team-pay','rp-sim-team-inc'].forEach(id => {
+        F(id)?.addEventListener('input', runMgrSim);
+      });
+
+      // 🧪 영업이익 시뮬레이터 — 정책 + 영업 가정 → 회사 마진/상담사 수령
+      function runPLSim() {
+        const resEl = F('rp-pl-result');
+        if (!resEl) return;
+        const sales = Number(F('rp-pl-sales').value) || 0;
+        const rebate = Number(F('rp-pl-rebate').value) || 0;
+        const months = Number(F('rp-pl-months').value) || 60;
+        const premRate = (Number(F('rp-pl-prem-rate').value) || 0) / 100;
+        const careRate = (Number(F('rp-pl-care-rate').value) || 0) / 100;
+        // 현재 정책 입력값
+        const profitRate = (Number(F('rp-target-profit').value) || 10) / 100;
+        const baseSalary = Number(F('rp-base-salary').value) || 0;
+        const standardSales = Math.max(1, Number(F('rp-standard-sales').value) || 1);
+        const baseShare = Math.round(baseSalary / standardSales);
+        const weightP = months >= 84 ? Number(F('rp-p84').value)
+          : months >= 72 ? Number(F('rp-p72').value)
+          : months >= 60 ? Number(F('rp-p60').value)
+          : Number(F('rp-p36').value);
+        const premBonusP = Number(F('rp-premium-bonus-p').value) || 0;
+        const careVisitP = Number(F('rp-care-visit-p').value) || 0;
+        const weightCost = Number(F('rp-weight-cost').value) || 0;
+        const signupBonus = Number(F('rp-signup-bonus').value) || 0;
+        const bonusPerPrem = Number(F('rp-bonus-prem').value) || 0;
+        // 페이백 자동 산출 (만원 단위 반올림)
+        const paybackRaw = rebate * (0.9 - profitRate);
+        const payback = Math.round(paybackRaw / 10000) * 10000;
+        // 1건당 P (우수·방문 보정 — 비율 가중)
+        const pPerSale = (Number(weightP) || 0) + (premRate * premBonusP) + (careRate * careVisitP);
+        const totalP = +(sales * pPerSale).toFixed(2);
+        const premCount = Math.round(sales * premRate);
+        // Grade 자동
+        const g2P = Number(F('rp-g2-p').value) || 16;
+        const g3P = Number(F('rp-g3-p').value) || 31;
+        const g2Prem = Number(F('rp-g2-prem').value) || 5;
+        const g3Prem = Number(F('rp-g3-prem').value) || 10;
+        let grade = 'G1';
+        let gradeUnit = Number(F('rp-g1').value) || 9000;
+        if (totalP >= g3P && premCount >= g3Prem) { grade = 'G3'; gradeUnit = Number(F('rp-g3').value) || 13000; }
+        else if (totalP >= g2P && premCount >= g2Prem) { grade = 'G2'; gradeUnit = Number(F('rp-g2').value) || 11000; }
+        // 1건당 회사 마진
+        const marginPerSale = Math.round(rebate * 0.9 - payback - (pPerSale * weightCost) - baseShare - signupBonus);
+        const totalRevenue = sales * Math.round(rebate * 0.9);  // 세후 리베이트 (회사 매출)
+        const totalPayback = sales * payback;
+        const totalCompanyMargin = sales * marginPerSale;
+        const profitRateActual = totalRevenue > 0 ? (totalCompanyMargin / totalRevenue) : 0;
+        // 상담사 수령
+        const incentive = Math.round(totalP * gradeUnit);
+        const premBonusTotal = premCount * bonusPerPrem;
+        const totalAgent = baseSalary + incentive + premBonusTotal;
+        // 결과 렌더
+        const gradeColor = grade === 'G3' ? '#86efac' : grade === 'G2' ? '#fbbf24' : '#94a3b8';
+        const marginColor = marginPerSale >= 100000 ? '#86efac' : marginPerSale >= 0 ? '#fbbf24' : '#fca5a5';
+        const f = n => (n||0).toLocaleString();
+        resEl.innerHTML = `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div>
+              <div style="font-size:11px;color:#fb923c;font-weight:800;margin-bottom:6px">🏢 회사 (월간)</div>
+              <table style="width:100%;font-size:11.5px">
+                <tr><td style="color:#94a3b8;padding:2px 0">세후 리베이트 합 (×0.9)</td><td style="text-align:right;color:#22c55e"><b>${f(totalRevenue)}원</b></td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">− 페이백 지급</td><td style="text-align:right;color:#fbbf24"><b>${f(totalPayback)}원</b></td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">− 가중치 비용 + 분담 + 보너스</td><td style="text-align:right;color:#94a3b8">${f(sales * (Math.round(pPerSale * weightCost) + baseShare + signupBonus))}원</td></tr>
+                <tr style="border-top:1px solid #475569"><td style="padding:4px 0;color:#fff;font-weight:800">= 회사 영업이익</td><td style="text-align:right;color:${marginColor}"><b style="font-size:14px">${f(totalCompanyMargin)}원</b> <span style="color:#94a3b8;font-size:10px">(${(profitRateActual*100).toFixed(1)}%)</span></td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">1건당 마진</td><td style="text-align:right;color:${marginColor};font-size:10px">${f(marginPerSale)}원</td></tr>
+              </table>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#fb923c;font-weight:800;margin-bottom:6px">👤 상담사 (월간)</div>
+              <table style="width:100%;font-size:11.5px">
+                <tr><td style="color:#94a3b8;padding:2px 0">누적 P / 우수 건수</td><td style="text-align:right"><b>${totalP} P · ${premCount}건</b></td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">→ Grade 자동</td><td style="text-align:right;color:${gradeColor}"><b>${grade}</b> (₩${f(gradeUnit)}/P)</td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">기본급</td><td style="text-align:right">${f(baseSalary)}원</td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">+ 인센티브 (P × Grade)</td><td style="text-align:right;color:#86efac">${f(incentive)}원</td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">+ 우수상품 보너스</td><td style="text-align:right;color:#86efac">${f(premBonusTotal)}원</td></tr>
+                <tr style="border-top:1px solid #475569"><td style="padding:4px 0;color:#fff;font-weight:800">= 총 수령액</td><td style="text-align:right;color:#fbbf24"><b style="font-size:14px">${f(totalAgent)}원</b></td></tr>
+              </table>
+            </div>
+          </div>
+          <div style="margin-top:10px;padding:8px 10px;background:rgba(0,0,0,0.3);border-radius:4px;font-size:10.5px;color:#94a3b8;line-height:1.6">
+            ⚙️ 1건당 P: 약정 ${weightP || 0} + 우수${(premBonusP*premRate).toFixed(2)} + 방문${(careVisitP*careRate).toFixed(2)} = ${pPerSale.toFixed(2)}P · 페이백 ${f(payback)}원 (리베×${(0.9-profitRate).toFixed(2)})
+          </div>`;
+      }
+      ['rp-pl-sales','rp-pl-rebate','rp-pl-months','rp-pl-prem-rate','rp-pl-care-rate',
+       'rp-target-profit','rp-base-salary','rp-standard-sales','rp-p36','rp-p60','rp-p72','rp-p84',
+       'rp-premium-bonus-p','rp-care-visit-p','rp-weight-cost','rp-signup-bonus','rp-bonus-prem',
+       'rp-g1','rp-g2','rp-g3','rp-g2-p','rp-g3-p','rp-g2-prem','rp-g3-prem'].forEach(id => {
+        F(id)?.addEventListener('input', runPLSim);
+      });
+      // 초기 1회 실행
+      setTimeout(runPLSim, 600);
+      function updateBaseShare() {
+        const salary = Number(F('rp-base-salary').value) || 0;
+        const sales = Number(F('rp-standard-sales').value) || 1;
+        F('rp-base-share').value = fmtKor(Math.round(salary / sales)) + ' 원';
+      }
+      F('rp-base-salary').addEventListener('input', updateBaseShare);
+      F('rp-standard-sales').addEventListener('input', updateBaseShare);
+
+      F('rp-save-btn').addEventListener('click', async () => {
+        const tk = localStorage.getItem('incentive-auth-token-v1');
+        if (!tk) { alert('로그인 필요'); return; }
+        if (!_rp) return;
+        const body = {
+          id: _rp.id,
+          target_profit_rate: Number(F('rp-target-profit').value),
+          base_salary: Number(F('rp-base-salary').value),
+          base_salary_standard_sales: Number(F('rp-standard-sales').value),
+          weight_p_36m: Number(F('rp-p36').value),
+          weight_p_60m: Number(F('rp-p60').value),
+          weight_p_72m: Number(F('rp-p72').value),
+          weight_p_84m: Number(F('rp-p84').value),
+          premium_bonus_p: Number(F('rp-premium-bonus-p').value),
+          care_visit_bonus_p: Number(F('rp-care-visit-p').value),
+          grade_g1_unit: Number(F('rp-g1').value),
+          grade_g2_unit: Number(F('rp-g2').value),
+          grade_g3_unit: Number(F('rp-g3').value),
+          signup_bonus_per_sale: Number(F('rp-signup-bonus').value),
+          payback_cap: Number(F('rp-payback-cap').value),
+          weight_cost_per_p: Number(F('rp-weight-cost').value),
+          tier_s_min_margin: Number(F('rp-tier-s').value),
+          tier_a_min_margin: Number(F('rp-tier-a').value),
+          tier_b_min_margin: Number(F('rp-tier-b').value),
+          grade_g2_p_threshold: Number(F('rp-g2-p').value),
+          grade_g2_premium_threshold: Number(F('rp-g2-prem').value),
+          grade_g3_p_threshold: Number(F('rp-g3-p').value),
+          grade_g3_premium_threshold: Number(F('rp-g3-prem').value),
+          // 인터넷+TV 통일 항목
+          version: F('rp-version').value.trim() || 'V1',
+          effective_at: F('rp-effective').value || null,
+          bonus_per_premium: F('rp-bonus-prem').value ? Number(F('rp-bonus-prem').value) : null,
+          payback_company_max: F('rp-payback-company').value ? Number(F('rp-payback-company').value) : null,
+          premium_min_margin: F('rp-prem-margin').value ? Number(F('rp-prem-margin').value) : null,
+          notes: F('rp-notes').value.trim() || null,
+          // 팀장 V5.1
+          manager_v51_enabled: F('rp-mgr-enabled').checked,
+          manager_override_rate: F('rp-mgr-override').value ? Number(F('rp-mgr-override').value) : null,
+          manager_obligation_count: F('rp-mgr-obligation').value ? Number(F('rp-mgr-obligation').value) : null,
+          manager_penalty_partial_min: F('rp-mgr-partial').value ? Number(F('rp-mgr-partial').value) : null,
+          manager_team_profit_rate_min: F('rp-mgr-profit-rate').value ? Number(F('rp-mgr-profit-rate').value) : null,
+          change_reason: F('rp-change-reason').value || F('rp-change-reason-row')?.value || null,
+        };
+        try {
+          const res = await fetch(RP_API + '/policy', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || '저장 실패');
+          _rp = data.policy;
+          F('rp-msg').textContent = '✅ 저장 완료 (' + new Date().toLocaleTimeString() + ')';
+          F('rp-change-reason').value = '';
+        } catch (e) { F('rp-msg').textContent = '❌ ' + e.message; }
+      });
+
+      // 페이지 로드 시 1회
+      window.addEventListener('DOMContentLoaded', loadRP);
+      // 백업 — 이미 DOMContentLoaded 지나간 경우
+      if (document.readyState !== 'loading') setTimeout(loadRP, 100);
+    })();
+    </script>
+
+    </div><!-- /policy-tab-rental -->
+
+    <!-- 탭 토글 -->
+    <script>
+    (function(){
+      const btns = document.querySelectorAll('.policy-tab-btn');
+      const panes = document.querySelectorAll('.policy-tab-pane');
+      const restore = localStorage.getItem('policy-active-tab-v1') || 'it';
+      function activate(tab) {
+        btns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        panes.forEach(p => p.classList.toggle('active', p.id === 'policy-tab-' + tab));
+        localStorage.setItem('policy-active-tab-v1', tab);
+      }
+      btns.forEach(b => b.addEventListener('click', () => activate(b.dataset.tab)));
+      activate(restore);
+    })();
+    </script>
+
+    <!-- 🧮 하이브리드 시뮬레이터 JS -->
+    <script>
+    (function(){
+      const $ = (id) => document.getElementById(id);
+      const f = (n) => Math.round(n||0).toLocaleString();
+      // 정책 캐시 — 양쪽 정책 1회 fetch
+      let _itPolicy = null, _rtPolicy = null;
+      Promise.all([
+        fetch('/api/incentive/rules').then(r => r.json()).catch(() => null),
+        fetch('/api/rental/policy').then(r => r.json()).catch(() => null),
+      ]).then(([it, rt]) => {
+        _itPolicy = it?.rule || it;
+        _rtPolicy = rt?.policy || rt;
+        runHybSim();
+      });
+
+      function runHybSim() {
+        const resEl = $('hyb-result');
+        if (!resEl || !_itPolicy || !_rtPolicy) return;
+        const itCnt = Number($('hyb-it-cnt').value) || 0;
+        const itP = Number($('hyb-it-p').value) || 0;
+        const itMargin = Number($('hyb-it-margin').value) || 0;
+        const itPrem = Number($('hyb-it-prem').value) || 0;
+        const rtCnt = Number($('hyb-rt-cnt').value) || 0;
+        const rtP = Number($('hyb-rt-p').value) || 0;
+        const rtMargin = Number($('hyb-rt-margin').value) || 0;
+        const rtPrem = Number($('hyb-rt-prem').value) || 0;
+
+        // 통합 누적 P + 우수건수
+        const totalP = itCnt * itP + rtCnt * rtP;
+        const itPremCnt = Math.round(itCnt * itPrem / 100);
+        const rtPremCnt = Math.round(rtCnt * rtPrem / 100);
+        const totalPremCnt = itPremCnt + rtPremCnt;
+
+        // Grade 결정 (rental_policy 임계값 사용 — 통합 정산)
+        const g2P = Number(_rtPolicy.grade_g2_p_threshold) || 16;
+        const g2Prem = Number(_rtPolicy.grade_g2_premium_threshold) || 5;
+        const g3P = Number(_rtPolicy.grade_g3_p_threshold) || 31;
+        const g3Prem = Number(_rtPolicy.grade_g3_premium_threshold) || 10;
+        let grade = 'G1';
+        if (totalP >= g3P && totalPremCnt >= g3Prem) grade = 'G3';
+        else if (totalP >= g2P && totalPremCnt >= g2Prem) grade = 'G2';
+
+        // 각 시스템 단가
+        const itRates = _itPolicy.grade_rates || { 1: 20000, 2: 30000, 3: 40000 };
+        const itUnit = Number(itRates[grade === 'G3' ? 3 : grade === 'G2' ? 2 : 1]) || 20000;
+        const rtUnit = grade === 'G3' ? (_rtPolicy.grade_g3_unit || 30000)
+                     : grade === 'G2' ? (_rtPolicy.grade_g2_unit || 22000)
+                     : (_rtPolicy.grade_g1_unit || 15000);
+
+        // 인센티브
+        const itInc = Math.round(itCnt * itP * itUnit);
+        const rtInc = Math.round(rtCnt * rtP * rtUnit);
+        const totalInc = itInc + rtInc;
+
+        // 우수상품 보너스 (인터넷+TV만 — bonus_per_premium)
+        const bonusPerPrem = Number(_itPolicy.bonus_per_premium) || 0;
+        const itBonus = itPremCnt * bonusPerPrem;
+        const rtBonusPerPrem = Number(_rtPolicy.bonus_per_premium) || 0;
+        const rtBonus = rtPremCnt * rtBonusPerPrem;
+        const totalBonus = itBonus + rtBonus;
+
+        // 기본급 (인터넷+TV는 상담사별, 가전렌탈은 정책 통합 — 시뮬에선 230만 default)
+        const baseSalary = Number(_rtPolicy.base_salary) || 2300000;
+
+        // 회사 영업이익
+        const itTotalMargin = itCnt * itMargin;
+        const rtTotalMargin = rtCnt * rtMargin;
+        const totalMargin = itTotalMargin + rtTotalMargin;
+        const companyProfit = totalMargin - totalInc - totalBonus;
+
+        // 상담사 총 수령
+        const agentTotal = baseSalary + totalInc + totalBonus;
+
+        const gradeColor = grade === 'G3' ? '#86efac' : grade === 'G2' ? '#fbbf24' : '#94a3b8';
+        const profitColor = companyProfit >= 0 ? '#86efac' : '#fca5a5';
+
+        resEl.innerHTML = `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div>
+              <div style="font-size:11px;color:#c4b5fd;font-weight:800;margin-bottom:6px">📊 통합 누적 (Grade 결정용)</div>
+              <table style="width:100%;font-size:12px">
+                <tr><td style="color:#94a3b8;padding:2px 0">총 누적 P</td><td style="text-align:right"><b>${totalP.toFixed(1)} P</b></td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">  ├ 인터넷+TV</td><td style="text-align:right;color:#93c5fd">${(itCnt*itP).toFixed(1)} P (${itCnt}건 × ${itP})</td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">  └ 가전렌탈</td><td style="text-align:right;color:#fbbf24">${(rtCnt*rtP).toFixed(1)} P (${rtCnt}건 × ${rtP})</td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">총 우수건수</td><td style="text-align:right"><b>${totalPremCnt}건</b> <span style="font-size:10px;color:#94a3b8">(IT ${itPremCnt} + 렌탈 ${rtPremCnt})</span></td></tr>
+                <tr style="border-top:1px solid #475569"><td style="padding:6px 0;color:#fff;font-weight:800">→ Grade</td><td style="text-align:right;color:${gradeColor};font-size:16px;font-weight:900">${grade}</td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">  IT 단가</td><td style="text-align:right;font-size:10px">${f(itUnit)}원/P</td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">  렌탈 단가</td><td style="text-align:right;font-size:10px">${f(rtUnit)}원/P</td></tr>
+              </table>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#c4b5fd;font-weight:800;margin-bottom:6px">👤 상담사 (월간)</div>
+              <table style="width:100%;font-size:12px">
+                <tr><td style="color:#94a3b8;padding:2px 0">기본급</td><td style="text-align:right">${f(baseSalary)}원</td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">+ 인터넷+TV 인센</td><td style="text-align:right;color:#93c5fd">${f(itInc)}원</td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">+ 가전렌탈 인센</td><td style="text-align:right;color:#fbbf24">${f(rtInc)}원</td></tr>
+                ${totalBonus > 0 ? `<tr><td style="color:#94a3b8;padding:2px 0">+ 우수상품 보너스</td><td style="text-align:right;color:#86efac">${f(totalBonus)}원</td></tr>` : ''}
+                <tr style="border-top:1px solid #475569"><td style="padding:6px 0;color:#fff;font-weight:800">= 총 수령</td><td style="text-align:right;color:#fbbf24;font-size:16px;font-weight:900">${f(agentTotal)}원</td></tr>
+              </table>
+              <div style="margin-top:8px;padding:6px 8px;background:rgba(0,0,0,0.3);border-radius:4px">
+                <div style="font-size:10.5px;color:#c4b5fd;font-weight:700;margin-bottom:3px">🏢 회사 영업이익 (월간)</div>
+                <table style="width:100%;font-size:11px">
+                  <tr><td style="color:#94a3b8">총 마진</td><td style="text-align:right">${f(totalMargin)}원</td></tr>
+                  <tr><td style="color:#94a3b8">  ├ IT (${itCnt}건 × ${f(itMargin)})</td><td style="text-align:right;color:#93c5fd">${f(itTotalMargin)}원</td></tr>
+                  <tr><td style="color:#94a3b8">  └ 렌탈 (${rtCnt}건 × ${f(rtMargin)})</td><td style="text-align:right;color:#fbbf24">${f(rtTotalMargin)}원</td></tr>
+                  <tr><td style="color:#94a3b8">− 인센티브+보너스</td><td style="text-align:right;color:#fca5a5">−${f(totalInc + totalBonus)}원</td></tr>
+                  <tr style="border-top:1px solid #475569"><td style="padding:4px 0;color:#fff;font-weight:800">= 회사 영업이익</td><td style="text-align:right;color:${profitColor};font-weight:900">${f(companyProfit)}원</td></tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      ['hyb-it-cnt','hyb-it-p','hyb-it-margin','hyb-it-prem','hyb-rt-cnt','hyb-rt-p','hyb-rt-margin','hyb-rt-prem'].forEach(id => {
+        $(id)?.addEventListener('input', runHybSim);
+      });
+    })();
+    </script>
 
     <!-- 정책 이력 -->
     <div class="section">
@@ -921,10 +1768,27 @@ function runSimulation() {
   const thG2 = v('sim-th-g2');
   const thG3 = v('sim-th-g3');
 
-  // per agent 계산
-  const totalP = sales * weight;
-  const premCount = Math.round(sales * premPct);
-  // Grade 결정 (P 기준)
+  // 🏠 하이브리드 모드: 가전렌탈 입력
+  const hybridOn = document.getElementById('sim-hybrid-toggle')?.checked || false;
+  const rtSales = hybridOn ? v('sim-rt-sales') : 0;
+  const rtWeight = hybridOn ? v('sim-rt-weight') : 0;
+  const rtRebate = hybridOn ? v('sim-rt-rebate') : 0;
+  const rtPayback = hybridOn ? v('sim-rt-payback') : 0;
+  const rtPremPct = hybridOn ? (v('sim-rt-premium-pct') / 100) : 0;
+  const rtG1 = hybridOn ? v('sim-rt-g1') : 0;
+  const rtG2 = hybridOn ? v('sim-rt-g2') : 0;
+  const rtG3 = hybridOn ? v('sim-rt-g3') : 0;
+
+  // per agent 계산 (인터넷+TV)
+  const totalP_it = sales * weight;
+  const premCount_it = Math.round(sales * premPct);
+  // per agent 계산 (가전렌탈)
+  const totalP_rt = rtSales * rtWeight;
+  const premCount_rt = Math.round(rtSales * rtPremPct);
+  // 통합 누적 P + 우수 (Grade 결정용)
+  const totalP = totalP_it + totalP_rt;
+  const premCount = premCount_it + premCount_rt;
+  // Grade 결정 (통합 P 기준)
   let gradeTarget = 1;
   if (totalP >= thG3) gradeTarget = 3;
   else if (totalP >= thG2) gradeTarget = 2;
@@ -933,46 +1797,89 @@ function runSimulation() {
   let isPenalty = false;
   if (gradeTarget === 3 && premCount < 10) { gradeApplied = 2; isPenalty = true; }
   if (gradeApplied === 2 && premCount < 5) { gradeApplied = Math.min(gradeApplied, 1); isPenalty = true; }
-  const appliedRate = gradeApplied === 3 ? rateG3 : (gradeApplied === 2 ? rateG2 : rateG1);
+  // 각 시스템 단가 (인터넷+TV vs 가전렌탈)
+  const appliedRate_it = gradeApplied === 3 ? rateG3 : (gradeApplied === 2 ? rateG2 : rateG1);
+  const appliedRate_rt = gradeApplied === 3 ? rtG3 : (gradeApplied === 2 ? rtG2 : rtG1);
+  const appliedRate = appliedRate_it; // 호환성 (인터넷+TV 위주 표시)
 
   // 인센티브
-  const incentive = totalP * appliedRate;
+  const incentive_it = totalP_it * appliedRate_it;
+  const incentive_rt = totalP_rt * appliedRate_rt;
+  const incentive = incentive_it + incentive_rt;
   const bonusTotal = premCount * bonus;
   const companyBurden = Math.min(addPayback, cap) * sales;
   const agentDeduct = Math.max(0, addPayback - cap) * sales;
   const agentTotal = baseSalary + incentive + bonusTotal - agentDeduct;
 
-  // 회사 손익 (1명 기준 → × agents)
-  const totalRev = rebate * sales * agents;
-  const totalPayback = payback * sales * agents;
-  const totalBurden = companyBurden * agents;
+  // 회사 손익 (1명 기준 → × agents) — 직접 비용 차감 (가중치 비용 중복 차감 X)
+  // 인터넷+TV
+  const totalRev_it = rebate * sales * agents;
+  const totalPayback_it = payback * sales * agents;
+  // 가전렌탈
+  const totalRev_rt = rtRebate * rtSales * agents;
+  const totalPayback_rt = rtPayback * rtSales * agents;
+  // 통합
+  const totalRev = totalRev_it + totalRev_rt;
+  const totalPayback = totalPayback_it + totalPayback_rt;
+  const totalBurden = companyBurden * agents;  // IT 추가페이백 회사 부담만
+  // 인건비 = 기본급 + 양쪽 인센티브 + 우수 보너스 (이미 incentive에 양쪽 합산됨)
   const totalLabor = (baseSalary + incentive + bonusTotal) * agents;
   const netRevenue = totalRev * taxRate;
+  // 영업이익 = 매출인식 - 페이백 - 회사부담 - 인건비 (P×70,000 별도 차감 X — totalLabor에 포함)
   const profit = netRevenue - totalPayback - totalBurden - totalLabor;
   const profitRate = totalRev > 0 ? (profit / totalRev * 100) : 0;
-  const totalDeals = sales * agents;
+  const totalDeals = (sales + rtSales) * agents;
   const perDealMargin = totalDeals > 0 ? (profit / totalDeals) : 0;
   // BEP — 인건비 / 건당 마진(인건비 제외 회사 단위 마진)
   const perDealCompanyMargin = (rebate * taxRate) - payback - Math.min(addPayback, cap);
   const labor1 = baseSalary; // 1명 기본급만 비교
   const bepDeals = perDealCompanyMargin > 0 ? Math.ceil(labor1 / perDealCompanyMargin) : null;
 
+  // 시스템별 영업이익 분해 (인건비는 매출 비율로 안분)
+  const itRevShare = totalRev > 0 ? totalRev_it / totalRev : 0;
+  const rtRevShare = totalRev > 0 ? totalRev_rt / totalRev : 0;
+  const laborAlloc_it = totalLabor * itRevShare;
+  const laborAlloc_rt = totalLabor * rtRevShare;
+  const profit_it = (totalRev_it * taxRate) - totalPayback_it - totalBurden - laborAlloc_it;
+  const profit_rt = (totalRev_rt * taxRate) - totalPayback_rt - laborAlloc_rt;
+  const perDealMargin_rt = rtSales > 0 ? profit_rt / (rtSales * agents) : 0;
+  const incRatio = totalRev > 0 ? (incentive + bonusTotal) / totalRev * 100 : 0;
+
   // 출력
-  const set = (id, val) => { document.getElementById(id).textContent = val; };
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  // 회사 손익 (매출 분해)
+  set('sim-out-rev-it', simFmt(totalRev_it));
+  set('sim-out-rev-rt', simFmt(totalRev_rt));
   set('sim-out-net-rev', '+' + simFmt(netRevenue));
+  // 페이백 분해
+  set('sim-out-payback-it', '-' + simFmt(totalPayback_it));
+  set('sim-out-payback-rt', '-' + simFmt(totalPayback_rt));
   set('sim-out-payback', '-' + simFmt(totalPayback));
   set('sim-out-burden', '-' + simFmt(totalBurden));
   set('sim-out-labor', '-' + simFmt(totalLabor));
   set('sim-out-profit', (profit >= 0 ? '+' : '') + simFmt(profit));
   document.getElementById('sim-out-profit').style.color = profit >= 0 ? '#22c55e' : '#fca5a5';
+  // 시스템별 영업이익
+  set('sim-out-profit-it', (profit_it >= 0 ? '+' : '') + simFmt(Math.round(profit_it)));
+  set('sim-out-profit-rt', (profit_rt >= 0 ? '+' : '') + simFmt(Math.round(profit_rt)));
+  document.getElementById('sim-out-profit-it').style.color = profit_it >= 0 ? '#93c5fd' : '#fca5a5';
+  document.getElementById('sim-out-profit-rt').style.color = profit_rt >= 0 ? '#fbbf24' : '#fca5a5';
   set('sim-out-profit-rate', profitRate.toFixed(1) + '%');
-  set('sim-out-per-deal', simFmt(Math.round(perDealMargin)));
+  set('sim-out-per-deal', sales > 0 ? simFmt(Math.round(profit_it / (sales * agents))) : '-');
+  set('sim-out-per-deal-rt', rtSales > 0 ? simFmt(Math.round(perDealMargin_rt)) : '-');
+  set('sim-out-inc-ratio', incRatio.toFixed(1) + '%');
 
+  // 상담사 수령 (인센티브 분해)
   set('sim-out-base', '+' + simFmt(baseSalary));
-  set('sim-out-inc', '+' + simFmt(incentive));
+  set('sim-out-inc-it', '+' + simFmt(Math.round(incentive_it)));
+  set('sim-out-inc-rt', '+' + simFmt(Math.round(incentive_rt)));
+  set('sim-out-inc', '+' + simFmt(Math.round(incentive)));
   set('sim-out-bonus', '+' + simFmt(bonusTotal));
   set('sim-out-deduct', '-' + simFmt(agentDeduct));
   set('sim-out-agent-total', simFmt(agentTotal));
+  // 추가 지표
+  set('sim-out-inc-bonus-total', simFmt(Math.round(incentive + bonusTotal)));
+  set('sim-out-inc-vs-base', baseSalary > 0 ? ((incentive + bonusTotal) / baseSalary * 100).toFixed(1) + '%' : '-');
   const gradeColor = ['','#6b7280','#3b82f6','#dc2626'][gradeApplied] || '#6b7280';
   document.getElementById('sim-out-grade').innerHTML =
     `<span style="background:${gradeColor};color:#fff;padding:1px 8px;border-radius:4px">G${gradeApplied}</span>` +
@@ -988,6 +1895,12 @@ function runSimulation() {
 
 // 입력 변경 시 실시간 갱신
 document.querySelectorAll('.sim-input').forEach(inp => inp.addEventListener('input', runSimulation));
+// 🏠 하이브리드 토글
+document.getElementById('sim-hybrid-toggle')?.addEventListener('change', (e) => {
+  const block = document.getElementById('sim-rental-block');
+  if (block) block.style.display = e.target.checked ? 'block' : 'none';
+  runSimulation();
+});
 // 프리셋 버튼
 document.querySelectorAll('.sim-preset').forEach(btn => {
   btn.addEventListener('click', () => {
