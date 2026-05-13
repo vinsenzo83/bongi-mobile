@@ -81,6 +81,8 @@ import { existsSync } from 'fs';
 import authRoutes from './routes/auth.js';
 import adminPlatformRoutes from './routes/admin-platform.js';
 import incentiveRoutes from './routes/incentive.js';
+import rentalRoutes from './routes/rental.js';
+import policyDocsRoutes from './routes/policy-docs.js';
 import customerDbRoutes from './routes/customer-db.js';
 import dashboardRoutes from './routes/dashboard.js';
 import ctiRoutes from './routes/cti.js';
@@ -228,6 +230,8 @@ app.use('/api/admin/platform', adminPlatformRoutes);
 
 // ── V5 인센티브 (라우터 내부에서 authenticateJWT/optionalAuth 자체 처리) ──
 app.use('/api/incentive', incentiveRoutes);
+app.use('/api/rental', rentalRoutes);
+app.use('/api/policy-docs', policyDocsRoutes);
 app.use('/api/customer-db', ipAllowlist, authenticateJWT, customerDbRoutes);
 
 // ── 특판 LP (별도 운영 — 파이어니×에이스휴먼파워, project_bongi_special_promo) ──
