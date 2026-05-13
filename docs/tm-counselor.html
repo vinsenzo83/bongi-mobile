@@ -5117,14 +5117,28 @@ setTimeout(() => {
     const listEl = document.getElementById('rr-list');
     if (!listEl) return;
     try {
-      // 추천용 endpoint — DB 메타(feature_tags, recommended_capacity, specifications) 포함
-      // RPC schema cache 미적용 시 기본 endpoint로 fallback (메타 없이 동작)
+      // 추천 데이터 sessionStorage 캐시 (5분 TTL)
       let r;
-      try {
-        r = await fetch(API + '/products/for-recommend').then(r => r.json());
-        if (r.error) throw new Error(r.error);
-      } catch {
-        r = await fetch(API + '/products?active_only=1').then(r => r.json());
+      const cacheKey = 'rental-recommend-cache-v1';
+      const cached = (() => {
+        try {
+          const raw = sessionStorage.getItem(cacheKey);
+          if (!raw) return null;
+          const obj = JSON.parse(raw);
+          if (Date.now() - obj.t > 5 * 60 * 1000) return null;
+          return obj.r;
+        } catch { return null; }
+      })();
+      if (cached) {
+        r = cached;
+      } else {
+        try {
+          r = await fetch(API + '/products/for-recommend').then(r => r.json());
+          if (r.error) throw new Error(r.error);
+        } catch {
+          r = await fetch(API + '/products?active_only=1').then(r => r.json());
+        }
+        try { sessionStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), r })); } catch {}
       }
       _allProducts = (r.products || []).filter(p => (p.option_count || 0) > 0);
       renderRecCategoryChips();
@@ -5485,16 +5499,33 @@ setTimeout(() => {
     renderQuote();
   }
 
-  async function renderQuote() {
+  // ── 견적 캐시 + 디바운스 (같은 조합 재호출 방지) ──
+  const _quoteCache = new Map();  // key: option_id|promo|half → response
+  let _renderQuoteTimer = null;
+  let _renderQuoteSeq = 0;
+  function renderQuote() {
+    if (!_selectedOpt) return;
+    clearTimeout(_renderQuoteTimer);
+    const mySeq = ++_renderQuoteSeq;
+    _renderQuoteTimer = setTimeout(() => _renderQuoteImpl(mySeq), 80);
+  }
+  async function _renderQuoteImpl(mySeq) {
     if (!_selectedOpt) return;
     const promo_type = document.getElementById('rental-promo').value;
     const halfMonthsInput = document.getElementById('rental-half-months').value;
     const body = { option_id: _selectedOpt.id, promo_type };
     if (halfMonthsInput) body.half_period_override = Number(halfMonthsInput);
-    const r = await fetch(API + '/quote', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }).then(r => r.json());
+    const cacheKey = `${body.option_id}|${promo_type}|${halfMonthsInput||''}`;
+    let r = _quoteCache.get(cacheKey);
+    if (!r) {
+      r = await fetch(API + '/quote', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then(r => r.json());
+      if (!r.error) _quoteCache.set(cacheKey, r);
+    }
+    // 더 새로운 호출이 있었으면 폐기
+    if (mySeq !== _renderQuoteSeq) return;
     if (r.error) {
       document.getElementById('rental-quote-body').innerHTML = `<div style="color:#ef4444;padding:10px">계산 오류: ${r.error}</div>`;
       return;
