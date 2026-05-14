@@ -1685,6 +1685,11 @@ function bindShortcutKeys() {
       .rr-card .meta-chip.filt { background:rgba(139,92,246,0.18); color:#c4b5fd; border-color:#5b21b6; }
       .rr-card .meta-chip.feat { background:rgba(34,197,94,0.13); color:#86efac; border-color:#166534; }
       .rr-card .data-src { font-size:9px; color:#cbd5e1; opacity:0.6; margin-left:2px; }
+      .rr-card .rr-tier-badge { display:inline-block; font-size:9px; font-weight:900; padding:1px 5px; border-radius:3px; margin-left:3px; letter-spacing:0.05em; }
+      .rr-card .rr-tier-S { background:#fbbf24; color:#451a03; }
+      .rr-card .rr-tier-A { background:#60a5fa; color:#0c1f3a; }
+      .rr-card .rr-tier-B { background:#94a3b8; color:#0f172a; }
+      .rr-card .rr-tier-C { background:#475569; color:#cbd5e1; }
     </style>
 
     <h2>📝 메모</h2>
@@ -5292,7 +5297,6 @@ setTimeout(() => {
       const months = Array.isArray(p.months_available) && p.months_available.length ? `${Math.min(...p.months_available)}~${Math.max(...p.months_available)}M` : '';
       const care = Array.isArray(p.care_services) ? p.care_services.join('·') : '';
       const fee = p.monthly_fee_min ? `${Math.round(p.monthly_fee_min/100)/100}만~${Math.round((p.monthly_fee_max||p.monthly_fee_min)/100)/100}만원/월` : '';
-      const rebate = p.rebate_max ? `리베 ${(p.rebate_max/10000).toFixed(0)}만` : '';
       const reasons = hasCriteria ? rrReasons(p, _rrCriteria) : [];
       const isTop = hasCriteria && idx === 0; // 마진 1위 강조
       const reasonHtml = reasons.length ? `<div class="match-tags">${reasons.map(r => `<span class="mt">${r}</span>`).join('')}</div>` : '';
@@ -5304,9 +5308,10 @@ setTimeout(() => {
       (p.feature_tags || []).forEach(t => { if (featMap[t]) metaChips.push(`<span class="meta-chip feat">${featMap[t]}</span>`); });
       const metaHtml = metaChips.length ? `<div class="meta-chips">${metaChips.join('')}</div>` : '';
       const dataSrc = p.meta_manual_override ? '✓' : p.auto_filled_at ? '🤖' : '';
+      const tierBadge = p.tier ? `<span class="rr-tier-badge rr-tier-${p.tier}">${p.tier}</span>` : '';
       return `<div class="rr-card ${p.is_premium?'premium':''} ${isTop?'top-match':''}" data-id="${p.id}" data-cat="${p.category?.slug||''}" data-brand="${p.brand||''}">
         <div class="rr-row1">
-          <span class="brand">${isTop ? '🏆 ' : ''}${p.brand||''} ${dataSrc?`<span class="data-src" title="${p.meta_manual_override?'어드민 확정':'자동 추출'}">${dataSrc}</span>`:''}</span>
+          <span class="brand">${isTop ? '🏆 ' : ''}${p.brand||''} ${tierBadge} ${dataSrc?`<span class="data-src" title="${p.meta_manual_override?'어드민 확정':'자동 추출'}">${dataSrc}</span>`:''}</span>
           ${p.is_premium ? '<span class="premium-badge">⭐ 우수</span>' : ''}
         </div>
         <div class="model">${escapeHtml(p.name||'')}</div>
@@ -5314,7 +5319,6 @@ setTimeout(() => {
         <div class="rr-row3">
           ${months ? `<span class="tag">${months}</span>` : ''}
           ${fee ? `<span>${fee}</span>` : ''}
-          ${rebate ? `<span class="payback">${rebate}</span>` : ''}
         </div>
         ${metaHtml}
         ${reasonHtml}
