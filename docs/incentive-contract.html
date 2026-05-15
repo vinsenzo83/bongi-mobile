@@ -1343,8 +1343,8 @@ function openEditModal(id) {
           <input class="detail-input" data-field="customer_phone" value="${(c.customer_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678">
         </div>
         <div>
-          <label class="modal-field-label">🎂 생년월일</label>
-          <input class="detail-input" data-field="birth_date" type="date" value="${c.birth_date || ''}">
+          <label class="modal-field-label">📧 이메일</label>
+          <input class="detail-input" data-field="customer_email" type="email" value="${(c.customer_email || '').replace(/"/g, '&quot;')}" placeholder="example@domain.com">
         </div>
       </div>
       <div class="sec-row">
@@ -1480,7 +1480,7 @@ function openEditModal(id) {
       <div class="sec-grid-3 sec-row">
         <div>
           <label class="modal-field-label">📑 청구서 방식</label>
-          <select class="detail-input" data-field="billing_method">
+          <select class="detail-input billing-method-select" data-field="billing_method" onchange="syncBillingTarget(this)">
             <option value="">— 선택 —</option>
             <option value="우편" ${c.billing_method==='우편'?'selected':''}>📮 우편</option>
             <option value="MMS" ${c.billing_method==='MMS'?'selected':''}>📱 MMS (문자)</option>
@@ -1489,8 +1489,8 @@ function openEditModal(id) {
           </select>
         </div>
         <div>
-          <label class="modal-field-label">청구서 받을 번호 <span style="font-size:9.5px;color:#94a3b8">(MMS인 경우)</span></label>
-          <input class="detail-input" data-field="billing_phone" value="${(c.billing_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678">
+          <label class="modal-field-label billing-target-label">청구서 받을 ${c.billing_method==='이메일'?'이메일':'번호'} <span style="font-size:9.5px;color:#94a3b8">(MMS/이메일/카카오톡)</span></label>
+          <input class="detail-input billing-target-input" data-field="billing_phone" value="${(c.billing_phone || '').replace(/"/g, '&quot;')}" placeholder="${c.billing_method==='이메일'?'example@domain.com':'010-1234-5678'}">
         </div>
         <div>
           <label class="modal-field-label">청구서 통신사</label>
@@ -1851,7 +1851,7 @@ async function injectHistorySection(c) {
     product_id: '상품', payback_snapshot: '페이백', rebate_snapshot: '리베이트',
     point_weight_snapshot: '가중치', is_premium_snapshot: '우수상품',
     db_source_id: 'DB 출처', dealer_id: '대리점',
-    customer_name: '고객명', customer_phone: '전화',
+    customer_name: '고객명', customer_phone: '전화', customer_email: '이메일',
     customer_address: '주소', customer_address_detail: '상세주소',
     bank_account_holder: '예금주', bank_name: '은행', bank_account_number: '계좌번호',
     birth_date: '생년월일', resident_id: '신분증',
@@ -2376,6 +2376,25 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
 
 init();
 
+// 청구서 방식 = 이메일이면 청구서 받을 번호 input을 고객 이메일과 자동 연동
+function syncBillingTarget(selectEl) {
+  const scope = selectEl.closest('[class*="modal"]') || selectEl.closest('.sec-card')?.parentElement || document;
+  const target = scope.querySelector('.billing-target-input');
+  const label = scope.querySelector('.billing-target-label');
+  const customerEmail = scope.querySelector('input[data-field="customer_email"]');
+  if (!target) return;
+  if (selectEl.value === '이메일') {
+    if (label) label.firstChild.textContent = '청구서 받을 이메일 ';
+    target.type = 'email';
+    target.placeholder = 'example@domain.com';
+    if (customerEmail && customerEmail.value) target.value = customerEmail.value;
+  } else {
+    if (label) label.firstChild.textContent = '청구서 받을 번호 ';
+    target.type = 'text';
+    target.placeholder = '010-1234-5678';
+  }
+}
+
 // ════════════════════════════════════════════════
 // 🎁 상품권 dropdown + 페이백 합산 (계약 모달)
 // ════════════════════════════════════════════════
@@ -2436,10 +2455,20 @@ init();
     const customInput = document.getElementById(customId);
     if (current) {
       const m = [...select.options].find(o => o.value === current);
-      if (m) m.selected = true;
-      else {
-        select.value = '__custom__';
-        if (customInput) { customInput.style.display = ''; customInput.value = current; }
+      if (m) {
+        m.selected = true;
+      } else {
+        // 옛 값이 새 carrier voucher 옵션과 매칭 안 됨 (상품 변경됨) → 자동 초기화
+        select.value = '';
+        if (customInput) {
+          customInput.style.display = 'none';
+          customInput.value = '';
+        }
+        const hint = select.closest('div')?.parentElement?.querySelector('.modal-field-hint');
+        if (hint && !hint.dataset.carrierWarned) {
+          hint.dataset.carrierWarned = '1';
+          hint.innerHTML += ' <span style="color:#f59e0b;font-weight:700">⚠️ 상품 변경됨 — 상품권 재선택 필요 (옛 값: ' + current + ')</span>';
+        }
       }
     }
     const scope = findRoot(select);

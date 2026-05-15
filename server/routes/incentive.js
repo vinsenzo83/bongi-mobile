@@ -880,7 +880,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id, dealer_id,
+    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, customer_email, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id, dealer_id,
       birth_date, combo_type, combo_members, billing_method, billing_phone, billing_carrier, payment_method, payment_extra, waiting_person, waiting_phone, seller_phone, onestop_yn, current_carrier } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
@@ -935,6 +935,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (bank_account_number !== undefined) update.bank_account_number = bank_account_number;
     if (customer_name !== undefined) update.customer_name = customer_name;
     if (customer_phone !== undefined) update.customer_phone = customer_phone;
+    if (customer_email !== undefined) update.customer_email = customer_email;
     if (installation_date !== undefined) update.installation_date = installation_date;
     if (installation_time !== undefined) update.installation_time = installation_time;
     if (resident_id !== undefined) update.resident_id = resident_id;
