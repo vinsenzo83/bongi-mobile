@@ -190,8 +190,9 @@ app.use('/docs', express.static(join(__dirname, '..', 'docs'), {
       // 문서: 1주일
       res.setHeader('Cache-Control', 'public, max-age=604800');
     } else if (/\.(js|css)$/i.test(path)) {
-      // JS/CSS: 1일 + revalidate
-      res.setHeader('Cache-Control', 'public, max-age=86400, must-revalidate');
+      // JS/CSS: 1분 즉시 + 24h stale-while-revalidate
+      // (24h 캐시는 핵심 모듈 갱신을 막아 권한 페이지 빈 화면 사고를 일으켰음 — 2026-05-15)
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=86400');
     } else {
       res.setHeader('Cache-Control', 'public, max-age=86400');
     }
