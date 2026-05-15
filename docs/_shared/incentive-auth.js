@@ -1,5 +1,15 @@
 // ═══ 공통 인증 모듈 — V5 인센티브 어드민 페이지 전용 ═══
 // 모든 incentive-* 페이지에서 사용. <script src="/docs/_shared/incentive-auth.js"></script>로 로드.
+//
+// ⚠️ IIFE로 감싸 const(TOKEN_KEY/API 등)가 글로벌로 누출되지 않도록 격리.
+//   각 incentive-*.html이 inline에 동일 식별자로 const TOKEN_KEY/API 등을 정의하고 있고,
+//   둘 다 클래식 스크립트라 같은 글로벌 lexical scope를 공유해 SyntaxError 발생했음
+//   ('Identifier API has already been declared' → inline script 미실행 → 빈 화면 사고).
+//   함수만 window.X로 명시 export하여 호환성 유지 (inline에서 `getToken()` 직접 호출 동작).
+//   (2026-05-15 권한 페이지 사고 후속)
+
+(function() {
+'use strict';
 
 const TOKEN_KEY = 'incentive-auth-token-v1';
 const REFRESH_TOKEN_KEY = 'incentive-refresh-token-v1';
@@ -94,3 +104,18 @@ async function apiCall(method, path, body) {
   }
   return res;
 }
+
+// ═══ 글로벌 export ═══
+// inline 페이지가 `getToken()`·`apiCall(...)` 등을 직접 호출하므로 window에 attach.
+// (inline의 `function getToken()` 같은 재선언도 가능하지만 외부 정의가 fallback 역할.)
+window.getToken = getToken;
+window.setToken = setToken;
+window.clearToken = clearToken;
+window.login = login;
+window.tryRefreshToken = tryRefreshToken;
+window.fetchAgent = fetchAgent;
+window.apiCall = apiCall;
+window.apiGetCached = apiGetCached;
+window.apiCacheInvalidate = apiCacheInvalidate;
+
+})();
