@@ -250,6 +250,43 @@ async function fetchAgent() {
       </div>
     </div>
 
+    <!-- 🎁 사은품(상품권) 마스터 (admin 전용) -->
+    <div class="section" id="vouchers-section" style="display:none">
+      <h2>🎁 통신사별 사은품(상품권) 종류 <span style="font-size:11px;color:#94a3b8;font-weight:400">— 계약 처리 편집창에서 자동 노출</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px">
+        <div style="background:rgba(0,0,0,0.3);border:1px solid #334155;border-radius:8px;padding:12px">
+          <div style="font-size:13px;font-weight:800;color:#dc2626;margin-bottom:8px">🔴 SKT</div>
+          <div id="vouchers-SKT" style="font-size:11.5px"></div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <input type="text" id="v-SKT-name" placeholder="상품권명" style="flex:1.4;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px">
+            <select id="v-SKT-type" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px"><option value="mobile">모바일</option><option value="cash">금액권</option></select>
+            <button onclick="addVoucher('SKT')" style="background:#22c55e;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">+</button>
+          </div>
+        </div>
+        <div style="background:rgba(0,0,0,0.3);border:1px solid #334155;border-radius:8px;padding:12px">
+          <div style="font-size:13px;font-weight:800;color:#fbbf24;margin-bottom:8px">🟡 KT</div>
+          <div id="vouchers-KT" style="font-size:11.5px"></div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <input type="text" id="v-KT-name" placeholder="상품권명" style="flex:1.4;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px">
+            <select id="v-KT-type" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px"><option value="mobile">모바일</option><option value="cash">금액권</option></select>
+            <button onclick="addVoucher('KT')" style="background:#22c55e;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">+</button>
+          </div>
+        </div>
+        <div style="background:rgba(0,0,0,0.3);border:1px solid #334155;border-radius:8px;padding:12px">
+          <div style="font-size:13px;font-weight:800;color:#a5b4fc;margin-bottom:8px">🟣 LGU+</div>
+          <div id="vouchers-LGU+" style="font-size:11.5px"></div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <input type="text" id="v-LGU+-name" placeholder="상품권명" style="flex:1.4;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px">
+            <select id="v-LGU+-type" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11px"><option value="mobile">모바일</option><option value="cash">금액권</option></select>
+            <button onclick="addVoucher('LGU+')" style="background:#22c55e;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">+</button>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:10.5px;color:#94a3b8;margin-top:8px;line-height:1.5">
+        💡 상품권 종류는 계약 처리 페이지에서 통신사 선택 시 자동으로 dropdown 표시됩니다. 비활성(❌)은 신규 선택 차단.
+      </div>
+    </div>
+
     <div class="section">
       <h2>📋 상품 목록 — 인라인 편집</h2>
       <div style="font-size:11.5px;color:#fbbf24;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);padding:8px 12px;border-radius:6px;margin-bottom:14px;line-height:1.5">
@@ -259,7 +296,7 @@ async function fetchAgent() {
       </div>
       <div class="toolbar">
         <label style="font-size:11px;color:#94a3b8">통신사</label>
-        <select id="filter-carrier"><option value="">전체</option><option value="SKT">SKT</option><option value="KT">KT</option><option value="LGU+">LGU+</option></select>
+        <select id="filter-carrier"><option value="">전체</option><option value="SK">SKT</option><option value="KT">KT</option><option value="LG">LGU+</option></select>
         <label style="font-size:11px;color:#94a3b8">종류</label>
         <select id="filter-type"><option value="">전체</option><option value="단독">단독</option><option value="결합">결합</option></select>
         <label style="font-size:11px;color:#94a3b8">Tier</label>
@@ -284,6 +321,7 @@ async function fetchAgent() {
               <th style="width:110px">TV 등급</th>
               <th style="width:110px">리베이트</th>
               <th style="width:110px">페이백</th>
+              <th style="width:85px" title="상품권 (만원). 0이면 현금 페이백만, >0이면 페이백+상품권 합산 지급">🎁 상품권</th>
               <th style="width:75px">가중치</th>
               <th style="width:110px">마진 (자동)</th>
               <th style="width:75px">Tier</th>
@@ -867,6 +905,7 @@ function renderTable() {
       <td style="font-size:10px;color:#94a3b8">${p.tv_tier || '-'}</td>
       <td><input class="cell-edit field-rebate" type="number" value="${p.rebate || 0}" min="0" step="1000" data-id="${p.id}" data-field="rebate" data-orig="${p.rebate || 0}" style="text-align:right;color:#86efac;font-weight:700"></td>
       <td><input class="cell-edit field-payback" type="number" value="${p.payback || 0}" min="0" step="1000" data-id="${p.id}" data-field="payback" data-orig="${p.payback || 0}" style="text-align:right;color:#fca5a5;font-weight:700"></td>
+      <td><input class="cell-edit field-gift" type="number" value="${p.gift_amount || 0}" min="0" max="999" step="0.5" data-id="${p.id}" data-field="gift_amount" data-orig="${p.gift_amount || 0}" style="text-align:right;color:#fbbf24;font-weight:700" title="상품권 (만원). 0이면 현금만, >0이면 페이백+상품권 합산"></td>
       <td><select class="cell-edit field-weight" data-id="${p.id}" data-field="point_weight" data-orig="${p.point_weight}" style="font-weight:700">
         <option value="0.5" ${p.point_weight==0.5?'selected':''}>0.5</option>
         <option value="1.0" ${p.point_weight==1.0?'selected':''}>1.0</option>
@@ -907,8 +946,8 @@ async function saveRow(id) {
   tr.querySelectorAll('.cell-edit').forEach(inp => {
     const field = inp.dataset.field;
     let val = inp.value;
-    if (field === 'rebate' || field === 'payback') val = parseInt(val) || 0;
-    if (field === 'point_weight') val = parseFloat(val);
+    if (field === 'rebate' || field === 'payback' || field === 'monthly_fee_min' || field === 'monthly_fee_max' || field === 'guide_min' || field === 'guide_max' || field === 'install_fee') val = parseInt(val) || 0;
+    if (field === 'point_weight' || field === 'gift_amount') val = parseFloat(val) || 0;
     if (String(inp.dataset.orig) !== String(val)) body[field] = val;
   });
   if (Object.keys(body).length === 0) { showToast('변경사항 없음'); return; }
@@ -970,10 +1009,12 @@ function onLoggedIn(agent) {
   document.getElementById('main-area').style.display = '';
   document.getElementById('user-info').style.display = '';
   document.getElementById('user-name').textContent = '👤 ' + agent.name;
-  // admin 전용 대리점 섹션 노출
+  // admin 전용 대리점 + 사은품 마스터 섹션 노출
   if (agent.role === 'admin') {
     document.getElementById('dealers-section').style.display = '';
+    document.getElementById('vouchers-section').style.display = '';
     loadDealers();
+    loadVouchers();
   }
   loadAll();
 }
@@ -1054,6 +1095,67 @@ async function deleteDealer(id, name) {
   loadDealers();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🎁 사은품(상품권) 마스터 (incentive_gift_vouchers)
+// ═══════════════════════════════════════════════════════════════
+async function loadVouchers() {
+  const tk = getToken(); if (!tk) return;
+  const r = await fetch('/api/incentive/gift-vouchers', { headers: { Authorization: 'Bearer ' + tk }});
+  if (!r.ok) return;
+  const d = await r.json();
+  const byCarrier = { SKT:[], KT:[], 'LGU+':[] };
+  (d.vouchers || []).forEach(x => { if (byCarrier[x.carrier]) byCarrier[x.carrier].push(x); });
+  ['SKT','KT','LGU+'].forEach(c => {
+    const wrap = document.getElementById('vouchers-' + c);
+    if (!wrap) return;
+    if (!byCarrier[c].length) { wrap.innerHTML = '<div style="color:#64748b;text-align:center;padding:6px">상품권 없음</div>'; return; }
+    const escHtml = (s) => String(s ?? '').replace(/[<>&"']/g, ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[ch]));
+    wrap.innerHTML = byCarrier[c].map(x => {
+      const nameEsc = escHtml(x.name);
+      const typeBadge = x.voucher_type === 'cash'
+        ? '<span style="background:#16a34a;color:#fff;padding:1px 6px;border-radius:3px;font-size:9.5px">금액권</span>'
+        : '<span style="background:#3b82f6;color:#fff;padding:1px 6px;border-radius:3px;font-size:9.5px">모바일</span>';
+      return `<div style="display:flex;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid #1e293b">
+        <input type="checkbox" ${x.active?'checked':''} onchange="toggleVoucher(${x.id}, this.checked)" title="활성/비활성">
+        <span style="flex:1;font-weight:${x.active?'700':'400'};color:${x.active?'#f8fafc':'#64748b'}">${nameEsc}</span>
+        ${typeBadge}
+        <button data-vact="delete" data-vid="${x.id}" data-vname="${nameEsc}" style="background:#dc2626;color:#fff;border:none;padding:2px 7px;border-radius:3px;font-size:10px;cursor:pointer">×</button>
+      </div>`;
+    }).join('');
+    wrap.querySelectorAll('button[data-vact]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.vact === 'delete') deleteVoucher(parseInt(btn.dataset.vid), btn.dataset.vname);
+      });
+    });
+  });
+}
+async function addVoucher(carrier) {
+  const tk = getToken();
+  const name = document.getElementById('v-' + carrier + '-name').value.trim();
+  const voucher_type = document.getElementById('v-' + carrier + '-type').value;
+  if (!name) { alert('상품권명 입력'); return; }
+  const r = await fetch('/api/incentive/gift-vouchers', {
+    method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+tk},
+    body: JSON.stringify({ carrier, name, voucher_type })
+  });
+  if (!r.ok) { const d = await r.json(); alert('실패: ' + d.error); return; }
+  document.getElementById('v-' + carrier + '-name').value = '';
+  loadVouchers();
+}
+async function toggleVoucher(id, active) {
+  const tk = getToken();
+  await fetch('/api/incentive/gift-vouchers/' + id, {
+    method:'PATCH', headers:{'Content-Type':'application/json', Authorization:'Bearer '+tk},
+    body: JSON.stringify({ active })
+  });
+}
+async function deleteVoucher(id, name) {
+  if (!confirm(`"${name}" 상품권 삭제?`)) return;
+  const tk = getToken();
+  await fetch('/api/incentive/gift-vouchers/' + id, { method:'DELETE', headers:{Authorization:'Bearer '+tk}});
+  loadVouchers();
+}
+
 document.getElementById('auth-login-btn').addEventListener('click', async () => {
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-pass').value;
@@ -1082,6 +1184,12 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
     'TV 등급': p.tv_tier || '',
     '리베이트': p.rebate || 0,
     '페이백': p.payback || 0,
+    '상품권 (만원)': p.gift_amount != null ? Number(p.gift_amount) : 0,
+    '월요금 최소 (₩)': p.monthly_fee_min || '',
+    '월요금 최대 (₩)': p.monthly_fee_max || '',
+    '가이드 최소 (만원)': p.guide_min || '',
+    '가이드 최대 (만원)': p.guide_max || '',
+    '설치비 (₩)': p.install_fee || '',
     '가중치': p.point_weight || 0,
     '마진 (자동)': p.margin || 0,
     'Tier (자동)': p.tier || '',
@@ -1089,7 +1197,7 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
     '활성': p.active ? 'Y' : 'N',
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:6},{wch:8},{wch:8},{wch:36},{wch:8},{wch:14},{wch:11},{wch:11},{wch:8},{wch:12},{wch:10},{wch:12},{wch:8}];
+  ws['!cols'] = [{wch:6},{wch:8},{wch:8},{wch:36},{wch:8},{wch:14},{wch:11},{wch:11},{wch:11},{wch:13},{wch:13},{wch:13},{wch:13},{wch:11},{wch:8},{wch:12},{wch:10},{wch:12},{wch:8}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '상품 목록');
   const today = new Date().toISOString().slice(0, 10);
@@ -1113,7 +1221,13 @@ document.getElementById('import-xlsx-file').addEventListener('change', async (ev
     if (!rows.length) { alert('빈 파일입니다.'); return; }
 
     // 미리보기 — 변경될 항목 검사
-    const editableFields = { '리베이트': 'rebate', '페이백': 'payback', '가중치': 'point_weight', '활성': 'active' };
+    const editableFields = {
+      '리베이트': 'rebate', '페이백': 'payback', '가중치': 'point_weight', '활성': 'active',
+      '상품권 (만원)': 'gift_amount',
+      '월요금 최소 (₩)': 'monthly_fee_min', '월요금 최대 (₩)': 'monthly_fee_max',
+      '가이드 최소 (만원)': 'guide_min', '가이드 최대 (만원)': 'guide_max',
+      '설치비 (₩)': 'install_fee',
+    };
     const changes = [];
     for (const row of rows) {
       const id = parseInt(row['ID']);
@@ -1126,7 +1240,8 @@ document.getElementById('import-xlsx-file').addEventListener('change', async (ev
         let newVal = row[colName];
         if (field === 'active') newVal = (String(newVal).toUpperCase() === 'Y' || newVal === true || newVal === 1);
         else newVal = parseFloat(newVal) || 0;
-        if (cur[field] !== newVal) diff[field] = newVal;
+        const curVal = cur[field] != null ? Number(cur[field]) : null;
+        if (curVal !== newVal && !(curVal === null && newVal === 0)) diff[field] = newVal;
       }
       if (Object.keys(diff).length) changes.push({ id, name: cur.name, diff });
     }

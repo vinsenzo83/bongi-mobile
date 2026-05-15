@@ -107,7 +107,8 @@ router.patch('/products/:id', authenticateJWT, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
-    const allowed = ['rebate', 'payback', 'point_weight', 'name', 'active', 'speed', 'tv_tier'];
+    const allowed = ['rebate', 'payback', 'point_weight', 'name', 'active', 'speed', 'tv_tier',
+                     'gift_amount', 'monthly_fee_min', 'monthly_fee_max', 'guide_min', 'guide_max', 'install_fee'];
     const update = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
     if (!Object.keys(update).length) {
@@ -2338,6 +2339,81 @@ router.delete('/dealers/:id(\\d+)', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
     const { error } = await supabase.from('incentive_dealers').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 사은품(상품권) 마스터 — 통신사별 종류 관리 (admin)
+// 계약 처리 화면에서 carrier별 dropdown으로 표시
+// ═══════════════════════════════════════════════════════════════
+const ALLOWED_VOUCHER_CARRIERS = ['KT', 'SKT', 'LGU+', 'ALL'];
+const ALLOWED_VOUCHER_TYPES = ['mobile', 'cash'];
+
+router.get('/gift-vouchers', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+    let q = supabase.from('incentive_gift_vouchers').select('*').order('carrier').order('display_order').order('name');
+    if (req.query.carrier) q = q.in('carrier', [req.query.carrier, 'ALL']);
+    if (req.query.active_only === 'true') q = q.eq('active', true);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json({ vouchers: data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/gift-vouchers', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const { carrier, name, voucher_type = 'mobile', display_order, notes } = req.body || {};
+    if (!carrier || !name) return res.status(400).json({ error: 'carrier·name 필수' });
+    if (!ALLOWED_VOUCHER_CARRIERS.includes(carrier)) return res.status(400).json({ error: 'carrier는 KT/SKT/LGU+/ALL' });
+    if (!ALLOWED_VOUCHER_TYPES.includes(voucher_type)) return res.status(400).json({ error: 'voucher_type은 mobile/cash' });
+    const { data, error } = await supabase.from('incentive_gift_vouchers').insert({
+      carrier,
+      name: String(name).trim().slice(0, 100),
+      voucher_type,
+      display_order: parseInt(display_order) || 100,
+      notes: notes ? String(notes).slice(0, 500) : null,
+      active: true,
+    }).select().single();
+    if (error) {
+      if (error.code === '23505') return res.status(409).json({ error: '동일 통신사에 같은 이름의 상품권이 이미 있습니다' });
+      throw error;
+    }
+    res.json({ voucher: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.patch('/gift-vouchers/:id(\\d+)', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const update = { updated_at: new Date().toISOString() };
+    const { name, voucher_type, active, notes, display_order } = req.body || {};
+    if (name !== undefined) update.name = String(name).trim().slice(0, 100);
+    if (voucher_type !== undefined) {
+      if (!ALLOWED_VOUCHER_TYPES.includes(voucher_type)) return res.status(400).json({ error: 'voucher_type은 mobile/cash' });
+      update.voucher_type = voucher_type;
+    }
+    if (active !== undefined) update.active = !!active;
+    if (notes !== undefined) update.notes = notes ? String(notes).slice(0, 500) : null;
+    if (display_order !== undefined) update.display_order = parseInt(display_order) || 100;
+    const { data, error } = await supabase.from('incentive_gift_vouchers').update(update).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: '상품권 없음' });
+    res.json({ voucher: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/gift-vouchers/:id(\\d+)', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const { error } = await supabase.from('incentive_gift_vouchers').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }

@@ -1186,6 +1186,37 @@ function getGiftAmount(d, sp, tvIdx) {
   return bucket ? (bucket[sp] || 0) : 0;
 }
 
+// 🎁 상품권 lookup — incentive_products.gift_amount (만원) → 원
+// c-carrier value: skt/kt/lgu (소문자) — DB carrier: SK/KT/LG (대문자) — 매핑 필수
+var _GIFT_CARRIER_MAP = { skt: 'SK', kt: 'KT', lgu: 'LG', SK: 'SK', KT: 'KT', LG: 'LG' };
+function lookupProductGiftVoucher(carrierKey, sp, tvIdx) {
+  if (!window._incentiveProducts || !window._incentiveProducts.length) return 0;
+  var dbCarrier = _GIFT_CARRIER_MAP[carrierKey] || carrierKey;
+  var tvName = (tvIdx > 0 && D[carrierKey] && D[carrierKey].tv && D[carrierKey].tv[tvIdx]) ? D[carrierKey].tv[tvIdx].n : '';
+  var product = window._incentiveProducts.find(function(p) {
+    if (!p.active) return false;
+    if (p.carrier !== dbCarrier) return false;
+    if (p.speed !== sp) return false;
+    if (tvIdx === 0) return (p.type === '단독' || !p.tv_tier);
+    return p.tv_tier && tvName && (tvName.indexOf(p.tv_tier) !== -1);
+  });
+  return product ? Math.round(Number(product.gift_amount || 0) * 10000) : 0;
+}
+
+// 페이지 로드 시 incentive_products 캐시
+(function() {
+  fetch('/api/incentive/products?active_only=true')
+    .then(function(r) { return r.ok ? r.json() : { products: [] }; })
+    .then(function(d) {
+      window._incentiveProducts = d.products || [];
+      try {
+        var resultEl = document.getElementById('c-result');
+        if (resultEl && resultEl.innerHTML.trim() && typeof calc === 'function') calc();
+      } catch (e) {}
+    })
+    .catch(function() { window._incentiveProducts = []; });
+})();
+
 // 셋톱 결합 할인 — 셋톱의 discountRules에서 매칭 + 매칭되는 모든 규칙 합산
 // 각 셋톱이 자체 규칙을 가짐 → 새 셋톱 추가 시 규칙도 함께 들고 옴
 // 규칙 type: 'base'(기본 결합 할인) | 'promo'(출시 프로모션)
@@ -2053,9 +2084,16 @@ function calc() {
       '</div>';
   }
 
-  var giftAmount = getGiftAmount(d, sp, ti);
-  if (giftAmount > 0) {
-    html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:6px;padding:6px 10px;margin-top:6px"><span class="l" style="color:#fbbf24">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900">' + fmt(giftAmount) + '</span></div>';
+  var giftTotal = getGiftAmount(d, sp, ti);  // 페이백 = 사은품 총합 (상품권 포함)
+  var giftVoucher = lookupProductGiftVoucher(c, sp, ti);
+  var giftCash = Math.max(0, giftTotal - giftVoucher);  // 현금 = 총합 - 상품권
+  if (giftTotal > 0) {
+    if (giftVoucher > 0 && giftVoucher <= giftTotal) {
+      html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:6px;padding:6px 10px;margin-top:6px"><span class="l" style="color:#fbbf24">🎁 사은품 총액</span><span class="v" style="color:#fbbf24;font-weight:900">' + fmt(giftTotal) + '</span></div>'
+        + '<div class="calc-line" style="padding:2px 10px 4px;margin-top:0;font-size:11px;color:#94a3b8"><span class="l">└ 현금 ' + fmt(giftCash) + ' + 상품권 ' + fmt(giftVoucher) + '</span></div>';
+    } else {
+      html += '<div class="calc-line" style="background:rgba(251,191,36,0.1);border-radius:6px;padding:6px 10px;margin-top:6px"><span class="l" style="color:#fbbf24">🎁 현금 사은품</span><span class="v" style="color:#fbbf24;font-weight:900">' + fmt(giftTotal) + '</span></div>';
+    }
   }
   // 설치비 — 본 설치비 + 추가 TV 설치비 (50% 할인)
   html += '<div class="calc-line" style="margin-top:6px"><span class="l">🔧 설치비 (1회 · 본 인터넷+TV)</span><span class="v">' + fmt(installPrice) + '</span></div>';
