@@ -1868,10 +1868,34 @@ async function injectHistorySection(c) {
     onestop_yn: '원스톱', current_carrier: '현재 통신사',
   };
   const labelF = (f) => FIELD_LABELS[f] || f;
+  // 값을 사람이 읽기 쉬운 형태로
+  const fmtVal = (v, f) => {
+    if (v === null || v === undefined || v === '') return '<span style="color:#64748b">(빈값)</span>';
+    if (typeof v === 'boolean') return v ? '✅ Y' : '❌ N';
+    if (f === 'dealer_id') return `대리점#${v}`;
+    if (f === 'db_source_id') return `출처#${v}`;
+    if (f === 'product_id') return escHtml(labelP(v));
+    if (f === 'payback_snapshot' || f === 'rebate_snapshot' || f === 'add_payback' || f === 'monthly_fee' || f === 'company_payback_burden' || f === 'agent_payback_deduct') {
+      return `${Number(v).toLocaleString()}원`;
+    }
+    if (typeof v === 'object') return escHtml(JSON.stringify(v).slice(0, 50));
+    const s = String(v);
+    return escHtml(s.length > 40 ? s.slice(0, 40) + '…' : s);
+  };
   const rows = history.map(h => {
     const dt = new Date(h.changed_at).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
     const fields = Array.isArray(h.changed_fields)
-      ? h.changed_fields.map(labelF).join(' · ')
+      ? h.changed_fields.map(f => {
+          const label = labelF(f);
+          const before = h.before_data?.[f];
+          const after = h.after_data?.[f];
+          // product_id는 아래 productChange 카드에서 별도 처리
+          if (f === 'product_id') return `<b>${label}</b>`;
+          if (before !== undefined && after !== undefined && JSON.stringify(before) !== JSON.stringify(after)) {
+            return `<b>${label}</b>: ${fmtVal(before, f)} → <b style="color:#86efac">${fmtVal(after, f)}</b>`;
+          }
+          return `<b>${label}</b>`;
+        }).join('<br>')
       : (h.changed_fields || '-');
     const reason = h.reason ? `<div style="font-size:10px;color:#fde047;margin-top:2px">💬 ${escHtml(h.reason)}</div>` : '';
     // 상품 변경 강조 — product_id 변화 감지 시 before → after 카드
@@ -1885,7 +1909,7 @@ async function injectHistorySection(c) {
       <td style="padding:6px 8px;font-size:10.5px;color:#94a3b8;white-space:nowrap">${dt}</td>
       <td style="padding:6px 8px;text-align:center"><span style="background:${actionColor[h.action]||'#475569'};color:#fff;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700">${actionLabel[h.action]||h.action}</span></td>
       <td style="padding:6px 8px;font-size:11px"><b>${escHtml(h.changed_by_name)||'-'}</b> <span style="color:#94a3b8;font-size:9.5px">(${escHtml(h.changed_by_role)||'-'})</span></td>
-      <td style="padding:6px 8px;font-size:10.5px;color:#cbd5e1">${escHtml(fields)}${productChange}${reason}</td>
+      <td style="padding:6px 8px;font-size:10.5px;color:#cbd5e1">${Array.isArray(h.changed_fields) ? fields : escHtml(fields)}${productChange}${reason}</td>
     </tr>`;
   }).join('');
 
