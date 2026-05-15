@@ -1185,11 +1185,6 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
     '리베이트': p.rebate || 0,
     '페이백': p.payback || 0,
     '상품권 (만원)': p.gift_amount != null ? Number(p.gift_amount) : 0,
-    '월요금 최소 (₩)': p.monthly_fee_min || '',
-    '월요금 최대 (₩)': p.monthly_fee_max || '',
-    '가이드 최소 (만원)': p.guide_min || '',
-    '가이드 최대 (만원)': p.guide_max || '',
-    '설치비 (₩)': p.install_fee || '',
     '가중치': p.point_weight || 0,
     '마진 (자동)': p.margin || 0,
     'Tier (자동)': p.tier || '',
@@ -1197,7 +1192,7 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
     '활성': p.active ? 'Y' : 'N',
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:6},{wch:8},{wch:8},{wch:36},{wch:8},{wch:14},{wch:11},{wch:11},{wch:11},{wch:13},{wch:13},{wch:13},{wch:13},{wch:11},{wch:8},{wch:12},{wch:10},{wch:12},{wch:8}];
+  ws['!cols'] = [{wch:6},{wch:8},{wch:8},{wch:36},{wch:8},{wch:14},{wch:11},{wch:11},{wch:11},{wch:8},{wch:12},{wch:10},{wch:12},{wch:8}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '상품 목록');
   const today = new Date().toISOString().slice(0, 10);
@@ -1224,9 +1219,6 @@ document.getElementById('import-xlsx-file').addEventListener('change', async (ev
     const editableFields = {
       '리베이트': 'rebate', '페이백': 'payback', '가중치': 'point_weight', '활성': 'active',
       '상품권 (만원)': 'gift_amount',
-      '월요금 최소 (₩)': 'monthly_fee_min', '월요금 최대 (₩)': 'monthly_fee_max',
-      '가이드 최소 (만원)': 'guide_min', '가이드 최대 (만원)': 'guide_max',
-      '설치비 (₩)': 'install_fee',
     };
     const changes = [];
     for (const row of rows) {
