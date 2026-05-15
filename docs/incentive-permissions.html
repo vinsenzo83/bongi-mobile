@@ -175,6 +175,7 @@ function _markStage(s, color) {
 <div id="toast"></div>
 
 <script>
+try { _markStage('main script 진입', '#3b82f6'); } catch(e) {}
 // ═══ 상수 ═══
 const MENUS = [
   { key: 'dashboard',    label: '📊 대시보드' },
@@ -489,6 +490,7 @@ async function init() {
   }
 }
 
+try { _markStage('함수 정의 완료 → 리스너 부착'); } catch(e) {}
 document.getElementById('auth-login-btn').addEventListener('click', async () => {
   const email = document.getElementById('auth-email').value.trim();
   const pass = document.getElementById('auth-pass').value;
@@ -511,6 +513,7 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 document.getElementById('btn-save').addEventListener('click', saveDirty);
 document.getElementById('btn-reset').addEventListener('click', resetToDefaults);
 
+try { _markStage('리스너 부착 완료 → init() 호출 직전', '#fbbf24'); } catch(e) {}
 init();
 </script>
 </body>
