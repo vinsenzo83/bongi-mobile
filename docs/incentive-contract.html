@@ -1295,7 +1295,7 @@ function openEditModal(id) {
           </div>
           <div style="text-align:right">
             <div class="ph-payback-label">💰 페이백 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 5px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:3px" title="등록 시점에 박제된 단가 — 이후 상품가격 변경되어도 변하지 않음">SNAPSHOT</span></div>
-            <div class="ph-payback-val">${((c.payback_snapshot ?? p.payback) || 0).toLocaleString()}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+            <div class="ph-payback-val ph-payback-display" data-snapshot="${(c.payback_snapshot ?? p.payback) || 0}" data-gift-default-won="${(p.gift_amount && Number(p.gift_amount) > 0) ? Math.round(Number(p.gift_amount) * 10000) : 0}">${((c.payback_snapshot ?? p.payback) || 0).toLocaleString()}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
           </div>
         </div>
       </div>
@@ -1394,13 +1394,21 @@ function openEditModal(id) {
       </div>
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
         <div>
-          <label class="modal-field-label">🎁 실제 사은품</label>
-          <input class="detail-input" data-field="gift_received" value="${(c.gift_received || '').replace(/"/g, '&quot;')}" placeholder="예: 현금 30만 / 다이슨 / 가전렌탈">
+          <label class="modal-field-label">🎁 상품권 <span style="font-size:9.5px;color:#94a3b8">(carrier=${p.carrier || '-'} · 상품 관리에서 등록된 종류)</span></label>
+          <select class="detail-input gift-voucher-select" id="gift-voucher-select-${c.id || 'new'}" data-field="gift_received" data-carrier="${p.carrier || ''}" data-current="${(c.gift_received || '').replace(/"/g, '&quot;')}" data-gift-default-won="${(p.gift_amount && Number(p.gift_amount) > 0) ? Math.round(Number(p.gift_amount) * 10000) : 0}">
+            <option value="">— 선택 (없으면 비우기) —</option>
+            <option value="__custom__">기타 (직접 입력)</option>
+          </select>
+          <input type="text" class="detail-input gift-voucher-custom" id="gift-voucher-custom-${c.id || 'new'}" data-field="gift_received_custom" placeholder="자유 입력 (예: 다이슨 / 가전렌탈 / 현금 30만)" style="display:none;margin-top:6px" value="${(c.gift_received || '').replace(/"/g, '&quot;')}">
+          <div class="modal-field-hint">기본 메리트(상품 gift_amount=${(p.gift_amount && Number(p.gift_amount) > 0) ? Number(p.gift_amount) + '만원' : '0'})</div>
         </div>
         <div>
-          <label class="modal-field-label">💰 추가 페이백 (₩)</label>
-          <input class="detail-input" data-field="add_payback" type="number" min="0" max="50000" step="1000" value="${c.add_payback || 0}">
+          <label class="modal-field-label">💰 추가 페이백 (₩, 현금)</label>
+          <input class="detail-input gift-payback-input" data-field="add_payback" type="number" min="0" max="50000" step="1000" value="${c.add_payback || 0}">
           <div class="modal-field-hint">회사 ≤30,000 / 상담사 차감 30,001~50K</div>
+          <div class="gift-payback-total" id="gift-payback-total-${c.id || 'new'}" style="margin-top:6px;padding:6px 8px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:5px;font-size:11px;color:#fbbf24;font-weight:700">
+            🧾 총 페이백 (현금+상품권): <span class="total-display">${(Number(c.add_payback)||0).toLocaleString()}</span>원
+          </div>
         </div>
       </div>
     </div>
@@ -2343,6 +2351,119 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
 });
 
 init();
+
+// ════════════════════════════════════════════════
+// 🎁 상품권 dropdown + 페이백 합산 (계약 모달)
+// ════════════════════════════════════════════════
+(function() {
+  let _vouchers = null, _vouchersPromise = null;
+  async function getVouchers() {
+    if (_vouchers) return _vouchers;
+    if (_vouchersPromise) return _vouchersPromise;
+    _vouchersPromise = (async () => {
+      try {
+        const tk = localStorage.getItem('incentive-auth-token-v1');
+        const r = await fetch('/api/incentive/gift-vouchers?active_only=true', { headers: { Authorization: 'Bearer ' + tk }});
+        if (!r.ok) return [];
+        const d = await r.json();
+        _vouchers = d.vouchers || [];
+        return _vouchers;
+      } catch { return []; }
+    })();
+    return _vouchersPromise;
+  }
+  function findRoot(el) { return el.closest('.sec-card') || el.closest('[class*="modal"]') || document; }
+  function updateTotal(scope) {
+    const select = scope.querySelector('.gift-voucher-select');
+    const payback = scope.querySelector('.gift-payback-input');
+    const totalEl = scope.querySelector('.gift-payback-total .total-display');
+    const cash = parseInt(payback ? payback.value : 0) || 0;
+    // 운영 규칙: 상품에 gift_amount > 0이면 dropdown 선택 무관하게 무조건 합산
+    const giftWon = select ? (parseInt(select.dataset.giftDefaultWon) || 0) : 0;
+    if (totalEl) totalEl.textContent = (cash + giftWon).toLocaleString();
+    // SNAPSHOT 페이백: gift_amount > 0이면 무조건 분할 표시
+    const phDisplay = document.querySelector('.ph-payback-display');
+    if (phDisplay) {
+      const snap = parseInt(phDisplay.dataset.snapshot) || 0;
+      const headerGift = parseInt(phDisplay.dataset.giftDefaultWon) || 0;
+      if (headerGift > 0) {
+        const cashPart = Math.max(0, snap - headerGift);
+        phDisplay.innerHTML = `<span style="font-size:13px;color:#fbbf24">🎁 ${(headerGift/10000)}만</span><span style="font-size:13px;color:#94a3b8;margin:0 4px">+</span><span style="font-size:18px">${cashPart.toLocaleString()}</span><span style="font-size:11px;color:#94a3b8;margin-left:3px">원</span><div style="font-size:10.5px;color:#94a3b8;font-weight:600;margin-top:2px">= ${snap.toLocaleString()}원</div>`;
+      } else {
+        phDisplay.innerHTML = `${snap.toLocaleString()}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span>`;
+      }
+    }
+  }
+  async function initSelect(select) {
+    if (select.dataset.giftInited === '1') return;
+    select.dataset.giftInited = '1';
+    const carrier = select.dataset.carrier || '';
+    const current = select.dataset.current || '';
+    const vs = await getVouchers();
+    const filtered = vs.filter(v => v.carrier === carrier || v.carrier === 'ALL');
+    const customOpt = select.querySelector('option[value="__custom__"]');
+    filtered.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = v.name + (v.voucher_type === 'cash' ? ' (금액권)' : ' (모바일)');
+      if (customOpt) select.insertBefore(opt, customOpt); else select.appendChild(opt);
+    });
+    const customId = select.id.replace('gift-voucher-select-', 'gift-voucher-custom-');
+    const customInput = document.getElementById(customId);
+    if (current) {
+      const m = [...select.options].find(o => o.value === current);
+      if (m) m.selected = true;
+      else {
+        select.value = '__custom__';
+        if (customInput) { customInput.style.display = ''; customInput.value = current; }
+      }
+    }
+    const scope = findRoot(select);
+    select.addEventListener('change', () => {
+      if (select.value === '__custom__') {
+        if (customInput) { customInput.style.display = ''; customInput.focus(); }
+      } else if (customInput) { customInput.style.display = 'none'; customInput.value = ''; }
+      updateTotal(scope);
+    });
+    if (customInput) customInput.addEventListener('input', () => updateTotal(scope));
+    const payback = scope.querySelector('.gift-payback-input');
+    if (payback && !payback.dataset.giftBound) {
+      payback.dataset.giftBound = '1';
+      payback.addEventListener('input', () => updateTotal(scope));
+    }
+    updateTotal(scope);
+  }
+  const obs = new MutationObserver(() => {
+    document.querySelectorAll('.gift-voucher-select').forEach(initSelect);
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.gift-voucher-select').forEach(initSelect);
+  });
+
+  // 저장 시 select='__custom__'이면 custom input value 사용 — getVal patch
+  // 저장 흐름: detail-input[data-field='gift_received']가 select. value '__custom__'면 custom 사용.
+  // 모든 saveDetail 호출 전 select value를 custom value로 즉시 변경 (option 추가)
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const txt = btn.textContent || '';
+    if (!txt.includes('저장') && !txt.includes('save')) return;
+    document.querySelectorAll('.gift-voucher-select').forEach(sel => {
+      if (sel.value === '__custom__') {
+        const id = sel.id.replace('gift-voucher-select-', 'gift-voucher-custom-');
+        const cust = document.getElementById(id);
+        const cv = cust ? cust.value.trim() : '';
+        if (cv) {
+          let opt = sel.querySelector(`option[data-dynamic="1"]`);
+          if (!opt) { opt = document.createElement('option'); opt.dataset.dynamic = '1'; sel.appendChild(opt); }
+          opt.value = cv; opt.textContent = cv + ' (직접입력)';
+          sel.value = cv;
+        } else { sel.value = ''; }
+      }
+    });
+  }, true);
+})();
 </script>
 
 
