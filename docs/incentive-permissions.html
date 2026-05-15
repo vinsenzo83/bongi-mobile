@@ -342,7 +342,8 @@ async function login(email, password) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || '로그인 실패');
-  if (data.token) setToken(data.token);
+  if (data.access_token) setToken(data.access_token);
+  else if (data.token) setToken(data.token);
   if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token);
   return data;
 }
@@ -424,29 +425,44 @@ function resetToDefaults() {
 }
 
 // ═══ 인증 + 진입 ═══
+// iframe(embedded)에서는 auth-box가 CSS로 숨겨져 있으므로 deny-area로 fallback
+const IS_EMBEDDED = (window !== window.parent);
+function showAuthOrDeny(reason) {
+  if (IS_EMBEDDED) {
+    const deny = document.getElementById('deny-area');
+    deny.innerHTML = `
+      <div class="big">🔒</div>
+      <div class="msg">${reason}</div>
+      <div class="hint">부모 어드민 화면에서 다시 로그인 후 새로고침 해주세요.</div>
+    `;
+    deny.style.display = '';
+  } else {
+    document.getElementById('auth-box').style.display = '';
+  }
+}
 async function init() {
-  const tk = getToken();
-  if (!tk) {
-    document.getElementById('auth-box').style.display = '';
-    return;
-  }
-  const agent = await fetchAgent();
-  if (!agent) {
-    document.getElementById('auth-box').style.display = '';
-    return;
-  }
-  document.getElementById('user-name').textContent = '👤 ' + (agent.name || '-') + ' (' + agent.role + ')';
-  document.getElementById('user-info').style.display = '';
-  if (agent.role !== 'admin') {
-    document.getElementById('deny-area').style.display = '';
-    return;
-  }
   try {
+    const tk = getToken();
+    if (!tk) { showAuthOrDeny('로그인이 필요합니다'); return; }
+    const agent = await fetchAgent();
+    if (!agent) { showAuthOrDeny('세션이 만료되었습니다'); return; }
+    document.getElementById('user-name').textContent = '👤 ' + (agent.name || '-') + ' (' + agent.role + ')';
+    document.getElementById('user-info').style.display = '';
+    if (agent.role !== 'admin') {
+      document.getElementById('deny-area').style.display = '';
+      return;
+    }
     await loadAll();
     document.getElementById('main-area').style.display = '';
   } catch (e) {
-    showToast('⚠️ ' + e.message, true);
-    document.getElementById('deny-area').style.display = '';
+    // 어떤 단계에서든 실패하면 deny-area로 명시 — 빈 화면 방지
+    const deny = document.getElementById('deny-area');
+    deny.innerHTML = `
+      <div class="big">⚠️</div>
+      <div class="msg">권한 관리 로드 실패</div>
+      <div class="hint">${(e && e.message) || e}</div>
+    `;
+    deny.style.display = '';
   }
 }
 
