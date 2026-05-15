@@ -186,10 +186,22 @@ const ROLES = ['agent', 'manager', 'admin', 'contract'];
 const ADMIN_REQUIRED = new Set(['permissions', 'agents']);
 // 기본값 (DB 시드와 동일)
 const DEFAULTS = {
-  agent:    ['dashboard', 'contract', 'tm-counselor', 'tm-counselor-v2', 'guide', 'call-list', 'distribution-requests'],
-  manager:  ['dashboard', 'contract', 'tm-counselor', 'tm-data', 'guide', 'call-list', 'distribution-requests', 'agents-roi'],
-  admin:    ['dashboard', 'contract', 'agents', 'products', 'rules', 'db-sources', 'tm-counselor', 'tm-data', 'permissions', 'guide', 'call-list', 'distribution-requests', 'customer-db', 'call-stats', 'settlements', 'agents-roi'],
-  contract: ['dashboard', 'contract', 'guide'],
+  agent: [
+    'dashboard', 'contract', 'tm-counselor', 'tm-counselor-v2',
+    'guide', 'call-list', 'distribution-requests', 'manual'
+  ],
+  manager: [
+    'dashboard', 'contract', 'agents', 'tm-counselor', 'tm-counselor-v2',
+    'tm-data', 'guide', 'call-list', 'distribution-requests',
+    'agents-roi', 'goals', 'call-stats', 'settlements', 'manual'
+  ],
+  admin: [
+    'dashboard', 'contract', 'agents', 'products', 'rules', 'db-sources',
+    'customer-db', 'call-stats', 'settlements', 'goals', 'agents-roi',
+    'manual', 'call-list', 'distribution-requests',
+    'tm-counselor', 'tm-counselor-v2', 'tm-data', 'guide', 'permissions'
+  ],
+  contract: ['dashboard', 'contract', 'guide', 'manual'],
 };
 
 // ═══ 상태 ═══
