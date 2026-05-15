@@ -92,6 +92,22 @@ input[type="checkbox"]:disabled {
 </script>
 </head>
 <body>
+<!-- DEBUG BADGE — fix 적용 여부를 즉시 판별 (이게 안 보이면 캐시·SW 문제) -->
+<div id="debug-badge" style="position:fixed;top:8px;right:8px;background:#16a34a;color:#fff;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:800;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,0.4)">
+  ✅ v2 fix 적용 (init 시작 전)
+</div>
+<script>
+// init() 시작 전·후 단계를 화면 배지로 표시 (콘솔 못 볼 때 대비)
+window._stage = 'parsed';
+function _markStage(s, color) {
+  const b = document.getElementById('debug-badge');
+  if (b) {
+    b.textContent = '🔧 stage: ' + s;
+    if (color) b.style.background = color;
+  }
+  window._stage = s;
+}
+</script>
 <div class="wrap">
   <header>
     <div>
@@ -442,19 +458,26 @@ function showAuthOrDeny(reason) {
 }
 async function init() {
   try {
+    _markStage('init 시작');
     const tk = getToken();
-    if (!tk) { showAuthOrDeny('로그인이 필요합니다'); return; }
+    if (!tk) { _markStage('토큰 없음 → auth/deny', '#f59e0b'); showAuthOrDeny('로그인이 필요합니다'); return; }
+    _markStage('토큰 OK → fetchAgent');
     const agent = await fetchAgent();
-    if (!agent) { showAuthOrDeny('세션이 만료되었습니다'); return; }
+    if (!agent) { _markStage('agent 없음 → auth/deny', '#f59e0b'); showAuthOrDeny('세션이 만료되었습니다'); return; }
+    _markStage('agent OK: ' + (agent.role || '?'));
     document.getElementById('user-name').textContent = '👤 ' + (agent.name || '-') + ' (' + agent.role + ')';
     document.getElementById('user-info').style.display = '';
     if (agent.role !== 'admin') {
+      _markStage('admin 아님 → deny', '#dc2626');
       document.getElementById('deny-area').style.display = '';
       return;
     }
+    _markStage('loadAll 시작');
     await loadAll();
+    _markStage('main-area 표시', '#16a34a');
     document.getElementById('main-area').style.display = '';
   } catch (e) {
+    _markStage('예외: ' + ((e&&e.message)||e), '#dc2626');
     // 어떤 단계에서든 실패하면 deny-area로 명시 — 빈 화면 방지
     const deny = document.getElementById('deny-area');
     deny.innerHTML = `
