@@ -138,11 +138,11 @@ app.use((req, res, next) => {
   // 단 postcode.map.kakao.com은 http 응답 → http: 스킴도 frame-src에 명시
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://t1.daumcdn.net https://*.daum.net https://*.kakao.com",
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://t1.daumcdn.net https://*.daum.net https://*.kakao.com https://static.cloudflareinsights.com",
     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://*.googleapis.com https://*.daum.net https://*.kakao.com",
     "img-src 'self' data: https: http://*.kakao.com",
     "font-src 'self' https://cdn.jsdelivr.net data:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.daumcdn.net https://t1.daumcdn.net https://*.daum.net https://*.kakao.com https://cdn.jsdelivr.net",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.daumcdn.net https://t1.daumcdn.net https://*.daum.net https://*.kakao.com https://cdn.jsdelivr.net https://cloudflareinsights.com https://*.cloudflareinsights.com",
     "frame-src 'self' https://*.daumcdn.net https://t1.daumcdn.net https://*.daum.net https://*.kakao.com http://*.kakao.com",
     "child-src 'self' https://*.daumcdn.net https://t1.daumcdn.net https://*.daum.net https://*.kakao.com http://*.kakao.com",
     "frame-ancestors 'self'",
