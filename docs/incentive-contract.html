@@ -766,7 +766,7 @@ function renderTable(contracts) {
         const cb = carrierMap[carrier];
         const carrierBadge = cb ? `<span style="background:${cb.bg};color:#fff;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:800;margin-right:4px">${cb.label}</span>` : '';
         return carrierBadge;
-      })()}${p.name || '-'} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P${p.speed ? ` · ${p.speed}` : ''}</div></td>
+      })()}${p.name || '-'}${((c.wifi_option && c.wifi_option !== '미사용' && c.wifi_option !== 'X' && c.wifi_option !== 'N') || /wi-?fi/i.test(c.quote_summary || '')) && !/wi-?fi/i.test(p.name||'') ? '<span style="background:#0891b2;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">+ WiFi</span>' : ''} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P${p.speed ? ` · ${p.speed}` : ''}</div></td>
       <td>${c.customer_name || '<i style="color:#94a3b8">-</i>'}</td>
       <td>${c.customer_phone || '<i style="color:#94a3b8">-</i>'}</td>
       <td style="max-width:240px;word-break:break-all;font-size:10.5px">${addrText}</td>
@@ -895,87 +895,121 @@ function renderTable(contracts) {
 }
 
 // ─── 유선청약요청 메모 파서/생성기 (SK 양식 기준) ───
+// 신 양식: "★ 키 : 값" (고객 영역) + 상품 영역 별표 없음
 function parseLineRequestMemo(text) {
   if (!text) return {};
-  // 라인별 "N. 키 : 값" 형식 (한자릿수~두자릿수 번호)
   const lines = text.replace(/\r/g, '').split('\n');
-  const map = {};
-  for (const line of lines) {
-    const m = line.match(/^\s*(\d{1,2})\.\s*([^:]+?)\s*:\s*(.*)$/);
-    if (!m) continue;
-    const no = parseInt(m[1], 10);
-    const val = m[3].trim();
-    if (!val || val === 'X' || val === 'x') continue;  // 빈값/X 제외
-    map[no] = val;
-  }
-  // 양식 외 추가 정보 (★유선청약요청★, 하나로/동판, 티게이트)
-  const extras = [];
-  const headerMatch = text.match(/하나로\s*\/\s*동판\s*:\s*([^\n]+)/);
-  const tgateMatch = text.match(/티게이트접수여부\s*:\s*([^\n]+)/);
-  if (headerMatch) extras.push('하나로/동판: ' + headerMatch[1].trim());
-  if (tgateMatch) extras.push('티게이트접수: ' + tgateMatch[1].trim());
-
-  // 결과 필드 매핑
   const out = {};
-  if (map[1]) out.customer_name = map[1];
-  if (map[2]) out.resident_id = map[2];
-  if (map[3]) out.customer_phone = map[3];
-  if (map[4]) out.customer_address = map[4];
-  if (map[11]) out.gift_received = map[11];
+  let _payment_raw = '';
+  const notesExtra = [];
 
-  // 나머지(상품·결합·설치연락처·판매처 등)는 notes에 정리
-  const notesParts = [];
-  if (extras.length) notesParts.push(extras.join(' · '));
-  if (map[5]) notesParts.push('인터넷: ' + map[5]);
-  if (map[6]) notesParts.push('TV①: ' + map[6]);
-  if (map[7]) notesParts.push('TV②: ' + map[7]);
-  if (map[8]) notesParts.push('결합/회선: ' + map[8]);
-  if (map[9]) notesParts.push('시내전화: ' + map[9]);
-  if (map[10]) notesParts.push('인터넷전화: ' + map[10]);
-  if (map[12]) notesParts.push('설치연락처: ' + map[12]);
-  if (map[13]) notesParts.push('기타: ' + map[13]);
-  if (map[14]) notesParts.push('판매처: ' + map[14]);
-  if (notesParts.length) out.notes = notesParts.join('\n');
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    // ★ 키 : 값
+    let m = line.match(/^★\s*([^:]+?)\s*:\s*(.*)$/);
+    let key, val;
+    if (m) { key = m[1].trim(); val = m[2].trim(); }
+    else {
+      m = line.match(/^([^:★*][^:]*?)\s*:\s*(.*)$/);
+      if (!m) continue;
+      key = m[1].trim(); val = m[2].trim();
+    }
+    if (!val || val === 'X' || val === 'x') continue;
+
+    if (/현재.*사용.*통신사/.test(key)) {
+      const c = val.toUpperCase().replace(/[\s\-_]/g, '');
+      if (/^SKT?알뜰/.test(c)) out.current_carrier = 'SK알뜰';
+      else if (/^KT알뜰/.test(c)) out.current_carrier = 'KT알뜰';
+      else if (/^(LG|LGU\+?)알뜰/.test(c)) out.current_carrier = 'LG알뜰';
+      else if (/^SKT?/.test(c)) out.current_carrier = 'SK';
+      else if (/^KT/.test(c)) out.current_carrier = 'KT';
+      else if (/^(LG|LGU\+?)/.test(c)) out.current_carrier = 'LG';
+    }
+    else if (key.includes('고객명')) out.customer_name = val;
+    else if (key.includes('주민번호')) out.resident_id = val;
+    else if (key.includes('핸드폰번호') || key.includes('휴대폰')) {
+      // 공백·하이픈 정규화 → 010-XXXX-XXXX
+      const digits = val.replace(/\D/g, '');
+      out.customer_phone = digits.length === 11 ? `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7)}` : val;
+    }
+    else if (key.includes('이메일')) out.customer_email = val;
+    else if (key.includes('설치주소') || key === '주소') out.customer_address = val;
+    else if (key.includes('출금계좌') || key.includes('카드')) _payment_raw = val;
+    else if (key.includes('사은품계좌')) {/* 현금 사은품 계좌 — 무시 또는 별도 */}
+    else if (key === '통신사') notesExtra.push('통신사: ' + val);
+    else if (key === '상품명') notesExtra.push('상품명: ' + val);
+    else if (key === '요금') notesExtra.push('요금: ' + val);
+    else if (key === '설치비') notesExtra.push('설치비: ' + val);
+    else if (key.includes('사은품')) out.gift_received = val;
+    else if (key === '결합') {
+      out.combo_type = val.includes('직접결합') || val.includes('직접 결합') ? '고객이 직접 결합' : val;
+      if (val !== out.combo_type) notesExtra.push('결합 상세: ' + val);
+    }
+    else if (key === '약정') notesExtra.push('약정: ' + val);
+    else if (key === '기타') notesExtra.push('기타: ' + val);
+  }
+
+  // 출금계좌 분해 — "농협카드 / 4706-1675-2136-2679 / 31년02월"
+  if (_payment_raw) {
+    const parts = _payment_raw.split('/').map(s => s.trim()).filter(Boolean);
+    out.payment_method = '신용카드';
+    out.payment_extra = {
+      card: {
+        company: parts[0] || '',
+        number: parts[1] || '',
+        expiry: parts[2] || '',
+      }
+    };
+  }
+
+  if (notesExtra.length) out.notes = notesExtra.join('\n');
   return out;
 }
 
 function buildLineRequestMemo(d) {
-  // notes에서 추가 정보 역추출 (한 줄씩 "키: 값" 패턴)
-  const extraMap = {};
-  const noteLines = (d.notes || '').split('\n');
-  const noteKeys = {
-    '인터넷': 5, 'TV①': 6, 'TV②': 7, '결합/회선': 8,
-    '시내전화': 9, '인터넷전화': 10, '설치연락처': 12, '기타': 13, '판매처': 14,
-  };
-  for (const ln of noteLines) {
-    const m = ln.match(/^([^:]+?)\s*:\s*(.+)$/);
-    if (!m) continue;
-    const key = m[1].trim();
-    const val = m[2].trim();
-    if (noteKeys[key] != null) extraMap[noteKeys[key]] = val;
+  const p = d.product || {};
+  const fee = p.monthly_fee_min || p.monthly_fee_max || d.monthly_fee || '';
+  const installFee = p.install_fee || '';
+  // 출금계좌 → "회사/번호/만료일" (카드) 또는 "은행/계좌/예금주" (자동이체)
+  let paymentLine = 'X';
+  const card = (d.payment_extra && d.payment_extra.card) || null;
+  const bank = (d.payment_extra && d.payment_extra.bank) || null;
+  if (card && (card.company || card.number)) {
+    paymentLine = [card.company, card.number, card.expiry].filter(Boolean).join(' / ');
+  } else if (bank && (bank.name || bank.account)) {
+    paymentLine = [bank.name, bank.account, bank.holder].filter(Boolean).join(' / ');
   }
-  const rows = [
-    [1, '고객명', d.customer_name],
-    [2, '주민번호', d.resident_id],
-    [3, '휴대폰번호', d.customer_phone],
-    [4, '설치주소', d.customer_address],
-    [5, '인터넷상품', extraMap[5]],
-    [6, 'TV상품 / 셋탑 ①', extraMap[6] || 'X'],
-    [7, 'TV상품 / 셋탑 ②', extraMap[7] || 'X'],
-    [8, '결합상품 / 회선수', extraMap[8]],
-    [9, '시내전화', extraMap[9]],
-    [10, '인터넷전화', extraMap[10]],
-    [11, '사은품종류 / 금액', d.gift_received],
-    [12, '설치연락처', extraMap[12] || d.customer_phone],
-    [13, '기타 요청건', extraMap[13]],
-    [14, '판매처/연락처', extraMap[14]],
+  const addr = (d.customer_address || '') + (d.customer_address_detail ? ' ' + d.customer_address_detail : '');
+  // 상품명: product.name + WiFi 자동 (name에 wifi 미포함 시 추가)
+  const wifiOn = (d.wifi_option && d.wifi_option !== '미사용' && d.wifi_option !== 'X' && d.wifi_option !== 'N')
+    || /wi-?fi/i.test(d.quote_summary || '');
+  const nameHasWifi = /wi-?fi/i.test(p.name || '');
+  const productLabel = (p.name || [p.speed, p.tv_tier].filter(Boolean).join(' + '))
+    + (wifiOn && !nameHasWifi ? ' + WIFI' : '');
+  const lines = [
+    '유선',
+    '★현재 사용중인 인터넷통신사 : ' + (d.current_carrier || ''),
+    '★ 고객명 : ' + (d.customer_name || ''),
+    '★ 주민번호 : ' + (d.resident_id || ''),
+    '★ 핸드폰번호&통신사(본인명의) : ' + (d.customer_phone || ''),
+    '★ 이메일 : ' + (d.customer_email || ''),
+    '★ 설치주소 : ' + addr,
+    '★ 출금계좌&카드(본인명의): ' + paymentLine,
+    '★ 현금사은품계좌(본인명의): X',
+    '',
+    '통신사: ' + (p.carrier || ''),
+    '상품명: ' + (productLabel || p.name || ''),
+    '요금: ' + (fee ? Number(fee).toLocaleString() + '원' : ''),
+    '설치비: ' + (installFee ? Number(installFee).toLocaleString() + '원' : ''),
+    '사은품(상품권+현금): ' + (d.gift_received || 'X'),
+    '결합: ' + (d.combo_type || ''),
+    '약정: 3년 (기간중 해지시 위약금발생)',
+    '기타: 타사해지는 본인이 직접하셔야합니다',
+    '**와이파이는 필요시 유무확인필수 **',
+    '**현재 사용중인 통신사 필수 기재**',
   ];
-  // 없는 값 제외 (사용자 지시: 빈 값은 제외해도 OK)
-  const body = rows
-    .filter(([_, __, v]) => v != null && v !== '')
-    .map(([n, k, v]) => `${n}. ${k} : ${v}`)
-    .join('\n');
-  return `★유선청약요청★\n하나로 / 동판 : 하나로\n티게이트접수여부 : O\n\n${body}`;
+  return lines.join('\n');
 }
 
 async function handleAction(id, act) {
@@ -1020,13 +1054,33 @@ async function handleAction(id, act) {
       return inp ? (inp.value || '').trim() : '';
     };
     const notesField = isModal ? 'contract_notes' : 'notes';
+    // sale + product 객체에서 직접 가져오기 (모달이 동적 채워진 input보다 정확)
+    const sale = (_currentContracts || []).find(s => s.id === id) || {};
+    // payment_extra 조립 (modal에서 _pe_card_* / _pe_bank_* input 값 사용)
+    let payment_extra = sale.payment_extra || null;
+    if (isModal) {
+      const pm = getVal('payment_method');
+      const card = { holder: getVal('_pe_card_holder'), company: getVal('_pe_card_company'), number: getVal('_pe_card_number'), expiry: getVal('_pe_card_expiry') };
+      const bank = { holder: getVal('_pe_bank_holder'), name: getVal('_pe_bank_name'), account: getVal('_pe_bank_account') };
+      if (pm === '신용카드' && Object.values(card).some(Boolean)) payment_extra = { card };
+      else if (pm === '자동이체' && Object.values(bank).some(Boolean)) payment_extra = { bank };
+    }
     const memo = buildLineRequestMemo({
-      customer_name: getVal('customer_name'),
-      resident_id: getVal('resident_id'),
-      customer_phone: getVal('customer_phone'),
-      customer_address: getVal('customer_address'),
-      gift_received: getVal('gift_received'),
+      customer_name: getVal('customer_name') || sale.customer_name || '',
+      resident_id: getVal('resident_id') || sale.resident_id || '',
+      customer_phone: getVal('customer_phone') || sale.customer_phone || '',
+      customer_email: getVal('customer_email') || sale.customer_email || '',
+      customer_address: getVal('customer_address') || sale.customer_address || '',
+      customer_address_detail: getVal('customer_address_detail') || sale.customer_address_detail || '',
+      current_carrier: getVal('current_carrier') || sale.current_carrier || '',
+      combo_type: getVal('combo_type') || sale.combo_type || '',
+      gift_received: getVal('gift_received') || sale.gift_received || '',
+      payment_extra,
       notes: getVal(notesField),
+      product: sale.product || {},
+      monthly_fee: getVal('monthly_fee') || sale.monthly_fee || null,
+      wifi_option: sale.wifi_option || null,
+      quote_summary: sale.quote_summary || '',
     });
     try {
       await navigator.clipboard.writeText(memo);
@@ -1111,8 +1165,15 @@ async function handleAction(id, act) {
 
   let body = {};
   if (act === 'save-detail') {
-    // 모달의 모든 input/textarea 값 수집
-    const modalBody = document.getElementById('modal-body');
+    // 컨테이너 결정: 모달이 열려 있으면 modal-body 우선 (사용자가 거기서 편집).
+    // 모달 닫혀 있고 row inline form 펼쳐진 상태면 클릭된 버튼의 <tr>.
+    const modalEl = document.getElementById('modal-body');
+    const modalOpen = modalEl && modalEl.offsetParent !== null && modalEl.innerHTML.trim().length > 0;
+    const clickedBtn = document.activeElement?.closest('[data-act="save-detail"]')
+      || document.querySelector(`[data-act="save-detail"][data-id="${id}"]`);
+    const modalBody = modalOpen
+      ? modalEl
+      : (clickedBtn?.closest('tr') || modalEl);
     const peBank = {}, peCard = {}; let comboCustom = null;
     modalBody.querySelectorAll('.detail-input').forEach(inp => {
       const field = inp.dataset.field;
@@ -1140,7 +1201,9 @@ async function handleAction(id, act) {
       else if (field === '_pe_card_number') { peCard.number = val || null; }
       else if (field === '_pe_card_expiry') { peCard.expiry = val || null; }
       else {
-        body[field] = val || null;
+        // 빈 값(공백)은 PATCH body에서 제외 — 기존 값 보존
+        // (의도적으로 비우려면 별도 처리)
+        if (val !== '') body[field] = val;
       }
     });
     // 결합유형: '__custom__' select 값을 자유 입력으로 대체
@@ -1168,6 +1231,7 @@ async function handleAction(id, act) {
   } else if (act === 'finalize') {
     body = { status: 'completed' };
   }
+
 
   // role별 권한은 서버 PATCH/DELETE에서 검증 — UI는 _canMutate로 행 단위 차단
   try {
@@ -1277,8 +1341,14 @@ function openEditModal(id) {
 
       <div class="product-header">
         <div style="flex:1;min-width:280px">
-          <div class="ph-meta">[${p.carrier || '-'}] ${p.type || '-'} · ${p.speed || '-'} · TV ${p.tv_tier || '없음'}</div>
-          <div class="ph-name">${p.name || '-'}</div>
+          ${(() => {
+            // WiFi 사용 판단: wifi_option 또는 quote_summary에 "WiFi" 키워드
+            const hasWifi = (c.wifi_option && c.wifi_option !== '미사용' && c.wifi_option !== 'X' && c.wifi_option !== 'N')
+              || /wi-?fi/i.test(c.quote_summary || '');
+            return `
+              <div class="ph-meta">[${p.carrier || '-'}] ${p.type || '-'} · ${p.speed || '-'} · TV ${p.tv_tier || '없음'}${hasWifi ? ' · WiFi' : ''}${c.tv_count > 1 ? ' · TV ' + c.tv_count + '대' : ''}</div>
+              <div class="ph-name">${p.name || '-'}${(hasWifi && !/wi-?fi/i.test(p.name||'')) ? ' + WiFi' : ''}</div>`;
+          })()}
           <div class="ph-tags">
             <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 8px;border-radius:4px;font-weight:700">${(c.point_weight_snapshot ?? p.point_weight ?? '-')}P</span>
             ${tierBadge}${premBadge}
@@ -1347,9 +1417,23 @@ function openEditModal(id) {
           <input class="detail-input" data-field="customer_email" type="email" value="${(c.customer_email || '').replace(/"/g, '&quot;')}" placeholder="example@domain.com">
         </div>
       </div>
-      <div class="sec-row">
-        <label class="modal-field-label">주민번호 <span style="font-size:9.5px;color:#94a3b8">(최종계약시)</span></label>
-        <input class="detail-input" data-field="resident_id" value="${(c.resident_id || '').replace(/"/g, '&quot;')}" placeholder="000000-0000000" style="letter-spacing:0.04em">
+      <div class="sec-grid-2 sec-row">
+        <div>
+          <label class="modal-field-label">주민번호 <span style="font-size:9.5px;color:#94a3b8">(최종계약시 · 13자리)</span></label>
+          <input class="detail-input" data-field="resident_id" value="${(c.resident_id || '').replace(/"/g, '&quot;')}" placeholder="830111-1664210" maxlength="14" inputmode="numeric" style="letter-spacing:0.04em" oninput="this.value = (this.value.replace(/\D/g,'').slice(0,13)).replace(/^(\d{6})(\d{0,7}).*/, (m,a,b)=>b?a+'-'+b:a);">
+        </div>
+        <div>
+          <label class="modal-field-label">📡 현재 사용 중인 통신사 <span style="font-size:9.5px;color:#94a3b8">(이전 통신사·해지 대상)</span></label>
+          <select class="detail-input" data-field="current_carrier">
+            <option value="">— 선택 —</option>
+            <option value="SK"      ${c.current_carrier==='SK'?'selected':''}>SK</option>
+            <option value="KT"      ${c.current_carrier==='KT'?'selected':''}>KT</option>
+            <option value="LG"      ${c.current_carrier==='LG'?'selected':''}>LG</option>
+            <option value="SK알뜰"  ${c.current_carrier==='SK알뜰'?'selected':''}>SK알뜰</option>
+            <option value="KT알뜰"  ${c.current_carrier==='KT알뜰'?'selected':''}>KT알뜰</option>
+            <option value="LG알뜰"  ${c.current_carrier==='LG알뜰'?'selected':''}>LG알뜰</option>
+          </select>
+        </div>
       </div>
       <div class="sec-row">
         <label class="modal-field-label">📍 설치 주소 (기본) <span style="color:#dc2626">*</span></label>
@@ -1441,7 +1525,7 @@ function openEditModal(id) {
           const carrier = normalizeCarrier(p.carrier);
           const opts = COMBO_OPTIONS[carrier] || [];   // SK/KT/LG 중 하나로 인식된 경우만 노출
           const cur = c.combo_type || '';
-          const isCustom = cur && !opts.includes(cur);
+          const isCustom = cur && !opts.includes(cur) && cur !== '고객이 직접 결합';
           const customId = `combo-type-custom-${c.id}`;
           const fallbackHint = (opts.length === 0)
             ? `<div style="font-size:10px;color:#fbbf24;margin-top:4px">⚠️ 통신사 "${p.carrier || '-'}" SK/KT/LG로 인식 안 됨 — "기타"로 직접 입력 (운영팀: 상품 carrier 값 확인)</div>`
@@ -1450,7 +1534,8 @@ function openEditModal(id) {
             <select class="detail-input" data-field="combo_type" data-id="${c.id}" data-custom-target="${customId}" onchange="(function(s){var t=document.getElementById(s.dataset.customTarget);if(!t)return;t.style.display=s.value==='__custom__'?'block':'none';if(s.value!=='__custom__')t.value='';})(this)">
               <option value="">— 선택 —</option>
               ${opts.map(o => `<option value="${o}" ${cur===o?'selected':''}>${o}</option>`).join('')}
-              <option value="__custom__" ${isCustom?'selected':''}>📝 기타 (직접 입력)</option>
+              <option value="고객이 직접 결합" ${cur==='고객이 직접 결합'?'selected':''}>👤 고객이 직접 결합</option>
+              <option value="__custom__" ${isCustom && cur!=='고객이 직접 결합'?'selected':''}>📝 기타 (직접 입력)</option>
             </select>
             <input id="${customId}" class="detail-input" data-field="combo_type_custom" data-id="${c.id}" value="${isCustom ? cur.replace(/"/g, '&quot;') : ''}" placeholder="예: 인터넷+모바일 패키지" style="margin-top:6px;display:${isCustom?'block':'none'}">
             ${fallbackHint}
@@ -1465,17 +1550,6 @@ function openEditModal(id) {
             : ''
         }</textarea>
         <div class="modal-field-hint">💡 한 줄당 1명. 형식: 이름 / 생년월일 / 전화번호. 저장 시 자동 JSON 변환</div>
-      </div>
-      <div class="sec-row">
-        <label class="modal-field-label">📡 현재 사용 중인 통신사 <span style="font-size:9.5px;color:#94a3b8">(이전 통신사·해지 대상)</span></label>
-        <select class="detail-input" data-field="current_carrier">
-          <option value="">— 선택 —</option>
-          <option value="SK" ${c.current_carrier==='SK'?'selected':''}>SK</option>
-          <option value="KT" ${c.current_carrier==='KT'?'selected':''}>KT</option>
-          <option value="LG" ${c.current_carrier==='LG'?'selected':''}>LG U+</option>
-          <option value="알뜰폰" ${c.current_carrier==='알뜰폰'?'selected':''}>알뜰폰</option>
-          <option value="없음(신규)" ${c.current_carrier==='없음(신규)'?'selected':''}>없음 (신규)</option>
-        </select>
       </div>
       <div class="sec-grid-3 sec-row">
         <div>
@@ -1492,8 +1566,8 @@ function openEditModal(id) {
           <label class="modal-field-label billing-target-label">청구서 받을 ${c.billing_method==='이메일'?'이메일':'번호'} <span style="font-size:9.5px;color:#94a3b8">(MMS/이메일/카카오톡)</span></label>
           <input class="detail-input billing-target-input" data-field="billing_phone" value="${(c.billing_phone || '').replace(/"/g, '&quot;')}" placeholder="${c.billing_method==='이메일'?'example@domain.com':'010-1234-5678'}">
         </div>
-        <div>
-          <label class="modal-field-label">청구서 통신사</label>
+        <div class="billing-carrier-wrap" style="${['MMS','카카오톡'].includes(c.billing_method)?'':'display:none'}">
+          <label class="modal-field-label">청구서 통신사 <span style="font-size:9.5px;color:#94a3b8">(MMS·카카오톡만)</span></label>
           <select class="detail-input" data-field="billing_carrier">
             <option value="">— 선택 —</option>
             <option value="SK" ${c.billing_carrier==='SK'?'selected':''}>SK</option>
@@ -1521,14 +1595,27 @@ function openEditModal(id) {
     <!-- 👥 댁내 대기자 · 판매자 연락처 -->
     <div class="sec-card acc-yellow">
       <div class="sec-title"><span class="sec-icon">👥</span>댁내 대기자 · 판매자 연락처</div>
-      <div class="sec-grid-2 sec-row">
+      <div class="sec-grid-3 sec-row">
         <div>
-          <label class="modal-field-label">🏠 댁내 대기자 성함 <span style="font-size:9.5px;color:#94a3b8">(설치 당일)</span></label>
-          <input class="detail-input" data-field="waiting_person" value="${(c.waiting_person || '').replace(/"/g, '&quot;')}" placeholder="예: 본인 / 배우자 김영희">
+          <label class="modal-field-label">👥 대기자 관계 <span style="font-size:9.5px;color:#94a3b8">(설치 당일)</span></label>
+          <select class="detail-input waiting-relation-select" data-field="waiting_relation" onchange="syncWaitingPerson(this)">
+            <option value="">— 선택 —</option>
+            <option value="본인"   ${c.waiting_relation==='본인'?'selected':''}>👤 본인 (자동 채움)</option>
+            <option value="배우자" ${c.waiting_relation==='배우자'?'selected':''}>💑 배우자</option>
+            <option value="부모"   ${c.waiting_relation==='부모'?'selected':''}>👨‍👩‍👧 부모</option>
+            <option value="자녀"   ${c.waiting_relation==='자녀'?'selected':''}>🧒 자녀</option>
+            <option value="형제"   ${c.waiting_relation==='형제'?'selected':''}>👨‍👨‍👦 형제·자매</option>
+            <option value="친척"   ${c.waiting_relation==='친척'?'selected':''}>👪 친척</option>
+            <option value="기타"   ${c.waiting_relation==='기타'?'selected':''}>📝 기타</option>
+          </select>
+        </div>
+        <div>
+          <label class="modal-field-label">🏠 댁내 대기자 성함</label>
+          <input class="detail-input waiting-person-input" data-field="waiting_person" value="${(c.waiting_person || '').replace(/"/g, '&quot;')}" placeholder="예: 김영희">
         </div>
         <div>
           <label class="modal-field-label">📞 댁내 대기자 CTN</label>
-          <input class="detail-input" data-field="waiting_phone" value="${(c.waiting_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678">
+          <input class="detail-input waiting-phone-input" data-field="waiting_phone" value="${(c.waiting_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678">
         </div>
       </div>
       <div class="sec-grid-2 sec-row">
@@ -1864,7 +1951,7 @@ async function injectHistorySection(c) {
     monthly_fee: '월 요금', installation_date: '설치일', installation_time: '설치 시간',
     activation_date: '개통일', gift_received: '사은품',
     quote_summary: '견적 요약', quote_full_html: '견적서',
-    waiting_person: '대기자', waiting_phone: '대기자 전화', seller_phone: '판매자 전화',
+    waiting_person: '대기자', waiting_phone: '대기자 전화', waiting_relation: '대기자 관계', seller_phone: '판매자 전화',
     onestop_yn: '원스톱', current_carrier: '현재 통신사',
   };
   const labelF = (f) => FIELD_LABELS[f] || f;
@@ -2376,22 +2463,54 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
 
 init();
 
-// 청구서 방식 = 이메일이면 청구서 받을 번호 input을 고객 이메일과 자동 연동
+// 청구서 방식 따라 청구서 받을 target input을 고객정보와 자동 연동
+//   - 이메일      → customer_email
+//   - MMS·카카오톡 → customer_phone
+//   - 우편         → customer_address (수정 가능)
 function syncBillingTarget(selectEl) {
   const scope = selectEl.closest('[class*="modal"]') || selectEl.closest('.sec-card')?.parentElement || document;
   const target = scope.querySelector('.billing-target-input');
   const label = scope.querySelector('.billing-target-label');
-  const customerEmail = scope.querySelector('input[data-field="customer_email"]');
   if (!target) return;
-  if (selectEl.value === '이메일') {
+  const customerEmail = scope.querySelector('input[data-field="customer_email"]')?.value || '';
+  const customerPhone = scope.querySelector('input[data-field="customer_phone"]')?.value || '';
+  const customerAddr  = scope.querySelector('input[data-field="customer_address"]')?.value || '';
+  const v = selectEl.value;
+  if (v === '이메일') {
     if (label) label.firstChild.textContent = '청구서 받을 이메일 ';
     target.type = 'email';
     target.placeholder = 'example@domain.com';
-    if (customerEmail && customerEmail.value) target.value = customerEmail.value;
-  } else {
+    if (customerEmail) target.value = customerEmail;
+  } else if (v === 'MMS' || v === '카카오톡') {
     if (label) label.firstChild.textContent = '청구서 받을 번호 ';
-    target.type = 'text';
+    target.type = 'tel';
     target.placeholder = '010-1234-5678';
+    if (customerPhone) target.value = customerPhone;
+  } else if (v === '우편') {
+    if (label) label.firstChild.textContent = '청구서 받을 주소 ';
+    target.type = 'text';
+    target.placeholder = '청구서 우편 발송 주소';
+    if (customerAddr) target.value = customerAddr;
+  } else {
+    if (label) label.firstChild.textContent = '청구서 받을 정보 ';
+    target.type = 'text';
+    target.placeholder = '청구서 방식을 먼저 선택';
+  }
+  // 청구서 통신사 필드는 MMS·카카오톡일 때만 노출
+  const carrierWrap = scope.querySelector('.billing-carrier-wrap');
+  if (carrierWrap) carrierWrap.style.display = (v === 'MMS' || v === '카카오톡') ? '' : 'none';
+}
+
+// 댁내 대기자 관계 = 본인이면 customer_name·customer_phone 자동 채움
+function syncWaitingPerson(selectEl) {
+  const scope = selectEl.closest('[class*="modal"]') || selectEl.closest('.sec-card')?.parentElement || document;
+  const person = scope.querySelector('.waiting-person-input');
+  const phone  = scope.querySelector('.waiting-phone-input');
+  if (selectEl.value === '본인') {
+    const cn = scope.querySelector('input[data-field="customer_name"]')?.value || '';
+    const cp = scope.querySelector('input[data-field="customer_phone"]')?.value || '';
+    if (person && cn) person.value = cn;
+    if (phone  && cp) phone.value  = cp;
   }
 }
 

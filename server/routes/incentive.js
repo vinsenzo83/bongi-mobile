@@ -881,7 +881,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
     const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, customer_email, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id, dealer_id,
-      birth_date, combo_type, combo_members, billing_method, billing_phone, billing_carrier, payment_method, payment_extra, waiting_person, waiting_phone, seller_phone, onestop_yn, current_carrier } = req.body || {};
+      birth_date, combo_type, combo_members, billing_method, billing_phone, billing_carrier, payment_method, payment_extra, waiting_person, waiting_phone, waiting_relation, seller_phone, onestop_yn, current_carrier } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -958,6 +958,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (payment_extra !== undefined) update.payment_extra = payment_extra;
     if (waiting_person !== undefined) update.waiting_person = waiting_person;
     if (waiting_phone !== undefined) update.waiting_phone = waiting_phone;
+    if (waiting_relation !== undefined) update.waiting_relation = waiting_relation;
     if (seller_phone !== undefined) update.seller_phone = seller_phone;
     if (onestop_yn !== undefined) update.onestop_yn = onestop_yn;
     if (current_carrier !== undefined) update.current_carrier = current_carrier;
@@ -1393,7 +1394,7 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
 
     // gzip 적용 후 quote_full_html 포함해도 페이로드 작음 (~10KB 추가) — 모달 즉시 표시
     // 휴지통 모드일 때는 deleted_at/deleted_by_user_id/deleted_reason도 함께 반환
-    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_address,customer_address_detail,resident_id,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,point_weight_snapshot,is_premium_snapshot,db_source_id,dealer_id';
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_email,customer_address,customer_address_detail,resident_id,birth_date,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,point_weight_snapshot,is_premium_snapshot,db_source_id,dealer_id,combo_type,combo_members,billing_method,billing_phone,billing_carrier,payment_method,payment_extra,waiting_person,waiting_phone,waiting_relation,seller_phone,onestop_yn,current_carrier';
     let q = supabase
       .from('incentive_sales')
       .select(`${listCols}, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)`)
