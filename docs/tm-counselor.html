@@ -1706,7 +1706,7 @@ function bindShortcutKeys() {
     <!-- ★ 카테고리 탭 (인터넷+TV / 가전렌탈) -->
     <div class="tm-cat-tabs">
       <div class="tab active" data-cat="it">📡 인터넷 + TV</div>
-      <div class="tab" data-cat="rental">🏠 가전렌탈 <span class="new">NEW</span></div>
+      <div class="tab" data-cat="rental">🏠 가전렌탈(정수기) <span class="new">NEW</span></div>
     </div>
 
     <!-- ★ 가전렌탈 패널 (기본 hidden, 탭 클릭 시 표시) -->
@@ -5074,7 +5074,7 @@ setTimeout(() => {
       document.body.classList.toggle('cat-it', cat === 'it');
       // 카테고리별 스크립트 라벨 + 데이터 전환
       const lbl = document.getElementById('tm-script-cat-label');
-      if (lbl) lbl.textContent = cat === 'rental' ? '· 🏠 가전렌탈' : '· 📡 인터넷+TV';
+      if (lbl) lbl.textContent = cat === 'rental' ? '· 🏠 가전렌탈(정수기)' : '· 📡 인터넷+TV';
       if (cat === 'rental') {
         rentalInit();
         renderRentalScripts();
@@ -5846,7 +5846,7 @@ setTimeout(() => {
 <div class="rdm-overlay" id="rdm-overlay" role="dialog" aria-modal="true" aria-labelledby="rdm-title">
   <div class="rdm-box rdm-type-individual" id="rdm-box">
     <div class="rdm-header">
-      <h2 id="rdm-title">🏠 가전렌탈 신청 <span class="req">* 필수입력사항</span></h2>
+      <h2 id="rdm-title">🏠 가전렌탈(정수기) 신청 <span class="req">* 필수입력사항</span></h2>
       <button type="button" class="close" id="rdm-close" aria-label="닫기">✕</button>
     </div>
     <div class="rdm-body">
