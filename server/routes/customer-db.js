@@ -358,68 +358,7 @@ router.get('/:id(\\d+)', async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // 6-EQ. POST /api/customer-db/distribute/equal — 균등 분배 (1클릭)
 // ═══════════════════════════════════════════════════════════════
-router.post('/distribute/equal', async (req, res) => {
-  try {
-    const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!isManagerOrAdmin(me)) return res.status(403).json({ error: 'manager/admin 전용' });
-
-    const { center, max_per_agent = 0 } = req.body || {};
-    const targetCenter = me.role === 'manager' ? me.center : (center || null);
-
-    // 콜센터 active agent 자동 조회
-    let aq = supabase.from('incentive_agents').select('id, name, center').eq('active', true).in('role', ['agent','manager']);
-    if (targetCenter) aq = aq.eq('center', targetCenter);
-    const { data: agents, error: ae } = await aq;
-    if (ae) throw ae;
-    if (!agents || !agents.length) return res.status(400).json({ error: '분배 대상 상담사 없음' });
-
-    const agent_ids = agents.map(a => a.id);
-
-    // 미배정 풀 가져오기 (priority_score DESC)
-    const totalLimit = max_per_agent > 0 ? max_per_agent * agent_ids.length : 100000;
-    let q = supabase.from('incentive_customer_db')
-      .select('id, priority_score').is('deleted_at', null).is('assigned_agent_id', null).eq('archived', false);
-    if (me.role === 'manager') q = q.eq('assigned_center', me.center);
-    q = q.order('priority_score', { ascending: false, nullsFirst: false })
-         .order('imported_at', { ascending: true })
-         .limit(totalLimit);
-    const { data: targets, error: e1 } = await q;
-    if (e1) throw e1;
-    if (!targets.length) return res.json({ ok: true, distributed: 0, message: '미배정 풀 비어있음' });
-
-    // 라운드로빈
-    const updates = targets.map((t, i) => ({
-      id: t.id,
-      assigned_agent_id: agent_ids[i % agent_ids.length],
-      assigned_center: targetCenter,
-      assigned_at: new Date().toISOString(),
-      assigned_by_user_id: req.user.id,
-    }));
-
-    let total = 0;
-    for (let i = 0; i < updates.length; i += 500) {
-      const chunk = updates.slice(i, i + 500);
-      const { error } = await supabase.from('incentive_customer_db').upsert(chunk);
-      if (error) throw error;
-      total += chunk.length;
-    }
-
-    logAccess({
-      user_id: req.user.id, action: 'distribute_equal', ip: req.ip, ua: req.get('user-agent'),
-      metadata: { center: targetCenter, agent_count: agent_ids.length, distributed: total, max_per_agent },
-    });
-
-    // 상담사별 분배 카운트
-    const perAgent = {};
-    updates.forEach(u => { perAgent[u.assigned_agent_id] = (perAgent[u.assigned_agent_id] || 0) + 1; });
-    const breakdown = agents.map(a => ({ id: a.id, name: a.name, center: a.center, assigned: perAgent[a.id] || 0 }));
-
-    res.json({ ok: true, distributed: total, agent_count: agent_ids.length, center: targetCenter, breakdown });
-  } catch (e) {
-    console.error('[distribute/equal]', e);
-    res.status(500).json({ error: sanitizeErr(e) });
-  }
-});
+// (이전 중복 정의 제거됨 — 아래 grades 필터 포함 개선판만 유지)
 
 // ═══════════════════════════════════════════════════════════════
 // 6-EQ. POST /api/customer-db/distribute/equal — 균등 분배 (1클릭)
@@ -456,20 +395,31 @@ router.post('/distribute/equal', async (req, res) => {
     if (e1) throw e1;
     if (!targets.length) return res.json({ ok: true, distributed: 0, message: '미배정 풀 비어있음' });
 
-    const updates = targets.map((t, i) => ({
-      id: t.id,
-      assigned_agent_id: agent_ids[i % agent_ids.length],
-      assigned_center: targetCenter,
-      assigned_at: new Date().toISOString(),
-      assigned_by_user_id: req.user.id,
-    }));
-
+    // 라운드로빈 → agent별 customer id 그룹화 (한 번에 update)
+    // upsert는 name NOT NULL 충돌 위험 → 안전한 .update() + .in() 사용
+    const byAgent = {};
+    targets.forEach((t, i) => {
+      const aid = agent_ids[i % agent_ids.length];
+      (byAgent[aid] = byAgent[aid] || []).push(t.id);
+    });
+    const now = new Date().toISOString();
     let total = 0;
-    for (let i = 0; i < updates.length; i += 500) {
-      const chunk = updates.slice(i, i + 500);
-      const { error } = await supabase.from('incentive_customer_db').upsert(chunk);
-      if (error) throw error;
-      total += chunk.length;
+    for (const [aid, ids] of Object.entries(byAgent)) {
+      // chunk 500개씩 split
+      for (let j = 0; j < ids.length; j += 500) {
+        const chunk = ids.slice(j, j + 500);
+        const { error } = await supabase.from('incentive_customer_db')
+          .update({
+            assigned_agent_id: aid,
+            assigned_center: targetCenter,
+            assigned_at: now,
+            assigned_by_user_id: req.user.id,
+            updated_at: now,
+          })
+          .in('id', chunk);
+        if (error) throw error;
+        total += chunk.length;
+      }
     }
 
     logAccess({
@@ -477,9 +427,7 @@ router.post('/distribute/equal', async (req, res) => {
       metadata: { center: targetCenter, agent_count: agent_ids.length, distributed: total, grades },
     });
 
-    const perAgent = {};
-    updates.forEach(u => { perAgent[u.assigned_agent_id] = (perAgent[u.assigned_agent_id] || 0) + 1; });
-    const breakdown = agents.map(a => ({ id: a.id, name: a.name, center: a.center, assigned: perAgent[a.id] || 0 }));
+    const breakdown = agents.map(a => ({ id: a.id, name: a.name, center: a.center, assigned: (byAgent[a.id] || []).length }));
 
     res.json({ ok: true, distributed: total, agent_count: agent_ids.length, center: targetCenter, breakdown, grades });
   } catch (e) {
