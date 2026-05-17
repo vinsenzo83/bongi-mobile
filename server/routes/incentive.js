@@ -2422,6 +2422,68 @@ router.delete('/gift-vouchers/:id(\\d+)', authenticateJWT, async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════
+// 📋 메뉴 SSOT (incentive_menus) — 사이드바·권한·DEFAULTS 1곳 통합
+// ════════════════════════════════════════════════════════════
+
+// GET /api/incentive/menus — 활성 메뉴 list (모든 인증 사용자)
+router.get('/menus', authenticateJWT, async (req, res) => {
+  try {
+    const { include_inactive } = req.query;
+    let q = supabase.from('incentive_menus')
+      .select('slug,label,icon,iframe_src,category,display_order,default_roles,active')
+      .order('display_order', { ascending: true });
+    if (include_inactive !== 'true' && include_inactive !== '1') q = q.eq('active', true);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json({ menus: data || [], total: (data || []).length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/incentive/menus/:slug — admin 수정
+router.patch('/menus/:slug', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const { label, icon, iframe_src, category, display_order, default_roles, active } = req.body || {};
+    const update = { updated_at: new Date().toISOString() };
+    if (label !== undefined) update.label = String(label).slice(0, 100);
+    if (icon !== undefined) update.icon = String(icon).slice(0, 10);
+    if (iframe_src !== undefined) update.iframe_src = String(iframe_src).slice(0, 500);
+    if (category !== undefined) update.category = String(category).slice(0, 50);
+    if (display_order !== undefined) update.display_order = parseInt(display_order) || 100;
+    if (Array.isArray(default_roles)) update.default_roles = default_roles;
+    if (active !== undefined) update.active = !!active;
+    const { data, error } = await supabase.from('incentive_menus')
+      .update(update).eq('slug', req.params.slug).select().single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: '메뉴 없음' });
+    res.json({ menu: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/incentive/menus — admin 신규 등록
+router.post('/menus', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const { slug, label, icon, iframe_src, category, display_order, default_roles } = req.body || {};
+    if (!slug || !label) return res.status(400).json({ error: 'slug, label 필수' });
+    if (!/^[a-z][a-z0-9-]+$/.test(slug)) return res.status(400).json({ error: 'slug는 소문자/숫자/하이픈만' });
+    const row = {
+      slug, label,
+      icon: icon || null,
+      iframe_src: iframe_src || null,
+      category: category || null,
+      display_order: parseInt(display_order) || 100,
+      default_roles: Array.isArray(default_roles) ? default_roles : [],
+    };
+    const { data, error } = await supabase.from('incentive_menus').insert(row).select().single();
+    if (error) throw error;
+    res.json({ ok: true, menu: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ════════════════════════════════════════════════════════════
 // 🎫 티켓 관리 — 고객→상담사 핫라인 식별 코드
 // ════════════════════════════════════════════════════════════
 // 인터넷+TV 티켓 (incentive_internet_tickets — 105개 박제)
