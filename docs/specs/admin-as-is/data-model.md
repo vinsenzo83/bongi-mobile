@@ -708,26 +708,38 @@ CASE
 
 ---
 
-## 부록 — `bongi_tickets` (어드민에서 간접 사용)
+## 부록 — `bongi_tickets` (봉이 메인 사이트 신청 카탈로그)
 
-> incentive_* 도메인은 아니지만 **TM 데이터 관리 메뉴 → "티켓" 서브메뉴**에서 사용. 정리 작업(2026-05-17) 반영.
+> incentive_* 도메인 외부. **어드민 견적(105 JS 메모리)과 별개의 시스템**. 봉이 고객 사이트(`bongi-mobile.com`)의 인터넷+TV+렌탈 신청 카탈로그.
 
-### 정리 후 상태
+### 현재 상태 (2026-05-17 롤백 후 = 원래 상태)
 | 항목 | 값 |
 |---|---|
-| 총 row | **1,053** (삭제 안 함 — snapshot 박제 정책) |
-| `is_active=true` | **155** (운영 internet 105 + rental 50) |
-| `is_active=false` | 898 (와이어프레임 mock 누적 897 + rental 1) |
+| 총 row | **1,053** |
+| `is_active=true` | **1,052** (internet 1,002 + rental 50) |
+| `is_active=false` | 1 (rental 1) |
 | RLS | true |
 | PK | `id` (integer, sequence) |
-| FK | 4개 (speed_id, tv_id, settop_id, wifi_id → bongi_internet_speeds / bongi_tv_products / bongi_settop_boxes / bongi_wifi_products) |
+| FK | 4개 (speed_id, tv_id, settop_id, wifi_id) |
 
-### 운영 active 105개 분포
-| 통신사 (ticket_number prefix) | active | 범위 |
+### 실제 운영 사용 증거
+`bongi_applications` (rows=10) — 고객 신청서 테이블의 `product_ticket` 컬럼:
+- `SK0188` (신청완료), `SK0398` (취소)
+- `KT0311` (상담중), `KT0146` (신청완료)
+- `LG0079` (계약완료)
+- `R015` (계약완료, rental)
+
+→ **105 범위 밖 티켓번호로 실제 신청 데이터 존재** = 봉이 메인 사이트가 949개 internet 카탈로그 운영 중.
+
+### 어드민 견적 105개와의 차이
+
+| 항목 | 어드민 견적 (`calculator.html`) | 고객 사이트 (`bongi_tickets`) |
 |---|---|---|
-| SK | 60 | SK0001 ~ SK0060 |
-| KT | 30 | KT0001 ~ KT0030 |
-| LG | 15 | LG0001 ~ LG0015 |
+| 갯수 | 105 (internet) | 1,002 internet + 50 rental |
+| 저장 | DB 없음 (JS 메모리) | bongi_tickets 테이블 |
+| 갱신 시점 | 시드 변경(`incentive_calculator_overrides`) 즉시 재생성 | sync API 또는 manual |
+| 용도 | TM 상담 견적·요금 계산 | 고객 신청 카탈로그 |
+| ticket_number 범위 | SK0001~60 / KT0001~30 / LG0001~15 | SK0001~450 / KT0001~360 / LG0001~192 |
 
 ### 핵심 컬럼
 | 컬럼 | 타입 | 비고 |
@@ -742,19 +754,13 @@ CASE
 | `is_active` | boolean | default true (비활성화로 박제) |
 | `created_at`, `updated_at` | timestamptz | now() |
 
-### ⚠️ 주의
-- 운영 어드민(`/`)에서 안 읽음 — `calculator.html` JS가 메모리 105개를 동적 생성
-- 공개 와이어프레임(`/admin/`)에서만 조회 — 인증 미들웨어 없음 (보안 검토 필요)
-- carrier 표기가 다른 시스템과 다름 → 매핑 필수
-- 정리 작업 SQL (참고):
-  ```sql
-  UPDATE bongi_tickets
-  SET is_active = false, updated_at = NOW()
-  WHERE ticket_type = 'internet'
-    AND is_active = true
-    AND NOT (
-      ticket_number BETWEEN 'SK0001' AND 'SK0060' OR
-      ticket_number BETWEEN 'KT0001' AND 'KT0030' OR
-      ticket_number BETWEEN 'LG0001' AND 'LG0015'
-    );
-  ```
+### ⚠️ 절대 금지
+- `bongi_tickets`의 internet row를 어드민(105) 기준으로 정리 X — 봉이 메인 사이트 신청 흐름 깨짐
+- 작업 전 반드시 `bongi_applications.product_ticket` 사용 데이터 확인
+- 매뉴얼의 "105개"는 TM 견적용 한정 표현 (고객 사이트는 별개)
+
+### 2026-05-17 사고 + 롤백
+- 19:30: 잘못된 정리 (105 범위 외 internet 비활성화) — 897건 영향
+- 20:30: 발견 즉시 롤백 (`updated_at::date='2026-05-17'` 조건으로 안전 복원)
+- 결과: 원래 상태와 동일 (active 1,052 / inactive 1)
+- 상세: `environments.md` §6

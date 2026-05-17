@@ -106,26 +106,37 @@ function renderTicketList() {
 }
 ```
 
-### 10.4 `bongi_tickets` 테이블 (DB, 정리 후)
+### 10.4 `bongi_tickets` 테이블 — **별개 시스템 (봉이 메인 사이트용)**
 
-**위치**: 공개 `/admin/` 와이어프레임에서 사용 (`server/public/admin/index.html`)
-**라이브 운영 어드민(`/`)에서는 사용 안 함**
+⚠️ **이 메뉴(어드민 견적)와 무관**. 봉이 고객 사이트(`bongi-mobile.com`)의 신청 카탈로그.
 
 | 상태 | internet | rental | 합계 |
 |---|---|---|---|
-| `is_active=true` | **105** (운영과 일치) | 50 | **155** |
-| `is_active=false` | 897 (와이어프레임 mock 누적) | 1 | 898 |
+| `is_active=true` | 1,002 | 50 | 1,052 |
+| `is_active=false` | 0 | 1 | 1 |
 | **total rows** | 1,002 | 51 | **1,053** |
 
-> ⚠️ 2026-05-17 정리 작업: SK0061~SK0450 / KT0031~KT0360 / LG0016~LG0192 총 **897건을 is_active=false 처리**. row 삭제 안 함 (snapshot 박제 정책).
+**실제 사용 증거**: `bongi_applications.product_ticket`에 SK0188 / KT0311 / LG0079 / SK0398 / KT0146 (105 범위 밖) 사용 중.
 
-### 10.5 와이어프레임 발견 (보안 검토 필요)
-**`https://admin.prexymarket.com/admin/`** — `<title>봉이모바일 어드민 와이어프레임</title>`
+### 10.5 두 티켓 시스템 비교
+
+| 항목 | 어드민 견적 (이 메뉴) | 고객 사이트 (bongi_tickets) |
+|---|---|---|
+| 갯수 | 105 internet | 1,002 internet + 50 rental |
+| 데이터 source | JS 메모리 (`calculator.html`) | DB 테이블 |
+| 시드 변경 시점 | `incentive_calculator_overrides` 즉시 | manual / sync |
+| 사용처 | TM 상담 견적 화면 | 봉이 메인 고객 신청 흐름 |
+| ticket_number 범위 | SK0001~60 / KT0001~30 / LG0001~15 | SK0001~450 / KT0001~360 / LG0001~192 |
+| 영업 연결 | `incentive_sales` (ticket_number 컬럼 없음) | `bongi_applications.product_ticket` |
+
+**둘은 데이터 동기화 안 됨**. 같은 `SK0001`이라도 다른 의미일 수 있음.
+
+### 10.6 와이어프레임 (`/admin/`) 발견
+- `<title>봉이모바일 어드민 와이어프레임</title>`
 - 9,594 lines 단일 HTML, light theme
-- **인증 없이 누구나 접근 가능**
-- `/api/admin/platform/tickets` 호출 (인증 미들웨어 없음)
-- 운영 어드민(`/`)과 무관, 디자인 prototype
-- 보안 검토: 라이브에서 비공개 처리 검토 필요
+- **인증 없이 누구나 접근 가능** (보안 검토 필요)
+- `/api/admin/platform/tickets` 호출 → `bongi_tickets` 표시
+- 즉 와이어프레임은 **고객 사이트 데이터의 관리 UI prototype**
 
 ### 10.6 carrier 표기 분기 ⚠️
 | 시스템 | 표기 |

@@ -87,13 +87,22 @@ curl -s https://admin.prexymarket.com/api/health | python3 -m json.tool
 | 2 | 데브 products 시드를 라이브 기준으로 재정렬할지 결정 | 중 | 대기 |
 | 3 | 환경별 drift 자동 모니터링 cron 추가 (이 스크립트 일 1회) | 중 | 대기 |
 | 4 | 라이브 `/admin/` 와이어프레임 비공개 처리 (인증 없이 노출 중) | 높음 | 대기 |
-| 5 | `bongi_tickets` 정리 (와이어프레임 mock 누적 → active 105개 일치) | 완료 | **2026-05-17 완료** |
+| 5 | `bongi_tickets` 정리 시도 → **롤백 완료** (잘못된 판단) | 완료 | **2026-05-17 롤백** |
 
 ## 6. 변경 로그
 
-### 2026-05-17 — bongi_tickets 정리
-- 라이브 SQL: `UPDATE bongi_tickets SET is_active=false ... WHERE ticket_type='internet' AND NOT (SK0001~SK0060 OR KT0001~KT0030 OR LG0001~LG0015)`
-- 결과: 897건 비활성화 (row 삭제 안 함 — snapshot 박제 정책)
-- 정리 후: active 155 (internet 105 + rental 50), inactive 898
-- 운영 진실(`calculator.html` JS 105개)과 DB(`bongi_tickets` active 105개) 일치
-- 상세: `menu-tm-data.md` §10
+### 2026-05-17 — bongi_tickets 정리 → ⚠️ 즉시 롤백
+
+**오해**: 운영 어드민(`calculator.html` JS 105)과 DB(`bongi_tickets` 949)가 불일치 → mock 누적으로 판단.
+**실제**: 두 시스템 모두 운영 중이지만 **다른 흐름**:
+- 어드민 105개 = TM 견적/상담 계산기 표시값 (JS 메모리)
+- DB 949개 = **봉이 메인 고객 사이트**(bongi-mobile.com)의 신청 카탈로그
+
+**증거**: `bongi_applications` (rows=10) `product_ticket` 컬럼에 SK0188 / KT0311 / LG0079 / SK0398 / KT0146 등 **105 범위 밖** 티켓번호로 실제 신청 데이터 존재.
+
+**작업**:
+1. 19:30 — UPDATE bongi_tickets SET is_active=false (897건) — ❌ 잘못된 판단
+2. 20:30 — bongi_applications 발견 → 즉시 롤백 (897건 is_active=true 복원, updated_at='2026-05-17' 조건으로 안전 타겟)
+3. 결과: 정리 전 상태와 100% 동일 (internet SK 450/KT 360/LG 192 모두 active, rental R 50 active+1 inactive)
+
+**교훈**: 봉이 어드민 도메인(`incentive_*`)과 봉이 고객 사이트 도메인(`bongi_*`)을 별개 시스템으로 분리 인식. `bongi_tickets`는 incentive_* 외부 — 어드민 영향 점검 시 incentive_* 만 보면 안 됨.
