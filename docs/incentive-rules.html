@@ -369,25 +369,29 @@ async function fetchAgent() {
         </div>
       </div>
 
-      <!-- 🏷️ Tier 임계 (마진 기준 자동 분류) -->
-      <h2 style="margin-top:18px">🏷️ Tier 임계 (마진 기준 자동 분류 + Tier → P 매핑)</h2>
+      <!-- 🏷️ Tier 임계 (마진 기준 자동 분류) — 가전탭과 동일 구조 -->
+      <h2 style="margin-top:18px">🏷️ Tier 임계 (마진 기준 자동 분류)</h2>
       <div class="row" style="grid-template-columns:repeat(4,1fr);gap:10px">
+        <div class="field"><label>가중치 비용 (₩/P)</label>
+          <input type="number" id="f-weight-cost" min="0" step="5000">
+          <div class="hint">margin = 리베×0.9 − 페이백 − P×이 값</div>
+        </div>
         <div class="field"><label>S Tier 최소 마진 (₩)</label>
           <input type="number" id="f-tier-s" min="0" step="10000">
-          <div class="hint">≥ 이 값 → S, P=2.0</div>
         </div>
         <div class="field"><label>A Tier 최소 마진 (₩)</label>
           <input type="number" id="f-tier-a" min="0" step="10000">
-          <div class="hint">≥ 이 값 → A, P=1.5</div>
         </div>
         <div class="field"><label>B Tier 최소 마진 (₩)</label>
           <input type="number" id="f-tier-b" min="0" step="10000">
-          <div class="hint">≥ 이 값 → B, P=1.2 / 그 외 → C, P=1.0</div>
         </div>
-        <div class="field"><label>자동 흐름</label>
-          <input type="text" class="sim-input" value="margin → Tier → P 매핑" readonly style="background:#1e293b;color:#a78bfa;font-weight:700">
-          <div class="hint">상품 margin 기준 Tier 자동 → P 자동</div>
-        </div>
+      </div>
+      <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">🎯 Tier → 상담사 포인트 매핑</h3>
+      <div class="row" style="grid-template-columns:repeat(4,1fr);gap:10px">
+        <div class="field"><label>S Tier → P</label><input type="number" id="f-tp-s" min="0" step="0.1" placeholder="2.0"></div>
+        <div class="field"><label>A Tier → P</label><input type="number" id="f-tp-a" min="0" step="0.1" placeholder="1.5"></div>
+        <div class="field"><label>B Tier → P</label><input type="number" id="f-tp-b" min="0" step="0.1" placeholder="1.2"></div>
+        <div class="field"><label>C Tier → P</label><input type="number" id="f-tp-c" min="0" step="0.1" placeholder="1.0"></div>
       </div>
 
       <!-- 🏢 팀장(manager) 인센티브 V5.1 정책 -->
@@ -796,7 +800,7 @@ async function fetchAgent() {
       </div>
 
       <!-- 🏷️ Tier 임계 (마진 기준 자동 분류) -->
-      <h2 style="margin-top:18px">🏷️ Tier 임계 (마진 기준 자동 분류 + Tier → P 매핑)</h2>
+      <h2 style="margin-top:18px">🏷️ Tier 임계 (마진 기준 자동 분류)</h2>
       <div class="row" style="grid-template-columns:repeat(4,1fr);gap:10px">
         <div class="field"><label>가중치 비용 (₩/P)</label>
           <input type="number" id="rp-weight-cost" min="0" step="5000">
@@ -804,16 +808,20 @@ async function fetchAgent() {
         </div>
         <div class="field"><label>S Tier 최소 마진 (₩)</label>
           <input type="number" id="rp-tier-s" min="0" step="10000">
-          <div class="hint">≥ 이 값 → S, P=2.0</div>
         </div>
         <div class="field"><label>A Tier 최소 마진 (₩)</label>
           <input type="number" id="rp-tier-a" min="0" step="10000">
-          <div class="hint">≥ 이 값 → A, P=1.5</div>
         </div>
         <div class="field"><label>B Tier 최소 마진 (₩)</label>
           <input type="number" id="rp-tier-b" min="0" step="10000">
-          <div class="hint">≥ 이 값 → B, P=1.2 / 그 외 → C, P=1.0</div>
         </div>
+      </div>
+      <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">🎯 Tier → 상담사 포인트 매핑</h3>
+      <div class="row" style="grid-template-columns:repeat(4,1fr);gap:10px">
+        <div class="field"><label>S Tier → P</label><input type="number" id="rp-tp-s" min="0" step="0.1" placeholder="2.0"></div>
+        <div class="field"><label>A Tier → P</label><input type="number" id="rp-tp-a" min="0" step="0.1" placeholder="1.5"></div>
+        <div class="field"><label>B Tier → P</label><input type="number" id="rp-tp-b" min="0" step="0.1" placeholder="1.2"></div>
+        <div class="field"><label>C Tier → P</label><input type="number" id="rp-tp-c" min="0" step="0.1" placeholder="1.0"></div>
       </div>
 
       <!-- 🏢 팀장(manager) 인센티브 V5.1 정책 -->
@@ -960,6 +968,11 @@ async function fetchAgent() {
         if (F('rp-tier-s')) F('rp-tier-s').value = r.tier_s_min_margin || 130000;
         if (F('rp-tier-a')) F('rp-tier-a').value = r.tier_a_min_margin || 120000;
         if (F('rp-tier-b')) F('rp-tier-b').value = r.tier_b_min_margin || 100000;
+        const _rtp = r.tier_to_p || { S:2.0, A:1.5, B:1.2, C:1.0 };
+        if (F('rp-tp-s')) F('rp-tp-s').value = _rtp.S ?? 2.0;
+        if (F('rp-tp-a')) F('rp-tp-a').value = _rtp.A ?? 1.5;
+        if (F('rp-tp-b')) F('rp-tp-b').value = _rtp.B ?? 1.2;
+        if (F('rp-tp-c')) F('rp-tp-c').value = _rtp.C ?? 1.0;
         F('rp-mgr-override').value = (r.manager_override_rate != null) ? r.manager_override_rate : 0.12;
         F('rp-mgr-obligation').value = (r.manager_obligation_count != null) ? r.manager_obligation_count : 20;
         F('rp-mgr-partial').value = (r.manager_penalty_partial_min != null) ? r.manager_penalty_partial_min : 10;
@@ -1015,6 +1028,12 @@ async function fetchAgent() {
           tier_s_min_margin: parseInt(F('rp-tier-s')?.value) || 130000,
           tier_a_min_margin: parseInt(F('rp-tier-a')?.value) || 120000,
           tier_b_min_margin: parseInt(F('rp-tier-b')?.value) || 100000,
+          tier_to_p: {
+            S: parseFloat(F('rp-tp-s')?.value) || 2.0,
+            A: parseFloat(F('rp-tp-a')?.value) || 1.5,
+            B: parseFloat(F('rp-tp-b')?.value) || 1.2,
+            C: parseFloat(F('rp-tp-c')?.value) || 1.0,
+          },
         };
       }
 
@@ -1363,6 +1382,12 @@ function loadActiveToForm(r) {
   if (document.getElementById('f-tier-s')) document.getElementById('f-tier-s').value = r.tier_s_min_margin || 250000;
   if (document.getElementById('f-tier-a')) document.getElementById('f-tier-a').value = r.tier_a_min_margin || 180000;
   if (document.getElementById('f-tier-b')) document.getElementById('f-tier-b').value = r.tier_b_min_margin || 120000;
+  if (document.getElementById('f-weight-cost')) document.getElementById('f-weight-cost').value = r.weight_cost_per_p || 70000;
+  const tp = r.tier_to_p || { S:2.0, A:1.5, B:1.2, C:1.0 };
+  if (document.getElementById('f-tp-s')) document.getElementById('f-tp-s').value = tp.S ?? 2.0;
+  if (document.getElementById('f-tp-a')) document.getElementById('f-tp-a').value = tp.A ?? 1.5;
+  if (document.getElementById('f-tp-b')) document.getElementById('f-tp-b').value = tp.B ?? 1.2;
+  if (document.getElementById('f-tp-c')) document.getElementById('f-tp-c').value = tp.C ?? 1.0;
   updateMgrUi();
 }
 
@@ -1459,6 +1484,13 @@ function collectForm() {
     tier_s_min_margin: parseInt(document.getElementById('f-tier-s')?.value) || 250000,
     tier_a_min_margin: parseInt(document.getElementById('f-tier-a')?.value) || 180000,
     tier_b_min_margin: parseInt(document.getElementById('f-tier-b')?.value) || 120000,
+    weight_cost_per_p: parseInt(document.getElementById('f-weight-cost')?.value) || 70000,
+    tier_to_p: {
+      S: parseFloat(document.getElementById('f-tp-s')?.value) || 2.0,
+      A: parseFloat(document.getElementById('f-tp-a')?.value) || 1.5,
+      B: parseFloat(document.getElementById('f-tp-b')?.value) || 1.2,
+      C: parseFloat(document.getElementById('f-tp-c')?.value) || 1.0,
+    },
   };
 }
 
