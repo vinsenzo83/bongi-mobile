@@ -371,19 +371,26 @@ async function fetchAgent() {
 
       <!-- 🏷️ Tier 임계 (마진 기준 자동 분류) — 가전탭과 동일 구조 -->
       <h2 style="margin-top:18px">🏷️ Tier 임계 (마진 기준 자동 분류)</h2>
-      <div class="row" style="grid-template-columns:repeat(4,1fr);gap:10px">
+      <div class="row" style="grid-template-columns:repeat(5,1fr);gap:10px">
         <div class="field"><label>가중치 비용 (₩/P)</label>
           <input type="number" id="f-weight-cost" min="0" step="5000">
           <div class="hint">margin = 리베×0.9 − 페이백 − P×이 값</div>
         </div>
         <div class="field"><label>S Tier 최소 마진 (₩)</label>
           <input type="number" id="f-tier-s" min="0" step="10000">
+          <div class="hint">≥ 이 값 → S Tier</div>
         </div>
         <div class="field"><label>A Tier 최소 마진 (₩)</label>
           <input type="number" id="f-tier-a" min="0" step="10000">
+          <div class="hint">≥ 이 값 → A Tier</div>
         </div>
         <div class="field"><label>B Tier 최소 마진 (₩)</label>
           <input type="number" id="f-tier-b" min="0" step="10000">
+          <div class="hint">≥ 이 값 → B Tier</div>
+        </div>
+        <div class="field"><label>C Tier (자동)</label>
+          <input type="text" value="B Tier 미만 → 자동 C" readonly style="background:#1e293b;color:#94a3b8;font-weight:700">
+          <div class="hint">별도 임계 없음 (B 미만 = C)</div>
         </div>
       </div>
       <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">🎯 Tier → 상담사 포인트 매핑</h3>
@@ -801,19 +808,26 @@ async function fetchAgent() {
 
       <!-- 🏷️ Tier 임계 (마진 기준 자동 분류) -->
       <h2 style="margin-top:18px">🏷️ Tier 임계 (마진 기준 자동 분류)</h2>
-      <div class="row" style="grid-template-columns:repeat(4,1fr);gap:10px">
+      <div class="row" style="grid-template-columns:repeat(5,1fr);gap:10px">
         <div class="field"><label>가중치 비용 (₩/P)</label>
           <input type="number" id="rp-weight-cost" min="0" step="5000">
           <div class="hint">margin = 리베×0.9 − 페이백 − P×이 값</div>
         </div>
         <div class="field"><label>S Tier 최소 마진 (₩)</label>
           <input type="number" id="rp-tier-s" min="0" step="10000">
+          <div class="hint">≥ 이 값 → S Tier</div>
         </div>
         <div class="field"><label>A Tier 최소 마진 (₩)</label>
           <input type="number" id="rp-tier-a" min="0" step="10000">
+          <div class="hint">≥ 이 값 → A Tier</div>
         </div>
         <div class="field"><label>B Tier 최소 마진 (₩)</label>
           <input type="number" id="rp-tier-b" min="0" step="10000">
+          <div class="hint">≥ 이 값 → B Tier</div>
+        </div>
+        <div class="field"><label>C Tier (자동)</label>
+          <input type="text" value="B Tier 미만 → 자동 C" readonly style="background:#1e293b;color:#94a3b8;font-weight:700">
+          <div class="hint">별도 임계 없음 (B 미만 = C)</div>
         </div>
       </div>
       <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">🎯 Tier → 상담사 포인트 매핑</h3>
