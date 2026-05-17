@@ -5525,7 +5525,8 @@ setTimeout(() => {
       _rrFilter.brand = chip.dataset.brand;
       renderRecBrandChips(); renderRecList();
     });
-    document.getElementById('rr-premium-only').addEventListener('change', (e) => {
+    // rr-premium-only 체크박스 제거됨 (옵션별 자동 분류) — null 체크
+    document.getElementById('rr-premium-only')?.addEventListener('change', (e) => {
       _rrFilter.premiumOnly = e.target.checked; renderRecList();
     });
     document.getElementById('rr-search').addEventListener('input', (e) => {
