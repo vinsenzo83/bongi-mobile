@@ -342,6 +342,37 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 
   <!-- 메인 영역 (로그인 후) -->
   <div id="main-area" style="display:none">
+    <!-- ★ 카테고리 탭 (동적) — 본인 권한 카테고리만 노출 -->
+    <div id="contract-cat-tabs" style="display:flex;gap:4px;border-bottom:1.5px solid #475569;margin-bottom:14px;padding:0 4px">
+      <button type="button" class="cat-tab active" data-cat="internet_tv" style="background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;color:#cbd5e1;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px">📡 인터넷+TV</button>
+      <!-- 가전렌탈 탭은 카테고리 fetch 후 동적 추가 -->
+    </div>
+
+    <!-- ★ 가전렌탈 패널 (기본 hidden, 카테고리 탭 클릭 시 표시) -->
+    <div id="rental-contract-panel" style="display:none">
+      <div style="background:rgba(15,23,42,0.55);border:1.5px solid #475569;border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:800;color:#fbbf24;margin-bottom:10px">🎫 가전렌탈 R 티켓번호로 빠른 계약 등록</div>
+        <div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap">
+          <input type="text" id="rc-ticket" placeholder="예: R0683" autocomplete="off"
+            style="flex:1;min-width:140px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:13px;font-family:'SF Mono',Monaco,monospace;text-transform:uppercase">
+          <button id="rc-lookup-btn" style="background:#3b82f6;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">조회</button>
+        </div>
+        <div id="rc-lookup-result" style="margin-top:10px"></div>
+        <div id="rc-lookup-msg" style="font-size:11px;margin-top:6px;min-height:14px"></div>
+      </div>
+      <div id="rental-sales-list" style="background:#1e293b;border:1px solid #475569;border-radius:10px;padding:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:800;color:#60a5fa">📋 가전렌탈 계약 목록</div>
+          <button id="rc-reload" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:11px;cursor:pointer">🔄 새로고침</button>
+        </div>
+        <div id="rental-sales-tbody" style="font-size:12px">
+          <div style="padding:30px;text-align:center;color:#64748b">불러오는 중...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ★ 인터넷+TV 패널 (기본 — 기존 통계·툴바·테이블 모두 여기 안에) -->
+    <div id="internet-contract-panel">
     <!-- 통계 카드 -->
     <div class="stats" id="stats" style="grid-template-columns:repeat(5, 1fr)">
       <div class="stat-card"><div class="stat-label">📋 이번 달 영업</div><div class="stat-val" id="stat-total">-</div><div class="stat-sub" id="stat-completed-meta">-</div></div>
@@ -420,6 +451,8 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
       </select>
       <span id="page-info" style="font-size:11px;color:#94a3b8;margin-left:8px"></span>
     </div>
+    </div>
+    <!-- /internet-contract-panel -->
   </div>
 </div>
 
@@ -2462,6 +2495,210 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
 });
 
 init();
+
+// ════════════════════════════════════════════════════════════
+// 🏢 카테고리 동적 탭 + 가전렌탈 계약 처리 (Phase A+B+C 통합)
+// ════════════════════════════════════════════════════════════
+(function setupCategoryTabs() {
+  let _categories = [];
+  let _myCats = [];
+  let _myCatsUnrestricted = false;
+  const tabsEl = document.getElementById('contract-cat-tabs');
+  if (!tabsEl) return;
+
+  async function bootCategoryTabs() {
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    if (!tk) return;
+    try {
+      const [r1, r2] = await Promise.all([
+        fetch('/api/rental/categories', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json()),
+        fetch('/api/incentive/agents/me/categories', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json()),
+      ]);
+      _categories = r1.categories || [];
+      _myCats = r2.categories || [];
+      _myCatsUnrestricted = !!r2.unrestricted;
+      renderTabs();
+    } catch (e) { console.warn('[cat-tabs]', e); }
+  }
+
+  function renderTabs() {
+    // 인터넷+TV 탭은 hardcoded — 권한 있을 때만 표시
+    const showIT = _myCatsUnrestricted || _myCats.includes('internet_tv');
+    const itTab = tabsEl.querySelector('[data-cat="internet_tv"]');
+    if (itTab) itTab.style.display = showIT ? '' : 'none';
+
+    // 기존 동적 추가된 탭 제거
+    tabsEl.querySelectorAll('.cat-tab[data-dynamic="1"]').forEach(b => b.remove());
+
+    // 권한 있는 카테고리만 탭 추가
+    _categories.forEach(cat => {
+      const allowed = _myCatsUnrestricted || _myCats.includes(cat.slug);
+      if (!allowed || !cat.is_active) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cat-tab';
+      btn.dataset.cat = cat.slug;
+      btn.dataset.dynamic = '1';
+      btn.style.cssText = 'background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;color:#94a3b8;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px';
+      btn.innerHTML = `${cat.icon || '🏠'} 가전렌탈(${cat.name})`;
+      tabsEl.appendChild(btn);
+    });
+
+    // 탭 클릭 이벤트
+    tabsEl.querySelectorAll('.cat-tab').forEach(b => {
+      b.addEventListener('click', () => {
+        tabsEl.querySelectorAll('.cat-tab').forEach(x => { x.classList.remove('active'); x.style.color = '#94a3b8'; x.style.background = '#1e293b'; });
+        b.classList.add('active');
+        b.style.color = '#fff';
+        b.style.background = '#3b82f6';
+        switchPanel(b.dataset.cat);
+      });
+    });
+  }
+
+  function switchPanel(slug) {
+    const it = document.getElementById('internet-contract-panel');
+    const rental = document.getElementById('rental-contract-panel');
+    if (slug === 'internet_tv') {
+      if (it) it.style.display = '';
+      if (rental) rental.style.display = 'none';
+    } else {
+      if (it) it.style.display = 'none';
+      if (rental) {
+        rental.style.display = '';
+        // 카테고리별 타이틀 + 계약 list 로드
+        const cat = _categories.find(c => c.slug === slug);
+        const title = document.querySelector('#rental-sales-list > div > div:first-child');
+        if (title) title.textContent = `📋 가전렌탈(${cat?.name || ''}) 계약 목록`;
+        loadRentalSales(slug);
+      }
+    }
+  }
+
+  async function loadRentalSales(slug) {
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    const body = document.getElementById('rental-sales-tbody');
+    if (!tk || !body) return;
+    body.innerHTML = '<div style="padding:30px;text-align:center;color:#64748b">불러오는 중...</div>';
+    try {
+      const r = await fetch('/api/rental/sales?limit=200', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json());
+      const sales = (r.sales || r.rows || []).filter(s => {
+        // 카테고리 slug 매칭 (product.category_id로 필터)
+        return true;  // 일단 전체 (필터는 carrier 정보 join 후 추후)
+      });
+      if (sales.length === 0) {
+        body.innerHTML = '<div style="padding:30px;text-align:center;color:#64748b">계약 없음. R 티켓번호로 신규 등록하세요.</div>';
+        return;
+      }
+      const fmt = n => n == null ? '-' : Number(n).toLocaleString('ko-KR');
+      body.innerHTML = `<table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#0f172a">
+          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">고객</th>
+          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">전화</th>
+          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">계약일</th>
+          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">상태</th>
+          <th style="padding:8px;text-align:right;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">월납</th>
+          <th style="padding:8px;text-align:right;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">페이백</th>
+        </tr></thead>
+        <tbody>${sales.map(s => `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <td style="padding:7px 8px">${s.customer_name || '-'}</td>
+            <td style="padding:7px 8px;font-family:monospace;font-size:11px">${s.customer_phone || '-'}</td>
+            <td style="padding:7px 8px;font-size:11px;color:#cbd5e1">${s.contract_date || '-'}</td>
+            <td style="padding:7px 8px"><span style="background:rgba(34,197,94,0.15);color:#86efac;padding:1px 6px;border-radius:3px;font-size:10.5px;font-weight:700">${s.status || 'pending'}</span></td>
+            <td style="padding:7px 8px;text-align:right;font-family:monospace;color:#f1f5f9;font-weight:700">${fmt(s.monthly_fee_snapshot)}원</td>
+            <td style="padding:7px 8px;text-align:right;font-family:monospace;color:#fbbf24;font-weight:700">${fmt(s.payback_snapshot)}원</td>
+          </tr>`).join('')}</tbody></table>`;
+    } catch (e) { body.innerHTML = `<div style="color:#ef4444;padding:20px">로드 실패: ${e.message}</div>`; }
+  }
+
+  // R 티켓 빠른 조회
+  async function lookupRTicket() {
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    const num = (document.getElementById('rc-ticket').value || '').trim().toUpperCase();
+    const msg = document.getElementById('rc-lookup-msg');
+    const result = document.getElementById('rc-lookup-result');
+    if (!num) return;
+    if (!/^R\d{3,}$/.test(num)) { msg.style.color = '#ef4444'; msg.textContent = '⚠️ R0001 형식이어야 합니다'; return; }
+    msg.textContent = '조회 중...'; msg.style.color = '#94a3b8';
+    try {
+      const r = await fetch('/api/incentive/tickets/rental/lookup?ticket=' + encodeURIComponent(num), {
+        headers: { Authorization: 'Bearer ' + tk }
+      }).then(r => r.json());
+      if (r.error) { msg.style.color = '#ef4444'; msg.textContent = '⚠️ ' + r.error; return; }
+      const t = r.ticket, p = t.product || {};
+      const fmt = n => n == null ? '-' : Number(n).toLocaleString('ko-KR');
+      result.innerHTML = `<div style="background:#1e293b;border:1.5px solid #3b82f6;border-radius:8px;padding:12px;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-family:'SF Mono',Monaco,monospace;font-weight:800;color:#a5b4fc;font-size:16px">${t.ticket_number}</span>
+          <span style="background:rgba(56,189,248,0.15);color:#7dd3fc;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">${p.brand || '-'}</span>
+        </div>
+        <div style="font-size:13px;color:#e2e8f0;font-weight:600">${p.name || '-'}</div>
+        <div style="font-size:11px;color:#64748b;margin:3px 0 10px">모델 ${p.model || '-'} · ${t.months}M · ${t.care_service}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;font-size:11.5px">
+          <div><span style="color:#94a3b8">월납</span> <b style="color:#f1f5f9;font-family:monospace">${fmt(t.monthly_fee)}원</b></div>
+          <div><span style="color:#94a3b8">정상가</span> <b style="color:#cbd5e1;font-family:monospace">${fmt(t.normal_price)}원</b></div>
+          <div><span style="color:#94a3b8">리베이트</span> <b style="color:#34d399;font-family:monospace">${fmt(t.rebate)}원</b></div>
+          <div><span style="color:#94a3b8">페이백</span> <b style="color:#fbbf24;font-family:monospace">${fmt(t.payback)}원</b></div>
+        </div>
+        <div style="border-top:1px solid #334155;padding-top:10px">
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:6px">고객 정보 입력 → 계약 등록</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <input id="rc-customer-name" placeholder="고객명" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:12px">
+            <input id="rc-customer-phone" placeholder="전화번호" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:12px">
+            <input id="rc-install-date" type="date" placeholder="설치희망일" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:12px;grid-column:span 2">
+            <textarea id="rc-address" placeholder="설치 주소" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:12px;grid-column:span 2;height:40px;resize:vertical"></textarea>
+          </div>
+          <button id="rc-save-btn" style="width:100%;margin-top:8px;background:#16a34a;color:#fff;border:none;padding:9px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer">💾 계약 등록</button>
+        </div>
+      </div>`;
+      msg.style.color = '#22c55e';
+      msg.textContent = '✓ ' + (p.brand || '-') + ' · ' + t.months + 'M · 월 ' + fmt(t.monthly_fee) + '원 — 고객 정보 입력 후 등록';
+
+      // 계약 등록 핸들러
+      document.getElementById('rc-save-btn').addEventListener('click', async () => {
+        const body = {
+          option_id: t.id,
+          customer_name: document.getElementById('rc-customer-name').value.trim(),
+          customer_phone: document.getElementById('rc-customer-phone').value.trim(),
+          customer_address: document.getElementById('rc-address').value.trim(),
+          installation_date: document.getElementById('rc-install-date').value || null,
+          status: 'pending',
+        };
+        if (!body.customer_name || !body.customer_phone) { msg.style.color = '#ef4444'; msg.textContent = '고객명·전화 필수'; return; }
+        try {
+          const res = await fetch('/api/rental/sales', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tk },
+            body: JSON.stringify(body),
+          }).then(r => r.json());
+          if (res.error) throw new Error(res.error);
+          msg.style.color = '#22c55e';
+          msg.textContent = '✅ 계약 등록 완료 (id=' + (res.sale?.id || res.id || '?') + ')';
+          result.innerHTML = '';
+          document.getElementById('rc-ticket').value = '';
+          // list 갱신
+          const activeTab = tabsEl.querySelector('.cat-tab.active');
+          if (activeTab) loadRentalSales(activeTab.dataset.cat);
+        } catch (e) { msg.style.color = '#ef4444'; msg.textContent = '실패: ' + e.message; }
+      });
+    } catch (e) { msg.style.color = '#ef4444'; msg.textContent = '실패: ' + e.message; }
+  }
+
+  // 이벤트 바인딩
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('rc-lookup-btn');
+    const input = document.getElementById('rc-ticket');
+    const reload = document.getElementById('rc-reload');
+    if (btn) btn.addEventListener('click', lookupRTicket);
+    if (input) input.addEventListener('keypress', e => { if (e.key === 'Enter') lookupRTicket(); });
+    if (reload) reload.addEventListener('click', () => {
+      const activeTab = tabsEl.querySelector('.cat-tab.active');
+      if (activeTab) loadRentalSales(activeTab.dataset.cat);
+    });
+    setTimeout(bootCategoryTabs, 500);  // init 후 권한 fetch
+  });
+})();
 
 // 청구서 방식 따라 청구서 받을 target input을 고객정보와 자동 연동
 //   - 이메일      → customer_email
