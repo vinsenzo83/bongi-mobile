@@ -766,9 +766,9 @@ async function fetchAgent() {
     if (tempMargin >= sMin) tempTier = 'S';
     else if (tempMargin >= aMin) tempTier = 'A';
     else if (tempMargin >= bMin) tempTier = 'B';
-    // 2단계: 임시 Tier → P 매핑 (S=2.0, A=1.5, B=1.2, C=1.0)
-    const pMap = { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
-    const pAuto = pMap[tempTier];
+    // 2단계: 임시 Tier → P 매핑 (정책의 tier_to_p JSONB 사용)
+    const pMap = (_policy?.tier_to_p) || { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
+    const pAuto = Number(pMap[tempTier]) || 1.0;
     // 3단계: 최종 P (수동 우선) → 최종 마진 → 최종 Tier
     const P = Number(o.point_weight ?? pAuto);
     const weightCost = Math.round(P * wcUnit);
@@ -935,9 +935,9 @@ function calcAutoTierP(p) {
   if (tempMargin >= sMin) tempTier = 'S';
   else if (tempMargin >= aMin) tempTier = 'A';
   else if (tempMargin >= bMin) tempTier = 'B';
-  // 2단계: 임시 Tier → P 매핑
-  const pMap = { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
-  const pAuto = pMap[tempTier];
+  // 2단계: 임시 Tier → P 매핑 (정책의 tier_to_p JSONB 사용)
+  const pMap = (_itPolicy?.tier_to_p) || { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
+  const pAuto = Number(pMap[tempTier]) || 1.0;
   // 3단계: 최종 P 기반 마진 자동 계산
   const finalP = Number(p.point_weight ?? pAuto);
   const marginAuto = Math.round(rebate * 0.9 - payback - finalP * wcUnit);
