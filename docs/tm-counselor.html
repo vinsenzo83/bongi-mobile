@@ -405,12 +405,15 @@ body.cat-rental .tm-app { grid-template-columns: 280px minmax(0,1fr) !important;
 .tm-rental-panel .cat-bar label { font-size:10px; color:#92400e; font-weight:800; margin-right:4px; }
 .tm-rental-panel .cat-bar select { padding:7px 10px; background:#fff; color:#451a03; font-weight:800; border:1.5px solid #fcd34d; border-radius:5px; font-size:13px; max-width:240px; flex:1; }
 .tm-rental-panel .cat-bar .note { font-size:10px; color:#92400e; line-height:1.55; padding:5px 8px; background:rgba(251,191,36,0.18); border:1px dashed #fcd34d; border-radius:4px; flex:1; }
-/* 가전 큐콜 — viewport 기반 자동 리사이징 (clamp 사용) */
+/* 가전 큐콜 — viewport 기반 자동 리사이징 (큰 화면 대응 확장) */
 .tm-rental-panel .rental-grid {
   display:grid;
-  grid-template-columns: minmax(0, 1fr) clamp(280px, 22vw, 420px);
-  gap: clamp(8px, 1vw, 16px);
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 26vw, 520px);
+  gap: clamp(8px, 1vw, 18px);
   align-items:start;
+}
+@media (min-width: 1920px) {
+  .tm-rental-panel .rental-grid { grid-template-columns: minmax(0, 1fr) clamp(420px, 28vw, 580px); }
 }
 @media (max-width: 1100px) {
   .tm-rental-panel .rental-grid { grid-template-columns:1fr; gap:10px; }
@@ -5444,18 +5447,23 @@ setTimeout(() => {
     const hasCriteria = _rrCriteria.usage || _rrCriteria.people || (_rrCriteria.features||[]).length;
     if (hasCriteria) arr = arr.filter(p => passCriteria(p, _rrCriteria));
 
-    // 3) 정렬 — 마진(rebate_max) 내림차순 · 우수상품 동점 시 우선
+    // 3) 정렬 — S Tier 옵션 있는 상품 최우선 + 마진(rebate_max) 큰 순
+    //    S Tier 추정: rebate_max × 0.9 − 0(payback 가정 0) − 1.5×70k ≥ 130k → rebate_max ≥ 약 261k
+    //    (정확한 옵션 마진은 옵션별이지만 product의 rebate_max로 후보 판정)
+    const sThr = 261000;  // 가전 S 임계 130k 역산 (rebate_max ≥ 이 값이면 S 가능성)
     arr.sort((a,b) => {
+      const aS = (Number(a.rebate_max) || 0) >= sThr ? 1 : 0;
+      const bS = (Number(b.rebate_max) || 0) >= sThr ? 1 : 0;
+      if (bS !== aS) return bS - aS;  // S 우선
       const ma = Number(a.rebate_max || 0);
       const mb = Number(b.rebate_max || 0);
-      if (mb !== ma) return mb - ma;
-      if (!!b.is_premium - !!a.is_premium) return !!b.is_premium - !!a.is_premium;
+      if (mb !== ma) return mb - ma;  // 마진 큰 순
       return (a.display_rank || 999) - (b.display_rank || 999);
     });
 
     statsEl.textContent = `총 ${arr.length}건`
-      + (hasCriteria ? ' · 조건 매칭 · 마진순' : ' · 마진순')
-      + (_rrFilter.premiumOnly ? ' · 우수만' : '');
+      + (hasCriteria ? ' · 조건 매칭' : '')
+      + ' · S Tier(우수) 우선 · 마진순';
 
     if (!arr.length) { listEl.innerHTML = `<div class="rr-empty">조건에 맞는 상품 없음<br><span style="font-size:10px">↺ 조건 초기화 시도</span></div>`; return; }
 
