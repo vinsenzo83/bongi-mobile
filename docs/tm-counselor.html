@@ -418,19 +418,39 @@ body.cat-rental .tm-app { grid-template-columns: 280px minmax(0,1fr) !important;
 @media (max-width: 1100px) {
   .tm-rental-panel .rental-grid { grid-template-columns: 1fr; gap: 10px; }
 }
-.tm-rental-panel .rental-quote-result { word-break: break-word; min-width: 0; overflow-wrap: break-word; }
-.tm-rental-panel .rental-quote-result .row { white-space: normal; }
-.tm-rental-panel .rental-quote-result .k,
-.tm-rental-panel .rental-quote-result .v { font-size: 12px; }
+/* 견적 결과 카드 — 인터넷+TV(.tm-result-panel) 패턴 통일: 다크 그라데이션 + 흰색 텍스트 */
+.tm-rental-panel .rental-quote-result {
+  background: linear-gradient(160deg, #1e293b 0%, #0f172a 60%, #020617 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 20px rgba(15,23,42,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+  word-break: break-word; min-width: 0; overflow-wrap: break-word;
+}
+.tm-rental-panel .rental-quote-result .row { white-space: normal; display:flex; justify-content:space-between; padding:3px 0; line-height:1.5; font-size:12px; }
+.tm-rental-panel .rental-quote-result .k { color: rgba(226,232,240,0.7) !important; font-weight: 500; }
+.tm-rental-panel .rental-quote-result .v { color: #f8fafc !important; font-weight: 700; }
+.tm-rental-panel .rental-quote-result .qt-ttl { color: #fbbf24 !important; font-weight: 800; font-size: 13px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.15); margin-bottom: 8px; }
+.tm-rental-panel .rental-quote-result h3,
+.tm-rental-panel .rental-quote-result h4 { color: #fbbf24 !important; }
+.tm-rental-panel .rental-quote-result .total { font-weight: 900; font-size: 18px; color: #fbbf24 !important; border-top: 1.5px solid rgba(255,255,255,0.2); margin-top: 9px; padding-top: 11px; }
 .tm-rental-panel .rental-form-wrap { min-width: 0; }
 .tm-rental-panel .rental-form-wrap > * { min-width: 0; max-width: 100%; box-sizing: border-box; }
-/* form-grid — 좁은 영역에서 짤림 방지 위해 단일 1열, 큰 화면에서만 2열 */
+/* form-grid — 모든 화면에서 단일 1열 강제 (짤림 완전 방지) */
 .tm-rental-panel .form-grid { display: grid !important; grid-template-columns: 1fr !important; gap: 8px 10px; margin-bottom: 12px; }
-@media (min-width: 1400px) {
-  .tm-rental-panel .form-grid { grid-template-columns: 1fr 1fr !important; }
-}
+.tm-rental-panel .form-grid > *,
 .tm-rental-panel .form-grid select,
-.tm-rental-panel .form-grid input { width: 100%; min-width: 0; box-sizing: border-box; text-overflow: ellipsis; }
+.tm-rental-panel .form-grid input,
+.tm-rental-panel .form-grid label {
+  width: 100% !important; max-width: 100% !important;
+  min-width: 0 !important; box-sizing: border-box !important;
+  text-overflow: ellipsis !important; overflow: hidden;
+}
+.tm-rental-panel select,
+.tm-rental-panel input { max-width: 100%; box-sizing: border-box; }
+.tm-rental-panel .cat-bar select { max-width: 100% !important; flex: 1 1 0; min-width: 0; }
+.tm-rental-panel .cat-bar { flex-wrap: wrap; }
 .tm-rental-panel .rental-form-wrap { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px; }
 .tm-rental-panel .rental-form-wrap .ttl { font-size:11px; font-weight:800; color:#3617ce; margin-bottom:8px; }
 .tm-rental-panel .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; margin-bottom:12px; }
