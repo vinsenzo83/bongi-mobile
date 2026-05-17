@@ -2597,26 +2597,307 @@ init();
         return;
       }
       const fmt = n => n == null ? '-' : Number(n).toLocaleString('ko-KR');
+      const statusLabel = { pending:'⏰ 대기', in_progress:'🚧 진행', completed:'✅ 완료', cancelled:'❌ 취소' };
+      const statusColor = { pending:'#fbbf24', in_progress:'#60a5fa', completed:'#22c55e', cancelled:'#dc2626' };
+      window._rentalSalesCache = sales;
       body.innerHTML = `<table style="width:100%;border-collapse:collapse">
         <thead><tr style="background:#0f172a">
+          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">R번호</th>
+          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">상품</th>
           <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">고객</th>
           <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">전화</th>
           <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">계약일</th>
           <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">상태</th>
           <th style="padding:8px;text-align:right;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">월납</th>
           <th style="padding:8px;text-align:right;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">페이백</th>
+          <th style="padding:8px;text-align:center;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">상세</th>
         </tr></thead>
-        <tbody>${sales.map(s => `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+        <tbody>${sales.map(s => {
+          const p = s.product || {};
+          const opt = s.option || {};
+          return `<tr class="rental-sale-row" data-id="${s.id}" style="border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer">
+            <td style="padding:7px 8px;font-family:'SF Mono',Monaco,monospace;color:#a5b4fc;font-weight:700">${opt.ticket_number || '-'}</td>
+            <td style="padding:7px 8px;font-size:11px;color:#e2e8f0">${(p.brand||'')} ${(p.name||'')} <span style="color:#64748b">· ${opt.months||'-'}M</span></td>
             <td style="padding:7px 8px">${s.customer_name || '-'}</td>
             <td style="padding:7px 8px;font-family:monospace;font-size:11px">${s.customer_phone || '-'}</td>
             <td style="padding:7px 8px;font-size:11px;color:#cbd5e1">${s.contract_date || '-'}</td>
-            <td style="padding:7px 8px"><span style="background:rgba(34,197,94,0.15);color:#86efac;padding:1px 6px;border-radius:3px;font-size:10.5px;font-weight:700">${s.status || 'pending'}</span></td>
+            <td style="padding:7px 8px"><span style="background:rgba(${statusColor[s.status]==='#22c55e'?'34,197,94':statusColor[s.status]==='#dc2626'?'220,38,38':statusColor[s.status]==='#60a5fa'?'96,165,250':'251,191,36'},0.15);color:${statusColor[s.status]||'#94a3b8'};padding:1px 6px;border-radius:3px;font-size:10.5px;font-weight:700">${statusLabel[s.status]||s.status}</span></td>
             <td style="padding:7px 8px;text-align:right;font-family:monospace;color:#f1f5f9;font-weight:700">${fmt(s.monthly_fee_snapshot)}원</td>
             <td style="padding:7px 8px;text-align:right;font-family:monospace;color:#fbbf24;font-weight:700">${fmt(s.payback_snapshot)}원</td>
-          </tr>`).join('')}</tbody></table>`;
+            <td style="padding:7px 8px;text-align:center"><button type="button" class="rental-sale-edit-btn" data-id="${s.id}" style="background:#1d4ed8;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">📝 편집</button></td>
+          </tr>`;
+        }).join('')}</tbody></table>`;
+      // 행/버튼 클릭 → 상세 모달
+      body.querySelectorAll('.rental-sale-edit-btn').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openRentalSaleModal(b.dataset.id);
+      }));
+      body.querySelectorAll('.rental-sale-row').forEach(r => r.addEventListener('click', () => openRentalSaleModal(r.dataset.id)));
     } catch (e) { body.innerHTML = `<div style="color:#ef4444;padding:20px">로드 실패: ${e.message}</div>`; }
   }
+
+  // ─── 가전렌탈 계약 상세 편집 모달 ───
+  window.openRentalSaleModal = function(saleId) {
+    const sales = window._rentalSalesCache || [];
+    const s = sales.find(x => String(x.id) === String(saleId));
+    if (!s) { alert('계약 데이터 없음 — 새로고침 후 다시 시도'); return; }
+    const p = s.product || {};
+    const opt = s.option || {};
+    const a = s.agent || {};
+    const fmt = n => n == null ? '-' : Number(n).toLocaleString('ko-KR');
+    const esc = v => (v == null ? '' : String(v).replace(/"/g, '&quot;'));
+    const escTxt = v => (v == null ? '' : String(v).replace(/</g, '&lt;'));
+
+    document.getElementById('modal-subtitle').textContent =
+      `🎫 ${opt.ticket_number || '-'} · ${s.contract_date || '-'} · ${a.name || '?'} · ID ${String(s.id||'').slice(0,8)}…`;
+
+    document.getElementById('modal-body').innerHTML = `
+      <!-- 📦 계약 상품 정보 (가전렌탈) -->
+      <div class="sec-card acc-yellow">
+        <div class="sec-title"><span class="sec-icon">📦</span>계약 상품 정보 <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">읽기 전용 (티켓 SNAPSHOT)</span></div>
+        <div class="product-header">
+          <div style="flex:1;min-width:280px">
+            <div class="ph-meta">[${p.brand || '-'}] ${p.name || '-'} · 모델 ${p.model || '-'}</div>
+            <div class="ph-name">🎫 ${opt.ticket_number || '-'} · ${opt.months || '-'}개월 · ${opt.care_service || '-'}</div>
+            <div class="ph-tags">
+              <span style="background:rgba(99,102,241,0.15);color:#a5b4fc;padding:2px 8px;border-radius:4px;font-weight:700">${s.point_weight_snapshot ?? p.point_weight ?? '-'}P</span>
+              <span style="background:rgba(34,197,94,0.15);color:#86efac;padding:2px 8px;border-radius:4px;font-weight:700">${s.tier_snapshot || '-'} 등급</span>
+              <span style="color:#64748b">·</span>
+              <span>📅 ${s.contract_date || '-'}</span>
+              <span style="color:#64748b">·</span>
+              <span>👤 ${a.name || '-'} <span style="color:#94a3b8">${a.center || ''}</span></span>
+            </div>
+          </div>
+          <div style="display:flex;gap:18px;align-items:center">
+            <div style="text-align:right;border-right:1px solid #334155;padding-right:18px">
+              <div class="ph-payback-label">💵 월 요금</div>
+              <div style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:-0.02em">${fmt(s.monthly_fee_snapshot)}<span style="font-size:12px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+            </div>
+            <div style="text-align:right;border-right:1px solid #334155;padding-right:18px">
+              <div class="ph-payback-label">💰 리베이트</div>
+              <div style="font-size:16px;font-weight:800;color:#34d399">${fmt(s.rebate_snapshot)}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+            </div>
+            <div style="text-align:right">
+              <div class="ph-payback-label">💰 페이백 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 5px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:3px" title="등록 시점에 박제된 단가">SNAPSHOT</span></div>
+              <div class="ph-payback-val">${fmt(s.payback_snapshot)}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 👤 고객 정보 -->
+      <div class="sec-card acc-blue">
+        <div class="sec-title"><span class="sec-icon">👤</span>고객 정보</div>
+        <div class="sec-grid-3 sec-row">
+          <div>
+            <label class="modal-field-label">이름 <span style="color:#dc2626">*</span></label>
+            <input class="detail-input" data-field="customer_name" value="${esc(s.customer_name)}" placeholder="홍길동">
+          </div>
+          <div>
+            <label class="modal-field-label">전화번호 <span style="color:#dc2626">*</span></label>
+            <input class="detail-input" data-field="customer_phone" value="${esc(s.customer_phone)}" placeholder="010-1234-5678">
+          </div>
+          <div>
+            <label class="modal-field-label">📧 이메일</label>
+            <input class="detail-input" data-field="customer_email" type="email" value="${esc(s.customer_email)}" placeholder="example@domain.com">
+          </div>
+        </div>
+        <div class="sec-grid-2 sec-row">
+          <div>
+            <label class="modal-field-label">고객 유형</label>
+            <select class="detail-input" data-field="customer_type">
+              <option value="">— 선택 —</option>
+              <option value="개인" ${s.customer_type==='개인'?'selected':''}>개인</option>
+              <option value="법인" ${s.customer_type==='법인'?'selected':''}>법인</option>
+              <option value="개인사업자" ${s.customer_type==='개인사업자'?'selected':''}>개인사업자</option>
+            </select>
+          </div>
+          <div>
+            <label class="modal-field-label">주민번호 <span style="font-size:9.5px;color:#94a3b8">(최종계약시 · 13자리)</span></label>
+            <input class="detail-input" data-field="resident_id" value="${esc(s.resident_id)}" placeholder="830111-1664210" maxlength="14" inputmode="numeric" style="letter-spacing:0.04em" oninput="this.value=(this.value.replace(/\\D/g,'').slice(0,13)).replace(/^(\\d{6})(\\d{0,7}).*/,(m,a,b)=>b?a+'-'+b:a);">
+          </div>
+        </div>
+        <div class="sec-row">
+          <label class="modal-field-label">📍 설치 주소 <span style="color:#dc2626">*</span></label>
+          <div style="display:flex;gap:8px">
+            <input class="detail-input" data-field="customer_address" id="rs-addr-${s.id}" value="${esc(s.customer_address)}" placeholder="주소 검색 또는 직접 입력" style="flex:1" readonly>
+            <button type="button" onclick="openAddressSearch('#rs-addr-${s.id}')" style="padding:0 18px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;white-space:nowrap">🔍 주소 검색</button>
+          </div>
+        </div>
+        <div class="sec-row">
+          <label class="modal-field-label">🏠 상세 주소 (동·호수·층)</label>
+          <input class="detail-input" data-field="address_detail" value="${esc(s.address_detail)}" placeholder="예: 101동 502호">
+        </div>
+      </div>
+
+      <!-- 📅 설치 / 해피콜 -->
+      <div class="sec-card acc-green">
+        <div class="sec-title"><span class="sec-icon">📅</span>설치 · 해피콜</div>
+        <div class="sec-grid-3 sec-row">
+          <div>
+            <label class="modal-field-label">📅 설치 희망일</label>
+            <input class="detail-input" data-field="installation_date" type="date" value="${s.installation_date || ''}" onclick="triggerDatePicker(this)">
+          </div>
+          <div>
+            <label class="modal-field-label">📞 해피콜 가능 시간</label>
+            <select class="detail-input" data-field="happy_call_time">
+              <option value="">— 선택 —</option>
+              <option value="오전" ${s.happy_call_time==='오전'?'selected':''}>오전 (9~12)</option>
+              <option value="오후" ${s.happy_call_time==='오후'?'selected':''}>오후 (12~18)</option>
+              <option value="저녁" ${s.happy_call_time==='저녁'?'selected':''}>저녁 (18~21)</option>
+              <option value="아무때나" ${s.happy_call_time==='아무때나'?'selected':''}>아무때나</option>
+            </select>
+          </div>
+          <div>
+            <label class="modal-field-label">📱 부 연락처</label>
+            <input class="detail-input" data-field="phone_secondary" value="${esc(s.phone_secondary)}" placeholder="010-1234-5678">
+          </div>
+        </div>
+      </div>
+
+      <!-- 💰 페이백 / 사은품 -->
+      <div class="sec-card acc-yellow">
+        <div class="sec-title"><span class="sec-icon">💰</span>추가 페이백 · 사은품</div>
+        <div class="sec-grid-2 sec-row">
+          <div>
+            <label class="modal-field-label">💰 추가 페이백 (₩, 현금)</label>
+            <input class="detail-input" data-field="add_payback" type="number" min="0" max="500000" step="1000" value="${s.add_payback || 0}">
+            <div class="modal-field-hint">티켓 SNAPSHOT 페이백과 별도 지급</div>
+          </div>
+          <div>
+            <label class="modal-field-label">🎁 사은품 (자유 입력)</label>
+            <input class="detail-input" data-field="gift_received" value="${esc(s.gift_received)}" placeholder="예: 신세계상품권 5만">
+          </div>
+        </div>
+      </div>
+
+      <!-- 🏦 입금 정보 -->
+      <div class="sec-card acc-cyan">
+        <div class="sec-title"><span class="sec-icon">🏦</span>페이백 입금 정보</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:16px">
+          <div>
+            <label class="modal-field-label">예금주</label>
+            <input class="detail-input" data-field="bank_account_holder" value="${esc(s.bank_account_holder)}" placeholder="홍길동">
+          </div>
+          <div>
+            <label class="modal-field-label">은행</label>
+            <select class="detail-input" data-field="bank_name">
+              <option value="">— 선택 —</option>
+              ${['국민은행','신한은행','우리은행','하나은행','NH농협은행','IBK기업은행','SC제일은행','카카오뱅크','토스뱅크','케이뱅크','광주은행','전북은행','새마을금고','신협','우체국'].map(b => `<option value="${b}" ${s.bank_name===b?'selected':''}>${b}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="modal-field-label">계좌번호</label>
+            <input class="detail-input" data-field="bank_account_number" value="${esc(s.bank_account_number)}" placeholder="000-0000-0000-00" style="letter-spacing:0.04em;font-family:'SF Mono',Monaco,monospace">
+          </div>
+        </div>
+      </div>
+
+      <!-- 🚦 계약 진행 상태 -->
+      <div class="sec-card acc-purple">
+        <div class="sec-title"><span class="sec-icon">🚦</span>계약 진행 상태</div>
+        <div class="sec-grid-3 sec-row">
+          <div>
+            <label class="modal-field-label">상태</label>
+            <select class="detail-input" data-field="status" style="border-color:#a78bfa !important;font-weight:700">
+              <option value="pending"${s.status==='pending'?' selected':''}>⏰ 계약대기</option>
+              <option value="in_progress"${s.status==='in_progress'?' selected':''}>🚧 계약진행</option>
+              <option value="completed"${s.status==='completed'?' selected':''}>✅ 계약완료</option>
+              <option value="cancelled"${s.status==='cancelled'?' selected':''}>❌ 계약취소</option>
+            </select>
+          </div>
+          <div>
+            <label class="modal-field-label">📡 개통완료일</label>
+            <input class="detail-input" data-field="activation_date" type="date" value="${s.activation_date || ''}" onclick="triggerDatePicker(this)">
+          </div>
+          <div>
+            <label class="modal-field-label">취소 사유</label>
+            <input class="detail-input" data-field="cancellation_reason" value="${esc(s.cancellation_reason)}" placeholder="고객 변심 등">
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:12px 14px;background:rgba(0,0,0,0.25);border:1px solid #334155;border-radius:8px">
+          <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:10px;letter-spacing:0.04em">📅 상태 변경 이력</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:11px">
+            ${[
+              { label:'⏰ 계약대기', field:'contract_pending_at', color:'#fbbf24' },
+              { label:'🚧 계약진행', field:'contract_in_progress_at', color:'#60a5fa' },
+              { label:'✅ 계약완료', field:'contract_completed_at', color:'#22c55e' },
+              { label:'❌ 계약취소', field:'contract_cancelled_at', color:'#dc2626' },
+            ].map(st => {
+              const t = s[st.field];
+              const dt = t ? new Date(t) : null;
+              const f = dt ? dt.toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+              return `<div style="background:rgba(0,0,0,0.3);border:1px solid ${t?st.color:'#334155'};border-radius:6px;padding:8px 10px${t?'':';opacity:0.4'}">
+                <div style="color:${t?st.color:'#64748b'};font-weight:700;font-size:10.5px;margin-bottom:4px">${st.label}</div>
+                <div style="color:${t?'#e2e8f0':'#475569'};font-size:11px">${f || '미발생'}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- 📝 메모 -->
+      <div class="sec-grid-2">
+        <div class="sec-card acc-yellow" style="margin-bottom:0">
+          <div class="sec-title"><span class="sec-icon">📞</span>TM 상담 메모 <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">읽기 전용</span></div>
+          ${s.notes
+            ? `<div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:12px 14px;font-size:13px;color:#e2e8f0;white-space:pre-wrap;line-height:1.6;min-height:90px">${escTxt(s.notes)}</div>`
+            : `<div style="padding:24px;color:#64748b;font-size:12px;text-align:center;background:rgba(0,0,0,0.25);border:1px dashed #475569;border-radius:6px;min-height:90px;display:flex;align-items:center;justify-content:center">상담사가 작성한 메모 없음</div>`}
+        </div>
+        <div class="sec-card acc-blue" style="margin-bottom:0">
+          <div class="sec-title"><span class="sec-icon">📋</span>계약부서 메모 <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">편집 가능</span></div>
+          <textarea class="detail-input" data-field="contract_notes" rows="5" placeholder="신분증 수령 여부, 설치 일정 협의 결과, 고객 변심 사유 등">${escTxt(s.contract_notes)}</textarea>
+        </div>
+      </div>
+      <div class="sec-card acc-cyan" style="margin-top:14px">
+        <div class="sec-title"><span class="sec-icon">🏢</span>렌탈사 코멘트 <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">정수기/공기청정기 등 본사 회신</span></div>
+        <textarea class="detail-input" data-field="rental_company_note" rows="3" placeholder="예: 코웨이 설치팀 일정 확정 — 2026-05-21 오전">${escTxt(s.rental_company_note)}</textarea>
+      </div>
+    `;
+
+    // 푸터
+    const statusKor = { pending:'계약대기', in_progress:'계약진행', completed:'계약완료', cancelled:'계약취소' };
+    document.getElementById('modal-footer-info').innerHTML =
+      `상태 <span class="status status-${s.status}">${statusKor[s.status] || s.status}</span> · 계약일 ${s.contract_date || '-'}`;
+    document.getElementById('modal-footer-actions').innerHTML = `
+      <button type="button" id="rental-modal-save-btn" data-id="${s.id}" style="background:#16a34a;color:#fff;border:none;padding:8px 22px;border-radius:6px;font-size:12px;font-weight:800;cursor:pointer">💾 모든 변경사항 저장</button>
+    `;
+
+    document.getElementById('rental-modal-save-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('rental-modal-save-btn');
+      const tk = localStorage.getItem('incentive-auth-token-v1');
+      const inputs = document.querySelectorAll('#modal-body [data-field]');
+      const patch = {};
+      inputs.forEach(el => {
+        const k = el.dataset.field;
+        if (!k) return;
+        let v = el.value;
+        if (el.type === 'number') v = v === '' ? null : Number(v);
+        patch[k] = v;
+      });
+      btn.disabled = true; btn.textContent = '⏳ 저장 중…';
+      try {
+        const res = await fetch('/api/rental/sales/' + s.id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+          body: JSON.stringify(patch),
+        }).then(r => r.json());
+        if (res.error) throw new Error(res.error);
+        btn.style.background = '#16a34a'; btn.textContent = '✅ 저장됨';
+        setTimeout(() => {
+          closeModal();
+          const tabsEl = document.getElementById('contract-cat-tabs');
+          const activeTab = tabsEl?.querySelector('.cat-tab.active');
+          if (activeTab && activeTab.dataset.cat !== 'internet_tv') loadRentalSales(activeTab.dataset.cat);
+        }, 600);
+      } catch (e) {
+        btn.style.background = '#dc2626'; btn.textContent = '❌ ' + e.message;
+        setTimeout(() => { btn.disabled = false; btn.style.background = '#16a34a'; btn.textContent = '💾 모든 변경사항 저장'; }, 2200);
+      }
+    });
+
+    document.getElementById('modal-overlay').style.display = 'flex';
+  };
 
   // R 티켓 빠른 조회
   async function lookupRTicket() {

@@ -547,13 +547,62 @@ router.post('/sales', authenticateJWT, async (req, res) => {
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
+// ─── 영업 단건 PATCH (상세 모달 저장) ───
+router.patch('/sales/:id', authenticateJWT, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'id 필수' });
+
+    // 화이트리스트 (snapshot·agent_id·계산값·*_at 자동 컬럼은 제외)
+    const ALLOWED = [
+      'customer_name','customer_phone','customer_address','customer_email','resident_id',
+      'installation_date','status','notes','contract_notes',
+      'db_source_id','dealer_id','contract_date','activation_date','cancellation_reason',
+      'customer_type','resident_id_back',
+      'business_name','business_no','representative_name','corporation_no',
+      'phone_secondary','phone_secondary_type','address_detail','happy_call_time',
+      'rental_company_note','tags','add_payback','gift_received',
+      'bank_name','bank_account_holder','bank_account_number',
+      'waiting_relation','waiting_person','waiting_phone','seller_phone',
+      'billing_method','billing_phone','billing_carrier',
+    ];
+    const patch = {};
+    for (const k of ALLOWED) {
+      if (req.body[k] !== undefined) patch[k] = req.body[k] === '' ? null : req.body[k];
+    }
+    if (patch.add_payback != null) patch.add_payback = Number(patch.add_payback) || 0;
+    if (Array.isArray(patch.tags) && patch.tags.length === 0) patch.tags = null;
+
+    // 상태 변경 시 *_at 타임스탬프 자동 기록
+    if (patch.status) {
+      const now = new Date().toISOString();
+      const stampMap = {
+        pending: 'contract_pending_at',
+        in_progress: 'contract_in_progress_at',
+        completed: 'contract_completed_at',
+        cancelled: 'contract_cancelled_at',
+      };
+      const col = stampMap[patch.status];
+      if (col) patch[col] = now;
+    }
+    patch.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('rental_sales').update(patch).eq('id', id)
+      .select('*, product:rental_products(brand, name, model, category_id), option:rental_product_options(months, care_service, rebate, payback, ticket_number)')
+      .single();
+    if (error) throw error;
+    res.json({ sale: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
 // ─── 영업 목록 (담당자 또는 admin) ───
 router.get('/sales', authenticateJWT, async (req, res) => {
   try {
     const { status, agent_id, limit = 100 } = req.query;
     let q = supabase
       .from('rental_sales')
-      .select('*, product:rental_products(brand, name, model, category_id), option:rental_product_options(months, care_service, rebate, payback)')
+      .select('*, product:rental_products(*), option:rental_product_options(months, care_service, rebate, payback, monthly_fee, normal_price, ticket_number, ticket_active), agent:incentive_agents(id, name, center)')
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(Number(limit) || 100);
