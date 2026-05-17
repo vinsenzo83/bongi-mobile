@@ -760,27 +760,11 @@ async function fetchAgent() {
         </div>
       </div>
 
-      <!-- 가전렌탈 전용 — 영업이익율 + 기본급 분담 (숨김 — 인터넷+TV 단순화) -->
-      <div style="display:none">
-        <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">📈 가전렌탈 전용 — 영업이익율 + 기본급 분담</h3>
-        <div class="form-grid">
-          <div class="field"><label>영업이익율 (%) — 페이백 자동 산출용</label><input id="rp-target-profit" class="sim-input" type="number" step="0.1" min="0" max="100"></div>
-          <div class="field"><label>기본급 (₩/월)</label><input id="rp-base-salary" class="sim-input" type="number" step="100000"></div>
-          <div class="field"><label>표준 영업건수 (월)</label><input id="rp-standard-sales" class="sim-input" type="number" step="1"></div>
-          <div class="field"><label>1건 기본급 분담 (자동)</label><input id="rp-base-share" class="sim-input" type="text" readonly></div>
-        </div>
-      </div>
-
-      <!-- 약정별 가중치 P (숨김 — 단순화: 상품별 고정 point_weight 사용) -->
-      <div style="display:none">
-        <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">⚖️ 가중치 P (약정 + 보정) — 가전렌탈 전용</h3>
-        <div class="form-grid">
-          <div class="field"><label>36개월 P</label><input id="rp-p36" class="sim-input" type="number" step="0.1"></div>
-          <div class="field"><label>60개월 P</label><input id="rp-p60" class="sim-input" type="number" step="0.1"></div>
-          <div class="field"><label>72개월 P</label><input id="rp-p72" class="sim-input" type="number" step="0.1"></div>
-          <div class="field"><label>84개월 P</label><input id="rp-p84" class="sim-input" type="number" step="0.1"></div>
-          <div class="field"><label>우수상품 +P</label><input id="rp-premium-bonus-p" class="sim-input" type="number" step="0.1"></div>
-          <div class="field"><label>방문케어 +P</label><input id="rp-care-visit-p" class="sim-input" type="number" step="0.1"></div>
+      <!-- 영업이익율 — 페이백 자동 산출에만 사용 (마진 공식과 무관) -->
+      <div class="row">
+        <div class="field"><label>📈 영업이익율 (%) <span style="font-size:9.5px;color:#94a3b8">— 페이백 자동 산출 전용</span></label>
+          <input id="rp-target-profit" class="sim-input" type="number" step="0.1" min="0" max="100">
+          <div class="hint">payback = rebate × (0.9 − 이 비율) − P × 가중치비용. 마진 계산엔 미사용</div>
         </div>
       </div>
 
@@ -811,9 +795,10 @@ async function fetchAgent() {
 
       <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">💰 가중치 비용 (₩/P)</h3>
       <div class="form-grid">
-        <div class="field"><label>가중치 비용 (₩/P) — 인터넷+TV와 동일 단가</label><input id="rp-weight-cost" class="sim-input" type="number" step="5000"></div>
-        <!-- 가입 보너스 숨김 (인터넷+TV에 없음) -->
-        <div style="display:none"><input id="rp-signup-bonus" type="number"></div>
+        <div class="field"><label>가중치 비용 (₩/P)</label>
+          <input id="rp-weight-cost" class="sim-input" type="number" step="5000">
+          <div class="hint">margin = rebate × 0.9 − payback − P × 이 비용 (인터넷+TV와 통일 공식, 가입보너스·기본급분담 없음)</div>
+        </div>
       </div>
 
       <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">🏷️ Tier 임계값 (마진 기준 자동 분류)</h3>
@@ -919,32 +904,9 @@ async function fetchAgent() {
         </div>
       </div>
 
-      <!-- 🧪 가전렌탈 영업이익 시뮬레이터 (숨김 — 단순화) -->
-      <div style="display:none" class="section" style="background:linear-gradient(135deg,#7c2d12,#0f172a);border:1.5px solid #ea580c;border-radius:8px;padding:14px 16px;margin-top:18px">
-        <h3 style="color:#fb923c;margin:0 0 8px;font-size:14px">🧪 가전렌탈 영업이익 시뮬레이터</h3>
-        <div style="font-size:11px;color:#cbd5e1;margin-bottom:12px;line-height:1.55">
-          💡 정책·영업 가정 조정 시 회사 영업이익과 상담사 수령액 즉시 계산. 정책 변경 사전 영향 평가.
-        </div>
-        <div class="row" style="grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">
-          <div class="field"><label style="font-size:11px">월 영업 건수</label>
-            <input type="number" id="rp-pl-sales" class="sim-input" min="0" step="1" value="20"></div>
-          <div class="field"><label style="font-size:11px">평균 리베이트 (₩)</label>
-            <input type="number" id="rp-pl-rebate" class="sim-input" min="0" step="10000" value="600000"></div>
-          <div class="field"><label style="font-size:11px">평균 약정 (개월)</label>
-            <select id="rp-pl-months" class="sim-input">
-              <option value="36">36개월</option>
-              <option value="60" selected>60개월</option>
-              <option value="72">72개월</option>
-              <option value="84">84개월</option>
-            </select></div>
-          <div class="field"><label style="font-size:11px">우수상품 비율 (%)</label>
-            <input type="number" id="rp-pl-prem-rate" class="sim-input" min="0" max="100" step="5" value="30"></div>
-          <div class="field"><label style="font-size:11px">방문 케어 비율 (%)</label>
-            <input type="number" id="rp-pl-care-rate" class="sim-input" min="0" max="100" step="5" value="50"></div>
-        </div>
-        <div id="rp-pl-result" style="background:rgba(0,0,0,0.4);border-radius:6px;padding:12px 14px;font-size:12px;color:#cbd5e1;line-height:1.7">
-          입력값을 채우면 자동 계산됩니다.
-        </div>
+      <!-- 가전렌탈 영업이익 시뮬레이터는 인터넷+TV 탭의 통합 시뮬레이터(sim-hybrid-toggle)로 이관됨 (2026-05-18 정책 통일) -->
+      <div style="margin-top:14px;padding:10px 14px;background:rgba(96,165,250,0.06);border-left:3px solid #60a5fa;border-radius:4px;font-size:11px;color:#cbd5e1;line-height:1.7">
+        💡 <b style="color:#60a5fa">가전렌탈 단독 영업이익 시뮬레이터</b>는 인터넷+TV 탭의 <b>🧪 영업이익 시뮬레이터 → 🏠 가전렌탈 추가 (하이브리드 영업)</b> 토글로 통합되었습니다.
       </div>
 
       <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">📝 변경 사유 (이력 audit log)</h3>
@@ -1026,19 +988,9 @@ async function fetchAgent() {
         }
         _rp = res.policy;
         F('rp-target-profit').value = _rp.target_profit_rate;
-        F('rp-base-salary').value = _rp.base_salary;
-        F('rp-standard-sales').value = _rp.base_salary_standard_sales;
-        updateBaseShare();
-        F('rp-p36').value = _rp.weight_p_36m;
-        F('rp-p60').value = _rp.weight_p_60m;
-        F('rp-p72').value = _rp.weight_p_72m;
-        F('rp-p84').value = _rp.weight_p_84m;
-        F('rp-premium-bonus-p').value = _rp.premium_bonus_p;
-        F('rp-care-visit-p').value = _rp.care_visit_bonus_p;
         F('rp-g1').value = _rp.grade_g1_unit;
         F('rp-g2').value = _rp.grade_g2_unit;
         F('rp-g3').value = _rp.grade_g3_unit;
-        F('rp-signup-bonus').value = _rp.signup_bonus_per_sale;
         F('rp-payback-cap').value = _rp.payback_cap;
         F('rp-weight-cost').value = _rp.weight_cost_per_p;
         F('rp-tier-s').value = _rp.tier_s_min_margin;
@@ -1146,8 +1098,9 @@ async function fetchAgent() {
         F(id)?.addEventListener('input', runMgrSim);
       });
 
-      // 🧪 영업이익 시뮬레이터 — 정책 + 영업 가정 → 회사 마진/상담사 수령
-      function runPLSim() {
+      // 🧪 영업이익 시뮬레이터 (가전렌탈 단독, 합의 V1로 제거됨 — 통합 시뮬레이터는 인터넷+TV 탭의 sim-hybrid-toggle 사용)
+      function runPLSim() { return; /* deprecated 2026-05-18 — 가전렌탈 단독 시뮬은 인터넷+TV 통합 시뮬로 이관 */ }
+      function _runPLSim_legacy() {
         const resEl = F('rp-pl-result');
         if (!resEl) return;
         const sales = Number(F('rp-pl-sales').value) || 0;
@@ -1227,21 +1180,7 @@ async function fetchAgent() {
             ⚙️ 1건당 P: 약정 ${weightP || 0} + 우수${(premBonusP*premRate).toFixed(2)} + 방문${(careVisitP*careRate).toFixed(2)} = ${pPerSale.toFixed(2)}P · 페이백 ${f(payback)}원 (리베×${(0.9-profitRate).toFixed(2)})
           </div>`;
       }
-      ['rp-pl-sales','rp-pl-rebate','rp-pl-months','rp-pl-prem-rate','rp-pl-care-rate',
-       'rp-target-profit','rp-base-salary','rp-standard-sales','rp-p36','rp-p60','rp-p72','rp-p84',
-       'rp-premium-bonus-p','rp-care-visit-p','rp-weight-cost','rp-signup-bonus','rp-bonus-prem',
-       'rp-g1','rp-g2','rp-g3','rp-g2-p','rp-g3-p','rp-g2-prem','rp-g3-prem'].forEach(id => {
-        F(id)?.addEventListener('input', runPLSim);
-      });
-      // 초기 1회 실행
-      setTimeout(runPLSim, 600);
-      function updateBaseShare() {
-        const salary = Number(F('rp-base-salary').value) || 0;
-        const sales = Number(F('rp-standard-sales').value) || 1;
-        F('rp-base-share').value = fmtKor(Math.round(salary / sales)) + ' 원';
-      }
-      F('rp-base-salary').addEventListener('input', updateBaseShare);
-      F('rp-standard-sales').addEventListener('input', updateBaseShare);
+      // runPLSim·updateBaseShare 입력 바인딩 제거 (DOM 요소 모두 제거됨)
 
       F('rp-save-btn').addEventListener('click', async () => {
         const tk = localStorage.getItem('incentive-auth-token-v1');
@@ -1250,18 +1189,9 @@ async function fetchAgent() {
         const body = {
           id: _rp.id,
           target_profit_rate: Number(F('rp-target-profit').value),
-          base_salary: Number(F('rp-base-salary').value),
-          base_salary_standard_sales: Number(F('rp-standard-sales').value),
-          weight_p_36m: Number(F('rp-p36').value),
-          weight_p_60m: Number(F('rp-p60').value),
-          weight_p_72m: Number(F('rp-p72').value),
-          weight_p_84m: Number(F('rp-p84').value),
-          premium_bonus_p: Number(F('rp-premium-bonus-p').value),
-          care_visit_bonus_p: Number(F('rp-care-visit-p').value),
           grade_g1_unit: Number(F('rp-g1').value),
           grade_g2_unit: Number(F('rp-g2').value),
           grade_g3_unit: Number(F('rp-g3').value),
-          signup_bonus_per_sale: Number(F('rp-signup-bonus').value),
           payback_cap: Number(F('rp-payback-cap').value),
           weight_cost_per_p: Number(F('rp-weight-cost').value),
           tier_s_min_margin: Number(F('rp-tier-s').value),
