@@ -394,6 +394,9 @@ router.post('/quote', optionalAuth, async (req, res) => {
     else if (finalMargin >= aMin) finalTier = 'A';
     else if (finalMargin >= bMin) finalTier = 'B';
     const isPremiumAuto = finalMargin >= premThr;
+    // 응답의 product.is_premium / product.tier 옛 DB값을 자동값으로 덮어쓰기 (옵션 단위 자동 분류)
+    product.is_premium = isPremiumAuto;
+    product.tier = finalTier;
 
     // 페이백 회사/상담사 분담 (자동)
     const companyLimit = policy.payback_company_limit || 30000;
