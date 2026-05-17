@@ -929,8 +929,9 @@ function calcAutoTierP(p) {
   const bMin = _itPolicy.tier_b_min_margin || 120000;
   const rebate = Number(p.rebate) || 0;
   const payback = Number(p.payback) || 0;
-  // 1단계: 임시 P=1.5로 임시 마진/Tier
-  const tempMargin = Math.round(rebate * 0.9 - payback - 1.5 * wcUnit);
+  const giftWon = (Number(p.gift_amount) || 0) * 10000;  // 상품권 (만원 → 원, 0/null/NaN 안전 처리)
+  // 1단계: 임시 P=1.5로 임시 마진/Tier (상품권도 회사 부담 비용)
+  const tempMargin = Math.round(rebate * 0.9 - payback - giftWon - 1.5 * wcUnit);
   let tempTier = 'C';
   if (tempMargin >= sMin) tempTier = 'S';
   else if (tempMargin >= aMin) tempTier = 'A';
@@ -938,9 +939,9 @@ function calcAutoTierP(p) {
   // 2단계: 임시 Tier → P 매핑 (정책의 tier_to_p JSONB 사용)
   const pMap = (_itPolicy?.tier_to_p) || { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
   const pAuto = Number(pMap[tempTier]) || 1.0;
-  // 3단계: 최종 P 기반 마진 자동 계산
+  // 3단계: 최종 P 기반 마진 자동 계산 (상품권 포함)
   const finalP = Number(p.point_weight ?? pAuto);
-  const marginAuto = Math.round(rebate * 0.9 - payback - finalP * wcUnit);
+  const marginAuto = Math.round(rebate * 0.9 - payback - giftWon - finalP * wcUnit);
   const effMargin = (p.margin != null && p.margin !== '') ? Number(p.margin) : marginAuto;
   let tierAuto = 'C';
   if (effMargin >= sMin) tierAuto = 'S';
@@ -1028,7 +1029,10 @@ async function saveRow(id) {
     const field = inp.dataset.field;
     let val = inp.value;
     if (field === 'rebate' || field === 'payback' || field === 'monthly_fee_min' || field === 'monthly_fee_max' || field === 'guide_min' || field === 'guide_max' || field === 'install_fee') val = parseInt(val) || 0;
-    if (field === 'point_weight' || field === 'gift_amount') val = parseFloat(val) || 0;
+    if (field === 'point_weight' || field === 'gift_amount') {
+      const n = parseFloat(val);
+      val = isNaN(n) ? 0 : n;  // 0/빈값/NaN 모두 0으로 안전 처리
+    }
     if (String(inp.dataset.orig) !== String(val)) body[field] = val;
   });
   if (Object.keys(body).length === 0) { showToast('변경사항 없음'); return; }
