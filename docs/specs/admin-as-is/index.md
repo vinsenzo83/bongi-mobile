@@ -65,7 +65,7 @@ iframe pool 캐시 우회: SW_VERSION + `?v=N` + iframe pool 3중 (memory: `feed
 | **티켓 — 어드민 견적용 (105)** | TM 상담·견적 화면의 105개. `calculator.html` JS가 시드(`incentive_calculator_overrides`)에서 메모리 생성. DB 비저장 |
 | **티켓 — 고객 사이트용 (1,002)** | `bongi_tickets` 949 internet + 53 rental. 봉이 메인(`bongi-mobile.com`) 신청 카탈로그. `bongi_applications.product_ticket`이 SK0188/KT0311 등 105 범위 밖 번호 사용 — **별도 시스템** |
 | **두 티켓 체계 분리** | 어드민 견적(105) ↔ 고객 신청(949)은 같은 prefix(SK/KT/LG) 쓰지만 매핑 X. 정산 시점에 product_id로만 연결 |
-| **공개 와이어프레임** | `/admin/index.html` — 인증 없이 노출된 디자인 prototype (운영 어드민과 별개) |
+| **공개 와이어프레임 (deprecated)** | `/admin/index.html` — 인증 없이 노출된 디자인 prototype. **현재 사용 X, 업데이트 X**. 봉이 메인 사이트(bongi-mobile.com)와 함께 deprecated. bongi_tickets 949건도 이 prototype 용 mock |
 
 상세: 메모리의 `project_bongi_*` 시리즈 참조.
 

@@ -131,12 +131,13 @@ function renderTicketList() {
 
 **둘은 데이터 동기화 안 됨**. 같은 `SK0001`이라도 다른 의미일 수 있음.
 
-### 10.6 와이어프레임 (`/admin/`) 발견
+### 10.6 와이어프레임 (`/admin/`) — **deprecated**
 - `<title>봉이모바일 어드민 와이어프레임</title>`
 - 9,594 lines 단일 HTML, light theme
 - **인증 없이 누구나 접근 가능** (보안 검토 필요)
 - `/api/admin/platform/tickets` 호출 → `bongi_tickets` 표시
-- 즉 와이어프레임은 **고객 사이트 데이터의 관리 UI prototype**
+- **현재 사용 X, 업데이트 X** — 봉이 메인 사이트(bongi-mobile.com) 미운영과 함께 deprecated
+- `bongi_tickets` 949건 + `bongi_applications` 10건 모두 이 prototype용 mock
 
 ### 10.6 carrier 표기 분기 ⚠️
 | 시스템 | 표기 |

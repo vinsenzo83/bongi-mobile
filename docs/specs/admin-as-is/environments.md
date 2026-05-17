@@ -86,7 +86,7 @@ curl -s https://admin.prexymarket.com/api/health | python3 -m json.tool
 | 1 | 데브 권한 매트릭스(agent·contract 변경)를 라이브로 동기화할지 결정 | 높음 | 대기 |
 | 2 | 데브 products 시드를 라이브 기준으로 재정렬할지 결정 | 중 | 대기 |
 | 3 | 환경별 drift 자동 모니터링 cron 추가 (이 스크립트 일 1회) | 중 | 대기 |
-| 4 | 라이브 `/admin/` 와이어프레임 비공개 처리 (인증 없이 노출 중) | 높음 | 대기 |
+| 4 | 라이브 `/admin/` 와이어프레임 비공개 처리 (인증 없이 노출 + deprecated, 사용·업데이트 X) | 높음 | 대기 |
 | 5 | `bongi_tickets` 정리 시도 → **롤백 완료** (잘못된 판단) | 완료 | **2026-05-17 롤백** |
 
 ## 6. 변경 로그
