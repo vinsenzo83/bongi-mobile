@@ -405,7 +405,11 @@ body.cat-rental .tm-app { grid-template-columns: 280px minmax(0,1fr) !important;
 .tm-rental-panel .cat-bar label { font-size:10px; color:#92400e; font-weight:800; margin-right:4px; }
 .tm-rental-panel .cat-bar select { padding:7px 10px; background:#fff; color:#451a03; font-weight:800; border:1.5px solid #fcd34d; border-radius:5px; font-size:13px; max-width:240px; flex:1; }
 .tm-rental-panel .cat-bar .note { font-size:10px; color:#92400e; line-height:1.55; padding:5px 8px; background:rgba(251,191,36,0.18); border:1px dashed #fcd34d; border-radius:4px; flex:1; }
-.tm-rental-panel .rental-grid { display:grid; grid-template-columns:1fr 320px; gap:14px; }
+.tm-rental-panel .rental-grid { display:grid; grid-template-columns:1fr minmax(380px, 420px); gap:14px; }
+@media (max-width: 1400px) {
+  .tm-rental-panel .rental-grid { grid-template-columns:1fr minmax(340px, 380px); gap:10px; }
+}
+.tm-rental-panel .rental-quote-result { overflow-x:auto; word-break:break-word; }
 .tm-rental-panel .rental-form-wrap { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px; }
 .tm-rental-panel .rental-form-wrap .ttl { font-size:11px; font-weight:800; color:#3617ce; margin-bottom:8px; }
 .tm-rental-panel .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; margin-bottom:12px; }
