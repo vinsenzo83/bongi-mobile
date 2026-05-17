@@ -9,6 +9,30 @@ const router = Router();
 const _isProd = process.env.NODE_ENV === 'production';
 const errMsg = (e) => _isProd ? '서버 오류 — 잠시 후 다시 시도하세요' : (e?.message || '서버 오류');
 
+// notes HTML escape 누적 방지 — PATCH/POST 입력 시 디코드 (2026-05-18 버그 fix)
+// UI는 표시 시 한 번 escape하므로 server는 raw text로 저장한다.
+function normalizeNotes(s) {
+  if (s == null) return null;
+  let str = String(s);
+  for (let i = 0; i < 5; i++) {
+    const prev = str;
+    str = str
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
+      .replace(/&#x2F;/gi, '/')
+      .replace(/&#x60;/gi, '`')
+      .replace(/&#x3D;/gi, '=')
+      .replace(/&#x26;/gi, '&');
+    if (str === prev) break;
+  }
+  return str;
+}
+
 // ─── 카테고리 ───
 router.get('/categories', optionalAuth, async (req, res) => {
   try {
@@ -56,6 +80,8 @@ router.patch('/policy', authenticateJWT, async (req, res) => {
     for (const k of ALLOWED) {
       if (fields[k] !== undefined) update[k] = fields[k];
     }
+    // notes 누적 escape 디코드 (2026-05-18 fix)
+    if (update.notes !== undefined) update.notes = normalizeNotes(update.notes);
 
     // 변경 이력 — 기존 값 가져오기
     const { data: oldPolicy } = await supabase.from('rental_policy').select('*').eq('id', id).single();
@@ -104,6 +130,8 @@ router.post('/policy', authenticateJWT, async (req, res) => {
     for (const k of ALLOWED) {
       if (fields[k] !== undefined) insert[k] = fields[k];
     }
+    // notes 누적 escape 디코드 (2026-05-18 fix)
+    if (insert.notes !== undefined) insert.notes = normalizeNotes(insert.notes);
     if (!insert.version) return res.status(400).json({ error: 'version 필수' });
 
     if (deactivate_others) {

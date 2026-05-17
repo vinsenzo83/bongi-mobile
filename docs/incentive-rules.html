@@ -940,9 +940,24 @@ async function fetchAgent() {
       <div id="rp-msg" style="font-size:11px;color:#fbbf24;margin-top:6px;text-align:right"></div>
     </div>
 
-    <!-- 변경 이력은 페이지 하단의 통합 섹션에서 인터넷+TV와 가전렌탈 모두 확인 -->
-    <div style="margin:10px 0;padding:10px 14px;background:rgba(96,165,250,0.06);border-left:3px solid #60a5fa;border-radius:4px;font-size:11px;color:#cbd5e1;line-height:1.7">
-      💡 정책 변경 이력은 페이지 하단 <b>📜 정책 변경 이력 (통합)</b> 섹션에서 인터넷+TV·가전렌탈 모두 확인 가능합니다.
+    <!-- 📜 가전렌탈 정책 변경 audit 이력 (인터넷+TV와 동일 패턴) -->
+    <div class="section">
+      <h2>📜 가전렌탈 정책 변경 audit 이력 (최근 20건)</h2>
+      <div style="max-height:340px;overflow-y:auto;background:#0f172a;border:1px solid #334155;border-radius:8px">
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px">
+          <thead style="position:sticky;top:0;background:#1e293b">
+            <tr>
+              <th style="padding:8px;text-align:left;color:#94a3b8">시간</th>
+              <th style="padding:8px;text-align:center;color:#94a3b8;width:110px">탭</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">변경자</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">필드 (한글)</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">변경값 (이전 → 이후)</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">사유</th>
+            </tr>
+          </thead>
+          <tbody id="rp-history-tbody"><tr><td colspan="6" style="padding:14px;text-align:center;color:#64748b">불러오는 중…</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
     <script>
@@ -1149,7 +1164,8 @@ async function fetchAgent() {
         } catch (e) { F('rp-msg').textContent = '정책 로드 실패: ' + e.message; }
       }
 
-      // audit log (기존 rp-history-tbody — IT 패턴 외 가전 전용 유지)
+      // audit log (가전 — 인터넷+TV 패턴과 동일: 한글 필드명 + 탭 라벨 + 변경값 styling)
+      // POLICY_FIELD_KR은 메인 script (line ~1628)에서 script-scope const로 선언 → 동일 document의 모든 script tag 공유
       async function loadRpHistory() {
         const tbody = document.getElementById('rp-history-tbody');
         if (!tbody) return;
@@ -1157,25 +1173,33 @@ async function fetchAgent() {
         try {
           const r = await fetch('/api/rental/policy/history?limit=20', { headers: { Authorization: 'Bearer ' + tk } }).then(r => r.json());
           const rows = r.history || r.rows || [];
-          if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:14px;text-align:center;color:#94a3b8">변경 이력 없음</td></tr>'; return; }
+          if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" style="padding:14px;text-align:center;color:#94a3b8">변경 이력 없음</td></tr>'; return; }
+          const FIELD_KR = (typeof POLICY_FIELD_KR !== 'undefined') ? POLICY_FIELD_KR : {};
           tbody.innerHTML = rows.map(h => {
-            const dt = new Date(h.created_at);
+            const dt = new Date(h.changed_at || h.created_at);
             const f = dt.toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
             const fields = h.changed_fields || {};
             const fieldList = Object.entries(fields).map(([k, v]) => {
               const oldV = typeof v.old === 'object' ? JSON.stringify(v.old) : (v.old ?? '∅');
               const newV = typeof v.new === 'object' ? JSON.stringify(v.new) : (v.new ?? '∅');
-              return `<div style="font-size:10.5px;line-height:1.5"><b style="color:#a78bfa">${k}</b>: <s style="color:#94a3b8">${String(oldV).slice(0,80)}</s> → <b style="color:#86efac">${String(newV).slice(0,80)}</b></div>`;
+              const kr = FIELD_KR[k] || k;
+              return `<div style="margin-bottom:4px;line-height:1.55">
+                <div style="color:#a78bfa;font-weight:700;font-size:11px">${kr}<span style="font-size:9px;color:#64748b;font-family:monospace;margin-left:6px">${k}</span></div>
+                <div style="font-size:10.5px"><s style="color:#94a3b8">${String(oldV).slice(0,80).replace(/</g,'&lt;')}</s> → <b style="color:#86efac">${String(newV).slice(0,80).replace(/</g,'&lt;')}</b></div>
+              </div>`;
             }).join('');
+            const fieldNamesKr = Object.keys(fields).map(k => FIELD_KR[k] || k).join(', ');
             return `<tr style="border-top:1px solid #334155">
-              <td style="padding:7px 8px;color:#cbd5e1;white-space:nowrap">${f}</td>
-              <td style="padding:7px 8px;color:#fbbf24;font-family:monospace;font-size:10.5px">${h.changed_by || '-'}</td>
-              <td style="padding:7px 8px;color:#cbd5e1">${(h.change_reason || '-').replace(/</g,'&lt;')}</td>
-              <td style="padding:7px 8px">${fieldList || '<span style="color:#64748b">-</span>'}</td>
+              <td style="padding:7px 8px;color:#cbd5e1;white-space:nowrap;vertical-align:top">${f}</td>
+              <td style="padding:7px 8px;text-align:center;vertical-align:top"><span style="background:rgba(245,158,11,0.15);color:#fbbf24;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:800;white-space:nowrap">🏠 가전렌탈</span></td>
+              <td style="padding:7px 8px;color:#fbbf24;font-family:monospace;font-size:10.5px;vertical-align:top">${(h.changed_by_name || h.changed_by || '-').toString().replace(/</g,'&lt;')}</td>
+              <td style="padding:7px 8px;color:#a78bfa;font-weight:700;vertical-align:top;font-size:11px">${fieldNamesKr || '-'}</td>
+              <td style="padding:7px 8px;vertical-align:top">${fieldList || '<span style="color:#64748b">-</span>'}</td>
+              <td style="padding:7px 8px;color:#cbd5e1;vertical-align:top">${(h.change_reason || '-').toString().replace(/</g,'&lt;')}</td>
             </tr>`;
           }).join('');
         } catch (e) {
-          tbody.innerHTML = `<tr><td colspan="4" style="padding:14px;color:#ef4444">이력 로드 실패: ${e.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" style="padding:14px;color:#ef4444">이력 로드 실패: ${e.message}</td></tr>`;
         }
       }
 
@@ -1363,13 +1387,14 @@ async function fetchAgent() {
           <thead style="position:sticky;top:0;background:#1e293b">
             <tr>
               <th style="padding:8px;text-align:left;color:#94a3b8">시간</th>
+              <th style="padding:8px;text-align:center;color:#94a3b8;width:110px">탭</th>
               <th style="padding:8px;text-align:left;color:#94a3b8">변경자</th>
-              <th style="padding:8px;text-align:left;color:#94a3b8">필드</th>
-              <th style="padding:8px;text-align:left;color:#94a3b8">변경값</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">필드 (한글)</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">변경값 (이전 → 이후)</th>
               <th style="padding:8px;text-align:left;color:#94a3b8">사유</th>
             </tr>
           </thead>
-          <tbody id="audit-tbody"><tr><td colspan="5" style="padding:14px;text-align:center;color:#64748b">불러오는 중…</td></tr></tbody>
+          <tbody id="audit-tbody"><tr><td colspan="6" style="padding:14px;text-align:center;color:#64748b">불러오는 중…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1623,6 +1648,31 @@ async function loadAll() {
   } catch (e) { alert('정책 로드 실패: ' + e.message); }
 }
 
+// 정책 필드명 영문 → 한글 매핑
+const POLICY_FIELD_KR = {
+  version: '버전',
+  effective_from: '적용 시작일', effective_at: '적용 시작일',
+  active: '활성 상태', is_active: '활성 상태',
+  notes: '비고',
+  base_salary: '기본급',
+  bonus_per_premium: '우수상품 1건당 보너스',
+  payback_company_limit: '회사 페이백 부담 한도', payback_company_max: '회사 페이백 부담 한도',
+  payback_max: '최대 페이백', payback_cap: '최대 페이백',
+  grade_rates: 'Grade 단가 (G1/G2/G3)',
+  grade_thresholds: 'Grade 임계 (P/우수)',
+  premium_margin_threshold: '우수상품 마진 임계', premium_min_margin: '우수상품 마진 임계',
+  manager_v51_enabled: '팀장 V5.1 활성',
+  manager_override_rate: '팀장 오버라이드율',
+  manager_obligation_count: '팀장 본인영업 의무',
+  manager_penalty_partial_min: '팀장 부분 페널티 임계',
+  manager_team_profit_rate_min: '팀장 팀 영업이익률 임계',
+  weight_cost_per_p: '가중치 비용 (P당)',
+  tier_s_min_margin: 'S Tier 최소 마진',
+  tier_a_min_margin: 'A Tier 최소 마진',
+  tier_b_min_margin: 'B Tier 최소 마진',
+  tier_to_p: 'Tier → P 매핑',
+};
+
 async function loadAuditHistory() {
   const tbody = document.getElementById('audit-tbody');
   if (!tbody) return;
@@ -1630,22 +1680,24 @@ async function loadAuditHistory() {
   try {
     const r = await fetch(API + '/rules/history?limit=30', { headers: { Authorization: 'Bearer ' + tk } }).then(r => r.json());
     const rows = r.history || [];
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:14px;text-align:center;color:#94a3b8">변경 이력 없음</td></tr>'; return; }
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" style="padding:14px;text-align:center;color:#94a3b8">변경 이력 없음</td></tr>'; return; }
     tbody.innerHTML = rows.map(h => {
       const dt = new Date(h.changed_at);
       const f = dt.toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
       const ov = String(h.old_value ?? '∅').slice(0, 80).replace(/</g, '&lt;');
       const nv = String(h.new_value ?? '∅').slice(0, 80).replace(/</g, '&lt;');
+      const fieldKr = POLICY_FIELD_KR[h.field_name] || h.field_name;
       return `<tr style="border-top:1px solid #334155">
         <td style="padding:7px 8px;color:#cbd5e1;white-space:nowrap">${f}</td>
+        <td style="padding:7px 8px;text-align:center"><span style="background:rgba(96,165,250,0.15);color:#93c5fd;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:800;white-space:nowrap">📡 인터넷+TV</span></td>
         <td style="padding:7px 8px;color:#fbbf24;font-family:monospace;font-size:10.5px">${h.changed_by_name || '-'}</td>
-        <td style="padding:7px 8px;color:#a78bfa;font-weight:700">${h.field_name}</td>
+        <td style="padding:7px 8px;color:#a78bfa;font-weight:700;white-space:nowrap">${fieldKr}<div style="font-size:9px;color:#64748b;font-family:monospace">${h.field_name}</div></td>
         <td style="padding:7px 8px;font-size:10.5px"><s style="color:#94a3b8">${ov}</s> → <b style="color:#86efac">${nv}</b></td>
         <td style="padding:7px 8px;color:#cbd5e1">${(h.change_reason || '-').replace(/</g,'&lt;')}</td>
       </tr>`;
     }).join('');
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="5" style="padding:14px;color:#ef4444">이력 로드 실패: ${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:14px;color:#ef4444">이력 로드 실패: ${e.message}</td></tr>`;
   }
 }
 // 정책 PATCH 저장 후 audit 자동 갱신
