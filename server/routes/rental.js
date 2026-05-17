@@ -379,6 +379,7 @@ router.post('/quote', optionalAuth, async (req, res) => {
     const sMin = policy.tier_s_min_margin || 130000;
     const aMin = policy.tier_a_min_margin || 120000;
     const bMin = policy.tier_b_min_margin || 100000;
+    const premThr = policy.premium_margin_threshold || 130000;
     const tempMargin = Math.round((opt.rebate||0) * 0.9 - payback - 1.5 * wcUnit);
     let tempTier = 'C';
     if (tempMargin >= sMin) tempTier = 'S';
@@ -386,6 +387,13 @@ router.post('/quote', optionalAuth, async (req, res) => {
     else if (tempMargin >= bMin) tempTier = 'B';
     const pMap = policy.tier_to_p || { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
     const P = Number(pMap[tempTier]) || 1.0;
+    // 최종 margin 기반 Tier·우수 자동 분류
+    const finalMargin = Math.round((opt.rebate||0) * 0.9 - payback - P * wcUnit);
+    let finalTier = 'C';
+    if (finalMargin >= sMin) finalTier = 'S';
+    else if (finalMargin >= aMin) finalTier = 'A';
+    else if (finalMargin >= bMin) finalTier = 'B';
+    const isPremiumAuto = finalMargin >= premThr;
 
     // 페이백 회사/상담사 분담 (자동)
     const companyLimit = policy.payback_company_limit || 30000;
@@ -411,9 +419,14 @@ router.post('/quote', optionalAuth, async (req, res) => {
         bundle_rate: bundleRate,
         rebate_after_tax: Math.round(rebate * 0.9),
         effective_monthly_fee: effectiveMonthlyFee,
-        is_premium: !!product.is_premium,
-        tier: product.tier || null,                 // 운영자 수동 입력값 그대로 통과
-        option_margin: opt.margin ?? null,          // 운영자 수동 입력 마진 통과
+        // 자동 분류 (옵션 단위, 정책 변경 즉시 반영)
+        is_premium: isPremiumAuto,
+        tier: finalTier,
+        margin: finalMargin,
+        is_premium_auto: isPremiumAuto,
+        tier_auto: finalTier,
+        margin_auto: finalMargin,
+        option_margin: opt.margin ?? null,
         promo_type: promo_type || 'basic',
         bundle_apply: !!bundle_apply,
         payback_source: paybackSource,
