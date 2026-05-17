@@ -2510,11 +2510,17 @@ init();
     const tk = localStorage.getItem('incentive-auth-token-v1');
     if (!tk) return;
     try {
-      const [r1, r2] = await Promise.all([
+      const [r1, r2, r3] = await Promise.all([
         fetch('/api/rental/categories', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json()),
         fetch('/api/incentive/agents/me/categories', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json()),
+        fetch('/api/rental/products?active_only=0', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json()),
       ]);
-      _categories = r1.categories || [];
+      const allCats = r1.categories || [];
+      const products = r3.products || [];
+      // category_id 기준 상품 수 집계 (운영 중인 카테고리만 탭 노출)
+      const productCount = {};
+      products.forEach(p => { productCount[p.category_id] = (productCount[p.category_id] || 0) + 1; });
+      _categories = allCats.filter(c => (productCount[c.id] || 0) > 0);
       _myCats = r2.categories || [];
       _myCatsUnrestricted = !!r2.unrestricted;
       renderTabs();
