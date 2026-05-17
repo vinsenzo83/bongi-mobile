@@ -370,12 +370,22 @@ router.post('/quote', optionalAuth, async (req, res) => {
     // 월 납부액 (반값 적용 시 half_fee)
     const effectiveMonthlyFee = promo_type === 'half' && opt.half_fee ? opt.half_fee : opt.monthly_fee;
 
-    // P = 상품 point_weight 고정 (운영자 수동 입력 시대 — margin/tier 계산 제거)
-    const P = Number(opt.point_weight ?? product.point_weight) || 0;  // 옵션 단위 P 우선 (NULL이면 product fallback)
-
     // 페이백 = 옵션 DB의 값 (운영자가 옵션마다 수동 입력)
     const payback = payback_override != null ? Number(payback_override) : (opt.payback || 0);
     const paybackSource = payback_override != null ? 'override' : 'admin';
+
+    // P 자동 매핑 (정책의 tier_to_p JSONB): 임시 P=1.5 → 임시 Tier → P 매핑
+    const wcUnit = policy.weight_cost_per_p || 70000;
+    const sMin = policy.tier_s_min_margin || 130000;
+    const aMin = policy.tier_a_min_margin || 120000;
+    const bMin = policy.tier_b_min_margin || 100000;
+    const tempMargin = Math.round((opt.rebate||0) * 0.9 - payback - 1.5 * wcUnit);
+    let tempTier = 'C';
+    if (tempMargin >= sMin) tempTier = 'S';
+    else if (tempMargin >= aMin) tempTier = 'A';
+    else if (tempMargin >= bMin) tempTier = 'B';
+    const pMap = policy.tier_to_p || { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
+    const P = Number(pMap[tempTier]) || 1.0;
 
     // 페이백 회사/상담사 분담 (자동)
     const companyLimit = policy.payback_company_limit || 30000;

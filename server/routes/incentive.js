@@ -1357,10 +1357,41 @@ router.patch('/rules/:id', authenticateJWT, async (req, res) => {
       .select()
       .single();
     if (error) throw error;
+    // trigger가 자동 INSERT 한 history row에 changed_by 채움 (최근 5초)
+    try {
+      await supabase
+        .from('incentive_rules_history')
+        .update({ changed_by_user_id: req.user.id, changed_by_name: me.name, change_reason: req.body.change_reason || null })
+        .eq('rule_id', req.params.id)
+        .is('changed_by_user_id', null)
+        .gt('changed_at', new Date(Date.now() - 5000).toISOString());
+    } catch(e) {}
     res.json({ rules: data });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 11.455. GET /api/incentive/rules/history — 변경 audit 이력 (admin/manager)
+// ═══════════════════════════════════════════════════════════════
+router.get('/rules/history', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || !['admin','manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const { data, error } = await supabase
+      .from('incentive_rules_history')
+      .select('*')
+      .order('changed_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    res.json({ history: data || [] });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류' });
   }
 });
 
