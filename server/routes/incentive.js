@@ -2484,6 +2484,107 @@ router.post('/menus', authenticateJWT, async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════
+// 🏢 부서 관리 (incentive_departments) — 카테고리별 계약 처리
+// ════════════════════════════════════════════════════════════
+router.get('/departments', authenticateJWT, async (req, res) => {
+  try {
+    const { include_inactive } = req.query;
+    let q = supabase.from('incentive_departments')
+      .select('id,name,categories,description,active,display_order,manager_user_id')
+      .order('display_order', { ascending: true });
+    if (include_inactive !== 'true') q = q.eq('active', true);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json({ departments: data || [], total: (data || []).length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/departments', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const { name, categories, description, display_order } = req.body || {};
+    if (!name) return res.status(400).json({ error: 'name 필수' });
+    const row = {
+      name: String(name).slice(0, 50),
+      categories: Array.isArray(categories) ? categories : [],
+      description: description ? String(description).slice(0, 200) : null,
+      display_order: parseInt(display_order) || 100,
+    };
+    const { data, error } = await supabase.from('incentive_departments').insert(row).select().single();
+    if (error) throw error;
+    res.json({ ok: true, department: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.patch('/departments/:id(\\d+)', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin 전용' });
+    const { name, categories, description, active, display_order } = req.body || {};
+    const update = { updated_at: new Date().toISOString() };
+    if (name !== undefined) update.name = String(name).slice(0, 50);
+    if (Array.isArray(categories)) update.categories = categories;
+    if (description !== undefined) update.description = description ? String(description).slice(0, 200) : null;
+    if (active !== undefined) update.active = !!active;
+    if (display_order !== undefined) update.display_order = parseInt(display_order) || 100;
+    const { data, error } = await supabase.from('incentive_departments').update(update).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: '부서 없음' });
+    res.json({ department: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 본인 처리 가능 카테고리 (role + department + handle_categories 합산)
+router.get('/agents/me/categories', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(401).json({ error: 'unauthenticated' });
+    // admin/manager는 모든 카테고리
+    if (['admin', 'manager'].includes(me.role)) {
+      return res.json({ categories: ['internet_tv','rental_water','rental_air','rental_bidet','rental_massage','rental_all'], role: me.role, unrestricted: true });
+    }
+    // contract/agent는 본인 부서 + handle_categories 합산
+    let deptCats = [];
+    if (me.department_id) {
+      const { data: dept } = await supabase.from('incentive_departments').select('categories').eq('id', me.department_id).single();
+      deptCats = Array.isArray(dept?.categories) ? dept.categories : [];
+    }
+    const personal = Array.isArray(me.handle_categories) ? me.handle_categories : [];
+    const all = [...new Set([...deptCats, ...personal])];
+    res.json({ categories: all, role: me.role, department_id: me.department_id, unrestricted: false });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 부서별 계약 통계 (Phase C)
+router.get('/departments/stats', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || !['admin','manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
+    const { ym } = req.query;  // YYYY-MM
+    // rental_sales 부서별 집계 (agent.department_id로 그룹)
+    const month = ym || new Date().toISOString().slice(0, 7);
+    const { data: depts } = await supabase.from('incentive_departments').select('id,name,categories');
+    const { data: rentals } = await supabase.from('rental_sales')
+      .select('id,monthly_fee_snapshot,payback_snapshot,agent:incentive_agents(department_id)')
+      .gte('contract_date', month + '-01').lte('contract_date', month + '-31');
+    const byDept = {};
+    (rentals || []).forEach(r => {
+      const did = r.agent?.department_id || 'unassigned';
+      if (!byDept[did]) byDept[did] = { count: 0, monthly_fee: 0, payback: 0 };
+      byDept[did].count++;
+      byDept[did].monthly_fee += r.monthly_fee_snapshot || 0;
+      byDept[did].payback += r.payback_snapshot || 0;
+    });
+    const result = (depts || []).map(d => ({
+      ...d,
+      stats: byDept[d.id] || { count: 0, monthly_fee: 0, payback: 0 }
+    }));
+    res.json({ month, departments: result });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ════════════════════════════════════════════════════════════
 // 🎫 티켓 관리 — 고객→상담사 핫라인 식별 코드
 // ════════════════════════════════════════════════════════════
 // 인터넷+TV 티켓 (incentive_internet_tickets — 105개) + 가전 렌탈 티켓 (rental_products.ticket_number — R0001~)
