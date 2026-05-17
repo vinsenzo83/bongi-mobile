@@ -993,7 +993,7 @@ function renderTable() {
         <option value="1.5" ${effP==1.5?'selected':''}>1.5</option>
         <option value="2.0" ${effP==2.0?'selected':''}>2.0</option>
       </select></td>
-      <td style="text-align:right;font-weight:800" id="margin-${p.id}">${fmt(p.margin)}</td>
+      <td style="text-align:right;font-weight:800;color:${effMargin >= (_itPolicy.tier_s_min_margin||250000) ? '#fbbf24' : effMargin >= (_itPolicy.tier_a_min_margin||180000) ? '#60a5fa' : effMargin >= (_itPolicy.tier_b_min_margin||120000) ? '#94a3b8' : '#fca5a5'}" id="margin-${p.id}" title="자동 ${marginAuto.toLocaleString()}원 (rebate×0.9 − payback − ${effP}P×${(_itPolicy.weight_cost_per_p||70000).toLocaleString()}). p.margin DB값 ${(p.margin||0).toLocaleString()}원">${fmt(effMargin)}</td>
       <td><span class="${tierClass}" id="tier-${p.id}" title="자동 ${tierAuto} (margin ${(p.margin||0).toLocaleString()}원 기준). p.tier 수동 입력 시 override">${effTier}${p.tier ? '' : ' <span style=\"font-size:9px;color:#94a3b8\">(자동)</span>' }</span>${premBadge}</td>
       <td>${p.active ? '<span style="color:#86efac;font-weight:700">✅</span>' : '<span style="color:#94a3b8">❌</span>'}</td>
       <td>
