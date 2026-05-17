@@ -709,100 +709,88 @@ async function fetchAgent() {
     <!-- 활성 정책 편집 (인터넷+TV와 100% 동일 구조, id 접두사만 rp-*) -->
     <div class="section" style="background:linear-gradient(135deg,rgba(245,158,11,0.08),#0f172a);border:1.5px solid #f59e0b">
       <h2 style="color:#fbbf24">📌 활성 가전렌탈 정책 (현재 적용 중)</h2>
-      <div style="font-size:10.5px;color:#cbd5e1;margin-bottom:12px;line-height:1.55">
-        · 인터넷+TV와 <strong>별도 시스템</strong>이지만 누적 P · Grade는 통합 정산<br>
-        · 마진 = 리베×0.9 − 페이백 − P × 70,000 <span style="color:#94a3b8">(인터넷+TV와 통일 공식, 가입보너스·기본급분담 없음)</span><br>
-        · 페이백 자동 산출은 영업이익율 10% 적용 (마진 계산엔 미사용)
-      </div>
-
-      <!-- 📌 활성 정책 (인터넷+TV와 동일 구조) -->
-      <h2 style="margin-top:10px;color:#fbbf24;font-size:14px">📌 활성 정책 (현재 적용 중)</h2>
       <div class="row">
         <div class="field"><label>버전</label>
-          <input type="text" id="rp-version" class="sim-input" placeholder="V1">
+          <input type="text" id="rp-version" placeholder="V1">
           <div class="hint">고유 식별자 (V1, V2 등)</div>
         </div>
         <div class="field"><label>적용 시작일</label>
-          <input type="date" id="rp-effective" class="sim-input">
+          <input type="date" id="rp-effective">
         </div>
       </div>
       <div class="row">
         <div class="field"><label>우수상품 건당 보너스 (₩)</label>
-          <input type="number" id="rp-bonus-prem" class="sim-input" min="0" step="1000">
+          <input type="number" id="rp-bonus" min="0" step="1000">
           <div class="hint">마진 ≥ 임계값인 영업 1건당 추가</div>
         </div>
         <div class="field"><label>비고</label>
-          <input type="text" id="rp-notes" class="sim-input" placeholder="(선택) 변경 사유 등">
+          <input type="text" id="rp-notes-row1" placeholder="(이 자리는 비고로 사용 안함)" disabled style="opacity:0.3">
         </div>
+      </div>
+      <div style="background:rgba(96,165,250,0.06);border-left:3px solid #60a5fa;padding:8px 12px;margin-bottom:14px;font-size:11px;color:#94a3b8;border-radius:4px">
+        💡 <b>기본급</b>은 상담사별로 다를 수 있어 <a href="/docs/incentive-agents.html" style="color:#60a5fa">👥 상담사 관리</a>에서 개인별로 설정합니다.
       </div>
       <div class="row">
         <div class="field"><label>회사 페이백 부담 한도 (₩)</label>
-          <input type="number" id="rp-payback-company" class="sim-input" min="0" step="1000">
-          <div class="hint">이 금액 이하는 회사 자동 부담</div>
+          <input type="number" id="rp-payback-company" min="0" step="1000">
+          <div class="hint">이 금액 이하는 회사가 자동 부담</div>
         </div>
-        <div class="field"><label>최대 페이백 cap (₩)</label>
-          <input type="number" id="rp-payback-cap" class="sim-input" min="0" step="10000">
-          <div class="hint">초과 입력 불가</div>
+        <div class="field"><label>최대 페이백 (₩)</label>
+          <input type="number" id="rp-payback-max" min="0" step="1000">
+          <div class="hint">초과 입력 불가 (DB CHECK 제약)</div>
         </div>
       </div>
       <div class="row">
         <div class="field"><label>우수상품 마진 임계값 (₩)</label>
-          <input type="number" id="rp-prem-margin" class="sim-input" min="0" step="10000">
-          <div class="hint">이 마진 이상이면 우수상품 (S Tier 자동)</div>
+          <input type="number" id="rp-prem-margin" min="0" step="10000">
+          <div class="hint">이 마진 이상이면 우수상품(S Tier)</div>
         </div>
-        <div class="field"><label>변경 사유 (이력 audit)</label>
-          <input type="text" id="rp-change-reason-row" class="sim-input" placeholder="예: 영업이익율 8%로 인하">
+        <div class="field"><label>비고</label>
+          <input type="text" id="rp-notes" placeholder="(선택) 변경 사유 등">
         </div>
       </div>
 
-      <h2 style="margin-top:14px;color:#fbbf24;font-size:14px">🎯 Grade 단가 (₩/P)</h2>
-      <div style="font-size:10px;color:#cbd5e1;margin-bottom:8px;line-height:1.5">· 가전렌탈+인터넷TV 합산 누적 기준 · 두 조건 모두 충족 시 승급 · 기본 G1</div>
+      <h2 style="margin-top:18px">🎯 Grade 단가 (₩/P)</h2>
       <div class="grade-grid">
         <div class="grade-card">
           <div class="grade-title">G1 (기본)</div>
-          <div class="field"><label>단가 (₩/P)</label><input type="number" id="rp-g1" class="sim-input" min="0" step="500"></div>
+          <div class="field"><label>단가 (₩/P)</label><input type="number" id="rp-rate-1" min="0" step="1000"></div>
         </div>
         <div class="grade-card">
           <div class="grade-title">G2</div>
-          <div class="field"><label>단가 (₩/P)</label><input type="number" id="rp-g2" class="sim-input" min="0" step="500"></div>
+          <div class="field"><label>단가 (₩/P)</label><input type="number" id="rp-rate-2" min="0" step="1000"></div>
           <div class="row" style="margin-top:8px;grid-template-columns:1fr 1fr">
-            <div class="field"><label>임계 P</label><input type="number" id="rp-g2-p" class="sim-input" min="0" step="0.5"></div>
-            <div class="field"><label>우수 의무</label><input type="number" id="rp-g2-prem" class="sim-input" min="0" step="1"></div>
+            <div class="field"><label>임계 P</label><input type="number" id="rp-thr-2-p" min="0" step="0.5"></div>
+            <div class="field"><label>우수 의무</label><input type="number" id="rp-thr-2-prem" min="0" step="1"></div>
           </div>
         </div>
         <div class="grade-card">
           <div class="grade-title">G3 (최고)</div>
-          <div class="field"><label>단가 (₩/P)</label><input type="number" id="rp-g3" class="sim-input" min="0" step="500"></div>
+          <div class="field"><label>단가 (₩/P)</label><input type="number" id="rp-rate-3" min="0" step="1000"></div>
           <div class="row" style="margin-top:8px;grid-template-columns:1fr 1fr">
-            <div class="field"><label>임계 P</label><input type="number" id="rp-g3-p" class="sim-input" min="0" step="0.5"></div>
-            <div class="field"><label>우수 의무</label><input type="number" id="rp-g3-prem" class="sim-input" min="0" step="1"></div>
+            <div class="field"><label>임계 P</label><input type="number" id="rp-thr-3-p" min="0" step="0.5"></div>
+            <div class="field"><label>우수 의무</label><input type="number" id="rp-thr-3-prem" min="0" step="1"></div>
           </div>
         </div>
       </div>
 
-      <!-- 1포인트당 회사 비용 + Tier 임계는 Phase B에서 자동산출/박제 폐기와 함께 제거 예정.
-           인터넷+TV 정책에 없는 항목 — 운영자 수동 입력으로 통일됨 -->
-      <div style="margin-top:14px;padding:10px 14px;background:rgba(96,165,250,0.06);border-left:3px solid #60a5fa;border-radius:4px;font-size:11px;color:#cbd5e1;line-height:1.7">
-        💡 <b>마진/Tier</b>는 인터넷+TV 정책과 동일하게 <b>상품 관리 페이지에서 운영자가 직접 편집</b>합니다. 정책 자동 분류 항목은 폐기 예정 (Phase B).
-      </div>
-
-      <!-- 🏢 팀장(manager) 인센티브 V5.1 — 인터넷+TV와 동일 구조 -->
-      <div class="section" style="background:linear-gradient(135deg,#1e3a8a,#0f172a);border:1.5px solid #3b82f6;margin-top:18px;border-radius:8px;padding:14px 16px">
-        <h2 style="color:#93c5fd;display:flex;justify-content:space-between;align-items:center;font-size:14px;margin:0">
-          <span>🏢 가전렌탈 팀장 인센티브 V5.1 (manager role)</span>
+      <!-- 🏢 팀장(manager) 인센티브 V5.1 정책 -->
+      <div class="section" style="background:linear-gradient(135deg,#1e3a8a,#0f172a);border:1.5px solid #3b82f6;margin-top:18px">
+        <h2 style="color:#93c5fd;display:flex;justify-content:space-between;align-items:center">
+          <span>🏢 팀장 인센티브 V5.1 (manager role · 가전렌탈)</span>
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(0,0,0,0.3);padding:6px 14px;border-radius:8px">
             <input type="checkbox" id="rp-mgr-enabled" style="width:18px;height:18px;cursor:pointer">
             <span id="rp-mgr-enabled-label" style="color:#fbbf24">활성</span>
           </label>
         </h2>
-        <div style="font-size:11px;color:#cbd5e1;margin:10px 0;line-height:1.6">
-          본인 영업은 agent와 동일 적용 + <b style="color:#fbbf24">팀 오버라이드</b> 추가. 페널티는 오버라이드에만 적용.<br>
-          <span style="color:#94a3b8">⚙️ 비활성 시 팀장은 본인 영업 정책만 적용 (오버라이드 0원)</span>
+        <div style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.6">
+          본인 영업은 V5(agent와 동일) 적용 + <b style="color:#fbbf24">팀 오버라이드</b> 추가. 페널티는 오버라이드에만 적용.<br>
+          <span style="color:#94a3b8">⚙️ 비활성 시 팀장은 본인 영업 V5 정책만 적용 (오버라이드 0원)</span>
         </div>
         <div class="row" style="grid-template-columns:repeat(4, 1fr);gap:10px">
           <div class="field">
             <label>팀 오버라이드율 (0~1)</label>
-            <input type="number" id="rp-mgr-override" class="sim-input" min="0" max="1" step="0.01" placeholder="0.12">
+            <input type="number" id="rp-mgr-override" min="0" max="1" step="0.01" placeholder="0.12">
             <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
               <b style="color:#cbd5e1">팀원 인센+보너스 합계 × 이 비율</b><br>
               예: 0.12 = 12%. 팀원 인센 100만원 → 12만원 raw 오버라이드<br>
@@ -811,7 +799,7 @@ async function fetchAgent() {
           </div>
           <div class="field">
             <label>본인 영업 의무 건수</label>
-            <input type="number" id="rp-mgr-obligation" class="sim-input" min="0" step="1" placeholder="20">
+            <input type="number" id="rp-mgr-obligation" min="0" step="1" placeholder="20">
             <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
               <b style="color:#cbd5e1">월 본인 'completed' 영업 최소 의무</b><br>
               이상 → 100% / 미달 → 페널티 발동<br>
@@ -820,21 +808,21 @@ async function fetchAgent() {
           </div>
           <div class="field">
             <label>부분 페널티 임계 (50%)</label>
-            <input type="number" id="rp-mgr-partial" class="sim-input" min="0" step="1" placeholder="10">
+            <input type="number" id="rp-mgr-partial" min="0" step="1" placeholder="10">
             <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
               <b style="color:#cbd5e1">"절반은 받을 수 있는 최소 영업 건수"</b><br>
               이 건수 ~ 의무-1 → 50% 차감<br>
               미만 → 0% (전액 미지급)<br>
-              <span style="color:#fbbf24">↑ 올리면 안전망 좁아짐</span>
+              <span style="color:#fbbf24">↑ 올리면 안전망 좁아짐 (0% 발동 빈번)</span>
             </div>
           </div>
           <div class="field">
             <label>팀 영업이익률 임계 (0~1)</label>
-            <input type="number" id="rp-mgr-profit-rate" class="sim-input" min="0" max="1" step="0.01" placeholder="0.20">
+            <input type="number" id="rp-mgr-profit-rate" min="0" max="1" step="0.01" placeholder="0.20">
             <div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.5">
               <b style="color:#cbd5e1">(팀 매출 − 팀 페이백) ÷ 팀 매출</b><br>
               미달 시 본인 영업 무관하게 0% 강제<br>
-              <span style="color:#fbbf24">팀 페이백 과다 시 팀장 책임 압박</span>
+              <span style="color:#fbbf24">팀이 페이백 과다 시 팀장 책임 압박</span>
             </div>
           </div>
         </div>
@@ -861,71 +849,248 @@ async function fetchAgent() {
           </table>
         </div>
 
-        <!-- 🧮 라이브 시뮬레이터 -->
-        <div style="margin-top:14px;padding:14px 16px;background:linear-gradient(135deg,#064e3b,#0f172a);border:1.5px solid #16a34a;border-radius:10px">
-          <div style="font-size:12px;color:#86efac;font-weight:800;margin-bottom:8px">🧮 라이브 시뮬레이터 — 입력값 즉시 계산</div>
-          <div class="row" style="grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
-            <div class="field"><label style="font-size:11px">본인 영업 (건)</label>
-              <input type="number" id="rp-sim-mycount" class="sim-input" min="0" step="1" placeholder="예: 15"></div>
-            <div class="field"><label style="font-size:11px">팀 매출 (₩)</label>
-              <input type="number" id="rp-sim-team-rev" class="sim-input" min="0" step="100000" placeholder="예: 5000000"></div>
-            <div class="field"><label style="font-size:11px">팀 페이백 (₩)</label>
-              <input type="number" id="rp-sim-team-pay" class="sim-input" min="0" step="10000" placeholder="예: 1000000"></div>
-            <div class="field"><label style="font-size:11px">팀원 인센+보너스 합 (₩)</label>
-              <input type="number" id="rp-sim-team-inc" class="sim-input" min="0" step="10000" placeholder="예: 3000000"></div>
-          </div>
+        <!-- 면제 안내 -->
+        <div style="margin-top:14px;padding:10px 14px;background:rgba(8,145,178,0.1);border:1px solid rgba(8,145,178,0.4);border-radius:6px;font-size:11px;color:#67e8f9;line-height:1.6">
+          <b style="color:#22d3ee">🛡 페널티 면제 (admin 승인)</b><br>
+          • <b>신입 OJT</b>: 신규 팀장 인계 기간 — 의무 건수 미달 정상 면제<br>
+          • <b>시스템 장애</b>: 회사 측 사유로 영업 불가 (장애 일수 보상)<br>
+          • <b>경조사</b>: 본인·가족 사유로 영업 부재 (경조 휴가 기간)<br>
+          → 면제 부여 시 페널티 무시 + <b>오버라이드 100% 지급</b><br>
+          → 적용 위치: <b>대시보드 → 🏢 팀장 인센티브 V5.1 관리 → [면제] 버튼</b>
+        </div>
 
-          <div id="rp-sim-result" style="background:rgba(0,0,0,0.4);border-radius:6px;padding:10px 12px;font-size:11.5px;color:#cbd5e1;line-height:1.7">
-            입력값을 채우면 자동 계산됩니다.
-          </div>
+        <!-- 적용 흐름 -->
+        <div style="margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:6px;font-size:11px;color:#86efac;line-height:1.6">
+          <b style="color:#bbf7d0">⚙️ 정책 변경 적용 시점</b><br>
+          • 위 4개 수치 수정 + [💾 저장] → <b>즉시 DB 반영</b><br>
+          • 다음 settlement 호출부터 새 정책 적용 (Realtime 자동 갱신)<br>
+          • 정책 변경 이력은 <code>rental_policy_history</code> 테이블에 자동 기록<br>
+          • 비활성 토글 ON/OFF: 즉시 모든 manager 오버라이드 0원 (또는 정상)으로 전환
         </div>
       </div>
 
-      <!-- 가전렌탈 영업이익 시뮬레이터는 인터넷+TV 탭의 통합 시뮬레이터(sim-hybrid-toggle)로 이관됨 (2026-05-18 정책 통일) -->
-      <div style="margin-top:14px;padding:10px 14px;background:rgba(96,165,250,0.06);border-left:3px solid #60a5fa;border-radius:4px;font-size:11px;color:#cbd5e1;line-height:1.7">
-        💡 <b style="color:#60a5fa">가전렌탈 단독 영업이익 시뮬레이터</b>는 인터넷+TV 탭의 <b>🧪 영업이익 시뮬레이터 → 🏠 가전렌탈 추가 (하이브리드 영업)</b> 토글로 통합되었습니다.
+      <div class="actions-bar">
+        <button id="rp-btn-save" class="btn-primary">💾 현재 정책 수정 저장 (PATCH)</button>
+        <button id="rp-btn-publish" class="btn-secondary">📌 새 버전으로 발행 (POST + 기존 비활성화)</button>
       </div>
+      <div id="rp-msg" style="font-size:11px;color:#fbbf24;margin-top:6px;text-align:right"></div>
+    </div>
 
-      <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">📝 변경 사유 (이력 audit log)</h3>
-      <input id="rp-change-reason" class="sim-input" placeholder="예: 영업이익율 8%로 인하, 상담사 포인트 P 상향" style="margin-bottom:6px">
-      <div id="rp-msg" style="font-size:11px;color:#fbbf24;margin-top:6px"></div>
+    <!-- 📜 가전렌탈 정책 변경 이력 (rp-rules-tbody — IT 패턴 동일) -->
+    <div class="section">
+      <h2>📜 가전렌탈 정책 변경 이력</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>버전</th><th>적용일</th><th>활성</th>
+            <th>G1/G2/G3</th><th>임계 P</th><th>우수 의무</th>
+            <th>보너스</th><th>페이백 (회사/최대)</th>
+            <th>비고</th><th>작업</th>
+          </tr>
+        </thead>
+        <tbody id="rp-rules-tbody"></tbody>
+      </table>
+    </div>
 
-      <div style="margin-top:14px;padding:10px 12px;background:rgba(167,139,250,0.08);border:1px solid #a78bfa;border-radius:6px">
-        <div style="font-size:11.5px;font-weight:800;color:#a78bfa;margin-bottom:6px">🔁 정책 기준 일괄 재산출</div>
-        <div style="font-size:10px;color:#cbd5e1;margin-bottom:8px;line-height:1.6">
-          · <b>페이백 재산출</b>: 영업이익율·상담사 포인트·기본급 변경 시 옵션 페이백 갱신 (→ 자동으로 마진/Tier/우수상품도 체인 재산출)<br>
-          · <b>마진만 재산출</b>: Tier 임계값·우수마진 임계값만 변경 시 페이백은 유지하고 마진/Tier/우수상품만 다시 분류
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <button type="button" id="rp-recalc-auto-btn" style="background:#3617ce;color:#fff;border:none;padding:7px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">⚙️ 자동 페이백만 재산출 (NULL 상태)</button>
-          <button type="button" id="rp-recalc-all-btn" style="background:#dc2626;color:#fff;border:none;padding:7px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">⚠️ 페이백 전체 재산출 (수동 override 포함)</button>
-          <button type="button" id="rp-recalc-margins-btn" style="background:#16a34a;color:#fff;border:none;padding:7px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">🏷️ 마진·Tier·우수상품만 재산출</button>
-          <span id="rp-recalc-msg" style="font-size:10.5px;color:#22c55e"></span>
-        </div>
-      </div>
-
-      <!-- 📜 가전렌탈 정책 변경 이력 -->
-      <div style="margin-top:18px">
-        <h3 style="color:#a78bfa;font-size:14px;margin-bottom:8px">📜 변경 이력 (최근 20건)</h3>
-        <div style="max-height:340px;overflow-y:auto;background:#0f172a;border:1px solid #334155;border-radius:8px">
-          <table style="width:100%;border-collapse:collapse;font-size:11.5px">
-            <thead style="position:sticky;top:0;background:#1e293b">
-              <tr>
-                <th style="padding:8px;text-align:left;color:#94a3b8">시간</th>
-                <th style="padding:8px;text-align:left;color:#94a3b8">변경자</th>
-                <th style="padding:8px;text-align:left;color:#94a3b8">사유</th>
-                <th style="padding:8px;text-align:left;color:#94a3b8">변경 필드</th>
-              </tr>
-            </thead>
-            <tbody id="rp-history-tbody"><tr><td colspan="4" style="padding:14px;text-align:center;color:#64748b">불러오는 중…</td></tr></tbody>
-          </table>
-        </div>
+    <!-- 📜 가전렌탈 정책 audit log (기존 rp-history-tbody — 유지) -->
+    <div class="section">
+      <h3 style="color:#a78bfa;font-size:14px;margin-bottom:8px">📜 변경 audit 이력 (최근 20건)</h3>
+      <div style="max-height:340px;overflow-y:auto;background:#0f172a;border:1px solid #334155;border-radius:8px">
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px">
+          <thead style="position:sticky;top:0;background:#1e293b">
+            <tr>
+              <th style="padding:8px;text-align:left;color:#94a3b8">시간</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">변경자</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">사유</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">변경 필드</th>
+            </tr>
+          </thead>
+          <tbody id="rp-history-tbody"><tr><td colspan="4" style="padding:14px;text-align:center;color:#64748b">불러오는 중…</td></tr></tbody>
+        </table>
       </div>
     </div>
 
     <script>
+    // ═══ 가전렌탈 정책 JS (인터넷+TV 패턴과 100% 동일: loadRpAll → loadActiveToRpForm + renderRpHistory + audit history) ═══
     (function(){
-      const F2 = id => document.getElementById(id);
+      const RP_API = '/api/rental';
+      const F = (id) => document.getElementById(id);
+      let _activeRp = null;
+
+      async function fetchAllRpPolicies() {
+        const tk = localStorage.getItem('incentive-auth-token-v1');
+        const res = await fetch(RP_API + '/policy/all', { headers: { Authorization: 'Bearer ' + tk } });
+        if (!res.ok) throw new Error((await res.json()).error || '조회 실패');
+        return (await res.json()).policies || [];
+      }
+
+      function loadActiveToRpForm(r) {
+        if (!r) return;
+        F('rp-version').value = r.version || '';
+        F('rp-effective').value = (r.effective_from || '').slice(0, 10);
+        F('rp-bonus').value = r.bonus_per_premium || 0;
+        F('rp-payback-company').value = r.payback_company_limit || 0;
+        F('rp-payback-max').value = r.payback_max || 0;
+        F('rp-prem-margin').value = r.premium_margin_threshold || 0;
+        F('rp-notes').value = r.notes || '';
+        const rates = r.grade_rates || {};
+        const thrs = r.grade_thresholds || {};
+        F('rp-rate-1').value = rates['1'] || 0;
+        F('rp-rate-2').value = rates['2'] || 0;
+        F('rp-rate-3').value = rates['3'] || 0;
+        F('rp-thr-2-p').value = (thrs['2'] || {}).points || 0;
+        F('rp-thr-2-prem').value = (thrs['2'] || {}).premium || 0;
+        F('rp-thr-3-p').value = (thrs['3'] || {}).points || 0;
+        F('rp-thr-3-prem').value = (thrs['3'] || {}).premium || 0;
+        F('rp-mgr-override').value = (r.manager_override_rate != null) ? r.manager_override_rate : 0.12;
+        F('rp-mgr-obligation').value = (r.manager_obligation_count != null) ? r.manager_obligation_count : 20;
+        F('rp-mgr-partial').value = (r.manager_penalty_partial_min != null) ? r.manager_penalty_partial_min : 10;
+        F('rp-mgr-profit-rate').value = (r.manager_team_profit_rate_min != null) ? r.manager_team_profit_rate_min : 0.20;
+        F('rp-mgr-enabled').checked = (r.manager_v51_enabled !== false);
+        updateRpMgrUi();
+      }
+
+      function updateRpMgrUi() {
+        const oblig = parseInt(F('rp-mgr-obligation').value) || 0;
+        const partial = parseInt(F('rp-mgr-partial').value) || 0;
+        const pr = parseFloat(F('rp-mgr-profit-rate').value) || 0;
+        const enabled = F('rp-mgr-enabled').checked;
+        const labelEl = F('rp-mgr-enabled-label');
+        if (labelEl) {
+          labelEl.textContent = enabled ? '활성' : '비활성';
+          labelEl.style.color = enabled ? '#86efac' : '#fca5a5';
+        }
+        const set = (id, v) => { const el = F(id); if (el) el.textContent = v; };
+        set('rp-mtx-oblig-1', oblig); set('rp-mtx-oblig-2', oblig);
+        set('rp-mtx-oblig-m1', oblig - 1); set('rp-mtx-oblig-m2', oblig - 1);
+        set('rp-mtx-partial-1', partial); set('rp-mtx-partial-2', partial); set('rp-mtx-partial-3', partial);
+        const prPct = (pr * 100).toFixed(0);
+        set('rp-mtx-pr-1', prPct); set('rp-mtx-pr-2', prPct); set('rp-mtx-pr-3', prPct); set('rp-mtx-pr-4', prPct);
+      }
+
+      function collectRpForm() {
+        return {
+          version: F('rp-version').value.trim(),
+          effective_from: F('rp-effective').value,
+          base_salary: 2300000,
+          bonus_per_premium: parseInt(F('rp-bonus').value) || 0,
+          payback_company_limit: parseInt(F('rp-payback-company').value) || 0,
+          payback_max: parseInt(F('rp-payback-max').value) || 0,
+          premium_margin_threshold: parseInt(F('rp-prem-margin').value) || 0,
+          notes: F('rp-notes').value.trim() || null,
+          grade_rates: {
+            '1': parseInt(F('rp-rate-1').value) || 0,
+            '2': parseInt(F('rp-rate-2').value) || 0,
+            '3': parseInt(F('rp-rate-3').value) || 0,
+          },
+          grade_thresholds: {
+            '2': { points: parseFloat(F('rp-thr-2-p').value) || 0, premium: parseInt(F('rp-thr-2-prem').value) || 0 },
+            '3': { points: parseFloat(F('rp-thr-3-p').value) || 0, premium: parseInt(F('rp-thr-3-prem').value) || 0 },
+          },
+          manager_override_rate: parseFloat(F('rp-mgr-override').value) || 0,
+          manager_obligation_count: parseInt(F('rp-mgr-obligation').value) || 0,
+          manager_penalty_partial_min: parseInt(F('rp-mgr-partial').value) || 0,
+          manager_team_profit_rate_min: parseFloat(F('rp-mgr-profit-rate').value) || 0,
+          manager_v51_enabled: !!F('rp-mgr-enabled').checked,
+        };
+      }
+
+      ['rp-mgr-override','rp-mgr-obligation','rp-mgr-partial','rp-mgr-profit-rate','rp-mgr-enabled'].forEach(id => {
+        const el = F(id);
+        if (el) el.addEventListener('input', updateRpMgrUi);
+        if (el) el.addEventListener('change', updateRpMgrUi);
+      });
+
+      async function saveRP() {
+        if (!_activeRp) { alert('활성 정책 없음'); return; }
+        if (!confirm(`현재 가전렌탈 정책 [${_activeRp.version}]을 수정하시겠습니까?`)) return;
+        const tk = localStorage.getItem('incentive-auth-token-v1');
+        const body = collectRpForm();
+        body.id = _activeRp.id;
+        try {
+          const res = await fetch(RP_API + '/policy', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error((await res.json()).error || '저장 실패');
+          if (typeof showToast === 'function') showToast('✅ 가전렌탈 정책 수정 완료');
+          F('rp-msg').textContent = '✅ 저장 완료 (' + new Date().toLocaleTimeString() + ')';
+          await loadRpAll();
+          loadRpHistory();
+        } catch (e) { alert('오류: ' + e.message); F('rp-msg').textContent = '❌ ' + e.message; }
+      }
+
+      async function publishRP() {
+        const body = collectRpForm();
+        if (!body.version) { alert('새 버전 이름 입력 필수 (예: V2)'); return; }
+        if (_activeRp && body.version === _activeRp.version) {
+          if (!confirm(`'${body.version}'은 이미 활성 정책. 새 발행 시 기존이 비활성화됩니다. 진행?`)) return;
+        } else if (!confirm(`새 가전렌탈 정책 [${body.version}] 발행 + 기존 비활성화. 진행?`)) return;
+        body.deactivate_others = true;
+        const tk = localStorage.getItem('incentive-auth-token-v1');
+        try {
+          const res = await fetch(RP_API + '/policy', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error((await res.json()).error || '발행 실패');
+          if (typeof showToast === 'function') showToast('🚀 가전렌탈 새 버전 발행 완료');
+          F('rp-msg').textContent = '🚀 새 버전 발행 완료 (' + new Date().toLocaleTimeString() + ')';
+          await loadRpAll();
+          loadRpHistory();
+        } catch (e) { alert('오류: ' + e.message); }
+      }
+
+      async function toggleRpActive(id, active) {
+        if (!confirm((active ? '활성화' : '비활성화') + ' 하시겠습니까?')) return;
+        const tk = localStorage.getItem('incentive-auth-token-v1');
+        try {
+          const res = await fetch(RP_API + '/policy/' + id + '/active', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+            body: JSON.stringify({ active }),
+          });
+          if (!res.ok) throw new Error((await res.json()).error || '실패');
+          if (typeof showToast === 'function') showToast(active ? '✅ 활성화됨' : '❌ 비활성화됨');
+          await loadRpAll();
+        } catch (e) { alert('오류: ' + e.message); }
+      }
+      // 전역 노출 (onclick 핸들러용)
+      window.toggleRpActive = toggleRpActive;
+
+      function renderRpHistory(rules) {
+        const tbody = F('rp-rules-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = (rules || []).map(r => {
+          const rates = r.grade_rates || {};
+          const thrs = r.grade_thresholds || {};
+          return `<tr>
+            <td><b>${r.version}</b></td>
+            <td>${(r.effective_from||'').slice(0,10)}</td>
+            <td>${r.active ? '<span class="active-badge">활성</span>' : '<span class="inactive-badge">비활성</span>'}</td>
+            <td>${(rates['1']||0).toLocaleString()} / ${(rates['2']||0).toLocaleString()} / ${(rates['3']||0).toLocaleString()}</td>
+            <td>${(thrs['2']||{}).points||0}P / ${(thrs['3']||{}).points||0}P</td>
+            <td>${(thrs['2']||{}).premium||0} / ${(thrs['3']||{}).premium||0}건</td>
+            <td>${(r.bonus_per_premium||0).toLocaleString()}</td>
+            <td>${(r.payback_company_limit||0).toLocaleString()} / ${(r.payback_max||0).toLocaleString()}</td>
+            <td style="font-size:10px;color:#94a3b8">${(r.notes||'-').replace(/</g,'&lt;')}</td>
+            <td>${r.active
+              ? `<button class="btn-danger" onclick="toggleRpActive('${r.id}', false)">비활성화</button>`
+              : `<button class="btn-danger" style="background:#16a34a" onclick="toggleRpActive('${r.id}', true)">활성화</button>`}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      async function loadRpAll() {
+        try {
+          const rules = await fetchAllRpPolicies();
+          const active = rules.find(r => r.active);
+          _activeRp = active;
+          if (active) loadActiveToRpForm(active);
+          renderRpHistory(rules);
+        } catch (e) { F('rp-msg').textContent = '정책 로드 실패: ' + e.message; }
+      }
+
+      // audit log (기존 rp-history-tbody — IT 패턴 외 가전 전용 유지)
       async function loadRpHistory() {
         const tbody = document.getElementById('rp-history-tbody');
         if (!tbody) return;
@@ -954,314 +1119,26 @@ async function fetchAgent() {
           tbody.innerHTML = `<tr><td colspan="4" style="padding:14px;color:#ef4444">이력 로드 실패: ${e.message}</td></tr>`;
         }
       }
-      // 정책 저장 후 + 페이지 로드 시
-      window.addEventListener('DOMContentLoaded', loadRpHistory);
-      if (document.readyState !== 'loading') setTimeout(loadRpHistory, 200);
-      // rp-save-btn 클릭 후 이력 갱신 (지연 1초)
-      document.addEventListener('click', e => {
-        if (e.target?.id === 'rp-save-btn') setTimeout(loadRpHistory, 1200);
-      });
-      async function recalc(allFlag) {
-        const tk = localStorage.getItem('incentive-auth-token-v1');
-        if (!tk) return alert('로그인 필요');
-        if (allFlag && !confirm('⚠️ 수동 override된 페이백도 모두 정책 기준으로 덮어씁니다. 진행할까요?')) return;
-        F2('rp-recalc-msg').textContent = '재산출 중...';
-        try {
-          const res = await fetch('/api/rental/recalculate-paybacks', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-            body: JSON.stringify({ only_auto: !allFlag }),
-          });
-          const d = await res.json();
-          if (!res.ok) throw new Error(d.error || '실패');
-          const m = d.margin_tier_recalc;
-          let extra = '';
-          if (m && m.ok) {
-            extra = ` · 마진 ${m.updated_options}옵션 · 우수 ${m.premium_products}상품`;
-          }
-          F2('rp-recalc-msg').textContent = `✅ ${d.updated_target} 재산출 완료 · 페이백 채워진 옵션 ${d.count_with_payback}건${extra}`;
-        } catch (e) { F2('rp-recalc-msg').textContent = '❌ ' + e.message; }
+
+      // 버튼 바인딩
+      F('rp-btn-save')?.addEventListener('click', saveRP);
+      F('rp-btn-publish')?.addEventListener('click', publishRP);
+
+      // 페이지 로드 시 초기화 — 정책 list + audit history 동시 로드
+      function initRp() {
+        loadRpAll();
+        loadRpHistory();
       }
-      async function recalcMargins() {
-        const tk = localStorage.getItem('incentive-auth-token-v1');
-        if (!tk) return alert('로그인 필요');
-        F2('rp-recalc-msg').textContent = '마진/Tier/우수상품 재산출 중...';
-        try {
-          const res = await fetch('/api/rental/recalculate-margins', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-          });
-          const d = await res.json();
-          if (!res.ok) throw new Error(d.error || '실패');
-          const r = d.result || {};
-          F2('rp-recalc-msg').textContent = `✅ 마진/Tier 재산출 완료 · 옵션 ${r.updated_options||0}건 · 상품 ${r.updated_products||0}건 · ⭐ 우수 ${r.premium_products||0}건`;
-        } catch (e) { F2('rp-recalc-msg').textContent = '❌ ' + e.message; }
-      }
-      F2('rp-recalc-auto-btn')?.addEventListener('click', () => recalc(false));
-      F2('rp-recalc-all-btn')?.addEventListener('click', () => recalc(true));
-      F2('rp-recalc-margins-btn')?.addEventListener('click', recalcMargins);
+      window.addEventListener('DOMContentLoaded', initRp);
+      if (document.readyState !== 'loading') setTimeout(initRp, 100);
     })();
     </script>
 
-    <!-- 가전렌탈 정책 JS -->
-    <script>
-    (function(){
-      const RP_API = '/api/rental';
-      let _rp = null;
-      const F = (id) => document.getElementById(id);
-      const fmtKor = n => n == null ? '-' : Number(n).toLocaleString();
-
-      async function loadRP() {
-        const tk = localStorage.getItem('incentive-auth-token-v1');
-        const res = await fetch(RP_API + '/policy', tk ? { headers: { Authorization: 'Bearer ' + tk } } : {}).then(r => r.json()).catch(e => ({error: e.message}));
-        if (!res.policy) {
-          F('rp-msg').textContent = '정책 로드 실패: ' + (res.error || 'unknown');
-          return;
-        }
-        _rp = res.policy;
-        // 인터넷+TV와 동일 구조 (Phase A 통일) — grade_rates/grade_thresholds JSONB 사용
-        const gr = _rp.grade_rates || {};
-        const gt = _rp.grade_thresholds || {};
-        F('rp-g1').value = gr['1'] ?? '';
-        F('rp-g2').value = gr['2'] ?? '';
-        F('rp-g3').value = gr['3'] ?? '';
-        F('rp-g2-p').value = gt['2']?.points ?? '';
-        F('rp-g2-prem').value = gt['2']?.premium ?? '';
-        F('rp-g3-p').value = gt['3']?.points ?? '';
-        F('rp-g3-prem').value = gt['3']?.premium ?? '';
-        F('rp-payback-cap').value = _rp.payback_max ?? '';
-        F('rp-version').value = _rp.version || 'V1';
-        F('rp-effective').value = _rp.effective_from || '';
-        F('rp-bonus-prem').value = _rp.bonus_per_premium ?? '';
-        F('rp-notes').value = _rp.notes || '';
-        F('rp-payback-company').value = _rp.payback_company_limit ?? '';
-        F('rp-prem-margin').value = _rp.premium_margin_threshold ?? '';
-        // 팀장 V5.1 (가전렌탈)
-        F('rp-mgr-enabled').checked = !!_rp.manager_v51_enabled;
-        F('rp-mgr-enabled-label').textContent = _rp.manager_v51_enabled ? '활성 ✅' : '비활성';
-        F('rp-mgr-override').value = _rp.manager_override_rate ?? '';
-        F('rp-mgr-obligation').value = _rp.manager_obligation_count ?? '';
-        F('rp-mgr-partial').value = _rp.manager_penalty_partial_min ?? '';
-        F('rp-mgr-profit-rate').value = _rp.manager_team_profit_rate_min ?? '';
-        updateMgrMatrix();
-      }
-      // 페널티 매트릭스 실시간 갱신
-      function updateMgrMatrix() {
-        const oblig = Number(F('rp-mgr-obligation').value) || 20;
-        const partial = Number(F('rp-mgr-partial').value) || 10;
-        const pr = Math.round((Number(F('rp-mgr-profit-rate').value) || 0.20) * 100);
-        F('rp-mtx-oblig-1').textContent = oblig;
-        F('rp-mtx-oblig-2').textContent = oblig;
-        F('rp-mtx-oblig-m1').textContent = oblig - 1;
-        F('rp-mtx-oblig-m2').textContent = oblig - 1;
-        F('rp-mtx-partial-1').textContent = partial;
-        F('rp-mtx-partial-2').textContent = partial;
-        F('rp-mtx-partial-3').textContent = partial;
-        F('rp-mtx-pr-1').textContent = pr;
-        F('rp-mtx-pr-2').textContent = pr;
-        F('rp-mtx-pr-3').textContent = pr;
-        F('rp-mtx-pr-4').textContent = pr;
-      }
-      ['rp-mgr-obligation','rp-mgr-partial','rp-mgr-profit-rate'].forEach(id => {
-        F(id)?.addEventListener('input', () => { updateMgrMatrix(); runMgrSim(); });
-      });
-      ['rp-mgr-override'].forEach(id => F(id)?.addEventListener('input', runMgrSim));
-      F('rp-mgr-enabled')?.addEventListener('change', (e) => {
-        F('rp-mgr-enabled-label').textContent = e.target.checked ? '활성 ✅' : '비활성';
-        runMgrSim();
-      });
-
-      // 🧮 라이브 시뮬레이터 — 입력값 즉시 페널티/오버라이드 계산
-      function runMgrSim() {
-        const resEl = F('rp-sim-result');
-        if (!resEl) return;
-        const myCount = Number(F('rp-sim-mycount').value) || 0;
-        const teamRev = Number(F('rp-sim-team-rev').value) || 0;
-        const teamPay = Number(F('rp-sim-team-pay').value) || 0;
-        const teamInc = Number(F('rp-sim-team-inc').value) || 0;
-        const enabled = F('rp-mgr-enabled').checked;
-        const overrideRate = Number(F('rp-mgr-override').value) || 0.12;
-        const oblig = Number(F('rp-mgr-obligation').value) || 20;
-        const partial = Number(F('rp-mgr-partial').value) || 10;
-        const prMin = Number(F('rp-mgr-profit-rate').value) || 0.20;
-
-        if (!enabled) {
-          resEl.innerHTML = '<span style="color:#fca5a5;font-weight:800">⚙️ 팀장 V5.1 비활성 — 오버라이드 0원</span>';
-          return;
-        }
-        if (myCount === 0 && teamRev === 0 && teamInc === 0) {
-          resEl.innerHTML = '<span style="color:#94a3b8">입력값을 채우면 자동 계산됩니다.</span>';
-          return;
-        }
-
-        const teamPr = teamRev > 0 ? (teamRev - teamPay) / teamRev : 0;
-        const overrideRaw = Math.round(teamInc * overrideRate);
-
-        let factor = 0;
-        let reason = '';
-        if (myCount >= oblig) {
-          if (teamPr < prMin) { factor = 0; reason = `팀 영업이익률 ${(teamPr*100).toFixed(1)}% < ${(prMin*100).toFixed(0)}% — 미지급`; }
-          else { factor = 1; reason = '정상 지급 (100%)'; }
-        } else if (myCount >= partial) {
-          if (teamPr < prMin) { factor = 0; reason = `팀 영업이익률 미달 → 0%`; }
-          else { factor = 0.5; reason = `본인 영업 ${myCount}건 (의무 ${oblig}건 미달) → 50% 차감`; }
-        } else {
-          factor = 0; reason = `본인 영업 ${myCount}건 (${partial}건 미만) — 0% 미지급`;
-        }
-        const overrideFinal = Math.round(overrideRaw * factor);
-        const factorColor = factor === 1 ? '#86efac' : factor === 0.5 ? '#fbbf24' : '#fca5a5';
-        const factorPct = (factor * 100).toFixed(0);
-        resEl.innerHTML = `
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 14px;margin-bottom:8px">
-            <div>팀 영업이익률: <b style="color:${teamPr >= prMin ? '#86efac' : '#fca5a5'}">${(teamPr*100).toFixed(1)}%</b> <span style="color:#94a3b8;font-size:10px">(임계 ${(prMin*100).toFixed(0)}%)</span></div>
-            <div>오버라이드 raw: <b style="color:#fbbf24">${overrideRaw.toLocaleString()}원</b></div>
-            <div>페널티 계수: <b style="color:${factorColor};font-size:14px">${factorPct}%</b></div>
-          </div>
-          <div style="padding:6px 10px;background:rgba(${factor===1?'34,197,94':factor===0.5?'251,191,36':'239,68,68'},0.15);border-left:3px solid ${factorColor};border-radius:4px">
-            <div style="font-size:11px;color:${factorColor};font-weight:700">${reason}</div>
-            <div style="font-size:13px;color:#fff;font-weight:900;margin-top:3px">→ 최종 오버라이드: ${overrideFinal.toLocaleString()}원</div>
-          </div>
-        `;
-      }
-      ['rp-sim-mycount','rp-sim-team-rev','rp-sim-team-pay','rp-sim-team-inc'].forEach(id => {
-        F(id)?.addEventListener('input', runMgrSim);
-      });
-
-      // 🧪 영업이익 시뮬레이터 (가전렌탈 단독, 합의 V1로 제거됨 — 통합 시뮬레이터는 인터넷+TV 탭의 sim-hybrid-toggle 사용)
-      function runPLSim() { return; /* deprecated 2026-05-18 — 가전렌탈 단독 시뮬은 인터넷+TV 통합 시뮬로 이관 */ }
-      function _runPLSim_legacy() {
-        const resEl = F('rp-pl-result');
-        if (!resEl) return;
-        const sales = Number(F('rp-pl-sales').value) || 0;
-        const rebate = Number(F('rp-pl-rebate').value) || 0;
-        const months = Number(F('rp-pl-months').value) || 60;
-        const premRate = (Number(F('rp-pl-prem-rate').value) || 0) / 100;
-        const careRate = (Number(F('rp-pl-care-rate').value) || 0) / 100;
-        // 현재 정책 입력값
-        const profitRate = (Number(F('rp-target-profit').value) || 10) / 100;
-        const baseSalary = Number(F('rp-base-salary').value) || 0;
-        const standardSales = Math.max(1, Number(F('rp-standard-sales').value) || 1);
-        const baseShare = Math.round(baseSalary / standardSales);
-        const weightP = months >= 84 ? Number(F('rp-p84').value)
-          : months >= 72 ? Number(F('rp-p72').value)
-          : months >= 60 ? Number(F('rp-p60').value)
-          : Number(F('rp-p36').value);
-        const premBonusP = Number(F('rp-premium-bonus-p').value) || 0;
-        const careVisitP = Number(F('rp-care-visit-p').value) || 0;
-        const weightCost = Number(F('rp-weight-cost').value) || 0;
-        const signupBonus = Number(F('rp-signup-bonus').value) || 0;
-        const bonusPerPrem = Number(F('rp-bonus-prem').value) || 0;
-        // 페이백 자동 산출 (만원 단위 반올림)
-        const paybackRaw = rebate * (0.9 - profitRate);
-        const payback = Math.round(paybackRaw / 10000) * 10000;
-        // 1건당 P (우수·방문 보정 — 비율 가중)
-        const pPerSale = (Number(weightP) || 0) + (premRate * premBonusP) + (careRate * careVisitP);
-        const totalP = +(sales * pPerSale).toFixed(2);
-        const premCount = Math.round(sales * premRate);
-        // Grade 자동
-        const g2P = Number(F('rp-g2-p').value) || 16;
-        const g3P = Number(F('rp-g3-p').value) || 31;
-        const g2Prem = Number(F('rp-g2-prem').value) || 5;
-        const g3Prem = Number(F('rp-g3-prem').value) || 10;
-        let grade = 'G1';
-        let gradeUnit = Number(F('rp-g1').value) || 9000;
-        if (totalP >= g3P && premCount >= g3Prem) { grade = 'G3'; gradeUnit = Number(F('rp-g3').value) || 13000; }
-        else if (totalP >= g2P && premCount >= g2Prem) { grade = 'G2'; gradeUnit = Number(F('rp-g2').value) || 11000; }
-        // 1건당 회사 마진
-        const marginPerSale = Math.round(rebate * 0.9 - payback - (pPerSale * weightCost) - baseShare - signupBonus);
-        const totalRevenue = sales * Math.round(rebate * 0.9);  // 세후 리베이트 (회사 매출)
-        const totalPayback = sales * payback;
-        const totalCompanyMargin = sales * marginPerSale;
-        const profitRateActual = totalRevenue > 0 ? (totalCompanyMargin / totalRevenue) : 0;
-        // 상담사 수령
-        const incentive = Math.round(totalP * gradeUnit);
-        const premBonusTotal = premCount * bonusPerPrem;
-        const totalAgent = baseSalary + incentive + premBonusTotal;
-        // 결과 렌더
-        const gradeColor = grade === 'G3' ? '#86efac' : grade === 'G2' ? '#fbbf24' : '#94a3b8';
-        const marginColor = marginPerSale >= 100000 ? '#86efac' : marginPerSale >= 0 ? '#fbbf24' : '#fca5a5';
-        const f = n => (n||0).toLocaleString();
-        resEl.innerHTML = `
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-            <div>
-              <div style="font-size:11px;color:#fb923c;font-weight:800;margin-bottom:6px">🏢 회사 (월간)</div>
-              <table style="width:100%;font-size:11.5px">
-                <tr><td style="color:#94a3b8;padding:2px 0">세후 리베이트 합 (×0.9)</td><td style="text-align:right;color:#22c55e"><b>${f(totalRevenue)}원</b></td></tr>
-                <tr><td style="color:#94a3b8;padding:2px 0">− 페이백 지급</td><td style="text-align:right;color:#fbbf24"><b>${f(totalPayback)}원</b></td></tr>
-                <tr><td style="color:#94a3b8;padding:2px 0">− 1포인트당 회사 비용 + 분담 + 보너스</td><td style="text-align:right;color:#94a3b8">${f(sales * (Math.round(pPerSale * weightCost) + baseShare + signupBonus))}원</td></tr>
-                <tr style="border-top:1px solid #475569"><td style="padding:4px 0;color:#fff;font-weight:800">= 회사 영업이익</td><td style="text-align:right;color:${marginColor}"><b style="font-size:14px">${f(totalCompanyMargin)}원</b> <span style="color:#94a3b8;font-size:10px">(${(profitRateActual*100).toFixed(1)}%)</span></td></tr>
-                <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">1건당 마진</td><td style="text-align:right;color:${marginColor};font-size:10px">${f(marginPerSale)}원</td></tr>
-              </table>
-            </div>
-            <div>
-              <div style="font-size:11px;color:#fb923c;font-weight:800;margin-bottom:6px">👤 상담사 (월간)</div>
-              <table style="width:100%;font-size:11.5px">
-                <tr><td style="color:#94a3b8;padding:2px 0">누적 P / 우수 건수</td><td style="text-align:right"><b>${totalP} P · ${premCount}건</b></td></tr>
-                <tr><td style="color:#94a3b8;padding:2px 0">→ Grade 자동</td><td style="text-align:right;color:${gradeColor}"><b>${grade}</b> (₩${f(gradeUnit)}/P)</td></tr>
-                <tr><td style="color:#94a3b8;padding:2px 0">기본급</td><td style="text-align:right">${f(baseSalary)}원</td></tr>
-                <tr><td style="color:#94a3b8;padding:2px 0">+ 인센티브 (P × Grade)</td><td style="text-align:right;color:#86efac">${f(incentive)}원</td></tr>
-                <tr><td style="color:#94a3b8;padding:2px 0">+ 우수상품 보너스</td><td style="text-align:right;color:#86efac">${f(premBonusTotal)}원</td></tr>
-                <tr style="border-top:1px solid #475569"><td style="padding:4px 0;color:#fff;font-weight:800">= 총 수령액</td><td style="text-align:right;color:#fbbf24"><b style="font-size:14px">${f(totalAgent)}원</b></td></tr>
-              </table>
-            </div>
-          </div>
-          <div style="margin-top:10px;padding:8px 10px;background:rgba(0,0,0,0.3);border-radius:4px;font-size:10.5px;color:#94a3b8;line-height:1.6">
-            ⚙️ 1건당 P: 약정 ${weightP || 0} + 우수${(premBonusP*premRate).toFixed(2)} + 방문${(careVisitP*careRate).toFixed(2)} = ${pPerSale.toFixed(2)}P · 페이백 ${f(payback)}원 (리베×${(0.9-profitRate).toFixed(2)})
-          </div>`;
-      }
-      // runPLSim·updateBaseShare 입력 바인딩 제거 (DOM 요소 모두 제거됨)
-
-      F('rp-save-btn').addEventListener('click', async () => {
-        const tk = localStorage.getItem('incentive-auth-token-v1');
-        if (!tk) { alert('로그인 필요'); return; }
-        if (!_rp) return;
-        // incentive_rules와 동일 컬럼 구조 (Phase A 통일)
-        const grade_rates = {
-          '1': Number(F('rp-g1').value),
-          '2': Number(F('rp-g2').value),
-          '3': Number(F('rp-g3').value),
-        };
-        const grade_thresholds = {
-          '2': { points: Number(F('rp-g2-p').value), premium: Number(F('rp-g2-prem').value) },
-          '3': { points: Number(F('rp-g3-p').value), premium: Number(F('rp-g3-prem').value) },
-        };
-        const body = {
-          id: _rp.id,
-          version: F('rp-version').value.trim() || 'V1',
-          effective_from: F('rp-effective').value || null,
-          active: true,
-          grade_rates,
-          grade_thresholds,
-          payback_max: Number(F('rp-payback-cap').value),
-          payback_company_limit: F('rp-payback-company').value ? Number(F('rp-payback-company').value) : null,
-          bonus_per_premium: F('rp-bonus-prem').value ? Number(F('rp-bonus-prem').value) : null,
-          premium_margin_threshold: F('rp-prem-margin').value ? Number(F('rp-prem-margin').value) : null,
-          notes: F('rp-notes').value.trim() || null,
-          // 팀장 V5.1
-          manager_v51_enabled: F('rp-mgr-enabled').checked,
-          manager_override_rate: F('rp-mgr-override').value ? Number(F('rp-mgr-override').value) : null,
-          manager_obligation_count: F('rp-mgr-obligation').value ? Number(F('rp-mgr-obligation').value) : null,
-          manager_penalty_partial_min: F('rp-mgr-partial').value ? Number(F('rp-mgr-partial').value) : null,
-          manager_team_profit_rate_min: F('rp-mgr-profit-rate').value ? Number(F('rp-mgr-profit-rate').value) : null,
-          change_reason: F('rp-change-reason').value || F('rp-change-reason-row')?.value || null,
-        };
-        try {
-          const res = await fetch(RP_API + '/policy', {
-            method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-            body: JSON.stringify(body),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || '저장 실패');
-          _rp = data.policy;
-          F('rp-msg').textContent = '✅ 저장 완료 (' + new Date().toLocaleTimeString() + ')';
-          F('rp-change-reason').value = '';
-        } catch (e) { F('rp-msg').textContent = '❌ ' + e.message; }
-      });
-
-      // 페이지 로드 시 1회
-      window.addEventListener('DOMContentLoaded', loadRP);
-      // 백업 — 이미 DOMContentLoaded 지나간 경우
-      if (document.readyState !== 'loading') setTimeout(loadRP, 100);
-    })();
-    </script>
+    <!--
+      [제거 2026-05-18] 가전탭 잔재 코드 삭제 — 인터넷+TV 패턴(saveRP/publishRP/toggleRpActive/loadRpAll)으로 통일
+      삭제 내용: recalc()·recalcMargins()·runMgrSim()·runPLSim()·old F('rp-save-btn') 핸들러·loadRP()·updateMgrMatrix()
+      대체 함수: 위 메인 script의 loadRpAll/loadActiveToRpForm/updateRpMgrUi/saveRP/publishRP/toggleRpActive
+    -->
 
     </div><!-- /policy-tab-rental -->
 
