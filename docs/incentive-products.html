@@ -188,8 +188,6 @@ async function fetchAgent() {
                   <th style="width:90px" title="가능 약정 (개월)">약정</th>
                   <th style="width:55px" title="옵션 수">옵션</th>
                   <th style="width:50px">시장</th>
-                  <th style="width:55px" title="옵션별 자동 P (Tier 매핑)">P</th>
-                  <th style="width:50px" title="옵션 디테일에서 자동 분류 (마진 임계 기준)">Tier</th>
                   <th style="width:45px">활성</th>
                 </tr>
               </thead>
@@ -452,8 +450,6 @@ async function fetchAgent() {
         <td style="font-size:9.5px;line-height:1.4">${monthsHTML}<div style="font-size:9px;color:#94a3b8;margin-top:2px">${caresHTML}</div></td>
         <td style="text-align:center;color:#a78bfa;font-weight:700">${p.option_count || '-'}</td>
         <td style="text-align:center;font-size:10px;color:#fbbf24" title="시장성">${fmtStar(p.market_score)}</td>
-        <td style="text-align:center;color:#94a3b8;font-size:10px" title="옵션마다 자동 매핑 (Tier 기반)">옵션별</td>
-        <td style="text-align:center;color:#94a3b8;font-size:10px" title="옵션마다 자동 분류 (마진 임계 기반)">옵션별</td>
         <td style="text-align:center"><input class="rp-edit" data-field="is_active" type="checkbox" ${p.is_active?'checked':''}></td>
       </tr>`;
     }).join('');
