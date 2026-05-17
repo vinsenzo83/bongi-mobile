@@ -903,8 +903,8 @@ let _itPolicy = { tier_s_min_margin: 250000, tier_a_min_margin: 180000, tier_b_m
 async function fetchItPolicy() {
   try {
     const tk = localStorage.getItem('incentive-auth-token-v1');
-    const r = await fetch('/api/incentive/rules/active', { headers: tk ? { Authorization: 'Bearer ' + tk } : {} }).then(r => r.json());
-    if (r.rule || r.rules) _itPolicy = { ..._itPolicy, ...(r.rule || r.rules) };
+    const r = await fetch('/api/incentive/rules', { headers: tk ? { Authorization: 'Bearer ' + tk } : {} }).then(r => r.json());
+    if (r.rules) _itPolicy = { ..._itPolicy, ...r.rules };
     return _itPolicy;
   } catch (e) { return _itPolicy; }
 }
