@@ -224,6 +224,10 @@ router.patch('/options/:id', authenticateJWT, async (req, res) => {
       const { data: cur } = await supabase.from('rental_product_options').select('metadata').eq('id', id).single();
       update.metadata = { ...(cur?.metadata || {}), note: req.body.note };
     }
+    // 옵션 is_active 변경 시 ticket_active도 자동 sync (영업 추적 정확성)
+    if ('is_active' in req.body) {
+      update.ticket_active = !!req.body.is_active;
+    }
     update.updated_at = new Date().toISOString();
     const { data, error } = await supabase
       .from('rental_product_options')

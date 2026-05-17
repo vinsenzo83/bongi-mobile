@@ -483,6 +483,9 @@ async function fetchAgent() {
     if (!res.ok) { alert('저장 실패'); return; }
     inp.style.borderColor = '#22c55e';
     setTimeout(() => inp.style.borderColor = '#475569', 1500);
+    // KPI 즉시 갱신 — _products 배열 해당 item field만 업데이트 + renderKpi
+    const p = _products.find(x => String(x.id) === String(id));
+    if (p) { p[field] = value; renderKpi(); }
   }
 
   async function loadOptions(productId) {
