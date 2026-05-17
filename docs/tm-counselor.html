@@ -405,17 +405,23 @@ body.cat-rental .tm-app { grid-template-columns: 280px minmax(0,1fr) !important;
 .tm-rental-panel .cat-bar label { font-size:10px; color:#92400e; font-weight:800; margin-right:4px; }
 .tm-rental-panel .cat-bar select { padding:7px 10px; background:#fff; color:#451a03; font-weight:800; border:1.5px solid #fcd34d; border-radius:5px; font-size:13px; max-width:240px; flex:1; }
 .tm-rental-panel .cat-bar .note { font-size:10px; color:#92400e; line-height:1.55; padding:5px 8px; background:rgba(251,191,36,0.18); border:1px dashed #fcd34d; border-radius:4px; flex:1; }
-/* 가전 큐콜 — 2섹터 (form-wrap + 견적결과) */
-.tm-rental-panel .rental-grid { display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:14px; align-items:start; }
-@media (max-width: 1400px) {
-  .tm-rental-panel .rental-grid { grid-template-columns:minmax(0,1fr) 320px; gap:10px; }
+/* 가전 큐콜 — viewport 기반 자동 리사이징 (clamp 사용) */
+.tm-rental-panel .rental-grid {
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 22vw, 420px);
+  gap: clamp(8px, 1vw, 16px);
+  align-items:start;
 }
 @media (max-width: 1100px) {
   .tm-rental-panel .rental-grid { grid-template-columns:1fr; gap:10px; }
 }
 .tm-rental-panel .rental-quote-result { word-break:break-word; min-width:0; overflow-wrap:break-word; }
 .tm-rental-panel .rental-quote-result .row { white-space:normal; }
+.tm-rental-panel .rental-quote-result .k,
+.tm-rental-panel .rental-quote-result .v { font-size: clamp(10.5px, 0.8vw, 13px); }
 .tm-rental-panel .rental-form-wrap { min-width:0; }
+.tm-rental-panel .rental-form-wrap > * { min-width:0; max-width:100%; box-sizing:border-box; }
+.tm-rental-panel .form-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important; gap: 8px 10px; }
 .tm-rental-panel .rental-form-wrap { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px; }
 .tm-rental-panel .rental-form-wrap .ttl { font-size:11px; font-weight:800; color:#3617ce; margin-bottom:8px; }
 .tm-rental-panel .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; margin-bottom:12px; }
