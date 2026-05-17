@@ -405,11 +405,20 @@ body.cat-rental .tm-app { grid-template-columns: 280px minmax(0,1fr) !important;
 .tm-rental-panel .cat-bar label { font-size:10px; color:#92400e; font-weight:800; margin-right:4px; }
 .tm-rental-panel .cat-bar select { padding:7px 10px; background:#fff; color:#451a03; font-weight:800; border:1.5px solid #fcd34d; border-radius:5px; font-size:13px; max-width:240px; flex:1; }
 .tm-rental-panel .cat-bar .note { font-size:10px; color:#92400e; line-height:1.55; padding:5px 8px; background:rgba(251,191,36,0.18); border:1px dashed #fcd34d; border-radius:4px; flex:1; }
-.tm-rental-panel .rental-grid { display:grid; grid-template-columns:1fr minmax(380px, 420px); gap:14px; }
-@media (max-width: 1400px) {
-  .tm-rental-panel .rental-grid { grid-template-columns:1fr minmax(340px, 380px); gap:10px; }
+/* 가전 큐콜 — 3섹터 균형 (상품추천 + 견적입력+V5 + 견적결과) */
+.tm-rental-panel .rental-grid { display:grid; grid-template-columns:minmax(220px,260px) minmax(0,1fr) minmax(300px,340px); gap:12px; align-items:start; }
+@media (max-width: 1600px) {
+  .tm-rental-panel .rental-grid { grid-template-columns:minmax(200px,240px) minmax(0,1fr) minmax(280px,310px); gap:10px; }
 }
-.tm-rental-panel .rental-quote-result { overflow-x:auto; word-break:break-word; }
+@media (max-width: 1280px) {
+  .tm-rental-panel .rental-grid { grid-template-columns:1fr; gap:10px; }
+}
+.tm-rental-panel .rental-quote-result { word-break:break-word; min-width:0; }
+.tm-rental-panel .rental-quote-result * { min-width:0; max-width:100%; }
+.tm-rental-panel .rental-quote-result .row { white-space:normal; }
+.tm-rental-panel .rental-quote-result .v { word-break:break-all; }
+.tm-rental-panel .rental-form-wrap { min-width:0; }
+.tm-rental-panel .rental-form-wrap > * { min-width:0; max-width:100%; box-sizing:border-box; }
 .tm-rental-panel .rental-form-wrap { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px; }
 .tm-rental-panel .rental-form-wrap .ttl { font-size:11px; font-weight:800; color:#3617ce; margin-bottom:8px; }
 .tm-rental-panel .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; margin-bottom:12px; }
@@ -5870,7 +5879,7 @@ setTimeout(() => {
         <div class="row"><span class="k">소유권 이전</span><span class="v">${effOwn ? effOwn+'개월 후' : '-'}${ownV ? ' <span style="color:#a78bfa;font-size:9px">(지정)</span>' : ''}</span></div>
         ${o.monthly_diff != null && o.monthly_diff !== 0 ? `<div class="row"><span class="k">월납 증감</span><span class="v" style="color:${o.monthly_diff < 0 ? '#22c55e' : '#f59e0b'}">${o.monthly_diff > 0 ? '+' : ''}${fmt(o.monthly_diff)}원</span></div>` : ''}
         ${p.promo_tag ? `<div class="row"><span class="k">프로모션 태그</span><span class="v" style="color:#a78bfa">${p.promo_tag}</span></div>` : ''}
-        ${p.is_premium ? `<div class="row"><span class="k">우수상품</span><span class="v" style="color:#fbbf24;font-weight:800">⭐ +0.3P 보너스</span></div>` : ''}
+        ${p.is_premium ? `<div class="row"><span class="k">우수상품</span><span class="v" style="color:#fbbf24;font-weight:800">⭐ 우수 (1건당 보너스)</span></div>` : ''}
         ${p.registration_status ? `<div class="row"><span class="k">등록상태</span><span class="v" style="color:#ef4444">${p.registration_status}</span></div>` : ''}
         ${p.evaluation_memo ? `<div class="row"><span class="k">평가 메모</span><span class="v" style="color:#94a3b8;font-size:10px">${p.evaluation_memo}</span></div>` : ''}
         ${note ? `<div class="row"><span class="k">비고 (옵션)</span><span class="v" style="color:#cbd5e1;font-size:10px">${note}</span></div>` : ''}
