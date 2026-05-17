@@ -1283,6 +1283,9 @@ router.post('/rules', authenticateJWT, async (req, res) => {
       notes, deactivate_others,
       manager_override_rate, manager_obligation_count,
       manager_penalty_partial_min, manager_team_profit_rate_min,
+      manager_v51_enabled,
+      // 옵션 자동 계산용
+      weight_cost_per_p, tier_s_min_margin, tier_a_min_margin, tier_b_min_margin, tier_to_p,
     } = req.body || {};
 
     if (!version || !effective_from || !grade_rates || !grade_thresholds) {
@@ -1308,6 +1311,13 @@ router.post('/rules', authenticateJWT, async (req, res) => {
         manager_obligation_count: manager_obligation_count ?? 20,
         manager_penalty_partial_min: manager_penalty_partial_min ?? 10,
         manager_team_profit_rate_min: manager_team_profit_rate_min ?? 0.20,
+        manager_v51_enabled: manager_v51_enabled ?? true,
+        // 옵션 자동 계산용 (생략 시 기본값)
+        weight_cost_per_p: weight_cost_per_p ?? 70000,
+        tier_s_min_margin: tier_s_min_margin ?? 250000,
+        tier_a_min_margin: tier_a_min_margin ?? 180000,
+        tier_b_min_margin: tier_b_min_margin ?? 120000,
+        tier_to_p: tier_to_p ?? { S: 2.0, A: 1.5, B: 1.2, C: 1.0 },
         active: true, notes,
       })
       .select()
@@ -1334,7 +1344,9 @@ router.patch('/rules/:id', authenticateJWT, async (req, res) => {
       'premium_margin_threshold', 'active', 'notes',
       'manager_override_rate', 'manager_obligation_count',
       'manager_penalty_partial_min', 'manager_team_profit_rate_min',
-      'manager_v51_enabled'];
+      'manager_v51_enabled',
+      // 옵션 자동 계산용 (마진/Tier/P)
+      'weight_cost_per_p', 'tier_s_min_margin', 'tier_a_min_margin', 'tier_b_min_margin', 'tier_to_p'];
     const update = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
 
