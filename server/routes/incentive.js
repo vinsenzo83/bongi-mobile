@@ -2421,4 +2421,158 @@ router.delete('/gift-vouchers/:id(\\d+)', authenticateJWT, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ════════════════════════════════════════════════════════════
+// 🎫 티켓 관리 — 고객→상담사 핫라인 식별 코드
+// ════════════════════════════════════════════════════════════
+// 인터넷+TV 티켓 (incentive_internet_tickets — 105개 박제)
+// (가전 렌탈 티켓은 Phase 2에서 별도 설계 예정)
+
+// GET /api/incentive/tickets/internet — DB list
+router.get('/tickets/internet', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    const { carrier, search, active_only } = req.query;
+    let q = supabase.from('incentive_internet_tickets')
+      .select('id,ticket_number,carrier,speed,tv_idx,tv_label,has_wifi,monthly_fee,gift_amount,is_active,snapshot_at,deactivated_at');
+    if (carrier) q = q.eq('carrier', String(carrier).toLowerCase());
+    if (active_only === 'true' || active_only === '1') q = q.eq('is_active', true);
+    if (search) {
+      const s = String(search).trim().slice(0, 50);
+      q = q.or(`ticket_number.ilike.%${s}%,tv_label.ilike.%${s}%,speed.ilike.%${s}%`);
+    }
+    q = q.order('ticket_number', { ascending: true }).limit(500);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json({ tickets: data || [], total: (data || []).length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/incentive/tickets/internet/lookup?ticket=SK0015 — TM 상담사 빠른 조회
+router.get('/tickets/internet/lookup', authenticateJWT, async (req, res) => {
+  try {
+    const { ticket } = req.query;
+    if (!ticket) return res.status(400).json({ error: 'ticket 쿼리 필수' });
+    const tn = String(ticket).trim().toUpperCase();
+    if (!/^(SK|KT|LG)\d{4,}$/.test(tn)) return res.status(400).json({ error: 'SK0001/KT0001/LG0001 형식이어야 함' });
+
+    const { data, error } = await supabase.from('incentive_internet_tickets')
+      .select('id,ticket_number,carrier,speed,tv_idx,tv_label,has_wifi,monthly_fee,gift_amount,is_active')
+      .eq('ticket_number', tn)
+      .single();
+    if (error || !data) return res.status(404).json({ error: '티켓 없음', ticket_number: tn });
+    res.json({ ticket: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/incentive/tickets/internet/sync — calculator.html 시드 ↔ DB 양방향 sync
+// 정책: 티켓 자체는 박제 X. 시드 변경 시 가격·사은품·tv_label 모두 update.
+//        (영업·계약은 incentive_sales의 quote_summary HTML에 별도 박제됨)
+// body: { tickets: [{ticket_number, carrier, speed, tv_idx, tv_label, has_wifi, monthly_fee, gift_amount}, ...] }
+router.post('/tickets/internet/sync', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || !['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
+    const incoming = Array.isArray(req.body?.tickets) ? req.body.tickets : null;
+    if (!incoming) return res.status(400).json({ error: 'tickets 배열 필수' });
+
+    // 기존 DB row 모두 fetch
+    const { data: existing } = await supabase.from('incentive_internet_tickets')
+      .select('id,ticket_number,carrier,speed,tv_idx,tv_label,has_wifi,monthly_fee,gift_amount,is_active');
+    const existingMap = new Map((existing || []).map(t => [t.ticket_number, t]));
+    const incomingSet = new Set(incoming.map(t => t.ticket_number));
+
+    const newRows = [];
+    const updates = [];   // [{id, patch}]
+    let unchanged = 0;
+    for (const t of incoming) {
+      const ex = existingMap.get(t.ticket_number);
+      if (!ex) {
+        newRows.push({
+          ticket_number: t.ticket_number,
+          carrier: t.carrier,
+          speed: t.speed,
+          tv_idx: t.tv_idx | 0,
+          tv_label: t.tv_label || null,
+          has_wifi: !!t.has_wifi,
+          monthly_fee: t.monthly_fee | 0,
+          gift_amount: t.gift_amount | 0,
+        });
+      } else {
+        const patch = {};
+        if (ex.tv_label !== (t.tv_label || null)) patch.tv_label = t.tv_label || null;
+        if (ex.monthly_fee !== (t.monthly_fee | 0)) patch.monthly_fee = t.monthly_fee | 0;
+        if (ex.gift_amount !== (t.gift_amount | 0)) patch.gift_amount = t.gift_amount | 0;
+        if (!ex.is_active) { patch.is_active = true; patch.deactivated_at = null; }
+        if (Object.keys(patch).length > 0) {
+          patch.updated_at = new Date().toISOString();
+          updates.push({ id: ex.id, patch });
+        } else {
+          unchanged++;
+        }
+      }
+    }
+
+    // 시드에서 사라진 → 비활성
+    const toDeactivate = Array.from(existingMap.values())
+      .filter(ex => ex.is_active && !incomingSet.has(ex.ticket_number))
+      .map(ex => ex.id);
+
+    let inserted = 0, updated = 0, deactivated = 0;
+    if (newRows.length > 0) {
+      const { error } = await supabase.from('incentive_internet_tickets').insert(newRows);
+      if (error) throw error;
+      inserted = newRows.length;
+    }
+    // 변경 row UPDATE (개별 update — 컬럼별 patch가 다 다르므로)
+    for (const u of updates) {
+      const { error } = await supabase.from('incentive_internet_tickets')
+        .update(u.patch).eq('id', u.id);
+      if (error) throw error;
+      updated++;
+    }
+    if (toDeactivate.length > 0) {
+      const { error } = await supabase.from('incentive_internet_tickets')
+        .update({ is_active: false, deactivated_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .in('id', toDeactivate);
+      if (error) throw error;
+      deactivated = toDeactivate.length;
+    }
+
+    res.json({ ok: true, inserted, updated, unchanged, deactivated, total_incoming: incoming.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/incentive/tickets/internet/:id/deactivate
+router.patch('/tickets/internet/:id(\\d+)/deactivate', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || !['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
+    const { data, error } = await supabase.from('incentive_internet_tickets')
+      .update({ is_active: false, deactivated_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select('id,ticket_number,is_active')
+      .single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: '티켓 없음' });
+    res.json({ ok: true, ticket: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/incentive/tickets/internet/:id/activate
+router.patch('/tickets/internet/:id(\\d+)/activate', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me || !['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
+    const { data, error } = await supabase.from('incentive_internet_tickets')
+      .update({ is_active: true, deactivated_at: null, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select('id,ticket_number,is_active')
+      .single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: '티켓 없음' });
+    res.json({ ok: true, ticket: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;
