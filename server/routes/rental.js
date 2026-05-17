@@ -87,6 +87,78 @@ router.patch('/policy', authenticateJWT, async (req, res) => {
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
+// ─── 새 버전 발행 (admin) — incentive_rules와 동일 패턴 ───
+router.post('/policy', authenticateJWT, async (req, res) => {
+  try {
+    const { deactivate_others, change_reason, ...fields } = req.body;
+    const ALLOWED = [
+      'version', 'effective_from', 'notes',
+      'base_salary', 'bonus_per_premium',
+      'payback_company_limit', 'payback_max',
+      'grade_rates', 'grade_thresholds', 'premium_margin_threshold',
+      'manager_v51_enabled', 'manager_override_rate', 'manager_obligation_count',
+      'manager_penalty_partial_min', 'manager_team_profit_rate_min',
+    ];
+    const insert = { active: true };
+    for (const k of ALLOWED) {
+      if (fields[k] !== undefined) insert[k] = fields[k];
+    }
+    if (!insert.version) return res.status(400).json({ error: 'version 필수' });
+
+    if (deactivate_others) {
+      // 옛 컬럼 호환: is_active도 함께 false
+      await supabase.from('rental_policy').update({ active: false, is_active: false }).or('active.eq.true,is_active.eq.true');
+    }
+    insert.is_active = true;  // Phase B DROP 전까지 호환
+    const { data, error } = await supabase.from('rental_policy').insert(insert).select().single();
+    if (error) throw error;
+    // 이력 기록
+    await supabase.from('rental_policy_history').insert({
+      policy_id: data.id,
+      changed_fields: { __published__: { old: null, new: insert.version } },
+      changed_by: req.user?.email || 'unknown',
+      change_reason: change_reason || `새 버전 [${insert.version}] 발행`,
+    });
+    res.json({ policy: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ─── 정책 전체 list (admin) — 다중 버전 ───
+router.get('/policy/all', authenticateJWT, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('rental_policy')
+      .select('*')
+      .order('effective_from', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ policies: data || [] });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ─── 정책 row 활성/비활성 토글 (admin) ───
+router.patch('/policy/:id/active', authenticateJWT, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { active } = req.body;
+    if (active === true) {
+      // 다른 active row 비활성화
+      await supabase.from('rental_policy').update({ active: false, is_active: false }).neq('id', id);
+    }
+    const { data, error } = await supabase.from('rental_policy')
+      .update({ active: !!active, is_active: !!active, updated_at: new Date().toISOString() })
+      .eq('id', id).select().single();
+    if (error) throw error;
+    await supabase.from('rental_policy_history').insert({
+      policy_id: id,
+      changed_fields: { active: { old: !active, new: !!active } },
+      changed_by: req.user?.email || 'unknown',
+      change_reason: active ? '활성화' : '비활성화',
+    });
+    res.json({ policy: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
 // ─── 정책 변경 이력 ───
 router.get('/policy/history', authenticateJWT, async (req, res) => {
   try {
