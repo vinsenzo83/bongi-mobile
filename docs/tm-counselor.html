@@ -5665,18 +5665,20 @@ setTimeout(() => {
         <div class="row" style="border-top:1px solid #22c55e;padding-top:4px;margin-top:4px"><span class="k" style="color:#22c55e;font-weight:800">👤 실 부담액</span><span class="v" style="color:#22c55e;font-weight:900">${fmt(netBurden)}원</span></div>
       </div>`;
 
-    // ─── V5 인센티브 미리보기 (상담사용 · 회사 정보 제외) ───
+    // ─── V5 인센티브 미리보기 (통합: 가전 + 인터넷+TV) ───
     // 누적 데이터 — DB 자동 로드 시도 (1회만), 실패 시 localStorage
     if (window._incRentalCurrentP == null) {
       window._incRentalCurrentP = 0;
       window._incRentalCurrentPrem = 0;
       window._incRentalCurrentGrade = 'G1';
-      // localStorage fallback
+      window._incRentalItP = 0;
+      window._incRentalItPrem = 0;
+      window._incRentalRates = { '1': 15000, '2': 22000, '3': 30000 };
+      window._incRentalItRates = { '1': 20000, '2': 30000, '3': 40000 };
       try {
         const saved = JSON.parse(localStorage.getItem('rental-incentive-state-v1') || '{}');
         if (saved.grade) window._incRentalCurrentGrade = saved.grade;
       } catch(e) {}
-      // DB 자동 합산 (비동기, 토큰 있을 때만)
       const _tk = localStorage.getItem('incentive-auth-token-v1');
       if (_tk && !window._incRentalAutoLoading) {
         window._incRentalAutoLoading = true;
@@ -5686,29 +5688,48 @@ setTimeout(() => {
             if (d && typeof d.p === 'number') {
               window._incRentalCurrentP = d.p;
               window._incRentalCurrentPrem = d.premium_count || 0;
-              if (d.grade) window._incRentalCurrentGrade = d.grade; // 자동 결정
+              if (d.grade) window._incRentalCurrentGrade = d.grade;
               window._incRentalCombinedP = d.combined_p;
               window._incRentalCombinedPrem = d.combined_premium;
-              window._incRentalItP = d.it_p;
-              window._incRentalItPrem = d.it_premium;
+              window._incRentalItP = d.it_p || 0;
+              window._incRentalItPrem = d.it_premium || 0;
+              window._incRentalRates = d.rental_rates || window._incRentalRates;
+              window._incRentalItRates = d.it_rates || window._incRentalItRates;
               window._incRentalGradeAuto = true;
-              if (_selectedOpt) renderQuote();  // 자동 재렌더
+              if (_selectedOpt) renderQuote();
             }
           }).catch(()=>{});
       }
     }
     const grade = window._incRentalCurrentGrade || 'G1';
-    // Phase A 통일: grade_rates JSONB {1,2,3} (옛 grade_g1_unit DROP됨)
-    const _rates = (r.policy && r.policy.grade_rates) || {};
     const _gradeKey = grade.replace('G', '');
-    const gradeUnit = Number(_rates[_gradeKey]) || 15000;
-    const currentP = Number(window._incRentalCurrentP) || 0;
-    const currentPrem = Number(window._incRentalCurrentPrem) || 0;
-    const currentTotal = Math.round(currentP * gradeUnit);
-    const newP = currentP + Number(c.point_weight);
-    const newPrem = currentPrem + (p.is_premium ? 1 : 0);
-    const newTotal = Math.round(newP * gradeUnit);
+    // 양쪽 단가
+    const rtRates = window._incRentalRates || ((r.policy && r.policy.grade_rates) || { '1': 15000, '2': 22000, '3': 30000 });
+    const itRates = window._incRentalItRates || { '1': 20000, '2': 30000, '3': 40000 };
+    const rtUnit = Number(rtRates[_gradeKey]) || 15000;
+    const itUnit = Number(itRates[_gradeKey]) || 20000;
+    // 가전 단독 (이번 견적 추가용)
+    const rtP = Number(window._incRentalCurrentP) || 0;
+    const rtPrem = Number(window._incRentalCurrentPrem) || 0;
+    // 인터넷+TV 누적
+    const itP = Number(window._incRentalItP) || 0;
+    const itPrem = Number(window._incRentalItPrem) || 0;
+    // 통합 인센티브 = 가전 P × 가전 단가 + 인터넷 P × 인터넷 단가
+    const rtIncentive = Math.round(rtP * rtUnit);
+    const itIncentive = Math.round(itP * itUnit);
+    const currentP = rtP + itP;
+    const currentPrem = rtPrem + itPrem;
+    const currentTotal = rtIncentive + itIncentive;
+    // +1건 후 (가전 영업 추가 시): 가전 P 증가
+    const newRtP = rtP + Number(c.point_weight);
+    const newRtPrem = rtPrem + (p.is_premium ? 1 : 0);
+    const newP = newRtP + itP;
+    const newPrem = newRtPrem + itPrem;
+    const newRtIncentive = Math.round(newRtP * rtUnit);
+    const newTotal = newRtIncentive + itIncentive;
     const delta = newTotal - currentTotal;
+    // 사용자 표시용 가독성
+    const gradeUnit = rtUnit; // 호환 (하단 표시 코드용)
     const incentiveHTML = `
       <div style="margin-top:12px;background:linear-gradient(135deg,#fef3c7,#fde68a);border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;box-shadow:0 2px 8px rgba(245,158,11,0.15);color:#92400e">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -5731,15 +5752,34 @@ setTimeout(() => {
           </div>
           <button type="button" id="rental-inc-save" style="margin-top:6px;width:100%;padding:5px;background:#16a34a;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">✅ 적용</button>
         </div>
-        <!-- 📊 내 현재 상태 -->
+        <!-- 📊 내 현재 상태 (이번 달) — 인터넷+TV / 가전렌탈 분리 + 통합 -->
         <div style="background:linear-gradient(135deg,rgba(255,255,255,0.7),rgba(255,255,255,0.5));border:1.5px solid #d97706;border-radius:8px;padding:10px 12px;margin-bottom:8px">
-          <div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">📊 내 현재 상태 (이번 달)</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
-            <div><div style="font-size:9px;color:#78350f;margin-bottom:2px">Grade</div><div style="font-size:14px;font-weight:900;color:#1e293b">${grade}</div></div>
-            <div><div style="font-size:9px;color:#78350f;margin-bottom:2px">누적 P</div><div style="font-size:14px;font-weight:900;color:#1e293b">${currentP}P</div></div>
-            <div><div style="font-size:9px;color:#78350f;margin-bottom:2px">우수 건수</div><div style="font-size:14px;font-weight:900;color:#1e293b">${currentPrem}건</div></div>
-            <div><div style="font-size:9px;color:#78350f;margin-bottom:2px">예상 수령</div><div style="font-size:13px;font-weight:900;color:#16a34a">${fmt(currentTotal)}원</div></div>
+          <div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:8px;letter-spacing:0.04em">📊 내 현재 상태 (이번 달) · Grade는 통합 누적 기준</div>
+          <!-- 인터넷+TV 행 -->
+          <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px dashed rgba(120,53,15,0.25)">
+            <div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#1d4ed8;display:flex;align-items:center">📡 인터넷+TV</div>
+            <div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">${grade}</div></div>
+            <div><div style="font-size:9px;color:#78350f">누적 P</div><div style="font-size:13px;font-weight:900;color:#1e293b">${itP.toFixed(2)}P</div></div>
+            <div><div style="font-size:9px;color:#78350f">우수</div><div style="font-size:13px;font-weight:900;color:#1e293b">${itPrem}건</div></div>
+            <div><div style="font-size:9px;color:#78350f">예상 수령</div><div style="font-size:13px;font-weight:900;color:#1d4ed8">${fmt(itIncentive)}원</div></div>
           </div>
+          <!-- 가전렌탈 행 -->
+          <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px solid rgba(120,53,15,0.4)">
+            <div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#d97706;display:flex;align-items:center">🏠 가전렌탈</div>
+            <div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">${grade}</div></div>
+            <div><div style="font-size:9px;color:#78350f">누적 P</div><div style="font-size:13px;font-weight:900;color:#1e293b">${rtP.toFixed(2)}P</div></div>
+            <div><div style="font-size:9px;color:#78350f">우수</div><div style="font-size:13px;font-weight:900;color:#1e293b">${rtPrem}건</div></div>
+            <div><div style="font-size:9px;color:#78350f">예상 수령</div><div style="font-size:13px;font-weight:900;color:#d97706">${fmt(rtIncentive)}원</div></div>
+          </div>
+          <!-- 통합 합산 행 -->
+          <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:8px 0 2px;background:rgba(34,197,94,0.06);margin:4px -4px 0;border-radius:4px">
+            <div style="text-align:left;padding-left:4px;font-size:10.5px;font-weight:900;color:#15803d;display:flex;align-items:center">⚡ 통합 합계</div>
+            <div><div style="font-size:9px;color:#15803d">Grade</div><div style="font-size:14px;font-weight:900;color:#1e293b">${grade}</div></div>
+            <div><div style="font-size:9px;color:#15803d">누적 P</div><div style="font-size:14px;font-weight:900;color:#1e293b">${currentP.toFixed(2)}P</div></div>
+            <div><div style="font-size:9px;color:#15803d">우수</div><div style="font-size:14px;font-weight:900;color:#1e293b">${currentPrem}건</div></div>
+            <div><div style="font-size:9px;color:#15803d">예상 수령</div><div style="font-size:14px;font-weight:900;color:#16a34a">${fmt(currentTotal)}원</div></div>
+          </div>
+          <div style="margin-top:4px;font-size:9.5px;color:#78350f;text-align:right">단가 — 인터넷+TV ${fmt(itUnit)}원/P · 가전 ${fmt(rtUnit)}원/P (${grade})</div>
         </div>
         <!-- ⚡ 매칭 정보 -->
         <div style="background:rgba(255,255,255,0.55);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:10.5px;color:#78350f">
