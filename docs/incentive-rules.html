@@ -1073,6 +1073,8 @@ async function fetchAgent() {
           F('rp-msg').textContent = '✅ 저장 완료 (' + new Date().toLocaleTimeString() + ')';
           await loadRpAll();
           loadRpHistory();
+          // BroadcastChannel — 다른 페이지(상품관리·큐콜) 즉시 재 fetch
+          try { const ch = new BroadcastChannel('rental-policy'); ch.postMessage({ type:'policy-changed' }); ch.close(); } catch(e) {}
         } catch (e) { alert('오류: ' + e.message); F('rp-msg').textContent = '❌ ' + e.message; }
       }
 
@@ -1094,6 +1096,7 @@ async function fetchAgent() {
           F('rp-msg').textContent = '🚀 새 버전 발행 완료 (' + new Date().toLocaleTimeString() + ')';
           await loadRpAll();
           loadRpHistory();
+          try { const ch = new BroadcastChannel('rental-policy'); ch.postMessage({ type:'policy-changed' }); ch.close(); } catch(e) {}
         } catch (e) { alert('오류: ' + e.message); }
       }
 
