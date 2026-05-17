@@ -50,7 +50,7 @@ router.patch('/policy', authenticateJWT, async (req, res) => {
       'manager_v51_enabled', 'manager_override_rate', 'manager_obligation_count',
       'manager_penalty_partial_min', 'manager_team_profit_rate_min',
       // 가전 옵션 자동 계산용 (옵션 단위 마진/Tier 자동 분류)
-      'weight_cost_per_p', 'tier_s_min_margin', 'tier_a_min_margin', 'tier_b_min_margin',
+      'weight_cost_per_p', 'tier_s_min_margin', 'tier_a_min_margin', 'tier_b_min_margin', 'tier_to_p',
     ];
     const update = {};
     for (const k of ALLOWED) {
