@@ -1006,7 +1006,7 @@ function renderTable() {
     </tr>`;
   }).join('');
 
-  // 변경 감지 → 행 강조
+  // 변경 감지 → 행 강조 + 마진/Tier/P 즉시 재계산 시각 미리보기
   document.querySelectorAll('.cell-edit').forEach(inp => {
     inp.addEventListener('input', () => {
       const tr = inp.closest('tr');
@@ -1014,9 +1014,33 @@ function renderTable() {
       const cur = inp.value;
       if (String(orig) !== String(cur)) tr.classList.add('changed');
       else {
-        // 모든 필드 원래대로면 changed 제거
         const allSame = [...tr.querySelectorAll('.cell-edit')].every(i => String(i.dataset.orig) === String(i.value));
         if (allSame) tr.classList.remove('changed');
+      }
+      // ✨ 동적 미리보기: rebate/payback/gift_amount/point_weight 변경 시 마진/Tier/P 즉시 update
+      const field = inp.dataset.field;
+      if (['rebate','payback','gift_amount','point_weight'].includes(field)) {
+        const id = Number(tr.dataset.id);
+        const idx = _products.findIndex(p => p.id === id);
+        if (idx < 0) return;
+        let val = inp.value;
+        if (field === 'rebate' || field === 'payback') val = parseInt(val) || 0;
+        if (field === 'point_weight' || field === 'gift_amount') { const n = parseFloat(val); val = isNaN(n) ? 0 : n; }
+        const tempP = { ..._products[idx], [field]: val };
+        const { tierAuto, pAuto, effMargin } = calcAutoTierP(tempP);
+        const marginCell = document.getElementById(`margin-${id}`);
+        if (marginCell) {
+          marginCell.textContent = fmt(effMargin);
+          const c = effMargin >= (_itPolicy.tier_s_min_margin||250000) ? '#fbbf24' : effMargin >= (_itPolicy.tier_a_min_margin||180000) ? '#60a5fa' : effMargin >= (_itPolicy.tier_b_min_margin||120000) ? '#94a3b8' : '#fca5a5';
+          marginCell.style.color = c;
+        }
+        const tierCell = document.getElementById(`tier-${id}`);
+        if (tierCell) { tierCell.className = `tier tier-${tierAuto}`; tierCell.textContent = tierAuto; }
+        // P select가 다른 input일 때만 update (자신은 사용자가 직접 입력 중)
+        if (field !== 'point_weight') {
+          const pSel = tr.querySelector('select[data-field="point_weight"]');
+          if (pSel) pSel.value = pAuto;
+        }
       }
     });
   });
