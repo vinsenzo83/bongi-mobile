@@ -1351,6 +1351,25 @@ async function fetchAgent() {
         <tbody id="rules-tbody"></tbody>
       </table>
     </div>
+
+    <!-- 📜 변경 audit log (인터넷+TV) — 가전탭과 동일 패턴 -->
+    <div class="section">
+      <h2>📜 변경 audit 이력 (최근 30건)</h2>
+      <div style="max-height:340px;overflow-y:auto;background:#0f172a;border:1px solid #334155;border-radius:8px">
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px">
+          <thead style="position:sticky;top:0;background:#1e293b">
+            <tr>
+              <th style="padding:8px;text-align:left;color:#94a3b8">시간</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">변경자</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">필드</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">변경값</th>
+              <th style="padding:8px;text-align:left;color:#94a3b8">사유</th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody"><tr><td colspan="5" style="padding:14px;text-align:center;color:#64748b">불러오는 중…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1597,8 +1616,39 @@ async function loadAll() {
     _activeRule = active;
     if (active) loadActiveToForm(active);
     renderHistory(rules);
+    loadAuditHistory();
   } catch (e) { alert('정책 로드 실패: ' + e.message); }
 }
+
+async function loadAuditHistory() {
+  const tbody = document.getElementById('audit-tbody');
+  if (!tbody) return;
+  const tk = getToken();
+  try {
+    const r = await fetch(API + '/rules/history?limit=30', { headers: { Authorization: 'Bearer ' + tk } }).then(r => r.json());
+    const rows = r.history || [];
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:14px;text-align:center;color:#94a3b8">변경 이력 없음</td></tr>'; return; }
+    tbody.innerHTML = rows.map(h => {
+      const dt = new Date(h.changed_at);
+      const f = dt.toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+      const ov = String(h.old_value ?? '∅').slice(0, 80).replace(/</g, '&lt;');
+      const nv = String(h.new_value ?? '∅').slice(0, 80).replace(/</g, '&lt;');
+      return `<tr style="border-top:1px solid #334155">
+        <td style="padding:7px 8px;color:#cbd5e1;white-space:nowrap">${f}</td>
+        <td style="padding:7px 8px;color:#fbbf24;font-family:monospace;font-size:10.5px">${h.changed_by_name || '-'}</td>
+        <td style="padding:7px 8px;color:#a78bfa;font-weight:700">${h.field_name}</td>
+        <td style="padding:7px 8px;font-size:10.5px"><s style="color:#94a3b8">${ov}</s> → <b style="color:#86efac">${nv}</b></td>
+        <td style="padding:7px 8px;color:#cbd5e1">${(h.change_reason || '-').replace(/</g,'&lt;')}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:14px;color:#ef4444">이력 로드 실패: ${e.message}</td></tr>`;
+  }
+}
+// 정책 PATCH 저장 후 audit 자동 갱신
+document.addEventListener('click', e => {
+  if (e.target?.id === 'btn-save' || e.target?.id === 'btn-publish') setTimeout(loadAuditHistory, 1200);
+});
 
 let _toastTimer;
 function showToast(msg) {
