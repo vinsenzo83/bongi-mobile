@@ -570,12 +570,14 @@ router.get('/agents/me/monthly-stats', authenticateJWT, async (req, res) => {
       premium_count: rentalPrem,
       sale_count: rentalSales.length,
       rental_unit: rentalUnit,
+      rental_bonus_per: rentalBonusPer,
       rental_incentive: rentalIncentive,
       rental_bonus: rentalBonus,
       // 인터넷+TV만
       it_p: Number(itP.toFixed(2)),
       it_premium: itPrem,
       it_unit: itUnit,
+      it_bonus_per: itBonusPer,
       it_incentive: itIncentive,
       it_bonus: itBonus,
       // 통합 (Grade 결정용 + 합산 표시)

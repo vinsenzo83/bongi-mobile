@@ -5766,6 +5766,8 @@ setTimeout(() => {
               window._incRentalItPrem = d.it_premium || 0;
               window._incRentalRates = d.rental_rates || window._incRentalRates;
               window._incRentalItRates = d.it_rates || window._incRentalItRates;
+              window._incRentalBonusPer = d.rental_bonus_per || 10000;
+              window._incRentalItBonusPer = d.it_bonus_per || 10000;
               window._incRentalGradeAuto = true;
               if (_selectedOpt) renderQuote();
             }
@@ -5779,24 +5781,27 @@ setTimeout(() => {
     const itRates = window._incRentalItRates || { '1': 20000, '2': 30000, '3': 40000 };
     const rtUnit = Number(rtRates[_gradeKey]) || 15000;
     const itUnit = Number(itRates[_gradeKey]) || 20000;
+    // 우수 1건당 보너스 (정책별)
+    const rtBonusPer = Number(window._incRentalBonusPer) || 10000;
+    const itBonusPer = Number(window._incRentalItBonusPer) || 10000;
     // 가전 단독 (이번 견적 추가용)
     const rtP = Number(window._incRentalCurrentP) || 0;
     const rtPrem = Number(window._incRentalCurrentPrem) || 0;
     // 인터넷+TV 누적
     const itP = Number(window._incRentalItP) || 0;
     const itPrem = Number(window._incRentalItPrem) || 0;
-    // 통합 인센티브 = 가전 P × 가전 단가 + 인터넷 P × 인터넷 단가
-    const rtIncentive = Math.round(rtP * rtUnit);
-    const itIncentive = Math.round(itP * itUnit);
+    // 통합 인센티브 + 우수 보너스 = 가전 P × 단가 + 가전 우수 × 보너스 + 인터넷 동일
+    const rtIncentive = Math.round(rtP * rtUnit) + (rtPrem * rtBonusPer);
+    const itIncentive = Math.round(itP * itUnit) + (itPrem * itBonusPer);
     const currentP = rtP + itP;
     const currentPrem = rtPrem + itPrem;
     const currentTotal = rtIncentive + itIncentive;
-    // +1건 후 (가전 영업 추가 시): 가전 P 증가
+    // +1건 후 (가전 영업 추가 시): 가전 P 증가 + 우수면 보너스도 추가
     const newRtP = rtP + Number(c.point_weight);
     const newRtPrem = rtPrem + (p.is_premium ? 1 : 0);
     const newP = newRtP + itP;
     const newPrem = newRtPrem + itPrem;
-    const newRtIncentive = Math.round(newRtP * rtUnit);
+    const newRtIncentive = Math.round(newRtP * rtUnit) + (newRtPrem * rtBonusPer);
     const newTotal = newRtIncentive + itIncentive;
     const delta = newTotal - currentTotal;
     // 사용자 표시용 가독성
