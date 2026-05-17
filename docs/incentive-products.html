@@ -849,10 +849,11 @@ async function fetchAgent() {
       body: JSON.stringify({ [field]: value }),
     });
     if (!res.ok) { alert('저장 실패'); return; }
-    // 페이백 변경 시 자동 산출값 갱신 위해 재로딩
-    if (field === 'payback' && _selectedProductId) loadOptions(_selectedProductId);
     inp.style.borderColor = '#22c55e';
     setTimeout(() => inp.style.borderColor = '#475569', 1500);
+    // P·Tier 자동 계산이 다른 값(rebate/payback/point_weight)에도 의존 → 항상 재로딩으로 즉시 시각 동기화
+    const autoTrigger = ['rebate','payback','point_weight','rebate_otherco','rebate_half'];
+    if (autoTrigger.includes(field) && _selectedProductId) loadOptions(_selectedProductId);
   }
 })();
 </script>
@@ -920,19 +921,32 @@ try {
 // 페이지 로드 시 1회 fetch
 fetchItPolicy();
 
-// Tier/P 자동 계산 (margin → Tier → P 매핑)
+// Tier/P 자동 계산 (가전 동일 공식: 임시 P=1.5 → 임시 마진 → 임시 Tier → 최종 P → 최종 마진)
 function calcAutoTierP(p) {
-  const margin = Number(p.margin) || 0;
+  const wcUnit = _itPolicy.weight_cost_per_p || 70000;
   const sMin = _itPolicy.tier_s_min_margin || 250000;
   const aMin = _itPolicy.tier_a_min_margin || 180000;
   const bMin = _itPolicy.tier_b_min_margin || 120000;
-  let tierAuto = 'C';
-  if (margin >= sMin) tierAuto = 'S';
-  else if (margin >= aMin) tierAuto = 'A';
-  else if (margin >= bMin) tierAuto = 'B';
+  const rebate = Number(p.rebate) || 0;
+  const payback = Number(p.payback) || 0;
+  // 1단계: 임시 P=1.5로 임시 마진/Tier
+  const tempMargin = Math.round(rebate * 0.9 - payback - 1.5 * wcUnit);
+  let tempTier = 'C';
+  if (tempMargin >= sMin) tempTier = 'S';
+  else if (tempMargin >= aMin) tempTier = 'A';
+  else if (tempMargin >= bMin) tempTier = 'B';
+  // 2단계: 임시 Tier → P 매핑
   const pMap = { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
-  const pAuto = pMap[tierAuto];
-  return { tierAuto, pAuto };
+  const pAuto = pMap[tempTier];
+  // 3단계: 최종 P 기반 마진 자동 계산
+  const finalP = Number(p.point_weight ?? pAuto);
+  const marginAuto = Math.round(rebate * 0.9 - payback - finalP * wcUnit);
+  const effMargin = (p.margin != null && p.margin !== '') ? Number(p.margin) : marginAuto;
+  let tierAuto = 'C';
+  if (effMargin >= sMin) tierAuto = 'S';
+  else if (effMargin >= aMin) tierAuto = 'A';
+  else if (effMargin >= bMin) tierAuto = 'B';
+  return { tierAuto, pAuto, marginAuto, effMargin };
 }
 
 function renderTable() {
@@ -956,7 +970,7 @@ function renderTable() {
 
   const tbody = document.getElementById('products-tbody');
   tbody.innerHTML = filtered.map(p => {
-    const { tierAuto, pAuto } = calcAutoTierP(p);
+    const { tierAuto, pAuto, marginAuto, effMargin } = calcAutoTierP(p);
     const effTier = p.tier || tierAuto;
     const effP = (p.point_weight != null) ? p.point_weight : pAuto;
     const tierClass = `tier tier-${effTier}`;
