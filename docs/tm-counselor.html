@@ -3926,15 +3926,22 @@ document.getElementById('tm-script-add').addEventListener('click', function(){
         if (rentalTab) rentalTab.click();
         // 견적 결과 영역(#c-result) 위에 가전렌탈 카드 prepend
         var fmt = function(n){ return n == null ? '-' : Number(n).toLocaleString('ko-KR'); };
+        // 인터넷+TV 견적 결과와 동일한 시각 패턴 (🎫 티켓번호 라벨 + 큰 번호)
         var rentalHTML = ''
           + '<div style="background:linear-gradient(135deg,#1e293b,#0f172a);border:1.5px solid #3b82f6;border-radius:10px;padding:14px;margin-bottom:10px">'
+          // ─── 헤더: 🎫 티켓번호 + 큰 R번호 ───
+          + '<div style="display:flex;flex-direction:column;gap:3px;padding-bottom:10px;border-bottom:1px solid #334155;margin-bottom:10px">'
+          + '<span style="font-size:9.5px;color:rgba(255,255,255,0.6);letter-spacing:0.04em">🎫 티켓번호</span>'
+          + '<span style="font-size:18px;font-weight:900;color:#a5b4fc;font-family:\'SF Mono\',Monaco,monospace;letter-spacing:0.8px">' + r.ticket_number + '</span>'
+          + '</div>'
+          // ─── 브랜드 + 상품명 ───
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
           + '<div style="font-size:11px;color:#94a3b8;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">🏠 가전 렌탈 견적</div>'
-          + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">'
-          + '<div style="font-family:\'SF Mono\',Monaco,monospace;font-weight:800;color:#a5b4fc;font-size:18px">' + r.ticket_number + '</div>'
           + '<div style="background:rgba(56,189,248,0.15);color:#7dd3fc;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">' + (p.brand || '-') + '</div>'
           + '</div>'
           + '<div style="font-size:13px;color:#e2e8f0;font-weight:600;margin-top:4px">' + (p.name || '-') + '</div>'
           + '<div style="font-size:11px;color:#64748b;margin-top:2px">모델 ' + (p.model || '-') + '</div>'
+          // ─── 견적 항목 표 ───
           + '<table style="width:100%;margin-top:10px;font-size:12px">'
           + '<tr><td style="color:#94a3b8;padding:3px 0">약정</td><td style="text-align:right;color:#c4b5fd;font-weight:700;font-family:monospace">' + r.months + 'M' + (r.care_service ? ' · ' + r.care_service : '') + '</td></tr>'
           + '<tr><td style="color:#94a3b8;padding:3px 0">월납</td><td style="text-align:right;color:#f1f5f9;font-weight:800;font-family:monospace">' + fmt(r.monthly_fee) + '원</td></tr>'
@@ -3943,15 +3950,11 @@ document.getElementById('tm-script-add').addEventListener('click', function(){
           + '<tr><td style="color:#94a3b8;padding:3px 0">페이백</td><td style="text-align:right;color:#fbbf24;font-weight:700;font-family:monospace">' + fmt(r.payback) + '원</td></tr>'
           + (r.ownership_months ? '<tr><td style="color:#94a3b8;padding:3px 0">소유권 이전</td><td style="text-align:right;color:#cbd5e1;font-family:monospace">' + r.ownership_months + 'M 후</td></tr>' : '')
           + '</table></div>';
-        var resultEl = document.getElementById('c-result');
-        if (resultEl) {
-          var existing = document.getElementById('c-rental-result');
-          if (existing) existing.remove();
-          var wrap = document.createElement('div');
-          wrap.id = 'c-rental-result';
-          wrap.innerHTML = rentalHTML;
-          resultEl.parentElement.insertBefore(wrap, resultEl);
-        }
+        // 가전렌탈 탭 안의 견적 결과 영역(#rental-quote-body)에 inject
+        var bodyEl = document.getElementById('rental-quote-body');
+        var titleEl = document.getElementById('rental-quote-title');
+        if (bodyEl) bodyEl.innerHTML = rentalHTML;
+        if (titleEl) titleEl.textContent = '🏠 ' + r.ticket_number + ' 견적 결과';
         showMsg('✓ ' + (p.brand || '-') + ' · ' + r.months + 'M · 월 ' + fmt(r.monthly_fee) + '원', 'success');
       } catch (e) {
         showMsg('⚠️ 조회 실패: ' + e.message);
@@ -3966,9 +3969,6 @@ document.getElementById('tm-script-add').addEventListener('click', function(){
     // 인터넷+TV 탭으로 자동 전환
     var itTab = document.querySelector('.tab[data-cat="it"]');
     if (itTab) itTab.click();
-    // 가전렌탈 견적 영역 제거 (있다면)
-    var rentalEl = document.getElementById('c-rental-result');
-    if (rentalEl) rentalEl.remove();
 
     document.getElementById('c-carrier').value = t.carrier;
     buildTV();
