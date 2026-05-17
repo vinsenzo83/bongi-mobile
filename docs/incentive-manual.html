@@ -479,7 +479,7 @@ const SECTIONS = [
 <tr><td><b>1️⃣ 필터 (제외 룰)</b></td><td>watch_prefix · age_min/max · phone_regex</td><td>data.watch_prefix · age_min · age_max · phone_regex</td></tr>
 <tr><td><b>2️⃣ 인터넷·TV 판별</b></td><td>단말 모델명 (메인 — 기본값 <code>인+TV, 인터넷</code>) · 유형·prefix는 고급 옵션(비권장)</td><td>data.internet_models[] (필수) · internet_types[] · internet_model_prefix (옵션)</td></tr>
 <tr><td><b>3️⃣ 등급 (S/A/B/R/C)</b></td><td>각 등급별 tier + category · basePriority sync · default 등급</td><td>data.grades{} · base_priority{}</td></tr>
-<tr><td><b>4️⃣ 나이 가중치</b> (현재 비활성)</td><td>나이대별 bonus 배열 (향후 활성화 시)</td><td>data.age_bonus[]</td></tr>
+<tr><td><b>4️⃣ 나이 상담사 포인트</b> (현재 비활성)</td><td>나이대별 bonus 배열 (향후 활성화 시)</td><td>data.age_bonus[]</td></tr>
 </table>
 
 <h3>7. 룰 저장·시뮬·이력</h3>
@@ -533,7 +533,7 @@ const SECTIONS = [
 <h3>상품 인라인 편집</h3>
 <ul>
 <li>통신사·종류·Tier·검색 필터</li>
-<li>페이백·리베이트·가중치 즉시 수정 → 신규 영업부터 적용 (기존은 snapshot 보존)</li>
+<li>페이백·리베이트·상담사 포인트 즉시 수정 → 신규 영업부터 적용 (기존은 snapshot 보존)</li>
 <li>[📜 변경 이력] / [📥 엑셀 다운로드] / [📤 엑셀 업로드]</li>
 </ul>
 <div class="tip">📌 <b>사은품 페이백 변경 시 모든 화면 자동 동기화</b> — TM 데이터관리 9번 티켓 조합 리스트, TM 상담 v1·v2 견적 결과, 같은 PC 다른 탭 모두 60초 이내 반영 (탭 활성화 시 즉시). 박제된 기존 계약(snapshot)은 영향 없음.</div>
@@ -551,7 +551,7 @@ const SECTIONS = [
 <p class="lead">V5 인센티브 정책 + V5.1 매니저 오버라이드 보너스 + 우수상품·페이백 분담 정책 통합 편집.</p>
 <h3>V5 인센티브 규칙 (절대 변경 금지 핵심)</h3>
 <ul>
-<li>가중치: 단독 1.0P / 결합 1.5P</li>
+<li>상담사 포인트: 단독 1.0P / 결합 1.5P</li>
 <li>Grade: G1(0~15P) / G2(16~30P, 우수 5건+) / G3(31P+, 우수 10건+)</li>
 <li>페널티: 우수 미달 시 한 단계 강등</li>
 <li>우수상품: 마진 25만+ → +1만/건 보너스</li>

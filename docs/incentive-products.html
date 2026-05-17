@@ -126,7 +126,7 @@ async function fetchAgent() {
   <header>
     <div>
       <h1>📦 상품 관리 (V5)</h1>
-      <div class="subtitle">통신사별 상품 — 리베이트·페이백·가중치 편집 (마진/Tier 자동 재계산)</div>
+      <div class="subtitle">통신사별 상품 — 리베이트·페이백·상담사 포인트 편집 (마진/Tier 자동 재계산)</div>
     </div>
     <div id="user-info" style="text-align:right;display:none">
       <div style="font-size:13px;font-weight:800;color:#f8fafc" id="user-name">-</div>
@@ -174,7 +174,7 @@ async function fetchAgent() {
           <div><label style="font-size:11px;color:#94a3b8">Tier</label><select id="rp-filter-tier" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"><option value="">전체</option><option value="S">S</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
           <div><label style="font-size:11px;color:#94a3b8">검색</label><input id="rp-filter-search" placeholder="모델·상품·메모" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"></div>
         </div>
-        <div style="font-size:10.5px;color:#94a3b8;line-height:1.6">📋 좌: 모델 마스터 — 가중치 P · 우수 · Tier · 시장성 · URL · 활성 · 프로모션 태그 / 우: 옵션 디테일 — 약정·케어·점검·소유권·정상가·월납·반값·리베이트 3종·결합지급률·페이백·비고</div>
+        <div style="font-size:10.5px;color:#94a3b8;line-height:1.6">📋 좌: 모델 마스터 — 상담사 포인트 P · 우수 · Tier · 시장성 · URL · 활성 · 프로모션 태그 / 우: 옵션 디테일 — 약정·케어·점검·소유권·정상가·월납·반값·리베이트 3종·결합지급률·페이백·비고</div>
       </div>
       <div style="display:grid;grid-template-columns:1.2fr 1.8fr;gap:12px;align-items:start">
         <!-- 좌: 모델 목록 -->
@@ -290,7 +290,7 @@ async function fetchAgent() {
     <div class="section">
       <h2>📋 상품 목록 — 인라인 편집</h2>
       <div style="font-size:11.5px;color:#fbbf24;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);padding:8px 12px;border-radius:6px;margin-bottom:14px;line-height:1.5">
-        ℹ️ 페이백·리베이트·가중치(매출/포인트) 변경은 <b>신규 영업부터 적용</b>됩니다.
+        ℹ️ 페이백·리베이트·상담사 포인트(매출/포인트) 변경은 <b>신규 영업부터 적용</b>됩니다.
         이미 등록된 영업은 <b>등록 시점 단가가 snapshot으로 박제</b>되어 보존되며, 상품 가격 변경의 영향을 받지 않습니다.
         (계약 진행 중 상품 변경은 pending 단계에서만 가능)
       </div>
@@ -322,7 +322,7 @@ async function fetchAgent() {
               <th style="width:110px">리베이트</th>
               <th style="width:110px">페이백</th>
               <th style="width:85px" title="상품권 (만원). 0이면 현금 페이백만, >0이면 페이백+상품권 합산 지급">🎁 상품권</th>
-              <th style="width:75px">가중치</th>
+              <th style="width:75px">상담사 포인트</th>
               <th style="width:110px">마진 (자동)</th>
               <th style="width:75px">Tier</th>
               <th style="width:80px">활성</th>
@@ -333,7 +333,7 @@ async function fetchAgent() {
         </table>
       </div>
       <div style="font-size:10px;color:#64748b;margin-top:10px;line-height:1.5">
-        💡 리베이트·페이백·가중치 셀에 직접 입력 후 [💾 저장] 클릭. 변경 시 마진/Tier/우수상품 자동 재계산.<br>
+        💡 리베이트·페이백·상담사 포인트 셀에 직접 입력 후 [💾 저장] 클릭. 변경 시 마진/Tier/우수상품 자동 재계산.<br>
         ⚠️ Tier 임계값은 정책 관리(⚙️ 정책) 탭에서 변경 (현재: S=25만, A=18만, B=12만)
       </div>
     </div>
@@ -503,7 +503,7 @@ async function fetchAgent() {
         <div><b style="color:#fbbf24">📦 상품명</b> ${product.name}</div>
         <div><b style="color:#fbbf24">🏷️ 모델</b> ${product.model}</div>
         <div><b style="color:#fbbf24">⭐ 시장성</b> ${fmtStar(product.market_score)} (${product.market_score||'-'})</div>
-        <div><b style="color:#fbbf24">🎯 Tier</b> ${product.tier} · 가중치 ${product.point_weight}P ${product.is_premium?' · ⭐우수':''}</div>
+        <div><b style="color:#fbbf24">🎯 Tier</b> ${product.tier} · 상담사 포인트 ${product.point_weight}P ${product.is_premium?' · ⭐우수':''}</div>
         <div><b style="color:#fbbf24">📅 가능 약정</b> ${monthsAvail||'-'} <span style="color:#94a3b8;font-size:10px">${careAvail}</span></div>
         <div><b style="color:#fbbf24">📊 옵션 수</b> ${product.option_count||'-'} · 월납 ${product.monthly_fee_min ? Math.round(product.monthly_fee_min/1000)+'~'+Math.round(product.monthly_fee_max/1000)+'천원' : '-'}</div>
         <div><b style="color:#fbbf24">💰 최고 리베</b> ${product.rebate_max ? product.rebate_max.toLocaleString()+'원' : '-'}${product.rebate_half_max ? ` · 반값 ${product.rebate_half_max.toLocaleString()}` : ''}</div>
@@ -723,7 +723,7 @@ async function fetchAgent() {
             <th style="width:85px;color:#22c55e" title="반값 리베이트">반값리베</th>
             <th style="width:55px" title="결합지급률 %">결합%</th>
             <th style="width:85px;color:#fbbf24">페이백</th>
-            <th style="width:50px" title="가중치 보정">P보정</th>
+            <th style="width:50px" title="상담사 포인트 보정">P보정</th>
             <th style="width:75px">마진</th>
             <th style="width:40px">Tier</th>
             <th style="width:35px">활성</th>
@@ -733,7 +733,7 @@ async function fetchAgent() {
         <tbody>${_options.map(o => optRow(o, product)).join('')}</tbody>
       </table></div>
       <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;line-height:1.5">
-        💡 마진 = 리베×0.9 − 페이백 − 가중치비용(P×${fmtKor(_policy.weight_cost_per_p)}) <span style="color:#64748b">· 인터넷+TV와 통일 공식 (가입보너스·기본급분담 없음)</span><br>
+        💡 마진 = 리베×0.9 − 페이백 − 1포인트당 회사 비용(P×${fmtKor(_policy.weight_cost_per_p)}) <span style="color:#64748b">· 인터넷+TV와 통일 공식 (가입보너스·기본급분담 없음)</span><br>
         Tier 임계: S=${fmtKor(_policy.tier_s_min_margin)} · A=${fmtKor(_policy.tier_a_min_margin)} · B=${fmtKor(_policy.tier_b_min_margin)}
       </div>`;
     F('rp-options-area').querySelectorAll('.rp-opt-edit').forEach(inp => {
@@ -1182,7 +1182,7 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
     '리베이트': p.rebate || 0,
     '페이백': p.payback || 0,
     '상품권 (만원)': p.gift_amount != null ? Number(p.gift_amount) : 0,
-    '가중치': p.point_weight || 0,
+    '상담사 포인트': p.point_weight || 0,
     '마진 (자동)': p.margin || 0,
     'Tier (자동)': p.tier || '',
     '우수상품 (자동)': p.is_premium ? 'Y' : 'N',
@@ -1214,7 +1214,7 @@ document.getElementById('import-xlsx-file').addEventListener('change', async (ev
 
     // 미리보기 — 변경될 항목 검사
     const editableFields = {
-      '리베이트': 'rebate', '페이백': 'payback', '가중치': 'point_weight', '활성': 'active',
+      '리베이트': 'rebate', '페이백': 'payback', '상담사 포인트': 'point_weight', '활성': 'active',
       '상품권 (만원)': 'gift_amount',
     };
     const changes = [];
@@ -1308,7 +1308,7 @@ async function showHistory(productId) {
     // 상품 history 필드 한국어 라벨
     const PROD_FIELD_LABELS = {
       carrier: '통신사', name: '상품명', speed: '속도', tv_tier: 'TV 단계', type: '종류',
-      rebate: '리베이트', payback: '페이백', point_weight: '가중치',
+      rebate: '리베이트', payback: '페이백', point_weight: '상담사 포인트',
       is_premium: '우수상품', tier: '등급', active: '활성 상태', margin: '마진',
     };
     const labelP = (f) => PROD_FIELD_LABELS[f] || f;

@@ -165,7 +165,7 @@ a:hover { text-decoration:underline; }
         <td><b>7</b></td>
         <td>cron 자동 (매월 1일 02:00) 또는 admin 수동</td>
         <td class="mono">RPC <span class="badge b-green">incentive_calc_monthly_settlement</span><br>(agent_id, year_month)<br>POST /settlements/run (admin)</td>
-        <td class="mono">incentive_settlements<br>UPSERT (status=draft)<br>+ 가중치·Grade·페널티·보너스·페이백 분담 자동</td>
+        <td class="mono">incentive_settlements<br>UPSERT (status=draft)<br>+ 상담사 포인트·Grade·페널티·보너스·페이백 분담 자동</td>
         <td>admin: locked → paid 전환</td>
       </tr>
     </tbody>
@@ -402,7 +402,7 @@ a:hover { text-decoration:underline; }
     <div class="card-mock" style="border:2px solid var(--navy)">
       <div style="font-weight:900;color:var(--navy);font-size:12px;margin-bottom:6px">📦 상품 정보 (read-only)</div>
       통신사·종류·속도·TV 등급<br>
-      가중치·Tier·우수상품<br>
+      상담사 포인트·Tier·우수상품<br>
       <b>페이백 SNAPSHOT</b><br>
       <span class="mono">payback_snapshot</span>
     </div>
@@ -506,8 +506,8 @@ a:hover { text-decoration:underline; }
 
   <div class="grid2" style="margin-top:14px">
     <div class="card-mock" style="border:2px solid var(--blue)">
-      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">가중치 + Grade</div>
-      <b>가중치</b>: 단독 <b>1.0P</b> / 결합 <b>1.5P</b><br>
+      <div style="font-weight:900;color:var(--blue);font-size:12px;margin-bottom:6px">상담사 포인트 + Grade</div>
+      <b>상담사 포인트</b>: 단독 <b>1.0P</b> / 결합 <b>1.5P</b><br>
       <b>Grade</b>:<br>
       • G1 (0~15P) → 건당 <b>2만</b><br>
       • G2 (16~30P, 우수 5건+) → <b>3만</b><br>
@@ -652,7 +652,7 @@ a:hover { text-decoration:underline; }
       <div style="font-weight:900;color:var(--purple);font-size:13px;margin-bottom:8px">💰 인센티브 V5 미리보기 (agent 화면)</div>
       <div class="card-mock" style="border:2px solid var(--purple);font-family:'JetBrains Mono',monospace;font-size:10px">
         상품: SK 500M + B tv 올 (결합) · Tier S<br>
-        가중치: 1.5P (결합)<br>
+        상담사 포인트: 1.5P (결합)<br>
         우수상품: ✓ (마진 25만+ 가정)<br><br>
         이번 달 김상담 누적: 12건 = 18P<br>
         → Grade <b>G2</b> (16~30P) · 우수 5건+<br>
@@ -1012,7 +1012,7 @@ a:hover { text-decoration:underline; }
    ┌──────────────────────────────────────────────┐
    │  <span style="color:var(--purple);font-weight:700">incentive_settlements</span>  UPSERT (status=draft)             │
    │   RPC incentive_calc_monthly_settlement                       │
-   │   = 가중치 + Grade + 페널티 + 보너스 + 페이백 분담            │
+   │   = 상담사 포인트 + Grade + 페널티 + 보너스 + 페이백 분담            │
    └──────────────────────────────────────────────┘
                           │
                           ▼

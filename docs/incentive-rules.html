@@ -195,12 +195,12 @@ async function fetchAgent() {
         <div style="padding:14px 16px;font-size:12px;color:#cbd5e1;line-height:1.7">
           <p>각 상품 1건 영업이 회사에 남기는 추정 순이익. DB가 자동 계산 (수정 불가).</p>
           <div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:12px;margin:10px 0;font-family:'SF Mono',Monaco,monospace;font-size:12px;color:#86efac">
-            마진 = (리베이트 × 0.9) − 페이백 − (가중치 × 70,000원)
+            마진 = (리베이트 × 0.9) − 페이백 − (상담사 포인트 × 70,000원)
           </div>
           <ul style="margin-left:18px;line-height:1.9">
             <li><b>리베이트 × 0.9</b>: 통신사가 주는 정산금에서 세금 10% 공제</li>
             <li><b>페이백</b>: 사은품 정가 (회사가 고객에게 지급한 비용)</li>
-            <li><b>가중치 × 70,000원</b>: 평균 인센티브 비용 표준 (1P당 7만원, V4 평가 기준)</li>
+            <li><b>상담사 포인트 × 70,000원</b>: 평균 인센티브 비용 표준 (1P당 7만원, V4 평가 기준)</li>
           </ul>
           <p style="margin-top:8px;color:#fca5a5"><b>마진 음수면 손해 영업.</b> Tier 'C' 상품은 회사 손실 위험.</p>
         </div>
@@ -230,7 +230,7 @@ async function fetchAgent() {
             <tr><td style="padding:8px;border-bottom:1px solid #334155"><b>G2</b></td><td style="padding:8px;border-bottom:1px solid #334155">16 ~ 30</td><td style="padding:8px;border-bottom:1px solid #334155;color:#fbbf24">우수 5건+</td><td style="padding:8px;border-bottom:1px solid #334155;color:#86efac;font-weight:800">30,000</td></tr>
             <tr><td style="padding:8px"><b>G3</b></td><td style="padding:8px">31+</td><td style="padding:8px;color:#fbbf24">우수 10건+</td><td style="padding:8px;color:#86efac;font-weight:800">40,000</td></tr>
           </table>
-          <p style="margin-top:10px"><b>가중치 (P)</b>: 인터넷 단독 = 1.0P, 인터넷+TV 결합 = 1.5P</p>
+          <p style="margin-top:10px"><b>상담사 포인트 (P)</b>: 인터넷 단독 = 1.0P, 인터넷+TV 결합 = 1.5P</p>
           <p style="margin-top:6px;color:#fca5a5"><b>⚠️ 페널티:</b> 우수 의무 미달 시 한 단계 강등.<br>
           예: 31P 달성했지만 우수 0건 → G3 자격 X → G2 단가(3만/P)로 강등 적용</p>
           <div style="background:#0f172a;border-left:3px solid #fbbf24;padding:10px 12px;margin-top:10px;font-size:11px;color:#fbbf24">
@@ -528,7 +528,7 @@ async function fetchAgent() {
             <input id="sim-rt-g3" type="number" min="0" step="1000" value="30000" class="sim-input"></label>
         </div>
         <div style="font-size:10px;color:#cbd5e1;margin-top:8px;line-height:1.5">
-          ⚙️ 가전렌탈 마진 공식: <code>rebate × 인식률 − payback − P × 70,000</code> · 가중치 비용 70,000원/P · 가입보너스 없음 · 기본급분담 없음
+          ⚙️ 가전렌탈 마진 공식: <code>rebate × 인식률 − payback − P × 70,000</code> · 1포인트당 회사 비용 70,000원/P · 가입보너스 없음 · 기본급분담 없음
         </div>
       </div>
 
@@ -552,7 +552,7 @@ async function fetchAgent() {
             <label>월 영업/명
               <input id="sim-sales" type="number" min="0" value="30" class="sim-input">
             </label>
-            <label>평균 가중치 P (1.0~1.5)
+            <label>평균 상담사 포인트 P (1.0~1.5)
               <input id="sim-weight" type="number" min="0.5" max="2" step="0.1" value="1.5" class="sim-input">
             </label>
             <label>우수상품 비율 (%)
@@ -762,7 +762,7 @@ async function fetchAgent() {
       <div class="row">
         <div class="field"><label>📈 영업이익율 (%) <span style="font-size:9.5px;color:#94a3b8">— 페이백 자동 산출 전용</span></label>
           <input id="rp-target-profit" class="sim-input" type="number" step="0.1" min="0" max="100">
-          <div class="hint">payback = rebate × (0.9 − 이 비율) − P × 가중치비용. 마진 계산엔 미사용</div>
+          <div class="hint">payback = rebate × (0.9 − 이 비율) − P × 1포인트당 회사 비용. 마진 계산엔 미사용</div>
         </div>
       </div>
 
@@ -791,9 +791,9 @@ async function fetchAgent() {
         </div>
       </div>
 
-      <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">💰 가중치 비용 (₩/P)</h3>
+      <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">💰 1포인트당 회사 비용 (₩/P)</h3>
       <div class="form-grid">
-        <div class="field"><label>가중치 비용 (₩/P)</label>
+        <div class="field"><label>1포인트당 회사 비용 (₩/P)</label>
           <input id="rp-weight-cost" class="sim-input" type="number" step="5000">
           <div class="hint">margin = rebate × 0.9 − payback − P × 이 비용 (인터넷+TV와 통일 공식, 가입보너스·기본급분담 없음)</div>
         </div>
@@ -908,13 +908,13 @@ async function fetchAgent() {
       </div>
 
       <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">📝 변경 사유 (이력 audit log)</h3>
-      <input id="rp-change-reason" class="sim-input" placeholder="예: 영업이익율 8%로 인하, 가중치 P 상향" style="margin-bottom:6px">
+      <input id="rp-change-reason" class="sim-input" placeholder="예: 영업이익율 8%로 인하, 상담사 포인트 P 상향" style="margin-bottom:6px">
       <div id="rp-msg" style="font-size:11px;color:#fbbf24;margin-top:6px"></div>
 
       <div style="margin-top:14px;padding:10px 12px;background:rgba(167,139,250,0.08);border:1px solid #a78bfa;border-radius:6px">
         <div style="font-size:11.5px;font-weight:800;color:#a78bfa;margin-bottom:6px">🔁 정책 기준 일괄 재산출</div>
         <div style="font-size:10px;color:#cbd5e1;margin-bottom:8px;line-height:1.6">
-          · <b>페이백 재산출</b>: 영업이익율·가중치·기본급 변경 시 옵션 페이백 갱신 (→ 자동으로 마진/Tier/우수상품도 체인 재산출)<br>
+          · <b>페이백 재산출</b>: 영업이익율·상담사 포인트·기본급 변경 시 옵션 페이백 갱신 (→ 자동으로 마진/Tier/우수상품도 체인 재산출)<br>
           · <b>마진만 재산출</b>: Tier 임계값·우수마진 임계값만 변경 시 페이백은 유지하고 마진/Tier/우수상품만 다시 분류
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -1157,7 +1157,7 @@ async function fetchAgent() {
               <table style="width:100%;font-size:11.5px">
                 <tr><td style="color:#94a3b8;padding:2px 0">세후 리베이트 합 (×0.9)</td><td style="text-align:right;color:#22c55e"><b>${f(totalRevenue)}원</b></td></tr>
                 <tr><td style="color:#94a3b8;padding:2px 0">− 페이백 지급</td><td style="text-align:right;color:#fbbf24"><b>${f(totalPayback)}원</b></td></tr>
-                <tr><td style="color:#94a3b8;padding:2px 0">− 가중치 비용 + 분담 + 보너스</td><td style="text-align:right;color:#94a3b8">${f(sales * (Math.round(pPerSale * weightCost) + baseShare + signupBonus))}원</td></tr>
+                <tr><td style="color:#94a3b8;padding:2px 0">− 1포인트당 회사 비용 + 분담 + 보너스</td><td style="text-align:right;color:#94a3b8">${f(sales * (Math.round(pPerSale * weightCost) + baseShare + signupBonus))}원</td></tr>
                 <tr style="border-top:1px solid #475569"><td style="padding:4px 0;color:#fff;font-weight:800">= 회사 영업이익</td><td style="text-align:right;color:${marginColor}"><b style="font-size:14px">${f(totalCompanyMargin)}원</b> <span style="color:#94a3b8;font-size:10px">(${(profitRateActual*100).toFixed(1)}%)</span></td></tr>
                 <tr><td style="color:#94a3b8;padding:2px 0;font-size:10px">1건당 마진</td><td style="text-align:right;color:${marginColor};font-size:10px">${f(marginPerSale)}원</td></tr>
               </table>
@@ -1739,7 +1739,7 @@ function runSimulation() {
   const agentDeduct = Math.max(0, addPayback - cap) * sales;
   const agentTotal = baseSalary + incentive + bonusTotal - agentDeduct;
 
-  // 회사 손익 (1명 기준 → × agents) — 직접 비용 차감 (가중치 비용 중복 차감 X)
+  // 회사 손익 (1명 기준 → × agents) — 직접 비용 차감 (1포인트당 회사 비용 중복 차감 X)
   // 인터넷+TV
   const totalRev_it = rebate * sales * agents;
   const totalPayback_it = payback * sales * agents;

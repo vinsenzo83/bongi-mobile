@@ -4196,7 +4196,7 @@ async function incSimulate() {
     else {
       html += '<div style="background:rgba(255,255,255,0.6);border-radius:6px;padding:6px 8px;margin-bottom:6px;font-size:10px">';
       html += '🎯 매칭: <b>' + product.name + '</b> ' + tierEmoji + ' ' + product.tier + premBadge;
-      html += ' · 가중치 ' + product.point_weight + 'P';
+      html += ' · 상담사 포인트 ' + product.point_weight + 'P';
       html += '</div>';
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">';
       html += '<div style="background:rgba(255,255,255,0.5);border-radius:6px;padding:6px 8px"><div style="font-size:9px;color:#78350f;font-weight:700;margin-bottom:2px">현재 (G' + s.current_grade + ')</div><div style="font-size:13px;font-weight:800;color:#78350f">' + incFmt(s.current_total) + '</div></div>';
@@ -5017,7 +5017,7 @@ async function incRenderSales() {
       '<div style="color:#6b7280;font-size:9.5px">' +
         (s.customer_name ? '👤 ' + s.customer_name : '익명') +
         (s.customer_phone ? ' · ' + s.customer_phone : '') +
-        ' · 가중치 ' + (p.point_weight || '?') + 'P' +
+        ' · 상담사 포인트 ' + (p.point_weight || '?') + 'P' +
         (s.add_payback > 0 ? ' · 페이백 ' + (s.add_payback||0).toLocaleString() + '원' + (s.agent_payback_deduct > 0 ? ' (본인 -' + s.agent_payback_deduct.toLocaleString() + ')' : '') : '') +
       '</div>' +
       summaryLine +
@@ -5738,7 +5738,7 @@ setTimeout(() => {
         </div>
         <!-- ⚡ 매칭 정보 -->
         <div style="background:rgba(255,255,255,0.55);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:10.5px;color:#78350f">
-          ⚡ <b>매칭:</b> ${p.brand} ${p.model} · ${o.months}M · ${o.care_service} · 가중치 ${Number(c.point_weight).toFixed(2)}P${p.is_premium?' · ⭐우수':''}
+          ⚡ <b>매칭:</b> ${p.brand} ${p.model} · ${o.months}M · ${o.care_service} · 상담사 포인트 ${Number(c.point_weight).toFixed(2)}P${p.is_premium?' · ⭐우수':''}
         </div>
         <!-- 현재 vs +1건 후 -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
