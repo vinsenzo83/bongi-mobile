@@ -25,34 +25,49 @@ router.get('/categories', optionalAuth, async (req, res) => {
 // ─── 정책 (활성 1개) ───
 router.get('/policy', optionalAuth, async (req, res) => {
   try {
+    // active 또는 is_active 호환 (Phase A 마이그레이션 중 — Phase B에서 is_active DROP)
     const { data, error } = await supabase
       .from('rental_policy')
       .select('*')
-      .eq('is_active', true)
+      .or('active.eq.true,is_active.eq.true')
       .single();
     if (error) throw error;
     res.json({ policy: data });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
-// ─── 정책 변경 (admin 전용) ───
+// ─── 정책 변경 (admin 전용) — incentive_rules와 동일 컬럼 화이트리스트 ───
 router.patch('/policy', authenticateJWT, async (req, res) => {
   try {
-    const { id, ...fields } = req.body;
+    const { id, change_reason, ...fields } = req.body;
     if (!id) return res.status(400).json({ error: 'policy id 필수' });
+
+    // 화이트리스트 (incentive_rules와 동일 컬럼)
+    const ALLOWED = [
+      'version', 'effective_from', 'active', 'notes',
+      'base_salary', 'bonus_per_premium',
+      'payback_company_limit', 'payback_max',
+      'grade_rates', 'grade_thresholds', 'premium_margin_threshold',
+      'manager_v51_enabled', 'manager_override_rate', 'manager_obligation_count',
+      'manager_penalty_partial_min', 'manager_team_profit_rate_min',
+    ];
+    const update = {};
+    for (const k of ALLOWED) {
+      if (fields[k] !== undefined) update[k] = fields[k];
+    }
+
     // 변경 이력 — 기존 값 가져오기
     const { data: oldPolicy } = await supabase.from('rental_policy').select('*').eq('id', id).single();
     const changedFields = {};
-    for (const [k, v] of Object.entries(fields)) {
-      if (oldPolicy && oldPolicy[k] != null && String(oldPolicy[k]) !== String(v)) {
-        changedFields[k] = { old: oldPolicy[k], new: v };
-      } else if (oldPolicy && oldPolicy[k] == null && v != null) {
+    for (const [k, v] of Object.entries(update)) {
+      const ov = oldPolicy?.[k];
+      if (ov != null && JSON.stringify(ov) !== JSON.stringify(v)) {
+        changedFields[k] = { old: ov, new: v };
+      } else if (ov == null && v != null) {
         changedFields[k] = { old: null, new: v };
       }
     }
-    const update = { ...fields, updated_at: new Date().toISOString() };
-    delete update.id;
-    delete update.created_at;
+    update.updated_at = new Date().toISOString();
     const { data, error } = await supabase
       .from('rental_policy')
       .update(update)
@@ -65,7 +80,7 @@ router.patch('/policy', authenticateJWT, async (req, res) => {
         policy_id: id,
         changed_fields: changedFields,
         changed_by: req.user?.email || 'unknown',
-        change_reason: fields.change_reason || null,
+        change_reason: change_reason || null,
       });
     }
     res.json({ policy: data });

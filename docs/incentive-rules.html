@@ -758,14 +758,6 @@ async function fetchAgent() {
         </div>
       </div>
 
-      <!-- 영업이익율 — 페이백 자동 산출에만 사용 (마진 공식과 무관) -->
-      <div class="row">
-        <div class="field"><label>📈 영업이익율 (%) <span style="font-size:9.5px;color:#94a3b8">— 페이백 자동 산출 전용</span></label>
-          <input id="rp-target-profit" class="sim-input" type="number" step="0.1" min="0" max="100">
-          <div class="hint">payback = rebate × (0.9 − 이 비율) − P × 1포인트당 회사 비용. 마진 계산엔 미사용</div>
-        </div>
-      </div>
-
       <h2 style="margin-top:14px;color:#fbbf24;font-size:14px">🎯 Grade 단가 (₩/P)</h2>
       <div style="font-size:10px;color:#cbd5e1;margin-bottom:8px;line-height:1.5">· 가전렌탈+인터넷TV 합산 누적 기준 · 두 조건 모두 충족 시 승급 · 기본 G1</div>
       <div class="grade-grid">
@@ -791,20 +783,10 @@ async function fetchAgent() {
         </div>
       </div>
 
-      <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">💰 1포인트당 회사 비용 (₩/P)</h3>
-      <div class="form-grid">
-        <div class="field"><label>1포인트당 회사 비용 (₩/P)</label>
-          <input id="rp-weight-cost" class="sim-input" type="number" step="5000">
-          <div class="hint">margin = rebate × 0.9 − payback − P × 이 비용 (인터넷+TV와 통일 공식, 가입보너스·기본급분담 없음)</div>
-        </div>
-      </div>
-
-      <h3 style="margin-top:14px;color:#a78bfa;font-size:13px">🏷️ Tier 임계값 (마진 기준 자동 분류)</h3>
-      <div class="form-grid">
-        <div class="field"><label>S Tier (≥)</label><input id="rp-tier-s" class="sim-input" type="number" step="10000"></div>
-        <div class="field"><label>A Tier (≥)</label><input id="rp-tier-a" class="sim-input" type="number" step="10000"></div>
-        <div class="field"><label>B Tier (≥)</label><input id="rp-tier-b" class="sim-input" type="number" step="10000"></div>
-        <div class="field"><label>그 외 = C Tier</label><input class="sim-input" type="text" value="자동" readonly style="background:#1e293b;color:#94a3b8"></div>
+      <!-- 1포인트당 회사 비용 + Tier 임계는 Phase B에서 자동산출/박제 폐기와 함께 제거 예정.
+           인터넷+TV 정책에 없는 항목 — 운영자 수동 입력으로 통일됨 -->
+      <div style="margin-top:14px;padding:10px 14px;background:rgba(96,165,250,0.06);border-left:3px solid #60a5fa;border-radius:4px;font-size:11px;color:#cbd5e1;line-height:1.7">
+        💡 <b>마진/Tier</b>는 인터넷+TV 정책과 동일하게 <b>상품 관리 페이지에서 운영자가 직접 편집</b>합니다. 정책 자동 분류 항목은 폐기 예정 (Phase B).
       </div>
 
       <!-- 🏢 팀장(manager) 인센티브 V5.1 — 인터넷+TV와 동일 구조 -->
@@ -985,26 +967,23 @@ async function fetchAgent() {
           return;
         }
         _rp = res.policy;
-        F('rp-target-profit').value = _rp.target_profit_rate;
-        F('rp-g1').value = _rp.grade_g1_unit;
-        F('rp-g2').value = _rp.grade_g2_unit;
-        F('rp-g3').value = _rp.grade_g3_unit;
-        F('rp-payback-cap').value = _rp.payback_cap;
-        F('rp-weight-cost').value = _rp.weight_cost_per_p;
-        F('rp-tier-s').value = _rp.tier_s_min_margin;
-        F('rp-tier-a').value = _rp.tier_a_min_margin;
-        F('rp-tier-b').value = _rp.tier_b_min_margin;
-        F('rp-g2-p').value = _rp.grade_g2_p_threshold;
-        F('rp-g2-prem').value = _rp.grade_g2_premium_threshold;
-        F('rp-g3-p').value = _rp.grade_g3_p_threshold;
-        F('rp-g3-prem').value = _rp.grade_g3_premium_threshold;
-        // 인터넷+TV 통일 항목
+        // 인터넷+TV와 동일 구조 (Phase A 통일) — grade_rates/grade_thresholds JSONB 사용
+        const gr = _rp.grade_rates || {};
+        const gt = _rp.grade_thresholds || {};
+        F('rp-g1').value = gr['1'] ?? '';
+        F('rp-g2').value = gr['2'] ?? '';
+        F('rp-g3').value = gr['3'] ?? '';
+        F('rp-g2-p').value = gt['2']?.points ?? '';
+        F('rp-g2-prem').value = gt['2']?.premium ?? '';
+        F('rp-g3-p').value = gt['3']?.points ?? '';
+        F('rp-g3-prem').value = gt['3']?.premium ?? '';
+        F('rp-payback-cap').value = _rp.payback_max ?? '';
         F('rp-version').value = _rp.version || 'V1';
-        F('rp-effective').value = _rp.effective_at || '';
+        F('rp-effective').value = _rp.effective_from || '';
         F('rp-bonus-prem').value = _rp.bonus_per_premium ?? '';
         F('rp-notes').value = _rp.notes || '';
-        F('rp-payback-company').value = _rp.payback_company_max ?? '';
-        F('rp-prem-margin').value = _rp.premium_min_margin ?? '';
+        F('rp-payback-company').value = _rp.payback_company_limit ?? '';
+        F('rp-prem-margin').value = _rp.premium_margin_threshold ?? '';
         // 팀장 V5.1 (가전렌탈)
         F('rp-mgr-enabled').checked = !!_rp.manager_v51_enabled;
         F('rp-mgr-enabled-label').textContent = _rp.manager_v51_enabled ? '활성 ✅' : '비활성';
@@ -1184,27 +1163,27 @@ async function fetchAgent() {
         const tk = localStorage.getItem('incentive-auth-token-v1');
         if (!tk) { alert('로그인 필요'); return; }
         if (!_rp) return;
+        // incentive_rules와 동일 컬럼 구조 (Phase A 통일)
+        const grade_rates = {
+          '1': Number(F('rp-g1').value),
+          '2': Number(F('rp-g2').value),
+          '3': Number(F('rp-g3').value),
+        };
+        const grade_thresholds = {
+          '2': { points: Number(F('rp-g2-p').value), premium: Number(F('rp-g2-prem').value) },
+          '3': { points: Number(F('rp-g3-p').value), premium: Number(F('rp-g3-prem').value) },
+        };
         const body = {
           id: _rp.id,
-          target_profit_rate: Number(F('rp-target-profit').value),
-          grade_g1_unit: Number(F('rp-g1').value),
-          grade_g2_unit: Number(F('rp-g2').value),
-          grade_g3_unit: Number(F('rp-g3').value),
-          payback_cap: Number(F('rp-payback-cap').value),
-          weight_cost_per_p: Number(F('rp-weight-cost').value),
-          tier_s_min_margin: Number(F('rp-tier-s').value),
-          tier_a_min_margin: Number(F('rp-tier-a').value),
-          tier_b_min_margin: Number(F('rp-tier-b').value),
-          grade_g2_p_threshold: Number(F('rp-g2-p').value),
-          grade_g2_premium_threshold: Number(F('rp-g2-prem').value),
-          grade_g3_p_threshold: Number(F('rp-g3-p').value),
-          grade_g3_premium_threshold: Number(F('rp-g3-prem').value),
-          // 인터넷+TV 통일 항목
           version: F('rp-version').value.trim() || 'V1',
-          effective_at: F('rp-effective').value || null,
+          effective_from: F('rp-effective').value || null,
+          active: true,
+          grade_rates,
+          grade_thresholds,
+          payback_max: Number(F('rp-payback-cap').value),
+          payback_company_limit: F('rp-payback-company').value ? Number(F('rp-payback-company').value) : null,
           bonus_per_premium: F('rp-bonus-prem').value ? Number(F('rp-bonus-prem').value) : null,
-          payback_company_max: F('rp-payback-company').value ? Number(F('rp-payback-company').value) : null,
-          premium_min_margin: F('rp-prem-margin').value ? Number(F('rp-prem-margin').value) : null,
+          premium_margin_threshold: F('rp-prem-margin').value ? Number(F('rp-prem-margin').value) : null,
           notes: F('rp-notes').value.trim() || null,
           // 팀장 V5.1
           manager_v51_enabled: F('rp-mgr-enabled').checked,
