@@ -2488,76 +2488,88 @@ router.post('/menus', authenticateJWT, async (req, res) => {
 // ════════════════════════════════════════════════════════════
 // 인터넷+TV 티켓 (incentive_internet_tickets — 105개) + 가전 렌탈 티켓 (rental_products.ticket_number — R0001~)
 
-// ─── 가전 렌탈 티켓 ───────────────────────────────────────
-// GET /api/incentive/tickets/rental — 렌탈 티켓 카탈로그
+// ─── 가전 렌탈 티켓 (옵션 단위 — rental_product_options) ───
+// GET /api/incentive/tickets/rental — 옵션 카탈로그 + product 정보 join
 router.get('/tickets/rental', authenticateJWT, async (req, res) => {
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: '권한 없음' });
     const { search, ticket, active_only } = req.query;
-    let q = supabase.from('rental_products')
-      .select('id,brand,name,model,category_id,is_active,ticket_number,ticket_active,description,metadata,updated_at,tier,promo_tag')
-      .not('ticket_number', 'is', null);
-    if (ticket) q = q.eq('ticket_number', String(ticket).trim().toUpperCase());
-    if (active_only === 'true' || active_only === '1') q = q.eq('ticket_active', true);
-    if (search) {
-      const s = String(search).trim().slice(0, 50);
-      q = q.or(`ticket_number.ilike.%${s}%,name.ilike.%${s}%,brand.ilike.%${s}%,model.ilike.%${s}%`);
-    }
-    q = q.order('ticket_number', { ascending: true }).limit(500);
-    const { data, error } = await q;
-    if (error) throw error;
-    res.json({ tickets: data || [], total: (data || []).length });
+    // PostgREST max-rows 1000 → 매번 새 builder로 페이지별 fetch
+    const buildQ = (from, to) => {
+      let qq = supabase.from('rental_product_options')
+        .select(`
+          id, ticket_number, ticket_active, is_active, months, care_service,
+          monthly_fee, normal_price, rebate, payback, ownership_months,
+          product:rental_products!product_id(id, brand, name, model, category_id, is_active)
+        `)
+        .not('ticket_number', 'is', null);
+      if (ticket) qq = qq.eq('ticket_number', String(ticket).trim().toUpperCase());
+      if (active_only === 'true' || active_only === '1') qq = qq.eq('ticket_active', true);
+      return qq.order('ticket_number', { ascending: true }).range(from, to);
+    };
+    const [r1, r2] = await Promise.all([buildQ(0, 999), buildQ(1000, 1999)]);
+    if (r1.error) throw r1.error;
+    if (r2.error) throw r2.error;
+    const data = [...(r1.data || []), ...(r2.data || [])];
+    // 클라이언트에서 brand/name 검색을 위해 평탄화 + product 정보 inline
+    const tickets = (data || []).map(o => ({
+      id: o.id,
+      ticket_number: o.ticket_number,
+      ticket_active: o.ticket_active,
+      is_active: o.is_active,
+      months: o.months,
+      care_service: o.care_service,
+      monthly_fee: o.monthly_fee,
+      normal_price: o.normal_price,
+      rebate: o.rebate,
+      payback: o.payback,
+      ownership_months: o.ownership_months,
+      brand: o.product?.brand,
+      product_name: o.product?.name,
+      model: o.product?.model,
+      product_id: o.product?.id,
+      product_active: o.product?.is_active,
+    }));
+    // 서버측 search (brand/name도 매칭) — Supabase or 쿼리는 join column 못 씀
+    const filtered = search
+      ? tickets.filter(t => {
+          const s = String(search).toLowerCase();
+          return [t.ticket_number, t.brand, t.product_name, t.model].some(v => (v || '').toLowerCase().includes(s));
+        })
+      : tickets;
+    res.json({ tickets: filtered, total: filtered.length });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET /api/incentive/tickets/rental/lookup?ticket=R0023
+// GET /api/incentive/tickets/rental/lookup?ticket=R0683
 router.get('/tickets/rental/lookup', authenticateJWT, async (req, res) => {
   try {
     const { ticket } = req.query;
     if (!ticket) return res.status(400).json({ error: 'ticket 쿼리 필수' });
     const tn = String(ticket).trim().toUpperCase();
     if (!/^R\d{3,}$/.test(tn)) return res.status(400).json({ error: 'R0001 형식이어야 함' });
-    const { data, error } = await supabase.from('rental_products')
-      .select('id,ticket_number,ticket_active,brand,name,model,category_id,description,metadata,tier,promo_tag,is_active')
-      .eq('ticket_number', tn)
-      .single();
+    const { data, error } = await supabase.from('rental_product_options')
+      .select(`
+        id, ticket_number, ticket_active, is_active, months, care_service,
+        monthly_fee, normal_price, rebate, payback, ownership_months,
+        product:rental_products!product_id(id, brand, name, model, category_id, description, is_active)
+      `)
+      .eq('ticket_number', tn).single();
     if (error || !data) return res.status(404).json({ error: '티켓 없음', ticket_number: tn });
     res.json({ ticket: data });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/incentive/tickets/rental — 신규 발급
-router.post('/tickets/rental', authenticateJWT, async (req, res) => {
-  try {
-    const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!me || !['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
-    const { rental_product_id } = req.body || {};
-    if (!rental_product_id) return res.status(400).json({ error: 'rental_product_id 필수' });
-    const { data: existing } = await supabase.from('rental_products')
-      .select('id,ticket_number,name').eq('id', rental_product_id).single();
-    if (!existing) return res.status(404).json({ error: '상품 없음' });
-    if (existing.ticket_number) return res.status(409).json({ error: '이미 발급됨', ticket_number: existing.ticket_number });
-    const { data: nextTicket, error: fnErr } = await supabase.rpc('generate_next_rental_ticket');
-    if (fnErr) throw fnErr;
-    const { data, error } = await supabase.from('rental_products')
-      .update({ ticket_number: nextTicket, ticket_active: true, updated_at: new Date().toISOString() })
-      .eq('id', rental_product_id)
-      .select('id,ticket_number,brand,name,model').single();
-    if (error) throw error;
-    res.json({ ok: true, ticket: data });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// PATCH /api/incentive/tickets/rental/:id/deactivate
+// PATCH /api/incentive/tickets/rental/:id/deactivate (옵션 비활성 → ticket_active=false)
 router.patch('/tickets/rental/:id(\\d+)/deactivate', authenticateJWT, async (req, res) => {
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me || !['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
-    const { data, error } = await supabase.from('rental_products')
+    const { data, error } = await supabase.from('rental_product_options')
       .update({ ticket_active: false, updated_at: new Date().toISOString() })
       .eq('id', req.params.id).not('ticket_number', 'is', null)
-      .select('id,ticket_number,ticket_active').single();
+      .select('id,ticket_number,ticket_active,is_active').single();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: '티켓 없음' });
     res.json({ ok: true, ticket: data });
@@ -2569,15 +2581,18 @@ router.patch('/tickets/rental/:id(\\d+)/activate', authenticateJWT, async (req, 
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me || !['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
-    const { data, error } = await supabase.from('rental_products')
+    const { data, error } = await supabase.from('rental_product_options')
       .update({ ticket_active: true, updated_at: new Date().toISOString() })
       .eq('id', req.params.id).not('ticket_number', 'is', null)
-      .select('id,ticket_number,ticket_active').single();
+      .select('id,ticket_number,ticket_active,is_active').single();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: '티켓 없음' });
     res.json({ ok: true, ticket: data });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+
+// POST /api/incentive/tickets/rental — 옵션은 보통 상품 관리에서 등록되며 자동 R 발급
+// 별도 발급 endpoint는 옵션 단위 X (rental.js의 옵션 INSERT trigger에서 자동 처리 권장)
 
 // ─── 인터넷+TV 티켓 (incentive_internet_tickets — 105개) ───
 
