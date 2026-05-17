@@ -451,7 +451,7 @@ router.get('/agents/me/monthly-stats', authenticateJWT, async (req, res) => {
     const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
 
     // 가전렌탈 + 인터넷+TV 동시 합산 (정책 공유 — 통합 Grade)
-    const [rentalRes, itRes, rentalPolicyRes] = await Promise.all([
+    const [rentalRes, itRes, rentalPolicyRes, itPolicyRes] = await Promise.all([
       supabase.from('rental_sales')
         .select('id, point_weight_snapshot, product:rental_products(is_premium)')
         .eq('agent_id', agent.id).gte('contract_date', monthStart)
@@ -461,8 +461,11 @@ router.get('/agents/me/monthly-stats', authenticateJWT, async (req, res) => {
         .eq('agent_id', agent.id).gte('contract_date', monthStart)
         .is('deleted_at', null).in('status', ['pending','in_progress','completed']),
       supabase.from('rental_policy')
-        .select('grade_thresholds')
+        .select('grade_thresholds, grade_rates, bonus_per_premium')
         .eq('active', true).single(),
+      supabase.from('incentive_rules')
+        .select('grade_thresholds, grade_rates, bonus_per_premium')
+        .eq('active', true).order('effective_from', { ascending: false }).limit(1).single(),
     ]);
 
     const rentalSales = rentalRes.data || [];
@@ -492,18 +495,43 @@ router.get('/agents/me/monthly-stats', authenticateJWT, async (req, res) => {
     if (totalP >= g3P && totalPrem >= g3Prem) grade = 'G3';
     else if (totalP >= g2P && totalPrem >= g2Prem) grade = 'G2';
 
+    // 양쪽 정책 단가 (Phase D 통합 인센티브 미리보기용)
+    const rentalRates = rentalPolicyRes.data?.grade_rates || { 1: 15000, 2: 22000, 3: 30000 };
+    const itRates = itPolicyRes.data?.grade_rates || { 1: 20000, 2: 30000, 3: 40000 };
+    const _gKey = grade === 'G3' ? '3' : grade === 'G2' ? '2' : '1';
+    const rentalUnit = Number(rentalRates[_gKey] ?? rentalRates[Number(_gKey)]) || 15000;
+    const itUnit = Number(itRates[_gKey] ?? itRates[Number(_gKey)]) || 20000;
+    const rentalBonusPer = Number(rentalPolicyRes.data?.bonus_per_premium) || 10000;
+    const itBonusPer = Number(itPolicyRes.data?.bonus_per_premium) || 10000;
+    const rentalIncentive = Math.round(rentalP * rentalUnit);
+    const itIncentive = Math.round(itP * itUnit);
+    const rentalBonus = rentalPrem * rentalBonusPer;
+    const itBonus = itPrem * itBonusPer;
+
     res.json({
       // 가전렌탈만
       p: Number(rentalP.toFixed(2)),
       premium_count: rentalPrem,
       sale_count: rentalSales.length,
-      // 통합 (Grade 결정용)
-      combined_p: Number(totalP.toFixed(2)),
-      combined_premium: totalPrem,
+      rental_unit: rentalUnit,
+      rental_incentive: rentalIncentive,
+      rental_bonus: rentalBonus,
+      // 인터넷+TV만
       it_p: Number(itP.toFixed(2)),
       it_premium: itPrem,
+      it_unit: itUnit,
+      it_incentive: itIncentive,
+      it_bonus: itBonus,
+      // 통합 (Grade 결정용 + 합산 표시)
+      combined_p: Number(totalP.toFixed(2)),
+      combined_premium: totalPrem,
+      combined_incentive: rentalIncentive + itIncentive,
+      combined_bonus: rentalBonus + itBonus,
+      combined_total: rentalIncentive + itIncentive + rentalBonus + itBonus,
       grade,
       grade_thresholds: { 2: { points: g2P, premium: g2Prem }, 3: { points: g3P, premium: g3Prem } },
+      rental_rates: rentalRates,
+      it_rates: itRates,
       month_start: monthStart,
     });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
