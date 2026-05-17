@@ -41,7 +41,7 @@ router.patch('/policy', authenticateJWT, async (req, res) => {
     const { id, change_reason, ...fields } = req.body;
     if (!id) return res.status(400).json({ error: 'policy id 필수' });
 
-    // 화이트리스트 (incentive_rules와 동일 컬럼)
+    // 화이트리스트 (incentive_rules 동일 + 가전 자동 계산용)
     const ALLOWED = [
       'version', 'effective_from', 'active', 'notes',
       'base_salary', 'bonus_per_premium',
@@ -49,6 +49,8 @@ router.patch('/policy', authenticateJWT, async (req, res) => {
       'grade_rates', 'grade_thresholds', 'premium_margin_threshold',
       'manager_v51_enabled', 'manager_override_rate', 'manager_obligation_count',
       'manager_penalty_partial_min', 'manager_team_profit_rate_min',
+      // 가전 옵션 자동 계산용 (옵션 단위 마진/Tier 자동 분류)
+      'weight_cost_per_p', 'tier_s_min_margin', 'tier_a_min_margin', 'tier_b_min_margin',
     ];
     const update = {};
     for (const k of ALLOWED) {
@@ -290,7 +292,7 @@ router.patch('/options/:id', authenticateJWT, async (req, res) => {
   try {
     const { id } = req.params;
     const allowed = [
-      'payback', 'point_weight_adj', 'is_active', 'margin', 'tier_calculated',
+      'payback', 'point_weight', 'point_weight_adj', 'tier', 'is_active', 'margin', 'tier_calculated',
       'monthly_fee', 'monthly_diff', 'normal_price',
       'rebate', 'rebate_otherco', 'rebate_half',           // ★ 리베이트 3종
       'half_fee', 'half_period',                            // ★ 반값할인 렌탈료·기간
@@ -369,7 +371,7 @@ router.post('/quote', optionalAuth, async (req, res) => {
     const effectiveMonthlyFee = promo_type === 'half' && opt.half_fee ? opt.half_fee : opt.monthly_fee;
 
     // P = 상품 point_weight 고정 (운영자 수동 입력 시대 — margin/tier 계산 제거)
-    const P = Number(product.point_weight) || 0;
+    const P = Number(opt.point_weight ?? product.point_weight) || 0;  // 옵션 단위 P 우선 (NULL이면 product fallback)
 
     // 페이백 = 옵션 DB의 값 (운영자가 옵션마다 수동 입력)
     const payback = payback_override != null ? Number(payback_override) : (opt.payback || 0);
@@ -560,7 +562,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
     ]);
     if (!opt || !policy) return res.status(404).json({ error: '옵션/정책 없음' });
     const product = opt.product;
-    const P = Number(product.point_weight) || 0;
+    const P = Number(opt.point_weight ?? product.point_weight) || 0;  // 옵션 단위 P 우선 (NULL이면 product fallback)
 
     // 페이백 회사/상담사 분담 자동
     const companyLimit = policy.payback_company_limit || 30000;
