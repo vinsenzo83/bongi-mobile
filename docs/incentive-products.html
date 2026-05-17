@@ -733,7 +733,7 @@ async function fetchAgent() {
         <tbody>${_options.map(o => optRow(o, product)).join('')}</tbody>
       </table></div>
       <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;line-height:1.5">
-        💡 마진 = 리베×0.9 − 페이백 − 가중치비용(P×${fmtKor(_policy.weight_cost_per_p)}) − 기본급분담(${fmtKor(_policy.base_salary/_policy.base_salary_standard_sales)}) − 가입보너스(${fmtKor(_policy.signup_bonus_per_sale)})<br>
+        💡 마진 = 리베×0.9 − 페이백 − 가중치비용(P×${fmtKor(_policy.weight_cost_per_p)}) <span style="color:#64748b">· 인터넷+TV와 통일 공식 (가입보너스·기본급분담 없음)</span><br>
         Tier 임계: S=${fmtKor(_policy.tier_s_min_margin)} · A=${fmtKor(_policy.tier_a_min_margin)} · B=${fmtKor(_policy.tier_b_min_margin)}
       </div>`;
     F('rp-options-area').querySelectorAll('.rp-opt-edit').forEach(inp => {

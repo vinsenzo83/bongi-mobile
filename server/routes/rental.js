@@ -328,8 +328,6 @@ router.post('/quote', optionalAuth, async (req, res) => {
         rebate_after_tax: Math.round(rebate * 0.9),
         effective_monthly_fee: effectiveMonthlyFee,
         weight_cost: weightCost,
-        base_salary_share: 0,
-        signup_bonus: 0,
         margin,
         profit_rate: Number(profitRate.toFixed(4)),
         tier,
@@ -532,7 +530,6 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       monthly_fee_snapshot: opt.monthly_fee,
       months_snapshot: opt.months,
       care_service_snapshot: opt.care_service,
-      signup_bonus_snapshot: policy.signup_bonus_per_sale,
       margin_snapshot: margin,
       tier_snapshot: tier,
     };
