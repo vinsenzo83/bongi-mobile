@@ -418,7 +418,7 @@ body.cat-rental .tm-app { grid-template-columns: 280px minmax(0,1fr) !important;
 @media (max-width: 1100px) {
   .tm-rental-panel .rental-grid { grid-template-columns: 1fr; gap: 10px; }
 }
-/* 견적 결과 카드 — 인터넷+TV(.tm-result-panel) 패턴 통일: 다크 그라데이션 + 흰색 텍스트 */
+/* 견적 결과 카드 — 인터넷+TV(.tm-result-panel) 패턴 통일 + 독립 sticky 스크롤 */
 .tm-rental-panel .rental-quote-result {
   background: linear-gradient(160deg, #1e293b 0%, #0f172a 60%, #020617 100%) !important;
   color: #fff !important;
@@ -427,7 +427,20 @@ body.cat-rental .tm-app { grid-template-columns: 280px minmax(0,1fr) !important;
   padding: 14px 16px;
   box-shadow: 0 4px 20px rgba(15,23,42,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
   word-break: break-word; min-width: 0; overflow-wrap: break-word;
+  /* sticky — form 스크롤 시 견적 결과 화면에 고정 */
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  align-self: start;
 }
+/* 견적 입력 form — 자체 스크롤 (견적 결과와 독립) */
+.tm-rental-panel .rental-form-wrap {
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  min-width: 0;
+}
+.tm-rental-panel .rental-grid { align-items: start; }
 .tm-rental-panel .rental-quote-result .row { white-space: normal; display:flex; justify-content:space-between; padding:3px 0; line-height:1.5; font-size:12px; }
 .tm-rental-panel .rental-quote-result .k { color: rgba(226,232,240,0.7) !important; font-weight: 500; }
 .tm-rental-panel .rental-quote-result .v { color: #f8fafc !important; font-weight: 700; }
