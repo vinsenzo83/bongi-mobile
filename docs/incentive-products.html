@@ -945,9 +945,8 @@ function calcAutoTierP(p) {
   if (effMargin >= sMin) tierAuto = 'S';
   else if (effMargin >= aMin) tierAuto = 'A';
   else if (effMargin >= bMin) tierAuto = 'B';
-  // 우수 자동: premium_margin_threshold 이상이면 자동 우수상품
-  const premThr = _itPolicy.premium_margin_threshold || 250000;
-  const isPremiumAuto = effMargin >= premThr;
+  // 우수 자동: S Tier만 (단순화)
+  const isPremiumAuto = (tierAuto === 'S');
   return { tierAuto, pAuto, marginAuto, effMargin, isPremiumAuto };
 }
 
