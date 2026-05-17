@@ -939,10 +939,11 @@ function calcAutoTierP(p) {
   // 2단계: 임시 Tier → P 매핑 (정책의 tier_to_p JSONB 사용)
   const pMap = (_itPolicy?.tier_to_p) || { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
   const pAuto = Number(pMap[tempTier]) || 1.0;
-  // 3단계: 최종 P 기반 마진 자동 계산 (상품권 포함)
-  const finalP = Number(p.point_weight ?? pAuto);
+  // 3단계: 최종 P (자동 우선, DB 옛값 무시) 기반 마진 자동 계산 (상품권 포함)
+  const finalP = pAuto;
   const marginAuto = Math.round(rebate * 0.9 - payback - giftWon - finalP * wcUnit);
-  const effMargin = (p.margin != null && p.margin !== '') ? Number(p.margin) : marginAuto;
+  // effMargin = marginAuto (DB p.margin 옛값 무시 — 모두 자동)
+  const effMargin = marginAuto;
   let tierAuto = 'C';
   if (effMargin >= sMin) tierAuto = 'S';
   else if (effMargin >= aMin) tierAuto = 'A';
@@ -972,8 +973,8 @@ function renderTable() {
   const tbody = document.getElementById('products-tbody');
   tbody.innerHTML = filtered.map(p => {
     const { tierAuto, pAuto, marginAuto, effMargin } = calcAutoTierP(p);
-    const effTier = p.tier || tierAuto;
-    // P 자동 우선 (Tier 매핑 S=2.0/A=1.5/B=1.2/C=1.0) — DB 옛값은 폐기
+    // Tier 자동 우선 (DB p.tier 옛값 무시 — 마진/P와 일관성)
+    const effTier = tierAuto;
     const effP = pAuto;
     const tierClass = `tier tier-${effTier}`;
     const premBadge = p.is_premium ? '<span class="prem-badge">⭐</span>' : '';
