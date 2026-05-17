@@ -897,6 +897,44 @@ function renderKpi() {
   document.getElementById('kpi-c').textContent = _products.filter(p => p.tier === 'C').length + '개';
 }
 
+// 인터넷+TV 정책 cache (Tier/P 자동 계산용) — 동적 fetch + BroadcastChannel
+let _itPolicy = { tier_s_min_margin: 250000, tier_a_min_margin: 180000, tier_b_min_margin: 120000 };
+async function fetchItPolicy() {
+  try {
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    const r = await fetch('/api/incentive/rules/active', { headers: tk ? { Authorization: 'Bearer ' + tk } : {} }).then(r => r.json());
+    if (r.rule || r.rules) _itPolicy = { ..._itPolicy, ...(r.rule || r.rules) };
+    return _itPolicy;
+  } catch (e) { return _itPolicy; }
+}
+// 정책 변경 BroadcastChannel 수신 → 재 fetch + renderTable
+try {
+  const _pCh = new BroadcastChannel('incentive-policy');
+  _pCh.addEventListener('message', async (e) => {
+    if (e.data?.type === 'policy-changed') {
+      await fetchItPolicy();
+      if (typeof renderTable === 'function') renderTable();
+    }
+  });
+} catch(e) {}
+// 페이지 로드 시 1회 fetch
+fetchItPolicy();
+
+// Tier/P 자동 계산 (margin → Tier → P 매핑)
+function calcAutoTierP(p) {
+  const margin = Number(p.margin) || 0;
+  const sMin = _itPolicy.tier_s_min_margin || 250000;
+  const aMin = _itPolicy.tier_a_min_margin || 180000;
+  const bMin = _itPolicy.tier_b_min_margin || 120000;
+  let tierAuto = 'C';
+  if (margin >= sMin) tierAuto = 'S';
+  else if (margin >= aMin) tierAuto = 'A';
+  else if (margin >= bMin) tierAuto = 'B';
+  const pMap = { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
+  const pAuto = pMap[tierAuto];
+  return { tierAuto, pAuto };
+}
+
 function renderTable() {
   const carrier = document.getElementById('filter-carrier').value;
   const type = document.getElementById('filter-type').value;
@@ -906,14 +944,22 @@ function renderTable() {
   let filtered = _products;
   if (carrier) filtered = filtered.filter(p => p.carrier === carrier);
   if (type) filtered = filtered.filter(p => p.type === type);
-  if (tier) filtered = filtered.filter(p => p.tier === tier);
+  if (tier) {
+    filtered = filtered.filter(p => {
+      const eff = p.tier || calcAutoTierP(p).tierAuto;
+      return eff === tier;
+    });
+  }
   if (search) filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(search));
 
   document.getElementById('result-count').textContent = filtered.length + '개';
 
   const tbody = document.getElementById('products-tbody');
   tbody.innerHTML = filtered.map(p => {
-    const tierClass = `tier tier-${p.tier}`;
+    const { tierAuto, pAuto } = calcAutoTierP(p);
+    const effTier = p.tier || tierAuto;
+    const effP = (p.point_weight != null) ? p.point_weight : pAuto;
+    const tierClass = `tier tier-${effTier}`;
     const premBadge = p.is_premium ? '<span class="prem-badge">⭐</span>' : '';
     return `<tr data-id="${p.id}" class="${p.active ? '' : 'inactive'}">
       <td style="color:#64748b">#${p.id}</td>
@@ -925,14 +971,16 @@ function renderTable() {
       <td><input class="cell-edit field-rebate" type="number" value="${p.rebate || 0}" min="0" step="1000" data-id="${p.id}" data-field="rebate" data-orig="${p.rebate || 0}" style="text-align:right;color:#86efac;font-weight:700"></td>
       <td><input class="cell-edit field-payback" type="number" value="${p.payback || 0}" min="0" step="1000" data-id="${p.id}" data-field="payback" data-orig="${p.payback || 0}" style="text-align:right;color:#fca5a5;font-weight:700"></td>
       <td><input class="cell-edit field-gift" type="number" value="${p.gift_amount || 0}" min="0" max="999" step="0.5" data-id="${p.id}" data-field="gift_amount" data-orig="${p.gift_amount || 0}" style="text-align:right;color:#fbbf24;font-weight:700" title="상품권 (만원). 0이면 현금만, >0이면 페이백+상품권 합산"></td>
-      <td><select class="cell-edit field-weight" data-id="${p.id}" data-field="point_weight" data-orig="${p.point_weight}" style="font-weight:700">
+      <td><select class="cell-edit field-weight" data-id="${p.id}" data-field="point_weight" data-orig="${p.point_weight ?? ''}" title="자동 P=${pAuto} (${tierAuto} Tier 매핑: S=2.0 A=1.5 B=1.2 C=1.0). 수동 select 시 override" style="font-weight:700">
+        <option value="">${pAuto} (자동)</option>
         <option value="0.5" ${p.point_weight==0.5?'selected':''}>0.5</option>
         <option value="1.0" ${p.point_weight==1.0?'selected':''}>1.0</option>
+        <option value="1.2" ${p.point_weight==1.2?'selected':''}>1.2</option>
         <option value="1.5" ${p.point_weight==1.5?'selected':''}>1.5</option>
         <option value="2.0" ${p.point_weight==2.0?'selected':''}>2.0</option>
       </select></td>
       <td style="text-align:right;font-weight:800" id="margin-${p.id}">${fmt(p.margin)}</td>
-      <td><span class="${tierClass}" id="tier-${p.id}">${p.tier}</span>${premBadge}</td>
+      <td><span class="${tierClass}" id="tier-${p.id}" title="자동 ${tierAuto} (margin ${(p.margin||0).toLocaleString()}원 기준). p.tier 수동 입력 시 override">${effTier}${p.tier ? '' : ' <span style=\"font-size:9px;color:#94a3b8\">(자동)</span>' }</span>${premBadge}</td>
       <td>${p.active ? '<span style="color:#86efac;font-weight:700">✅</span>' : '<span style="color:#94a3b8">❌</span>'}</td>
       <td>
         <button class="btn-row btn-save" onclick="saveRow(${p.id})">💾 저장</button>

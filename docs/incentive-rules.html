@@ -369,6 +369,27 @@ async function fetchAgent() {
         </div>
       </div>
 
+      <!-- 🏷️ Tier 임계 (마진 기준 자동 분류) -->
+      <h2 style="margin-top:18px">🏷️ Tier 임계 (마진 기준 자동 분류 + Tier → P 매핑)</h2>
+      <div class="row" style="grid-template-columns:repeat(4,1fr);gap:10px">
+        <div class="field"><label>S Tier 최소 마진 (₩)</label>
+          <input type="number" id="f-tier-s" min="0" step="10000">
+          <div class="hint">≥ 이 값 → S, P=2.0</div>
+        </div>
+        <div class="field"><label>A Tier 최소 마진 (₩)</label>
+          <input type="number" id="f-tier-a" min="0" step="10000">
+          <div class="hint">≥ 이 값 → A, P=1.5</div>
+        </div>
+        <div class="field"><label>B Tier 최소 마진 (₩)</label>
+          <input type="number" id="f-tier-b" min="0" step="10000">
+          <div class="hint">≥ 이 값 → B, P=1.2 / 그 외 → C, P=1.0</div>
+        </div>
+        <div class="field"><label>자동 흐름</label>
+          <input type="text" class="sim-input" value="margin → Tier → P 매핑" readonly style="background:#1e293b;color:#a78bfa;font-weight:700">
+          <div class="hint">상품 margin 기준 Tier 자동 → P 자동</div>
+        </div>
+      </div>
+
       <!-- 🏢 팀장(manager) 인센티브 V5.1 정책 -->
       <div class="section" style="background:linear-gradient(135deg,#1e3a8a,#0f172a);border:1.5px solid #3b82f6;margin-top:18px">
         <h2 style="color:#93c5fd;display:flex;justify-content:space-between;align-items:center">
@@ -774,6 +795,27 @@ async function fetchAgent() {
         </div>
       </div>
 
+      <!-- 🏷️ Tier 임계 (마진 기준 자동 분류) -->
+      <h2 style="margin-top:18px">🏷️ Tier 임계 (마진 기준 자동 분류 + Tier → P 매핑)</h2>
+      <div class="row" style="grid-template-columns:repeat(4,1fr);gap:10px">
+        <div class="field"><label>가중치 비용 (₩/P)</label>
+          <input type="number" id="rp-weight-cost" min="0" step="5000">
+          <div class="hint">margin = 리베×0.9 − 페이백 − P×이 값</div>
+        </div>
+        <div class="field"><label>S Tier 최소 마진 (₩)</label>
+          <input type="number" id="rp-tier-s" min="0" step="10000">
+          <div class="hint">≥ 이 값 → S, P=2.0</div>
+        </div>
+        <div class="field"><label>A Tier 최소 마진 (₩)</label>
+          <input type="number" id="rp-tier-a" min="0" step="10000">
+          <div class="hint">≥ 이 값 → A, P=1.5</div>
+        </div>
+        <div class="field"><label>B Tier 최소 마진 (₩)</label>
+          <input type="number" id="rp-tier-b" min="0" step="10000">
+          <div class="hint">≥ 이 값 → B, P=1.2 / 그 외 → C, P=1.0</div>
+        </div>
+      </div>
+
       <!-- 🏢 팀장(manager) 인센티브 V5.1 정책 -->
       <div class="section" style="background:linear-gradient(135deg,#1e3a8a,#0f172a);border:1.5px solid #3b82f6;margin-top:18px">
         <h2 style="color:#93c5fd;display:flex;justify-content:space-between;align-items:center">
@@ -913,6 +955,11 @@ async function fetchAgent() {
         F('rp-thr-2-prem').value = (thrs['2'] || {}).premium || 0;
         F('rp-thr-3-p').value = (thrs['3'] || {}).points || 0;
         F('rp-thr-3-prem').value = (thrs['3'] || {}).premium || 0;
+        // Tier 임계 + 가중치 비용 (옵션 단위 자동 계산용)
+        if (F('rp-weight-cost')) F('rp-weight-cost').value = r.weight_cost_per_p || 70000;
+        if (F('rp-tier-s')) F('rp-tier-s').value = r.tier_s_min_margin || 130000;
+        if (F('rp-tier-a')) F('rp-tier-a').value = r.tier_a_min_margin || 120000;
+        if (F('rp-tier-b')) F('rp-tier-b').value = r.tier_b_min_margin || 100000;
         F('rp-mgr-override').value = (r.manager_override_rate != null) ? r.manager_override_rate : 0.12;
         F('rp-mgr-obligation').value = (r.manager_obligation_count != null) ? r.manager_obligation_count : 20;
         F('rp-mgr-partial').value = (r.manager_penalty_partial_min != null) ? r.manager_penalty_partial_min : 10;
@@ -963,6 +1010,11 @@ async function fetchAgent() {
           manager_penalty_partial_min: parseInt(F('rp-mgr-partial').value) || 0,
           manager_team_profit_rate_min: parseFloat(F('rp-mgr-profit-rate').value) || 0,
           manager_v51_enabled: !!F('rp-mgr-enabled').checked,
+          // Tier 임계 + 가중치 비용 (옵션 자동 계산용)
+          weight_cost_per_p: parseInt(F('rp-weight-cost')?.value) || 70000,
+          tier_s_min_margin: parseInt(F('rp-tier-s')?.value) || 130000,
+          tier_a_min_margin: parseInt(F('rp-tier-a')?.value) || 120000,
+          tier_b_min_margin: parseInt(F('rp-tier-b')?.value) || 100000,
         };
       }
 
@@ -1307,6 +1359,10 @@ function loadActiveToForm(r) {
   document.getElementById('f-mgr-partial').value = (r.manager_penalty_partial_min != null) ? r.manager_penalty_partial_min : 10;
   document.getElementById('f-mgr-profit-rate').value = (r.manager_team_profit_rate_min != null) ? r.manager_team_profit_rate_min : 0.20;
   document.getElementById('f-mgr-enabled').checked = (r.manager_v51_enabled !== false);
+  // Tier 임계 (옵션 자동 분류용)
+  if (document.getElementById('f-tier-s')) document.getElementById('f-tier-s').value = r.tier_s_min_margin || 250000;
+  if (document.getElementById('f-tier-a')) document.getElementById('f-tier-a').value = r.tier_a_min_margin || 180000;
+  if (document.getElementById('f-tier-b')) document.getElementById('f-tier-b').value = r.tier_b_min_margin || 120000;
   updateMgrUi();
 }
 
@@ -1399,6 +1455,10 @@ function collectForm() {
     manager_penalty_partial_min: parseInt(document.getElementById('f-mgr-partial').value) || 0,
     manager_team_profit_rate_min: parseFloat(document.getElementById('f-mgr-profit-rate').value) || 0,
     manager_v51_enabled: !!document.getElementById('f-mgr-enabled').checked,
+    // Tier 임계 (마진 → Tier → P 매핑용)
+    tier_s_min_margin: parseInt(document.getElementById('f-tier-s')?.value) || 250000,
+    tier_a_min_margin: parseInt(document.getElementById('f-tier-a')?.value) || 180000,
+    tier_b_min_margin: parseInt(document.getElementById('f-tier-b')?.value) || 120000,
   };
 }
 
