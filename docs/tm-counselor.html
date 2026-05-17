@@ -405,26 +405,32 @@ body.cat-rental .tm-app { grid-template-columns: 280px minmax(0,1fr) !important;
 .tm-rental-panel .cat-bar label { font-size:10px; color:#92400e; font-weight:800; margin-right:4px; }
 .tm-rental-panel .cat-bar select { padding:7px 10px; background:#fff; color:#451a03; font-weight:800; border:1.5px solid #fcd34d; border-radius:5px; font-size:13px; max-width:240px; flex:1; }
 .tm-rental-panel .cat-bar .note { font-size:10px; color:#92400e; line-height:1.55; padding:5px 8px; background:rgba(251,191,36,0.18); border:1px dashed #fcd34d; border-radius:4px; flex:1; }
-/* 가전 큐콜 — viewport 기반 자동 리사이징 (큰 화면 대응 확장) */
+/* 가전 큐콜 — 2섹터 (form + 견적결과) 단순화 / form-grid 1열로 짤림 방지 */
 .tm-rental-panel .rental-grid {
   display:grid;
-  grid-template-columns: minmax(0, 1fr) clamp(300px, 26vw, 520px);
-  gap: clamp(8px, 1vw, 18px);
-  align-items:start;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 14px;
+  align-items: start;
 }
-@media (min-width: 1920px) {
-  .tm-rental-panel .rental-grid { grid-template-columns: minmax(0, 1fr) clamp(420px, 28vw, 580px); }
+@media (min-width: 1600px) {
+  .tm-rental-panel .rental-grid { grid-template-columns: minmax(0, 1fr) 400px; }
 }
 @media (max-width: 1100px) {
-  .tm-rental-panel .rental-grid { grid-template-columns:1fr; gap:10px; }
+  .tm-rental-panel .rental-grid { grid-template-columns: 1fr; gap: 10px; }
 }
-.tm-rental-panel .rental-quote-result { word-break:break-word; min-width:0; overflow-wrap:break-word; }
-.tm-rental-panel .rental-quote-result .row { white-space:normal; }
+.tm-rental-panel .rental-quote-result { word-break: break-word; min-width: 0; overflow-wrap: break-word; }
+.tm-rental-panel .rental-quote-result .row { white-space: normal; }
 .tm-rental-panel .rental-quote-result .k,
-.tm-rental-panel .rental-quote-result .v { font-size: clamp(10.5px, 0.8vw, 13px); }
-.tm-rental-panel .rental-form-wrap { min-width:0; }
-.tm-rental-panel .rental-form-wrap > * { min-width:0; max-width:100%; box-sizing:border-box; }
-.tm-rental-panel .form-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important; gap: 8px 10px; }
+.tm-rental-panel .rental-quote-result .v { font-size: 12px; }
+.tm-rental-panel .rental-form-wrap { min-width: 0; }
+.tm-rental-panel .rental-form-wrap > * { min-width: 0; max-width: 100%; box-sizing: border-box; }
+/* form-grid — 좁은 영역에서 짤림 방지 위해 단일 1열, 큰 화면에서만 2열 */
+.tm-rental-panel .form-grid { display: grid !important; grid-template-columns: 1fr !important; gap: 8px 10px; margin-bottom: 12px; }
+@media (min-width: 1400px) {
+  .tm-rental-panel .form-grid { grid-template-columns: 1fr 1fr !important; }
+}
+.tm-rental-panel .form-grid select,
+.tm-rental-panel .form-grid input { width: 100%; min-width: 0; box-sizing: border-box; text-overflow: ellipsis; }
 .tm-rental-panel .rental-form-wrap { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px; }
 .tm-rental-panel .rental-form-wrap .ttl { font-size:11px; font-weight:800; color:#3617ce; margin-bottom:8px; }
 .tm-rental-panel .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; margin-bottom:12px; }
