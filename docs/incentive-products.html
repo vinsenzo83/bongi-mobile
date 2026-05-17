@@ -769,8 +769,8 @@ async function fetchAgent() {
     // 2단계: 임시 Tier → P 매핑 (정책의 tier_to_p JSONB 사용)
     const pMap = (_policy?.tier_to_p) || { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
     const pAuto = Number(pMap[tempTier]) || 1.0;
-    // 3단계: 최종 P (수동 우선) → 최종 마진 → 최종 Tier
-    const P = Number(o.point_weight ?? pAuto);
+    // 3단계: 최종 P — 자동 우선 (인터넷+TV와 동일, DB 옛값 폐기)
+    const P = pAuto;
     const weightCost = Math.round(P * wcUnit);
     const marginAuto = Math.round((o.rebate||0) * 0.9 - (o.payback||0) - weightCost);
     const margin = (o.margin_manual_override && o.margin != null) ? Number(o.margin) : marginAuto;
@@ -799,7 +799,7 @@ async function fetchAgent() {
         <td>${inp('rebate_half', o.rebate_half, 80, '#22c55e')}</td>
         <td style="text-align:center">${inpM('bundle_rate', o.bundle_rate, 45)}</td>
         <td style="white-space:nowrap">${inp('payback', o.payback, 70, '#fbbf24')}${o.payback != null ? `<button type="button" class="rp-payback-reset" data-id="${o.id}" title="자동 산출로 복귀" style="margin-left:2px;background:#475569;color:#cbd5e1;border:none;padding:2px 4px;border-radius:3px;font-size:9px;cursor:pointer">↺</button>` : ''}</td>
-        <td><input class="rp-opt-edit" data-field="point_weight" type="number" step="0.1" value="${o.point_weight!=null?o.point_weight:''}" placeholder="${pAuto} 자동" title="자동 P=${pAuto} (임시 마진 ${tempMargin.toLocaleString()}원 → ${tempTier} Tier 매핑: S=2.0 A=1.5 B=1.2 C=1.0). 수동 입력 시 override" style="width:62px;background:#0f172a;border:1px solid #a78bfa;color:#a78bfa;padding:2px 4px;border-radius:3px;font-size:10.5px;text-align:right;font-weight:700"></td>
+        <td><input class="rp-opt-edit" data-field="point_weight" type="number" step="0.1" value="${P}" title="자동 P=${P} (임시 마진 ${tempMargin.toLocaleString()}원 → ${tempTier} Tier 매핑). 수동 입력 시 override" style="width:62px;background:#0f172a;border:1px solid #a78bfa;color:#a78bfa;padding:2px 4px;border-radius:3px;font-size:10.5px;text-align:right;font-weight:700"></td>
         <td>${inp('margin', margin, 70, tierColor)}</td>
         <td style="text-align:center">
           <select class="rp-opt-edit field-tier" data-field="tier" title="자동 ${tierAuto} (마진 ${margin.toLocaleString()}원 기준) · 수동 select로 override" style="background:${tierColor};color:#0f172a;font-size:10px;font-weight:800;padding:2px 4px;border:1px solid #475569;border-radius:3px">
