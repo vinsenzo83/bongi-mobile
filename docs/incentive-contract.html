@@ -2604,6 +2604,7 @@ init();
         <thead><tr style="background:#0f172a">
           <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">R번호</th>
           <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">상품</th>
+          <th style="padding:8px;text-align:center;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155;width:65px">Tier</th>
           <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">고객</th>
           <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">전화</th>
           <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">계약일</th>
@@ -2615,9 +2616,15 @@ init();
         <tbody>${sales.map(s => {
           const p = s.product || {};
           const opt = s.option || {};
+          const curTier = s.tier_snapshot || p.tier;
+          const tierBadge = curTier
+            ? `<span class="tier tier-${curTier}" title="${s.tier_snapshot ? '등록 시점 박제' : '현재 상품 등급'}">${curTier}</span>`
+            : `<span style="color:#64748b;font-size:10px">-</span>`;
+          const premBadge = p.is_premium ? '<span class="prem-badge" style="margin-left:3px">⭐</span>' : '';
           return `<tr class="rental-sale-row" data-id="${s.id}" style="border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer">
             <td style="padding:7px 8px;font-family:'SF Mono',Monaco,monospace;color:#a5b4fc;font-weight:700">${opt.ticket_number || '-'}</td>
             <td style="padding:7px 8px;font-size:11px;color:#e2e8f0">${(p.brand||'')} ${(p.name||'')} <span style="color:#64748b">· ${opt.months||'-'}M</span></td>
+            <td style="padding:7px 8px;text-align:center">${tierBadge}${premBadge}</td>
             <td style="padding:7px 8px">${s.customer_name || '-'}</td>
             <td style="padding:7px 8px;font-family:monospace;font-size:11px">${s.customer_phone || '-'}</td>
             <td style="padding:7px 8px;font-size:11px;color:#cbd5e1">${s.contract_date || '-'}</td>
@@ -2657,31 +2664,60 @@ init();
         <div class="sec-title"><span class="sec-icon">📦</span>계약 상품 정보 <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">읽기 전용 (티켓 SNAPSHOT)</span></div>
         <div class="product-header">
           <div style="flex:1;min-width:280px">
-            <div class="ph-meta">[${p.brand || '-'}] ${p.name || '-'} · 모델 ${p.model || '-'}</div>
-            <div class="ph-name">🎫 ${opt.ticket_number || '-'} · ${opt.months || '-'}개월 · ${opt.care_service || '-'}</div>
+            <div class="ph-meta">[${p.brand || '-'}] ${p.name || '-'} · 모델 <code style="background:#0f172a;padding:1px 5px;border-radius:3px;color:#fbbf24">${p.model || '-'}</code>${p.product_url ? ` <a href="${p.product_url}" target="_blank" style="color:#60a5fa;text-decoration:none;font-size:10.5px;margin-left:4px">🔗 상품 페이지</a>` : ''}</div>
+            <div class="ph-name">🎫 <span style="color:#a5b4fc">${opt.ticket_number || '-'}</span> · ${opt.months || '-'}개월 · ${opt.care_service || '-'}${p.promo_tag ? ` <span style="background:#7c3aed;color:#fff;font-size:9.5px;padding:1px 6px;border-radius:3px;margin-left:4px;font-weight:700">${p.promo_tag}</span>` : ''}</div>
             <div class="ph-tags">
               <span style="background:rgba(99,102,241,0.15);color:#a5b4fc;padding:2px 8px;border-radius:4px;font-weight:700">${s.point_weight_snapshot ?? p.point_weight ?? '-'}P</span>
-              <span style="background:rgba(34,197,94,0.15);color:#86efac;padding:2px 8px;border-radius:4px;font-weight:700">${s.tier_snapshot || '-'} 등급</span>
+              ${(() => {
+                const curTier = s.tier_snapshot || p.tier;
+                if (!curTier) return '<span style="background:rgba(100,116,139,0.15);color:#94a3b8;padding:2px 8px;border-radius:4px;font-weight:700">Tier 미지정</span>';
+                const snapDiff = s.tier_snapshot && p.tier && s.tier_snapshot !== p.tier;
+                return `<span class="tier tier-${curTier}" title="등록 시점 등급 (SNAPSHOT)">${curTier} 등급${s.tier_snapshot ? ' · 박제' : ''}</span>`
+                  + (snapDiff ? ` <span class="tier tier-${p.tier}" title="현재 상품 등급" style="opacity:0.7">현재 ${p.tier}</span>` : '');
+              })()}
+              ${p.is_premium ? '<span class="prem-badge">⭐ 우수</span>' : ''}
+              ${s.grade_at_snapshot ? `<span style="background:rgba(59,130,246,0.15);color:#93c5fd;padding:2px 8px;border-radius:4px;font-weight:700">DB ${s.grade_at_snapshot} 등급</span>` : ''}
               <span style="color:#64748b">·</span>
               <span>📅 ${s.contract_date || '-'}</span>
               <span style="color:#64748b">·</span>
               <span>👤 ${a.name || '-'} <span style="color:#94a3b8">${a.center || ''}</span></span>
             </div>
           </div>
-          <div style="display:flex;gap:18px;align-items:center">
-            <div style="text-align:right;border-right:1px solid #334155;padding-right:18px">
+          <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+            <div style="text-align:right;border-right:1px solid #334155;padding-right:14px">
               <div class="ph-payback-label">💵 월 요금</div>
               <div style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:-0.02em">${fmt(s.monthly_fee_snapshot)}<span style="font-size:12px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+              ${opt.normal_price ? `<div style="font-size:9.5px;color:#94a3b8;margin-top:2px">정상 ${fmt(opt.normal_price)}원</div>` : ''}
             </div>
-            <div style="text-align:right;border-right:1px solid #334155;padding-right:18px">
+            <div style="text-align:right;border-right:1px solid #334155;padding-right:14px">
               <div class="ph-payback-label">💰 리베이트</div>
               <div style="font-size:16px;font-weight:800;color:#34d399">${fmt(s.rebate_snapshot)}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+              ${opt.rebate && opt.rebate !== s.rebate_snapshot ? `<div style="font-size:9.5px;color:#fbbf24;margin-top:2px">현재 ${fmt(opt.rebate)}원</div>` : ''}
+            </div>
+            <div style="text-align:right;border-right:1px solid #334155;padding-right:14px">
+              <div class="ph-payback-label">💰 페이백 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 5px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:3px" title="등록 시점 박제">SNAPSHOT</span></div>
+              <div class="ph-payback-val">${fmt(s.payback_snapshot)}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+              ${opt.payback != null && opt.payback !== s.payback_snapshot ? `<div style="font-size:9.5px;color:#fbbf24;margin-top:2px">현재 ${fmt(opt.payback)}원</div>` : ''}
             </div>
             <div style="text-align:right">
-              <div class="ph-payback-label">💰 페이백 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 5px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:3px" title="등록 시점에 박제된 단가">SNAPSHOT</span></div>
-              <div class="ph-payback-val">${fmt(s.payback_snapshot)}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+              <div class="ph-payback-label">📊 마진 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 5px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:3px">SNAPSHOT</span></div>
+              <div style="font-size:16px;font-weight:800;color:${(s.margin_snapshot||0)>=0?'#a78bfa':'#dc2626'}">${fmt(s.margin_snapshot)}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+              ${s.signup_bonus_snapshot ? `<div style="font-size:9.5px;color:#86efac;margin-top:2px">+ 가입보너스 ${fmt(s.signup_bonus_snapshot)}원</div>` : ''}
             </div>
           </div>
+        </div>
+        <!-- 상세 메타 (그리드) -->
+        <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #334155;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:11.5px">
+          <div><span style="color:#94a3b8">카테고리</span> <b style="color:#e2e8f0">${(_categories.find(c => c.id === p.category_id)?.name) || '-'}</b></div>
+          <div><span style="color:#94a3b8">약정 (SNAPSHOT)</span> <b style="color:#e2e8f0">${s.months_snapshot || opt.months || '-'}개월</b></div>
+          <div><span style="color:#94a3b8">케어 (SNAPSHOT)</span> <b style="color:#e2e8f0">${s.care_service_snapshot || opt.care_service || '-'}</b></div>
+          <div><span style="color:#94a3b8">옵션 ID</span> <b style="color:#cbd5e1;font-family:monospace;font-size:10.5px">${s.option_id || '-'}</b></div>
+          ${Array.isArray(p.months_available) && p.months_available.length ? `<div style="grid-column:span 2"><span style="color:#94a3b8">가능 약정</span> <b style="color:#cbd5e1">${p.months_available.join(' / ')}M</b></div>` : ''}
+          ${Array.isArray(p.care_services) && p.care_services.length ? `<div style="grid-column:span 2"><span style="color:#94a3b8">케어 종류</span> <b style="color:#cbd5e1">${p.care_services.join(' / ')}</b></div>` : ''}
+          ${p.recommended_capacity ? `<div><span style="color:#94a3b8">권장 용량</span> <b style="color:#cbd5e1">${p.recommended_capacity}</b></div>` : ''}
+          ${p.recommended_usage ? `<div style="grid-column:span 3"><span style="color:#94a3b8">권장 용도</span> <b style="color:#cbd5e1">${p.recommended_usage}</b></div>` : ''}
+          ${p.evaluation_memo ? `<div style="grid-column:span 4;background:rgba(251,191,36,0.08);border-left:3px solid #fbbf24;padding:6px 10px;border-radius:3px"><span style="color:#fbbf24;font-weight:700">📝 평가 메모</span> <span style="color:#e2e8f0">${(p.evaluation_memo||'').replace(/</g,'&lt;')}</span></div>` : ''}
+          ${p.description ? `<div style="grid-column:span 4;color:#94a3b8;font-size:10.5px;line-height:1.6">${(p.description||'').replace(/</g,'&lt;').slice(0,300)}${p.description.length>300?'…':''}</div>` : ''}
         </div>
       </div>
 
