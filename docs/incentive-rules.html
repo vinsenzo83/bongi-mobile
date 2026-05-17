@@ -706,12 +706,9 @@ async function fetchAgent() {
     <!-- ─── 탭: 가전렌탈 ─── -->
     <div id="policy-tab-rental" class="policy-tab-pane">
 
-    <!-- ★ 가전렌탈 정책 (별도 시스템) -->
+    <!-- 활성 정책 편집 (인터넷+TV와 100% 동일 구조, id 접두사만 rp-*) -->
     <div class="section" style="background:linear-gradient(135deg,rgba(245,158,11,0.08),#0f172a);border:1.5px solid #f59e0b">
-      <h2 style="color:#fbbf24;display:flex;justify-content:space-between;align-items:center">
-        🏠 가전렌탈 정책 (V1)
-        <button type="button" id="rp-save-btn" class="btn btn-primary" style="font-size:11.5px;padding:7px 16px">💾 가전렌탈 정책 저장</button>
-      </h2>
+      <h2 style="color:#fbbf24">📌 활성 가전렌탈 정책 (현재 적용 중)</h2>
       <div style="font-size:10.5px;color:#cbd5e1;margin-bottom:12px;line-height:1.55">
         · 인터넷+TV와 <strong>별도 시스템</strong>이지만 누적 P · Grade는 통합 정산<br>
         · 마진 = 리베×0.9 − 페이백 − P × 70,000 <span style="color:#94a3b8">(인터넷+TV와 통일 공식, 가입보너스·기본급분담 없음)</span><br>
@@ -1318,21 +1315,22 @@ async function fetchAgent() {
         const rtPremCnt = Math.round(rtCnt * rtPrem / 100);
         const totalPremCnt = itPremCnt + rtPremCnt;
 
-        // Grade 결정 (rental_policy 임계값 사용 — 통합 정산)
-        const g2P = Number(_rtPolicy.grade_g2_p_threshold) || 16;
-        const g2Prem = Number(_rtPolicy.grade_g2_premium_threshold) || 5;
-        const g3P = Number(_rtPolicy.grade_g3_p_threshold) || 31;
-        const g3Prem = Number(_rtPolicy.grade_g3_premium_threshold) || 10;
+        // Grade 결정 (rental_policy grade_thresholds JSONB 사용 — Phase A 통일)
+        const _rtThrs = _rtPolicy.grade_thresholds || {};
+        const g2P = Number(_rtThrs['2']?.points) || 16;
+        const g2Prem = Number(_rtThrs['2']?.premium) || 5;
+        const g3P = Number(_rtThrs['3']?.points) || 31;
+        const g3Prem = Number(_rtThrs['3']?.premium) || 10;
         let grade = 'G1';
         if (totalP >= g3P && totalPremCnt >= g3Prem) grade = 'G3';
         else if (totalP >= g2P && totalPremCnt >= g2Prem) grade = 'G2';
 
-        // 각 시스템 단가
+        // 각 시스템 단가 (Phase A 통일: grade_rates JSONB)
         const itRates = _itPolicy.grade_rates || { 1: 20000, 2: 30000, 3: 40000 };
-        const itUnit = Number(itRates[grade === 'G3' ? 3 : grade === 'G2' ? 2 : 1]) || 20000;
-        const rtUnit = grade === 'G3' ? (_rtPolicy.grade_g3_unit || 30000)
-                     : grade === 'G2' ? (_rtPolicy.grade_g2_unit || 22000)
-                     : (_rtPolicy.grade_g1_unit || 15000);
+        const rtRates = _rtPolicy.grade_rates || { 1: 15000, 2: 22000, 3: 30000 };
+        const _gKey = grade === 'G3' ? '3' : grade === 'G2' ? '2' : '1';
+        const itUnit = Number(itRates[_gKey] ?? itRates[Number(_gKey)]) || 20000;
+        const rtUnit = Number(rtRates[_gKey] ?? rtRates[Number(_gKey)]) || 15000;
 
         // 인센티브
         const itInc = Math.round(itCnt * itP * itUnit);

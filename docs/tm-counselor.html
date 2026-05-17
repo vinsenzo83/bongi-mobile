@@ -5645,7 +5645,9 @@ setTimeout(() => {
     }
     const c = r.computed, p = r.product, o = r.option;
     const fmt = n => n == null ? '-' : Math.round(n).toLocaleString();
-    const tierColor = { S:'#fbbf24', A:'#60a5fa', B:'#94a3b8', C:'#475569' }[c.tier] || '#475569';
+    // Phase B 이후 — Tier는 옵션/상품의 수동 입력값 사용 (computed.tier 제거됨)
+    const rentalTier = (o && o.tier) || (p && p.tier) || null;
+    const tierColor = { S:'#fbbf24', A:'#60a5fa', B:'#94a3b8', C:'#475569' }[rentalTier] || '#475569';
     // ─── 월별 납부 시뮬 카드 ───
     const halfMonths = c.half_months || 0;
     const normalMonths = c.normal_months || 0;
@@ -5696,7 +5698,10 @@ setTimeout(() => {
       }
     }
     const grade = window._incRentalCurrentGrade || 'G1';
-    const gradeUnit = { G1: r.policy.grade_g1_unit, G2: r.policy.grade_g2_unit, G3: r.policy.grade_g3_unit }[grade] || r.policy.grade_g1_unit;
+    // Phase A 통일: grade_rates JSONB {1,2,3} (옛 grade_g1_unit DROP됨)
+    const _rates = (r.policy && r.policy.grade_rates) || {};
+    const _gradeKey = grade.replace('G', '');
+    const gradeUnit = Number(_rates[_gradeKey]) || 15000;
     const currentP = Number(window._incRentalCurrentP) || 0;
     const currentPrem = Number(window._incRentalCurrentPrem) || 0;
     const currentTotal = Math.round(currentP * gradeUnit);

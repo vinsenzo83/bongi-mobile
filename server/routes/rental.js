@@ -25,11 +25,10 @@ router.get('/categories', optionalAuth, async (req, res) => {
 // ─── 정책 (활성 1개) ───
 router.get('/policy', optionalAuth, async (req, res) => {
   try {
-    // active 또는 is_active 호환 (Phase A 마이그레이션 중 — Phase B에서 is_active DROP)
     const { data, error } = await supabase
       .from('rental_policy')
       .select('*')
-      .or('active.eq.true,is_active.eq.true')
+      .eq('active', true)
       .single();
     if (error) throw error;
     res.json({ policy: data });
@@ -106,10 +105,8 @@ router.post('/policy', authenticateJWT, async (req, res) => {
     if (!insert.version) return res.status(400).json({ error: 'version 필수' });
 
     if (deactivate_others) {
-      // 옛 컬럼 호환: is_active도 함께 false
-      await supabase.from('rental_policy').update({ active: false, is_active: false }).or('active.eq.true,is_active.eq.true');
+      await supabase.from('rental_policy').update({ active: false }).eq('active', true);
     }
-    insert.is_active = true;  // Phase B DROP 전까지 호환
     const { data, error } = await supabase.from('rental_policy').insert(insert).select().single();
     if (error) throw error;
     // 이력 기록
@@ -143,10 +140,10 @@ router.patch('/policy/:id/active', authenticateJWT, async (req, res) => {
     const { active } = req.body;
     if (active === true) {
       // 다른 active row 비활성화
-      await supabase.from('rental_policy').update({ active: false, is_active: false }).neq('id', id);
+      await supabase.from('rental_policy').update({ active: false }).neq('id', id);
     }
     const { data, error } = await supabase.from('rental_policy')
-      .update({ active: !!active, is_active: !!active, updated_at: new Date().toISOString() })
+      .update({ active: !!active, updated_at: new Date().toISOString() })
       .eq('id', id).select().single();
     if (error) throw error;
     await supabase.from('rental_policy_history').insert({
@@ -338,7 +335,7 @@ router.post('/quote', optionalAuth, async (req, res) => {
 
     const [{ data: opt }, { data: policy }] = await Promise.all([
       supabase.from('rental_product_options').select('*, product:rental_products(*)').eq('id', option_id).single(),
-      supabase.from('rental_policy').select('*').eq('is_active', true).single(),
+      supabase.from('rental_policy').select('*').eq('active', true).single(),
     ]);
     if (!opt || !policy) return res.status(404).json({ error: '옵션 또는 정책 없음' });
 
@@ -357,7 +354,6 @@ router.post('/quote', optionalAuth, async (req, res) => {
       // 모델별 promo_tags_list 조합 (예: "12M반값", "타사보상+패키지" 등)
       const tag = promo_type.slice(7);
       rebateSourceLabel = tag;
-      // 반값 + 타사보상 조합 등은 복합. 일단 기본 적용 + 라벨 표시.
       if (tag.includes('반값') && opt.rebate_half) rebateBase = opt.rebate_half;
       else if (tag.includes('타사보상') && opt.rebate_otherco) rebateBase = opt.rebate_otherco;
     }
@@ -372,23 +368,17 @@ router.post('/quote', optionalAuth, async (req, res) => {
     // 월 납부액 (반값 적용 시 half_fee)
     const effectiveMonthlyFee = promo_type === 'half' && opt.half_fee ? opt.half_fee : opt.monthly_fee;
 
-    // 가중치 P
-    // ─── 단순화 공식 (인터넷+TV와 동일) ───
-    // P = 상품 point_weight 고정 (약정·케어·우수 보정 제거)
+    // P = 상품 point_weight 고정 (운영자 수동 입력 시대 — margin/tier 계산 제거)
     const P = Number(product.point_weight) || 0;
-    const weightCost = Math.round(P * (policy.weight_cost_per_p || 70000));
 
-    // 페이백 = 옵션 DB의 값 (어드민에서 일괄 산출 또는 수동 입력)
+    // 페이백 = 옵션 DB의 값 (운영자가 옵션마다 수동 입력)
     const payback = payback_override != null ? Number(payback_override) : (opt.payback || 0);
     const paybackSource = payback_override != null ? 'override' : 'admin';
 
-    // margin = rebate × 0.9 − payback − P × weight_cost_per_p
-    const margin = Math.round(rebate * 0.9 - payback - weightCost);
-    const profitRate = rebate ? margin / rebate : 0;
-    let tier = 'C';
-    if (margin >= policy.tier_s_min_margin) tier = 'S';
-    else if (margin >= policy.tier_a_min_margin) tier = 'A';
-    else if (margin >= policy.tier_b_min_margin) tier = 'B';
+    // 페이백 회사/상담사 분담 (자동)
+    const companyLimit = policy.payback_company_limit || 30000;
+    const companyBurden = Math.min(payback, companyLimit);
+    const agentDeduct = Math.max(0, payback - companyLimit);
 
     // 월별 납부 시뮬 (반값 기간 + 정상 기간)
     const halfMonths = (promo_type === 'half' && opt.half_fee && effectiveHalfPeriod) ? Math.min(effectiveHalfPeriod, opt.months) : 0;
@@ -397,11 +387,6 @@ router.post('/quote', optionalAuth, async (req, res) => {
     const normalTotal = normalMonths * (opt.monthly_fee || 0);
     const totalPayment = halfTotal + normalTotal;
     const netCustomerBurden = totalPayment - payback;
-
-    // 상담사 인센티브 (1건 · Grade별)
-    const incentiveG1 = Math.round(P * policy.grade_g1_unit);
-    const incentiveG2 = Math.round(P * policy.grade_g2_unit);
-    const incentiveG3 = Math.round(P * policy.grade_g3_unit);
 
     res.json({
       product, option: { ...opt, product: undefined },
@@ -414,13 +399,15 @@ router.post('/quote', optionalAuth, async (req, res) => {
         bundle_rate: bundleRate,
         rebate_after_tax: Math.round(rebate * 0.9),
         effective_monthly_fee: effectiveMonthlyFee,
-        weight_cost: weightCost,
-        margin,
-        profit_rate: Number(profitRate.toFixed(4)),
-        tier,
+        is_premium: !!product.is_premium,
+        tier: product.tier || null,                 // 운영자 수동 입력값 그대로 통과
+        option_margin: opt.margin ?? null,          // 운영자 수동 입력 마진 통과
         promo_type: promo_type || 'basic',
         bundle_apply: !!bundle_apply,
         payback_source: paybackSource,
+        // 페이백 분담
+        company_payback_burden: companyBurden,
+        agent_payback_deduct: agentDeduct,
         // 월별 납부 시뮬
         half_months: halfMonths,
         half_total: halfTotal,
@@ -428,49 +415,21 @@ router.post('/quote', optionalAuth, async (req, res) => {
         normal_total: normalTotal,
         total_payment: totalPayment,
         net_customer_burden: netCustomerBurden,
-        // 상담사 인센티브 시뮬
-        incentive_g1: incentiveG1,
-        incentive_g2: incentiveG2,
-        incentive_g3: incentiveG3,
       },
       policy: {
-        target_profit_rate: policy.target_profit_rate,
-        grade_g1_unit: policy.grade_g1_unit,
-        grade_g2_unit: policy.grade_g2_unit,
-        grade_g3_unit: policy.grade_g3_unit,
+        payback_company_limit: policy.payback_company_limit,
+        payback_max: policy.payback_max,
+        grade_rates: policy.grade_rates,
+        grade_thresholds: policy.grade_thresholds,
+        premium_margin_threshold: policy.premium_margin_threshold,
       },
     });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
-// ─── 영업이익율 기준 전체 옵션 페이백 일괄 재산출 (admin) ───
+// ─── 폐기됨 (Phase B): 페이백은 옵션마다 운영자가 수동 입력 ───
 router.post('/recalculate-paybacks', authenticateJWT, async (req, res) => {
-  try {
-    const { only_auto = true } = req.body;
-    // 단순화 페이백 산출: payback = rebate × (0.9 - target_profit_rate) − P × weight_cost_per_p
-    // (가입보너스·기본급분담 차감 제거 — 인터넷+TV 통일)
-    const calcExpr = `GREATEST(0, LEAST(
-      (SELECT payback_cap FROM rental_policy WHERE is_active = true),
-      ROUND(ROUND(
-        o.rebate * (0.9 - COALESCE((SELECT target_profit_rate FROM rental_policy WHERE is_active = true),10)/100.0)
-        - p.point_weight * COALESCE((SELECT weight_cost_per_p FROM rental_policy WHERE is_active = true),70000)
-      ) / 10000.0)::int * 10000))`;
-    const sql = only_auto
-      ? `UPDATE rental_product_options o SET payback = ${calcExpr} FROM rental_products p WHERE o.product_id = p.id AND o.payback IS NULL`
-      : `UPDATE rental_product_options o SET payback = ${calcExpr} FROM rental_products p WHERE o.product_id = p.id`;
-    const { error } = await supabase.rpc('exec_sql', { sql_text: sql });
-    if (error) throw error;
-    // 체인 — 마진/Tier/우수상품 자동 재산출
-    const { data: recalc, error: recalcErr } = await supabase.rpc('rental_recalc_margins_and_premium');
-    if (recalcErr) console.warn('[recalc-margins]', recalcErr.message);
-    const { count } = await supabase.from('rental_product_options').select('*', { count: 'exact', head: true }).not('payback', 'is', null);
-    res.json({
-      ok: true,
-      updated_target: only_auto ? 'NULL 페이백만' : '전체',
-      count_with_payback: count,
-      margin_tier_recalc: recalc || null,
-    });
-  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+  res.status(410).json({ error: '폐기됨 — 페이백은 옵션마다 운영자가 수동 입력' });
 });
 
 // ─── 마진/Tier/우수상품만 일괄 재산출 (정책 임계값 변경 시) ───
@@ -502,8 +461,8 @@ router.get('/agents/me/monthly-stats', authenticateJWT, async (req, res) => {
         .eq('agent_id', agent.id).gte('contract_date', monthStart)
         .is('deleted_at', null).in('status', ['pending','in_progress','completed']),
       supabase.from('rental_policy')
-        .select('grade_g2_p_threshold, grade_g2_premium_threshold, grade_g3_p_threshold, grade_g3_premium_threshold')
-        .eq('is_active', true).single(),
+        .select('grade_thresholds')
+        .eq('active', true).single(),
     ]);
 
     const rentalSales = rentalRes.data || [];
@@ -523,12 +482,12 @@ router.get('/agents/me/monthly-stats', authenticateJWT, async (req, res) => {
     const totalP = rentalP + itP;
     const totalPrem = rentalPrem + itPrem;
 
-    // Grade 자동 결정 (rental_policy 임계값 사용 — 가전렌탈 별도 정책)
-    const rp = rentalPolicyRes.data || {};
-    const g2P = Number(rp.grade_g2_p_threshold ?? 16);
-    const g2Prem = Number(rp.grade_g2_premium_threshold ?? 5);
-    const g3P = Number(rp.grade_g3_p_threshold ?? 31);
-    const g3Prem = Number(rp.grade_g3_premium_threshold ?? 10);
+    // Grade 자동 결정 — incentive_rules 통일 구조 (grade_thresholds JSON)
+    const gth = rentalPolicyRes.data?.grade_thresholds || {};
+    const g2P = Number(gth?.G2?.points ?? 16);
+    const g2Prem = Number(gth?.G2?.premium ?? 5);
+    const g3P = Number(gth?.G3?.points ?? 31);
+    const g3Prem = Number(gth?.G3?.premium ?? 10);
     let grade = 'G1';
     if (totalP >= g3P && totalPrem >= g3Prem) grade = 'G3';
     else if (totalP >= g2P && totalPrem >= g2Prem) grade = 'G2';
@@ -566,22 +525,20 @@ router.post('/sales', authenticateJWT, async (req, res) => {
     } = req.body;
     if (!product_id || !option_id) return res.status(400).json({ error: 'product_id, option_id 필수' });
 
-    // 견적 재계산하여 snapshot 보장
+    // snapshot 박제 (마진/Tier 계산 제거 — 운영자 수동 입력 시대)
     const [{ data: opt }, { data: policy }] = await Promise.all([
       supabase.from('rental_product_options').select('*, product:rental_products(*)').eq('id', option_id).single(),
-      supabase.from('rental_policy').select('*').eq('is_active', true).single(),
+      supabase.from('rental_policy').select('*').eq('active', true).single(),
     ]);
     if (!opt || !policy) return res.status(404).json({ error: '옵션/정책 없음' });
     const product = opt.product;
-    const finalPayback = payback != null ? Number(payback) : (opt.payback || 0);
-    // 단순화 (인터넷+TV와 동일): P = 상품 point_weight 고정
     const P = Number(product.point_weight) || 0;
-    const weightCost = Math.round(P * (policy.weight_cost_per_p || 70000));
-    const margin = Math.round(opt.rebate * 0.9 - finalPayback - weightCost);
-    let tier = 'C';
-    if (margin >= policy.tier_s_min_margin) tier = 'S';
-    else if (margin >= policy.tier_a_min_margin) tier = 'A';
-    else if (margin >= policy.tier_b_min_margin) tier = 'B';
+
+    // 페이백 회사/상담사 분담 자동
+    const companyLimit = policy.payback_company_limit || 30000;
+    const finalPayback = payback != null ? Number(payback) : (opt.payback || 0);
+    const companyBurden = Math.min(finalPayback, companyLimit);
+    const agentDeduct = Math.max(0, finalPayback - companyLimit);
 
     const insert = {
       product_id, option_id,
@@ -617,8 +574,9 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       monthly_fee_snapshot: opt.monthly_fee,
       months_snapshot: opt.months,
       care_service_snapshot: opt.care_service,
-      margin_snapshot: margin,
-      tier_snapshot: tier,
+      is_premium_snapshot: !!product.is_premium,
+      company_payback_burden: companyBurden,
+      agent_payback_deduct: agentDeduct,
     };
     // agent_id 매핑
     if (req.user?.id) {
@@ -677,6 +635,20 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       .single();
     if (error) throw error;
     res.json({ sale: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ─── 월간 정산 RPC (인터넷+TV와 동일 패턴, rental 도메인) ───
+router.get('/settlement', authenticateJWT, async (req, res) => {
+  try {
+    const { agent_id, year_month } = req.query;
+    if (!agent_id || !year_month) return res.status(400).json({ error: 'agent_id, year_month 필수' });
+    const { data, error } = await supabase.rpc('rental_calc_monthly_settlement', {
+      p_agent_id: agent_id,
+      p_year_month: year_month,
+    });
+    if (error) throw error;
+    res.json({ settlement: data });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 

@@ -2616,9 +2616,9 @@ init();
         <tbody>${sales.map(s => {
           const p = s.product || {};
           const opt = s.option || {};
-          const curTier = s.tier_snapshot || p.tier;
+          const curTier = (s.option || {}).tier || p.tier;
           const tierBadge = curTier
-            ? `<span class="tier tier-${curTier}" title="${s.tier_snapshot ? '등록 시점 박제' : '현재 상품 등급'}">${curTier}</span>`
+            ? `<span class="tier tier-${curTier}" title="현재 옵션 등급 (운영자 수동 입력)">${curTier}</span>`
             : `<span style="color:#64748b;font-size:10px">-</span>`;
           const premBadge = p.is_premium ? '<span class="prem-badge" style="margin-left:3px">⭐</span>' : '';
           return `<tr class="rental-sale-row" data-id="${s.id}" style="border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer">
@@ -2669,11 +2669,9 @@ init();
             <div class="ph-tags">
               <span style="background:rgba(99,102,241,0.15);color:#a5b4fc;padding:2px 8px;border-radius:4px;font-weight:700">${s.point_weight_snapshot ?? p.point_weight ?? '-'}P</span>
               ${(() => {
-                const curTier = s.tier_snapshot || p.tier;
+                const curTier = opt.tier || p.tier;
                 if (!curTier) return '<span style="background:rgba(100,116,139,0.15);color:#94a3b8;padding:2px 8px;border-radius:4px;font-weight:700">Tier 미지정</span>';
-                const snapDiff = s.tier_snapshot && p.tier && s.tier_snapshot !== p.tier;
-                return `<span class="tier tier-${curTier}" title="등록 시점 등급 (SNAPSHOT)">${curTier} 등급${s.tier_snapshot ? ' · 박제' : ''}</span>`
-                  + (snapDiff ? ` <span class="tier tier-${p.tier}" title="현재 상품 등급" style="opacity:0.7">현재 ${p.tier}</span>` : '');
+                return `<span class="tier tier-${curTier}" title="현재 옵션 등급 (운영자 수동 입력)">${curTier} 등급</span>`;
               })()}
               ${p.is_premium ? '<span class="prem-badge">⭐ 우수</span>' : ''}
               ${s.grade_at_snapshot ? `<span style="background:rgba(59,130,246,0.15);color:#93c5fd;padding:2px 8px;border-radius:4px;font-weight:700">DB ${s.grade_at_snapshot} 등급</span>` : ''}
@@ -2700,8 +2698,8 @@ init();
               ${opt.payback != null && opt.payback !== s.payback_snapshot ? `<div style="font-size:9.5px;color:#fbbf24;margin-top:2px">현재 ${fmt(opt.payback)}원</div>` : ''}
             </div>
             <div style="text-align:right">
-              <div class="ph-payback-label">📊 마진 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 5px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:3px">SNAPSHOT</span></div>
-              <div style="font-size:16px;font-weight:800;color:${(s.margin_snapshot||0)>=0?'#a78bfa':'#dc2626'}">${fmt(s.margin_snapshot)}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
+              <div class="ph-payback-label">📊 현재 옵션 마진</div>
+              <div style="font-size:16px;font-weight:800;color:${(opt.margin||0)>=0?'#a78bfa':'#dc2626'}">${fmt(opt.margin)}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
             </div>
           </div>
         </div>
