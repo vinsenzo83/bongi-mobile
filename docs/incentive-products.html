@@ -381,6 +381,18 @@ async function fetchAgent() {
       _cats = cs.categories || [];
       _policy = pol.policy;
       _brandPolicies = bps.brand_policies || [];
+
+      // 정책 변경 BroadcastChannel 수신 → _policy 재 fetch + 옵션 표 즉시 재계산
+      try {
+        const rpCh = new BroadcastChannel('rental-policy');
+        rpCh.addEventListener('message', async (e) => {
+          if (e.data?.type === 'policy-changed') {
+            const r = await fetch(RP_API + '/policy').then(r => r.json()).catch(()=>null);
+            if (r?.policy) _policy = r.policy;
+            if (_selectedProductId) loadOptions(_selectedProductId);
+          }
+        });
+      } catch(e) {}
       F('rp-filter-cat').innerHTML = _cats.map(c => `<option value="${c.slug}">${(c.metadata?.icon||'')} ${c.name}</option>`).join('');
       F('rp-filter-cat').addEventListener('change', loadProducts);
       F('rp-filter-brand').addEventListener('change', renderModels);
