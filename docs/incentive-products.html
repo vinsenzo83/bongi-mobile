@@ -755,9 +755,17 @@ async function fetchAgent() {
   }
 
   function optRow(o, product) {
-    // 인터넷+TV와 동일 패턴 — 마진/Tier 운영자 직접 입력 (자동 산출 제거)
-    const margin = (o.margin != null) ? Number(o.margin) : null;
-    const tier = o.tier || '';
+    // 옵션 단위 자동 계산 — 약정·페이백·P 조합마다 마진/Tier 다름
+    const P = Number(o.point_weight ?? product.point_weight) || 1.5;
+    const weightCost = Math.round(P * (_policy?.weight_cost_per_p || 70000));
+    const marginAuto = Math.round((o.rebate||0) * 0.9 - (o.payback||0) - weightCost);
+    const margin = (o.margin_manual_override && o.margin != null) ? Number(o.margin) : marginAuto;
+    // Tier 자동 분류 (margin 기준)
+    let tierAuto = 'C';
+    if (margin >= (_policy?.tier_s_min_margin || 130000)) tierAuto = 'S';
+    else if (margin >= (_policy?.tier_a_min_margin || 120000)) tierAuto = 'A';
+    else if (margin >= (_policy?.tier_b_min_margin || 100000)) tierAuto = 'B';
+    const tier = o.tier || tierAuto;  // 수동값 우선, 없으면 자동
     const tierColor = { S:'#fbbf24', A:'#60a5fa', B:'#94a3b8', C:'#475569' }[tier] || '#475569';
     const diffColor = (o.monthly_diff || 0) < 0 ? '#22c55e' : '#cbd5e1';
     const note = o.metadata?.note || '';
@@ -781,12 +789,12 @@ async function fetchAgent() {
         <td><input class="rp-opt-edit" data-field="point_weight" type="number" step="0.1" value="${o.point_weight!=null?o.point_weight:''}" placeholder="${product.point_weight||1.5}" title="옵션 단위 P (빈칸이면 상품 단위 P fallback)" style="width:50px;background:#0f172a;border:1px solid #a78bfa;color:#a78bfa;padding:2px 4px;border-radius:3px;font-size:10.5px;text-align:right;font-weight:700"></td>
         <td>${inp('margin', margin, 70, tierColor)}</td>
         <td style="text-align:center">
-          <select class="rp-opt-edit field-tier" data-field="tier" style="background:${tierColor};color:#0f172a;font-size:10px;font-weight:800;padding:2px 4px;border:1px solid #475569;border-radius:3px">
-            <option value="" ${!tier?'selected':''}>-</option>
-            <option value="S" ${tier==='S'?'selected':''}>S</option>
-            <option value="A" ${tier==='A'?'selected':''}>A</option>
-            <option value="B" ${tier==='B'?'selected':''}>B</option>
-            <option value="C" ${tier==='C'?'selected':''}>C</option>
+          <select class="rp-opt-edit field-tier" data-field="tier" title="자동 ${tierAuto} (마진 ${margin.toLocaleString()}원 기준) · 수동 select로 override" style="background:${tierColor};color:#0f172a;font-size:10px;font-weight:800;padding:2px 4px;border:1px solid #475569;border-radius:3px">
+            <option value="">${tierAuto} (자동)</option>
+            <option value="S" ${o.tier==='S'?'selected':''}>S</option>
+            <option value="A" ${o.tier==='A'?'selected':''}>A</option>
+            <option value="B" ${o.tier==='B'?'selected':''}>B</option>
+            <option value="C" ${o.tier==='C'?'selected':''}>C</option>
           </select>
         </td>
         <td style="text-align:center"><input class="rp-opt-edit" data-field="is_active" type="checkbox" ${o.is_active?'checked':''}></td>
