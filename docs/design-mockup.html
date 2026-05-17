@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이 디자인 시스템 1차안</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+/* ════════════════════════════════════════════════════════════
+   봉이 디자인 토큰 (Polar 구조 × Rox CRM × Vapi 톤 × Linear 규율)
+   ════════════════════════════════════════════════════════════ */
+:root {
+  /* Surface — Vapi의 deep canvas + Polar의 layered surface */
+  --bg-canvas:    #0a0d14;   /* 최외각 캔버스 (기존 #0f172a보다 더 깊게) */
+  --bg-panel:     #11151f;   /* 사이드바·상단바 */
+  --bg-card:      #161b27;   /* 카드·테이블 row */
+  --bg-elevated:  #1c2230;   /* hover, dropdown */
+  --bg-input:     #0d1119;   /* input·textarea */
+
+  /* Border — Linear의 얇은 graphite */
+  --border-subtle: #1f2533;
+  --border-default:#2a3142;
+  --border-strong: #3a4358;
+  --border-glow:   rgba(59,130,246,0.4); /* focus ring */
+
+  /* Text — high contrast hierarchy */
+  --text-primary:  #f1f5f9;
+  --text-secondary:#a8b3c7;
+  --text-muted:    #6b7689;
+  --text-disabled: #475063;
+
+  /* Accent — 봉이 brand blue (한 가지로 통일) */
+  --accent:        #3b82f6;
+  --accent-hover:  #2563eb;
+  --accent-glow:   rgba(59,130,246,0.15);
+  --accent-soft:   rgba(59,130,246,0.08);
+
+  /* Semantic — CRM status chips (Rox 영감) */
+  --success: #22c55e;  --success-bg: rgba(34,197,94,0.12);
+  --warning: #f59e0b;  --warning-bg: rgba(245,158,11,0.12);
+  --danger:  #ef4444;  --danger-bg:  rgba(239,68,68,0.12);
+  --info:    #38bdf8;  --info-bg:    rgba(56,189,248,0.12);
+  --neutral: #94a3b8;  --neutral-bg: rgba(148,163,184,0.10);
+
+  /* Role badges (기존 유지하되 톤 조정) */
+  --role-admin:    #dc2626;
+  --role-manager:  #16a34a;
+  --role-agent:    #3b82f6;
+  --role-contract: #8b5cf6;
+
+  /* Typography scale (Linear 규율) */
+  --fs-xs:   11px;
+  --fs-sm:   12px;
+  --fs-base: 13px;
+  --fs-md:   14px;
+  --fs-lg:   16px;
+  --fs-xl:   20px;
+  --fs-2xl:  28px;
+
+  /* Radius (Polar의 부드러운 모서리) */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --r-xl: 14px;
+
+  /* Spacing (4px 그리드) */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;  --sp-10: 40px;
+
+  /* Elevation (그림자 대신 border + subtle glow) */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-glow: 0 0 0 3px var(--accent-glow);
+}
+
+* { box-sizing: border-box; margin:0; padding:0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Pretendard Variable', -apple-system, sans-serif;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* ──────── 레이아웃 ──────── */
+.layout { display: flex; flex-direction: column; height: 100vh; }
+
+/* 상단바 — Polar의 절제된 chrome */
+.topbar {
+  height: 52px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--sp-5);
+  flex-shrink: 0;
+}
+.topbar-brand {
+  display: flex; align-items: center; gap: var(--sp-2);
+  font-size: var(--fs-md); font-weight: 700; letter-spacing: -0.02em;
+}
+.topbar-brand .logo-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.topbar-user {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 4px 4px 4px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+}
+.avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-sm); font-weight: 700; color: #fff;
+}
+.user-text { display: flex; flex-direction: column; gap: 1px; line-height: 1.2; }
+.user-name { font-size: var(--fs-sm); font-weight: 600; }
+.user-meta { font-size: 10px; color: var(--text-muted); display: flex; gap: 4px; align-items: center; }
+
+/* 메인 — 사이드바 + 콘텐츠 */
+.main { flex: 1; display: flex; min-height: 0; }
+
+/* 사이드바 — Polar 구조 + Linear 절제 */
+.sidebar {
+  width: 220px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-subtle);
+  padding: var(--sp-3) var(--sp-2);
+  display: flex; flex-direction: column; gap: 1px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.sidebar-section-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: var(--sp-3) var(--sp-3) var(--sp-2);
+  font-weight: 600;
+}
+.nav-item {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: 7px var(--sp-3);
+  border-radius: var(--r-md);
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s;
+  border: none; background: none;
+  text-align: left;
+  width: 100%;
+}
+.nav-item:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.nav-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.nav-item .icon { font-size: 14px; width: 16px; text-align: center; }
+.nav-item .badge {
+  margin-left: auto;
+  font-size: 10px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.nav-item.active .badge { background: var(--accent); color: #fff; }
+
+/* 콘텐츠 영역 */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-6) var(--sp-8);
+  background: var(--bg-canvas);
+}
+.page-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: var(--sp-6);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.page-title { font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -0.03em; }
+.page-subtitle { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 4px; }
+.page-actions { display: flex; gap: var(--sp-2); }
+
+/* ──────── 버튼 ──────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: inherit;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-glow); }
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+.btn-secondary:hover { background: var(--bg-elevated); border-color: var(--border-strong); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.btn-danger { background: var(--danger); color: #fff; }
+
+/* ──────── 카드 ──────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+}
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-4); }
+.card-title { font-size: var(--fs-md); font-weight: 700; }
+
+/* Stat 카드 그리드 */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-6); }
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+}
+.stat-label { font-size: var(--fs-xs); color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-value { font-size: var(--fs-2xl); font-weight: 700; margin-top: var(--sp-2); letter-spacing: -0.02em; }
+.stat-delta { font-size: var(--fs-xs); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.stat-delta.up { color: var(--success); }
+.stat-delta.down { color: var(--danger); }
+
+/* ──────── 테이블 (Polar + Rox 콤팩트) ──────── */
+.table-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.table-toolbar {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.search-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  font-family: inherit;
+}
+.search-input:focus { outline: none; border-color: var(--accent); box-shadow: var(--shadow-glow); }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+}
+td {
+  padding: 11px var(--sp-4);
+  font-size: var(--fs-sm);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+tbody tr:hover { background: var(--bg-elevated); }
+tbody tr:last-child td { border-bottom: none; }
+.cell-mono { font-family: 'SF Mono', 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-secondary); }
+.cell-muted { color: var(--text-muted); }
+
+/* ──────── Status Chip (Rox 영감) ──────── */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  border-radius: 4px;
+  line-height: 1.6;
+}
+.chip-success { background: var(--success-bg); color: var(--success); }
+.chip-warning { background: var(--warning-bg); color: var(--warning); }
+.chip-danger  { background: var(--danger-bg);  color: var(--danger); }
+.chip-info    { background: var(--info-bg);    color: var(--info); }
+.chip-neutral { background: var(--neutral-bg); color: var(--neutral); }
+.chip-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* Role badge */
+.role-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+.role-badge.admin { background: var(--role-admin); color: #fff; }
+
+/* ──────── Slide-over (Polar) ──────── */
+.slideover-demo {
+  margin-top: var(--sp-6);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+}
+.form-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--sp-4); }
+.form-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.form-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  font-family: inherit;
+}
+.form-input:focus { outline: none; border-color: var(--accent); box-shadow: var(--shadow-glow); }
+
+/* Section title */
+.section-title { font-size: var(--fs-lg); font-weight: 700; margin: var(--sp-8) 0 var(--sp-3); letter-spacing: -0.02em; }
+.section-sub { font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: var(--sp-4); }
+
+/* Color swatch */
+.swatch-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--sp-3); }
+.swatch {
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-subtle);
+  padding: var(--sp-3);
+  font-size: var(--fs-xs);
+}
+.swatch-block { height: 40px; border-radius: var(--r-sm); margin-bottom: var(--sp-2); border: 1px solid var(--border-subtle); }
+.swatch-name { font-weight: 600; }
+.swatch-hex { color: var(--text-muted); font-family: monospace; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- 상단바 -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="logo-dot"></span>
+      봉이 TM CRM
+    </div>
+    <div class="topbar-user">
+      <div class="avatar">빈</div>
+      <div class="user-text">
+        <div class="user-name">빈센조</div>
+        <div class="user-meta"><span class="role-badge admin">ADMIN</span> 광주센터</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="main">
+    <!-- 사이드바 -->
+    <aside class="sidebar">
+      <div class="sidebar-section-label">대시보드</div>
+      <button class="nav-item active">
+        <span class="icon">📊</span> 대시보드
+        <span class="badge">12</span>
+      </button>
+      <button class="nav-item">
+        <span class="icon">📞</span> 콜 리스트
+        <span class="badge">48</span>
+      </button>
+      <button class="nav-item">
+        <span class="icon">📈</span> 콜 통계
+      </button>
+
+      <div class="sidebar-section-label">영업 관리</div>
+      <button class="nav-item">
+        <span class="icon">📋</span> 계약 관리
+      </button>
+      <button class="nav-item">
+        <span class="icon">👥</span> 고객 DB
+        <span class="badge">2.4k</span>
+      </button>
+      <button class="nav-item">
+        <span class="icon">💰</span> 정산
+      </button>
+      <button class="nav-item">
+        <span class="icon">🎯</span> 목표·ROI
+      </button>
+
+      <div class="sidebar-section-label">상품·규칙</div>
+      <button class="nav-item">
+        <span class="icon">📦</span> 상품 관리
+      </button>
+      <button class="nav-item">
+        <span class="icon">⚙️</span> 인센티브 규칙
+      </button>
+
+      <div class="sidebar-section-label">TM 도구</div>
+      <button class="nav-item">
+        <span class="icon">🎧</span> TM 상담사 v2
+      </button>
+      <button class="nav-item">
+        <span class="icon">🗂️</span> TM 데이터
+      </button>
+
+      <div class="sidebar-section-label">관리</div>
+      <button class="nav-item">
+        <span class="icon">👤</span> 상담사
+      </button>
+      <button class="nav-item">
+        <span class="icon">🔐</span> 권한 설정
+      </button>
+    </aside>
+
+    <!-- 콘텐츠 -->
+    <main class="content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">대시보드</div>
+          <div class="page-subtitle">2026년 5월 17일 — 실시간 운영 현황</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost">⤓ 내보내기</button>
+          <button class="btn btn-secondary">필터</button>
+          <button class="btn btn-primary">+ 새 계약</button>
+        </div>
+      </div>
+
+      <!-- Stat 카드 -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">이번달 매출</div>
+          <div class="stat-value">₩48.2M</div>
+          <div class="stat-delta up">▲ 12.4% 전월 대비</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">신규 계약</div>
+          <div class="stat-value">127</div>
+          <div class="stat-delta up">▲ 8건</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">활성 상담사</div>
+          <div class="stat-value">11</div>
+          <div class="stat-delta">전체 정상 운영</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">분배 대기 DB</div>
+          <div class="stat-value">2,418</div>
+          <div class="stat-delta down">▼ 어제 -340</div>
+        </div>
+      </div>
+
+      <!-- 테이블 -->
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <input class="search-input" placeholder="🔍 계약번호·고객명·전화로 검색...">
+          <button class="btn btn-ghost">상태 ▾</button>
+          <button class="btn btn-ghost">통신사 ▾</button>
+          <button class="btn btn-secondary">+ 추가</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>계약번호</th>
+              <th>고객</th>
+              <th>통신사</th>
+              <th>상품</th>
+              <th>상태</th>
+              <th>담당</th>
+              <th>등록일</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cell-mono">CT-2026-1248</td>
+              <td>김지영 <span class="cell-muted">010-****-1234</span></td>
+              <td><span class="chip chip-info"><span class="chip-dot"></span>SK</span></td>
+              <td>인+TV 결합 (광기가)</td>
+              <td><span class="chip chip-success">완료</span></td>
+              <td>박상담</td>
+              <td class="cell-muted">05/17</td>
+            </tr>
+            <tr>
+              <td class="cell-mono">CT-2026-1247</td>
+              <td>이민호 <span class="cell-muted">010-****-5678</span></td>
+              <td><span class="chip chip-warning"><span class="chip-dot"></span>KT</span></td>
+              <td>인터넷 단독 (500M)</td>
+              <td><span class="chip chip-warning">처리중</span></td>
+              <td>김TM</td>
+              <td class="cell-muted">05/17</td>
+            </tr>
+            <tr>
+              <td class="cell-mono">CT-2026-1246</td>
+              <td>최영수 <span class="cell-muted">010-****-9012</span></td>
+              <td><span class="chip chip-danger"><span class="chip-dot"></span>LG</span></td>
+              <td>제로렌탈 (TV+냉장고)</td>
+              <td><span class="chip chip-info">검수중</span></td>
+              <td>박상담</td>
+              <td class="cell-muted">05/16</td>
+            </tr>
+            <tr>
+              <td class="cell-mono">CT-2026-1245</td>
+              <td>박지수 <span class="cell-muted">010-****-3456</span></td>
+              <td><span class="chip chip-info"><span class="chip-dot"></span>SK</span></td>
+              <td>인+TV+모바일 결합</td>
+              <td><span class="chip chip-danger">반려</span></td>
+              <td>이TM</td>
+              <td class="cell-muted">05/16</td>
+            </tr>
+            <tr>
+              <td class="cell-mono">CT-2026-1244</td>
+              <td>정수민 <span class="cell-muted">010-****-7890</span></td>
+              <td><span class="chip chip-warning"><span class="chip-dot"></span>KT</span></td>
+              <td>인터넷 단독 (1G)</td>
+              <td><span class="chip chip-neutral">대기</span></td>
+              <td>—</td>
+              <td class="cell-muted">05/16</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 폼 데모 -->
+      <div class="section-title">컴포넌트 — 폼 / 입력</div>
+      <div class="section-sub">slide-over 패널 안의 편집 폼 (Polar 패턴)</div>
+      <div class="slideover-demo">
+        <div class="form-row">
+          <label class="form-label">고객명</label>
+          <input class="form-input" value="김지영">
+        </div>
+        <div class="form-row">
+          <label class="form-label">전화번호</label>
+          <input class="form-input" value="010-1234-5678">
+        </div>
+        <div class="form-row">
+          <label class="form-label">상품 메모</label>
+          <input class="form-input" placeholder="추가 메모를 입력하세요">
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top: 20px;">
+          <button class="btn btn-ghost">취소</button>
+          <button class="btn btn-primary">저장</button>
+        </div>
+      </div>
+
+      <!-- 컬러 팔레트 -->
+      <div class="section-title">디자인 토큰 — 컬러</div>
+      <div class="section-sub">모든 페이지가 공유하는 색 변수</div>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="swatch-block" style="background:#0a0d14"></div><div class="swatch-name">bg-canvas</div><div class="swatch-hex">#0a0d14</div></div>
+        <div class="swatch"><div class="swatch-block" style="background:#11151f"></div><div class="swatch-name">bg-panel</div><div class="swatch-hex">#11151f</div></div>
+        <div class="swatch"><div class="swatch-block" style="background:#161b27"></div><div class="swatch-name">bg-card</div><div class="swatch-hex">#161b27</div></div>
+        <div class="swatch"><div class="swatch-block" style="background:#1c2230"></div><div class="swatch-name">bg-elevated</div><div class="swatch-hex">#1c2230</div></div>
+        <div class="swatch"><div class="swatch-block" style="background:#3b82f6"></div><div class="swatch-name">accent</div><div class="swatch-hex">#3b82f6</div></div>
+        <div class="swatch"><div class="swatch-block" style="background:#22c55e"></div><div class="swatch-name">success</div><div class="swatch-hex">#22c55e</div></div>
+      </div>
+
+      <div style="height: 60px;"></div>
+    </main>
+  </div>
+</div>
+
+</body>
+</html>
