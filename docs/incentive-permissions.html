@@ -122,6 +122,39 @@ input[type="checkbox"]:disabled {
   </div>
 
   <div id="main-area" style="display:none">
+    <!-- ═══ 부서 관리 ═══ -->
+    <div class="section">
+      <h2>🏢 부서 관리 (담당 카테고리)</h2>
+      <div class="notice">
+        <b>부서</b>는 가전렌탈 카테고리 담당을 매핑합니다 (예: 정수기팀 → water-purifier).<br>
+        각 부서가 처리할 카테고리를 체크박스로 편집하세요. 변경 시 즉시 저장됩니다.
+      </div>
+      <div id="dept-list" style="display:flex;flex-direction:column;gap:8px">불러오는 중…</div>
+    </div>
+
+    <!-- ═══ 상담사 부서 배치 ═══ -->
+    <div class="section">
+      <h2>👥 상담사 부서 배치</h2>
+      <div class="notice">
+        각 상담사를 <b>부서</b>에 배치하면 해당 부서의 담당 카테고리를 처리할 권한이 부여됩니다.<br>
+        <b>추가 카테고리</b>는 부서 외에 본인이 따로 처리할 카테고리(예: 정수기팀이지만 비데도 처리)를 지정합니다.<br>
+        admin/manager는 자동으로 모든 카테고리를 처리합니다 (부서 배치 무관).
+      </div>
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>상담사 / 센터 / 역할</th>
+            <th style="width:200px">부서 배치</th>
+            <th style="min-width:260px">추가 처리 카테고리</th>
+            <th style="width:80px">저장</th>
+          </tr>
+        </thead>
+        <tbody id="agent-dept-tbody">
+          <tr><td colspan="4" style="padding:20px;text-align:center;color:#64748b">불러오는 중…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
     <div class="section">
       <h2>📋 메뉴 권한 매트릭스</h2>
 
@@ -397,6 +430,166 @@ async function saveDirty() {
   applyCellDirtyVisuals();
 }
 
+// ═══ 부서 + 상담사 배치 ═══
+let _depts = [];       // [{ id, name, slug, categories[], description }]
+let _agents = [];      // [{ id, name, center, role, department_id, handle_categories[] }]
+let _cats = [];        // [{ slug, name, icon }]  (가전렌탈 + internet_tv)
+
+async function loadDeptsAndAgents() {
+  const tk = getToken();
+  try {
+    const [dRes, aRes, cRes] = await Promise.all([
+      fetch(API + '/departments', { headers: { Authorization: 'Bearer ' + tk } }).then(r => r.json()).catch(() => ({})),
+      fetch(API + '/agents', { headers: { Authorization: 'Bearer ' + tk } }).then(r => r.json()).catch(() => ({})),
+      fetch('/api/rental/categories', { headers: { Authorization: 'Bearer ' + tk } }).then(r => r.json()).catch(() => ({})),
+    ]);
+    _depts = dRes.departments || dRes.rows || [];
+    _agents = (aRes.agents || []).filter(a => a.role !== 'admin');  // admin은 자동 전체 → 배치 불필요
+    const rentalCats = cRes.categories || cRes.rows || [];
+    _cats = [
+      { slug: 'internet_tv', name: '인터넷+TV', icon: '🌐' },
+      ...rentalCats.map(c => ({ slug: c.slug, name: c.name, icon: c.icon })),
+    ];
+    renderDeptList();
+    renderAgentDeptTable();
+  } catch (e) {
+    document.getElementById('dept-list').innerHTML = `<div style="color:#ef4444">부서 로드 실패: ${e.message}</div>`;
+  }
+}
+
+function renderDeptList() {
+  const el = document.getElementById('dept-list');
+  if (!_depts.length) { el.innerHTML = '<div style="color:#94a3b8">부서 없음</div>'; return; }
+  el.innerHTML = _depts.map(d => {
+    const myCats = Array.isArray(d.categories) ? d.categories : [];
+    const chips = _cats.map(c => {
+      const checked = myCats.includes(c.slug);
+      return `<label style="display:inline-flex;align-items:center;gap:4px;background:${checked?'rgba(34,197,94,0.15)':'rgba(71,85,105,0.25)'};border:1px solid ${checked?'#16a34a':'#475569'};padding:4px 9px;border-radius:5px;font-size:11.5px;cursor:pointer;font-weight:${checked?700:500};color:${checked?'#86efac':'#cbd5e1'}">
+        <input type="checkbox" data-dept-id="${d.id}" data-cat="${c.slug}" ${checked?'checked':''} style="margin:0;width:14px;height:14px">
+        ${c.icon || '📦'} ${c.name}
+      </label>`;
+    }).join('');
+    return `<div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+        <div style="font-size:13.5px;font-weight:800;color:#fbbf24">${d.name}</div>
+        <div style="font-size:10.5px;color:#64748b">${(d.slug||'-')} · ID ${d.id}</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${chips}</div>
+    </div>`;
+  }).join('');
+  // 체크 핸들러
+  el.querySelectorAll('input[data-dept-id]').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      const id = cb.dataset.deptId;
+      const dept = _depts.find(x => String(x.id) === String(id));
+      if (!dept) return;
+      const cats = new Set(Array.isArray(dept.categories) ? dept.categories : []);
+      if (cb.checked) cats.add(cb.dataset.cat); else cats.delete(cb.dataset.cat);
+      const next = Array.from(cats);
+      cb.disabled = true;
+      try {
+        const tk = getToken();
+        const r = await fetch(API + '/departments/' + id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+          body: JSON.stringify({ categories: next }),
+        }).then(r => r.json());
+        if (r.error) throw new Error(r.error);
+        dept.categories = next;
+        renderDeptList();
+        showToast(`✅ ${dept.name} 카테고리 저장`);
+      } catch (e) {
+        showToast(`❌ ${e.message}`, true);
+        cb.checked = !cb.checked;
+      } finally { cb.disabled = false; }
+    });
+  });
+}
+
+function renderAgentDeptTable() {
+  const tbody = document.getElementById('agent-dept-tbody');
+  if (!_agents.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:#94a3b8">상담사 없음</td></tr>'; return; }
+  tbody.innerHTML = _agents.map(a => {
+    const handle = Array.isArray(a.handle_categories) ? a.handle_categories : [];
+    const roleColor = { agent:'#3b82f6', manager:'#16a34a', contract:'#8b5cf6' }[a.role] || '#64748b';
+    return `<tr data-agent-id="${a.id}">
+      <td style="text-align:left;padding-left:18px">
+        <div style="font-weight:700;color:#f8fafc">${a.name || '-'}</div>
+        <div style="font-size:10.5px;color:#94a3b8">${a.center || '-'} · <span style="background:${roleColor};color:#fff;padding:1px 6px;border-radius:3px;font-size:9.5px;font-weight:800">${a.role}</span></div>
+      </td>
+      <td>
+        <select class="agent-dept-select" data-agent-id="${a.id}" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:5px;font-size:12px;font-weight:700">
+          <option value="">— 미배정 —</option>
+          ${_depts.map(d => `<option value="${d.id}" ${String(a.department_id)===String(d.id)?'selected':''}>${d.name}</option>`).join('')}
+        </select>
+      </td>
+      <td style="text-align:left">
+        <div class="agent-cat-chips" data-agent-id="${a.id}" style="display:flex;flex-wrap:wrap;gap:5px">
+          ${_cats.map(c => {
+            const checked = handle.includes(c.slug);
+            return `<label style="display:inline-flex;align-items:center;gap:3px;background:${checked?'rgba(96,165,250,0.15)':'rgba(71,85,105,0.20)'};border:1px solid ${checked?'#60a5fa':'#475569'};padding:3px 7px;border-radius:4px;font-size:10.5px;cursor:pointer;font-weight:${checked?700:500};color:${checked?'#93c5fd':'#cbd5e1'}">
+              <input type="checkbox" data-agent-id="${a.id}" data-cat="${c.slug}" ${checked?'checked':''} style="margin:0;width:12px;height:12px">
+              ${c.icon || ''} ${c.name}
+            </label>`;
+          }).join('')}
+        </div>
+      </td>
+      <td>
+        <button type="button" class="agent-dept-save-btn" data-agent-id="${a.id}" disabled style="background:#334155;color:#64748b;border:none;padding:6px 14px;border-radius:5px;font-size:11px;font-weight:800;cursor:not-allowed">저장</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // dirty 감지: select·체크 변경 시 저장 버튼 활성화
+  tbody.querySelectorAll('select.agent-dept-select, .agent-cat-chips input[type="checkbox"]').forEach(el => {
+    el.addEventListener('change', () => markAgentDirty(el.dataset.agentId));
+  });
+  tbody.querySelectorAll('.agent-dept-save-btn').forEach(btn => {
+    btn.addEventListener('click', () => saveAgentDept(btn.dataset.agentId));
+  });
+}
+
+function markAgentDirty(agentId) {
+  const btn = document.querySelector(`.agent-dept-save-btn[data-agent-id="${agentId}"]`);
+  if (!btn) return;
+  btn.disabled = false;
+  btn.textContent = '💾 저장';
+  btn.style.background = '#16a34a';
+  btn.style.color = '#fff';
+  btn.style.cursor = 'pointer';
+}
+
+async function saveAgentDept(agentId) {
+  const btn = document.querySelector(`.agent-dept-save-btn[data-agent-id="${agentId}"]`);
+  const sel = document.querySelector(`.agent-dept-select[data-agent-id="${agentId}"]`);
+  const chips = document.querySelectorAll(`.agent-cat-chips[data-agent-id="${agentId}"] input[type="checkbox"]:checked`);
+  const handle_categories = Array.from(chips).map(c => c.dataset.cat);
+  const department_id = sel.value ? Number(sel.value) : null;
+  btn.disabled = true; btn.textContent = '⏳ 저장 중…';
+  try {
+    const tk = getToken();
+    const r = await fetch(API + '/agents/' + agentId, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+      body: JSON.stringify({ department_id, handle_categories }),
+    }).then(r => r.json());
+    if (r.error) throw new Error(r.error);
+    // 로컬 캐시 업데이트
+    const a = _agents.find(x => String(x.id) === String(agentId));
+    if (a) { a.department_id = department_id; a.handle_categories = handle_categories; }
+    btn.textContent = '✅'; btn.style.background = '#16a34a';
+    setTimeout(() => {
+      btn.textContent = '저장'; btn.style.background = '#334155'; btn.style.color = '#64748b';
+      btn.style.cursor = 'not-allowed'; btn.disabled = true;
+    }, 1500);
+    showToast(`✅ ${a?.name || agentId} 부서·카테고리 저장`);
+  } catch (e) {
+    btn.textContent = '❌ ' + e.message.slice(0,20); btn.style.background = '#dc2626';
+    setTimeout(() => { btn.disabled = false; btn.textContent = '💾 저장'; btn.style.background = '#16a34a'; btn.style.color = '#fff'; btn.style.cursor = 'pointer'; }, 2500);
+    showToast(`❌ 저장 실패: ${e.message}`, true);
+  }
+}
+
 function resetToDefaults() {
   if (!confirm('모든 role을 기본값으로 복원합니다 (저장 전까지 DB 미반영). 계속할까요?')) return;
   ROLES.forEach(r => { _state[r] = new Set(DEFAULTS[r] || []); });
@@ -435,7 +628,7 @@ async function init() {
       return;
     }
     await bootMenus();   // ← incentive_menus SSOT fetch (MENUS/DEFAULTS 채움)
-    await loadAll();
+    await Promise.all([loadAll(), loadDeptsAndAgents()]);
     document.getElementById('main-area').style.display = '';
   } catch (e) {
     // 어떤 단계에서든 실패하면 deny-area로 명시 — 빈 화면 방지

@@ -360,9 +360,11 @@ router.patch('/agents/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
 
-    const allowed = ['name', 'center', 'role', 'base_salary', 'active', 'hire_date'];
+    const allowed = ['name', 'center', 'role', 'base_salary', 'active', 'hire_date', 'department_id', 'handle_categories'];
     const update = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    if (update.department_id === '' || update.department_id === 0) update.department_id = null;
+    if (Array.isArray(update.handle_categories) && update.handle_categories.length === 0) update.handle_categories = null;
 
     const { data, error } = await supabase
       .from('incentive_agents')
