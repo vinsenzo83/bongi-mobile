@@ -18,7 +18,9 @@
     "lint": "eslint server/ scripts/ tests/",
     "format": "prettier --write .",
     "check:auth": "node scripts/check-auth-helpers.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:diff": "node scripts/db-diff.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

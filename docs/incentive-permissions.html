@@ -160,50 +160,31 @@ input[type="checkbox"]:disabled {
 
 <script>
 // ═══ 상수 ═══
-const MENUS = [
-  { key: 'dashboard',    label: '📊 대시보드' },
-  { key: 'contract',     label: '📋 계약 처리' },
-  { key: 'agents',       label: '👥 상담사 관리' },
-  { key: 'products',     label: '📦 상품 관리' },
-  { key: 'rules',        label: '⚙️ 정책 관리' },
-  { key: 'db-sources',   label: '🗂️ DB 출처' },
-  { key: 'customer-db',  label: '📞 콜 DB 관리' },
-  { key: 'call-stats',   label: '📈 콜 통계' },
-  { key: 'settlements',  label: '💰 월별 정산' },
-  { key: 'goals',        label: '🎯 월간 목표' },
-  { key: 'agents-roi',   label: '👥 상담사 ROI 비교' },
-  { key: 'manual',       label: '📚 사용 매뉴얼' },
-  { key: 'call-list',    label: '📋 내 콜 리스트' },
-  { key: 'distribution-requests', label: '📥 분배 요청' },
-  { key: 'tm-counselor', label: '📞 TM 상담 v1 (큐콜)' },
-  { key: 'tm-counselor-v2', label: '✏️ TM 상담 v2 (수동)' },
-  { key: 'tm-data',      label: '🧮 TM 데이터 관리' },
-  { key: 'tickets',      label: '🎫 티켓 관리' },
-  { key: 'guide',        label: '📖 급여 안내' },
-  { key: 'permissions',  label: '🔐 권한 관리' },
-];
+// MENUS·DEFAULTS는 이제 incentive_menus 테이블(SSOT)에서 fetch — bootMenus()에서 채워짐
+let MENUS = [];
 const ROLES = ['agent', 'manager', 'admin', 'contract'];
 // admin 락다운 방지: admin row에서 항상 강제 체크
 const ADMIN_REQUIRED = new Set(['permissions', 'agents']);
-// 기본값 (DB 시드와 동일)
-const DEFAULTS = {
-  agent: [
-    'dashboard', 'contract', 'tm-counselor', 'tm-counselor-v2',
-    'guide', 'call-list', 'distribution-requests', 'manual'
-  ],
-  manager: [
-    'dashboard', 'contract', 'agents', 'tm-counselor', 'tm-counselor-v2',
-    'tm-data', 'tickets', 'guide', 'call-list', 'distribution-requests',
-    'agents-roi', 'goals', 'call-stats', 'settlements', 'manual'
-  ],
-  admin: [
-    'dashboard', 'contract', 'agents', 'products', 'rules', 'db-sources',
-    'customer-db', 'call-stats', 'settlements', 'goals', 'agents-roi',
-    'manual', 'call-list', 'distribution-requests',
-    'tm-counselor', 'tm-counselor-v2', 'tm-data', 'tickets', 'guide', 'permissions'
-  ],
-  contract: ['dashboard', 'contract', 'guide', 'manual'],
-};
+let DEFAULTS = {};
+
+async function bootMenus() {
+  const token = localStorage.getItem('incentive-auth-token-v1');
+  const res = await fetch('/api/incentive/menus', {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  if (!res.ok) throw new Error('menus fetch 실패: HTTP ' + res.status);
+  const { menus } = await res.json();
+  // MENUS: { key, label } 형태로 변환 (display_order 그대로 사용)
+  MENUS = menus.map(m => ({ key: m.slug, label: (m.icon || '') + ' ' + m.label }));
+  // DEFAULTS: role별 default_roles에서 재구성
+  DEFAULTS = { agent: [], manager: [], admin: [], contract: [] };
+  for (const m of menus) {
+    const roles = Array.isArray(m.default_roles) ? m.default_roles : [];
+    for (const r of roles) if (DEFAULTS[r]) DEFAULTS[r].push(m.slug);
+  }
+  console.log(`[menus SSOT] ${MENUS.length} menus loaded, DEFAULTS:`,
+    Object.fromEntries(Object.entries(DEFAULTS).map(([k, v]) => [k, v.length])));
+}
 
 // ═══ 상태 ═══
 // _state[role] = Set<menuKey>
@@ -453,6 +434,7 @@ async function init() {
       document.getElementById('deny-area').style.display = '';
       return;
     }
+    await bootMenus();   // ← incentive_menus SSOT fetch (MENUS/DEFAULTS 채움)
     await loadAll();
     document.getElementById('main-area').style.display = '';
   } catch (e) {

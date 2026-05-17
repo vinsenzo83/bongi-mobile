@@ -608,6 +608,43 @@ setTimeout(() => { if (window.G_currentAgent) pollDistributionRequests(); }, 150
 
 // 페이지 로드 후 init
 setTimeout(gInit, 50);
+
+// ════════════════════════════════════════════════════════════
+// 🛡️ 사이드바 SSOT 정합성 검증 — incentive_menus DB vs hardcoded button
+// 새 메뉴 추가 시 4곳 동기화 함정 자동 감지
+// ════════════════════════════════════════════════════════════
+async function verifySidebarSSOT() {
+  try {
+    const token = localStorage.getItem('incentive-auth-token-v1');
+    if (!token) return;
+    const res = await fetch('/api/incentive/menus', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    const { menus } = await res.json();
+    const dbSlugs = new Set(menus.filter(m => m.active).map(m => m.slug));
+    const htmlSlugs = new Set(
+      Array.from(document.querySelectorAll('aside.sidebar button[data-key]')).map(b => b.dataset.key)
+    );
+    const dbOnly = [...dbSlugs].filter(s => !htmlSlugs.has(s));
+    const htmlOnly = [...htmlSlugs].filter(s => !dbSlugs.has(s));
+    if (dbOnly.length || htmlOnly.length) {
+      console.warn(
+        '🛡️ [SSOT drift] DB↔사이드바 불일치 — 4곳 동기화 함정:\n' +
+        (dbOnly.length ? '  DB에만 있음 (사이드바 button 추가 필요): ' + dbOnly.join(', ') + '\n' : '') +
+        (htmlOnly.length ? '  HTML에만 있음 (DB INSERT 또는 비활성 필요): ' + htmlOnly.join(', ') + '\n' : '') +
+        'memory: feedback_menu_4places_sync.md'
+      );
+      // admin에게 토스트 알림
+      if (window.G_currentAgent?.role === 'admin') {
+        setTimeout(() => gShowToast(`⚠️ 메뉴 SSOT drift: DB ${dbOnly.length}개 / HTML ${htmlOnly.length}개 불일치 — 콘솔 확인`), 3000);
+      }
+    } else {
+      console.log(`✓ [SSOT] 사이드바 ${htmlSlugs.size}개 메뉴 일치`);
+    }
+  } catch (e) { /* silent — 검증 실패가 운영 차단 X */ }
+}
+setTimeout(verifySidebarSSOT, 3500);
 </script>
 </body>
 </html>

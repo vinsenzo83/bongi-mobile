@@ -1,0 +1,27 @@
+name: Schema Diff (라이브 ↔ 데브)
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 매일 KST 09:00 (UTC 00:00)
+  workflow_dispatch:      # 수동 실행
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Run schema diff
+        env:
+          SUPABASE_PAT: ${{ secrets.SUPABASE_PAT }}
+          SUPABASE_PROJECT_LIVE: dugaqvvnhsgenhmhuyju
+          SUPABASE_PROJECT_DEV: sesgdqbmophgmombelmn
+        run: npm run db:diff
+      - name: Slack/이메일 알림 (drift 시)
+        if: failure()
+        run: |
+          echo "::warning::라이브↔데브 schema drift 감지 — Actions log 확인"
