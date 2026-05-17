@@ -1632,7 +1632,7 @@ function bindShortcutKeys() {
 
       <div class="rr-filter-bar">
         <input type="search" id="rr-search" placeholder="🔎 모델·브랜드 검색">
-        <label class="rr-chk"><input type="checkbox" id="rr-premium-only"> ⭐ 우수상품만</label>
+<!-- 우수상품 필터 제거: 옵션 단위 자동 분류라 product 단위 필터 무의미 -->
       </div>
       <div class="rr-cat-chips" id="rr-cat-chips"></div>
       <div class="rr-brand-chips" id="rr-brand-chips"></div>
@@ -5251,7 +5251,7 @@ setTimeout(() => {
     if (crit.people === '1-2' && f.small) tags.push('🧍 1~2인');
     if (crit.people === '5+' && f.large) tags.push('👨‍👩‍👧‍👦 대가족');
     if (crit.usage === 'business' && (f.business || f.large)) tags.push('🏢 사업장');
-    if (p.is_premium) tags.push('⭐ 우수');
+    // 우수 태그 제거 (옵션별 자동 분류)
     return tags;
   }
 
@@ -5342,7 +5342,8 @@ setTimeout(() => {
     let arr = _allProducts.slice();
     if (_rrFilter.category !== 'all') arr = arr.filter(p => p.category?.slug === _rrFilter.category);
     if (_rrFilter.brand !== 'all') arr = arr.filter(p => p.brand === _rrFilter.brand);
-    if (_rrFilter.premiumOnly) arr = arr.filter(p => p.is_premium);
+    // 우수 필터 비활성 (옵션별 자동) — premiumOnly 무시
+    // if (_rrFilter.premiumOnly) arr = arr.filter(p => p.is_premium);
     if (_rrFilter.q) {
       const q = _rrFilter.q.toLowerCase();
       arr = arr.filter(p => (p.name||'').toLowerCase().includes(q) || (p.model||'').toLowerCase().includes(q) || (p.brand||'').toLowerCase().includes(q));
@@ -5479,10 +5480,10 @@ setTimeout(() => {
       const metaHtml = metaChips.length ? `<div class="meta-chips">${metaChips.join('')}</div>` : '';
       const dataSrc = p.meta_manual_override ? '✓' : p.auto_filled_at ? '🤖' : '';
       const tierBadge = p.tier ? `<span class="rr-tier-badge rr-tier-${p.tier}">${p.tier}</span>` : '';
-      return `<div class="rr-card ${p.is_premium?'premium':''} ${isTop?'top-match':''}" data-id="${p.id}" data-cat="${p.category?.slug||''}" data-brand="${p.brand||''}">
+      return `<div class="rr-card ${isTop?'top-match':''}" data-id="${p.id}" data-cat="${p.category?.slug||''}" data-brand="${p.brand||''}">
         <div class="rr-row1">
           <span class="brand">${isTop ? '🏆 ' : ''}${p.brand||''} ${tierBadge} ${dataSrc?`<span class="data-src" title="${p.meta_manual_override?'어드민 확정':'자동 추출'}">${dataSrc}</span>`:''}</span>
-          ${p.is_premium ? '<span class="premium-badge">⭐ 우수</span>' : ''}
+<!-- 우수 배지 제거: 옵션별 자동 분류이므로 product 단위 표시 무의미 -->
         </div>
         <div class="model">${escapeHtml(p.name||'')}</div>
         <div class="model-name">${escapeHtml(p.model||'')} · ${care}</div>
