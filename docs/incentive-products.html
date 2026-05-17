@@ -411,16 +411,10 @@ async function fetchAgent() {
     F('rp-kpi-active').textContent = '활성 ' + _products.filter(p => p.is_active).length;
     F('rp-kpi-premium').textContent = _products.filter(p => p.is_premium).length;
     F('rp-kpi-brands').textContent = new Set(_products.map(p => p.brand)).size + ' 브랜드';
-    // 총 옵션 수 + 평균 리베이트 (전체 옵션 로드는 너무 많아서 첫 모델 옵션 기준 추정)
-    F('rp-kpi-options').textContent = '...';
-    F('rp-kpi-rebate').textContent = '...';
-    try {
-      // 카테고리 전체 옵션 집계 — Supabase는 GET으로 count 못해서 별도 stats API 필요. 일단 단순 표시.
-      // 옵션 평균 리베이트는 제품×약정×케어 평균 14.1개 가정 추정.
-      const totalOptions = _products.length * 14;  // 평균치 추정
-      F('rp-kpi-options').textContent = `≈ ${totalOptions}`;
-      F('rp-kpi-rebate').textContent = '클릭→확인';
-    } catch(e) { /* skip */ }
+    // 총 옵션 수 — rental_products.option_count 컬럼 합산 (정확값)
+    const totalOptions = _products.reduce((s, p) => s + (p.option_count || 0), 0);
+    F('rp-kpi-options').textContent = totalOptions;
+    F('rp-kpi-rebate').textContent = '클릭→확인';
   }
 
   function renderModels() {
