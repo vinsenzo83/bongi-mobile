@@ -1750,10 +1750,79 @@ function bindShortcutKeys() {
 
         <div class="rental-quote">
           <div class="qt-ttl" id="rental-quote-title">💧 정수기 견적 결과</div>
+          <!-- ★ R 티켓번호 빠른 조회 (가전렌탈 전용) — 인터넷+TV 영역과 분리 -->
+          <div style="background:rgba(15,23,42,0.55);border:1px solid #475569;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+            <div style="font-size:11px;color:#fbbf24;font-weight:700;margin-bottom:6px">🎫 가전렌탈 티켓번호 빠른 조회</div>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="r-ticket-lookup" placeholder="예: R0683" autocomplete="off"
+                style="flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px;font-family:'SF Mono',Monaco,monospace;text-transform:uppercase">
+              <button id="r-ticket-lookup-btn" style="background:#3b82f6;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">조회</button>
+            </div>
+            <div id="r-ticket-lookup-msg" style="font-size:10.5px;margin-top:6px;min-height:14px"></div>
+          </div>
           <div id="rental-quote-body">
-            <div style="text-align:center;padding:14px 8px;color:#94a3b8;font-size:11px">카테고리·브랜드·모델·옵션을 선택하세요</div>
+            <div style="text-align:center;padding:14px 8px;color:#94a3b8;font-size:11px">카테고리·브랜드·모델·옵션을 선택하거나 R 티켓번호로 조회하세요</div>
           </div>
         </div>
+
+        <script>
+        // ★ 가전렌탈 R 티켓 별도 조회 (인터넷+TV 영역과 완전 분리)
+        (function setupRentalTicketLookup() {
+          var input = document.getElementById('r-ticket-lookup');
+          var btn = document.getElementById('r-ticket-lookup-btn');
+          var msg = document.getElementById('r-ticket-lookup-msg');
+          if (!input || !btn) return;
+
+          function showMsg(text, kind) {
+            msg.textContent = text;
+            msg.style.color = kind === 'success' ? '#22c55e' : '#ef4444';
+          }
+          function hideMsg() { msg.textContent = ''; }
+          var fmt = function(n){ return n == null ? '-' : Number(n).toLocaleString('ko-KR'); };
+
+          async function lookupRental() {
+            var num = (input.value || '').trim().toUpperCase();
+            if (!num) { hideMsg(); return; }
+            if (!/^R\d{3,}$/.test(num)) { showMsg('⚠️ R0001 형식이어야 합니다'); return; }
+            try {
+              var tk = localStorage.getItem('incentive-auth-token-v1');
+              var resp = await fetch('/api/incentive/tickets/rental/lookup?ticket=' + encodeURIComponent(num), {
+                headers: { Authorization: 'Bearer ' + tk }
+              });
+              if (!resp.ok) { showMsg('⚠️ 티켓 없음: ' + num); return; }
+              var data = await resp.json();
+              var r = data.ticket;
+              var p = r.product || {};
+              var html = ''
+                + '<div style="background:linear-gradient(135deg,#1e293b,#0f172a);border:1.5px solid #3b82f6;border-radius:10px;padding:14px">'
+                + '<div style="display:flex;flex-direction:column;gap:3px;padding-bottom:10px;border-bottom:1px solid #334155;margin-bottom:10px">'
+                + '<span style="font-size:9.5px;color:rgba(255,255,255,0.6);letter-spacing:0.04em">🎫 티켓번호</span>'
+                + '<span style="font-size:18px;font-weight:900;color:#a5b4fc;font-family:\'SF Mono\',Monaco,monospace;letter-spacing:0.8px">' + r.ticket_number + '</span>'
+                + '</div>'
+                + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+                + '<div style="font-size:11px;color:#94a3b8;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">🏠 가전 렌탈 견적</div>'
+                + '<div style="background:rgba(56,189,248,0.15);color:#7dd3fc;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">' + (p.brand || '-') + '</div>'
+                + '</div>'
+                + '<div style="font-size:13px;color:#e2e8f0;font-weight:600;margin-top:4px">' + (p.name || '-') + '</div>'
+                + '<div style="font-size:11px;color:#64748b;margin-top:2px">모델 ' + (p.model || '-') + '</div>'
+                + '<table style="width:100%;margin-top:10px;font-size:12px">'
+                + '<tr><td style="color:#94a3b8;padding:3px 0">약정</td><td style="text-align:right;color:#c4b5fd;font-weight:700;font-family:monospace">' + r.months + 'M' + (r.care_service ? ' · ' + r.care_service : '') + '</td></tr>'
+                + '<tr><td style="color:#94a3b8;padding:3px 0">월납</td><td style="text-align:right;color:#f1f5f9;font-weight:800;font-family:monospace">' + fmt(r.monthly_fee) + '원</td></tr>'
+                + '<tr><td style="color:#94a3b8;padding:3px 0">정상가</td><td style="text-align:right;color:#cbd5e1;font-family:monospace">' + fmt(r.normal_price) + '원</td></tr>'
+                + '<tr><td style="color:#94a3b8;padding:3px 0">리베이트</td><td style="text-align:right;color:#34d399;font-weight:700;font-family:monospace">' + fmt(r.rebate) + '원</td></tr>'
+                + '<tr><td style="color:#94a3b8;padding:3px 0">페이백</td><td style="text-align:right;color:#fbbf24;font-weight:700;font-family:monospace">' + fmt(r.payback) + '원</td></tr>'
+                + (r.ownership_months ? '<tr><td style="color:#94a3b8;padding:3px 0">소유권 이전</td><td style="text-align:right;color:#cbd5e1;font-family:monospace">' + r.ownership_months + 'M 후</td></tr>' : '')
+                + '</table></div>';
+              document.getElementById('rental-quote-body').innerHTML = html;
+              var titleEl = document.getElementById('rental-quote-title');
+              if (titleEl) titleEl.textContent = '🏠 ' + r.ticket_number + ' 견적 결과';
+              showMsg('✓ ' + (p.brand || '-') + ' · ' + r.months + 'M · 월 ' + fmt(r.monthly_fee) + '원', 'success');
+            } catch (e) { showMsg('⚠️ 조회 실패: ' + e.message); }
+          }
+          btn.addEventListener('click', lookupRental);
+          input.addEventListener('keypress', function(e) { if (e.key === 'Enter') lookupRental(); });
+        })();
+        </script>
       </div>
     </div>
 
@@ -1994,7 +2063,7 @@ function bindShortcutKeys() {
     <div class="tm-ticket-lookup">
       <div class="tm-ticket-lookup-label">🎫 티켓번호로 빠른 조회</div>
       <div class="tm-ticket-lookup-row">
-        <input type="text" id="c-ticket-lookup" list="ticket-options" placeholder="예: SK0015 / KT0008 / LG0003 / R0683 (가전렌탈)" autocomplete="off">
+        <input type="text" id="c-ticket-lookup" list="ticket-options" placeholder="예: SK0015 / KT0008 / LG0003" autocomplete="off">
         <datalist id="ticket-options"></datalist>
         <button type="button" id="c-ticket-lookup-btn">조회</button>
       </div>
@@ -3906,69 +3975,11 @@ document.getElementById('tm-script-add').addEventListener('click', function(){
   }
   function hideMsg() { msg.className = 'tm-ticket-lookup-msg'; }
 
-  async function lookup() {
+  function lookup() {
     var num = input.value.trim().toUpperCase();
     if (!num) { hideMsg(); return; }
-
-    // ─── R 티켓 (가전 렌탈) — API 조회 ───
-    if (/^R\d{3,}$/.test(num)) {
-      try {
-        var tk = localStorage.getItem('incentive-auth-token-v1');
-        var resp = await fetch('/api/incentive/tickets/rental/lookup?ticket=' + encodeURIComponent(num), {
-          headers: { Authorization: 'Bearer ' + tk }
-        });
-        if (!resp.ok) { showMsg('⚠️ 가전렌탈 티켓 없음: ' + num); return; }
-        var data = await resp.json();
-        var r = data.ticket;
-        var p = r.product || {};
-        // 가전렌탈 탭으로 자동 전환
-        var rentalTab = document.querySelector('.tab[data-cat="rental"]');
-        if (rentalTab) rentalTab.click();
-        // 견적 결과 영역(#c-result) 위에 가전렌탈 카드 prepend
-        var fmt = function(n){ return n == null ? '-' : Number(n).toLocaleString('ko-KR'); };
-        // 인터넷+TV 견적 결과와 동일한 시각 패턴 (🎫 티켓번호 라벨 + 큰 번호)
-        var rentalHTML = ''
-          + '<div style="background:linear-gradient(135deg,#1e293b,#0f172a);border:1.5px solid #3b82f6;border-radius:10px;padding:14px;margin-bottom:10px">'
-          // ─── 헤더: 🎫 티켓번호 + 큰 R번호 ───
-          + '<div style="display:flex;flex-direction:column;gap:3px;padding-bottom:10px;border-bottom:1px solid #334155;margin-bottom:10px">'
-          + '<span style="font-size:9.5px;color:rgba(255,255,255,0.6);letter-spacing:0.04em">🎫 티켓번호</span>'
-          + '<span style="font-size:18px;font-weight:900;color:#a5b4fc;font-family:\'SF Mono\',Monaco,monospace;letter-spacing:0.8px">' + r.ticket_number + '</span>'
-          + '</div>'
-          // ─── 브랜드 + 상품명 ───
-          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-          + '<div style="font-size:11px;color:#94a3b8;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">🏠 가전 렌탈 견적</div>'
-          + '<div style="background:rgba(56,189,248,0.15);color:#7dd3fc;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">' + (p.brand || '-') + '</div>'
-          + '</div>'
-          + '<div style="font-size:13px;color:#e2e8f0;font-weight:600;margin-top:4px">' + (p.name || '-') + '</div>'
-          + '<div style="font-size:11px;color:#64748b;margin-top:2px">모델 ' + (p.model || '-') + '</div>'
-          // ─── 견적 항목 표 ───
-          + '<table style="width:100%;margin-top:10px;font-size:12px">'
-          + '<tr><td style="color:#94a3b8;padding:3px 0">약정</td><td style="text-align:right;color:#c4b5fd;font-weight:700;font-family:monospace">' + r.months + 'M' + (r.care_service ? ' · ' + r.care_service : '') + '</td></tr>'
-          + '<tr><td style="color:#94a3b8;padding:3px 0">월납</td><td style="text-align:right;color:#f1f5f9;font-weight:800;font-family:monospace">' + fmt(r.monthly_fee) + '원</td></tr>'
-          + '<tr><td style="color:#94a3b8;padding:3px 0">정상가</td><td style="text-align:right;color:#cbd5e1;font-family:monospace">' + fmt(r.normal_price) + '원</td></tr>'
-          + '<tr><td style="color:#94a3b8;padding:3px 0">리베이트</td><td style="text-align:right;color:#34d399;font-weight:700;font-family:monospace">' + fmt(r.rebate) + '원</td></tr>'
-          + '<tr><td style="color:#94a3b8;padding:3px 0">페이백</td><td style="text-align:right;color:#fbbf24;font-weight:700;font-family:monospace">' + fmt(r.payback) + '원</td></tr>'
-          + (r.ownership_months ? '<tr><td style="color:#94a3b8;padding:3px 0">소유권 이전</td><td style="text-align:right;color:#cbd5e1;font-family:monospace">' + r.ownership_months + 'M 후</td></tr>' : '')
-          + '</table></div>';
-        // 가전렌탈 탭 안의 견적 결과 영역(#rental-quote-body)에 inject
-        var bodyEl = document.getElementById('rental-quote-body');
-        var titleEl = document.getElementById('rental-quote-title');
-        if (bodyEl) bodyEl.innerHTML = rentalHTML;
-        if (titleEl) titleEl.textContent = '🏠 ' + r.ticket_number + ' 견적 결과';
-        showMsg('✓ ' + (p.brand || '-') + ' · ' + r.months + 'M · 월 ' + fmt(r.monthly_fee) + '원', 'success');
-      } catch (e) {
-        showMsg('⚠️ 조회 실패: ' + e.message);
-      }
-      return;
-    }
-
-    // ─── SK/KT/LG 티켓 (인터넷+TV) — 기존 JS 메모리 조회 ───
     var t = TICKETS.find(function(x){ return x.number === num; });
     if (!t) { showMsg('⚠️ 티켓번호를 찾을 수 없습니다: ' + num); return; }
-
-    // 인터넷+TV 탭으로 자동 전환
-    var itTab = document.querySelector('.tab[data-cat="it"]');
-    if (itTab) itTab.click();
 
     document.getElementById('c-carrier').value = t.carrier;
     buildTV();
