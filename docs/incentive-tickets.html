@@ -161,10 +161,10 @@ tbody tr:last-child td { border-bottom: none; }
         <table>
           <thead><tr>
             <th>티켓번호</th><th>브랜드</th><th>상품명</th><th>모델</th><th>약정</th>
-            <th class="num">월납</th><th class="num">정상가</th><th class="num">리베이트</th>
+            <th class="num">월납</th><th class="num">정상가</th><th class="num">리베이트</th><th class="num">💰 페이백</th>
             <th>상태</th><th>액션</th>
           </tr></thead>
-          <tbody id="tbody-rental"><tr><td colspan="10" class="loading">로딩...</td></tr></tbody>
+          <tbody id="tbody-rental"><tr><td colspan="11" class="loading">로딩...</td></tr></tbody>
         </table>
       </div>
       <div class="footnote">💡 옵션 단위 발급 (R0001~). 신규 옵션 등록 시 자동 R 번호. 상품 관리에서 옵션 비활성 시 티켓도 자동 sync.</div>
@@ -378,7 +378,7 @@ function renderRental() {
   });
   const MAX_RENDER = 500;
   const limited = filtered.slice(0, MAX_RENDER);
-  let html = limited.length === 0 ? '<tr><td colspan="10" class="empty">검색 결과 없음</td></tr>' :
+  let html = limited.length === 0 ? '<tr><td colspan="11" class="empty">검색 결과 없음</td></tr>' :
     limited.map(t => {
       const active = t.is_active && t.ticket_active;
       return `<tr class="${active ? '' : 'inactive'}">
@@ -390,6 +390,7 @@ function renderRental() {
         <td class="num"><span class="cell-fee">${fmt(t.monthly_fee)}원</span></td>
         <td class="num">${fmt(t.normal_price)}원</td>
         <td class="num"><span class="cell-rebate">${fmt(t.rebate)}원</span></td>
+        <td class="num"><span class="cell-gift">${fmt(t.payback)}원</span></td>
         <td>${active ? '<span class="badge badge-active">● 활성</span>' : '<span class="badge badge-inactive">○ 비활성</span>'}</td>
         <td>${active ?
           `<button class="btn" onclick="deactivateRental(${t.id},'${t.ticket_number}')">비활성</button>` :
@@ -397,7 +398,7 @@ function renderRental() {
       </tr>`;
     }).join('');
   if (filtered.length > MAX_RENDER) {
-    html += `<tr><td colspan="10" class="footnote" style="padding:14px 18px;color:#fbbf24">⚠️ ${filtered.length}건 중 상위 ${MAX_RENDER}건만 표시 — 검색·필터로 좁히세요</td></tr>`;
+    html += `<tr><td colspan="11" class="footnote" style="padding:14px 18px;color:#fbbf24">⚠️ ${filtered.length}건 중 상위 ${MAX_RENDER}건만 표시 — 검색·필터로 좁히세요</td></tr>`;
   }
   document.getElementById('tbody-rental').innerHTML = html;
 }
