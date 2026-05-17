@@ -8,6 +8,30 @@ const router = Router();
 const _isProd = process.env.NODE_ENV === 'production';
 const sanitizeErr = (e) => _isProd ? '서버 오류 — 잠시 후 다시 시도하세요' : (e?.message || '서버 오류');
 
+// notes HTML escape 누적 방지 — PATCH/POST 입력 시 디코드 (2026-05-18 버그 fix)
+// UI는 표시 시 한 번 escape하므로 server는 raw text로 저장한다.
+function normalizeNotes(s) {
+  if (s == null) return null;
+  let str = String(s);
+  for (let i = 0; i < 5; i++) {
+    const prev = str;
+    str = str
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
+      .replace(/&#x2F;/gi, '/')
+      .replace(/&#x60;/gi, '`')
+      .replace(/&#x3D;/gi, '=')
+      .replace(/&#x26;/gi, '&');
+    if (str === prev) break;
+  }
+  return str;
+}
+
 // ─── 헬퍼: req.user → incentive_agents.id 매핑 ───
 // 60초 in-memory LRU 캐시 (Supabase 매 round-trip 절감)
 const _agentCache = new Map();
@@ -1318,7 +1342,7 @@ router.post('/rules', authenticateJWT, async (req, res) => {
         tier_a_min_margin: tier_a_min_margin ?? 180000,
         tier_b_min_margin: tier_b_min_margin ?? 120000,
         tier_to_p: tier_to_p ?? { S: 2.0, A: 1.5, B: 1.2, C: 1.0 },
-        active: true, notes,
+        active: true, notes: normalizeNotes(notes),
       })
       .select()
       .single();
@@ -1349,6 +1373,8 @@ router.patch('/rules/:id', authenticateJWT, async (req, res) => {
       'weight_cost_per_p', 'tier_s_min_margin', 'tier_a_min_margin', 'tier_b_min_margin', 'tier_to_p'];
     const update = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    // notes 누적 escape 디코드 (2026-05-18 fix)
+    if (update.notes !== undefined) update.notes = normalizeNotes(update.notes);
 
     const { data, error } = await supabase
       .from('incentive_rules')
