@@ -5828,6 +5828,12 @@ setTimeout(() => {
     const delta = newTotal - currentTotal;
     // 사용자 표시용 가독성
     const gradeUnit = rtUnit; // 호환 (하단 표시 코드용)
+    // 🎯 IT/가전 Grade 각자 독립 표시용 (인터넷+TV 미리보기와 동일 패턴)
+    const itGradeNum = (window._incMyState?.settlement?.grade_applied) || (window._incMyState?.settlement?.grade_target) || 1;
+    const rtGradeNum = Number(_gradeKey) || 1;
+    const itGColor = ['', '#6b7280', '#3b82f6', '#dc2626'][itGradeNum] || '#6b7280';
+    const rtGColor = ['', '#6b7280', '#3b82f6', '#dc2626'][rtGradeNum] || '#6b7280';
+    const gradeBadge = (g, c) => `<span style="background:${c};color:#fff;padding:2px 8px;border-radius:4px;font-weight:800;font-size:11px">G${g}</span>`;
     const incentiveHTML = `
       <div style="margin-top:12px;background:linear-gradient(135deg,#fef3c7,#fde68a);border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;box-shadow:0 2px 8px rgba(245,158,11,0.15);color:#92400e">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -5856,7 +5862,7 @@ setTimeout(() => {
           <!-- 인터넷+TV 행 -->
           <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px dashed rgba(120,53,15,0.25)">
             <div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#1d4ed8;display:flex;align-items:center">📡 인터넷+TV</div>
-            <div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">${grade}</div></div>
+            <div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">${gradeBadge(itGradeNum, itGColor)}</div></div>
             <div><div style="font-size:9px;color:#78350f">누적 P</div><div style="font-size:13px;font-weight:900;color:#1e293b">${itP.toFixed(2)}P</div></div>
             <div><div style="font-size:9px;color:#78350f">우수</div><div style="font-size:13px;font-weight:900;color:#1e293b">${itPrem}건</div></div>
             <div><div style="font-size:9px;color:#78350f">예상 수령</div><div style="font-size:13px;font-weight:900;color:#1d4ed8">${fmt(itIncentive)}원</div></div>
@@ -5864,15 +5870,15 @@ setTimeout(() => {
           <!-- 가전렌탈 행 -->
           <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px solid rgba(120,53,15,0.4)">
             <div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#d97706;display:flex;align-items:center">🏠 가전렌탈</div>
-            <div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">${grade}</div></div>
+            <div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">${gradeBadge(rtGradeNum, rtGColor)}</div></div>
             <div><div style="font-size:9px;color:#78350f">누적 P</div><div style="font-size:13px;font-weight:900;color:#1e293b">${rtP.toFixed(2)}P</div></div>
             <div><div style="font-size:9px;color:#78350f">우수</div><div style="font-size:13px;font-weight:900;color:#1e293b">${rtPrem}건</div></div>
             <div><div style="font-size:9px;color:#78350f">예상 수령</div><div style="font-size:13px;font-weight:900;color:#d97706">${fmt(rtIncentive)}원</div></div>
           </div>
-          <!-- 통합 합산 행 -->
+          <!-- 통합 합산 행 (Grade는 IT/가전 별도 — 합산 X) -->
           <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:8px 0 2px;background:rgba(34,197,94,0.06);margin:4px -4px 0;border-radius:4px">
             <div style="text-align:left;padding-left:4px;font-size:10.5px;font-weight:900;color:#15803d;display:flex;align-items:center">⚡ 통합 합계</div>
-            <div><div style="font-size:9px;color:#15803d">Grade</div><div style="font-size:14px;font-weight:900;color:#1e293b">${grade}</div></div>
+            <div><div style="font-size:9px;color:#15803d">Grade</div><div style="font-size:11px;font-weight:700;color:#94a3b8">IT/가전 별도</div></div>
             <div><div style="font-size:9px;color:#15803d">누적 P</div><div style="font-size:14px;font-weight:900;color:#1e293b">${currentP.toFixed(2)}P</div></div>
             <div><div style="font-size:9px;color:#15803d">우수</div><div style="font-size:14px;font-weight:900;color:#1e293b">${currentPrem}건</div></div>
             <div><div style="font-size:9px;color:#15803d">예상 수령</div><div style="font-size:14px;font-weight:900;color:#16a34a">${fmt(currentTotal)}원</div></div>
