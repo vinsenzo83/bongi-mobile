@@ -393,6 +393,8 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           <label style="font-size:11px;color:#94a3b8">검색</label>
           <input type="text" id="rfilter-name" placeholder="이름·전화·R번호·모델" style="min-width:160px">
           <button id="rreload-btn">🔄 새로고침</button>
+          <button id="rexport-xlsx-btn" style="background:#16a34a;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📥 엑셀 다운로드</button>
+          <button id="rtrash-toggle-btn" style="background:#475569;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">📁 휴지통 보기</button>
         </div>
         <div style="font-size:11px;color:#94a3b8" id="rresult-count">-</div>
       </div>
@@ -419,6 +421,20 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <tbody id="rental-sales-tbody"></tbody>
       </table>
       <div class="empty" id="rempty-msg" style="display:none">조회된 가전 영업이 없습니다. R 티켓번호로 신규 등록하세요.</div>
+
+      <!-- 페이지네이션 -->
+      <div id="rpagination" style="display:none;justify-content:center;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap">
+        <button id="rpage-first" class="page-btn" title="처음">«</button>
+        <button id="rpage-prev" class="page-btn" title="이전">‹</button>
+        <div id="rpage-numbers" style="display:flex;gap:4px"></div>
+        <button id="rpage-next" class="page-btn" title="다음">›</button>
+        <button id="rpage-last" class="page-btn" title="끝">»</button>
+        <select id="rpage-size" style="margin-left:12px;background:#1e293b;border:1px solid #475569;color:#e2e8f0;padding:5px 8px;border-radius:5px;font-size:11px">
+          <option value="20">20개씩</option>
+          <option value="50" selected>50개씩</option>
+          <option value="100">100개씩</option>
+        </select>
+      </div>
     </div>
 
     <!-- ★ 인터넷+TV 패널 (기본 — 기존 통계·툴바·테이블 모두 여기 안에) -->
@@ -2633,6 +2649,8 @@ init();
 
   // ─── 가전 sales: stats + filter + 13 컬럼 table (인터넷+TV와 동일 layout) ───
   window._rentalCurrentSlug = 'internet_tv';
+  window._rentalTrashMode = false;
+  window._rentalPage = 1;
   async function loadRentalSales(slug) {
     window._rentalCurrentSlug = slug;
     const tk = localStorage.getItem('incentive-auth-token-v1');
@@ -2642,7 +2660,8 @@ init();
     body.innerHTML = '<tr><td colspan="13" style="padding:30px;text-align:center;color:#64748b">불러오는 중...</td></tr>';
     if (emptyMsg) emptyMsg.style.display = 'none';
     try {
-      const r = await fetch('/api/rental/sales?limit=500', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json());
+      const url = '/api/rental/sales?limit=500' + (window._rentalTrashMode ? '&deleted=1' : '');
+      const r = await fetch(url, { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json());
       let sales = (r.sales || r.rows || []);
       // 카테고리 slug 필터
       const cat = (window._categories || []).find(c => c.slug === slug);
@@ -2678,6 +2697,7 @@ init();
         || (s.agent?.name || '').toLowerCase().includes(kw);
     });
     window._rentalSalesCache = sales;
+    window._rentalSalesFiltered = sales;
     // 통계 (5 카드) — 이번 달 기준 또는 전체 (필터 적용 X)
     const monthSales = ym ? all.filter(s => (s.contract_date || '').slice(0, 7) === ym) : all;
     const cnt = { completed: 0, in_progress: 0, pending: 0, cancelled: 0 };
@@ -2690,19 +2710,27 @@ init();
     setT('rstat-in_progress', cnt.in_progress + '건');
     setT('rstat-pending', cnt.pending + '건');
     setT('rstat-cancelled', cnt.cancelled + '건');
-    setT('rresult-count', `${sales.length}건`);
+    setT('rresult-count', `${sales.length}건` + (window._rentalTrashMode ? ' · 🗑️ 휴지통' : ''));
     // 빈 상태
     if (!sales.length) {
       body.innerHTML = '';
       if (emptyMsg) emptyMsg.style.display = '';
+      document.getElementById('rpagination').style.display = 'none';
       return;
     }
     if (emptyMsg) emptyMsg.style.display = 'none';
+    // 페이지네이션 적용
+    const pageSize = Number(document.getElementById('rpage-size')?.value) || 50;
+    const totalPages = Math.max(1, Math.ceil(sales.length / pageSize));
+    if (window._rentalPage > totalPages) window._rentalPage = 1;
+    const start = (window._rentalPage - 1) * pageSize;
+    const pageSales = sales.slice(start, start + pageSize);
+    renderRentalPagination(totalPages, sales.length);
     const fmt = n => n == null ? '-' : Number(n).toLocaleString('ko-KR');
     const statusLabel = { pending:'⏰ 대기', in_progress:'🚧 진행', completed:'✅ 완료', cancelled:'❌ 취소' };
     const statusBg = { completed:'rgba(34,197,94,0.15)', in_progress:'rgba(96,165,250,0.15)', pending:'rgba(251,191,36,0.15)', cancelled:'rgba(220,38,38,0.15)' };
     const statusFg = { completed:'#86efac', in_progress:'#60a5fa', pending:'#fbbf24', cancelled:'#fca5a5' };
-    body.innerHTML = sales.map((s, i) => {
+    body.innerHTML = pageSales.map((s, i) => {
       const p = s.product || {}, opt = s.option || {}, a = s.agent || {};
       const curTier = opt.tier || p.tier;
       const tierBadge = curTier ? `<span class="tier tier-${curTier}">${curTier}</span>` : '<span style="color:#64748b;font-size:10px">-</span>';
@@ -2710,7 +2738,7 @@ init();
       const pBadge = (opt.point_weight || p.point_weight) ? `<span style="color:#a5b4fc;font-size:10.5px;margin-left:5px">${(opt.point_weight || p.point_weight)}P</span>` : '';
       const addrMissing = !s.customer_address;
       return `<tr class="rental-sale-row" data-id="${s.id}" style="cursor:pointer">
-        <td style="text-align:center;color:#64748b">${i+1}</td>
+        <td style="text-align:center;color:#64748b">${start + i + 1}</td>
         <td style="font-size:11px;color:#cbd5e1">${(s.contract_date || '').slice(5) || '-'}</td>
         <td style="font-size:11px;color:#94a3b8">${(s.created_at || '').slice(5, 10) || '-'}<div style="font-size:9.5px;color:#64748b">${(s.created_at || '').slice(11, 16) || ''}</div></td>
         <td>${a.name || '-'}</td>
@@ -2738,7 +2766,31 @@ init();
     body.querySelectorAll('.rental-sale-row').forEach(r => r.addEventListener('click', () => openRentalSaleModal(r.dataset.id)));
   }
 
-  // 가전 패널 filter/reload 핸들러
+  // 가전 페이지네이션 render
+  function renderRentalPagination(totalPages, totalCount) {
+    const pg = document.getElementById('rpagination');
+    if (!pg) return;
+    pg.style.display = totalPages <= 1 ? 'none' : 'flex';
+    document.getElementById('rpage-first').disabled = window._rentalPage === 1;
+    document.getElementById('rpage-prev').disabled = window._rentalPage === 1;
+    document.getElementById('rpage-next').disabled = window._rentalPage >= totalPages;
+    document.getElementById('rpage-last').disabled = window._rentalPage >= totalPages;
+    const nums = document.getElementById('rpage-numbers');
+    const range = 5;
+    let from = Math.max(1, window._rentalPage - range);
+    let to = Math.min(totalPages, window._rentalPage + range);
+    let html = '';
+    for (let p = from; p <= to; p++) {
+      html += `<button class="page-btn ${p === window._rentalPage ? 'active' : ''}" data-rpage="${p}">${p}</button>`;
+    }
+    nums.innerHTML = html;
+    nums.querySelectorAll('[data-rpage]').forEach(b => b.addEventListener('click', () => {
+      window._rentalPage = Number(b.dataset.rpage);
+      renderRentalSales();
+    }));
+  }
+
+  // 가전 패널 filter/reload/엑셀/휴지통/페이지네이션 핸들러
   (function setupRentalFilters(){
     const now = new Date();
     const ymInit = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
@@ -2746,10 +2798,77 @@ init();
     if (monthEl && !monthEl.value) monthEl.value = ymInit;
     ['rfilter-month','rfilter-status','rfilter-address','rfilter-name'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.addEventListener(id === 'rfilter-name' ? 'input' : 'change', renderRentalSales);
+      if (el) el.addEventListener(id === 'rfilter-name' ? 'input' : 'change', () => {
+        window._rentalPage = 1; renderRentalSales();
+      });
     });
-    const rb = document.getElementById('rreload-btn');
-    if (rb) rb.addEventListener('click', () => loadRentalSales(window._rentalCurrentSlug));
+    document.getElementById('rreload-btn')?.addEventListener('click', () => loadRentalSales(window._rentalCurrentSlug));
+    document.getElementById('rpage-first')?.addEventListener('click', () => { window._rentalPage = 1; renderRentalSales(); });
+    document.getElementById('rpage-prev')?.addEventListener('click', () => { window._rentalPage--; renderRentalSales(); });
+    document.getElementById('rpage-next')?.addEventListener('click', () => { window._rentalPage++; renderRentalSales(); });
+    document.getElementById('rpage-last')?.addEventListener('click', () => {
+      const pageSize = Number(document.getElementById('rpage-size')?.value) || 50;
+      const total = (window._rentalSalesFiltered || []).length;
+      window._rentalPage = Math.max(1, Math.ceil(total / pageSize));
+      renderRentalSales();
+    });
+    document.getElementById('rpage-size')?.addEventListener('change', () => { window._rentalPage = 1; renderRentalSales(); });
+
+    // 휴지통 토글
+    document.getElementById('rtrash-toggle-btn')?.addEventListener('click', () => {
+      window._rentalTrashMode = !window._rentalTrashMode;
+      const btn = document.getElementById('rtrash-toggle-btn');
+      if (window._rentalTrashMode) { btn.textContent = '↩️ 활성 보기'; btn.style.background = '#dc2626'; }
+      else { btn.textContent = '📁 휴지통 보기'; btn.style.background = '#475569'; }
+      window._rentalPage = 1;
+      loadRentalSales(window._rentalCurrentSlug);
+    });
+
+    // 엑셀 다운로드 (가전 sales 핵심 컬럼)
+    document.getElementById('rexport-xlsx-btn')?.addEventListener('click', () => {
+      if (typeof XLSX === 'undefined') { alert('SheetJS 로드 실패. 새로고침 후 다시 시도하세요.'); return; }
+      const list = window._rentalSalesFiltered || [];
+      if (!list.length) { alert('내보낼 데이터가 없습니다.'); return; }
+      const STATUS = { pending:'계약대기', in_progress:'계약진행', completed:'계약완료', cancelled:'계약취소' };
+      const fmtDt = v => v ? new Date(v).toLocaleString('ko-KR') : '';
+      const rows = list.map(s => {
+        const p = s.product || {}, opt = s.option || {}, a = s.agent || {};
+        return {
+          '영업ID': s.id || '',
+          '등록일': fmtDt(s.created_at),
+          '계약일': s.contract_date || '',
+          '상담사': a.name || '',
+          '센터': a.center || '',
+          'R번호': opt.ticket_number || '',
+          '브랜드': p.brand || '',
+          '모델': p.model || '',
+          '상품명': p.name || '',
+          '약정(M)': s.months_snapshot || opt.months || '',
+          '케어': s.care_service_snapshot || opt.care_service || '',
+          'Tier': opt.tier || p.tier || '',
+          'P': opt.point_weight || p.point_weight || '',
+          '우수': (opt.is_premium ?? p.is_premium) ? 'Y' : 'N',
+          '고객명': s.customer_name || '',
+          '전화': s.customer_phone || '',
+          '주소': s.customer_address || '',
+          '월납(snapshot)': s.monthly_fee_snapshot || 0,
+          '리베이트(snapshot)': s.rebate_snapshot || 0,
+          '페이백(snapshot)': s.payback_snapshot || 0,
+          '회사 페이백 부담': s.company_payback_burden || 0,
+          '상담사 페이백 차감': s.agent_payback_deduct || 0,
+          '상태': STATUS[s.status] || s.status || '',
+          '설치일': s.activation_date || '',
+          '취소사유': s.cancellation_reason || '',
+          '메모': s.notes || '',
+        };
+      });
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '가전영업');
+      const ym = document.getElementById('rfilter-month')?.value || 'all';
+      const trashMark = window._rentalTrashMode ? '_휴지통' : '';
+      XLSX.writeFile(wb, `가전영업_${ym}${trashMark}.xlsx`);
+    });
   })();
 
   // ─── 가전렌탈 계약 상세 편집 모달 ───
