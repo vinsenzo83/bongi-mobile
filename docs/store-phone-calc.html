@@ -115,11 +115,19 @@ h1 { font-size:20px; font-weight:900; margin:0 0 4px; color:#f8fafc; }
       </div>
 
       <div class="field">
-        <label>⑧ 매장 vs 온라인 (매장지원금 차등)</label>
+        <label>⑧ 매장 vs 온라인</label>
         <div class="radio-grp" id="f-channel">
           <label><input type="radio" name="channel" value="store" checked><div class="opt">🏪 매장</div></label>
           <label><input type="radio" name="channel" value="online"><div class="opt">🌐 온라인</div></label>
         </div>
+      </div>
+
+      <div class="field">
+        <label>⑨ 매장지원금 (만원, 직접 입력)
+          <span style="font-size:10px;color:var(--accent);font-weight:400">· 매장/온라인 각자 별도</span>
+        </label>
+        <input id="f-support" type="number" min="0" step="1" value="66" placeholder="예: 66 (= 660,000원)">
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">시세표 운영자가 통신사·요금제·기종별로 결정 — 입력값이 없으면 자동 계산 안 됨</div>
       </div>
 
       <div class="callout info" id="info-data">📊 라이브 시세 fetch 중…</div>
@@ -132,8 +140,8 @@ h1 { font-size:20px; font-weight:900; margin:0 0 4px; color:#f8fafc; }
       <!-- 기본 시세 -->
       <div class="row"><span class="k">출고가</span><span class="v" id="r-price">-</span></div>
       <div class="row"><span class="k">공시지원금</span><span class="v blue" id="r-gongsi">-</span></div>
-      <div class="row"><span class="k">매장지원금 (자동 계산)</span><span class="v blue" id="r-support">-</span></div>
-      <div class="row"><span class="k">현금가 (= 출고 − 공시 − 매장)</span><span class="v" id="r-cash">-</span></div>
+      <div class="row"><span class="k">매장지원금 (운영자 입력)</span><span class="v blue" id="r-support">-</span></div>
+      <div class="row"><span class="k">현금가 (자동 = 출고 − 공시 − 매장지원금)</span><span class="v" id="r-cash">-</span></div>
 
       <!-- 할부 / 현금 분기 결과 -->
       <div class="totals">
@@ -244,15 +252,9 @@ function recalc() {
   const gongsiRaw = prod.gongsi * 10000;
   // 선택약정 = 공시 0, 월요금 25%↓
   const gongsi = subsidy === 'seonyak' ? 0 : gongsiRaw;
-  // 매장지원금: 매장/온라인 차등 (xlsx에 단일 — 채널별 임의 차등 적용, 향후 DB에서 채널별 fetch)
-  const cashKey = opentype === 'mnp' ? 'cashMnp' : 'cashChg';
-  let cashRaw = prod[cashKey] * 10000;
-  // 채널별 차이 (매장 < 온라인 표준 — 현금가 차등 5만원, fallback)
-  if (channel === 'online' && cashRaw > 50000) cashRaw -= 50000;
-  const supportRaw = price - gongsi - cashRaw;
-  const support = Math.max(0, supportRaw);
-  // 음수 매장지원금 = 운영자 입력값 없음 → 할부 차단 X (단순히 시세값)
-  // 단 cashRaw <= 0 (기기값 0원 + 페이백) = 할부 차단 후보
+  // 매장지원금 = 운영자 직접 입력 (만원 → 원)
+  const support = (Number($('f-support').value) || 0) * 10000;
+  // 현금가 자동 계산 = 출고가 − 공시 − 매장지원금
   const cashFinal = price - gongsi - support;
 
   // 월요금
@@ -312,6 +314,7 @@ $('f-name').addEventListener('change', rebuildCapacity);
 $('f-capacity').addEventListener('change', rebuildPlans);
 $('f-plan').addEventListener('change', recalc);
 ['opentype','subsidy','payment','channel'].forEach(n => document.querySelectorAll(`input[name="${n}"]`).forEach(el => el.addEventListener('change', recalc)));
+$('f-support').addEventListener('input', recalc);
 
 loadData();
 </script>
