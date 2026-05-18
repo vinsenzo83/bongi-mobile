@@ -1958,27 +1958,10 @@ function bindShortcutKeys() {
         <button type="button" id="inc-toggle" style="font-size:10px;padding:2px 6px;background:#fff;border:1px solid #f59e0b;color:#92400e;border-radius:4px;cursor:pointer">⚙️ 누적</button>
       </div>
 
-      <!-- 🎯 내 현재 상태 (로그인 시 자동 표시) -->
+      <!-- 🎯 내 현재 상태 (로그인 시 자동 표시) — IT · 가전 · 통합 3행 -->
       <div id="inc-my-status" style="display:none;background:linear-gradient(135deg,rgba(255,255,255,0.7),rgba(255,255,255,0.5));border:1.5px solid #d97706;border-radius:8px;padding:10px 12px;margin-bottom:8px">
-        <div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">📊 내 현재 상태 (이번 달)</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
-          <div>
-            <div style="font-size:9px;color:#78350f;margin-bottom:2px">Grade</div>
-            <div id="inc-my-grade" style="font-size:14px;font-weight:900;color:#1e293b">-</div>
-          </div>
-          <div>
-            <div style="font-size:9px;color:#78350f;margin-bottom:2px">누적 P</div>
-            <div id="inc-my-points" style="font-size:14px;font-weight:900;color:#1e293b">-</div>
-          </div>
-          <div>
-            <div style="font-size:9px;color:#78350f;margin-bottom:2px">우수 건수</div>
-            <div id="inc-my-premium" style="font-size:14px;font-weight:900;color:#1e293b">-</div>
-          </div>
-          <div>
-            <div style="font-size:9px;color:#78350f;margin-bottom:2px">예상 수령</div>
-            <div id="inc-my-total" style="font-size:13px;font-weight:900;color:#16a34a">-</div>
-          </div>
-        </div>
+        <!-- JS가 inc-my-status-body에 3행 4컬럼 그리드 동적 채움 -->
+        <div id="inc-my-status-body"></div>
       </div>
 
       <div id="inc-input" style="display:none;background:rgba(255,255,255,0.6);border-radius:6px;padding:8px 10px;margin-bottom:8px">
@@ -4528,18 +4511,57 @@ async function incFetchMyState() {
     if (pEl && s) pEl.value = s.total_points || 0;
     if (premEl && s) premEl.value = s.premium_count || 0;
 
-    // 🎯 내 현재 상태 카드 자동 갱신 (항상 표시)
+    // 🎯 내 현재 상태 카드 자동 갱신 — IT · 가전 · 통합 3행 4컬럼 (Grade는 각자 독립)
     const statusEl = document.getElementById('inc-my-status');
-    if (statusEl && s) {
+    const bodyEl = document.getElementById('inc-my-status-body');
+    if (statusEl && bodyEl && s) {
       statusEl.style.display = '';
       const fmt = v => (v == null) ? '-' : Number(v).toLocaleString();
-      const g = s.grade_applied || s.grade_target || 1;
-      const gColor = ['', '#6b7280', '#3b82f6', '#dc2626'][g] || '#6b7280';
-      document.getElementById('inc-my-grade').innerHTML =
-        `<span style="background:${gColor};color:#fff;padding:2px 10px;border-radius:5px;font-weight:800">G${g}</span>`;
-      document.getElementById('inc-my-points').textContent = (s.total_points || 0) + 'P';
-      document.getElementById('inc-my-premium').textContent = (s.premium_count || 0) + '건';
-      document.getElementById('inc-my-total').textContent = fmt(s.agent_total) + '원';
+      // 가전 monthly-stats fetch (rental_grade 별도)
+      const _tk = localStorage.getItem('incentive-auth-token-v1');
+      let rt = window._rentalStatsCache || {};
+      if (_tk && !window._rentalStatsCache) {
+        try {
+          const rRes = await fetch('/api/rental/agents/me/monthly-stats', { headers: { Authorization: 'Bearer ' + _tk } });
+          if (rRes.ok) { rt = await rRes.json(); window._rentalStatsCache = rt; }
+        } catch(e) {}
+      }
+      const itG = s.grade_applied || s.grade_target || 1;
+      const itGColor = ['', '#6b7280', '#3b82f6', '#dc2626'][itG] || '#6b7280';
+      const itP = Number(s.total_points || 0);
+      const itPrem = Number(s.premium_count || 0);
+      const itTotal = Number(s.agent_total || 0) - Number(s.base_salary || 0);  // 인센+보너스만
+      const rtG = Number(rt.rental_grade_applied) || 1;
+      const rtGColor = ['', '#6b7280', '#3b82f6', '#dc2626'][rtG] || '#6b7280';
+      const rtP = Number(rt.rental_points || rt.p) || 0;
+      const rtPrem = Number(rt.rental_premium_count || rt.premium_count) || 0;
+      const rtTotal = (Number(rt.rental_incentive) || 0) + (Number(rt.rental_bonus) || 0);
+      const sumTotal = itTotal + rtTotal;
+      const cell = (label, value, color) => `<div><div style="font-size:9px;color:#78350f">${label}</div><div style="font-size:13px;font-weight:900;color:${color||'#1e293b'}">${value}</div></div>`;
+      const gradeBadge = (g, c) => `<span style="background:${c};color:#fff;padding:2px 8px;border-radius:4px;font-weight:800;font-size:11px">G${g}</span>`;
+      bodyEl.innerHTML = `
+        <div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:8px;letter-spacing:0.04em">📊 내 현재 상태 (이번 달) · Grade는 IT·가전 각자 독립</div>
+        <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px dashed rgba(120,53,15,0.25)">
+          <div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#1d4ed8;display:flex;align-items:center">📡 인터넷+TV</div>
+          ${cell('Grade', gradeBadge(itG, itGColor))}
+          ${cell('누적 P', itP + 'P')}
+          ${cell('우수', itPrem + '건')}
+          ${cell('예상 수령', fmt(itTotal) + '원', '#1d4ed8')}
+        </div>
+        <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px solid rgba(120,53,15,0.4)">
+          <div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#d97706;display:flex;align-items:center">🏠 가전렌탈</div>
+          ${cell('Grade', gradeBadge(rtG, rtGColor))}
+          ${cell('누적 P', rtP.toFixed(2) + 'P')}
+          ${cell('우수', rtPrem + '건')}
+          ${cell('예상 수령', fmt(rtTotal) + '원', '#d97706')}
+        </div>
+        <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:8px 0 2px;background:rgba(34,197,94,0.06);margin:4px -4px 0;border-radius:4px">
+          <div style="text-align:left;padding-left:4px;font-size:10.5px;font-weight:900;color:#15803d;display:flex;align-items:center">⚡ 통합 합계</div>
+          ${cell('Grade', 'IT/가전 별도', '#94a3b8')}
+          ${cell('누적 P', (itP + rtP).toFixed(2) + 'P')}
+          ${cell('우수', (itPrem + rtPrem) + '건')}
+          ${cell('예상 수령', fmt(sumTotal) + '원', '#16a34a')}
+        </div>`;
     } else if (statusEl) {
       statusEl.style.display = 'none';
     }
