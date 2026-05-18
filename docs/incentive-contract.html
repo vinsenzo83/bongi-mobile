@@ -350,6 +350,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 
     <!-- ★ 가전렌탈 패널 (기본 hidden, 카테고리 탭 클릭 시 표시) -->
     <div id="rental-contract-panel" style="display:none">
+      <!-- R 티켓 빠른 조회 (가전 전용 보조) -->
       <div style="background:rgba(15,23,42,0.55);border:1.5px solid #475569;border-radius:10px;padding:14px;margin-bottom:14px">
         <div style="font-size:13px;font-weight:800;color:#fbbf24;margin-bottom:10px">🎫 가전렌탈 R 티켓번호로 빠른 계약 등록</div>
         <div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap">
@@ -360,15 +361,64 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <div id="rc-lookup-result" style="margin-top:10px"></div>
         <div id="rc-lookup-msg" style="font-size:11px;margin-top:6px;min-height:14px"></div>
       </div>
-      <div id="rental-sales-list" style="background:#1e293b;border:1px solid #475569;border-radius:10px;padding:14px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:13px;font-weight:800;color:#60a5fa">📋 가전렌탈 계약 목록</div>
-          <button id="rc-reload" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:11px;cursor:pointer">🔄 새로고침</button>
-        </div>
-        <div id="rental-sales-tbody" style="font-size:12px">
-          <div style="padding:30px;text-align:center;color:#64748b">불러오는 중...</div>
-        </div>
+
+      <!-- 통계 카드 (인터넷+TV와 동일 구조) -->
+      <div class="stats" id="rental-stats" style="grid-template-columns:repeat(5, 1fr)">
+        <div class="stat-card"><div class="stat-label">📋 이번 달 영업</div><div class="stat-val" id="rstat-total">-</div><div class="stat-sub" id="rstat-completed-meta">-</div></div>
+        <div class="stat-card" style="border-color:#22c55e"><div class="stat-label" style="color:#86efac">✅ 계약완료</div><div class="stat-val" id="rstat-completed-val" style="color:#86efac">-</div><div class="stat-sub">인센티브 카운트</div></div>
+        <div class="stat-card" style="border-color:#3b82f6"><div class="stat-label" style="color:#60a5fa">🚧 계약진행</div><div class="stat-val" id="rstat-in_progress" style="color:#60a5fa">-</div><div class="stat-sub">처리 중</div></div>
+        <div class="stat-card" style="border-color:#f59e0b"><div class="stat-label" style="color:#fbbf24">⏰ 계약대기</div><div class="stat-val" id="rstat-pending" style="color:#fbbf24">-</div><div class="stat-sub">처리 필요</div></div>
+        <div class="stat-card" style="border-color:#dc2626"><div class="stat-label" style="color:#fca5a5">❌ 계약취소</div><div class="stat-val" id="rstat-cancelled" style="color:#fca5a5">-</div><div class="stat-sub">정산 제외</div></div>
       </div>
+
+      <!-- 툴바 (인터넷+TV와 동일) -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <label style="font-size:11px;color:#94a3b8">월</label>
+          <input type="month" id="rfilter-month">
+          <label style="font-size:11px;color:#94a3b8">상태</label>
+          <select id="rfilter-status">
+            <option value="">전체</option>
+            <option value="completed">✅ 계약완료</option>
+            <option value="in_progress">🚧 계약진행</option>
+            <option value="pending">⏰ 계약대기</option>
+            <option value="cancelled">❌ 계약취소</option>
+          </select>
+          <label style="font-size:11px;color:#94a3b8">주소</label>
+          <select id="rfilter-address">
+            <option value="">전체</option>
+            <option value="missing">주소 없음</option>
+            <option value="present">주소 있음</option>
+          </select>
+          <label style="font-size:11px;color:#94a3b8">검색</label>
+          <input type="text" id="rfilter-name" placeholder="이름·전화·R번호·모델" style="min-width:160px">
+          <button id="rreload-btn">🔄 새로고침</button>
+        </div>
+        <div style="font-size:11px;color:#94a3b8" id="rresult-count">-</div>
+      </div>
+
+      <!-- 가전 영업 목록 테이블 (13 컬럼 — 인터넷+TV와 동일 형식) -->
+      <table id="rental-contracts-table">
+        <thead>
+          <tr>
+            <th style="width:36px;text-align:center">#</th>
+            <th style="width:6%">계약일</th>
+            <th style="width:6%">접수</th>
+            <th style="width:8%">상담사</th>
+            <th style="width:7%">센터</th>
+            <th style="width:7%">R번호</th>
+            <th style="width:18%">상품 (Tier·P)</th>
+            <th style="width:8%">고객명</th>
+            <th style="width:9%">전화</th>
+            <th style="width:13%">주소</th>
+            <th style="width:6%">월납/페이백</th>
+            <th style="width:6%">상태</th>
+            <th style="width:6%">작업</th>
+          </tr>
+        </thead>
+        <tbody id="rental-sales-tbody"></tbody>
+      </table>
+      <div class="empty" id="rempty-msg" style="display:none">조회된 가전 영업이 없습니다. R 티켓번호로 신규 등록하세요.</div>
     </div>
 
     <!-- ★ 인터넷+TV 패널 (기본 — 기존 통계·툴바·테이블 모두 여기 안에) -->
@@ -2581,67 +2631,126 @@ init();
     }
   }
 
+  // ─── 가전 sales: stats + filter + 13 컬럼 table (인터넷+TV와 동일 layout) ───
+  window._rentalCurrentSlug = 'internet_tv';
   async function loadRentalSales(slug) {
+    window._rentalCurrentSlug = slug;
     const tk = localStorage.getItem('incentive-auth-token-v1');
     const body = document.getElementById('rental-sales-tbody');
+    const emptyMsg = document.getElementById('rempty-msg');
     if (!tk || !body) return;
-    body.innerHTML = '<div style="padding:30px;text-align:center;color:#64748b">불러오는 중...</div>';
+    body.innerHTML = '<tr><td colspan="13" style="padding:30px;text-align:center;color:#64748b">불러오는 중...</td></tr>';
+    if (emptyMsg) emptyMsg.style.display = 'none';
     try {
-      const r = await fetch('/api/rental/sales?limit=200', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json());
-      const sales = (r.sales || r.rows || []).filter(s => {
-        // 카테고리 slug 매칭 (product.category_id로 필터)
-        return true;  // 일단 전체 (필터는 carrier 정보 join 후 추후)
-      });
-      if (sales.length === 0) {
-        body.innerHTML = '<div style="padding:30px;text-align:center;color:#64748b">계약 없음. R 티켓번호로 신규 등록하세요.</div>';
-        return;
-      }
-      const fmt = n => n == null ? '-' : Number(n).toLocaleString('ko-KR');
-      const statusLabel = { pending:'⏰ 대기', in_progress:'🚧 진행', completed:'✅ 완료', cancelled:'❌ 취소' };
-      const statusColor = { pending:'#fbbf24', in_progress:'#60a5fa', completed:'#22c55e', cancelled:'#dc2626' };
+      const r = await fetch('/api/rental/sales?limit=500', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json());
+      let sales = (r.sales || r.rows || []);
+      // 카테고리 slug 필터
+      const cat = (window._categories || []).find(c => c.slug === slug);
+      if (cat) sales = sales.filter(s => (s.product?.category_id || s.product?.category?.id) === cat.id);
+      window._rentalSalesAll = sales;
       window._rentalSalesCache = sales;
-      body.innerHTML = `<table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:#0f172a">
-          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">R번호</th>
-          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">상품</th>
-          <th style="padding:8px;text-align:center;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155;width:65px">Tier</th>
-          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">고객</th>
-          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">전화</th>
-          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">계약일</th>
-          <th style="padding:8px;text-align:left;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">상태</th>
-          <th style="padding:8px;text-align:right;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">월납</th>
-          <th style="padding:8px;text-align:right;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">페이백</th>
-          <th style="padding:8px;text-align:center;font-size:10.5px;color:#94a3b8;border-bottom:1px solid #334155">상세</th>
-        </tr></thead>
-        <tbody>${sales.map(s => {
-          const p = s.product || {};
-          const opt = s.option || {};
-          const curTier = (s.option || {}).tier || p.tier;
-          const tierBadge = curTier
-            ? `<span class="tier tier-${curTier}" title="현재 옵션 등급 (운영자 수동 입력)">${curTier}</span>`
-            : `<span style="color:#64748b;font-size:10px">-</span>`;
-          const premBadge = p.is_premium ? '<span class="prem-badge" style="margin-left:3px">⭐</span>' : '';
-          return `<tr class="rental-sale-row" data-id="${s.id}" style="border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer">
-            <td style="padding:7px 8px;font-family:'SF Mono',Monaco,monospace;color:#a5b4fc;font-weight:700">${opt.ticket_number || '-'}</td>
-            <td style="padding:7px 8px;font-size:11px;color:#e2e8f0">${(p.brand||'')} ${(p.name||'')} <span style="color:#64748b">· ${opt.months||'-'}M</span></td>
-            <td style="padding:7px 8px;text-align:center">${tierBadge}${premBadge}</td>
-            <td style="padding:7px 8px">${s.customer_name || '-'}</td>
-            <td style="padding:7px 8px;font-family:monospace;font-size:11px">${s.customer_phone || '-'}</td>
-            <td style="padding:7px 8px;font-size:11px;color:#cbd5e1">${s.contract_date || '-'}</td>
-            <td style="padding:7px 8px"><span style="background:rgba(${statusColor[s.status]==='#22c55e'?'34,197,94':statusColor[s.status]==='#dc2626'?'220,38,38':statusColor[s.status]==='#60a5fa'?'96,165,250':'251,191,36'},0.15);color:${statusColor[s.status]||'#94a3b8'};padding:1px 6px;border-radius:3px;font-size:10.5px;font-weight:700">${statusLabel[s.status]||s.status}</span></td>
-            <td style="padding:7px 8px;text-align:right;font-family:monospace;color:#f1f5f9;font-weight:700">${fmt(s.monthly_fee_snapshot)}원</td>
-            <td style="padding:7px 8px;text-align:right;font-family:monospace;color:#fbbf24;font-weight:700">${fmt(s.payback_snapshot)}원</td>
-            <td style="padding:7px 8px;text-align:center"><button type="button" class="rental-sale-edit-btn" data-id="${s.id}" style="background:#1d4ed8;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">📝 편집</button></td>
-          </tr>`;
-        }).join('')}</tbody></table>`;
-      // 행/버튼 클릭 → 상세 모달
-      body.querySelectorAll('.rental-sale-edit-btn').forEach(b => b.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openRentalSaleModal(b.dataset.id);
-      }));
-      body.querySelectorAll('.rental-sale-row').forEach(r => r.addEventListener('click', () => openRentalSaleModal(r.dataset.id)));
-    } catch (e) { body.innerHTML = `<div style="color:#ef4444;padding:20px">로드 실패: ${e.message}</div>`; }
+      renderRentalSales();
+    } catch (e) {
+      body.innerHTML = `<tr><td colspan="13" style="color:#ef4444;padding:20px;text-align:center">로드 실패: ${e.message}</td></tr>`;
+    }
   }
+
+  function renderRentalSales() {
+    const body = document.getElementById('rental-sales-tbody');
+    const emptyMsg = document.getElementById('rempty-msg');
+    const all = window._rentalSalesAll || [];
+    const ym = document.getElementById('rfilter-month')?.value || '';
+    const status = document.getElementById('rfilter-status')?.value || '';
+    const addr = document.getElementById('rfilter-address')?.value || '';
+    const kw = (document.getElementById('rfilter-name')?.value || '').trim().toLowerCase();
+    let sales = all.slice();
+    if (ym) sales = sales.filter(s => (s.contract_date || '').slice(0, 7) === ym);
+    if (status) sales = sales.filter(s => s.status === status);
+    if (addr === 'missing') sales = sales.filter(s => !s.customer_address);
+    else if (addr === 'present') sales = sales.filter(s => !!s.customer_address);
+    if (kw) sales = sales.filter(s => {
+      const p = s.product || {}, opt = s.option || {};
+      return (s.customer_name || '').toLowerCase().includes(kw)
+        || (s.customer_phone || '').toLowerCase().includes(kw)
+        || (opt.ticket_number || '').toLowerCase().includes(kw)
+        || (p.brand || '').toLowerCase().includes(kw)
+        || (p.model || '').toLowerCase().includes(kw)
+        || (s.agent?.name || '').toLowerCase().includes(kw);
+    });
+    window._rentalSalesCache = sales;
+    // 통계 (5 카드) — 이번 달 기준 또는 전체 (필터 적용 X)
+    const monthSales = ym ? all.filter(s => (s.contract_date || '').slice(0, 7) === ym) : all;
+    const cnt = { completed: 0, in_progress: 0, pending: 0, cancelled: 0 };
+    monthSales.forEach(s => { if (s.status in cnt) cnt[s.status]++; });
+    const addrMiss = monthSales.filter(s => !s.customer_address && s.status !== 'cancelled').length;
+    const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setT('rstat-total', monthSales.length + '건');
+    setT('rstat-completed-meta', addrMiss ? `⚠️ 주소 미입력 ${addrMiss}건` : '');
+    setT('rstat-completed-val', cnt.completed + '건');
+    setT('rstat-in_progress', cnt.in_progress + '건');
+    setT('rstat-pending', cnt.pending + '건');
+    setT('rstat-cancelled', cnt.cancelled + '건');
+    setT('rresult-count', `${sales.length}건`);
+    // 빈 상태
+    if (!sales.length) {
+      body.innerHTML = '';
+      if (emptyMsg) emptyMsg.style.display = '';
+      return;
+    }
+    if (emptyMsg) emptyMsg.style.display = 'none';
+    const fmt = n => n == null ? '-' : Number(n).toLocaleString('ko-KR');
+    const statusLabel = { pending:'⏰ 대기', in_progress:'🚧 진행', completed:'✅ 완료', cancelled:'❌ 취소' };
+    const statusBg = { completed:'rgba(34,197,94,0.15)', in_progress:'rgba(96,165,250,0.15)', pending:'rgba(251,191,36,0.15)', cancelled:'rgba(220,38,38,0.15)' };
+    const statusFg = { completed:'#86efac', in_progress:'#60a5fa', pending:'#fbbf24', cancelled:'#fca5a5' };
+    body.innerHTML = sales.map((s, i) => {
+      const p = s.product || {}, opt = s.option || {}, a = s.agent || {};
+      const curTier = opt.tier || p.tier;
+      const tierBadge = curTier ? `<span class="tier tier-${curTier}">${curTier}</span>` : '<span style="color:#64748b;font-size:10px">-</span>';
+      const premBadge = (opt.is_premium ?? p.is_premium) ? '<span class="prem-badge" style="margin-left:3px">⭐</span>' : '';
+      const pBadge = (opt.point_weight || p.point_weight) ? `<span style="color:#a5b4fc;font-size:10.5px;margin-left:5px">${(opt.point_weight || p.point_weight)}P</span>` : '';
+      const addrMissing = !s.customer_address;
+      return `<tr class="rental-sale-row" data-id="${s.id}" style="cursor:pointer">
+        <td style="text-align:center;color:#64748b">${i+1}</td>
+        <td style="font-size:11px;color:#cbd5e1">${(s.contract_date || '').slice(5) || '-'}</td>
+        <td style="font-size:11px;color:#94a3b8">${(s.created_at || '').slice(5, 10) || '-'}<div style="font-size:9.5px;color:#64748b">${(s.created_at || '').slice(11, 16) || ''}</div></td>
+        <td>${a.name || '-'}</td>
+        <td style="font-size:11px;color:#cbd5e1">${a.center || '-'}</td>
+        <td style="font-family:'SF Mono',Monaco,monospace;color:#a5b4fc;font-weight:700;font-size:11px">${opt.ticket_number || '-'}</td>
+        <td style="font-size:11px">
+          <div style="color:#e2e8f0">${(p.brand||'')} ${(p.name||p.model||'')}</div>
+          <div style="color:#64748b;font-size:10px;margin-top:1px">${opt.months ? opt.months+'M' : ''}${opt.care_service ? ' · '+opt.care_service : ''} ${tierBadge}${premBadge}${pBadge}</div>
+        </td>
+        <td>${s.customer_name || '-'}</td>
+        <td style="font-family:monospace;font-size:11px">${s.customer_phone || '-'}</td>
+        <td style="font-size:11px;color:${addrMissing?'#ef4444':'#cbd5e1'}">${s.customer_address || (addrMissing?'주소 미입력':'-')}</td>
+        <td style="text-align:right;font-family:monospace;font-size:11px">
+          <div style="color:#f1f5f9;font-weight:700">${fmt(s.monthly_fee_snapshot)}</div>
+          <div style="color:#fbbf24;font-weight:700">-${fmt(s.payback_snapshot)}</div>
+        </td>
+        <td><span style="background:${statusBg[s.status]||'rgba(148,163,184,0.1)'};color:${statusFg[s.status]||'#94a3b8'};padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:700;white-space:nowrap">${statusLabel[s.status]||s.status}</span></td>
+        <td style="text-align:center"><button type="button" class="rental-sale-edit-btn" data-id="${s.id}" style="background:#1d4ed8;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">📝 편집</button></td>
+      </tr>`;
+    }).join('');
+    body.querySelectorAll('.rental-sale-edit-btn').forEach(b => b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRentalSaleModal(b.dataset.id);
+    }));
+    body.querySelectorAll('.rental-sale-row').forEach(r => r.addEventListener('click', () => openRentalSaleModal(r.dataset.id)));
+  }
+
+  // 가전 패널 filter/reload 핸들러
+  (function setupRentalFilters(){
+    const now = new Date();
+    const ymInit = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const monthEl = document.getElementById('rfilter-month');
+    if (monthEl && !monthEl.value) monthEl.value = ymInit;
+    ['rfilter-month','rfilter-status','rfilter-address','rfilter-name'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener(id === 'rfilter-name' ? 'input' : 'change', renderRentalSales);
+    });
+    const rb = document.getElementById('rreload-btn');
+    if (rb) rb.addEventListener('click', () => loadRentalSales(window._rentalCurrentSlug));
+  })();
 
   // ─── 가전렌탈 계약 상세 편집 모달 ───
   window.openRentalSaleModal = function(saleId) {
