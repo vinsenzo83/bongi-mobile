@@ -146,14 +146,15 @@ h1 { font-size:20px; font-weight:900; margin:0 0 4px; color:#f8fafc; }
       <!-- 할부 / 현금 분기 결과 -->
       <div class="totals">
         <div id="payment-result-cash" class="hidden">
-          <div class="row"><span class="k">💵 결제 방식</span><span class="v green">현금 일시불 <span class="tag green">위약금 없음</span></span></div>
+          <div class="row"><span class="k">💵 결제 방식</span><span class="v green">현금 일시불 <span class="tag blue">공시 위약금만</span></span></div>
           <div class="row"><span class="k">실 결제액 (일시불)</span><span class="v big green" id="r-cash-total">-</span></div>
+          <div class="row"><span class="k">⚠️ 위약금 (24M 이내 해지)</span><span class="v red" id="r-cash-penalty">-</span></div>
         </div>
         <div id="payment-result-installment" class="hidden">
           <div class="row"><span class="k">📅 결제 방식</span><span class="v blue" id="r-months">-</span></div>
           <div class="row"><span class="k">할부원금 (= 현금가)</span><span class="v" id="r-installment-base">-</span></div>
           <div class="row"><span class="k">월 단말 납부</span><span class="v big blue" id="r-monthly">-</span></div>
-          <div class="row"><span class="k">⚠️ 위약금 (해지 시)</span><span class="v red" id="r-penalty">-</span></div>
+          <div class="row"><span class="k">⚠️ 위약금 (해지 시 = 공시 + 매장)</span><span class="v red" id="r-penalty">-</span></div>
         </div>
       </div>
 
@@ -199,8 +200,8 @@ h1 { font-size:20px; font-weight:900; margin:0 0 4px; color:#f8fafc; }
   <div class="card" style="margin-top:16px">
     <div class="card-title">📋 봉이 정책 요약 (2026-05-18 정정)</div>
     <ul style="margin:0;padding-left:20px;font-size:12px;line-height:1.8;color:var(--muted)">
-      <li><strong style="color:var(--text)">할부</strong> = (출고가 − 공시 − 매장지원금) ÷ N개월 / <strong style="color:var(--red)">매장지원금 = 위약금</strong> (24개월 유지)</li>
-      <li><strong style="color:var(--text)">현금 일시불</strong> = 매장지원금 즉시 차감 / <strong style="color:var(--green)">위약금 없음 (해지 자유)</strong></li>
+      <li><strong style="color:var(--text)">할부</strong> = (출고가 − 공시 − 매장지원금) ÷ N개월 / <strong style="color:var(--red)">매장지원금 + 공시지원금 = 위약금</strong> (24개월 유지)</li>
+      <li><strong style="color:var(--text)">현금 일시불</strong> = 매장지원금 즉시 차감 (위약금 X) / <strong style="color:#fbbf24">공시지원금은 24개월 유지 의무</strong> (해지 시 잔여 공시 위약금)</li>
       <li><strong style="color:var(--text)">선택약정 25%</strong> = 공시 미적용 + 월 요금 25%↓ (출고가 그대로 − 매장지원금)</li>
       <li><strong style="color:#fca5a5">🚫 현금가 ≤ 0 (기기값 0원 + 페이백 받는 폰)</strong> = 할부 차단 · 현금 개통만 가능</li>
       <li>옛 "봉이지원금/할부 페이백/14일 후 별도 지급" 개념 <strong style="color:var(--red)">완전 폐기</strong></li>
@@ -310,6 +311,7 @@ function recalc() {
   if (isCash || blockInstallment) {
     $('payment-result-cash').classList.remove('hidden');
     $('r-cash-total').textContent = fmtKrw(Math.max(0, cashFinal));
+    $('r-cash-penalty').textContent = fmtKrw(gongsi) + ' (공시지원금만 · 24M 이내 해지 시 잔여 반환)';
     $('r-monthly-device').textContent = '-';
     $('r-monthly-total').textContent = fmtKrw(monthlyPlan);
     $('r-grand-total').textContent = fmtKrw(monthlyPlan * 24) + ' (24개월 통신요금만)';
@@ -317,15 +319,16 @@ function recalc() {
     const months = { m24:24, m30:30, m36:36 }[payment] || 24;
     const monthlyDevice = Math.round(cashFinal / months);
     const monthlyTotal = monthlyDevice + monthlyPlan;
+    const totalPenalty = support + gongsi;
     $('payment-result-installment').classList.remove('hidden');
     $('r-months').textContent = `${months}개월 할부`;
     $('r-installment-base').textContent = fmtKrw(cashFinal);
     $('r-monthly').textContent = fmtKrw(monthlyDevice);
-    $('r-penalty').textContent = fmtKrw(support) + ' (매장지원금 = 위약금 · 24개월 유지 미달 시 반환)';
+    $('r-penalty').textContent = fmtKrw(totalPenalty) + ` (공시 ${fmt(gongsi)} + 매장 ${fmt(support)} · 24M 이내 해지 시 잔여 반환)`;
     $('r-monthly-device').textContent = fmtKrw(monthlyDevice);
     $('r-monthly-total').textContent = fmtKrw(monthlyTotal);
     $('r-grand-total').textContent = fmtKrw(monthlyTotal * months) + ` (단말 ${months}개월 + 통신요금)`;
-    alerts.push(`<div class="callout warn">⚠️ <strong>${months}개월 유지 의무</strong> — 중도 해지 시 잔여 매장지원금 ${fmtKrw(support)} 반환 의무</div>`);
+    alerts.push(`<div class="callout warn">⚠️ <strong>${months}개월 유지 의무</strong> — 중도 해지 시 잔여 <b>공시지원금 ${fmtKrw(gongsi)} + 매장지원금 ${fmtKrw(support)}</b> 모두 반환 의무</div>`);
   }
 
   if (channel === 'online') alerts.push('<div class="callout info">🌐 온라인 시세 — 매장 대비 매장지원금 5만원 더 (예시 차등)</div>');
@@ -348,14 +351,18 @@ function renderMatrix(prod, gongsi, currentPay, currentType, currentChan) {
   const supportMnpOnline = Math.max(0, price - gongsi - cashMnpOnline);
   const supportChgOnline = Math.max(0, price - gongsi - cashChgOnline);
 
-  const cell = (cash, support, isCurrent) => {
+  const cell = (cash, support, isCurrent, isInstallment) => {
     if (cash <= 0) return `<td style="padding:6px;border:1px solid var(--line);text-align:center;background:rgba(220,38,38,0.08);color:#fca5a5;font-size:10px"><b>🚫 ${fmt(cash)}원</b><br>할부 차단<br>현금만</td>`;
     const monthly24 = Math.round(cash / 24);
     const star = isCurrent ? '<span style="color:var(--accent);font-weight:900">★</span> ' : '';
+    // 위약금: 할부 = 공시+매장 / 현금 = 공시만
+    const penalty = isInstallment ? (gongsi + support) : gongsi;
+    const penLabel = isInstallment ? '공시+매장' : '공시만';
     return `<td style="padding:6px;border:1px solid var(--line);text-align:center;${isCurrent?'background:rgba(54,23,206,0.18);border:2px solid var(--primary)':''}">
       ${star}<b style="color:var(--text)">${fmt(cash)}원</b><br>
       <span style="color:var(--muted);font-size:9.5px">매장지원금 ${fmt(support)}</span><br>
-      <span style="color:#60a5fa;font-size:10px">24M ÷ <b>${fmt(monthly24)}원</b></span>
+      ${isInstallment ? `<span style="color:#60a5fa;font-size:10px">24M ÷ <b>${fmt(monthly24)}원</b></span><br>` : ''}
+      <span style="color:#fca5a5;font-size:9.5px">⚠️ 위약금 ${fmt(penalty)} (${penLabel})</span>
     </td>`;
   };
 
@@ -363,21 +370,21 @@ function renderMatrix(prod, gongsi, currentPay, currentType, currentChan) {
   const isStore = currentChan === 'store';
   const rows = [
     {
-      label: '현금 일시불<br><span style="font-size:9px;color:#86efac">✅ 위약금 X</span>',
+      label: '현금 일시불<br><span style="font-size:9px;color:#fbbf24">⚠️ 공시지원금만 위약금</span>',
       cells: [
-        cell(cashMnpStore, supportMnpStore, isMnp && isStore && currentPay==='cash'),
-        cell(cashChgStore, supportChgStore, !isMnp && isStore && currentPay==='cash'),
-        cell(cashMnpOnline, supportMnpOnline, isMnp && !isStore && currentPay==='cash'),
-        cell(cashChgOnline, supportChgOnline, !isMnp && !isStore && currentPay==='cash'),
+        cell(cashMnpStore, supportMnpStore, isMnp && isStore && currentPay==='cash', false),
+        cell(cashChgStore, supportChgStore, !isMnp && isStore && currentPay==='cash', false),
+        cell(cashMnpOnline, supportMnpOnline, isMnp && !isStore && currentPay==='cash', false),
+        cell(cashChgOnline, supportChgOnline, !isMnp && !isStore && currentPay==='cash', false),
       ]
     },
     {
-      label: '24개월 할부<br><span style="font-size:9px;color:#fca5a5">⚠️ 매장지원금 위약금</span>',
+      label: '24개월 할부<br><span style="font-size:9px;color:#fca5a5">⚠️ 공시+매장 모두 위약금</span>',
       cells: [
-        cell(cashMnpStore, supportMnpStore, isMnp && isStore && currentPay==='m24'),
-        cell(cashChgStore, supportChgStore, !isMnp && isStore && currentPay==='m24'),
-        cell(cashMnpOnline, supportMnpOnline, isMnp && !isStore && currentPay==='m24'),
-        cell(cashChgOnline, supportChgOnline, !isMnp && !isStore && currentPay==='m24'),
+        cell(cashMnpStore, supportMnpStore, isMnp && isStore && currentPay==='m24', true),
+        cell(cashChgStore, supportChgStore, !isMnp && isStore && currentPay==='m24', true),
+        cell(cashMnpOnline, supportMnpOnline, isMnp && !isStore && currentPay==='m24', true),
+        cell(cashChgOnline, supportChgOnline, !isMnp && !isStore && currentPay==='m24', true),
       ]
     },
   ];
