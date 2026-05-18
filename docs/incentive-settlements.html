@@ -84,10 +84,6 @@ body:not(.role-agent) .agent-self-only { display:none !important; }
   <button class="no-print" onclick="openCorrections()" id="btn-corrections" style="background:#475569;color:#fff;font-weight:700">📩 수정 요청</button>
   <span style="margin-left:auto"></span>
   <button class="no-print" onclick="exportCSV()">📥 CSV</button>
-  <label class="no-print" style="display:inline-flex;align-items:center;gap:6px;background:rgba(251,191,36,0.12);border:1px solid #f59e0b;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;color:#fbbf24">
-    <input type="checkbox" id="toggle-combined" onchange="toggleCombined()" style="width:14px;height:14px;cursor:pointer">
-    🏠 가전 + ⚡ 합계 컬럼 표시
-  </label>
   <button class="no-print" onclick="window.print()">🖨️ 인쇄</button>
 </div>
 
@@ -165,23 +161,16 @@ body:not(.role-agent) .agent-self-only { display:none !important; }
   <thead><tr>
     <th>#</th>
     <th class="l">상담사</th><th>역할</th><th>센터</th>
-    <th title="📡 인터넷+TV 계약">📡계약</th><th title="📡 인터넷+TV P">📡P</th><th title="📡 인터넷+TV 우수">📡우수</th>
+    <th title="📡 인터넷+TV 계약">계약</th><th title="📡 인터넷+TV P">P</th><th title="📡 인터넷+TV 우수">우수</th>
     <th>Grade</th><th>단가</th>
     <th>인센티브</th><th>보너스</th>
     <th>페이백 차감</th><th>기본급</th>
-    <th class="col-rental" style="display:none;background:rgba(245,158,11,0.1)" title="🏠 가전 계약">🏠계약</th>
-    <th class="col-rental" style="display:none;background:rgba(245,158,11,0.1)" title="🏠 가전 P">🏠P</th>
-    <th class="col-rental" style="display:none;background:rgba(245,158,11,0.1)" title="🏠 가전 인센+보너스">🏠인센</th>
-    <th class="col-combined" style="display:none;background:rgba(99,102,241,0.12)" title="⚡ 통합 계약">⚡합계</th>
-    <th class="col-combined" style="display:none;background:rgba(99,102,241,0.12)" title="⚡ 통합 P (Grade 산정 기준)">⚡합P</th>
     <th>최종 지급</th>
-    <th class="col-combined admin-only" style="display:none;background:rgba(99,102,241,0.12)" title="⚡ 통합 상담사 수령">⚡합수령</th>
-    <th class="admin-only">회사이익</th>
-    <th class="col-combined admin-only" style="display:none;background:rgba(99,102,241,0.12)" title="⚡ 통합 회사이익">⚡합이익</th>
-    <th class="admin-only">이익률</th>
+    <th class="admin-only">회사이익</th><th class="admin-only">이익률</th>
+    <th class="no-print" title="🏠 가전 정산 별도 (다른 Grade·단가)">🏠 가전</th>
     <th class="no-print">확정</th>
   </tr></thead>
-  <tbody id="tbody"><tr><td colspan="22" style="padding:30px;color:#64748b">로딩 중...</td></tr></tbody>
+  <tbody id="tbody"><tr><td colspan="18" style="padding:30px;color:#64748b">로딩 중...</td></tr></tbody>
 </table>
 </div>
 
@@ -201,6 +190,13 @@ body:not(.role-agent) .agent-self-only { display:none !important; }
     </div>
     <h4 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">📋 요청 이력</h4>
     <div id="cor-list-body" style="font-size:11.5px"></div>
+  </div>
+</div>
+
+<!-- 🏠 가전 정산 상세 팝업 (가전 Grade·단가는 인터넷+TV와 별도) -->
+<div id="rental-settle-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99998;justify-content:center;align-items:flex-start;padding:40px 20px;overflow-y:auto" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#1e293b;border:1.5px solid #f59e0b;border-radius:12px;width:640px;max-width:96vw;color:#e2e8f0">
+    <div id="rental-settle-body"></div>
   </div>
 </div>
 
@@ -353,7 +349,7 @@ function renderTable() {
     const a = s.agent || {};
     const gradeBadge = `<span class="grade-${s.grade_applied||1}">G${s.grade_applied||1}</span>` + (s.is_penalty ? `<span class="penalty">▼${s.grade_target||''}</span>` : '');
     const finalized = s.finalized_at ? `<span style="color:#22c55e;font-size:10px">✅ ${new Date(s.finalized_at).toLocaleDateString('ko-KR')}</span>` : (_myRole === 'admin' ? `<button onclick="finalizeOne('${a.id}')" style="background:#3b82f6;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer">확정</button>` : '<span style="color:#94a3b8;font-size:10px">미확정</span>');
-    const rentalIncTotal = (s.rental_incentive||0) + (s.rental_bonus||0);
+    const rentalBtn = `<button onclick="openRentalSettlement('${a.id}', '${esc(a.name)}')" style="background:#f59e0b;color:#0f172a;border:none;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800;cursor:pointer" title="🏠 가전 정산 상세 — Grade·단가 별도 계산">🏠 ${fmt(s.rental_count)}건</button>`;
     return `<tr>
       <td>${i+1}</td>
       <td class="l"><b style="color:#f8fafc">${esc(a.name)}</b></td>
@@ -368,16 +364,10 @@ function renderTable() {
       <td class="r" style="color:#fbbf24">${fmt(s.bonus)}</td>
       <td class="r" style="color:#f87171">-${fmt(s.total_agent_payback_deduct)}</td>
       <td class="r">${fmt(s.base_salary)}</td>
-      <td class="r col-rental" style="display:none;background:rgba(245,158,11,0.06);color:#fbbf24">${fmt(s.rental_count)}</td>
-      <td class="r col-rental" style="display:none;background:rgba(245,158,11,0.06);color:#fbbf24">${(s.rental_points||0).toFixed(1)}P</td>
-      <td class="r col-rental" style="display:none;background:rgba(245,158,11,0.06);color:#fbbf24">${fmt(rentalIncTotal)}</td>
-      <td class="r col-combined" style="display:none;background:rgba(99,102,241,0.06);color:#a5b4fc;font-weight:800">${fmt(s.combined_total_count)}</td>
-      <td class="r col-combined" style="display:none;background:rgba(99,102,241,0.06);color:#a5b4fc;font-weight:800">${(s.combined_total_points||0).toFixed(1)}P</td>
       <td class="r" style="color:#22c55e;font-weight:900">${fmt(s.agent_total)}원</td>
-      <td class="r col-combined admin-only" style="display:none;background:rgba(99,102,241,0.06);color:#86efac;font-weight:900">${fmt(s.combined_agent_total)}</td>
       <td class="r admin-only">${fmt(s.company_profit)}</td>
-      <td class="r col-combined admin-only" style="display:none;background:rgba(99,102,241,0.06);color:#86efac;font-weight:800">${fmt(s.combined_company_profit)}</td>
       <td class="r admin-only" style="color:${(s.profit_rate||0)>=20?'#22c55e':(s.profit_rate||0)>=10?'#fbbf24':'#f87171'}">${(s.profit_rate||0).toFixed(1)}%</td>
+      <td class="no-print" style="text-align:center">${rentalBtn}</td>
       <td class="no-print">${finalized}</td>
     </tr>`;
   }).join('');
@@ -403,12 +393,66 @@ async function finalizeAll() {
   if (!r.ok) { const d = await r.json(); showToast('실패: ' + (d.error||''), '#dc2626'); return; }
   showToast('🔒 전체 확정 완료'); loadAll();
 }
-function toggleCombined() {
-  const on = document.getElementById('toggle-combined').checked;
-  document.querySelectorAll('.col-rental, .col-combined').forEach(el => {
-    el.style.display = on ? '' : 'none';
-  });
-}
+// 🏠 가전 정산 상세 팝업 — 가전은 인터넷+TV와 별도 Grade·단가 적용
+window.openRentalSettlement = async function(agentId, agentName) {
+  const ym = document.getElementById('f-period').value;
+  const modal = document.getElementById('rental-settle-modal');
+  const body = document.getElementById('rental-settle-body');
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8">불러오는 중...</div>';
+  try {
+    const r = await fetchAuth(`/api/rental/settlement?agent_id=${encodeURIComponent(agentId)}&year_month=${encodeURIComponent(ym)}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || '조회 실패');
+    const s = d.settlement || {};
+    const fmtKrw = (n) => (n == null ? '-' : Number(n).toLocaleString('ko-KR') + '원');
+    const gradeColor = { 1:'#64748b', 2:'#3b82f6', 3:'#22c55e' }[s.grade_applied] || '#64748b';
+    body.innerHTML = `
+      <div style="padding:18px 22px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #475569">
+          <div>
+            <div style="font-size:11px;color:#94a3b8">📅 ${esc(ym)} · 👤 ${esc(agentName)}</div>
+            <div style="font-size:14px;font-weight:800;color:#fbbf24;margin-top:2px">🏠 가전 정산 상세 (별도 Grade·단가)</div>
+          </div>
+          <button onclick="document.getElementById('rental-settle-modal').style.display='none'" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px">✕ 닫기</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-bottom:14px">
+          <div style="background:rgba(34,197,94,0.08);border:1px solid #22c55e;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:10px;color:#94a3b8">🏠 계약</div>
+            <div style="font-size:18px;font-weight:900;color:#86efac">${fmt(s.total_count)}건</div>
+          </div>
+          <div style="background:rgba(165,180,252,0.08);border:1px solid #a5b4fc;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:10px;color:#94a3b8">P</div>
+            <div style="font-size:18px;font-weight:900;color:#a5b4fc">${(s.total_points||0).toFixed(1)}</div>
+          </div>
+          <div style="background:rgba(251,191,36,0.08);border:1px solid #f59e0b;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:10px;color:#94a3b8">우수 (S Tier)</div>
+            <div style="font-size:18px;font-weight:900;color:#fbbf24">${fmt(s.premium_count)}건</div>
+          </div>
+          <div style="background:rgba(${gradeColor==='#22c55e'?'34,197,94':gradeColor==='#3b82f6'?'59,130,246':'100,116,139'},0.15);border:1.5px solid ${gradeColor};border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:10px;color:#94a3b8">🏆 가전 Grade · 단가</div>
+            <div style="font-size:18px;font-weight:900;color:${gradeColor}">G${s.grade_applied||1} · ${fmt(s.applied_rate)}원/P</div>
+            ${s.is_penalty ? `<div style="font-size:9px;color:#f87171;margin-top:2px">▼ 페널티 (목표 G${s.grade_target})</div>` : ''}
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <tr style="background:#0f172a"><td style="padding:7px;color:#94a3b8">💵 인센티브 (가전)</td><td style="padding:7px;text-align:right;color:#22c55e;font-weight:800">${fmtKrw(s.incentive)}</td></tr>
+          <tr><td style="padding:7px;color:#94a3b8">🎁 우수 보너스</td><td style="padding:7px;text-align:right;color:#fbbf24;font-weight:700">${fmtKrw(s.bonus)}</td></tr>
+          <tr style="background:#0f172a"><td style="padding:7px;color:#94a3b8">💰 가전 매출 (월납 합)</td><td style="padding:7px;text-align:right;color:#cbd5e1">${fmtKrw(s.total_revenue)}</td></tr>
+          <tr><td style="padding:7px;color:#94a3b8">💸 페이백 지급 합</td><td style="padding:7px;text-align:right;color:#f87171">${fmtKrw(s.total_payback)}</td></tr>
+          <tr style="background:#0f172a"><td style="padding:7px;color:#94a3b8">  ├ 회사 부담</td><td style="padding:7px;text-align:right;color:#fca5a5">${fmtKrw(s.total_company_payback_burden)}</td></tr>
+          <tr><td style="padding:7px;color:#94a3b8">  └ 상담사 차감</td><td style="padding:7px;text-align:right;color:#f87171">${fmtKrw(s.total_agent_payback_deduct)}</td></tr>
+          <tr style="background:rgba(34,197,94,0.08);border-top:2px solid #475569"><td style="padding:9px;color:#86efac;font-weight:800">🏆 가전 상담사 수령</td><td style="padding:9px;text-align:right;color:#86efac;font-size:14px;font-weight:900">${fmtKrw(s.agent_total)}</td></tr>
+          <tr style="background:rgba(167,139,250,0.08)"><td style="padding:9px;color:#c4b5fd;font-weight:800">🏢 가전 회사 이익</td><td style="padding:9px;text-align:right;color:#c4b5fd;font-size:14px;font-weight:900">${fmtKrw(s.company_profit)}</td></tr>
+        </table>
+        <div style="margin-top:12px;padding:10px;background:rgba(245,158,11,0.08);border:1px dashed #f59e0b;border-radius:6px;font-size:11px;color:#fbbf24;line-height:1.6">
+          ⚠️ <b>가전 정산은 인터넷+TV와 별도 운영</b> — 각자 별도 Grade·단가 적용. 위 표는 <code>rental_calc_monthly_settlement</code> RPC 단독 호출 결과 (가전 P만 기준 Grade 산정).
+        </div>
+      </div>`;
+  } catch (e) {
+    body.innerHTML = `<div style="padding:30px;text-align:center;color:#ef4444">오류: ${esc(e.message)}</div>`;
+  }
+};
 
 function exportCSV() {
   if (!_settlements.length) { showToast('데이터 없음', '#dc2626'); return; }
