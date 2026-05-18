@@ -602,6 +602,33 @@ async function fetchAgent() {
           <label style="color:#86efac;font-weight:700">케어주기 (개월)</label>
           <input type="number" step="1" id="rp-meta-care-${product.id}" value="${product.specifications?.care_cycle_months || ''}" style="padding:4px 7px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px;width:90px">
 
+          ${(() => {
+            // 📋 카테고리 extra_fields schema 기반 동적 input (rental_categories.metadata.extra_fields)
+            const extra = (product.category?.metadata?.extra_fields) || [];
+            if (!extra.length) return '';
+            const esc2 = s => String(s ?? '').replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+            const items = extra.map(f => {
+              const v = product.specifications?.[f.key];
+              const inputId = `rp-extra-${product.id}-${esc2(f.key)}`;
+              const labelHtml = `${esc2(f.label)}${f.unit?` <span style="color:#64748b;font-size:9.5px">(${esc2(f.unit)})</span>`:''}`;
+              if (f.type === 'select') {
+                const opts = (f.options||[]).map(o => `<option value="${esc2(o)}" ${String(v)===String(o)?'selected':''}>${esc2(o)}</option>`).join('');
+                return `<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;color:#a78bfa;font-weight:700">${labelHtml}</span><select id="${inputId}" data-extra-key="${esc2(f.key)}" data-extra-type="select" style="padding:4px 7px;background:#0f172a;border:1px solid #6d28d9;border-radius:4px;color:#e2e8f0;font-size:11px"><option value="">—</option>${opts}</select></div>`;
+              }
+              if (f.type === 'checkbox') {
+                return `<label style="cursor:pointer;font-size:10.5px;color:#a78bfa;display:inline-flex;align-items:center;gap:5px;padding:6px 0"><input type="checkbox" id="${inputId}" data-extra-key="${esc2(f.key)}" data-extra-type="checkbox" ${v?'checked':''}> ${labelHtml}</label>`;
+              }
+              // number / text
+              const t = f.type === 'number' ? 'number' : 'text';
+              return `<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;color:#a78bfa;font-weight:700">${labelHtml}</span><input type="${t}" id="${inputId}" data-extra-key="${esc2(f.key)}" data-extra-type="${t}" value="${esc2(v ?? '')}" placeholder="${esc2(f.placeholder||'')}" style="padding:4px 7px;background:#0f172a;border:1px solid #6d28d9;border-radius:4px;color:#e2e8f0;font-size:11px"></div>`;
+            }).join('');
+            return `
+              <div style="grid-column:1/-1;background:rgba(167,139,250,0.06);border:1px solid #6d28d9;border-radius:6px;padding:8px 10px;margin-top:4px" data-rp-extra-wrap="${product.id}">
+                <div style="font-size:10.5px;color:#c4b5fd;font-weight:800;margin-bottom:6px">📋 카테고리 추가 필드 — ${esc2(product.category?.name || '')}</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:8px">${items}</div>
+              </div>`;
+          })()}
+
           <label style="color:#86efac;font-weight:700">자유 메모</label>
           <textarea id="rp-meta-notes-${product.id}" rows="2" placeholder="추천 시 강조할 포인트 / 특이사항" style="padding:5px 8px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px;resize:vertical;font-family:inherit">${(product.spec_notes||'').replace(/</g,'&lt;')}</textarea>
 
@@ -666,14 +693,23 @@ async function fetchAgent() {
       const care = parseInt(F(`rp-meta-care-${product.id}`).value, 10) || null;
       const notes = F(`rp-meta-notes-${product.id}`).value.trim() || null;
       const lock = F(`rp-meta-lock-${product.id}`).checked;
-      // specifications jsonb 병합 (기존 값 보존)
+      // 📋 카테고리 extra_fields 동적 input 수집
+      const extraValues = {};
+      document.querySelectorAll(`[data-rp-extra-wrap="${product.id}"] [data-extra-key]`).forEach(el => {
+        const k = el.dataset.extraKey;
+        const t = el.dataset.extraType;
+        if (t === 'checkbox') extraValues[k] = el.checked;
+        else if (t === 'number') extraValues[k] = el.value === '' ? null : Number(el.value);
+        else extraValues[k] = el.value === '' ? null : el.value;
+      });
+      // specifications jsonb 병합 (기존 값 + 하드코딩 input + 카테고리 동적 input)
       const specs = Object.assign({}, product.specifications || {}, {
         install_type: inst,
         filter_type: filt,
         size_mm: size,
         weight_kg: weight,
         care_cycle_months: care,
-      });
+      }, extraValues);
       msgEl.style.color = '#94a3b8'; msgEl.textContent = '저장 중...';
       try {
         const res = await fetch(`${RP_API}/products/${product.id}`, {

@@ -266,7 +266,7 @@ router.get('/products', optionalAuth, async (req, res) => {
     const { category, brand, active_only = '1' } = req.query;
     let q = supabase
       .from('rental_products')
-      .select('*, category:rental_categories(slug, name)')
+      .select('*, category:rental_categories(slug, name, metadata)')
       .order('brand', { ascending: true })
       .order('model', { ascending: true });
     if (active_only === '1') q = q.eq('is_active', true);
@@ -286,7 +286,7 @@ router.get('/products/:id/options', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const [{ data: product }, { data: options }] = await Promise.all([
-      supabase.from('rental_products').select('*, category:rental_categories(slug, name)').eq('id', id).single(),
+      supabase.from('rental_products').select('*, category:rental_categories(slug, name, metadata)').eq('id', id).single(),
       supabase.from('rental_product_options').select('*').eq('product_id', id).eq('is_active', true).order('months').order('care_service'),
     ]);
     res.json({ product, options: options || [] });
