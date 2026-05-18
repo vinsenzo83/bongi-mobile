@@ -84,8 +84,24 @@ h1 { font-size:20px; font-weight:900; margin:0 0 4px; color:#f8fafc; }
       </div>
 
       <div class="field">
-        <label>④ 요금제 (월요금)</label>
+        <label>④ 요금제 (선택 시 출고가·공시 자동 채움 · 직접 수정 가능)</label>
         <select id="f-plan"></select>
+      </div>
+
+      <div style="background:rgba(54,23,206,0.08);border:1px solid var(--primary);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:800;color:var(--accent);margin-bottom:8px">✏️ 직접 입력 (시세 자동 → 운영자 수정 가능)</div>
+        <div class="field">
+          <label>출고가 (만원)</label>
+          <input id="f-price" type="number" min="0" step="1" value="180" placeholder="예: 180">
+        </div>
+        <div class="field">
+          <label>공시지원금 (만원, 선약 25% 선택 시 0)</label>
+          <input id="f-gongsi" type="number" min="0" step="1" value="45" placeholder="예: 45">
+        </div>
+        <div class="field">
+          <label>요금제 월 요금 (원, 선약 25% 시 자동 0.75 적용)</label>
+          <input id="f-monthly-plan" type="number" min="0" step="1000" value="125000" placeholder="예: 125000">
+        </div>
       </div>
 
       <div class="field">
@@ -127,7 +143,7 @@ h1 { font-size:20px; font-weight:900; margin:0 0 4px; color:#f8fafc; }
           <span style="font-size:10px;color:var(--accent);font-weight:400">· 매장/온라인 각자 별도</span>
         </label>
         <input id="f-support" type="number" min="0" step="1" value="66" placeholder="예: 66 (= 660,000원)">
-        <div style="font-size:10px;color:var(--muted);margin-top:3px">시세표 운영자가 통신사·요금제·기종별로 결정 — 입력값이 없으면 자동 계산 안 됨</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">시세표 운영자가 통신사·요금제·기종별로 결정</div>
       </div>
 
       <div class="callout info" id="info-data">📊 라이브 시세 fetch 중…</div>
@@ -247,46 +263,59 @@ function rebuildPlans() {
   const cap = $('f-capacity').value;
   const plans = [...new Set(DATA.products.filter(p => p.carrier === carrier && p.name === name && p.capacity === cap).map(p => p.plan))];
   $('f-plan').innerHTML = plans.map(p => `<option value="${p}">${p}</option>`).join('') || '<option value="">-</option>';
-  recalc();
+  autoFillFromTariff();
 }
 
-function getMonthlyPlan(planStr) {
-  // "프리미엄(125,000)" → 125000
-  const m = (planStr || '').match(/\(([\d,]+)\)/);
-  return m ? Number(m[1].replace(/,/g,'')) : 0;
-}
-
-function recalc() {
+// 요금제 선택 시 출고가·공시·요금 자동 채움 (운영자 수정 가능)
+function autoFillFromTariff() {
   const carrier = document.querySelector('input[name="carrier"]:checked').value;
   const name = $('f-name').value;
   const cap = $('f-capacity').value;
   const plan = $('f-plan').value;
+  const prod = DATA.products.find(p => p.carrier===carrier && p.name===name && p.capacity===cap && p.plan===plan);
+  if (prod) {
+    $('f-price').value = prod.price || 0;
+    $('f-gongsi').value = prod.gongsi || 0;
+    const m = (prod.plan || '').match(/\(([\d,]+)\)/);
+    $('f-monthly-plan').value = m ? Number(m[1].replace(/,/g,'')) : 0;
+    // 매장지원금: 시세 기본값 (= 출고가 − 공시 − 번이 현금가) — 없으면 그대로
+    if (prod.cashMnp) {
+      $('f-support').value = Math.max(0, (prod.price || 0) - (prod.gongsi || 0) - (prod.cashMnp || 0));
+    }
+  }
+  recalc();
+}
+
+function recalc() {
   const opentype = document.querySelector('input[name="opentype"]:checked').value;
   const subsidy = document.querySelector('input[name="subsidy"]:checked').value;
   const payment = document.querySelector('input[name="payment"]:checked').value;
   const channel = document.querySelector('input[name="channel"]:checked').value;
 
-  const prod = DATA.products.find(p => p.carrier===carrier && p.name===name && p.capacity===cap && p.plan===plan);
-  if (!prod) {
+  // 직접 입력 4 값 (만원/원)
+  const price = (Number($('f-price').value) || 0) * 10000;
+  const gongsiInput = (Number($('f-gongsi').value) || 0) * 10000;
+  const support = (Number($('f-support').value) || 0) * 10000;
+  const monthlyPlanRaw = Number($('f-monthly-plan').value) || 0;
+
+  // 선택약정 = 공시 0, 월요금 25%↓
+  const gongsi = subsidy === 'seonyak' ? 0 : gongsiInput;
+  let monthlyPlan = monthlyPlanRaw;
+  if (subsidy === 'seonyak') monthlyPlan = Math.round(monthlyPlanRaw * 0.75);
+
+  if (price <= 0) {
     ['r-price','r-gongsi','r-support','r-cash','r-monthly-plan','r-monthly-device','r-monthly-total','r-grand-total'].forEach(id => $(id).textContent = '-');
     $('payment-result-cash').classList.add('hidden');
     $('payment-result-installment').classList.add('hidden');
-    $('alerts').innerHTML = '<div class="callout warn">⚠️ 해당 조합 시세 데이터 없음</div>';
+    $('alerts').innerHTML = '<div class="callout warn">⚠️ 출고가를 입력해주세요</div>';
     return;
   }
 
-  const price = prod.price * 10000;  // 출고가 (만원 → 원)
-  const gongsiRaw = prod.gongsi * 10000;
-  // 선택약정 = 공시 0, 월요금 25%↓
-  const gongsi = subsidy === 'seonyak' ? 0 : gongsiRaw;
-  // 매장지원금 = 운영자 직접 입력 (만원 → 원)
-  const support = (Number($('f-support').value) || 0) * 10000;
-  // 현금가 자동 계산 = 출고가 − 공시 − 매장지원금
+  // 현금가 자동 = 출고가 − 공시 − 매장지원금
   const cashFinal = price - gongsi - support;
 
-  // 월요금
-  let monthlyPlan = getMonthlyPlan(plan);
-  if (subsidy === 'seonyak') monthlyPlan = Math.round(monthlyPlan * 0.75);
+  // 임시 prod 객체 (matrix 호환)
+  const prod = { price: price/10000, gongsi: gongsi/10000, cashMnp: support/10000, cashChg: Math.max(0, support/10000 - 20) };
 
   // 기본 시세
   $('r-price').textContent = fmtKrw(price);
@@ -395,9 +424,9 @@ function renderMatrix(prod, gongsi, currentPay, currentType, currentChan) {
 document.querySelectorAll('input[name="carrier"]').forEach(el => el.addEventListener('change', rebuildPhoneList));
 $('f-name').addEventListener('change', rebuildCapacity);
 $('f-capacity').addEventListener('change', rebuildPlans);
-$('f-plan').addEventListener('change', recalc);
+$('f-plan').addEventListener('change', autoFillFromTariff);
 ['opentype','subsidy','payment','channel'].forEach(n => document.querySelectorAll(`input[name="${n}"]`).forEach(el => el.addEventListener('change', recalc)));
-$('f-support').addEventListener('input', recalc);
+['f-price','f-gongsi','f-monthly-plan','f-support'].forEach(id => $(id).addEventListener('input', recalc));
 
 loadData();
 </script>
