@@ -167,6 +167,32 @@ h1 { font-size:20px; font-weight:900; margin:0 0 4px; color:#f8fafc; }
 
       <!-- 경고/안내 -->
       <div id="alerts"></div>
+
+      <!-- 📊 8조합 시세 매트릭스 (매장/온라인 × 번이/기변 × 현금/할부) -->
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+        <div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px">📊 8조합 시세 매트릭스 (★ = 현재 선택)</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead>
+              <tr style="background:#0f172a">
+                <th style="padding:6px;border:1px solid var(--line);color:var(--muted);font-size:10px">구분</th>
+                <th style="padding:6px;border:1px solid var(--line);color:#60a5fa">🏪 매장 번이</th>
+                <th style="padding:6px;border:1px solid var(--line);color:#60a5fa">🏪 매장 기변</th>
+                <th style="padding:6px;border:1px solid var(--line);color:#22c55e">🌐 온라인 번이</th>
+                <th style="padding:6px;border:1px solid var(--line);color:#22c55e">🌐 온라인 기변</th>
+              </tr>
+            </thead>
+            <tbody id="matrix-tbody">
+              <tr><td colspan="5" style="padding:14px;text-align:center;color:var(--muted)">로딩 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6">
+          ※ 시세표 현금가 = 출고가 − 공시 − (시세별 매장지원금 추정값)<br>
+          ※ 월 단말 = 현금가 ÷ 24개월 (할부 시) · 위약금 = 매장지원금 (해지 시 잔여)<br>
+          ※ 현금가 ≤ 0 (기기값 0원 + 페이백) = 할부 차단 → 현금 개통만
+        </div>
+      </div>
     </div>
   </div>
 
@@ -306,6 +332,56 @@ function recalc() {
   if (subsidy === 'seonyak') alerts.push('<div class="callout ok">✅ 선택약정 — 월 통신요금 25% 할인 적용 (' + fmtKrw(monthlyPlan) + ')</div>');
 
   $('alerts').innerHTML = alerts.join('');
+
+  // 📊 8조합 시세 매트릭스 — 시세표(xlsx) 기반 cashMnp/cashChg + 매장/온라인 차등
+  renderMatrix(prod, gongsi, payment, opentype, channel);
+}
+
+function renderMatrix(prod, gongsi, currentPay, currentType, currentChan) {
+  const price = prod.price * 10000;
+  const cashMnpStore = prod.cashMnp * 10000;
+  const cashChgStore = prod.cashChg * 10000;
+  const cashMnpOnline = Math.max(0, cashMnpStore - 50000);   // 온라인 매장지원금 5만원 더 → 현금가 -5만
+  const cashChgOnline = Math.max(0, cashChgStore - 50000);
+  const supportMnpStore = Math.max(0, price - gongsi - cashMnpStore);
+  const supportChgStore = Math.max(0, price - gongsi - cashChgStore);
+  const supportMnpOnline = Math.max(0, price - gongsi - cashMnpOnline);
+  const supportChgOnline = Math.max(0, price - gongsi - cashChgOnline);
+
+  const cell = (cash, support, isCurrent) => {
+    if (cash <= 0) return `<td style="padding:6px;border:1px solid var(--line);text-align:center;background:rgba(220,38,38,0.08);color:#fca5a5;font-size:10px"><b>🚫 ${fmt(cash)}원</b><br>할부 차단<br>현금만</td>`;
+    const monthly24 = Math.round(cash / 24);
+    const star = isCurrent ? '<span style="color:var(--accent);font-weight:900">★</span> ' : '';
+    return `<td style="padding:6px;border:1px solid var(--line);text-align:center;${isCurrent?'background:rgba(54,23,206,0.18);border:2px solid var(--primary)':''}">
+      ${star}<b style="color:var(--text)">${fmt(cash)}원</b><br>
+      <span style="color:var(--muted);font-size:9.5px">매장지원금 ${fmt(support)}</span><br>
+      <span style="color:#60a5fa;font-size:10px">24M ÷ <b>${fmt(monthly24)}원</b></span>
+    </td>`;
+  };
+
+  const isMnp = currentType === 'mnp';
+  const isStore = currentChan === 'store';
+  const rows = [
+    {
+      label: '현금 일시불<br><span style="font-size:9px;color:#86efac">✅ 위약금 X</span>',
+      cells: [
+        cell(cashMnpStore, supportMnpStore, isMnp && isStore && currentPay==='cash'),
+        cell(cashChgStore, supportChgStore, !isMnp && isStore && currentPay==='cash'),
+        cell(cashMnpOnline, supportMnpOnline, isMnp && !isStore && currentPay==='cash'),
+        cell(cashChgOnline, supportChgOnline, !isMnp && !isStore && currentPay==='cash'),
+      ]
+    },
+    {
+      label: '24개월 할부<br><span style="font-size:9px;color:#fca5a5">⚠️ 매장지원금 위약금</span>',
+      cells: [
+        cell(cashMnpStore, supportMnpStore, isMnp && isStore && currentPay==='m24'),
+        cell(cashChgStore, supportChgStore, !isMnp && isStore && currentPay==='m24'),
+        cell(cashMnpOnline, supportMnpOnline, isMnp && !isStore && currentPay==='m24'),
+        cell(cashChgOnline, supportChgOnline, !isMnp && !isStore && currentPay==='m24'),
+      ]
+    },
+  ];
+  $('matrix-tbody').innerHTML = rows.map(r => `<tr><td style="padding:8px;border:1px solid var(--line);color:var(--muted);font-weight:700;font-size:10.5px">${r.label}</td>${r.cells.join('')}</tr>`).join('');
 }
 
 // 이벤트
