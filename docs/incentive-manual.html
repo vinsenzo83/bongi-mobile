@@ -656,6 +656,14 @@ const SECTIONS = [
 <h3>🔔 BroadcastChannel 즉시 전파</h3>
 <p>정책 PATCH → <code>BroadcastChannel('rental-policy' · 'incentive-policy')</code> → 다른 탭(상품·TM 큐콜·정산)에서 즉시 재 fetch · 재계산. <b>새로고침 불필요</b>.</p>
 
+<h3>🧪 영업이익 시뮬레이터 — 활성정책 자동 동기화</h3>
+<ul>
+<li>페이지 로드 시 활성정책(<code>incentive_rules</code> + <code>rental_policy</code>) → 시뮬 input 자동 채움</li>
+<li>동기화 항목: 기본급·우수보너스·G1/G2/G3 단가·페이백 한도·Tier 임계·tier_to_p·weight_cost_per_p</li>
+<li>"💼 활성정책 동기화" 배지 표시 + [🔄 활성정책 재적용] 버튼 (수동 reset)</li>
+<li>가전 마진 공식 안내 텍스트도 활성 <code>weight_cost_per_p</code> 값으로 동적 갱신</li>
+</ul>
+
 <h3>📋 폐기된 옛 컬럼 (2026-05-18 DROP)</h3>
 <div class="warn">아래 컬럼은 모두 DROP — 화면에서도 사라짐. 옛 가이드/스크립트에 남아있으면 무시.
 <ul style="margin-top:6px">

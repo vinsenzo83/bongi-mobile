@@ -526,12 +526,18 @@ async function fetchAgent() {
 
     <!-- 🧪 영업이익 시뮬레이터 (기획서 기반) -->
     <div class="section">
-      <h2 style="display:flex;justify-content:space-between;align-items:center">
-        🧪 영업이익 시뮬레이터 — 회사 마진 / 인센티브 분리
-        <label style="font-size:11.5px;font-weight:700;cursor:pointer;background:rgba(245,158,11,0.15);padding:6px 12px;border:1px solid #f59e0b;border-radius:6px;display:inline-flex;align-items:center;gap:6px">
-          <input type="checkbox" id="sim-hybrid-toggle" style="width:16px;height:16px;cursor:pointer">
-          <span style="color:#fbbf24">🏠 가전렌탈 추가 (하이브리드 영업)</span>
-        </label>
+      <h2 style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <span style="display:inline-flex;align-items:center;gap:8px">
+          🧪 영업이익 시뮬레이터 — 회사 마진 / 인센티브 분리
+          <span id="sim-policy-badge" style="display:none;font-size:10px;font-weight:800;background:rgba(34,197,94,0.18);color:#86efac;padding:3px 8px;border:1px solid #22c55e;border-radius:10px;letter-spacing:0.03em" title="활성정책 자동 동기화됨">💼 활성정책 동기화</span>
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:8px">
+          <button type="button" id="sim-reload-policy" style="font-size:10.5px;font-weight:700;background:rgba(34,197,94,0.15);color:#86efac;border:1px solid #22c55e;border-radius:6px;padding:5px 10px;cursor:pointer" title="활성정책에서 시뮬 입력값 다시 불러오기">🔄 활성정책 재적용</button>
+          <label style="font-size:11.5px;font-weight:700;cursor:pointer;background:rgba(245,158,11,0.15);padding:6px 12px;border:1px solid #f59e0b;border-radius:6px;display:inline-flex;align-items:center;gap:6px">
+            <input type="checkbox" id="sim-hybrid-toggle" style="width:16px;height:16px;cursor:pointer">
+            <span style="color:#fbbf24">🏠 가전렌탈 추가 (하이브리드 영업)</span>
+          </label>
+        </span>
       </h2>
       <div style="font-size:11px;color:#94a3b8;margin-bottom:12px">
         💡 V5 기획서 공식 그대로 — 정책·영업 가정 조정 시 회사 영업이익과 상담사 수령액 즉시 계산.
@@ -559,8 +565,8 @@ async function fetchAgent() {
           <label>G3 단가 (₩/P)
             <input id="sim-rt-g3" type="number" min="0" step="1000" value="30000" class="sim-input"></label>
         </div>
-        <div style="font-size:10px;color:#cbd5e1;margin-top:8px;line-height:1.5">
-          ⚙️ 가전렌탈 마진 공식: <code>rebate × 인식률 − payback − P × 70,000</code> · 1포인트당 회사 비용 70,000원/P · 가입보너스 없음 · 기본급분담 없음
+        <div id="sim-rt-note" style="font-size:10px;color:#cbd5e1;margin-top:8px;line-height:1.5">
+          ⚙️ 가전렌탈 마진 공식: <code>rebate × 인식률 − payback − (gift × 10000) − P × 70,000</code> · 1포인트당 회사 비용 <b>70,000원/P</b> (활성정책 동기화)
         </div>
       </div>
 
@@ -1008,6 +1014,9 @@ async function fetchAgent() {
         F('rp-mgr-profit-rate').value = (r.manager_team_profit_rate_min != null) ? r.manager_team_profit_rate_min : 0.20;
         F('rp-mgr-enabled').checked = (r.manager_v51_enabled !== false);
         updateRpMgrUi();
+        // 🧪 영업이익 시뮬레이터 — 활성정책 input 자동 동기화 (가전렌탈)
+        window._activeRtRule = r;
+        if (typeof applyActivePolicyToSim === 'function') applyActivePolicyToSim('rt', r);
       }
 
       function updateRpMgrUi() {
@@ -1450,6 +1459,46 @@ function loadActiveToForm(r) {
   if (document.getElementById('f-tp-b')) document.getElementById('f-tp-b').value = tp.B ?? 1.2;
   if (document.getElementById('f-tp-c')) document.getElementById('f-tp-c').value = tp.C ?? 1.0;
   updateMgrUi();
+  // 🧪 영업이익 시뮬레이터 — 활성정책 input 자동 동기화 (인터넷+TV)
+  applyActivePolicyToSim('it', r);
+}
+
+// ═══ 시뮬레이터 ↔ 활성정책 연동 ═══
+function applyActivePolicyToSim(kind, r) {
+  if (!r) return;
+  const setSim = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el || val == null) return;
+    el.value = val;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  if (kind === 'it') {
+    const rates = r.grade_rates || {};
+    const thrs = r.grade_thresholds || {};
+    setSim('sim-base', r.base_salary || 2300000);
+    setSim('sim-bonus', r.bonus_per_premium);
+    setSim('sim-rate-g1', rates['1']);
+    setSim('sim-rate-g2', rates['2']);
+    setSim('sim-rate-g3', rates['3']);
+    setSim('sim-cap', r.payback_company_limit);
+    setSim('sim-th-g2', (thrs['2'] || {}).points);
+    setSim('sim-th-g3', (thrs['3'] || {}).points);
+  } else if (kind === 'rt') {
+    const rates = r.grade_rates || {};
+    setSim('sim-rt-g1', rates['1']);
+    setSim('sim-rt-g2', rates['2']);
+    setSim('sim-rt-g3', rates['3']);
+    // 안내 텍스트(line ~562) 동적 갱신
+    const wc = r.weight_cost_per_p || 70000;
+    const note = document.getElementById('sim-rt-note');
+    if (note) note.innerHTML = `⚙️ 가전렌탈 마진 공식: <code>rebate × 인식률 − payback − (gift × 10000) − P × ${wc.toLocaleString()}</code> · 1포인트당 회사 비용 <b>${wc.toLocaleString()}원/P</b> (활성정책 동기화)`;
+  }
+  // 배지 표시
+  const badge = document.getElementById('sim-policy-badge');
+  if (badge) {
+    badge.style.display = 'inline-flex';
+    badge.title = `IT v${(window._activeItRule?.version)||'?'} · RT v${(window._activeRtRule?.version)||'?'} 동기화됨`;
+  }
 }
 
 function updateMgrUi() {
@@ -1642,7 +1691,7 @@ async function loadAll() {
     const rules = await fetchAllRules();
     const active = rules.find(r => r.active);
     _activeRule = active;
-    if (active) loadActiveToForm(active);
+    if (active) { window._activeItRule = active; loadActiveToForm(active); }
     renderHistory(rules);
     loadAuditHistory();
   } catch (e) { alert('정책 로드 실패: ' + e.message); }
@@ -1912,6 +1961,12 @@ function runSimulation() {
 
 // 입력 변경 시 실시간 갱신
 document.querySelectorAll('.sim-input').forEach(inp => inp.addEventListener('input', runSimulation));
+// 🔄 활성정책 재적용 버튼
+document.getElementById('sim-reload-policy')?.addEventListener('click', () => {
+  if (window._activeItRule) applyActivePolicyToSim('it', window._activeItRule);
+  if (window._activeRtRule) applyActivePolicyToSim('rt', window._activeRtRule);
+  runSimulation();
+});
 // 🏠 하이브리드 토글
 document.getElementById('sim-hybrid-toggle')?.addEventListener('change', (e) => {
   const block = document.getElementById('sim-rental-block');
