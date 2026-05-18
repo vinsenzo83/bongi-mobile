@@ -1250,6 +1250,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const month = document.getElementById('filter-month')?.value;
     if (month && _myRole === 'agent') loadAgentSection(month);
   });
+  // 🔔 정책 변경 BroadcastChannel 수신 → KPI 재계산 (캐시 우회)
+  try {
+    const reload = () => {
+      const month = document.getElementById('filter-month')?.value;
+      if (typeof apiClearCache === 'function') apiClearCache();
+      if (month) loadAgentSection(month);
+    };
+    const _bcIt = new BroadcastChannel('incentive-policy');
+    _bcIt.onmessage = () => { console.log('[dashboard] incentive-policy 갱신'); reload(); };
+    const _bcRt = new BroadcastChannel('rental-policy');
+    _bcRt.onmessage = () => { console.log('[dashboard] rental-policy 갱신'); reload(); };
+  } catch (e) {}
 });
 
 let _toastTimer;

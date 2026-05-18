@@ -5257,6 +5257,16 @@ setTimeout(() => {
       _categories = cats.categories || [];
       _policy = pol.policy;
       _brandPolicies = bps.brand_policies || [];
+      // 🔔 가전 정책 변경 즉시 수신 → _policy 재 fetch + 견적 재계산
+      try {
+        const _bcRt = new BroadcastChannel('rental-policy');
+        _bcRt.onmessage = async () => {
+          const fresh = await fetch(API + '/policy').then(r => r.json()).catch(() => null);
+          if (fresh) { _policy = fresh.policy; if (_selectedOpt) renderQuote(); console.log('[tm-counselor] rental-policy 갱신'); }
+        };
+        const _bcIt = new BroadcastChannel('incentive-policy');
+        _bcIt.onmessage = () => { console.log('[tm-counselor] incentive-policy 변경 — 견적 영향 시 새로고침'); };
+      } catch (e) {}
       const catSel = document.getElementById('rental-category');
       catSel.innerHTML = _categories.map(c => `<option value="${c.slug}">${(c.metadata?.icon || '')} ${c.name}</option>`).join('');
       catSel.addEventListener('change', loadProducts);
