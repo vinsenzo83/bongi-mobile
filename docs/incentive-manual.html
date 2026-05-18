@@ -760,16 +760,15 @@ const SECTIONS = [
 <li>[🏠 가전 + ⚡ 합계 컬럼 표시] 토글 — 켜면 list에 가전·합산 7컬럼 추가 노출</li>
 <li>cron 자동: 매월 1일 02:00 KST</li>
 </ul>
-<div class="tip">📌 <b>Grade 산정 기준</b>: combined_total_points (가전+인터넷 합산 P) — 통합 Grade가 양쪽 단가에 동시 적용</div>
+<div class="warn"><b>⚠️ 가전 Grade는 인터넷+TV와 별도 운영</b> (2026-05-18 정책 변경) — 각자 P 기준으로 독립 Grade·단가 산정. 메인 화면은 인터넷+TV 기준만 표시. 가전 정산은 행의 <b>[🏠 N건]</b> 버튼 클릭 → 별도 팝업 (rental_calc_monthly_settlement RPC 단독 호출 — 가전 P·Grade·단가·인센·우수·매출·페이백·이익).</div>
 
-<h3>🏠 가전 + ⚡ 합계 컬럼 (토글 시 표시)</h3>
+<h3>🏠 가전 정산 팝업 (행 [🏠 N건] 버튼)</h3>
 <table>
-<tr><th>그룹</th><th>컬럼</th><th>비고</th></tr>
-<tr><td rowspan="3" style="background:rgba(245,158,11,0.06)">🏠 가전</td><td>🏠계약·🏠P·🏠인센</td><td>finalize 시점 박제값 (미확정은 0)</td></tr>
-<tr><td colspan="2" style="color:#94a3b8;font-size:11px">rental_count·rental_points·rental_incentive + rental_bonus</td></tr>
-<tr><td colspan="2" style="color:#94a3b8;font-size:11px">CSV에 rental_premium_count·rental_company_profit 추가 포함</td></tr>
-<tr><td rowspan="2" style="background:rgba(99,102,241,0.08)">⚡ 합계</td><td>⚡합계·⚡합P·⚡합수령·⚡합이익</td><td>가전+IT 통합 (Grade 산정 기준)</td></tr>
-<tr><td colspan="2" style="color:#94a3b8;font-size:11px">combined_total_count·combined_total_points·combined_agent_total·combined_company_profit</td></tr>
+<tr><th>구분</th><th>값</th></tr>
+<tr><td>가전 Grade · 단가</td><td>가전 P 기준 (인터넷과 무관)</td></tr>
+<tr><td>가전 인센티브 · 우수 보너스</td><td>가전 단가 × 가전 P + 우수 보너스</td></tr>
+<tr><td>가전 매출 · 페이백 (회사 부담 / 상담사 차감)</td><td>가전 박제값 합산</td></tr>
+<tr><td>가전 상담사 수령 · 회사 이익</td><td>가전 단독 정산 결과</td></tr>
 </table>`
   },
   {
