@@ -811,11 +811,13 @@ const SECTIONS = [
     id: 'dept-stats', group: '3️⃣ 관리자', title: '🏢 부서별 통계', roles: ['admin', 'manager'],
     html: `<h2>부서별 통계<span class="role-tag r-admin">ADMIN</span><span class="role-tag r-manager">MANAGER</span></h2>
 <p class="lead">부서(<code>incentive_departments</code>)별 KPI — 영업·계약·인센티브·우수·이익 비교 (2026-05-18 신규).</p>
-<h3>주요 지표</h3>
+<h3>주요 지표 (응답 schema 확장 — 2026-05-18)</h3>
 <ul>
-<li>부서별 활성 agent 수·계약 건수·우수 건수·총 P·인센티브·회사 이익</li>
-<li>전월 대비 변화 (▲▼ 화살표)</li>
-<li>인터넷+TV / 가전 통합 합계</li>
+<li>직접 집계: 인터넷+TV(<code>internet_count</code>) · 가전(<code>rental_count</code>) · 합계(<code>total_count</code>) · 월납·페이백 · 완료/취소</li>
+<li>settlements 기반 (finalize된 월): <code>total_points</code>·<code>premium_count</code>·<code>incentive</code>·<code>bonus</code>·<code>company_profit</code></li>
+<li>가전 separate: <code>rental_points</code>·<code>rental_premium_count</code>·<code>rental_incentive</code>·<code>rental_bonus</code>·<code>rental_company_profit</code></li>
+<li>⚡ 통합: <code>combined_total_count</code>·<code>combined_total_points</code>·<code>combined_agent_total</code>·<code>combined_company_profit</code></li>
+<li>부서 미배정 agent → "— 미배정" 행으로 별도 표시</li>
 </ul>
 <h3>주요 액션</h3>
 <ul>

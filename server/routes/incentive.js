@@ -2655,25 +2655,87 @@ router.get('/departments/stats', authenticateJWT, async (req, res) => {
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me || !['admin','manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
-    const { ym } = req.query;  // YYYY-MM
-    // rental_sales 부서별 집계 (agent.department_id로 그룹)
+    const { ym } = req.query;
     const month = ym || new Date().toISOString().slice(0, 7);
     const { data: depts } = await supabase.from('incentive_departments').select('id,name,categories');
-    const { data: rentals } = await supabase.from('rental_sales')
-      .select('id,monthly_fee_snapshot,payback_snapshot,agent:incentive_agents(department_id)')
-      .gte('contract_date', month + '-01').lte('contract_date', month + '-31');
+
+    // 1) 직접 집계 — rental_sales · incentive_sales (이번 달 contract_date)
+    const start = month + '-01';
+    const end = month + '-31';
+    const [rentalRes, salesRes, settleRes] = await Promise.all([
+      supabase.from('rental_sales')
+        .select('id,monthly_fee_snapshot,payback_snapshot,status,agent:incentive_agents(department_id)')
+        .gte('contract_date', start).lte('contract_date', end)
+        .is('deleted_at', null),
+      supabase.from('incentive_sales')
+        .select('id,monthly_fee,payback_snapshot,status,agent:incentive_agents(department_id)')
+        .gte('contract_date', start).lte('contract_date', end)
+        .is('deleted_at', null),
+      supabase.from('incentive_monthly_settlements')
+        .select('agent_id,total_count,total_points,premium_count,incentive,bonus,company_profit,rental_count,rental_points,rental_premium_count,rental_incentive,rental_bonus,rental_company_profit,combined_total_count,combined_total_points,combined_agent_total,combined_company_profit,agent:incentive_agents(department_id)')
+        .eq('year_month', month),
+    ]);
+
     const byDept = {};
-    (rentals || []).forEach(r => {
-      const did = r.agent?.department_id || 'unassigned';
-      if (!byDept[did]) byDept[did] = { count: 0, monthly_fee: 0, payback: 0 };
-      byDept[did].count++;
-      byDept[did].monthly_fee += r.monthly_fee_snapshot || 0;
-      byDept[did].payback += r.payback_snapshot || 0;
+    const ensure = (did) => {
+      if (!byDept[did]) byDept[did] = {
+        rental_count: 0, internet_count: 0, total_count: 0,
+        total_monthly_fee: 0, total_payback: 0,
+        completed_count: 0, cancelled_count: 0,
+        // settlements 기반 확장
+        total_points: 0, premium_count: 0, incentive: 0, bonus: 0, company_profit: 0,
+        rental_points: 0, rental_premium_count: 0, rental_incentive: 0, rental_bonus: 0, rental_company_profit: 0,
+        combined_total_count: 0, combined_total_points: 0, combined_agent_total: 0, combined_company_profit: 0,
+        // 호환 (legacy UI)
+        count: 0, monthly_fee: 0, payback: 0,
+      };
+      return byDept[did];
+    };
+
+    (rentalRes.data || []).forEach(r => {
+      const b = ensure(r.agent?.department_id || 'unassigned');
+      b.rental_count++; b.total_count++; b.count++;
+      b.total_monthly_fee += r.monthly_fee_snapshot || 0;
+      b.monthly_fee += r.monthly_fee_snapshot || 0;
+      b.total_payback += r.payback_snapshot || 0;
+      b.payback += r.payback_snapshot || 0;
+      if (r.status === 'completed') b.completed_count++;
+      if (r.status === 'cancelled') b.cancelled_count++;
     });
-    const result = (depts || []).map(d => ({
-      ...d,
-      stats: byDept[d.id] || { count: 0, monthly_fee: 0, payback: 0 }
-    }));
+    (salesRes.data || []).forEach(s => {
+      const b = ensure(s.agent?.department_id || 'unassigned');
+      b.internet_count++; b.total_count++; b.count++;
+      b.total_monthly_fee += s.monthly_fee || 0;
+      b.monthly_fee += s.monthly_fee || 0;
+      b.total_payback += s.payback_snapshot || 0;
+      b.payback += s.payback_snapshot || 0;
+      if (s.status === 'completed') b.completed_count++;
+      if (s.status === 'cancelled') b.cancelled_count++;
+    });
+    // settlements 기반 (finalize된 경우만 — 부서별 합산)
+    (settleRes.data || []).forEach(s => {
+      const b = ensure(s.agent?.department_id || 'unassigned');
+      b.total_points += Number(s.total_points || 0) + Number(s.rental_points || 0);
+      b.premium_count += (s.premium_count || 0) + (s.rental_premium_count || 0);
+      b.incentive += (s.incentive || 0);
+      b.bonus += (s.bonus || 0);
+      b.company_profit += (s.company_profit || 0);
+      b.rental_points += Number(s.rental_points || 0);
+      b.rental_premium_count += (s.rental_premium_count || 0);
+      b.rental_incentive += (s.rental_incentive || 0);
+      b.rental_bonus += (s.rental_bonus || 0);
+      b.rental_company_profit += (s.rental_company_profit || 0);
+      b.combined_total_count += (s.combined_total_count || 0);
+      b.combined_total_points += Number(s.combined_total_points || 0);
+      b.combined_agent_total += (s.combined_agent_total || 0);
+      b.combined_company_profit += (s.combined_company_profit || 0);
+    });
+
+    const result = (depts || []).map(d => ({ ...d, stats: byDept[d.id] || ensure(d.id) }));
+    // 미배정 부서 (agent.department_id NULL)
+    if (byDept['unassigned']) {
+      result.push({ id: 'unassigned', name: '— 미배정', categories: [], stats: byDept['unassigned'] });
+    }
     res.json({ month, departments: result });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
