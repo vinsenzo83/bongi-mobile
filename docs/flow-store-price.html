@@ -1549,16 +1549,16 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <div style="background:#eff6ff;border:2px solid #2563eb;border-radius:10px;padding:12px">
         <div style="font-size:12px;font-weight:900;color:#2563eb;margin-bottom:8px">🏪 오프라인 공통폼 (매장별 등록)</div>
 
-        <div style="font-size:10px;font-weight:800;color:#1a2744;margin:6px 0 3px">① 📱 무선(휴대폰) <span style="font-weight:500;color:#666;font-size:9px">· 입력 8 + 자동계산 2 (현금가=출고가−공시−매장지원금)</span></div>
+        <div style="font-size:10px;font-weight:800;color:#1a2744;margin:6px 0 3px">① 📱 무선(휴대폰) <span style="font-weight:500;color:#666;font-size:9px">· 입력 8 (매장지원금 직접 입력 · 자동계산 0)</span></div>
         <table style="font-size:9px">
-          <thead><tr><th>통신사</th><th>펫네임</th><th>용량</th><th>출고가</th><th>요금제(월요금)</th><th>공시</th><th>번이<br>현금가</th><th>기변<br>현금가</th><th style="background:#fef3c7;color:#b45309">매장지원금<br>(번이·자동)</th><th style="background:#fef3c7;color:#b45309">매장지원금<br>(기변·자동)</th></tr></thead>
+          <thead><tr><th>통신사</th><th>펫네임</th><th>용량</th><th>출고가</th><th>요금제(월요금)</th><th>공시</th><th style="background:#dbeafe;color:#1e40af">매장지원금<br>(번이·입력)</th><th style="background:#dbeafe;color:#1e40af">매장지원금<br>(기변·입력)</th></tr></thead>
           <tbody>
-            <tr><td>SK</td><td>S26U</td><td>512GB</td><td style="font-weight:700">180</td><td>프리미엄(125,000)</td><td style="color:#3617ce;font-weight:700">45</td><td style="color:#1a2744;font-weight:700">44</td><td style="color:#1a2744;font-weight:700">64</td><td style="background:#fef3c7;color:#b45309;font-weight:700">91</td><td style="background:#fef3c7;color:#b45309;font-weight:700">71</td></tr>
-            <tr><td>KT</td><td>S26U</td><td>512GB</td><td style="font-weight:700">180</td><td>초이스스페셜(130,000)</td><td style="color:#3617ce;font-weight:700">50</td><td style="color:#1a2744;font-weight:700">34</td><td style="color:#1a2744;font-weight:700">39</td><td style="background:#fef3c7;color:#b45309;font-weight:700">96</td><td style="background:#fef3c7;color:#b45309;font-weight:700">91</td></tr>
-            <tr><td>LG</td><td>S26U</td><td>512GB</td><td style="font-weight:700">180</td><td>프리미어 슈퍼(125,000)</td><td style="color:#3617ce;font-weight:700">47</td><td style="color:#1a2744;font-weight:700">29</td><td style="color:#1a2744;font-weight:700">34</td><td style="background:#fef3c7;color:#b45309;font-weight:700">104</td><td style="background:#fef3c7;color:#b45309;font-weight:700">99</td></tr>
+            <tr><td>SK</td><td>S26U</td><td>512GB</td><td style="font-weight:700">180</td><td>프리미엄(125,000)</td><td style="color:#3617ce;font-weight:700">45</td><td style="background:#dbeafe;color:#1e40af;font-weight:700">91</td><td style="background:#dbeafe;color:#1e40af;font-weight:700">71</td></tr>
+            <tr><td>KT</td><td>S26U</td><td>512GB</td><td style="font-weight:700">180</td><td>초이스스페셜(130,000)</td><td style="color:#3617ce;font-weight:700">50</td><td style="background:#dbeafe;color:#1e40af;font-weight:700">96</td><td style="background:#dbeafe;color:#1e40af;font-weight:700">91</td></tr>
+            <tr><td>LG</td><td>S26U</td><td>512GB</td><td style="font-weight:700">180</td><td>프리미어 슈퍼(125,000)</td><td style="color:#3617ce;font-weight:700">47</td><td style="background:#dbeafe;color:#1e40af;font-weight:700">104</td><td style="background:#dbeafe;color:#1e40af;font-weight:700">99</td></tr>
           </tbody>
         </table>
-        <div style="font-size:8px;color:#666;margin-top:3px;line-height:1.5">※ 용량별 출고가 (S26U): 256GB 160만 / 512GB 180만 / 1TB 200만 · 단위 만원<br>※ 자동 계산: 매장지원금(번이) = 출고가 − 공시 − 번이 현금가 / 매장지원금(기변) = 출고가 − 공시 − 기변 현금가<br>※ 매장지원금 = 즉시 차감 · 할부 시 위약금(24개월 유지 의무) · 현금 시 위약금 X · 현금가 음수 = 할부 차단·현금만<br>※ 공시지원금은 통신사·요금제별 차등 · 선택약정 25% 선택 시 공시 0 처리</div>
+        <div style="font-size:8px;color:#666;margin-top:3px;line-height:1.5">※ 용량별 출고가 (S26U): 256GB 160만 / 512GB 180만 / 1TB 200만 · 단위 만원<br>※ <strong style="color:#dc2626">자동계산 컬럼 폐기</strong> — 할부 페이백 개념 없음. 매장지원금 직접 입력 (번이·기변 별도)<br>※ 현금가(자동 표시) = 출고가 − 공시 − 매장지원금 (음수면 할부 차단·현금 개통만)<br>※ 매장지원금 = 즉시 차감 · 할부 시 위약금(24개월 유지 의무) · 현금 시 위약금 X<br>※ 공시지원금은 통신사·요금제별 차등 · 선택약정 25% 선택 시 공시 0 처리</div>
         <div style="font-size:10px;font-weight:800;color:#1a2744;margin:8px 0 3px">② 📇 유심 (유심-매장) <span style="font-weight:500;color:#dc2626;font-size:9px">· 선택약정 25% 할인 (SK/KT 개통시·LG 고객센터)</span></div>
         <table style="font-size:9px">
           <thead><tr><th>통신사</th><th>요금제(월요금)</th><th>25%↓실납</th><th>번이</th></tr></thead>
@@ -1647,9 +1647,9 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
       <div style="background:#f0fdf4;border:2px solid #059669;border-radius:10px;padding:12px">
         <div style="font-size:12px;font-weight:900;color:#059669;margin-bottom:8px">🌐 온라인 공통폼 (통합 1개)</div>
 
-        <div style="font-size:10px;font-weight:800;color:#1a2744;margin:6px 0 3px">① 📱 무선(휴대폰) <span style="font-weight:500;color:#666;font-size:9px">· 입력 8 + 자동계산 2 (현금가=출고가−공시−매장지원금)</span></div>
+        <div style="font-size:10px;font-weight:800;color:#1a2744;margin:6px 0 3px">① 📱 무선(휴대폰) <span style="font-weight:500;color:#666;font-size:9px">· 입력 8 (매장지원금 직접 입력 · 자동계산 0)</span></div>
         <table style="font-size:9px">
-          <thead><tr><th>통신사</th><th>펫네임</th><th>용량</th><th>출고가</th><th>요금제(월요금)</th><th>공시</th><th>번이<br>현금가</th><th>기변<br>현금가</th><th style="background:#fef3c7;color:#b45309">매장지원금<br>(번이·자동)</th><th style="background:#fef3c7;color:#b45309">매장지원금<br>(기변·자동)</th></tr></thead>
+          <thead><tr><th>통신사</th><th>펫네임</th><th>용량</th><th>출고가</th><th>요금제(월요금)</th><th>공시</th><th style="background:#dbeafe;color:#1e40af">매장지원금<br>(번이·입력)</th><th style="background:#dbeafe;color:#1e40af">매장지원금<br>(기변·입력)</th></tr></thead>
           <tbody>
             <tr><td>SK</td><td>S26U</td><td>512GB</td><td style="font-weight:700">180</td><td>프리미엄(125,000)</td><td style="color:#3617ce;font-weight:700">45</td><td style="color:#1a2744;font-weight:700">44</td><td style="color:#1a2744;font-weight:700">64</td><td style="background:#fef3c7;color:#b45309;font-weight:700">91</td><td style="background:#fef3c7;color:#b45309;font-weight:700">71</td></tr>
             <tr><td>KT</td><td>S26U</td><td>512GB</td><td style="font-weight:700">180</td><td>초이스스페셜(130,000)</td><td style="color:#3617ce;font-weight:700">50</td><td style="color:#1a2744;font-weight:700">34</td><td style="color:#1a2744;font-weight:700">39</td><td style="background:#fef3c7;color:#b45309;font-weight:700">96</td><td style="background:#fef3c7;color:#b45309;font-weight:700">91</td></tr>
@@ -1770,13 +1770,13 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
         · <strong>자동 계산 컬럼</strong>: 매장지원금(번이) = 출고가 − 공시 − 번이 현금가 · 매장지원금(기변) = 출고가 − 공시 − 기변 현금가<br>
         · <strong>파일 구분</strong>: 오프라인 공통폼 = 매장별 파일 (12개) + 온라인 공통폼 = 통합 파일 (1개)<br>
         · <strong>통합 템플릿</strong> (다운로드 → 편집 → 업로드):<br>
-        &nbsp;&nbsp;📥 <a href="https://bongi-mobile-production.up.railway.app/docs/template-form.xlsx" target="_blank" class="mono" style="color:#059669;font-weight:700">template-form.xlsx</a> (10컬럼 · 입력 8 + 매장지원금 자동 2 · 무선 공통, 유심/사은품 별도 시트)
+        &nbsp;&nbsp;📥 <a href="https://bongi-mobile-production.up.railway.app/docs/template-form.xlsx" target="_blank" class="mono" style="color:#059669;font-weight:700">template-form.xlsx</a> (8컬럼 입력 · 자동계산 X · 무선 공통, 유심/사은품 별도 시트)
       </div>
 
       <!-- 기종 추가/삭제 규칙 -->
       <div style="margin-top:10px;padding:10px 12px;background:#f3e8ff;border-left:3px solid #7c3aed;border-radius:6px;font-size:10px;color:#1a2744;line-height:1.7">
         🔧 <strong>기종 추가/삭제 시 → 컬럼이 아닌 "행(Row)"으로 처리</strong><br>
-        · 컬럼 구조는 <strong>고정 10개</strong> (입력 8: 통신사/펫네임/용량/출고가/요금제/공시/번이 현금가/기변 현금가 + 자동 2: 매장지원금 번이·기변) — 자동 확장 X<br>
+        · 컬럼 구조는 <strong>고정 8개</strong> (통신사/펫네임/용량/출고가/요금제/공시/매장지원금 번이/매장지원금 기변) — <strong style="color:#dc2626">자동계산 컬럼 폐기</strong> (할부 페이백 개념 없음)<br>
         · 신규 기종 출시: Excel에서 <strong>행 추가</strong> → 업로드하면 DB에 insert (예: 갤럭시 Z플립8 출시 → 3사 × 1행씩 = 3행 추가)<br>
         · 단종 기종: 행 <strong>삭제</strong> 또는 <strong>"운영중지" 플래그</strong> 컬럼 추가 (히스토리 보존 원할 시)<br>
         · 요금제·용량 신설: 동일 기종을 여러 요금제·용량으로 등록 가능 (예: SK S26U · 512GB · 프리미엄 / SK S26U · 1TB · 프리미엄 2행)<br>
