@@ -4187,27 +4187,30 @@ async function incSimulate() {
         const sumTotal = itTotal + rtTotal;
 
         html += '<div style="background:rgba(0,0,0,0.05);border-radius:6px;padding:10px 12px;margin-bottom:8px;font-size:10.5px">';
-        html += '<div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:6px;letter-spacing:0.04em">📍 현재 (이번 달) · Grade는 IT·가전 각자 독립</div>';
-        // 인터넷+TV 행
-        html += '<div style="display:grid;grid-template-columns:90px repeat(3,1fr);gap:6px;align-items:center;padding:5px 0;border-bottom:1px dashed rgba(120,53,15,0.25)">';
-        html += '<div style="font-size:10px;font-weight:800;color:#1d4ed8">📡 인터넷+TV</div>';
-        html += '<div><span style="background:' + gColor + ';color:#fff;padding:2px 8px;border-radius:4px;font-weight:800">' + gradeStr + '</span></div>';
-        html += '<div style="font-weight:700;color:#78350f">' + itP + 'P · 우수 ' + itPrem + '건</div>';
-        html += '<div style="font-weight:900;color:#1d4ed8;font-size:12px;text-align:right">' + incFmt(itTotal) + '</div>';
+        html += '<div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:8px;letter-spacing:0.04em">📍 현재 (이번 달) · Grade는 IT·가전 각자 독립</div>';
+        // 인터넷+TV 행 (4컬럼: Grade · 누적P · 우수 · 예상 수령)
+        html += '<div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px dashed rgba(120,53,15,0.25)">';
+        html += '<div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#1d4ed8;display:flex;align-items:center">📡 인터넷+TV</div>';
+        html += '<div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + gradeStr + '</div></div>';
+        html += '<div><div style="font-size:9px;color:#78350f">누적 P</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + itP + 'P</div></div>';
+        html += '<div><div style="font-size:9px;color:#78350f">우수</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + itPrem + '건</div></div>';
+        html += '<div><div style="font-size:9px;color:#78350f">예상 수령</div><div style="font-size:13px;font-weight:900;color:#1d4ed8">' + incFmt(itTotal) + '</div></div>';
         html += '</div>';
         // 가전렌탈 행
-        html += '<div style="display:grid;grid-template-columns:90px repeat(3,1fr);gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(120,53,15,0.4)">';
-        html += '<div style="font-size:10px;font-weight:800;color:#d97706">🏠 가전렌탈</div>';
-        html += '<div><span style="background:' + gColor + ';color:#fff;padding:2px 8px;border-radius:4px;font-weight:800">' + gradeStr + '</span></div>';
-        html += '<div style="font-weight:700;color:#78350f">' + rtP.toFixed(2) + 'P · 우수 ' + rtPrem + '건</div>';
-        html += '<div style="font-weight:900;color:#d97706;font-size:12px;text-align:right">' + incFmt(rtTotal) + '</div>';
+        html += '<div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px solid rgba(120,53,15,0.4)">';
+        html += '<div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#d97706;display:flex;align-items:center">🏠 가전렌탈</div>';
+        html += '<div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + gradeStr + '</div></div>';
+        html += '<div><div style="font-size:9px;color:#78350f">누적 P</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + rtP.toFixed(2) + 'P</div></div>';
+        html += '<div><div style="font-size:9px;color:#78350f">우수</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + rtPrem + '건</div></div>';
+        html += '<div><div style="font-size:9px;color:#78350f">예상 수령</div><div style="font-size:13px;font-weight:900;color:#d97706">' + incFmt(rtTotal) + '</div></div>';
         html += '</div>';
         // 통합 합계 행
-        html += '<div style="display:grid;grid-template-columns:90px repeat(3,1fr);gap:6px;align-items:center;padding:8px 0 2px;background:rgba(34,197,94,0.06);margin:4px -6px 0;padding-left:6px;padding-right:6px;border-radius:4px">';
-        html += '<div style="font-size:10.5px;font-weight:900;color:#15803d">⚡ 통합 합계</div>';
-        html += '<div><span style="background:' + gColor + ';color:#fff;padding:2px 8px;border-radius:4px;font-weight:800">' + gradeStr + '</span></div>';
-        html += '<div style="font-weight:700;color:#15803d">' + sumP.toFixed(2) + 'P · 우수 ' + sumPrem + '건</div>';
-        html += '<div style="font-weight:900;color:#16a34a;font-size:13px;text-align:right">' + incFmt(sumTotal) + '</div>';
+        html += '<div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:8px 0 2px;background:rgba(34,197,94,0.06);margin:4px -4px 0;border-radius:4px">';
+        html += '<div style="text-align:left;padding-left:4px;font-size:10.5px;font-weight:900;color:#15803d;display:flex;align-items:center">⚡ 통합 합계</div>';
+        html += '<div><div style="font-size:9px;color:#15803d">Grade</div><div style="font-size:14px;font-weight:900;color:#1e293b">' + gradeStr + '</div></div>';
+        html += '<div><div style="font-size:9px;color:#15803d">누적 P</div><div style="font-size:14px;font-weight:900;color:#1e293b">' + sumP.toFixed(2) + 'P</div></div>';
+        html += '<div><div style="font-size:9px;color:#15803d">우수</div><div style="font-size:14px;font-weight:900;color:#1e293b">' + sumPrem + '건</div></div>';
+        html += '<div><div style="font-size:9px;color:#15803d">예상 수령</div><div style="font-size:14px;font-weight:900;color:#16a34a">' + incFmt(sumTotal) + '</div></div>';
         html += '</div>';
         html += '</div>';
       } else {
