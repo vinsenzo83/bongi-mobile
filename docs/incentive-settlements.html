@@ -230,6 +230,14 @@ let _settlements = [];
 let _itPolicy = null;     // /api/incentive/rules — base_salary·bonus_per_premium·grade_rates·grade_thresholds·payback_company_limit
 let _rtPolicy = null;     // /api/rental/policy
 
+// 🔔 정책 변경 BroadcastChannel 수신 — 정책 관리에서 저장 시 즉시 재 fetch
+try {
+  const _bcIt = new BroadcastChannel('incentive-policy');
+  _bcIt.onmessage = (ev) => { console.log('[settlements] incentive-policy 변경 감지, 재로드'); loadAll(); };
+  const _bcRt = new BroadcastChannel('rental-policy');
+  _bcRt.onmessage = (ev) => { console.log('[settlements] rental-policy 변경 감지, 재로드'); loadAll(); };
+} catch (e) { /* BroadcastChannel 미지원 환경 */ }
+
 async function loadAll() {
   if (!TK()) { document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#64748b">로그인 필요</div>'; return; }
   if (!_myRole) {
@@ -239,15 +247,13 @@ async function loadAll() {
   if (_myRole === 'agent') document.body.classList.add('role-agent');
   document.getElementById('btn-finalize').style.display = _myRole === 'admin' ? '' : 'none';
 
-  // 활성 정책 fetch (Progress/KPI 동적화)
-  if (!_itPolicy || !_rtPolicy) {
-    const [pIt, pRt] = await Promise.all([
-      fetchAuth('/api/incentive/rules').then(r => r.json()).catch(() => ({})),
-      fetchAuth('/api/rental/policy').then(r => r.json()).catch(() => ({})),
-    ]);
-    _itPolicy = pIt.rule || pIt.rules || pIt || {};
-    _rtPolicy = pRt.policy || pRt.rules || pRt || {};
-  }
+  // 활성 정책 fetch (Progress/KPI 동적화) — 매번 fresh (정책 변경 즉시 반영)
+  const [pIt, pRt] = await Promise.all([
+    fetchAuth('/api/incentive/rules').then(r => r.json()).catch(() => ({})),
+    fetchAuth('/api/rental/policy').then(r => r.json()).catch(() => ({})),
+  ]);
+  _itPolicy = pIt.rule || pIt.rules || pIt || {};
+  _rtPolicy = pRt.policy || pRt.rules || pRt || {};
 
   const period = document.getElementById('f-period').value;
   const r = await fetchAuth('/api/incentive/manager/overview?month=' + period);
