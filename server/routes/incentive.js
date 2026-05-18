@@ -1552,20 +1552,25 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
     const filteredRows = me.role === 'agent'
       ? (rows || []).filter(r => r.agent_id === me.id)
       : (rows || []);
-    // 🏠 가전 + ⚡ 합산 컬럼 fetch — 이미 finalize된 settlements 테이블에서 1회 query (BATCH)
+    // 🏠 가전 정산 batch fetch — rental_calc_monthly_settlement RPC를 agent별 병렬 호출
+    // (가전 Grade·단가는 가전 P 기준 독립 산정 — 박제 X, 매번 RPC 계산)
     const agentIds = filteredRows.map(r => r.agent_id);
-    let combinedMap = new Map();
+    let rentalMap = new Map();
     if (agentIds.length) {
-      const { data: combined } = await supabase
-        .from('incentive_monthly_settlements')
-        .select('agent_id, rental_count, rental_points, rental_premium_count, rental_incentive, rental_bonus, rental_company_profit, combined_total_count, combined_total_points, combined_agent_total, combined_company_profit')
-        .eq('year_month', ym)
-        .in('agent_id', agentIds);
-      (combined || []).forEach(c => combinedMap.set(c.agent_id, c));
+      const rentalResults = await Promise.all(agentIds.map(id =>
+        supabase.rpc('rental_calc_monthly_settlement', { p_agent_id: id, p_year_month: ym })
+          .then(r => ({ id, data: r.data, error: r.error }))
+          .catch(e => ({ id, data: null, error: e }))
+      ));
+      rentalResults.forEach(({ id, data }) => { if (data) rentalMap.set(id, data); });
     }
     // RPC 결과를 기존 응답 포맷으로 변환 (agent 중첩 객체)
+    // IT (incentive_calc_overview) + 가전 (rental_calc_monthly_settlement) 각자 Grade·단가 별도
     const settlements = filteredRows.map(r => {
-      const c = combinedMap.get(r.agent_id) || {};
+      const rt = rentalMap.get(r.agent_id) || {};
+      // ⚡ 단순 합산 (Grade는 각자 독립 — 합산은 표시용만)
+      const combined_agent_total = (r.agent_total || 0) + (rt.incentive || 0) + (rt.bonus || 0) - (rt.total_agent_payback_deduct || 0);
+      const combined_company_profit = (r.company_profit || 0) + (rt.company_profit || 0);
       return {
         agent: {
           id: r.agent_id, name: r.agent_name, center: r.agent_center,
@@ -1581,15 +1586,28 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
         base_salary: r.base_salary, incentive: r.incentive, bonus: r.bonus,
         agent_total: r.agent_total, company_profit: r.company_profit,
         profit_rate: r.profit_rate, finalized_at: r.finalized_at,
-        // 🏠 가전 + ⚡ 합산 (finalize된 경우만 값 — 미확정이면 0)
-        rental_count: c.rental_count || 0, rental_points: c.rental_points || 0,
-        rental_premium_count: c.rental_premium_count || 0,
-        rental_incentive: c.rental_incentive || 0, rental_bonus: c.rental_bonus || 0,
-        rental_company_profit: c.rental_company_profit || 0,
-        combined_total_count: c.combined_total_count || 0,
-        combined_total_points: c.combined_total_points || 0,
-        combined_agent_total: c.combined_agent_total || 0,
-        combined_company_profit: c.combined_company_profit || 0,
+        // 🏠 가전 (rental_calc RPC 결과 — 가전 P 기준 독립 Grade·단가)
+        rental_count: rt.total_count || 0,
+        rental_points: rt.total_points || 0,
+        rental_premium_count: rt.premium_count || 0,
+        rental_grade_target: rt.grade_target || 1,
+        rental_grade_applied: rt.grade_applied || 1,
+        rental_is_penalty: rt.is_penalty || false,
+        rental_applied_rate: rt.applied_rate || 0,
+        rental_incentive: rt.incentive || 0,
+        rental_bonus: rt.bonus || 0,
+        rental_revenue: rt.total_revenue || 0,
+        rental_payback: rt.total_payback || 0,
+        rental_company_payback_burden: rt.total_company_payback_burden || 0,
+        rental_agent_payback_deduct: rt.total_agent_payback_deduct || 0,
+        rental_agent_total: rt.agent_total || 0,
+        rental_company_profit: rt.company_profit || 0,
+        // ⚡ 단순 합산 (표시용 — Grade 산정 X)
+        combined_total_count: (r.total_count || 0) + (rt.total_count || 0),
+        combined_total_points: Number(r.total_points || 0) + Number(rt.total_points || 0),
+        combined_premium_count: (r.premium_count || 0) + (rt.premium_count || 0),
+        combined_agent_total,
+        combined_company_profit,
       };
     });
 
