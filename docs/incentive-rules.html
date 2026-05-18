@@ -1627,6 +1627,7 @@ async function saveCurrent() {
     });
     if (!res.ok) throw new Error((await res.json()).error || '저장 실패');
     showToast('✅ 수정 완료');
+    try { const ch = new BroadcastChannel('incentive-policy'); ch.postMessage({ type:'policy-changed' }); ch.close(); } catch(e) {}
     await loadAll();
   } catch (e) { alert('오류: ' + e.message); }
 }
@@ -1646,6 +1647,7 @@ async function publishNew() {
     });
     if (!res.ok) throw new Error((await res.json()).error || '발행 실패');
     showToast('🚀 새 버전 발행 완료');
+    try { const ch = new BroadcastChannel('incentive-policy'); ch.postMessage({ type:'policy-changed' }); ch.close(); } catch(e) {}
     await loadAll();
   } catch (e) { alert('오류: ' + e.message); }
 }
@@ -1660,6 +1662,7 @@ async function toggleActive(id, active) {
     });
     if (!res.ok) throw new Error((await res.json()).error || '실패');
     showToast(active ? '✅ 활성화됨' : '❌ 비활성화됨');
+    try { const ch = new BroadcastChannel('incentive-policy'); ch.postMessage({ type:'policy-changed' }); ch.close(); } catch(e) {}
     await loadAll();
   } catch (e) { alert('오류: ' + e.message); }
 }

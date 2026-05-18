@@ -509,6 +509,14 @@ async function loadRentalPolicy() {
   } catch (e) { console.warn('[guide rt-policy]', e); }
 }
 loadRentalPolicy();
+
+// 🔔 정책 변경 BroadcastChannel 수신 — 정책 관리 저장 시 즉시 재 fetch
+try {
+  const _bcIt = new BroadcastChannel('incentive-policy');
+  _bcIt.onmessage = () => { console.log('[guide] incentive-policy 변경 감지'); loadRules(); loadRentalPolicy(); };
+  const _bcRt = new BroadcastChannel('rental-policy');
+  _bcRt.onmessage = () => { console.log('[guide] rental-policy 변경 감지'); loadRules(); loadRentalPolicy(); };
+} catch (e) {}
 </script>
 </body>
 </html>
