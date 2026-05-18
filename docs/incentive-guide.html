@@ -254,35 +254,35 @@ td { font-size:12px; color:#e2e8f0; padding:10px 12px; border-bottom:1px solid #
     </div>
   </div>
 
-  <!-- 🏠 가전렌탈 정책 (하이브리드 영업) -->
+  <!-- 🏠 가전렌탈 정책 (독립 정산) -->
   <div class="section" style="background:linear-gradient(135deg,rgba(245,158,11,0.08),#1e293b);border:2px solid #f59e0b;margin-top:28px">
-    <h2 style="color:#fbbf24;font-size:17px">🏠 가전렌탈 추가 정책 — 하이브리드 영업</h2>
+    <h2 style="color:#fbbf24;font-size:17px">🏠 가전렌탈 추가 정책 — 인터넷+TV와 <span style="color:#fca5a5">독립 정산</span></h2>
     <div style="font-size:12px;color:#fde68a;margin-bottom:16px;line-height:1.7;padding:10px 14px;background:rgba(0,0,0,0.3);border-radius:8px">
       <b style="color:#86efac">2026-05-18 정책 통일 V2</b> — 가전렌탈·인터넷+TV는 <b>컬럼·공식 동일, 값만 별도 설정</b>합니다.<br>
       <b style="color:#fca5a5">⚠️ 정책 정정 (2026-05-18 후속)</b> — <b>가전과 인터넷+TV는 각자 별도 Grade·단가</b> 산정. 합산 X. 통합은 단순 합계 표시용만.<br>
       공식: <code style="background:rgba(0,0,0,0.4);padding:1px 6px;border-radius:4px">margin = rebate × 0.9 − payback − (gift_amount × 10,000) − P × weight_cost_per_p</code> (양쪽 동일 구조, 단가만 각자)
     </div>
 
-    <h2 style="color:#fbbf24;font-size:14px;margin-top:8px">Ⓐ Grade 단가 (예시값)</h2>
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:8px">Ⓐ Grade 단가 <span style="font-size:11px;color:#86efac">(💼 활성 정책)</span></h2>
     <table>
       <thead><tr><th>Grade</th><th>가전렌탈 단가</th><th>인터넷+TV 단가</th></tr></thead>
       <tbody>
-        <tr><td>G1 (기본)</td><td><b>15,000원/P</b></td><td>20,000원/P</td></tr>
-        <tr><td>G2</td><td><b>22,000원/P</b></td><td>30,000원/P</td></tr>
-        <tr><td>G3 (최고)</td><td><b style="color:#fbbf24">30,000원/P</b></td><td>40,000원/P</td></tr>
-        <tr><td colspan="3" style="color:#94a3b8;font-size:11px;font-style:italic">위 단가는 예시 — <b>정책 관리에서 양쪽 별도 설정 가능</b> (구조는 양쪽 동일)</td></tr>
+        <tr><td>G1 (기본)</td><td><b id="rt-g1-rate">15,000</b>원/P</td><td><b id="it-g1-rate">20,000</b>원/P</td></tr>
+        <tr><td>G2</td><td><b id="rt-g2-rate">22,000</b>원/P</td><td><b id="it-g2-rate">30,000</b>원/P</td></tr>
+        <tr><td>G3 (최고)</td><td><b id="rt-g3-rate" style="color:#fbbf24">30,000</b>원/P</td><td><b id="it-g3-rate">40,000</b>원/P</td></tr>
+        <tr><td colspan="3" style="color:#94a3b8;font-size:11px;font-style:italic">실시간 활성 정책값 — 정책 관리에서 변경 시 즉시 반영</td></tr>
       </tbody>
     </table>
 
-    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓑ Tier 임계값 + P 매핑 (예시값)</h2>
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓑ Tier 임계값 + P 매핑 <span style="font-size:11px;color:#86efac">(💼 활성 정책)</span></h2>
     <table>
-      <thead><tr><th>Tier</th><th>가전렌탈 마진 임계</th><th>인터넷+TV 마진 임계</th><th>tier_to_p (기본)</th></tr></thead>
+      <thead><tr><th>Tier</th><th>가전렌탈 마진 임계</th><th>인터넷+TV 마진 임계</th><th>tier_to_p</th></tr></thead>
       <tbody>
-        <tr><td><b style="color:#fbbf24">S (우수)</b></td><td><b style="color:#fbbf24">130,000원</b></td><td>250,000원</td><td><b>2.0 P</b></td></tr>
-        <tr><td>A</td><td>120,000원</td><td>180,000원</td><td>1.5 P</td></tr>
-        <tr><td>B</td><td>100,000원</td><td>120,000원</td><td>1.2 P</td></tr>
-        <tr><td>C</td><td>그 외</td><td>그 외</td><td>1.0 P</td></tr>
-        <tr><td colspan="4" style="color:#94a3b8;font-size:11px;font-style:italic"><b>정책 관리에서 양쪽 별도 설정</b> — 옵션 마진이 임계값을 넘으면 Tier 자동 분류 → tier_to_p JSONB 매핑으로 P 자동 산출. <b style="color:#fbbf24">우수 = S Tier만</b> (premium_margin_threshold 별도 기준 X)</td></tr>
+        <tr><td><b style="color:#fbbf24">S (우수)</b></td><td><b id="rt-tier-s">130,000</b>원</td><td><b id="it-tier-s">250,000</b>원</td><td><b id="tp-s">2.0</b> P</td></tr>
+        <tr><td>A</td><td><b id="rt-tier-a">120,000</b>원</td><td><b id="it-tier-a">180,000</b>원</td><td><b id="tp-a">1.5</b> P</td></tr>
+        <tr><td>B</td><td><b id="rt-tier-b">100,000</b>원</td><td><b id="it-tier-b">120,000</b>원</td><td><b id="tp-b">1.2</b> P</td></tr>
+        <tr><td>C</td><td>그 외</td><td>그 외</td><td><b id="tp-c">1.0</b> P</td></tr>
+        <tr><td colspan="4" style="color:#94a3b8;font-size:11px;font-style:italic">실시간 활성 정책값 — 옵션 마진이 임계값을 넘으면 Tier 자동 분류 → tier_to_p 매핑으로 P 자동 산출. <b style="color:#fbbf24">우수 = S Tier만</b></td></tr>
       </tbody>
     </table>
 
@@ -466,6 +466,49 @@ async function loadRules() {
   } catch (e) { console.warn('[guide]', e); }
 }
 loadRules();
+
+// 🏠 가전 정책 (rental_policy) 활성값 연동 — Ⓐ Grade 단가·Ⓑ Tier 임계·tier_to_p
+async function loadRentalPolicy() {
+  try {
+    const tk = localStorage.getItem(TOKEN_KEY);
+    const headers = tk ? { Authorization: 'Bearer ' + tk } : {};
+    const [rtRes, itRes] = await Promise.all([
+      fetch('/api/rental/policy', { headers }).then(r => r.json()).catch(() => ({})),
+      fetch(API + '/rules', { headers }).then(r => r.json()).catch(() => ({})),
+    ]);
+    const rt = rtRes.policy || rtRes.rules || rtRes;
+    const it = itRes.rule || itRes.rules || itRes;
+    if (rt && typeof rt === 'object') {
+      // 가전 Grade 단가
+      const rtRates = rt.grade_rates || {};
+      const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.textContent = fmt(v); };
+      set('rt-g1-rate', rtRates['1']);
+      set('rt-g2-rate', rtRates['2']);
+      set('rt-g3-rate', rtRates['3']);
+      // 가전 Tier 임계
+      set('rt-tier-s', rt.tier_s_min_margin);
+      set('rt-tier-a', rt.tier_a_min_margin);
+      set('rt-tier-b', rt.tier_b_min_margin);
+      // tier_to_p (양쪽 동일이라 가전 기준으로)
+      const tp = rt.tier_to_p || { S:2.0, A:1.5, B:1.2, C:1.0 };
+      const tpSet = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.textContent = Number(v).toFixed(1); };
+      tpSet('tp-s', tp.S); tpSet('tp-a', tp.A); tpSet('tp-b', tp.B); tpSet('tp-c', tp.C);
+    }
+    if (it && typeof it === 'object') {
+      // IT 단가 (g1-rate 등은 이미 loadRules에서 처리 — 가전 표 비교용 추가 id)
+      const itRates = it.grade_rates || {};
+      const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.textContent = fmt(v); };
+      set('it-g1-rate', itRates['1']);
+      set('it-g2-rate', itRates['2']);
+      set('it-g3-rate', itRates['3']);
+      // IT Tier 임계
+      set('it-tier-s', it.tier_s_min_margin);
+      set('it-tier-a', it.tier_a_min_margin);
+      set('it-tier-b', it.tier_b_min_margin);
+    }
+  } catch (e) { console.warn('[guide rt-policy]', e); }
+}
+loadRentalPolicy();
 </script>
 </body>
 </html>
