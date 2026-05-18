@@ -259,7 +259,7 @@ td { font-size:12px; color:#e2e8f0; padding:10px 12px; border-bottom:1px solid #
     <h2 style="color:#fbbf24;font-size:17px">🏠 가전렌탈 추가 정책 — 하이브리드 영업</h2>
     <div style="font-size:12px;color:#fde68a;margin-bottom:16px;line-height:1.7;padding:10px 14px;background:rgba(0,0,0,0.3);border-radius:8px">
       <b style="color:#86efac">2026-05-18 정책 통일 V2</b> — 가전렌탈·인터넷+TV는 <b>컬럼·공식 동일, 값만 별도 설정</b>합니다.<br>
-      <b style="color:#86efac">누적 P + 우수건수는 통합 정산</b>되어 단일 Grade가 양쪽에 적용됩니다.<br>
+      <b style="color:#fca5a5">⚠️ 정책 정정 (2026-05-18 후속)</b> — <b>가전과 인터넷+TV는 각자 별도 Grade·단가</b> 산정. 합산 X. 통합은 단순 합계 표시용만.<br>
       공식: <code style="background:rgba(0,0,0,0.4);padding:1px 6px;border-radius:4px">margin = rebate × 0.9 − payback − (gift_amount × 10,000) − P × weight_cost_per_p</code> (양쪽 동일 구조, 단가만 각자)
     </div>
 
@@ -292,16 +292,17 @@ td { font-size:12px; color:#e2e8f0; padding:10px 12px; border-bottom:1px solid #
       ⚠️ 1년 이내 반환·연체 시 환수 (대부분 3연체 기준, 코웨이 5연체)
     </div>
 
-    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓓ 하이브리드 영업 예시 (통합 정산)</h2>
-    <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">조건: 인터넷+TV 15건 + 가전렌탈 10건 (모두 A Tier=1.5P, S Tier 우수 합산 8건)</div>
-    <div class="example-row"><div class="label">통합 누적 P</div><div class="calc">15×1.5 + 10×1.5 → combined_total_points</div><div class="val">37.5 P</div></div>
-    <div class="example-row"><div class="label">통합 우수 (S Tier만)</div><div class="calc">G3 임계 10건 미달 → 단일 Grade 결정</div><div class="val">8건 → G2</div></div>
-    <div class="example-row"><div class="label">인터넷+TV 인센</div><div class="calc">22.5P × 30,000 (G2 단가)</div><div class="val">+ 675,000</div></div>
-    <div class="example-row"><div class="label">가전렌탈 인센</div><div class="calc">15P × 22,000 (G2 단가)</div><div class="val">+ 330,000</div></div>
-    <div class="example-row"><div class="label">우수 보너스</div><div class="calc">8건 × 10,000</div><div class="val">+ 80,000</div></div>
-    <div class="example-row last"><div class="label">총 인센티브</div><div class="calc">기본급 + 위 합산</div><div class="val">기본급 + 1,085,000</div></div>
-    <div style="margin-top:10px;font-size:11px;color:#94a3b8;font-style:italic;padding:8px 12px;background:rgba(34,197,94,0.06);border-left:3px solid #22c55e;border-radius:4px">
-      💡 <b style="color:#86efac">단일 Grade</b>: combined_total_points + 통합 우수건수(S Tier 합산)로 양쪽에 동일 Grade 적용. 단가만 가전/인터넷 각자.
+    <h2 style="color:#fbbf24;font-size:14px;margin-top:18px">Ⓓ 영업 예시 (가전·인터넷 각자 별도 정산)</h2>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:8px">조건: 인터넷+TV 15건 (P=1.5, 우수 5건) + 가전렌탈 10건 (P=1.5, 우수 3건) — <b style="color:#fca5a5">두 시스템 독립</b></div>
+    <div class="example-row"><div class="label">📡 인터넷+TV P</div><div class="calc">15 × 1.5 → IT 단독 Grade 산정</div><div class="val">22.5 P → G2</div></div>
+    <div class="example-row"><div class="label">📡 IT 인센티브</div><div class="calc">22.5P × 30,000 (IT G2 단가)</div><div class="val">+ 675,000</div></div>
+    <div class="example-row"><div class="label">📡 IT 우수 보너스</div><div class="calc">5건 × 10,000</div><div class="val">+ 50,000</div></div>
+    <div class="example-row"><div class="label">🏠 가전 P</div><div class="calc">10 × 1.5 → 가전 단독 Grade 산정</div><div class="val">15 P → G1</div></div>
+    <div class="example-row"><div class="label">🏠 가전 인센티브</div><div class="calc">15P × 15,000 (가전 G1 단가)</div><div class="val">+ 225,000</div></div>
+    <div class="example-row"><div class="label">🏠 가전 우수 보너스</div><div class="calc">3건 × 10,000</div><div class="val">+ 30,000</div></div>
+    <div class="example-row last"><div class="label">⚡ 단순 합계</div><div class="calc">기본급 + IT(725k) + 가전(255k)</div><div class="val">기본급 + 980,000</div></div>
+    <div style="margin-top:10px;font-size:11px;color:#fca5a5;font-style:italic;padding:8px 12px;background:rgba(220,38,38,0.06);border-left:3px solid #f87171;border-radius:4px">
+      ⚠️ <b style="color:#f87171">Grade는 각자 독립 산정</b> — 인터넷+TV P로 IT Grade, 가전 P로 가전 Grade. 두 Grade가 다를 수 있음. combined_total_points는 표시용 단순 합계일 뿐 Grade 결정 X.
     </div>
   </div>
 
