@@ -741,13 +741,17 @@ router.get('/settlement', authenticateJWT, async (req, res) => {
 // ─── 영업 목록 (담당자 또는 admin) ───
 router.get('/sales', authenticateJWT, async (req, res) => {
   try {
-    const { status, agent_id, limit = 100 } = req.query;
+    const { status, agent_id, limit = 500, deleted } = req.query;
     let q = supabase
       .from('rental_sales')
       .select('*, product:rental_products(*), option:rental_product_options(months, care_service, rebate, payback, monthly_fee, normal_price, ticket_number, ticket_active), agent:incentive_agents(id, name, center)')
-      .is('deleted_at', null)
       .order('created_at', { ascending: false })
-      .limit(Number(limit) || 100);
+      .limit(Number(limit) || 500);
+    if (deleted === '1' || deleted === 'true') {
+      q = q.not('deleted_at', 'is', null);
+    } else {
+      q = q.is('deleted_at', null);
+    }
     if (status) q = q.eq('status', status);
     if (agent_id) q = q.eq('agent_id', agent_id);
     const { data, error } = await q;
