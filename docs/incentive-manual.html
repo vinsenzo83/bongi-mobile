@@ -739,10 +739,21 @@ const SECTIONS = [
 <h3>액션</h3>
 <ul>
 <li>[집계 실행] (admin) — 전월 sales 집계 → RPC finalize 호출 → settlements row INSERT/UPDATE</li>
-<li>[CSV export] / [인쇄]</li>
+<li>[📥 CSV export] — 27 컬럼 (IT·가전·합산 모두 포함) / [인쇄]</li>
+<li>[🏠 가전 + ⚡ 합계 컬럼 표시] 토글 — 켜면 list에 가전·합산 7컬럼 추가 노출</li>
 <li>cron 자동: 매월 1일 02:00 KST</li>
 </ul>
-<div class="tip">📌 <b>Grade 산정 기준</b>: combined_total_points (가전+인터넷 합산 P) — 통합 Grade가 양쪽 단가에 동시 적용</div>`
+<div class="tip">📌 <b>Grade 산정 기준</b>: combined_total_points (가전+인터넷 합산 P) — 통합 Grade가 양쪽 단가에 동시 적용</div>
+
+<h3>🏠 가전 + ⚡ 합계 컬럼 (토글 시 표시)</h3>
+<table>
+<tr><th>그룹</th><th>컬럼</th><th>비고</th></tr>
+<tr><td rowspan="3" style="background:rgba(245,158,11,0.06)">🏠 가전</td><td>🏠계약·🏠P·🏠인센</td><td>finalize 시점 박제값 (미확정은 0)</td></tr>
+<tr><td colspan="2" style="color:#94a3b8;font-size:11px">rental_count·rental_points·rental_incentive + rental_bonus</td></tr>
+<tr><td colspan="2" style="color:#94a3b8;font-size:11px">CSV에 rental_premium_count·rental_company_profit 추가 포함</td></tr>
+<tr><td rowspan="2" style="background:rgba(99,102,241,0.08)">⚡ 합계</td><td>⚡합계·⚡합P·⚡합수령·⚡합이익</td><td>가전+IT 통합 (Grade 산정 기준)</td></tr>
+<tr><td colspan="2" style="color:#94a3b8;font-size:11px">combined_total_count·combined_total_points·combined_agent_total·combined_company_profit</td></tr>
+</table>`
   },
   {
     id: 'call-stats', group: '3️⃣ 관리자', title: '📈 콜 통계', roles: ['admin', 'manager'],

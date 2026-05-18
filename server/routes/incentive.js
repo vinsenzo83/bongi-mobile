@@ -1552,23 +1552,46 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
     const filteredRows = me.role === 'agent'
       ? (rows || []).filter(r => r.agent_id === me.id)
       : (rows || []);
+    // 🏠 가전 + ⚡ 합산 컬럼 fetch — 이미 finalize된 settlements 테이블에서 1회 query (BATCH)
+    const agentIds = filteredRows.map(r => r.agent_id);
+    let combinedMap = new Map();
+    if (agentIds.length) {
+      const { data: combined } = await supabase
+        .from('incentive_monthly_settlements')
+        .select('agent_id, rental_count, rental_points, rental_premium_count, rental_incentive, rental_bonus, rental_company_profit, combined_total_count, combined_total_points, combined_agent_total, combined_company_profit')
+        .eq('year_month', ym)
+        .in('agent_id', agentIds);
+      (combined || []).forEach(c => combinedMap.set(c.agent_id, c));
+    }
     // RPC 결과를 기존 응답 포맷으로 변환 (agent 중첩 객체)
-    const settlements = filteredRows.map(r => ({
-      agent: {
-        id: r.agent_id, name: r.agent_name, center: r.agent_center,
-        role: r.agent_role, user_id: r.agent_user_id,
-      },
-      total_count: r.total_count, total_points: r.total_points,
-      premium_count: r.premium_count, grade_target: r.grade_target,
-      grade_applied: r.grade_applied, is_penalty: r.is_penalty,
-      applied_rate: r.applied_rate,
-      total_revenue: r.total_revenue, total_payback: r.total_payback,
-      total_company_payback_burden: r.total_company_payback_burden,
-      total_agent_payback_deduct: r.total_agent_payback_deduct,
-      base_salary: r.base_salary, incentive: r.incentive, bonus: r.bonus,
-      agent_total: r.agent_total, company_profit: r.company_profit,
-      profit_rate: r.profit_rate, finalized_at: r.finalized_at,
-    }));
+    const settlements = filteredRows.map(r => {
+      const c = combinedMap.get(r.agent_id) || {};
+      return {
+        agent: {
+          id: r.agent_id, name: r.agent_name, center: r.agent_center,
+          role: r.agent_role, user_id: r.agent_user_id,
+        },
+        total_count: r.total_count, total_points: r.total_points,
+        premium_count: r.premium_count, grade_target: r.grade_target,
+        grade_applied: r.grade_applied, is_penalty: r.is_penalty,
+        applied_rate: r.applied_rate,
+        total_revenue: r.total_revenue, total_payback: r.total_payback,
+        total_company_payback_burden: r.total_company_payback_burden,
+        total_agent_payback_deduct: r.total_agent_payback_deduct,
+        base_salary: r.base_salary, incentive: r.incentive, bonus: r.bonus,
+        agent_total: r.agent_total, company_profit: r.company_profit,
+        profit_rate: r.profit_rate, finalized_at: r.finalized_at,
+        // 🏠 가전 + ⚡ 합산 (finalize된 경우만 값 — 미확정이면 0)
+        rental_count: c.rental_count || 0, rental_points: c.rental_points || 0,
+        rental_premium_count: c.rental_premium_count || 0,
+        rental_incentive: c.rental_incentive || 0, rental_bonus: c.rental_bonus || 0,
+        rental_company_profit: c.rental_company_profit || 0,
+        combined_total_count: c.combined_total_count || 0,
+        combined_total_points: c.combined_total_points || 0,
+        combined_agent_total: c.combined_agent_total || 0,
+        combined_company_profit: c.combined_company_profit || 0,
+      };
+    });
 
     // 집계
     const totals = settlements.reduce((acc, s) => {
