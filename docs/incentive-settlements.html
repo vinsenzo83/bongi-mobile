@@ -84,6 +84,10 @@ body:not(.role-agent) .agent-self-only { display:none !important; }
   <button class="no-print" onclick="openCorrections()" id="btn-corrections" style="background:#475569;color:#fff;font-weight:700">📩 수정 요청</button>
   <span style="margin-left:auto"></span>
   <button class="no-print" onclick="exportCSV()">📥 CSV</button>
+  <label class="no-print" style="display:inline-flex;align-items:center;gap:6px;background:rgba(251,191,36,0.12);border:1px solid #f59e0b;border-radius:6px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;color:#fbbf24">
+    <input type="checkbox" id="toggle-combined" onchange="toggleCombined()" style="width:14px;height:14px;cursor:pointer">
+    🏠 가전 + ⚡ 합계 컬럼 표시
+  </label>
   <button class="no-print" onclick="window.print()">🖨️ 인쇄</button>
 </div>
 
@@ -161,15 +165,23 @@ body:not(.role-agent) .agent-self-only { display:none !important; }
   <thead><tr>
     <th>#</th>
     <th class="l">상담사</th><th>역할</th><th>센터</th>
-    <th>계약</th><th>P</th><th>우수</th>
+    <th title="📡 인터넷+TV 계약">📡계약</th><th title="📡 인터넷+TV P">📡P</th><th title="📡 인터넷+TV 우수">📡우수</th>
     <th>Grade</th><th>단가</th>
     <th>인센티브</th><th>보너스</th>
     <th>페이백 차감</th><th>기본급</th>
+    <th class="col-rental" style="display:none;background:rgba(245,158,11,0.1)" title="🏠 가전 계약">🏠계약</th>
+    <th class="col-rental" style="display:none;background:rgba(245,158,11,0.1)" title="🏠 가전 P">🏠P</th>
+    <th class="col-rental" style="display:none;background:rgba(245,158,11,0.1)" title="🏠 가전 인센+보너스">🏠인센</th>
+    <th class="col-combined" style="display:none;background:rgba(99,102,241,0.12)" title="⚡ 통합 계약">⚡합계</th>
+    <th class="col-combined" style="display:none;background:rgba(99,102,241,0.12)" title="⚡ 통합 P (Grade 산정 기준)">⚡합P</th>
     <th>최종 지급</th>
-    <th class="admin-only">회사이익</th><th class="admin-only">이익률</th>
+    <th class="col-combined admin-only" style="display:none;background:rgba(99,102,241,0.12)" title="⚡ 통합 상담사 수령">⚡합수령</th>
+    <th class="admin-only">회사이익</th>
+    <th class="col-combined admin-only" style="display:none;background:rgba(99,102,241,0.12)" title="⚡ 통합 회사이익">⚡합이익</th>
+    <th class="admin-only">이익률</th>
     <th class="no-print">확정</th>
   </tr></thead>
-  <tbody id="tbody"><tr><td colspan="17" style="padding:30px;color:#64748b">로딩 중...</td></tr></tbody>
+  <tbody id="tbody"><tr><td colspan="22" style="padding:30px;color:#64748b">로딩 중...</td></tr></tbody>
 </table>
 </div>
 
@@ -341,6 +353,7 @@ function renderTable() {
     const a = s.agent || {};
     const gradeBadge = `<span class="grade-${s.grade_applied||1}">G${s.grade_applied||1}</span>` + (s.is_penalty ? `<span class="penalty">▼${s.grade_target||''}</span>` : '');
     const finalized = s.finalized_at ? `<span style="color:#22c55e;font-size:10px">✅ ${new Date(s.finalized_at).toLocaleDateString('ko-KR')}</span>` : (_myRole === 'admin' ? `<button onclick="finalizeOne('${a.id}')" style="background:#3b82f6;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer">확정</button>` : '<span style="color:#94a3b8;font-size:10px">미확정</span>');
+    const rentalIncTotal = (s.rental_incentive||0) + (s.rental_bonus||0);
     return `<tr>
       <td>${i+1}</td>
       <td class="l"><b style="color:#f8fafc">${esc(a.name)}</b></td>
@@ -355,8 +368,15 @@ function renderTable() {
       <td class="r" style="color:#fbbf24">${fmt(s.bonus)}</td>
       <td class="r" style="color:#f87171">-${fmt(s.total_agent_payback_deduct)}</td>
       <td class="r">${fmt(s.base_salary)}</td>
+      <td class="r col-rental" style="display:none;background:rgba(245,158,11,0.06);color:#fbbf24">${fmt(s.rental_count)}</td>
+      <td class="r col-rental" style="display:none;background:rgba(245,158,11,0.06);color:#fbbf24">${(s.rental_points||0).toFixed(1)}P</td>
+      <td class="r col-rental" style="display:none;background:rgba(245,158,11,0.06);color:#fbbf24">${fmt(rentalIncTotal)}</td>
+      <td class="r col-combined" style="display:none;background:rgba(99,102,241,0.06);color:#a5b4fc;font-weight:800">${fmt(s.combined_total_count)}</td>
+      <td class="r col-combined" style="display:none;background:rgba(99,102,241,0.06);color:#a5b4fc;font-weight:800">${(s.combined_total_points||0).toFixed(1)}P</td>
       <td class="r" style="color:#22c55e;font-weight:900">${fmt(s.agent_total)}원</td>
+      <td class="r col-combined admin-only" style="display:none;background:rgba(99,102,241,0.06);color:#86efac;font-weight:900">${fmt(s.combined_agent_total)}</td>
       <td class="r admin-only">${fmt(s.company_profit)}</td>
+      <td class="r col-combined admin-only" style="display:none;background:rgba(99,102,241,0.06);color:#86efac;font-weight:800">${fmt(s.combined_company_profit)}</td>
       <td class="r admin-only" style="color:${(s.profit_rate||0)>=20?'#22c55e':(s.profit_rate||0)>=10?'#fbbf24':'#f87171'}">${(s.profit_rate||0).toFixed(1)}%</td>
       <td class="no-print">${finalized}</td>
     </tr>`;
@@ -383,15 +403,32 @@ async function finalizeAll() {
   if (!r.ok) { const d = await r.json(); showToast('실패: ' + (d.error||''), '#dc2626'); return; }
   showToast('🔒 전체 확정 완료'); loadAll();
 }
+function toggleCombined() {
+  const on = document.getElementById('toggle-combined').checked;
+  document.querySelectorAll('.col-rental, .col-combined').forEach(el => {
+    el.style.display = on ? '' : 'none';
+  });
+}
+
 function exportCSV() {
   if (!_settlements.length) { showToast('데이터 없음', '#dc2626'); return; }
-  const head = ['#','상담사','역할','센터','계약수','P','우수건','Grade','단가','인센티브','보너스','페이백차감','기본급','최종지급','회사이익','이익률'];
+  const head = ['#','상담사','역할','센터',
+    '📡IT계약','📡IT P','📡IT우수','Grade','단가','인센티브','보너스','페이백차감','기본급',
+    '🏠가전계약','🏠가전P','🏠가전우수','🏠가전인센','🏠가전보너스','🏠가전회사이익',
+    '⚡합계약','⚡합P','⚡합상담사수령','⚡합회사이익',
+    '최종지급(IT)','회사이익(IT)','이익률(%)'];
   const rows = [head];
   _settlements.forEach((s,i) => {
     const a = s.agent || {};
-    rows.push([i+1, a.name, a.role, a.center, s.total_count, s.total_points, s.premium_count,
+    rows.push([i+1, a.name, a.role, a.center,
+      s.total_count, s.total_points, s.premium_count,
       'G'+(s.grade_applied||1)+(s.is_penalty?'(페널티)':''), s.applied_rate,
-      s.incentive, s.bonus, s.total_agent_payback_deduct, s.base_salary, s.agent_total, s.company_profit, s.profit_rate]);
+      s.incentive, s.bonus, s.total_agent_payback_deduct, s.base_salary,
+      s.rental_count||0, s.rental_points||0, s.rental_premium_count||0,
+      s.rental_incentive||0, s.rental_bonus||0, s.rental_company_profit||0,
+      s.combined_total_count||0, s.combined_total_points||0,
+      s.combined_agent_total||0, s.combined_company_profit||0,
+      s.agent_total, s.company_profit, s.profit_rate]);
   });
   const csv = '﻿' + rows.map(r => r.map(x => `"${String(x ?? '').replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
