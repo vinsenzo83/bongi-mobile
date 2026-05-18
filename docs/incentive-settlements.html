@@ -227,6 +227,8 @@ document.getElementById('f-period').value = `${now.getFullYear()}-${String(now.g
 
 let _myRole = null, _myAgentId = null;
 let _settlements = [];
+let _itPolicy = null;     // /api/incentive/rules — base_salary·bonus_per_premium·grade_rates·grade_thresholds·payback_company_limit
+let _rtPolicy = null;     // /api/rental/policy
 
 async function loadAll() {
   if (!TK()) { document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#64748b">로그인 필요</div>'; return; }
@@ -236,6 +238,16 @@ async function loadAll() {
   }
   if (_myRole === 'agent') document.body.classList.add('role-agent');
   document.getElementById('btn-finalize').style.display = _myRole === 'admin' ? '' : 'none';
+
+  // 활성 정책 fetch (Progress/KPI 동적화)
+  if (!_itPolicy || !_rtPolicy) {
+    const [pIt, pRt] = await Promise.all([
+      fetchAuth('/api/incentive/rules').then(r => r.json()).catch(() => ({})),
+      fetchAuth('/api/rental/policy').then(r => r.json()).catch(() => ({})),
+    ]);
+    _itPolicy = pIt.rule || pIt.rules || pIt || {};
+    _rtPolicy = pRt.policy || pRt.rules || pRt || {};
+  }
 
   const period = document.getElementById('f-period').value;
   const r = await fetchAuth('/api/incentive/manager/overview?month=' + period);
@@ -308,7 +320,7 @@ function renderKpi(t) {
     document.getElementById('kpi-incentive-sub').textContent = `단가 ${fmt(me.applied_rate)}/P`;
     document.getElementById('kpi-bonus').textContent = fmt(me.bonus) + '원';
     document.getElementById('kpi-deduct').textContent = '−' + fmt(me.total_agent_payback_deduct);
-    document.getElementById('kpi-deduct-sub').textContent = `${me.total_count||0}건 중 페이백 30,000↑ 건수만`;
+    document.getElementById('kpi-deduct-sub').textContent = `${me.total_count||0}건 중 페이백 ${fmt(_itPolicy?.payback_company_limit || 30000)}↑ 건수만`;
   } else {
     document.getElementById('kpi-primary').textContent = fmt((_settlements.reduce((a,s)=>a+(s.agent_total||0),0))) + '원';
     document.getElementById('kpi-primary-sub').textContent = `${_settlements.length}명 합산 (지급 예정)`;
@@ -332,19 +344,28 @@ function renderProgress() {
   const me = _settlements[0];
   const p = Number(me.total_points || 0);
   const grade = me.grade_applied || 1;
+  // 활성 정책에서 임계·단가 동적 추출
+  const thrs = _itPolicy?.grade_thresholds || { '2':{points:16,premium:5}, '3':{points:31,premium:10} };
+  const rates = _itPolicy?.grade_rates || { '1':20000, '2':30000, '3':40000 };
+  const g2P = Number(thrs['2']?.points || 16);
+  const g3P = Number(thrs['3']?.points || 31);
+  const g2Prem = Number(thrs['2']?.premium || 5);
+  const g3Prem = Number(thrs['3']?.premium || 10);
+  const g3Rate = rates['3'] || 40000;
+  const g2Rate = rates['2'] || 30000;
   let target, label, hint;
   if (grade >= 3) {
-    target = Math.max(p, 50);
+    target = Math.max(p, g3P + 19);
     label = `G3 유지 — ${p.toFixed(1)}P`;
-    hint = '목표 G3 (31P+ & 우수 10건+) 도달';
+    hint = `목표 G3 (${g3P}P+ & 우수 ${g3Prem}건+) 도달`;
   } else if (grade === 2) {
-    target = 31;
-    label = `G3까지 +${(31-p).toFixed(1)}P`;
-    hint = `G3 도달 시 단가 40,000원/P 적용 (현 ${fmt(me.applied_rate)})`;
+    target = g3P;
+    label = `G3까지 +${(g3P-p).toFixed(1)}P`;
+    hint = `G3 도달 시 단가 ${fmt(g3Rate)}원/P 적용 (현 ${fmt(me.applied_rate)})`;
   } else {
-    target = 16;
-    label = `G2까지 +${(16-p).toFixed(1)}P`;
-    hint = `G2 도달 시 단가 30,000원/P 적용 (현 ${fmt(me.applied_rate)})`;
+    target = g2P;
+    label = `G2까지 +${(g2P-p).toFixed(1)}P`;
+    hint = `G2 도달 시 단가 ${fmt(g2Rate)}원/P 적용 (현 ${fmt(me.applied_rate)})`;
   }
   const pct = Math.min(100, (p/target*100));
   document.getElementById('progress-fill').style.width = pct + '%';
