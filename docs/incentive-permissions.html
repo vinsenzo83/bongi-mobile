@@ -433,7 +433,9 @@ async function saveDirty() {
 // ═══ 부서 + 상담사 배치 ═══
 let _depts = [];       // [{ id, name, slug, categories[], description }]
 let _agents = [];      // [{ id, name, center, role, department_id, handle_categories[] }]
-let _cats = [];        // [{ slug, name, icon }]  (가전렌탈 + internet_tv)
+let _cats = [];        // [{ slug, name, icon, isRentalAll?, rentalSlugs? }]  (가전렌탈은 단일 묶음)
+let _rentalSlugs = []; // 가전 카테고리 슬러그 전체 (저장 시 확장용)
+const RENTAL_ALL = '__rental_all__';
 
 async function loadDeptsAndAgents() {
   const tk = getToken();
@@ -446,9 +448,10 @@ async function loadDeptsAndAgents() {
     _depts = dRes.departments || dRes.rows || [];
     _agents = (aRes.agents || []).filter(a => a.role !== 'admin');  // admin은 자동 전체 → 배치 불필요
     const rentalCats = cRes.categories || cRes.rows || [];
+    _rentalSlugs = rentalCats.map(c => c.slug);
     _cats = [
       { slug: 'internet_tv', name: '인터넷+TV', icon: '🌐' },
-      ...rentalCats.map(c => ({ slug: c.slug, name: c.name, icon: c.icon })),
+      { slug: RENTAL_ALL, name: '가전렌탈', icon: '🏠', isRentalAll: true, rentalSlugs: _rentalSlugs },
     ];
     renderDeptList();
     renderAgentDeptTable();
@@ -463,10 +466,14 @@ function renderDeptList() {
   el.innerHTML = _depts.map(d => {
     const myCats = Array.isArray(d.categories) ? d.categories : [];
     const chips = _cats.map(c => {
-      const checked = myCats.includes(c.slug);
-      return `<label style="display:inline-flex;align-items:center;gap:4px;background:${checked?'rgba(34,197,94,0.15)':'rgba(71,85,105,0.25)'};border:1px solid ${checked?'#16a34a':'#475569'};padding:4px 9px;border-radius:5px;font-size:11.5px;cursor:pointer;font-weight:${checked?700:500};color:${checked?'#86efac':'#cbd5e1'}">
-        <input type="checkbox" data-dept-id="${d.id}" data-cat="${c.slug}" ${checked?'checked':''} style="margin:0;width:14px;height:14px">
-        ${c.icon || '📦'} ${c.name}
+      const checked = c.isRentalAll
+        ? (_rentalSlugs.length > 0 && _rentalSlugs.every(s => myCats.includes(s)))
+        : myCats.includes(c.slug);
+      const indeterminate = c.isRentalAll && !checked && _rentalSlugs.some(s => myCats.includes(s));
+      const hint = c.isRentalAll ? ` <span style="font-size:9.5px;color:#94a3b8">(${_rentalSlugs.length}종 통합)</span>` : '';
+      return `<label style="display:inline-flex;align-items:center;gap:4px;background:${checked?'rgba(34,197,94,0.15)':(indeterminate?'rgba(251,191,36,0.15)':'rgba(71,85,105,0.25)')};border:1px solid ${checked?'#16a34a':(indeterminate?'#f59e0b':'#475569')};padding:4px 9px;border-radius:5px;font-size:11.5px;cursor:pointer;font-weight:${checked?700:500};color:${checked?'#86efac':(indeterminate?'#fbbf24':'#cbd5e1')}" title="${indeterminate?'부분 포함 — 체크 시 전체 가전 처리':''}">
+        <input type="checkbox" data-dept-id="${d.id}" data-cat="${c.slug}" ${checked?'checked':''} ${indeterminate?'data-indeterminate="1"':''} style="margin:0;width:14px;height:14px">
+        ${c.icon || '📦'} ${c.name}${hint}
       </label>`;
     }).join('');
     return `<div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px 14px">
@@ -477,6 +484,8 @@ function renderDeptList() {
       <div style="display:flex;flex-wrap:wrap;gap:6px">${chips}</div>
     </div>`;
   }).join('');
+  // indeterminate 시각 표시
+  el.querySelectorAll('input[data-indeterminate="1"]').forEach(cb => { cb.indeterminate = true; });
   // 체크 핸들러
   el.querySelectorAll('input[data-dept-id]').forEach(cb => {
     cb.addEventListener('change', async () => {
@@ -484,7 +493,14 @@ function renderDeptList() {
       const dept = _depts.find(x => String(x.id) === String(id));
       if (!dept) return;
       const cats = new Set(Array.isArray(dept.categories) ? dept.categories : []);
-      if (cb.checked) cats.add(cb.dataset.cat); else cats.delete(cb.dataset.cat);
+      const slug = cb.dataset.cat;
+      // 가전렌탈 통합 토글 — 모든 가전 슬러그 add/remove
+      if (slug === RENTAL_ALL) {
+        if (cb.checked) _rentalSlugs.forEach(s => cats.add(s));
+        else _rentalSlugs.forEach(s => cats.delete(s));
+      } else {
+        if (cb.checked) cats.add(slug); else cats.delete(slug);
+      }
       const next = Array.from(cats);
       cb.disabled = true;
       try {
@@ -526,10 +542,14 @@ function renderAgentDeptTable() {
       <td style="text-align:left">
         <div class="agent-cat-chips" data-agent-id="${a.id}" style="display:flex;flex-wrap:wrap;gap:5px">
           ${_cats.map(c => {
-            const checked = handle.includes(c.slug);
-            return `<label style="display:inline-flex;align-items:center;gap:3px;background:${checked?'rgba(96,165,250,0.15)':'rgba(71,85,105,0.20)'};border:1px solid ${checked?'#60a5fa':'#475569'};padding:3px 7px;border-radius:4px;font-size:10.5px;cursor:pointer;font-weight:${checked?700:500};color:${checked?'#93c5fd':'#cbd5e1'}">
-              <input type="checkbox" data-agent-id="${a.id}" data-cat="${c.slug}" ${checked?'checked':''} style="margin:0;width:12px;height:12px">
-              ${c.icon || ''} ${c.name}
+            const checked = c.isRentalAll
+              ? (_rentalSlugs.length > 0 && _rentalSlugs.every(s => handle.includes(s)))
+              : handle.includes(c.slug);
+            const indeterminate = c.isRentalAll && !checked && _rentalSlugs.some(s => handle.includes(s));
+            const hint = c.isRentalAll ? ` <span style="font-size:9px;color:#94a3b8">(${_rentalSlugs.length}종)</span>` : '';
+            return `<label style="display:inline-flex;align-items:center;gap:3px;background:${checked?'rgba(96,165,250,0.15)':(indeterminate?'rgba(251,191,36,0.15)':'rgba(71,85,105,0.20)')};border:1px solid ${checked?'#60a5fa':(indeterminate?'#f59e0b':'#475569')};padding:3px 7px;border-radius:4px;font-size:10.5px;cursor:pointer;font-weight:${checked?700:500};color:${checked?'#93c5fd':(indeterminate?'#fbbf24':'#cbd5e1')}" title="${indeterminate?'부분 포함 — 체크 시 전체 가전':''}">
+              <input type="checkbox" data-agent-id="${a.id}" data-cat="${c.slug}" ${checked?'checked':''} ${indeterminate?'data-indeterminate="1"':''} style="margin:0;width:12px;height:12px">
+              ${c.icon || ''} ${c.name}${hint}
             </label>`;
           }).join('')}
         </div>
@@ -540,6 +560,8 @@ function renderAgentDeptTable() {
     </tr>`;
   }).join('');
 
+  // indeterminate 시각 표시
+  tbody.querySelectorAll('.agent-cat-chips input[data-indeterminate="1"]').forEach(cb => { cb.indeterminate = true; });
   // dirty 감지: select·체크 변경 시 저장 버튼 활성화
   tbody.querySelectorAll('select.agent-dept-select, .agent-cat-chips input[type="checkbox"]').forEach(el => {
     el.addEventListener('change', () => markAgentDirty(el.dataset.agentId));
@@ -563,7 +585,12 @@ async function saveAgentDept(agentId) {
   const btn = document.querySelector(`.agent-dept-save-btn[data-agent-id="${agentId}"]`);
   const sel = document.querySelector(`.agent-dept-select[data-agent-id="${agentId}"]`);
   const chips = document.querySelectorAll(`.agent-cat-chips[data-agent-id="${agentId}"] input[type="checkbox"]:checked`);
-  const handle_categories = Array.from(chips).map(c => c.dataset.cat);
+  // 가전렌탈 통합 토글 → 실제 슬러그 배열로 확장
+  const handle_categories = [];
+  Array.from(chips).forEach(c => {
+    if (c.dataset.cat === RENTAL_ALL) handle_categories.push(..._rentalSlugs);
+    else handle_categories.push(c.dataset.cat);
+  });
   const department_id = sel.value ? Number(sel.value) : null;
   btn.disabled = true; btn.textContent = '⏳ 저장 중…';
   try {

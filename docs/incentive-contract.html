@@ -2796,19 +2796,10 @@ init();
               <div style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:-0.02em">${fmt(s.monthly_fee_snapshot)}<span style="font-size:12px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
               ${opt.normal_price ? `<div style="font-size:9.5px;color:#94a3b8;margin-top:2px">정상 ${fmt(opt.normal_price)}원</div>` : ''}
             </div>
-            <div style="text-align:right;border-right:1px solid #334155;padding-right:14px">
-              <div class="ph-payback-label">💰 리베이트</div>
-              <div style="font-size:16px;font-weight:800;color:#34d399">${fmt(s.rebate_snapshot)}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
-              ${opt.rebate && opt.rebate !== s.rebate_snapshot ? `<div style="font-size:9.5px;color:#fbbf24;margin-top:2px">현재 ${fmt(opt.rebate)}원</div>` : ''}
-            </div>
-            <div style="text-align:right;border-right:1px solid #334155;padding-right:14px">
+            <div style="text-align:right">
               <div class="ph-payback-label">💰 페이백 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 5px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:3px" title="등록 시점 박제">SNAPSHOT</span></div>
               <div class="ph-payback-val">${fmt(s.payback_snapshot)}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
               ${opt.payback != null && opt.payback !== s.payback_snapshot ? `<div style="font-size:9.5px;color:#fbbf24;margin-top:2px">현재 ${fmt(opt.payback)}원</div>` : ''}
-            </div>
-            <div style="text-align:right">
-              <div class="ph-payback-label">📊 현재 옵션 마진</div>
-              <div style="font-size:16px;font-weight:800;color:${(opt.margin||0)>=0?'#a78bfa':'#dc2626'}">${fmt(opt.margin)}<span style="font-size:11px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
             </div>
           </div>
         </div>
