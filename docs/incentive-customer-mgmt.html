@@ -125,23 +125,24 @@ function renderList() {
   const grade = document.getElementById('f-grade').value;
   const status = document.getElementById('f-status').value;
   let list = _customers;
-  if (kw) list = list.filter(c => (c.customer_name||'').toLowerCase().includes(kw)
-    || (c.phone_number||'').includes(kw) || (c.memo||'').toLowerCase().includes(kw));
+  if (kw) list = list.filter(c => (c.name||'').toLowerCase().includes(kw)
+    || (c.phone||'').includes(kw));
   if (grade) list = list.filter(c => c.quality_grade === grade);
-  if (status) list = list.filter(c => c.status === status);
+  if (status) list = list.filter(c => c.call_status === status);
   document.getElementById('list-count').textContent = `${list.length}건`;
   if (!list.length) { body.innerHTML = '<div class="empty">조회 결과 없음</div>'; return; }
   body.innerHTML = list.slice(0, 200).map(c => {
     const g = c.quality_grade || '-';
-    const tag = (c.product_carrier ? `<span class="li-tag">${esc(c.product_carrier)}</span>` : '')
-      + (c.status ? `<span class="li-tag">${esc(c.status)}</span>` : '');
+    const src = c.db_source?.name;
+    const tag = (src ? `<span class="li-tag">${esc(src)}</span>` : '')
+      + (c.call_status ? `<span class="li-tag">${esc(c.call_status)}</span>` : '');
     return `<div class="list-item ${_selected?.id===c.id?'active':''}" data-id="${c.id}">
       <div class="li-row1">
-        <span class="li-name">${esc(c.customer_name || '이름없음')}</span>
+        <span class="li-name">${esc(c.name || '이름없음')}</span>
         <span class="li-grade g-${g}">${g}</span>
       </div>
       <div class="li-row2">
-        <span>📞 ${maskPhone(c.phone_number)}</span>
+        <span>📞 ${maskPhone(c.phone)}</span>
         ${tag}
       </div>
     </div>`;
@@ -162,14 +163,14 @@ async function renderDetail() {
     return;
   }
   const c = _selected;
-  title.innerHTML = `📄 ${esc(c.customer_name || '이름없음')} <span style="font-size:10px;color:var(--muted);font-weight:400">· ID ${c.id}</span>`;
+  title.innerHTML = `📄 ${esc(c.name || '이름없음')} <span style="font-size:10px;color:var(--muted);font-weight:400">· ID ${c.id}</span>`;
 
   // 통화 이력·계약 이력 병렬 fetch
   let calls = [], sales = [];
   try {
     const [cR, sR] = await Promise.all([
       fetchAuth(`/api/customer-db/${c.id}/calls?limit=10`).then(r => r.ok ? r.json() : { calls: [] }).catch(() => ({ calls: [] })),
-      fetchAuth(`/api/incentive/sales?phone=${encodeURIComponent(c.phone_number||'')}`).then(r => r.ok ? r.json() : { sales: [] }).catch(() => ({ sales: [] })),
+      fetchAuth(`/api/incentive/sales?phone=${encodeURIComponent(c.phone||'')}`).then(r => r.ok ? r.json() : { sales: [] }).catch(() => ({ sales: [] })),
     ]);
     calls = cR.calls || cR.rows || [];
     sales = sR.sales || sR.rows || [];
@@ -178,7 +179,7 @@ async function renderDetail() {
   body.innerHTML = `
     <div class="stat-row">
       <div class="stat"><div class="v g-${c.quality_grade||'C'}" style="display:inline-block;padding:2px 8px;border-radius:5px">${c.quality_grade||'-'}</div><div class="l">등급</div></div>
-      <div class="stat"><div class="v">${esc(c.status||'-')}</div><div class="l">상태</div></div>
+      <div class="stat"><div class="v">${esc(c.call_status||'-')}</div><div class="l">상태</div></div>
       <div class="stat"><div class="v">${fmt(calls.length)}</div><div class="l">통화 이력</div></div>
       <div class="stat"><div class="v">${fmt(sales.length)}</div><div class="l">계약 이력</div></div>
     </div>
@@ -186,27 +187,17 @@ async function renderDetail() {
     <div class="detail-section">
       <h3>👤 기본 정보</h3>
       <dl class="detail-grid">
-        <dt>이름</dt><dd>${esc(c.customer_name||'-')}</dd>
-        <dt>전화</dt><dd>${esc(c.phone_number||'-')}</dd>
-        <dt>통신사</dt><dd>${esc(c.product_carrier||'-')}</dd>
+        <dt>이름</dt><dd>${esc(c.name||'-')}</dd>
+        <dt>전화</dt><dd>${esc(c.phone||'-')}</dd>
         <dt>등급</dt><dd>${esc(c.quality_grade||'-')}</dd>
-        <dt>상태</dt><dd>${esc(c.status||'-')}</dd>
-        <dt>DB 출처</dt><dd>${esc(c.db_source_name||c.db_source_id||'-')}</dd>
+        <dt>콜 상태</dt><dd>${esc(c.call_status||'-')}</dd>
+        <dt>DB 출처</dt><dd>${esc(c.db_source?.name || c.db_source_id || '-')}</dd>
         <dt>등록일</dt><dd>${(c.imported_at||c.created_at||'').slice(0,10)}</dd>
         <dt>배정일</dt><dd>${(c.assigned_at||'').slice(0,10) || '-'}</dd>
-        <dt>담당</dt><dd>${esc(c.assigned_agent_name||c.assigned_agent_id||'-')}</dd>
+        <dt>담당</dt><dd>${esc(c.assigned_agent?.name || c.assigned_agent_id || '-')}</dd>
+        ${c.callback_at ? `<dt>콜백 예정</dt><dd>${c.callback_at.slice(0,16).replace('T',' ')}</dd>` : ''}
+        ${c.next_retry_at ? `<dt>재시도</dt><dd>${c.next_retry_at.slice(0,16).replace('T',' ')}</dd>` : ''}
       </dl>
-    </div>
-
-    ${c.tags && c.tags.length ? `
-    <div class="detail-section">
-      <h3>🏷️ 태그</h3>
-      <div class="tag-list">${c.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-    </div>` : ''}
-
-    <div class="detail-section">
-      <h3>💬 메모</h3>
-      <div style="background:#0f172a;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:11.5px;white-space:pre-wrap;min-height:50px">${esc(c.memo||'(메모 없음)')}</div>
     </div>
 
     <div class="detail-section">
