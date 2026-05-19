@@ -1,0 +1,73 @@
+name: backup-core-tables
+# 봉이 운영 핵심 17 테이블 일일 백업 (Supabase pg_dump → backups/ 폴더)
+# 트리거: 매일 KST 02:00 (UTC 17:00) + 수동 workflow_dispatch
+
+on:
+  schedule:
+    - cron: '0 17 * * *'  # KST 02:00
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Backup core tables (LIVE)
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_LIVE_DB_URL }}
+        run: |
+          mkdir -p backups/$(date +%Y-%m-%d)
+          TABLES=(
+            incentive_agents
+            incentive_sales
+            incentive_products
+            incentive_rules
+            incentive_rules_history
+            incentive_monthly_settlements
+            incentive_role_permissions
+            incentive_menus
+            incentive_departments
+            incentive_customer_db
+            customer_calls
+            rental_sales
+            rental_products
+            rental_product_options
+            rental_categories
+            rental_policy
+            rental_brand_policies
+          )
+          for TBL in "${TABLES[@]}"; do
+            echo "📦 Dumping $TBL..."
+            pg_dump "$DATABASE_URL" \
+              --table=public."$TBL" \
+              --data-only \
+              --no-owner \
+              --no-privileges \
+              --inserts \
+              --column-inserts \
+              > "backups/$(date +%Y-%m-%d)/$TBL.sql" || echo "⚠️ $TBL 실패 (계속)"
+          done
+          tar -czf "backups/$(date +%Y-%m-%d).tar.gz" "backups/$(date +%Y-%m-%d)"
+          rm -rf "backups/$(date +%Y-%m-%d)"
+          ls -lh backups/
+
+      - name: Keep only last 30 days
+        run: |
+          cd backups/
+          ls -t *.tar.gz 2>/dev/null | tail -n +31 | xargs -r rm -f
+          ls -lh
+
+      - name: Commit + push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backups/
+          git diff --staged --quiet || git commit -m "chore(backup): core tables $(date +%Y-%m-%d) [skip ci]"
+          git push origin master
