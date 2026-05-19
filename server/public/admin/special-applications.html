@@ -399,7 +399,8 @@
     <div class="lock-icon">🔒</div>
     <div class="lock-title">관리자 인증</div>
     <div class="lock-desc">파이어니 × 에이스휴먼파워 특판 관리</div>
-    <input class="lock-input" id="lockInput" type="password" inputmode="numeric" placeholder="비밀번호" autofocus>
+    <input class="lock-input" id="lockUser" type="text" placeholder="아이디" autocomplete="username" autofocus style="margin-bottom:8px;">
+    <input class="lock-input" id="lockInput" type="password" placeholder="비밀번호" autocomplete="current-password">
     <div class="lock-error" id="lockError"></div>
     <button class="lock-btn" id="lockBtn">접속</button>
   </div>
@@ -623,30 +624,39 @@
   let currentQuery = '';
   let cache = [];
   let currentPage = 1;
+  let adminUser = sessionStorage.getItem('admin_user') || '';
   let adminPw = sessionStorage.getItem('admin_pw') || '';
 
   function authHeaders() {
-    return { 'X-Admin-Password': adminPw, 'Content-Type': 'application/json' };
+    return {
+      'X-Admin-Username': adminUser,
+      'X-Admin-Password': adminPw,
+      'Content-Type': 'application/json',
+    };
   }
 
-  // === Password Lock ===
+  // === Login Lock ===
   const lockOverlay = document.getElementById('lockOverlay');
+  const lockUser = document.getElementById('lockUser');
   const lockInput = document.getElementById('lockInput');
   const lockError = document.getElementById('lockError');
   const lockBtn = document.getElementById('lockBtn');
   const adminBody = document.getElementById('adminBody');
 
-  async function attemptLogin(pw) {
+  async function attemptLogin(user, pw) {
     try {
       const r = await fetch('/api/special-promo?_=' + Date.now(), {
-        headers: { 'X-Admin-Password': pw },
+        headers: { 'X-Admin-Username': user, 'X-Admin-Password': pw },
         cache: 'no-store',
         credentials: 'same-origin',
       });
       if (r.ok) {
+        adminUser = user;
         adminPw = pw;
+        sessionStorage.setItem('admin_user', user);
         sessionStorage.setItem('admin_pw', pw);
-        document.cookie = `admin_pw=${pw}; path=/; max-age=43200; SameSite=Lax`;
+        document.cookie = `admin_user=${encodeURIComponent(user)}; path=/; max-age=43200; SameSite=Lax`;
+        document.cookie = `admin_pw=${encodeURIComponent(pw)}; path=/; max-age=43200; SameSite=Lax`;
         lockOverlay.style.display = 'none';
         adminBody.style.display = 'block';
         load();
@@ -662,15 +672,17 @@
   }
 
   lockBtn.addEventListener('click', async () => {
+    const user = lockUser.value.trim();
     const pw = lockInput.value.trim();
-    if (!pw) { lockError.textContent = '비밀번호를 입력하세요'; return; }
+    if (!user) { lockError.textContent = '아이디를 입력하세요'; lockUser.focus(); return; }
+    if (!pw) { lockError.textContent = '비밀번호를 입력하세요'; lockInput.focus(); return; }
     lockBtn.textContent = '확인 중...';
     lockError.textContent = '';
-    const result = await attemptLogin(pw);
+    const result = await attemptLogin(user, pw);
     lockBtn.textContent = '접속';
     if (result !== true) {
       if (typeof result === 'number') {
-        lockError.textContent = result === 401 ? '비밀번호가 올바르지 않습니다' : `인증 실패 (HTTP ${result})`;
+        lockError.textContent = result === 401 ? '아이디 또는 비밀번호가 올바르지 않습니다' : `인증 실패 (HTTP ${result})`;
       } else {
         lockError.textContent = '서버 연결 오류 — 새로고침 후 다시 시도';
       }
@@ -678,12 +690,14 @@
       lockInput.focus();
     }
   });
+  lockUser.addEventListener('keydown', (e) => { if (e.key === 'Enter') lockInput.focus(); });
   lockInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') lockBtn.click(); });
 
   // 자동 로그인 시도 (실패해도 조용히)
-  if (adminPw) {
-    attemptLogin(adminPw).then(result => {
+  if (adminUser && adminPw) {
+    attemptLogin(adminUser, adminPw).then(result => {
       if (result !== true) {
+        sessionStorage.removeItem('admin_user');
         sessionStorage.removeItem('admin_pw');
       }
     });
@@ -700,6 +714,7 @@
     try {
       const r = await fetch(url, { headers: authHeaders() });
       if (r.status === 401) {
+        sessionStorage.removeItem('admin_user');
         sessionStorage.removeItem('admin_pw');
         location.reload();
         return;
