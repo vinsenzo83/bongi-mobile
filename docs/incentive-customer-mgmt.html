@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>봉이 TM CRM — 고객 관리</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="/docs/_security.js" defer></script>
+<script src="/docs/_shared/incentive-auth.js" defer></script>
+<style>
+:root {
+  --bg:#0f172a; --panel:#1e293b; --line:#334155; --text:#e2e8f0; --muted:#94a3b8;
+  --primary:#3617ce; --accent:#fbbf24; --green:#22c55e; --red:#dc2626; --blue:#3b82f6;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font-family:Pretendard, sans-serif; font-size:13px; line-height:1.5; padding:14px; }
+h1 { font-size:18px; font-weight:900; margin:0 0 4px; color:#f8fafc; display:flex; align-items:center; gap:8px; }
+.subtitle { font-size:11px; color:var(--muted); margin-bottom:12px; }
+.layout { display:grid; grid-template-columns:380px 1fr; gap:14px; height:calc(100vh - 80px); }
+@media (max-width:900px) { .layout { grid-template-columns:1fr; height:auto; } }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; overflow-y:auto; }
+.card-title { font-size:12px; font-weight:800; color:var(--accent); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+.tools { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+.tools input, .tools select { flex:1; min-width:80px; background:#0f172a; border:1px solid var(--line); color:var(--text); padding:6px 8px; border-radius:5px; font-size:11.5px; font-family:inherit; }
+.tools input:focus, .tools select:focus { outline:none; border-color:var(--primary); }
+.list-item { background:#0f172a; border:1px solid var(--line); border-radius:7px; padding:8px 10px; margin-bottom:6px; cursor:pointer; transition:all 0.1s; }
+.list-item:hover { border-color:var(--primary); background:rgba(54,23,206,0.08); }
+.list-item.active { border-color:var(--accent); background:rgba(251,191,36,0.06); }
+.li-row1 { display:flex; justify-content:space-between; align-items:baseline; }
+.li-name { font-weight:800; color:#f1f5f9; font-size:13px; }
+.li-grade { font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; }
+.g-S { background:rgba(251,191,36,0.18); color:#fbbf24; }
+.g-A { background:rgba(34,197,94,0.18); color:#86efac; }
+.g-B { background:rgba(59,130,246,0.18); color:#93c5fd; }
+.g-R { background:rgba(167,139,250,0.18); color:#c4b5fd; }
+.g-C { background:rgba(148,163,184,0.18); color:#cbd5e1; }
+.li-row2 { display:flex; gap:6px; font-size:10.5px; color:var(--muted); margin-top:3px; }
+.li-tag { background:#334155; padding:1px 5px; border-radius:3px; font-size:9.5px; color:#cbd5e1; }
+.detail-section { margin-bottom:14px; }
+.detail-section h3 { font-size:12px; font-weight:800; color:#a5b4fc; margin:0 0 6px; padding-bottom:4px; border-bottom:1px dashed var(--line); }
+.detail-grid { display:grid; grid-template-columns:90px 1fr; gap:6px 12px; font-size:11.5px; padding:4px 0; }
+.detail-grid dt { color:var(--muted); font-weight:600; }
+.detail-grid dd { margin:0; color:var(--text); font-weight:700; font-family:'SF Mono', monospace; }
+.empty { padding:40px 20px; text-align:center; color:var(--muted); }
+.stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:12px; }
+.stat-row .stat { background:#0f172a; border:1px solid var(--line); border-radius:7px; padding:8px; text-align:center; }
+.stat-row .stat .v { font-size:18px; font-weight:900; color:#f8fafc; }
+.stat-row .stat .l { font-size:10px; color:var(--muted); margin-top:2px; }
+.tag-list { display:flex; flex-wrap:wrap; gap:4px; }
+.tag-list .tag { background:#334155; padding:2px 8px; border-radius:10px; font-size:10.5px; color:#cbd5e1; }
+.btn { background:var(--primary); color:#fff; border:none; padding:6px 12px; border-radius:5px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; }
+.btn:hover { opacity:0.85; }
+.btn.muted { background:#475569; }
+</style>
+</head>
+<body>
+<h1>👥 고객 관리 <span style="font-size:11px;color:var(--muted);font-weight:400">· 통합 CRM</span></h1>
+<div class="subtitle">콜 DB · 계약 고객 · 통화 이력 · 태그 통합 뷰 · 상세는 우측 패널</div>
+
+<div class="layout">
+  <!-- 좌측: 고객 list -->
+  <div class="card">
+    <div class="card-title">
+      <span>📋 고객 list</span>
+      <span id="list-count" style="font-size:10.5px;color:var(--muted);font-weight:400">-</span>
+    </div>
+    <div class="tools">
+      <input type="search" id="f-search" placeholder="🔎 이름·전화·메모">
+      <select id="f-grade">
+        <option value="">전체 등급</option>
+        <option value="S">S</option><option value="A">A</option><option value="B">B</option>
+        <option value="R">R</option><option value="C">C</option>
+      </select>
+      <select id="f-status">
+        <option value="">전체 상태</option>
+        <option value="pending">대기</option>
+        <option value="callback">콜백</option>
+        <option value="contacted">연락됨</option>
+        <option value="converted">전환</option>
+        <option value="rejected">거절</option>
+      </select>
+    </div>
+    <div id="list-body"><div class="empty">불러오는 중...</div></div>
+  </div>
+
+  <!-- 우측: 고객 상세 -->
+  <div class="card">
+    <div class="card-title" id="detail-title">📄 고객 상세</div>
+    <div id="detail-body"><div class="empty">좌측에서 고객을 선택하세요</div></div>
+  </div>
+</div>
+
+<script>
+const TK = () => localStorage.getItem('incentive-auth-token-v1');
+const fetchAuth = (url, opts={}) => fetch(url, { ...opts, headers: { ...(opts.headers||{}), Authorization: 'Bearer ' + TK() }});
+const esc = s => String(s ?? '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => (n == null ? '-' : Number(n).toLocaleString('ko-KR'));
+let _customers = [], _selected = null;
+
+// PII 마스킹 (목록 뷰만)
+function maskPhone(p) {
+  if (!p) return '-';
+  const d = String(p).replace(/[^0-9]/g, '');
+  if (d.length === 11) return d.slice(0,3) + '-****-' + d.slice(-4);
+  return p;
+}
+
+async function loadList() {
+  const body = document.getElementById('list-body');
+  body.innerHTML = '<div class="empty">불러오는 중...</div>';
+  try {
+    const r = await fetchAuth('/api/customer-db?limit=200');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    _customers = d.rows || d.customers || [];
+    renderList();
+  } catch (e) {
+    body.innerHTML = `<div class="empty" style="color:#ef4444">로드 실패: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderList() {
+  const body = document.getElementById('list-body');
+  const kw = (document.getElementById('f-search').value || '').toLowerCase();
+  const grade = document.getElementById('f-grade').value;
+  const status = document.getElementById('f-status').value;
+  let list = _customers;
+  if (kw) list = list.filter(c => (c.customer_name||'').toLowerCase().includes(kw)
+    || (c.phone_number||'').includes(kw) || (c.memo||'').toLowerCase().includes(kw));
+  if (grade) list = list.filter(c => c.quality_grade === grade);
+  if (status) list = list.filter(c => c.status === status);
+  document.getElementById('list-count').textContent = `${list.length}건`;
+  if (!list.length) { body.innerHTML = '<div class="empty">조회 결과 없음</div>'; return; }
+  body.innerHTML = list.slice(0, 200).map(c => {
+    const g = c.quality_grade || '-';
+    const tag = (c.product_carrier ? `<span class="li-tag">${esc(c.product_carrier)}</span>` : '')
+      + (c.status ? `<span class="li-tag">${esc(c.status)}</span>` : '');
+    return `<div class="list-item ${_selected?.id===c.id?'active':''}" data-id="${c.id}">
+      <div class="li-row1">
+        <span class="li-name">${esc(c.customer_name || '이름없음')}</span>
+        <span class="li-grade g-${g}">${g}</span>
+      </div>
+      <div class="li-row2">
+        <span>📞 ${maskPhone(c.phone_number)}</span>
+        ${tag}
+      </div>
+    </div>`;
+  }).join('');
+  body.querySelectorAll('.list-item').forEach(el => el.addEventListener('click', () => {
+    _selected = _customers.find(c => String(c.id) === el.dataset.id);
+    renderList();  // 활성 갱신
+    renderDetail();
+  }));
+}
+
+async function renderDetail() {
+  const body = document.getElementById('detail-body');
+  const title = document.getElementById('detail-title');
+  if (!_selected) {
+    title.textContent = '📄 고객 상세';
+    body.innerHTML = '<div class="empty">좌측에서 고객을 선택하세요</div>';
+    return;
+  }
+  const c = _selected;
+  title.innerHTML = `📄 ${esc(c.customer_name || '이름없음')} <span style="font-size:10px;color:var(--muted);font-weight:400">· ID ${c.id}</span>`;
+
+  // 통화 이력·계약 이력 병렬 fetch
+  let calls = [], sales = [];
+  try {
+    const [cR, sR] = await Promise.all([
+      fetchAuth(`/api/customer-db/${c.id}/calls?limit=10`).then(r => r.ok ? r.json() : { calls: [] }).catch(() => ({ calls: [] })),
+      fetchAuth(`/api/incentive/sales?phone=${encodeURIComponent(c.phone_number||'')}`).then(r => r.ok ? r.json() : { sales: [] }).catch(() => ({ sales: [] })),
+    ]);
+    calls = cR.calls || cR.rows || [];
+    sales = sR.sales || sR.rows || [];
+  } catch (e) {}
+
+  body.innerHTML = `
+    <div class="stat-row">
+      <div class="stat"><div class="v g-${c.quality_grade||'C'}" style="display:inline-block;padding:2px 8px;border-radius:5px">${c.quality_grade||'-'}</div><div class="l">등급</div></div>
+      <div class="stat"><div class="v">${esc(c.status||'-')}</div><div class="l">상태</div></div>
+      <div class="stat"><div class="v">${fmt(calls.length)}</div><div class="l">통화 이력</div></div>
+      <div class="stat"><div class="v">${fmt(sales.length)}</div><div class="l">계약 이력</div></div>
+    </div>
+
+    <div class="detail-section">
+      <h3>👤 기본 정보</h3>
+      <dl class="detail-grid">
+        <dt>이름</dt><dd>${esc(c.customer_name||'-')}</dd>
+        <dt>전화</dt><dd>${esc(c.phone_number||'-')}</dd>
+        <dt>통신사</dt><dd>${esc(c.product_carrier||'-')}</dd>
+        <dt>등급</dt><dd>${esc(c.quality_grade||'-')}</dd>
+        <dt>상태</dt><dd>${esc(c.status||'-')}</dd>
+        <dt>DB 출처</dt><dd>${esc(c.db_source_name||c.db_source_id||'-')}</dd>
+        <dt>등록일</dt><dd>${(c.imported_at||c.created_at||'').slice(0,10)}</dd>
+        <dt>배정일</dt><dd>${(c.assigned_at||'').slice(0,10) || '-'}</dd>
+        <dt>담당</dt><dd>${esc(c.assigned_agent_name||c.assigned_agent_id||'-')}</dd>
+      </dl>
+    </div>
+
+    ${c.tags && c.tags.length ? `
+    <div class="detail-section">
+      <h3>🏷️ 태그</h3>
+      <div class="tag-list">${c.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+    </div>` : ''}
+
+    <div class="detail-section">
+      <h3>💬 메모</h3>
+      <div style="background:#0f172a;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:11.5px;white-space:pre-wrap;min-height:50px">${esc(c.memo||'(메모 없음)')}</div>
+    </div>
+
+    <div class="detail-section">
+      <h3>📞 최근 통화 (${calls.length}건)</h3>
+      ${calls.length ? `<div style="display:flex;flex-direction:column;gap:4px">
+        ${calls.slice(0,5).map(call => `<div style="background:#0f172a;border:1px solid var(--line);border-radius:5px;padding:6px 9px;font-size:11px">
+          <div style="display:flex;justify-content:space-between"><b>${esc(call.result||call.status||'-')}</b><span style="color:var(--muted)">${(call.called_at||call.created_at||'').slice(5,16)}</span></div>
+          ${call.note ? `<div style="color:var(--muted);font-size:10.5px;margin-top:2px">${esc(call.note)}</div>` : ''}
+        </div>`).join('')}
+      </div>` : '<div class="empty" style="padding:14px">통화 이력 없음</div>'}
+    </div>
+
+    <div class="detail-section">
+      <h3>📋 계약 이력 (${sales.length}건)</h3>
+      ${sales.length ? `<div style="display:flex;flex-direction:column;gap:4px">
+        ${sales.slice(0,5).map(s => {
+          const p = s.product || {};
+          return `<div style="background:#0f172a;border:1px solid var(--line);border-radius:5px;padding:6px 9px;font-size:11px">
+            <div style="display:flex;justify-content:space-between"><b>${esc(p.carrier||'-')} ${esc(p.name||p.speed||'-')}</b><span style="color:${s.status==='completed'?'var(--green)':s.status==='cancelled'?'var(--red)':'var(--accent)'}">${esc(s.status||'-')}</span></div>
+            <div style="color:var(--muted);font-size:10.5px;margin-top:2px">${(s.contract_date||'').slice(0,10)} · 페이백 ${fmt(s.payback_snapshot)}원</div>
+          </div>`;
+        }).join('')}
+      </div>` : '<div class="empty" style="padding:14px">계약 이력 없음</div>'}
+    </div>
+  `;
+}
+
+['f-search','f-grade','f-status'].forEach(id => document.getElementById(id).addEventListener('input', renderList));
+loadList();
+</script>
+</body>
+</html>
