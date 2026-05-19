@@ -21,7 +21,7 @@ body {
 /* ===== 레이아웃 ===== */
 html, body { overflow:hidden; }
 .tm-app {
-  display:grid; grid-template-columns: 180px minmax(0, 1fr) 360px; gap:8px;
+  display:grid; grid-template-columns: 180px minmax(0, 1fr) 300px; gap:8px;
   padding:8px; height:100vh; max-width:1800px; margin:0 auto;
 }
 .tm-panel {
@@ -345,14 +345,14 @@ html, body { overflow:hidden; }
 
 /* ===== 반응형 단계 ===== */
 @media (max-width: 1400px) {
-  .tm-app { grid-template-columns: 160px minmax(0,1fr) 340px; gap:6px; padding:6px; }
+  .tm-app { grid-template-columns: 160px minmax(0,1fr) 280px; gap:6px; padding:6px; }
   .tm-panel { padding:10px; }
   .tm-option { padding:5px 9px; font-size:11px; }
   .tm-card { padding:8px 10px; }
   .tm-card-title { font-size:10px; }
 }
 @media (max-width: 1200px) {
-  .tm-app { grid-template-columns: 140px minmax(0,1fr) 300px; gap:5px; padding:5px; }
+  .tm-app { grid-template-columns: 140px minmax(0,1fr) 260px; gap:5px; padding:5px; }
   .tm-option { padding:4px 8px; font-size:10.5px; }
   .tm-card { padding:6px 8px; }
   .tm-card-title { font-size:9.5px; }
@@ -419,15 +419,16 @@ body.cat-rental #it-result-block { display:none; }
 .tm-rental-panel .field select:focus, .tm-rental-panel .field input:focus { outline:none; border-color:#3617ce; }
 .tm-rental-panel .guide-step { background:#fff; border:1px solid #e5e7eb; border-radius:5px; padding:6px 9px; margin-bottom:4px; font-size:10.5px; line-height:1.55; color:#1f2937; }
 .tm-rental-panel .guide-step .no { display:inline-block; width:17px;height:17px; background:#3617ce; color:#fff; font-size:9px; border-radius:50%; text-align:center; line-height:17px; margin-right:5px; font-weight:700; }
-.tm-rental-panel .rental-quote { background:linear-gradient(135deg,#312e81,#1e293b); color:#fff; border-radius:8px; padding:14px 16px; }
-.tm-rental-panel .rental-quote .qt-ttl { font-size:11px; font-weight:800; color:#fbbf24; margin-bottom:8px; }
-.tm-rental-panel .rental-quote .row { display:flex; justify-content:space-between; padding:4px 0; font-size:10.5px; border-bottom:1px dashed #475569; }
-.tm-rental-panel .rental-quote .row .k { color:#94a3b8; }
-.tm-rental-panel .rental-quote .row .v { font-weight:700; }
-.tm-rental-panel .rental-quote .row .green { color:#22c55e; }
-.tm-rental-panel .rental-quote .total { background:#0f172a; border-radius:6px; padding:8px 10px; margin-top:8px; text-align:center; }
-.tm-rental-panel .rental-quote .total .big { font-size:22px; font-weight:900; color:#fbbf24; }
-.tm-rental-panel .rental-quote .save { background:#16a34a; color:#fff; padding:9px 12px; border:none; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; margin-top:10px; width:100%; }
+/* ★ .rental-quote 는 우측 aside 안 #rental-result-block 으로 이동 — 부모 의존성 제거 (2026-05-19) */
+.rental-quote { background:linear-gradient(135deg,#312e81,#1e293b); color:#fff; border-radius:8px; padding:14px 16px; }
+.rental-quote .qt-ttl { font-size:11px; font-weight:800; color:#fbbf24; margin-bottom:8px; }
+.rental-quote .row { display:flex; justify-content:space-between; padding:4px 0; font-size:10.5px; border-bottom:1px dashed #475569; }
+.rental-quote .row .k { color:#94a3b8; }
+.rental-quote .row .v { font-weight:700; }
+.rental-quote .row .green { color:#22c55e; }
+.rental-quote .total { background:#0f172a; border-radius:6px; padding:8px 10px; margin-top:8px; text-align:center; }
+.rental-quote .total .big { font-size:22px; font-weight:900; color:#fbbf24; }
+.rental-quote .save { background:#16a34a; color:#fff; padding:9px 12px; border:none; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; margin-top:10px; width:100%; }
 
 /* ─── 가전렌탈 신청 모달 (빌리고 스타일) ─── */
 .rdm-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:99998; display:none; align-items:flex-start; justify-content:center; padding:32px 16px; overflow-y:auto; }
