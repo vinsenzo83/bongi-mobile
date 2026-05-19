@@ -397,8 +397,9 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 /* 모드별 가시성: 기본 = it 모드 */
 body:not(.cat-rental) .tm-rental-panel { display:none; }
 body.cat-rental main.tm-panel > *:not(.tm-cat-tabs):not(.tm-rental-panel):not(#call-mode-bar) { display:none !important; }
-body.cat-rental aside.tm-result-panel { display:none !important; }
-body.cat-rental .tm-app { grid-template-columns: 280px minmax(0,1fr) !important; }
+/* ★ 가전렌탈도 인터넷+TV와 동일한 3컬럼 구조 (좌 카드 + 가운데 폼 + 우 결과 사이드바) — 2026-05-19 */
+body:not(.cat-rental) #rental-result-block { display:none; }
+body.cat-rental #it-result-block { display:none; }
 /* 가전렌탈 패널 스타일 */
 .tm-rental-panel { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:14px 16px; }
 .tm-rental-panel .cat-bar { background:linear-gradient(135deg,#fef3c7,#fff); border:2px solid #f59e0b; border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; gap:12px; }
@@ -406,10 +407,8 @@ body.cat-rental .tm-app { grid-template-columns: 280px minmax(0,1fr) !important;
 .tm-rental-panel .cat-bar select { padding:7px 10px; background:#fff; color:#451a03; font-weight:800; border:1.5px solid #fcd34d; border-radius:5px; font-size:13px; max-width:240px; flex:1; }
 .tm-rental-panel .cat-bar .note { font-size:10px; color:#92400e; line-height:1.55; padding:5px 8px; background:rgba(251,191,36,0.18); border:1px dashed #fcd34d; border-radius:4px; flex:1; }
 /* 가전 큐콜 — 원래 패턴 복원 (2섹터 단순, 짤림 fix 최소만 유지) */
-.tm-rental-panel .rental-grid { display:grid; grid-template-columns:1fr 320px; gap:14px; align-items:start; }
-@media (max-width: 1100px) {
-  .tm-rental-panel .rental-grid { grid-template-columns:1fr; gap:10px; }
-}
+/* ★ rental-quote 가 우측 사이드바로 이동했으므로 가운데는 1컬럼 폼만 — 2026-05-19 */
+.tm-rental-panel .rental-grid { display:block; }
 .tm-rental-panel .rental-form-wrap { min-width:0; }
 .tm-rental-panel .rental-quote-result { word-break:break-word; min-width:0; overflow-wrap:break-word; }
 .tm-rental-panel .rental-form-wrap { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px; }
@@ -1752,23 +1751,8 @@ function bindShortcutKeys() {
           <div id="rental-brand-policy" style="margin-top:6px;padding:7px 10px;background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:5px;font-size:10px;color:#fbbf24;line-height:1.55;display:none"></div>
           <div id="rental-incentive-area"></div>
         </div>
-
-        <div class="rental-quote">
-          <div class="qt-ttl" id="rental-quote-title">💧 정수기 견적 결과</div>
-          <!-- ★ R 티켓번호 빠른 조회 (가전렌탈 전용) — 인터넷+TV 영역과 분리 -->
-          <div style="background:rgba(15,23,42,0.55);border:1px solid #475569;border-radius:8px;padding:10px 12px;margin-bottom:10px">
-            <div style="font-size:11px;color:#fbbf24;font-weight:700;margin-bottom:6px">🎫 가전렌탈 티켓번호 빠른 조회</div>
-            <div style="display:flex;gap:6px">
-              <input type="text" id="r-ticket-lookup" placeholder="예: R0683" autocomplete="off"
-                style="flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px;font-family:'SF Mono',Monaco,monospace;text-transform:uppercase">
-              <button id="r-ticket-lookup-btn" style="background:#3b82f6;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">조회</button>
-            </div>
-            <div id="r-ticket-lookup-msg" style="font-size:10.5px;margin-top:6px;min-height:14px"></div>
-          </div>
-          <div id="rental-quote-body">
-            <div style="text-align:center;padding:14px 8px;color:#94a3b8;font-size:11px">카테고리·브랜드·모델·옵션을 선택하거나 R 티켓번호로 조회하세요</div>
-          </div>
-        </div>
+        <!-- ★ .rental-quote 는 우측 aside.tm-result-panel 안 #rental-result-block 로 이동 (2026-05-19) -->
+        <!--    인터넷+TV 탭과 동일 구조: 가운데=폼, 우=결과 사이드바 -->
 
         <script>
         // ★ 가전렌탈 R 티켓 별도 조회 (인터넷+TV 영역과 완전 분리)
@@ -2044,20 +2028,41 @@ function bindShortcutKeys() {
 
   <!-- ═══ 우측 ═══ -->
   <aside class="tm-panel tm-result-panel">
-    <h2 style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <span>💰 견적 결과</span>
-      <a id="tm-install-check-btn" href="#" target="_blank" rel="noopener" style="display:none;background:#0891b2;color:#fff;padding:5px 12px;border-radius:5px;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:0">📍 설치가능 조회</a>
-    </h2>
-    <div class="tm-ticket-lookup">
-      <div class="tm-ticket-lookup-label">🎫 티켓번호로 빠른 조회</div>
-      <div class="tm-ticket-lookup-row">
-        <input type="text" id="c-ticket-lookup" list="ticket-options" placeholder="예: SK0015 / KT0008 / LG0003" autocomplete="off">
-        <datalist id="ticket-options"></datalist>
-        <button type="button" id="c-ticket-lookup-btn">조회</button>
+    <!-- ═══ 인터넷+TV 견적 결과 (body:not(.cat-rental)) ═══ -->
+    <div id="it-result-block">
+      <h2 style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span>💰 견적 결과</span>
+        <a id="tm-install-check-btn" href="#" target="_blank" rel="noopener" style="display:none;background:#0891b2;color:#fff;padding:5px 12px;border-radius:5px;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:0">📍 설치가능 조회</a>
+      </h2>
+      <div class="tm-ticket-lookup">
+        <div class="tm-ticket-lookup-label">🎫 티켓번호로 빠른 조회</div>
+        <div class="tm-ticket-lookup-row">
+          <input type="text" id="c-ticket-lookup" list="ticket-options" placeholder="예: SK0015 / KT0008 / LG0003" autocomplete="off">
+          <datalist id="ticket-options"></datalist>
+          <button type="button" id="c-ticket-lookup-btn">조회</button>
+        </div>
+        <div id="c-ticket-lookup-msg" class="tm-ticket-lookup-msg"></div>
       </div>
-      <div id="c-ticket-lookup-msg" class="tm-ticket-lookup-msg"></div>
+      <div class="tm-result"><div id="c-result"></div></div>
     </div>
-    <div class="tm-result"><div id="c-result"></div></div>  </aside>
+
+    <!-- ═══ 가전렌탈 견적 결과 (body.cat-rental) ═══ -->
+    <div id="rental-result-block" class="rental-quote">
+      <div class="qt-ttl" id="rental-quote-title">💧 정수기 견적 결과</div>
+      <div style="background:rgba(15,23,42,0.55);border:1px solid #475569;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+        <div style="font-size:11px;color:#fbbf24;font-weight:700;margin-bottom:6px">🎫 가전렌탈 티켓번호 빠른 조회</div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="r-ticket-lookup" placeholder="예: R0683" autocomplete="off"
+            style="flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px;font-family:'SF Mono',Monaco,monospace;text-transform:uppercase">
+          <button id="r-ticket-lookup-btn" style="background:#3b82f6;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">조회</button>
+        </div>
+        <div id="r-ticket-lookup-msg" style="font-size:10.5px;margin-top:6px;min-height:14px"></div>
+      </div>
+      <div id="rental-quote-body">
+        <div style="text-align:center;padding:14px 8px;color:#94a3b8;font-size:11px">카테고리·브랜드·모델·옵션을 선택하거나 R 티켓번호로 조회하세요</div>
+      </div>
+    </div>
+  </aside>
 
 </div>
 
