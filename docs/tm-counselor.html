@@ -1785,29 +1785,48 @@ function bindShortcutKeys() {
               var data = await resp.json();
               var r = data.ticket;
               var p = r.product || {};
-              var html = ''
-                + '<div style="background:linear-gradient(135deg,#1e293b,#0f172a);border:1.5px solid #3b82f6;border-radius:10px;padding:14px">'
-                + '<div style="display:flex;flex-direction:column;gap:3px;padding-bottom:10px;border-bottom:1px solid #334155;margin-bottom:10px">'
-                + '<span style="font-size:9.5px;color:rgba(255,255,255,0.6);letter-spacing:0.04em">🎫 티켓번호</span>'
-                + '<span style="font-size:18px;font-weight:900;color:#a5b4fc;font-family:\'SF Mono\',Monaco,monospace;letter-spacing:0.8px">' + r.ticket_number + '</span>'
-                + '</div>'
-                + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-                + '<div style="font-size:11px;color:#94a3b8;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">🏠 가전 렌탈 견적</div>'
-                + '<div style="background:rgba(56,189,248,0.15);color:#7dd3fc;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">' + (p.brand || '-') + '</div>'
-                + '</div>'
-                + '<div style="font-size:13px;color:#e2e8f0;font-weight:600;margin-top:4px">' + (p.name || '-') + '</div>'
-                + '<div style="font-size:11px;color:#64748b;margin-top:2px">모델 ' + (p.model || '-') + '</div>'
-                + '<table style="width:100%;margin-top:10px;font-size:12px">'
-                + '<tr><td style="color:#94a3b8;padding:3px 0">약정</td><td style="text-align:right;color:#c4b5fd;font-weight:700;font-family:monospace">' + r.months + 'M' + (r.care_service ? ' · ' + r.care_service : '') + '</td></tr>'
-                + '<tr><td style="color:#94a3b8;padding:3px 0">월납</td><td style="text-align:right;color:#f1f5f9;font-weight:800;font-family:monospace">' + fmt(r.monthly_fee) + '원</td></tr>'
-                + '<tr><td style="color:#94a3b8;padding:3px 0">정상가</td><td style="text-align:right;color:#cbd5e1;font-family:monospace">' + fmt(r.normal_price) + '원</td></tr>'
-                + '<tr><td style="color:#94a3b8;padding:3px 0">리베이트</td><td style="text-align:right;color:#34d399;font-weight:700;font-family:monospace">' + fmt(r.rebate) + '원</td></tr>'
-                + '<tr><td style="color:#94a3b8;padding:3px 0">페이백</td><td style="text-align:right;color:#fbbf24;font-weight:700;font-family:monospace">' + fmt(r.payback) + '원</td></tr>'
-                + (r.ownership_months ? '<tr><td style="color:#94a3b8;padding:3px 0">소유권 이전</td><td style="text-align:right;color:#cbd5e1;font-family:monospace">' + r.ownership_months + 'M 후</td></tr>' : '')
-                + '</table></div>';
-              document.getElementById('rental-quote-body').innerHTML = html;
-              var titleEl = document.getElementById('rental-quote-title');
-              if (titleEl) titleEl.textContent = '🏠 ' + r.ticket_number + ' 견적 결과';
+              // ★ 가전 탭 자동 활성 — body.cat-rental 보장
+              var rentalTab = document.querySelector('.tm-cat-tabs .tab[data-cat="rental"]');
+              if (rentalTab && !document.body.classList.contains('cat-rental')) rentalTab.click();
+              // ★ 폼 select에 값 채우기 → change 이벤트로 loadProducts→filterModels→loadOptions→selectOpt→renderQuote chain 자동 트리거
+              //   (옛 인라인 표 대신 폼 자동 입력 → 풍부한 카드 UI 동일하게 표시)
+              var sleep = function(ms){ return new Promise(r => setTimeout(r, ms)); };
+              // 1) 카테고리: 옵션 list에서 product.category_id 매칭 시도 (data-id 없을 시 skip — 사용자 카테고리 유지)
+              var catSel = document.getElementById('rental-category');
+              if (p.category_id) {
+                var catOpt = Array.from(catSel.options).find(o => String(o.dataset.id || '') === String(p.category_id));
+                if (catOpt && catSel.value !== catOpt.value) {
+                  catSel.value = catOpt.value;
+                  catSel.dispatchEvent(new Event('change', { bubbles: true }));
+                  await sleep(450);
+                }
+              }
+              // 2) 브랜드
+              var brSel = document.getElementById('rental-brand');
+              if (p.brand && Array.from(brSel.options).some(o => o.value === p.brand)) {
+                brSel.value = p.brand;
+                brSel.dispatchEvent(new Event('change', { bubbles: true }));
+                await sleep(350);
+              }
+              // 3) 모델
+              var mdSel = document.getElementById('rental-model');
+              if (mdSel.querySelector(`option[value="${p.id}"]`)) {
+                mdSel.value = String(p.id);
+                mdSel.dispatchEvent(new Event('change', { bubbles: true }));
+                await sleep(350);
+              }
+              // 4) 약정 · 케어 (selectOpt → renderQuote 자동)
+              var mSel = document.getElementById('rental-months');
+              if (mSel.querySelector(`option[value="${r.months}"]`)) {
+                mSel.value = String(r.months);
+                mSel.dispatchEvent(new Event('change', { bubbles: true }));
+                await sleep(50);
+              }
+              var cSel = document.getElementById('rental-care');
+              if (cSel.querySelector(`option[value="${r.care_service}"]`)) {
+                cSel.value = r.care_service;
+                cSel.dispatchEvent(new Event('change', { bubbles: true }));
+              }
               showMsg('✓ ' + (p.brand || '-') + ' · ' + r.months + 'M · 월 ' + fmt(r.monthly_fee) + '원', 'success');
             } catch (e) { showMsg('⚠️ 조회 실패: ' + e.message); }
           }
@@ -5301,7 +5320,7 @@ setTimeout(() => {
         _bcIt.onmessage = () => { console.log('[tm-counselor] incentive-policy 변경 — 견적 영향 시 새로고침'); };
       } catch (e) {}
       const catSel = document.getElementById('rental-category');
-      catSel.innerHTML = _categories.map(c => `<option value="${c.slug}">${(c.metadata?.icon || '')} ${c.name}</option>`).join('');
+      catSel.innerHTML = _categories.map(c => `<option value="${c.slug}" data-id="${c.id}">${(c.metadata?.icon || '')} ${c.name}</option>`).join('');
       catSel.addEventListener('change', loadProducts);
       document.getElementById('rental-brand').addEventListener('change', () => { showBrandPolicy(); filterModels(); });
       document.getElementById('rental-model').addEventListener('change', loadOptions);
