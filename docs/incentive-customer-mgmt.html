@@ -165,59 +165,94 @@ async function renderDetail() {
   const c = _selected;
   title.innerHTML = `📄 ${esc(c.name || '이름없음')} <span style="font-size:10px;color:var(--muted);font-weight:400">· ID ${c.id}</span>`;
 
-  // 통화 이력·계약 이력 병렬 fetch
-  let calls = [], sales = [];
+  // 통화 이력(상세 endpoint 안에 포함) + 계약 이력(phone 매칭) 병렬 fetch
+  let calls = [], sales = [], detail = c;
   try {
-    const [cR, sR] = await Promise.all([
-      fetchAuth(`/api/customer-db/${c.id}/calls?limit=10`).then(r => r.ok ? r.json() : { calls: [] }).catch(() => ({ calls: [] })),
-      fetchAuth(`/api/incentive/sales?phone=${encodeURIComponent(c.phone||'')}`).then(r => r.ok ? r.json() : { sales: [] }).catch(() => ({ sales: [] })),
+    const [dR, sR] = await Promise.all([
+      fetchAuth(`/api/customer-db/${c.id}`).then(r => r.ok ? r.json() : { call_logs: [] }).catch(() => ({ call_logs: [] })),
+      c.phone ? fetchAuth(`/api/incentive/sales?phone=${encodeURIComponent(c.phone)}`).then(r => r.ok ? r.json() : { sales: [] }).catch(() => ({ sales: [] })) : Promise.resolve({ sales: [] }),
     ]);
-    calls = cR.calls || cR.rows || [];
-    sales = sR.sales || sR.rows || [];
+    calls = dR.call_logs || [];
+    if (dR.customer) detail = dR.customer;
+    sales = sR.sales || [];
   } catch (e) {}
 
+  // 매출·페이백 합계
+  const totalPayback = sales.reduce((s,x) => s + (Number(x.payback_snapshot)||0), 0);
+  const totalMargin = sales.reduce((s,x) => s + (Number(x.margin_snapshot)||Number(x.net_margin)||0), 0);
+  const lastCall = calls[0]?.called_at?.slice(5,10) || '-';
+  const successCalls = calls.filter(c => ['converted','interested','callback'].includes(c.result)).length;
+  const rejectedCalls = calls.filter(c => c.result === 'rejected').length;
+  const dbName = detail.db_source?.name || '-';
+  const dbColor = detail.db_source?.color || '#475569';
+
   body.innerHTML = `
-    <div class="stat-row">
-      <div class="stat"><div class="v g-${c.quality_grade||'C'}" style="display:inline-block;padding:2px 8px;border-radius:5px">${c.quality_grade||'-'}</div><div class="l">등급</div></div>
-      <div class="stat"><div class="v">${esc(c.call_status||'-')}</div><div class="l">상태</div></div>
-      <div class="stat"><div class="v">${fmt(calls.length)}</div><div class="l">통화 이력</div></div>
-      <div class="stat"><div class="v">${fmt(sales.length)}</div><div class="l">계약 이력</div></div>
+    <!-- ⭐ 고객 360 stat 카드 (6개) -->
+    <div class="stat-row" style="grid-template-columns:repeat(6,1fr)">
+      <div class="stat"><div class="v g-${detail.quality_grade||'C'}" style="display:inline-block;padding:2px 8px;border-radius:5px">${detail.quality_grade||'-'}</div><div class="l">등급</div></div>
+      <div class="stat"><div class="v" style="font-size:13px">${esc(detail.call_status||'-')}</div><div class="l">상태</div></div>
+      <div class="stat"><div class="v">${fmt(calls.length)}</div><div class="l">총 콜</div></div>
+      <div class="stat"><div class="v" style="color:#fbbf24">${lastCall}</div><div class="l">마지막 콜</div></div>
+      <div class="stat"><div class="v" style="color:${totalPayback>0?'#22c55e':'#cbd5e1'};font-size:13px">${fmt(totalPayback)}원</div><div class="l">페이백 누계</div></div>
+      <div class="stat"><div class="v" style="color:${totalMargin>0?'#22c55e':'#cbd5e1'};font-size:13px">${fmt(totalMargin)}원</div><div class="l">마진 누계</div></div>
     </div>
 
+    <!-- ⭐ 콜백/재시도 알람 (있을 때만) -->
+    ${(detail.callback_at || detail.next_retry_at) ? `
+    <div class="detail-section" style="background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,191,36,0.05));border:1px solid #fbbf24;border-radius:8px;padding:8px 12px;margin-bottom:10px">
+      ${detail.callback_at ? `<div style="font-size:11.5px;color:#fcd34d">📅 <b>콜백 예정:</b> ${detail.callback_at.slice(0,16).replace('T',' ')}</div>` : ''}
+      ${detail.next_retry_at ? `<div style="font-size:11.5px;color:#fcd34d;margin-top:3px">⏰ <b>재시도:</b> ${detail.next_retry_at.slice(0,16).replace('T',' ')}</div>` : ''}
+    </div>` : ''}
+
     <div class="detail-section">
-      <h3>👤 기본 정보</h3>
+      <h3>👤 기본 정보 <span class="tag" style="background:${dbColor};color:#fff;margin-left:6px">${esc(dbName)}</span></h3>
       <dl class="detail-grid">
-        <dt>이름</dt><dd>${esc(c.name||'-')}</dd>
-        <dt>전화</dt><dd>${esc(c.phone||'-')}</dd>
-        <dt>등급</dt><dd>${esc(c.quality_grade||'-')}</dd>
-        <dt>콜 상태</dt><dd>${esc(c.call_status||'-')}</dd>
-        <dt>DB 출처</dt><dd>${esc(c.db_source?.name || c.db_source_id || '-')}</dd>
-        <dt>등록일</dt><dd>${(c.imported_at||c.created_at||'').slice(0,10)}</dd>
-        <dt>배정일</dt><dd>${(c.assigned_at||'').slice(0,10) || '-'}</dd>
-        <dt>담당</dt><dd>${esc(c.assigned_agent?.name || c.assigned_agent_id || '-')}</dd>
-        ${c.callback_at ? `<dt>콜백 예정</dt><dd>${c.callback_at.slice(0,16).replace('T',' ')}</dd>` : ''}
-        ${c.next_retry_at ? `<dt>재시도</dt><dd>${c.next_retry_at.slice(0,16).replace('T',' ')}</dd>` : ''}
+        <dt>이름</dt><dd>${esc(detail.name||'-')}</dd>
+        <dt>전화</dt><dd>${esc(detail.phone||'-')}</dd>
+        <dt>등급 · 상태</dt><dd>${esc(detail.quality_grade||'-')} · ${esc(detail.call_status||'-')}</dd>
+        <dt>등록일</dt><dd>${(detail.imported_at||detail.created_at||'').slice(0,10)}</dd>
+        <dt>배정일</dt><dd>${(detail.assigned_at||'').slice(0,10) || '-'}</dd>
+        <dt>담당 상담사</dt><dd>${esc(detail.assigned_agent?.name || detail.assigned_agent_id || '-')}</dd>
+        ${detail.priority_score != null ? `<dt>우선순위</dt><dd>${fmt(detail.priority_score)}</dd>` : ''}
+        ${detail.is_dnt ? `<dt>DNT</dt><dd style="color:#ef4444;font-weight:900">⚠ Do Not Call</dd>` : ''}
       </dl>
     </div>
 
+    <!-- ⭐ 통화 timeline -->
     <div class="detail-section">
-      <h3>📞 최근 통화 (${calls.length}건)</h3>
-      ${calls.length ? `<div style="display:flex;flex-direction:column;gap:4px">
-        ${calls.slice(0,5).map(call => `<div style="background:#0f172a;border:1px solid var(--line);border-radius:5px;padding:6px 9px;font-size:11px">
-          <div style="display:flex;justify-content:space-between"><b>${esc(call.result||call.status||'-')}</b><span style="color:var(--muted)">${(call.called_at||call.created_at||'').slice(5,16)}</span></div>
-          ${call.note ? `<div style="color:var(--muted);font-size:10.5px;margin-top:2px">${esc(call.note)}</div>` : ''}
-        </div>`).join('')}
+      <h3>📞 통화 이력 <span style="font-size:10px;color:var(--muted);font-weight:500">· ${calls.length}건 (성공 ${successCalls} · 거절 ${rejectedCalls})</span></h3>
+      ${calls.length ? `<div style="display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto">
+        ${calls.slice(0,10).map(call => {
+          const c2 = { converted:'#22c55e', interested:'#3b82f6', callback:'#fbbf24', no_answer:'#94a3b8', rejected:'#ef4444' }[call.result] || '#94a3b8';
+          return `<div style="background:#0f172a;border:1px solid var(--line);border-left:3px solid ${c2};border-radius:5px;padding:6px 9px;font-size:11px">
+            <div style="display:flex;justify-content:space-between">
+              <span><b style="color:${c2}">${esc(call.result||'-')}</b> ${call.agent?.name ? `<span style="color:var(--muted)">· ${esc(call.agent.name)}</span>` : ''}</span>
+              <span style="color:var(--muted);font-family:monospace;font-size:10.5px">${(call.called_at||'').slice(5,16).replace('T',' ')}</span>
+            </div>
+            ${call.notes ? `<div style="color:#cbd5e1;font-size:10.5px;margin-top:3px;line-height:1.4">${esc(call.notes)}</div>` : ''}
+            ${call.reject_reason ? `<div style="color:#fca5a5;font-size:10px;margin-top:2px">↳ ${esc(call.reject_reason)}</div>` : ''}
+            ${call.callback_at ? `<div style="color:#fbbf24;font-size:10px;margin-top:2px">📅 ${call.callback_at.slice(0,16).replace('T',' ')} 예정</div>` : ''}
+          </div>`;
+        }).join('')}
       </div>` : '<div class="empty" style="padding:14px">통화 이력 없음</div>'}
     </div>
 
+    <!-- ⭐ 계약 이력 (phone 매칭) + 합계 -->
     <div class="detail-section">
-      <h3>📋 계약 이력 (${sales.length}건)</h3>
+      <h3>📋 계약 이력 <span style="font-size:10px;color:var(--muted);font-weight:500">· ${sales.length}건 · 페이백 ${fmt(totalPayback)}원</span></h3>
       ${sales.length ? `<div style="display:flex;flex-direction:column;gap:4px">
-        ${sales.slice(0,5).map(s => {
+        ${sales.slice(0,10).map(s => {
           const p = s.product || {};
-          return `<div style="background:#0f172a;border:1px solid var(--line);border-radius:5px;padding:6px 9px;font-size:11px">
-            <div style="display:flex;justify-content:space-between"><b>${esc(p.carrier||'-')} ${esc(p.name||p.speed||'-')}</b><span style="color:${s.status==='completed'?'var(--green)':s.status==='cancelled'?'var(--red)':'var(--accent)'}">${esc(s.status||'-')}</span></div>
-            <div style="color:var(--muted);font-size:10.5px;margin-top:2px">${(s.contract_date||'').slice(0,10)} · 페이백 ${fmt(s.payback_snapshot)}원</div>
+          const sc = s.status==='completed'?'#22c55e':s.status==='cancelled'?'#ef4444':'#fbbf24';
+          return `<div style="background:#0f172a;border:1px solid var(--line);border-left:3px solid ${sc};border-radius:5px;padding:6px 9px;font-size:11px">
+            <div style="display:flex;justify-content:space-between">
+              <b>${esc(p.carrier||'-')} · ${esc(p.name || p.speed || '-')}</b>
+              <span style="color:${sc};font-weight:700">${esc(s.status||'-')}</span>
+            </div>
+            <div style="color:var(--muted);font-size:10.5px;margin-top:2px">
+              ${(s.contract_date||'').slice(0,10)} · 페이백 <b style="color:#fbbf24">${fmt(s.payback_snapshot)}원</b>
+              ${s.dealer?.name ? ` · ${esc(s.dealer.name)}` : ''}
+            </div>
           </div>`;
         }).join('')}
       </div>` : '<div class="empty" style="padding:14px">계약 이력 없음</div>'}

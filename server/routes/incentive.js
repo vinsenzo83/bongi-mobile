@@ -721,7 +721,28 @@ router.get('/sales', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { month, agent_id } = req.query;
+    const { month, agent_id, phone } = req.query;
+
+    let q = supabase
+      .from('incentive_sales')
+      .select('*, product:incentive_products(*), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)')
+      .is('deleted_at', null)
+      .order('contract_date', { ascending: false });
+
+    // ★ phone 지정 시: 고객 360 모드 — 전체 시간, agent 제한은 admin/manager만 해제
+    if (phone) {
+      // 010-1234-5678 / 01012345678 양식 모두 매칭 — 숫자만 추출 후 trailing 매칭
+      const digits = String(phone).replace(/[^0-9]/g, '');
+      if (digits.length < 4) return res.status(400).json({ error: 'phone 4자리 이상' });
+      q = q.or(`customer_phone.ilike.%${digits}%,customer_phone.ilike.%${phone}%`);
+      // agent는 본인 sales만 — admin/manager는 cross-agent 허용
+      if (!isManagerOrAdmin(me)) q = q.eq('agent_id', me.id);
+      const { data, error } = await q.limit(50);
+      if (error) throw error;
+      return res.json({ sales: data, count: data.length, phone });
+    }
+
+    // 기본 모드: month + agent
     const ym = month || new Date().toISOString().slice(0, 7);
     const [y, m] = ym.split('-');
     const monthStart = `${y}-${m}-01`;
@@ -729,29 +750,17 @@ router.get('/sales', authenticateJWT, async (req, res) => {
 
     let targetAgentId = me.id;
     if (agent_id && isManagerOrAdmin(me)) {
-      // 매니저는 본인 센터, 어드민은 모두
       if (me.role === 'manager') {
         const { data: target } = await supabase
-          .from('incentive_agents')
-          .select('center')
-          .eq('id', agent_id)
-          .single();
+          .from('incentive_agents').select('center').eq('id', agent_id).single();
         if (!target || target.center !== me.center) {
           return res.status(403).json({ error: '센터 외 상담사 조회 불가' });
         }
       }
       targetAgentId = agent_id;
     }
-
-    // soft delete 제외 — 기본은 deleted_at IS NULL만 (휴지통은 /contracts?trash=1만 노출)
-    const { data, error } = await supabase
-      .from('incentive_sales')
-      .select('*, product:incentive_products(*), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)')
-      .eq('agent_id', targetAgentId)
-      .gte('contract_date', monthStart)
-      .lte('contract_date', monthEnd)
-      .is('deleted_at', null)
-      .order('contract_date', { ascending: false });
+    q = q.eq('agent_id', targetAgentId).gte('contract_date', monthStart).lte('contract_date', monthEnd);
+    const { data, error } = await q;
     if (error) throw error;
     res.json({ sales: data, count: data.length, month: ym });
   } catch (err) {
