@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS rental_import_batches (
   upsert_updated      integer DEFAULT 0,
   marked_discontinued integer DEFAULT 0,
   status              text DEFAULT 'parsing'
-                      CHECK (status IN ('parsing','preview','committed','failed')),
+                      CHECK (status IN ('parsing','preview','committing','committed','failed')),
   imported_by         uuid,
   imported_at         timestamptz DEFAULT now()
 );
@@ -58,6 +58,7 @@ ALTER TABLE rental_product_options ADD COLUMN IF NOT EXISTS commission_method te
 -- P8 — 옵션 변형 차원 (청호 규정코드·쿠쿠 구분·SK매직 세부유형). 행 누락 0 보장 키.
 ALTER TABLE rental_product_options ADD COLUMN IF NOT EXISTS variant_code  text DEFAULT '';
 ALTER TABLE rental_product_options ADD COLUMN IF NOT EXISTS variant_label text;
+ALTER TABLE rental_product_options ADD COLUMN IF NOT EXISTS promo_type    text;  -- 빌리고 프로모션 텍스트 (옵션 단위)
 UPDATE rental_product_options SET variant_code = '' WHERE variant_code IS NULL;
 -- ⚠️ null-safe UNIQUE 인덱스(자연키)는 Phase 2 import commit 직전 생성:
 --   CREATE UNIQUE INDEX uq_rental_option_natural ON rental_product_options

@@ -31,6 +31,7 @@ ALTER TABLE rental_products DROP CONSTRAINT IF EXISTS rental_products_company_mo
 
 -- 4. rental_product_options 보강 컬럼 제거
 DROP INDEX IF EXISTS uq_rental_option_natural;
+ALTER TABLE rental_product_options DROP COLUMN IF EXISTS promo_type;
 ALTER TABLE rental_product_options DROP COLUMN IF EXISTS variant_label;
 ALTER TABLE rental_product_options DROP COLUMN IF EXISTS variant_code;
 ALTER TABLE rental_product_options DROP COLUMN IF EXISTS commission_method;
