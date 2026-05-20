@@ -970,7 +970,7 @@ router.post('/import/preview', authenticateJWT, billigoUpload.single('file'), as
       upsert_updated: 0,
       marked_discontinued: 0,
       status: 'preview',
-      imported_by: req.user?.email || 'unknown',
+      imported_by: req.user?.id || null,   // uuid 컬럼 — auth user id
       imported_at: new Date().toISOString(),
     };
     const { data: batch, error: bErr } = await supabase
