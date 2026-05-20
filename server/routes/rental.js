@@ -1,13 +1,29 @@
 // ═══════════════════════════════════════════════════════════════
-// 가전렌탈 라우트 — 카테고리·상품·옵션·정책·영업
+// 가전렌탈 라우트 — 카테고리·상품·옵션·정책·영업·빌리고 import
 // ═══════════════════════════════════════════════════════════════
 import { Router } from 'express';
+import os from 'os';
+import path from 'path';
+import fs from 'fs';
+import { randomUUID } from 'crypto';
+import multer from 'multer';
 import { supabase } from '../db/supabase.js';
 import { authenticateJWT, optionalAuth } from '../middleware/auth.js';
+import { parseBilligoRentalExcel } from '../services/billigo-rental-parser.js';
 
 const router = Router();
 const _isProd = process.env.NODE_ENV === 'production';
 const errMsg = (e) => _isProd ? '서버 오류 — 잠시 후 다시 시도하세요' : (e?.message || '서버 오류');
+
+// 빌리고 엑셀 업로드 — 메모리 저장 (xlsx 8천행은 메모리로 충분), .xlsx 한정 30MB
+const billigoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 30 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /\.xlsx$/i.test(file.originalname || '');
+    cb(ok ? null : new Error('xlsx 파일만 업로드 가능'), ok);
+  },
+});
 
 // notes HTML escape 누적 방지 — PATCH/POST 입력 시 디코드 (2026-05-18 버그 fix)
 // UI는 표시 시 한 번 escape하므로 server는 raw text로 저장한다.
@@ -758,6 +774,538 @@ router.get('/sales', authenticateJWT, async (req, res) => {
     if (error) throw error;
     res.json({ sales: data || [] });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 빌리고 엑셀 import (admin 전용) — PRD §5 워크플로
+//   POST /api/rental/import/preview  : 업로드·파싱·diff·batch 생성
+//   POST /api/rental/import/commit   : 캐시된 파싱결과를 DB 에 UPSERT 반영
+//
+// Phase 2 = 정수기 파일만 (file_type='정수기' 고정).
+//
+// ⚠️ 봉이 인센티브 컬럼(point_weight·point_weight_adj·tier·tier_calculated·
+//    margin·net_profit·is_premium·ticket_number·ticket_active)은 import 가
+//    절대 덮어쓰지 않는다 — UPSERT 시 빌리고 필드만 골라 갱신한다.
+// ═══════════════════════════════════════════════════════════════
+
+// ─── 파싱결과 메모리 캐시 (preview→commit 재사용, TTL 15분) ───
+const _importCache = new Map();   // batch_id → { parsed, year_month, filename, createdAt }
+const IMPORT_CACHE_TTL = 15 * 60 * 1000;
+
+function _pruneImportCache() {
+  const now = Date.now();
+  for (const [k, v] of _importCache.entries()) {
+    if (now - v.createdAt > IMPORT_CACHE_TTL) _importCache.delete(k);
+  }
+}
+
+// 봉이 정수기계열 카테고리 — 기존 DB diff/단종 마킹 대상 범위 한정
+const PURIFIER_CATEGORY_SLUGS = ['water-purifier', 'ice-purifier', 'hotcold-purifier'];
+
+// 옵션 자연키 정규화 헬퍼 — 파서 naturalKey(withVariant=true) 와 동일 규칙으로
+// 기존 DB 행의 키를 만든다 (company_name 대신 product_id 기준).
+function optionDbKey(productId, o) {
+  const care = o.care_service ?? '';
+  const insp = o.inspection_cycle == null ? -1 : o.inspection_cycle;
+  const own = o.ownership_months == null ? -1 : o.ownership_months;
+  const variant = o.variant_code ?? '';
+  return [productId, o.months, care, insp, own, variant].join('|');
+}
+
+// admin 가드 — rental import 는 admin 전용
+function requireAdmin(req, res) {
+  if (req.user?.role !== 'admin') {
+    res.status(403).json({ error: 'admin 전용' });
+    return false;
+  }
+  return true;
+}
+
+// Supabase chunk UPSERT — 8천행 규모는 500건씩 끊어 실행
+async function chunkedUpsert(table, rows, options) {
+  const SIZE = 500;
+  const out = [];
+  for (let i = 0; i < rows.length; i += SIZE) {
+    const slice = rows.slice(i, i + SIZE);
+    const { data, error } = await supabase
+      .from(table)
+      .upsert(slice, options)
+      .select(options?.selectCols || '*');
+    if (error) throw error;
+    if (data) out.push(...data);
+  }
+  return out;
+}
+
+// ─── POST /api/rental/import/preview ───
+router.post('/import/preview', authenticateJWT, billigoUpload.single('file'), async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  let tmpPath = null;
+  try {
+    if (!req.file) return res.status(400).json({ error: '파일 첨부 필수 (.xlsx)' });
+    const yearMonth = String(req.body.year_month || '').trim();
+    if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
+      return res.status(400).json({ error: 'year_month 형식 오류 (예: 2026-05)' });
+    }
+    const fileType = '정수기';   // Phase 2 — 정수기 고정
+
+    // 임시 파일 저장 후 파서 호출 (파서는 경로/Buffer 모두 지원하나 경로 우선)
+    tmpPath = path.join(os.tmpdir(), `billigo-${randomUUID()}.xlsx`);
+    fs.writeFileSync(tmpPath, req.file.buffer);
+
+    let parsed;
+    try {
+      parsed = parseBilligoRentalExcel(tmpPath);
+    } catch (e) {
+      return res.status(400).json({ error: '엑셀 파싱 실패' + (_isProd ? '' : ': ' + (e?.message || '')) });
+    }
+
+    const { companies, products, options, keyCollisions, warnings } = parsed;
+    const sheetNames = parsed.bySheet ? Object.keys(parsed.bySheet) : [];
+
+    // ── 기존 DB 정수기계열 상품·옵션 로드 (company 매칭용) ──
+    // 1) rental_companies — name → id
+    const { data: dbCompanies, error: cErr } = await supabase
+      .from('rental_companies')
+      .select('id, name');
+    if (cErr) throw cErr;
+    const companyIdByName = new Map((dbCompanies || []).map((c) => [c.name, c.id]));
+
+    // 2) 정수기계열 카테고리 id 집합
+    const { data: catRows, error: catErr } = await supabase
+      .from('rental_categories')
+      .select('id, slug')
+      .in('slug', PURIFIER_CATEGORY_SLUGS);
+    if (catErr) throw catErr;
+    const purifierCatIds = new Set((catRows || []).map((c) => c.id));
+
+    // 3) 기존 정수기계열 상품 — company_id + model 매칭키
+    //    company_id 가 있으면 company 매칭, 없으면 category 로 범위 한정.
+    const { data: dbProducts, error: pErr } = await supabase
+      .from('rental_products')
+      .select('id, company_id, model, name, manufacturer, model_key, category_id, billigo_status, brand');
+    if (pErr) throw pErr;
+    // 정수기계열만 — company 가 정수기메이커 그룹이거나 category 가 정수기계열
+    const purifierCompanyIds = new Set(
+      (dbCompanies || [])
+        .filter((c) => companies.some((pc) => pc.name === c.name))
+        .map((c) => c.id),
+    );
+    const existingProducts = (dbProducts || []).filter(
+      (p) => (p.company_id && purifierCompanyIds.has(p.company_id))
+          || (p.category_id && purifierCatIds.has(p.category_id)),
+    );
+    const productByKey = new Map();   // `${company_id}|${model}` → product row
+    for (const p of existingProducts) {
+      if (p.company_id) productByKey.set(`${p.company_id}|${p.model}`, p);
+    }
+
+    // 4) 기존 옵션 (위 정수기계열 상품의 옵션) — 자연키 매칭용
+    const existingProductIds = existingProducts.map((p) => p.id);
+    let dbOptions = [];
+    if (existingProductIds.length) {
+      for (let i = 0; i < existingProductIds.length; i += 200) {
+        const slice = existingProductIds.slice(i, i + 200);
+        const { data, error } = await supabase
+          .from('rental_product_options')
+          .select('id, product_id, months, care_service, inspection_cycle, ownership_months, variant_code')
+          .in('product_id', slice);
+        if (error) throw error;
+        if (data) dbOptions.push(...data);
+      }
+    }
+    const optionKeySet = new Set(dbOptions.map((o) => optionDbKey(o.product_id, o)));
+
+    // ── diff 계산 ──
+    // 상품: 파서 product 의 company 를 DB company_id 로 환산 후 (company_id|model) 매칭
+    let productsNew = 0, productsUpdated = 0;
+    const parsedProductKeys = new Set();
+    for (const p of products) {
+      const cid = companyIdByName.get(p.company_name);
+      if (cid != null) {
+        const key = `${cid}|${p.model}`;
+        parsedProductKeys.add(key);
+        if (productByKey.has(key)) productsUpdated++;
+        else productsNew++;
+      } else {
+        // company 가 아직 DB 에 없으면 전부 신규
+        productsNew++;
+      }
+    }
+    // 단종: 기존 정수기 상품 중 이번 파싱에 없는 것
+    let productsDiscontinued = 0;
+    for (const p of existingProducts) {
+      if (p.company_id) {
+        const key = `${p.company_id}|${p.model}`;
+        if (!parsedProductKeys.has(key)) productsDiscontinued++;
+      }
+    }
+
+    // 옵션: 자연키 매칭. product_id 를 모르는 신규 상품 옵션은 모두 신규.
+    let optionsNew = 0, optionsUpdated = 0;
+    for (const o of options) {
+      const cid = companyIdByName.get(o.company_name);
+      const prod = cid != null ? productByKey.get(`${cid}|${o.model}`) : null;
+      if (!prod) { optionsNew++; continue; }
+      const key = optionDbKey(prod.id, o);
+      if (optionKeySet.has(key)) optionsUpdated++;
+      else optionsNew++;
+    }
+
+    // ── rental_import_batches INSERT (status='preview') ──
+    const batchInsert = {
+      year_month: yearMonth,
+      file_type: fileType,
+      source_filename: req.file.originalname || 'billigo.xlsx',
+      sheet_count: sheetNames.length,
+      row_count: options.length,
+      upsert_new: 0,
+      upsert_updated: 0,
+      marked_discontinued: 0,
+      status: 'preview',
+      imported_by: req.user?.email || 'unknown',
+      imported_at: new Date().toISOString(),
+    };
+    const { data: batch, error: bErr } = await supabase
+      .from('rental_import_batches')
+      .insert(batchInsert)
+      .select()
+      .single();
+    if (bErr) throw bErr;
+
+    // ── 파싱결과 메모리 캐시 (commit 때 재사용) ──
+    _pruneImportCache();
+    _importCache.set(batch.id, {
+      parsed,
+      year_month: yearMonth,
+      file_type: fileType,
+      filename: batchInsert.source_filename,
+      createdAt: Date.now(),
+    });
+
+    res.json({
+      batch_id: batch.id,
+      summary: {
+        companies: companies.length,
+        products_new: productsNew,
+        products_updated: productsUpdated,
+        products_discontinued: productsDiscontinued,
+        options_total: options.length,
+        options_new: optionsNew,
+        options_updated: optionsUpdated,
+      },
+      sample: options.slice(0, 20),
+      warnings: warnings || null,
+      key_collisions: keyCollisions ?? 0,
+    });
+  } catch (e) {
+    res.status(500).json({ error: errMsg(e) });
+  } finally {
+    if (tmpPath) { try { fs.unlinkSync(tmpPath); } catch { /* noop */ } }
+  }
+});
+
+// ─── POST /api/rental/import/commit ───
+router.post('/import/commit', authenticateJWT, async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const { batch_id } = req.body || {};
+  if (!batch_id) return res.status(400).json({ error: 'batch_id 필수' });
+
+  _pruneImportCache();
+  const cached = _importCache.get(batch_id);
+  if (!cached) {
+    return res.status(410).json({ error: '파싱 캐시 만료 — 엑셀을 다시 업로드(preview)하세요' });
+  }
+
+  try {
+    const { parsed } = cached;
+    const { companies, products, options } = parsed;
+
+    // ─── 1. rental_companies UPSERT (name 기준) ───
+    // 기존 행은 그대로 두고, 없는 회사만 INSERT (commission 설정은 별도 화면에서 편집).
+    const { data: dbCompanies0, error: c0Err } = await supabase
+      .from('rental_companies')
+      .select('id, name');
+    if (c0Err) throw c0Err;
+    const companyIdByName = new Map((dbCompanies0 || []).map((c) => [c.name, c.id]));
+    const newCompanies = companies
+      .filter((c) => !companyIdByName.has(c.name))
+      .map((c) => ({
+        name: c.name,
+        category_group: c.category_group || '정수기메이커',
+        is_active: true,
+      }));
+    if (newCompanies.length) {
+      const inserted = await chunkedUpsert('rental_companies', newCompanies, {
+        onConflict: 'name',
+        ignoreDuplicates: false,
+        selectCols: 'id, name',
+      });
+      for (const c of inserted) companyIdByName.set(c.name, c.id);
+    }
+
+    // ─── 카테고리 slug → id 매핑 ───
+    const { data: allCats, error: catErr } = await supabase
+      .from('rental_categories')
+      .select('id, slug');
+    if (catErr) throw catErr;
+    const catIdBySlug = new Map((allCats || []).map((c) => [c.slug, c.id]));
+
+    // ─── 2. rental_products UPSERT — 매칭키 (company_id, model) ───
+    const { data: dbProducts, error: pErr } = await supabase
+      .from('rental_products')
+      .select('id, company_id, model, category_id, billigo_status');
+    if (pErr) throw pErr;
+    const productRowByKey = new Map();   // `${company_id}|${model}` → row
+    for (const p of dbProducts || []) {
+      if (p.company_id != null) productRowByKey.set(`${p.company_id}|${p.model}`, p);
+    }
+
+    let prodNew = 0, prodUpdated = 0;
+    const productInserts = [];
+    const productUpdates = [];
+    // 파서 products 를 (company_id|model) 로 dedup — 같은 키 중복 방지
+    const seenProductKey = new Set();
+    for (const p of products) {
+      const cid = companyIdByName.get(p.company_name);
+      if (cid == null) continue;   // company 매핑 실패분은 skip (warnings 로 노출됨)
+      const key = `${cid}|${p.model}`;
+      if (seenProductKey.has(key)) continue;
+      seenProductKey.add(key);
+      const categoryId = p.category_slug ? (catIdBySlug.get(p.category_slug) ?? null) : null;
+      const existing = productRowByKey.get(key);
+      if (existing) {
+        // 기존 행 — 빌리고 필드만 UPDATE. 봉이 인센티브 컬럼은 건드리지 않음.
+        productUpdates.push({
+          id: existing.id,
+          name: p.name,
+          manufacturer: p.manufacturer ?? null,
+          model_key: p.model_key ?? null,
+          company_id: cid,
+          category_id: categoryId,
+          source_batch_id: batch_id,
+          billigo_status: existing.billigo_status === '신규' ? '신규' : '변경',
+          brand: p.company_name,
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        });
+      } else {
+        productInserts.push({
+          company_id: cid,
+          model: p.model,
+          name: p.name,
+          brand: p.company_name,
+          manufacturer: p.manufacturer ?? null,
+          model_key: p.model_key ?? null,
+          category_id: categoryId,
+          source_batch_id: batch_id,
+          billigo_status: '신규',
+          is_active: true,
+        });
+      }
+    }
+
+    // 신규 상품 INSERT (chunk)
+    const insertedProducts = productInserts.length
+      ? await chunkedUpsert('rental_products', productInserts, {
+          onConflict: 'company_id,model',
+          ignoreDuplicates: false,
+          selectCols: 'id, company_id, model',
+        })
+      : [];
+    prodNew = insertedProducts.length;
+    for (const p of insertedProducts) {
+      productRowByKey.set(`${p.company_id}|${p.model}`, p);
+    }
+
+    // 기존 상품 UPDATE — 빌리고 필드만 (개별 update, 봉이 컬럼 보존)
+    for (const u of productUpdates) {
+      const { id, ...fields } = u;
+      const { error } = await supabase.from('rental_products').update(fields).eq('id', id);
+      if (error) throw error;
+      prodUpdated++;
+    }
+
+    // ─── 3. rental_product_options UPSERT — 7튜플 자연키 ───
+    // 매칭키: (product_id, months, care_service, inspection_cycle, ownership_months, variant_code)
+    // product_id 는 위 productRowByKey 로 환산.
+    const allProductIds = new Set();
+    for (const p of productRowByKey.values()) allProductIds.add(p.id);
+
+    // 이번 import 상품들의 기존 옵션 로드
+    const productIdList = [...allProductIds];
+    const dbOptions = [];
+    for (let i = 0; i < productIdList.length; i += 200) {
+      const slice = productIdList.slice(i, i + 200);
+      const { data, error } = await supabase
+        .from('rental_product_options')
+        .select('id, product_id, months, care_service, inspection_cycle, ownership_months, variant_code, is_active')
+        .in('product_id', slice);
+      if (error) throw error;
+      if (data) dbOptions.push(...data);
+    }
+    const optionRowByKey = new Map();   // optionDbKey → row
+    for (const o of dbOptions) optionRowByKey.set(optionDbKey(o.product_id, o), o);
+
+    let optNew = 0, optUpdated = 0;
+    const optionInserts = [];
+    const optionUpdates = [];
+    const touchedOptionKeys = new Set();
+    for (const o of options) {
+      const cid = companyIdByName.get(o.company_name);
+      if (cid == null) continue;
+      const prod = productRowByKey.get(`${cid}|${o.model}`);
+      if (!prod) continue;   // 상품 매핑 실패분 skip
+      const variant = o.variant_code ?? '';
+      const key = optionDbKey(prod.id, { ...o, variant_code: variant });
+      touchedOptionKeys.add(key);
+      const existing = optionRowByKey.get(key);
+      // 빌리고 필드 — 봉이 인센티브 컬럼(point_weight·tier·margin 등)은 제외
+      const billigoFields = {
+        monthly_fee: o.monthly_fee ?? null,
+        rebate: o.rebate ?? null,
+        rebate_otherco: o.rebate_otherco ?? null,
+        rebate_half: o.rebate_half ?? null,
+        half_fee: o.half_fee ?? null,
+        half_period: o.half_period ?? null,
+        variant_label: o.variant_label ?? '',
+        promo_type: o.promo_type ?? null,
+        commission_method: o.commission_method || 'direct',
+        source_batch_id: batch_id,
+      };
+      if (existing) {
+        optionUpdates.push({ id: existing.id, ...billigoFields, is_active: true, updated_at: new Date().toISOString() });
+      } else {
+        optionInserts.push({
+          product_id: prod.id,
+          months: o.months,
+          care_service: o.care_service ?? null,
+          inspection_cycle: o.inspection_cycle ?? null,
+          ownership_months: o.ownership_months ?? null,
+          variant_code: variant,
+          ...billigoFields,
+          is_active: true,
+        });
+      }
+    }
+
+    // 신규 옵션 INSERT (chunk) — UNIQUE 제약은 PK뿐이므로 plain insert
+    if (optionInserts.length) {
+      for (let i = 0; i < optionInserts.length; i += 500) {
+        const slice = optionInserts.slice(i, i + 500);
+        const { error } = await supabase.from('rental_product_options').insert(slice);
+        if (error) throw error;
+      }
+      optNew = optionInserts.length;
+    }
+    // 기존 옵션 UPDATE — 빌리고 필드만 (봉이 컬럼 보존, 개별 update)
+    for (const u of optionUpdates) {
+      const { id, ...fields } = u;
+      const { error } = await supabase.from('rental_product_options').update(fields).eq('id', id);
+      if (error) throw error;
+      optUpdated++;
+    }
+
+    // ─── 4. 이번 batch 에 없는 기존 정수기 옵션/상품 → 단종 마킹 ───
+    // 옵션: 이번 import 상품들의 기존 옵션 중 touchedOptionKeys 에 없는 것
+    let discontinuedOptions = 0;
+    const discOptionIds = [];
+    for (const o of dbOptions) {
+      const key = optionDbKey(o.product_id, o);
+      if (!touchedOptionKeys.has(key)) discOptionIds.push(o.id);
+    }
+    for (let i = 0; i < discOptionIds.length; i += 500) {
+      const slice = discOptionIds.slice(i, i + 500);
+      const { error } = await supabase
+        .from('rental_product_options')
+        .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
+        .in('id', slice);
+      if (error) throw error;
+      discontinuedOptions += slice.length;
+    }
+
+    // 상품: 정수기메이커 회사 소속 상품 중 이번 import 에 없는 것
+    const importedProductKeys = new Set();
+    for (const o of options) {
+      const cid = companyIdByName.get(o.company_name);
+      if (cid != null) importedProductKeys.add(`${cid}|${o.model}`);
+    }
+    for (const p of products) {
+      const cid = companyIdByName.get(p.company_name);
+      if (cid != null) importedProductKeys.add(`${cid}|${p.model}`);
+    }
+    const billigoCompanyIds = new Set(
+      companies.map((c) => companyIdByName.get(c.name)).filter((x) => x != null),
+    );
+    let discontinuedProducts = 0;
+    const discProductIds = [];
+    for (const p of dbProducts || []) {
+      if (p.company_id == null || !billigoCompanyIds.has(p.company_id)) continue;
+      const key = `${p.company_id}|${p.model}`;
+      if (!importedProductKeys.has(key) && p.billigo_status !== '단종') {
+        discProductIds.push(p.id);
+      }
+    }
+    for (let i = 0; i < discProductIds.length; i += 500) {
+      const slice = discProductIds.slice(i, i + 500);
+      const { error } = await supabase
+        .from('rental_products')
+        .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
+        .in('id', slice);
+      if (error) throw error;
+      discontinuedProducts += slice.length;
+    }
+    // 단종 상품의 옵션도 함께 단종 마킹 (rental_sales 참조분도 삭제 X — 마킹만)
+    for (let i = 0; i < discProductIds.length; i += 200) {
+      const slice = discProductIds.slice(i, i + 200);
+      const { error } = await supabase
+        .from('rental_product_options')
+        .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
+        .in('product_id', slice);
+      if (error) throw error;
+    }
+
+    // ─── 5. rental_import_batches status='committed' ───
+    const { error: bUpdErr } = await supabase
+      .from('rental_import_batches')
+      .update({
+        status: 'committed',
+        upsert_new: prodNew + optNew,
+        upsert_updated: prodUpdated + optUpdated,
+        marked_discontinued: discontinuedProducts + discontinuedOptions,
+      })
+      .eq('id', batch_id);
+    if (bUpdErr) throw bUpdErr;
+
+    // commit 성공 — 캐시 해제
+    _importCache.delete(batch_id);
+
+    res.json({
+      ok: true,
+      batch_id,
+      applied: {
+        new: prodNew + optNew,
+        updated: prodUpdated + optUpdated,
+        discontinued: discontinuedProducts + discontinuedOptions,
+      },
+      detail: {
+        products_new: prodNew,
+        products_updated: prodUpdated,
+        products_discontinued: discontinuedProducts,
+        options_new: optNew,
+        options_updated: optUpdated,
+        options_discontinued: discontinuedOptions,
+      },
+    });
+  } catch (e) {
+    // 실패 시 batch status='failed' 기록
+    try {
+      await supabase.from('rental_import_batches')
+        .update({ status: 'failed' })
+        .eq('id', batch_id);
+    } catch { /* noop */ }
+    res.status(500).json({ error: errMsg(e) });
+  }
 });
 
 export default router;
