@@ -420,11 +420,13 @@ async function fetchAgent() {
     _rentalInited = true;
     try {
       const [cs, pol, bps] = await Promise.all([
-        fetch(RP_API + '/categories').then(r => r.json()),
+        fetch(RP_API + '/categories?include_inactive=1').then(r => r.json()),
         fetch(RP_API + '/policy').then(r => r.json()),
         fetch(RP_API + '/brand-policies').then(r => r.json()),
       ]);
-      _cats = cs.categories || [];
+      // 카테고리 필터 — 상품(product_count>0) 있는 카테고리만 노출
+      _cats = (cs.categories || []).filter(c => (c.product_count || 0) > 0);
+      if (!_cats.length) _cats = cs.categories || [];  // 데이터 0이면 전체 노출 (fallback)
       _policy = pol.policy;
       _brandPolicies = bps.brand_policies || [];
 

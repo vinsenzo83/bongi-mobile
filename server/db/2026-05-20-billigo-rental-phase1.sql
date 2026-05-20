@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS rental_import_batches (
   marked_discontinued integer DEFAULT 0,
   status              text DEFAULT 'parsing'
                       CHECK (status IN ('parsing','preview','committing','committed','failed')),
+  error_message       text,                            -- commit 실패 시 에러 메시지·스택 (디버깅)
   imported_by         uuid,
   imported_at         timestamptz DEFAULT now()
 );
@@ -59,6 +60,12 @@ ALTER TABLE rental_product_options ADD COLUMN IF NOT EXISTS commission_method te
 ALTER TABLE rental_product_options ADD COLUMN IF NOT EXISTS variant_code  text DEFAULT '';
 ALTER TABLE rental_product_options ADD COLUMN IF NOT EXISTS variant_label text;
 ALTER TABLE rental_product_options ADD COLUMN IF NOT EXISTS promo_type    text;  -- 빌리고 프로모션 텍스트 (옵션 단위)
+-- 빌리고 수수료는 VAT 곱해 소수 발생 (535610.88) → integer→numeric. care_service·rebate NOT NULL 해제.
+ALTER TABLE rental_product_options ALTER COLUMN rebate         TYPE numeric;
+ALTER TABLE rental_product_options ALTER COLUMN rebate_otherco TYPE numeric;
+ALTER TABLE rental_product_options ALTER COLUMN rebate_half    TYPE numeric;
+ALTER TABLE rental_product_options ALTER COLUMN care_service   DROP NOT NULL;
+ALTER TABLE rental_product_options ALTER COLUMN rebate         DROP NOT NULL;
 UPDATE rental_product_options SET variant_code = '' WHERE variant_code IS NULL;
 -- ⚠️ null-safe UNIQUE 인덱스(자연키)는 Phase 2 import commit 직전 생성:
 --   CREATE UNIQUE INDEX uq_rental_option_natural ON rental_product_options

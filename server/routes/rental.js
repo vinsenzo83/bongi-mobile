@@ -50,15 +50,23 @@ function normalizeNotes(s) {
 }
 
 // ─── 카테고리 ───
+// ?include_inactive=1 — 어드민 상품관리용 (비활성 카테고리도 포함). 기본은 활성만.
+// 각 카테고리에 product_count 포함 — 어드민 필터가 데이터 있는 카테고리만 노출하도록.
 router.get('/categories', optionalAuth, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    let q = supabase
       .from('rental_categories')
-      .select('*')
-      .eq('is_active', true)
+      .select('*, rental_products(count)')
       .order('sort_order', { ascending: true });
+    if (req.query.include_inactive !== '1') q = q.eq('is_active', true);
+    const { data, error } = await q;
     if (error) throw error;
-    res.json({ categories: data || [] });
+    const categories = (data || []).map(c => {
+      const product_count = c.rental_products?.[0]?.count || 0;
+      delete c.rental_products;
+      return { ...c, product_count };
+    });
+    res.json({ categories });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
@@ -812,6 +820,18 @@ function optionDbKey(productId, o) {
   return [productId, o.months, care, insp, own, variant].join('|');
 }
 
+// ⚠️ 정수 컬럼 강제 변환 — 파서 toNum() 은 소수점 2자리(Math.round(v*100)/100)를
+//   반환하므로, monthly_fee·half_fee·inspection_cycle·ownership_months·half_period·
+//   months 같은 integer 컬럼에 소수가 들어가면 postgres 가
+//   "invalid input syntax for type integer" 로 INSERT 청크 전체를 거부한다.
+//   → 정수 컬럼은 반드시 반올림 정수로 강제한다. null/NaN 은 null 유지.
+function toInt(v) {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n);
+}
+
 // admin 가드 — rental import 는 admin 전용
 // incentive role 은 JWT 가 아니라 incentive_agents 테이블에 있다 (rental.js 기존 패턴)
 async function requireAdmin(req, res) {
@@ -828,18 +848,27 @@ async function requireAdmin(req, res) {
   return true;
 }
 
-// Supabase chunk UPSERT — 8천행 규모는 500건씩 끊어 실행
+// Supabase chunk UPSERT — 8천행 규모는 200건씩 끊어 실행.
+// 청크별 try/catch 로 어느 청크·행에서 실패했는지 에러 메시지에 박제한다.
 async function chunkedUpsert(table, rows, options) {
-  const SIZE = 500;
+  const SIZE = options?.chunkSize || 200;
   const out = [];
   for (let i = 0; i < rows.length; i += SIZE) {
     const slice = rows.slice(i, i + SIZE);
-    const { data, error } = await supabase
-      .from(table)
-      .upsert(slice, options)
-      .select(options?.selectCols || '*');
-    if (error) throw error;
-    if (data) out.push(...data);
+    const chunkNo = Math.floor(i / SIZE) + 1;
+    try {
+      const { data, error } = await supabase
+        .from(table)
+        .upsert(slice, options)
+        .select(options?.selectCols || '*');
+      if (error) throw error;
+      if (data) out.push(...data);
+    } catch (e) {
+      const msg = e?.message || String(e);
+      throw new Error(
+        `[chunkedUpsert ${table}] chunk#${chunkNo} (rows ${i}~${i + slice.length - 1}) 실패: ${msg}`,
+      );
+    }
   }
   return out;
 }
@@ -1063,18 +1092,19 @@ async function runImportCommit(batch_id, parsed) {
   // ⚠️ upsert 행에는 빌리고 필드만 담는다 — 봉이 인센티브 컬럼
   //    (point_weight·tier·margin·net_profit·is_premium·ticket_number·ticket_active)은
   //    행 객체에 포함하지 않으므로 upsert 가 해당 컬럼은 SET 하지 않아 기존값 보존.
-  const productRows = [];
-  const seenProductKey = new Set();
+  //
+  // ★ (company_id, model) DEDUP 필수 — 파서가 쿠쿠 침대세트류(CP-AJS801SW 등 6개)를
+  //    같은 (company, model) 로 2번 만든다. 중복 행 2건이 같은 upsert 청크에 들어가면
+  //    postgres 가 "ON CONFLICT DO UPDATE command cannot affect row a second time" 로
+  //    청크 전체를 거부한다 → upsert 전에 반드시 키 단위로 dedup (뒤 행 우선).
+  const productRowMap = new Map();   // `${cid}|${model}` → upsert row (last-wins)
   for (const p of products) {
     const cid = companyIdByName.get(p.company_name);
     if (cid == null) continue;   // company 매핑 실패분은 skip (warnings 로 노출됨)
     const key = `${cid}|${p.model}`;
-    if (seenProductKey.has(key)) continue;
-    seenProductKey.add(key);
     const categoryId = p.category_slug ? (catIdBySlug.get(p.category_slug) ?? null) : null;
     const existing = productRowByKey.get(key);
-    if (existing) prodUpdated++; else prodNew++;
-    productRows.push({
+    productRowMap.set(key, {
       company_id: cid,
       model: p.model,
       name: p.name,
@@ -1090,6 +1120,11 @@ async function runImportCommit(batch_id, parsed) {
       updated_at: new Date().toISOString(),
     });
   }
+  // dedup 후 카운트 (키 단위 = 실제 상품 수)
+  for (const key of productRowMap.keys()) {
+    if (productRowByKey.has(key)) prodUpdated++; else prodNew++;
+  }
+  const productRows = [...productRowMap.values()];
 
   // 전체 상품 UPSERT (chunk) — onConflict (company_id, model)
   const upsertedProducts = productRows.length
@@ -1129,8 +1164,8 @@ async function runImportCommit(batch_id, parsed) {
   for (const o of dbOptions) optionRowByKey.set(optionDbKey(o.product_id, o), o);
 
   let optNew = 0, optUpdated = 0;
-  const optionInserts = [];
-  const optionUpdates = [];
+  let optionInserts = [];
+  let optionUpdates = [];
   const touchedOptionKeys = new Set();
   for (const o of options) {
     const cid = companyIdByName.get(o.company_name);
@@ -1141,14 +1176,16 @@ async function runImportCommit(batch_id, parsed) {
     const key = optionDbKey(prod.id, { ...o, variant_code: variant });
     touchedOptionKeys.add(key);
     const existing = optionRowByKey.get(key);
-    // 빌리고 필드 — 봉이 인센티브 컬럼(point_weight·tier·margin 등)은 제외
+    // 빌리고 필드 — 봉이 인센티브 컬럼(point_weight·tier·margin 등)은 제외.
+    // ⚠️ monthly_fee·half_fee 는 integer 컬럼 → toInt() 로 강제 (소수 INSERT 거부 방지).
+    //    rebate 3종은 numeric 컬럼이라 소수 허용 → 변환 안 함.
     const billigoFields = {
-      monthly_fee: o.monthly_fee ?? null,
+      monthly_fee: toInt(o.monthly_fee),
       rebate: o.rebate ?? null,
       rebate_otherco: o.rebate_otherco ?? null,
       rebate_half: o.rebate_half ?? null,
-      half_fee: o.half_fee ?? null,
-      half_period: o.half_period ?? null,
+      half_fee: toInt(o.half_fee),
+      half_period: toInt(o.half_period),
       variant_label: o.variant_label ?? '',
       promo_type: o.promo_type ?? null,
       commission_method: o.commission_method || 'direct',
@@ -1159,10 +1196,11 @@ async function runImportCommit(batch_id, parsed) {
     } else {
       optionInserts.push({
         product_id: prod.id,
-        months: o.months,
+        // ⚠️ months 는 integer NOT NULL, inspection_cycle·ownership_months 는 integer
+        months: toInt(o.months),
         care_service: o.care_service ?? null,
-        inspection_cycle: o.inspection_cycle ?? null,
-        ownership_months: o.ownership_months ?? null,
+        inspection_cycle: toInt(o.inspection_cycle),
+        ownership_months: toInt(o.ownership_months),
         variant_code: variant,
         ...billigoFields,
         is_active: true,
@@ -1170,24 +1208,45 @@ async function runImportCommit(batch_id, parsed) {
     }
   }
 
-  // 신규 옵션 INSERT (chunk) — 7튜플 UNIQUE 인덱스가 없어 plain insert.
+  // 신규 옵션 INSERT — 7튜플 UNIQUE 인덱스가 없어 plain insert.
+  // 청크 200건, 청크별 try/catch 로 실패 위치를 에러 메시지에 박제.
   // 첫 적재라 보통 전부 신규 (기존 빌리고 옵션 0건).
   if (optionInserts.length) {
-    for (let i = 0; i < optionInserts.length; i += 500) {
-      const slice = optionInserts.slice(i, i + 500);
-      const { error } = await supabase.from('rental_product_options').insert(slice);
-      if (error) throw error;
+    const OPT_CHUNK = 200;
+    for (let i = 0; i < optionInserts.length; i += OPT_CHUNK) {
+      const slice = optionInserts.slice(i, i + OPT_CHUNK);
+      const chunkNo = Math.floor(i / OPT_CHUNK) + 1;
+      try {
+        const { error } = await supabase.from('rental_product_options').insert(slice);
+        if (error) throw error;
+      } catch (e) {
+        const msg = e?.message || String(e);
+        // 청크 내 어느 행이 문제인지 — 첫 행 키를 함께 남긴다
+        const first = slice[0] || {};
+        throw new Error(
+          `[options INSERT] chunk#${chunkNo} (rows ${i}~${i + slice.length - 1}, `
+          + `첫행 product_id=${first.product_id} months=${first.months}) 실패: ${msg}`,
+        );
+      }
+      optNew += slice.length;
     }
-    optNew = optionInserts.length;
   }
+  optionInserts = null;   // 메모리 해제 — 8천행 배열 참조 끊기
+
   // 기존 옵션 UPDATE — 빌리고 필드만 (봉이 컬럼 보존, 개별 update).
   // 매칭 0건이면 이 루프는 돌지 않음 (첫 적재 = 전부 INSERT).
   for (const u of optionUpdates) {
     const { id, ...fields } = u;
-    const { error } = await supabase.from('rental_product_options').update(fields).eq('id', id);
-    if (error) throw error;
+    try {
+      const { error } = await supabase.from('rental_product_options').update(fields).eq('id', id);
+      if (error) throw error;
+    } catch (e) {
+      throw new Error(`[options UPDATE] id=${id} 실패: ${e?.message || String(e)}`);
+    }
     optUpdated++;
   }
+  optionUpdates = null;   // 메모리 해제
+
   // 진행도 2단계 — 옵션 반영 완료
   await supabase.from('rental_import_batches')
     .update({ upsert_new: prodNew + optNew, upsert_updated: prodUpdated + optUpdated })
@@ -1201,13 +1260,13 @@ async function runImportCommit(batch_id, parsed) {
     const key = optionDbKey(o.product_id, o);
     if (!touchedOptionKeys.has(key)) discOptionIds.push(o.id);
   }
-  for (let i = 0; i < discOptionIds.length; i += 500) {
-    const slice = discOptionIds.slice(i, i + 500);
+  for (let i = 0; i < discOptionIds.length; i += 200) {
+    const slice = discOptionIds.slice(i, i + 200);
     const { error } = await supabase
       .from('rental_product_options')
       .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
       .in('id', slice);
-    if (error) throw error;
+    if (error) throw new Error(`[options 단종마킹] rows ${i}~ 실패: ${error.message}`);
     discontinuedOptions += slice.length;
   }
 
@@ -1233,13 +1292,13 @@ async function runImportCommit(batch_id, parsed) {
       discProductIds.push(p.id);
     }
   }
-  for (let i = 0; i < discProductIds.length; i += 500) {
-    const slice = discProductIds.slice(i, i + 500);
+  for (let i = 0; i < discProductIds.length; i += 200) {
+    const slice = discProductIds.slice(i, i + 200);
     const { error } = await supabase
       .from('rental_products')
       .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
       .in('id', slice);
-    if (error) throw error;
+    if (error) throw new Error(`[products 단종마킹] rows ${i}~ 실패: ${error.message}`);
     discontinuedProducts += slice.length;
   }
   // 단종 상품의 옵션도 함께 단종 마킹 (rental_sales 참조분도 삭제 X — 마킹만)
@@ -1282,11 +1341,11 @@ router.post('/import/commit', authenticateJWT, async (req, res) => {
     return res.status(410).json({ error: '파싱 캐시 만료 — 엑셀을 다시 업로드(preview)하세요' });
   }
 
-  // batch status='committing' 전환 (폴링 시작점)
+  // batch status='committing' 전환 (폴링 시작점) + 이전 실패 에러 클리어
   try {
     const { error: stErr } = await supabase
       .from('rental_import_batches')
-      .update({ status: 'committing' })
+      .update({ status: 'committing', error_message: null })
       .eq('id', batch_id);
     if (stErr) throw stErr;
   } catch (e) {
@@ -1301,15 +1360,22 @@ router.post('/import/commit', authenticateJWT, async (req, res) => {
   const { parsed } = cached;
   runImportCommit(batch_id, parsed)
     .then(() => {
-      _importCache.delete(batch_id);   // 성공 시 캐시 해제
+      _importCache.delete(batch_id);   // 성공 시 캐시 해제 (메모리 회수)
     })
     .catch(async (e) => {
-      console.error(`[rental import commit] batch=${batch_id} 실패:`, e?.message || e);
+      // 실패 원인 가시화 — 메시지+스택을 batch.error_message 에 박제.
+      const msg = e?.message || String(e);
+      const stack = e?.stack ? String(e.stack) : '';
+      const full = (stack || msg).slice(0, 4000);   // 컬럼 폭주 방지 4KB cap
+      console.error(`[rental import commit] batch=${batch_id} 실패:`, msg);
+      if (stack) console.error(stack);
       try {
         await supabase.from('rental_import_batches')
-          .update({ status: 'failed' })
+          .update({ status: 'failed', error_message: full })
           .eq('id', batch_id);
-      } catch { /* noop */ }
+      } catch (e2) {
+        console.error(`[rental import commit] batch=${batch_id} status 기록 실패:`, e2?.message || e2);
+      }
       // 캐시는 유지 — 재시도(commit) 가능하도록
     });
 });
