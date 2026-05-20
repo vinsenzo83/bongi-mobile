@@ -80,10 +80,11 @@ function hasVal(v) {
 
 /** 숫자 파싱 (콤마·원·텍스트 제거). 실패 시 null */
 function toNum(v) {
+  // 빌리고 금액은 원 단위 정수 — VAT 계산 잔여 소수는 반올림 제거 (2026-05-20)
   if (v == null || v === '') return null;
-  if (typeof v === 'number') return Number.isFinite(v) ? Math.round(v * 100) / 100 : null;
+  if (typeof v === 'number') return Number.isFinite(v) ? Math.round(v) : null;
   const m = String(v).replace(/[, 원]/g, '').match(/-?\d+(\.\d+)?/);
-  return m ? Math.round(parseFloat(m[0]) * 100) / 100 : null;
+  return m ? Math.round(parseFloat(m[0])) : null;
 }
 
 /** 텍스트에서 개월 수 추출 ("36개월"→36, "5년"→60, "72"→72) */
@@ -163,6 +164,21 @@ function splitInspection(raw, numericVisitMode = false) {
 }
 
 /**
+ * 임의 텍스트(모델명·세부·비고 등)에서 care_service 키워드를 찾는다.
+ * 큐밍 모델명(세부) "관리형"/"셀프형"/"방문형" 등 판정용.
+ *  - 셀프: "셀프형" "셀프" "자가"
+ *  - 방문: "관리형" "방문형" "관리" "방문" "케어"
+ * 미검출 시 null.
+ */
+function careFromText(...texts) {
+  const s = texts.map((t) => clean(t)).join(' ');
+  if (!s) return null;
+  if (/셀프형|셀프|자가/.test(s)) return '셀프';
+  if (/관리형|방문형|관리|방문|케어/.test(s)) return '방문';
+  return null;
+}
+
+/**
  * 제품군 텍스트 → 봉이 카테고리 slug.
  * 매핑 실패 시 null 반환 (호출부에서 경고 로그).
  */
@@ -190,7 +206,7 @@ function normalizeCategory(raw) {
   if (test(/공청기|공기청정|청정기|공청|펫공청/)) return 'air-purifier';
 
   // --- 생활위생 ---
-  if (test(/비데/)) return 'bidet';
+  if (test(/비데|양변기/)) return 'bidet';   // 초절수형 양변기 = 비데 계열
   if (test(/연수기/)) return 'water-softener';
   if (test(/샤워|클린샤워/)) return 'shower';
   if (test(/핸드드라이어/)) return 'hand-dryer';
@@ -223,14 +239,36 @@ function normalizeCategory(raw) {
 
   // --- 헬스 ---
   if (test(/안마의자|안마/)) return 'massage-chair';
-  if (test(/힐링케어|힐링/)) return 'healing-care';
+  // 베개·필로우(코골이 방지 베개 등) = 봉이 38카테고리에 없음 → 헬스케어 계열
+  if (test(/힐링케어|힐링|베개|필로우|모션필로우/)) return 'healing-care';
   if (test(/미용기기|의료기기|미용|의료|홈메디/)) return 'beauty-medical';
 
   // --- 기타 ---
   if (test(/펫드라이|펫급수|펫/)) return 'pet-care';
   if (test(/포충|해충방제|해충|포충등/)) return 'pest-control';
-  if (test(/방향기/)) return 'air-freshener';
+  // 방향기·버블클렌저(공간 위생/방향 계열) → air-freshener
+  if (test(/방향기|버블클렌저|클렌저/)) return 'air-freshener';
 
+  return null;
+}
+
+/**
+ * 카테고리 해석 — 제품군 컬럼이 "위탁판매군"·"패키지 특가"처럼
+ * 판매형태로 적혀 매핑 실패할 때, 모델명·상품명 텍스트로 fallback 추론한다.
+ *
+ * @param {*} productGroup  1차 제품군 컬럼 값
+ * @param {...*} fallbackTexts  모델명·상품명·세부 등 보조 텍스트
+ * @returns {string|null}  category_slug (모두 실패 시 null)
+ */
+function resolveCategory(productGroup, ...fallbackTexts) {
+  // 1차: 제품군 컬럼
+  const primary = normalizeCategory(productGroup);
+  if (primary) return primary;
+  // 2차: 모델명·상품명 등 텍스트에서 키워드 추론
+  for (const t of fallbackTexts) {
+    const slug = normalizeCategory(t);
+    if (slug) return slug;
+  }
   return null;
 }
 
@@ -335,7 +373,7 @@ function adaptCoway(aoa, sheetName, warnings) {
     const rebate = toNum(row[14]);
     if (!hasVal(model) || months == null || fee == null) continue;
 
-    const slug = normalizeCategory(pg);
+    const slug = resolveCategory(pg, name, model);
     if (!slug && hasVal(pg)) warnings.unmapped.add(`${sheetName}:${clean(pg)}`);
     col.addProduct({ model: clean(model), name: clean(name), category_slug: slug });
 
@@ -348,7 +386,7 @@ function adaptCoway(aoa, sheetName, warnings) {
       model: clean(model),
       months,
       ownership_months: months,         // 코웨이는 별도 소유권 컬럼 없음 → 약정과 동일
-      care_service: insp.care_service,
+      care_service: insp.care_service ?? '방문',   // 미판정 시 방문 기본 (null 금지)
       inspection_cycle: insp.inspection_cycle,
       monthly_fee: fee,
       half_fee: null,
@@ -392,7 +430,8 @@ function adaptCheongho(aoa, sheetName, warnings) {
     const reg    = clean(row[6]);                // 규정
     if (!hasVal(prodCode) || months == null || fee == null) continue;
 
-    const slug = normalizeCategory(pg);
+    // 위탁판매군 등 판매형태 제품군은 모델명/세부 텍스트로 카테고리 추론
+    const slug = resolveCategory(pg, detail, modelNm);
     if (!slug && hasVal(pg)) warnings.unmapped.add(`${sheetName}:${clean(pg)}`);
 
     const model = clean(prodCode);
@@ -407,7 +446,7 @@ function adaptCheongho(aoa, sheetName, warnings) {
       model,
       months,
       ownership_months: toNum(row[8]),
-      care_service: insp.care_service,
+      care_service: insp.care_service ?? '방문',   // 미판정 시 방문 기본 (null 금지)
       inspection_cycle: insp.inspection_cycle,
       monthly_fee: fee,
       rebate,
@@ -499,10 +538,13 @@ function adaptLgSubscription(aoa, sheetName, warnings) {
       const visit = row[5];   // 방문주기
       if (!hasVal(model)) continue;
 
-      const slug = normalizeCategory(pg);
-      if (!slug && hasVal(pg)) warnings.unmapped.add(`${sheetName}:${clean(pg)}`);
       const name = [clean(line), clean(g1)].filter(Boolean).join(' ') || clean(model);
-      const insp = splitInspection(visit);
+      const slug = resolveCategory(pg, line, g1, model);
+      if (!slug && hasVal(pg)) warnings.unmapped.add(`${sheetName}:${clean(pg)}`);
+      // 방문주기 컬럼: 숫자(6/4/3)=방문+주기, "자가"=셀프 (숫자 방문판정 모드)
+      const insp = splitInspection(visit, true);
+      // 그래도 미판정이면 방문 기본값 (정수기는 방문이 다수, null 금지)
+      if (insp.care_service == null) insp.care_service = '방문';
 
       // unpivot: 약정 × 결합유형
       for (const b of termBlocks) {
@@ -553,7 +595,7 @@ function adaptLuhens(aoa, sheetName, warnings) {
     if (!hasVal(model) || months == null || fee == null) continue;
 
     // 루헨스 시트는 정수기(WHP-) 행에 제품군이 비어있음 → 기본 정수기로 보정
-    let slug = normalizeCategory(pg);
+    let slug = resolveCategory(pg, model);
     if (!slug) {
       if (hasVal(pg)) warnings.unmapped.add(`${sheetName}:${clean(pg)}`);
       else slug = 'water-purifier';
@@ -565,7 +607,7 @@ function adaptLuhens(aoa, sheetName, warnings) {
       model: clean(model),
       months,
       ownership_months: toNum(row[4]),
-      care_service: insp.care_service,
+      care_service: insp.care_service ?? '방문',   // 미판정 시 방문 기본 (null 금지)
       inspection_cycle: insp.inspection_cycle,
       monthly_fee: fee,
       rebate,
@@ -594,21 +636,34 @@ function adaptWells(aoa, sheetName, warnings) {
     const promo  = fill('promo', row[1]);
     const name   = fill('name', row[2]);
     const model  = fill('model', row[3]);
-    const months = extractMonths(row[4]);
     const fee    = toNum(row[6]);
     const rebate = toNum(row[7]);
-    if (!hasVal(model) || months == null || fee == null) continue;
+    // 렌탈료>0 인 행만 옵션 (식물재배기 일시불 등 포함)
+    if (!hasVal(model) || fee == null || fee <= 0) continue;
+    // 의무(months): 숫자 추출 — 일시불 행(의무 빈값)은 0 으로 (null 금지)
+    let months = extractMonths(row[4]);
+    if (months == null) months = 0;
 
-    const slug = normalizeCategory(pg);
+    // "패키지 특가" 등 판매형태 제품군은 fallback 추론.
+    // 정수기+비데/공청기 패키지(모델명에 '+')는 주품목 정수기 기준 → water-purifier
+    let slug = normalizeCategory(pg);
+    if (!slug) {
+      if (/패키지/.test(clean(pg)) && /\+/.test(clean(model))) slug = 'water-purifier';
+      else slug = resolveCategory(pg, name, model);
+    }
     if (!slug && hasVal(pg)) warnings.unmapped.add(`${sheetName}:${clean(pg)}`);
     col.addProduct({ model: clean(model), name: clean(name) || clean(model), category_slug: slug });
 
     const insp = splitInspection(row[5]);
+    // 점검주기 키워드 미검출 시(프레임 등 점검 무관 품목) 비고·상품명 보조 →
+    // 그래도 불명이면 방문 기본값 (null 금지)
+    let care = insp.care_service;
+    if (care == null) care = careFromText(row[8], name) || '방문';
     col.addOption({
       model: clean(model),
       months,
       ownership_months: months,
-      care_service: insp.care_service,
+      care_service: care,
       inspection_cycle: insp.inspection_cycle,
       monthly_fee: fee,
       rebate,
@@ -641,9 +696,10 @@ function adaptCuckoo(aoa, sheetName, warnings, isOthercoSheet) {
     const months = extractMonths(row[5]);
     const fee    = toNum(row[8]);
     const rebate = toNum(row[9]);
-    if (!hasVal(model) || months == null || fee == null) continue;
+    // 렌탈료>0 인 행만 옵션 — 렌탈료 0 은 침대세트 프레임 부속행(과다 방지)
+    if (!hasVal(model) || months == null || fee == null || fee <= 0) continue;
 
-    const slug = normalizeCategory(pg);
+    const slug = resolveCategory(pg, detail, model);
     if (!slug && hasVal(pg)) warnings.unmapped.add(`${sheetName}:${clean(pg)}`);
     col.addProduct({
       model: clean(model),
@@ -652,11 +708,14 @@ function adaptCuckoo(aoa, sheetName, warnings, isOthercoSheet) {
     });
 
     const insp = splitInspection(row[7]);
+    // 점검주기 빈값(빌트인 정수기 BIPM-H* 등) → 비고·세부 보조, 불명이면 방문 기본
+    let care = insp.care_service;
+    if (care == null) care = careFromText(row[10], detail, model) || '방문';
     col.addOption({
       model: clean(model),
       months,
       ownership_months: extractMonths(row[6]),
-      care_service: insp.care_service,
+      care_service: care,
       inspection_cycle: insp.inspection_cycle,
       monthly_fee: fee,
       rebate,
@@ -725,21 +784,28 @@ function adaptSkMagic(aoa, sheetName, warnings) {
     const row = aoa[r] || [];
     const modelRaw = fill('modelRaw', row[2]);
     const promo  = fill('promo', row[1]);
-    const channel = fill('channel', row[3]);
+    // 채널은 행마다 다를 수 있어 raw 값을 우선 쓰고, 빈 칸만 forward-fill
+    const channelRaw = clean(row[3]);
+    const channel = channelRaw || clean(fill('channel', row[3]));
     const detail = clean(row[4]);
     const fee    = toNum(row[7]);
     const rebate = toNum(row[8]);
-    if (!hasVal(modelRaw) || !detail || fee == null) continue;
+    // 렌탈료>0 인 행만 옵션 (일시불·부속품 포함 — 빌리고 시트의 실제 옵션 행)
+    if (!hasVal(modelRaw) || !detail || fee == null || fee <= 0) continue;
 
     const model = extractModelCode(modelRaw);
     if (!model) continue;
 
-    // 의무(months): 모델명(세부)의 "N년의무" → 개월, 없으면 소유권
+    // 의무(months): 세부 "N년의무" → 채널 "N년" → 소유권 → 일시불/부속품은 0
     let months = null;
     const ym = detail.match(/(\d+)\s*년\s*의무/);
     if (ym) months = parseInt(ym[1], 10) * 12;
+    if (months == null) {
+      const yc = channel.match(/(\d+)\s*년/);
+      if (yc) months = parseInt(yc[1], 10) * 12;
+    }
     if (months == null) months = extractMonths(row[5]);
-    if (months == null) continue;
+    if (months == null) months = 0;        // 일시불·부속품(필터·센서) → 0 (null 금지)
 
     const slug = normalizeCategory(detail) || normalizeCategory(clean(modelRaw)) || 'water-purifier';
     col.addProduct({
@@ -756,7 +822,7 @@ function adaptSkMagic(aoa, sheetName, warnings) {
       model,
       months,
       ownership_months: extractMonths(row[5]),
-      care_service: insp.care_service,
+      care_service: insp.care_service ?? careFromText(channel, detail) ?? '방문',
       inspection_cycle: splitInspection(row[6]).inspection_cycle,
       monthly_fee: fee,
       rebate,
@@ -784,12 +850,15 @@ function adaptUbus(aoa, sheetName, warnings) {
     const pg     = fill('pg', row[1]);
     const promo  = fill('promo', row[2]);
     const model  = fill('model', row[3]);
-    const months = extractMonths(row[4]);
     const fee    = toNum(row[7]);
     const rebate = toNum(row[8]);
-    if (!hasVal(model) || months == null || fee == null) continue;
+    // 렌탈료>0 인 행만 옵션 (일시불 포함)
+    if (!hasVal(model) || fee == null || fee <= 0) continue;
+    // 의무(months): 숫자 추출 — "판매"(일시불) 행은 0 으로 (null 금지)
+    let months = extractMonths(row[4]);
+    if (months == null) months = 0;
 
-    const slug = normalizeCategory(pg);
+    const slug = resolveCategory(pg, model, promo);
     if (!slug && hasVal(pg)) warnings.unmapped.add(`${sheetName}:${clean(pg)}`);
     col.addProduct({ model: clean(model), name: clean(model), category_slug: slug });
 
@@ -798,7 +867,7 @@ function adaptUbus(aoa, sheetName, warnings) {
       model: clean(model),
       months,
       ownership_months: extractMonths(row[5]),
-      care_service: insp.care_service,
+      care_service: insp.care_service ?? careFromText(row[9], model) ?? '방문',
       inspection_cycle: insp.inspection_cycle,
       monthly_fee: fee,
       rebate,
@@ -811,12 +880,18 @@ function adaptUbus(aoa, sheetName, warnings) {
 }
 
 /**
- * 큐밍 — 헤더 r8. 의무 컬럼 없음 — "기간" 컬럼이 약정.
- * cols: 0제품군 1프로모션 2모델명 3모델명(세부) 4기간 6렌탈료 7총수수료(v+)
- *       8일시불금액(v+) 9일시불총수수료(v+) 10전사프로모션
- * variant_code: 전사프로모션 텍스트 (6개월반값·12개월반값 등) — 같은 모델·기간에
- *   프로모션별 다른 행이 존재. 점검주기 컬럼 없음 → 그래도 충돌하면
- *   finalizeVariants 가 fee 순위 접미사를 추가한다.
+ * 큐밍 — 헤더 r8.
+ * cols: 0제품군 1프로모션 2모델명 3모델명(세부) 4기간 5(약정-보조)
+ *       6렌탈료 7총수수료(v+) 8일시불금액(v+) 9일시불총수수료(v+) 10전사프로모션
+ *
+ * ⚠️ "기간"(col4) 컬럼은 시트 구역에 따라 의미가 다르다:
+ *   - 정수기 구역: col4 = 약정개월(36/60/72/48개월), col5 비어있음
+ *   - 비데·공청기·커피머신·클린샤워 구역: col4 = 케어/결합 유형
+ *     (방문형/셀프형/방문형 결합/셀프형 결합/일반/결합/N개월주기),
+ *     실제 약정개월은 col5 에 있다.
+ *   → months 는 col4 가 숫자면 col4, 아니면 col5 에서 추출.
+ *   → care_service 는 col4 의 방문형/셀프형 키워드(미검출 시 방문 기본).
+ * variant_code: 결합 여부 + 전사프로모션. 잔여 충돌은 finalizeVariants 가 처리.
  */
 function adaptQming(aoa, sheetName, warnings) {
   const HEADER = 8;
@@ -830,12 +905,20 @@ function adaptQming(aoa, sheetName, warnings) {
     const promo  = fill('promo', row[1]);
     const model  = fill('model', row[2]);
     const detail = fill('detail', row[3]);
-    const months = extractMonths(row[4]);
+    const periodText = clean(row[4]);     // 기간 — 약정 or 케어유형
     const fee    = toNum(row[6]);
     const rebate = toNum(row[7]);
-    if (!hasVal(model) || months == null || fee == null) continue;
+    // 데이터 행 판정: 모델 + 렌탈료(>0) 가 핵심값
+    if (!hasVal(model) || fee == null || fee <= 0) continue;
 
-    const slug = normalizeCategory(pg);
+    // months: col4 가 숫자면 col4, 아니면 col5(약정 보조 컬럼).
+    // 커피머신·클린샤워 구역은 약정 컬럼이 아예 없음(일반/결합만) → 0 (null 금지).
+    // 렌탈료 있는 옵션 행은 누락하지 않는다.
+    let months = extractMonths(row[4]);
+    if (months == null) months = extractMonths(row[5]);
+    if (months == null) months = 0;
+
+    const slug = resolveCategory(pg, model, detail, promo);
     if (!slug && hasVal(pg)) warnings.unmapped.add(`${sheetName}:${clean(pg)}`);
     col.addProduct({
       model: clean(model),
@@ -843,14 +926,20 @@ function adaptQming(aoa, sheetName, warnings) {
       category_slug: slug,
     });
 
-    // 전사프로모션을 1차 variant 로 (6개월 반값 등)
+    // care_service: col4(케어유형) 키워드 → 모델명/세부 보조 → 방문 기본 (null 금지)
+    const care = careFromText(periodText, detail, model, promo) || '방문';
+    // variant_code: 결합 여부 + 전사프로모션 (둘 다 변형 차원)
+    const isCombo = /결합/.test(periodText);
     const corpPromo = clean(row[10]);
-    const variant = corpPromo && corpPromo !== '-' ? corpPromo : '';
+    const variantParts = [];
+    if (isCombo) variantParts.push('결합');
+    if (corpPromo && corpPromo !== '-') variantParts.push(corpPromo);
+    const variant = variantParts.join('/');
     col.addOption({
       model: clean(model),
       months,
       ownership_months: null,
-      care_service: null,
+      care_service: care,
       inspection_cycle: null,
       monthly_fee: fee,
       rebate,
