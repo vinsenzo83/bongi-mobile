@@ -813,8 +813,15 @@ function optionDbKey(productId, o) {
 }
 
 // admin 가드 — rental import 는 admin 전용
-function requireAdmin(req, res) {
-  if (req.user?.role !== 'admin') {
+// incentive role 은 JWT 가 아니라 incentive_agents 테이블에 있다 (rental.js 기존 패턴)
+async function requireAdmin(req, res) {
+  if (!req.user?.id) {
+    res.status(401).json({ error: 'unauthorized' });
+    return false;
+  }
+  const { data: agent } = await supabase
+    .from('incentive_agents').select('role').eq('user_id', req.user.id).single();
+  if (!agent || agent.role !== 'admin') {
     res.status(403).json({ error: 'admin 전용' });
     return false;
   }
@@ -839,7 +846,7 @@ async function chunkedUpsert(table, rows, options) {
 
 // ─── POST /api/rental/import/preview ───
 router.post('/import/preview', authenticateJWT, billigoUpload.single('file'), async (req, res) => {
-  if (!requireAdmin(req, res)) return;
+  if (!(await requireAdmin(req, res))) return;
   let tmpPath = null;
   try {
     if (!req.file) return res.status(400).json({ error: '파일 첨부 필수 (.xlsx)' });
@@ -1007,7 +1014,7 @@ router.post('/import/preview', authenticateJWT, billigoUpload.single('file'), as
 
 // ─── POST /api/rental/import/commit ───
 router.post('/import/commit', authenticateJWT, async (req, res) => {
-  if (!requireAdmin(req, res)) return;
+  if (!(await requireAdmin(req, res))) return;
   const { batch_id } = req.body || {};
   if (!batch_id) return res.status(400).json({ error: 'batch_id 필수' });
 
