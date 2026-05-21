@@ -147,7 +147,7 @@ async function fetchAgent() {
     <div style="display:flex;gap:5px;border-bottom:2px solid #f59e0b;margin-bottom:14px">
       <div class="prod-cat-tab active" data-cat="it" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#cbd5e1;position:relative;bottom:-2px">📡 인터넷 + TV</div>
       <div class="prod-cat-tab" data-cat="rental" data-group="정수기" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">💧 정수기 그룹</div>
-      <div class="prod-cat-tab" data-cat="rental" data-group="가전렌탈사" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">🏠 가전 그룹 <span style="background:#f59e0b;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">NEW</span></div>
+      <div class="prod-cat-tab" data-cat="rental" data-group="가전" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">🏠 가전 그룹 <span style="background:#f59e0b;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">NEW</span></div>
     </div>
 
     <!-- ★ 가전렌탈 패널 (기본 hidden) -->
@@ -463,9 +463,11 @@ async function fetchAgent() {
       const gt = F('rp-group-title');
       if (gt) gt.textContent = (group === '정수기' ? '💧 정수기 그룹' : '🏠 가전 그룹') + ' 상품 관리';
       // 카테고리 — 선택 그룹(정수기/가전렌탈사)의 상품 있는 것만
+      // 카테고리 그룹(정수기/가전) ↔ 렌탈사 그룹(정수기/가전렌탈사) 매핑
+      const companyGroup = group === '정수기' ? '정수기' : '가전렌탈사';
       const [cs, comp] = await Promise.all([
         fetch(RP_API + `/categories?include_inactive=1&group=${encodeURIComponent(group)}`).then(r => r.json()),
-        fetch(RP_API + `/companies?group=${encodeURIComponent(group)}`).then(r => r.json()),
+        fetch(RP_API + `/companies?group=${encodeURIComponent(companyGroup)}`).then(r => r.json()),
       ]);
       _cats = (cs.categories || []).filter(c => (c.product_count || 0) > 0);
       if (!_cats.length) _cats = cs.categories || [];  // 데이터 0이면 전체 노출 (fallback)
@@ -493,7 +495,7 @@ async function fetchAgent() {
   function renderCompanyRates(group) {
     const box = F('rp-company-rates');
     if (!box) return;
-    if (group !== '가전렌탈사') { box.style.display = 'none'; return; }
+    if (group !== '가전') { box.style.display = 'none'; return; }
     const list = (_companies || []).filter(c => (c.model_count || 0) > 0)
       .sort((a, b) => (b.model_count || 0) - (a.model_count || 0));
     if (!list.length) { box.style.display = 'none'; return; }
@@ -519,7 +521,7 @@ async function fetchAgent() {
     const brands = [...new Set(_products.map(p => p.brand))].sort();
     F('rp-filter-brand').innerHTML = '<option value="">전체</option>' + brands.map(b => {
       const co = (_companies || []).find(x => x.name === b);
-      const suffix = (co && _rentalGroup === '가전렌탈사') ? ` (${fmtCommission(co)})` : '';
+      const suffix = (co && _rentalGroup === '가전') ? ` (${fmtCommission(co)})` : '';
       return `<option value="${b}">${b}${suffix}</option>`;
     }).join('');
     renderKpi();
