@@ -160,6 +160,9 @@ async function fetchAgent() {
         <div class="kpi-card"><div class="kpi-label">평균 리베이트</div><div class="kpi-val" id="rp-kpi-rebate">-</div><div class="kpi-sub">옵션 평균</div></div>
       </div>
 
+      <!-- 가전 그룹 — 렌탈사별 수수료율 (정수기 그룹은 숨김) -->
+      <div id="rp-company-rates" style="display:none;margin-bottom:14px"></div>
+
       <div class="section" style="background:linear-gradient(135deg,rgba(245,158,11,0.06),#0f172a);border:1.5px solid #f59e0b;border-radius:8px;padding:14px 16px;margin-bottom:14px">
         <h2 style="color:#fbbf24;margin:0 0 10px;font-size:15px;display:flex;justify-content:space-between;align-items:center">
           <span id="rp-group-title">💧 정수기 그룹 상품 관리</span>
@@ -400,7 +403,7 @@ async function fetchAgent() {
 <script>
 (function(){
   const RP_API = '/api/rental';
-  let _cats = [], _products = [], _selectedProductId = null, _options = [], _policy = null, _brandPolicies = [];
+  let _cats = [], _products = [], _selectedProductId = null, _options = [], _policy = null, _brandPolicies = [], _companies = [];
   const F = (id) => document.getElementById(id);
   const fmtKor = n => n == null ? '-' : Math.round(Number(n)).toLocaleString();
   const fmtStar = n => n ? '★'.repeat(Number(n)) + '☆'.repeat(Math.max(0, 5 - Number(n))) : '-';
@@ -460,14 +463,52 @@ async function fetchAgent() {
       const gt = F('rp-group-title');
       if (gt) gt.textContent = (group === '정수기' ? '💧 정수기 그룹' : '🏠 가전 그룹') + ' 상품 관리';
       // 카테고리 — 선택 그룹(정수기/가전렌탈사)의 상품 있는 것만
-      const cs = await fetch(RP_API + `/categories?include_inactive=1&group=${encodeURIComponent(group)}`).then(r => r.json());
+      const [cs, comp] = await Promise.all([
+        fetch(RP_API + `/categories?include_inactive=1&group=${encodeURIComponent(group)}`).then(r => r.json()),
+        fetch(RP_API + `/companies?group=${encodeURIComponent(group)}`).then(r => r.json()),
+      ]);
       _cats = (cs.categories || []).filter(c => (c.product_count || 0) > 0);
       if (!_cats.length) _cats = cs.categories || [];  // 데이터 0이면 전체 노출 (fallback)
+      _companies = comp.companies || [];
+      renderCompanyRates(group);
       F('rp-filter-cat').innerHTML = _cats.map(c => `<option value="${c.slug}">${(c.metadata?.icon||'')} ${c.name}</option>`).join('');
       await loadProducts();
     } catch (e) {
       F('rp-models-tbody').innerHTML = `<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:14px">API 오류: ${e.message}</td></tr>`;
     }
+  }
+
+  // 렌탈사 수수료 표기 — rate(%)·multiple(배수)·flat(정액)
+  function fmtCommission(c) {
+    if (!c) return '-';
+    if (c.commission_method === 'rate' && c.commission_rate != null)
+      return Math.round(Number(c.commission_rate) * 100) + '%';
+    if (c.commission_method === 'multiple' && c.commission_multiple != null)
+      return '월렌탈료 ×' + c.commission_multiple;
+    if (c.commission_method === 'flat' && c.commission_flat != null)
+      return Number(c.commission_flat).toLocaleString() + '원';
+    return c.commission_method || '-';
+  }
+  // 가전 그룹 — 렌탈사별 수수료율 패널 (정수기 그룹은 direct 라 숨김)
+  function renderCompanyRates(group) {
+    const box = F('rp-company-rates');
+    if (!box) return;
+    if (group !== '가전렌탈사') { box.style.display = 'none'; return; }
+    const list = (_companies || []).filter(c => (c.model_count || 0) > 0)
+      .sort((a, b) => (b.model_count || 0) - (a.model_count || 0));
+    if (!list.length) { box.style.display = 'none'; return; }
+    box.style.display = '';
+    box.innerHTML = `
+      <div class="section" style="padding:10px 12px">
+        <h3 style="font-size:13px;color:#cbd5e1;margin:0 0 8px">🏢 렌탈사별 수수료율 <span style="font-size:10.5px;color:#94a3b8;font-weight:500">· ${list.length}개사 · 봉이 영업 수수료</span></h3>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${list.map(c => `<div style="background:#0f172a;border:1px solid #475569;border-radius:6px;padding:5px 10px;font-size:11px">
+            <span style="color:#e2e8f0;font-weight:700">${c.name}</span>
+            <span style="color:#fbbf24;font-weight:800;margin-left:5px">${fmtCommission(c)}</span>
+            <span style="color:#64748b;margin-left:4px">${(c.model_count||0).toLocaleString()}모델</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
   }
 
   async function loadProducts() {
@@ -476,7 +517,11 @@ async function fetchAgent() {
     // 옵션 단가 등록된 모델만 (후보-only 제외)
     _products = (r.products || []).filter(p => (p.option_count || 0) > 0);
     const brands = [...new Set(_products.map(p => p.brand))].sort();
-    F('rp-filter-brand').innerHTML = '<option value="">전체</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+    F('rp-filter-brand').innerHTML = '<option value="">전체</option>' + brands.map(b => {
+      const co = (_companies || []).find(x => x.name === b);
+      const suffix = (co && _rentalGroup === '가전렌탈사') ? ` (${fmtCommission(co)})` : '';
+      return `<option value="${b}">${b}${suffix}</option>`;
+    }).join('');
     renderKpi();
     renderModels();
   }

@@ -92,6 +92,26 @@ router.get('/categories', optionalAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
+// ─── 렌탈사(채널) + 수수료 — 가전 그룹 수수료율 표시용 ───
+router.get('/companies', optionalAuth, async (req, res) => {
+  try {
+    const { group } = req.query;
+    let q = supabase
+      .from('rental_companies')
+      .select('id, name, category_group, commission_method, commission_rate, commission_flat, commission_multiple, settle_basis, notes, is_active, rental_products(count)')
+      .order('name', { ascending: true });
+    if (group) q = q.eq('category_group', group);
+    const { data, error } = await q;
+    if (error) throw error;
+    const companies = (data || []).map((c) => {
+      const model_count = c.rental_products?.[0]?.count || 0;
+      delete c.rental_products;
+      return { ...c, model_count };
+    });
+    res.json({ companies });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
 // ─── 정책 (활성 1개) ───
 router.get('/policy', optionalAuth, async (req, res) => {
   try {
