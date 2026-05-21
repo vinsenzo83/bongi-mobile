@@ -280,7 +280,7 @@ router.get('/manager-override/me', authenticateJWT, async (req, res) => {
 // ─── 추천용 상품 + 메타 (RPC로 schema cache 우회) ───
 router.get('/products/for-recommend', optionalAuth, async (req, res) => {
   try {
-    const { data, error } = await supabase.rpc('rental_products_for_recommend').range(0, 49999);
+    const { data, error } = await supabase.rpc('rental_products_for_recommend');
     if (error) throw error;
     res.json({ products: data || [] });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
@@ -289,21 +289,31 @@ router.get('/products/for-recommend', optionalAuth, async (req, res) => {
 router.get('/products', optionalAuth, async (req, res) => {
   try {
     const { category, brand, active_only = '1' } = req.query;
-    let q = supabase
-      .from('rental_products')
-      .select('*, category:rental_categories(slug, name, metadata)')
-      .order('brand', { ascending: true })
-      .order('model', { ascending: true })
-      .range(0, 49999);   // PostgREST 기본 1000행 cap 해제 — 가전 대량 카테고리(에어컨 1.7천 등)
-    if (active_only === '1') q = q.eq('is_active', true);
+    let categoryId = null;
     if (category) {
       const { data: cat } = await supabase.from('rental_categories').select('id').eq('slug', category).single();
-      if (cat) q = q.eq('category_id', cat.id);
+      if (!cat) return res.json({ products: [] });
+      categoryId = cat.id;
     }
-    if (brand) q = q.eq('brand', brand);
-    const { data, error } = await q;
-    if (error) throw error;
-    res.json({ products: data || [] });
+    // PostgREST max-rows(1000) 서버 cap 회피 — 1000행씩 페이지 누적 (가전 에어컨 1.7천·냉장고 1.3천)
+    const PAGE = 1000;
+    const products = [];
+    for (let from = 0; ; from += PAGE) {
+      let q = supabase
+        .from('rental_products')
+        .select('*, category:rental_categories(slug, name, metadata)')
+        .order('brand', { ascending: true })
+        .order('model', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (active_only === '1') q = q.eq('is_active', true);
+      if (categoryId != null) q = q.eq('category_id', categoryId);
+      if (brand) q = q.eq('brand', brand);
+      const { data, error } = await q;
+      if (error) throw error;
+      products.push(...(data || []));
+      if (!data || data.length < PAGE) break;
+    }
+    res.json({ products });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
