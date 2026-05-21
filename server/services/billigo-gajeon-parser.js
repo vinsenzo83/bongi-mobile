@@ -619,13 +619,18 @@ function adaptSmart(aoa, ctx) {
 
 /**
  * LG헬로 — 헤더 3행(r0~r2). 약정 24/36/39/48/60 컬럼쌍(일반가/총액).
- * cols: 0EQPID 2구분 3상세 4무료개월 8품목종류 9브랜드 11모델코드 12모델명
+ * cols: 0EQPID 2구분 3상세 4무료개월 6경로 8품목종류 9브랜드 11모델코드 12모델명
  *       13규격 14색상 16~25 약정쌍(일반가,총액) 26일시불가 27수수료정책 …
- * 약정쌍: 24=(17,18) 36=(19,20) 39=(21,22) 48=(23,24) 60=(25,26)?
- *   r3 실측: idx17,18 = 24개월 (일반가,총액) … 짝수=일반가, 다음=총액.
+ * 약정쌍: 24=(16,17) 36=(18,19) 39=(20,21) 48=(22,23) 60=(24,25).
+ *   col26 = 일시불가(months=0 옵션), col27 = 수수료정책(정률/정액/해당없음).
+ * ⭐ 일시불 옵션 — col26 에 값이 있으면 months=0 옵션 1행을 추가 생성한다.
+ *   약정 옵션과 별개 행. 약정도 있으면 약정 N개 + 일시불 1개.
+ *   페페 고양이모래·UV정수기·하트만 에어프라이어 등 18개 모델은 약정 전부
+ *   비어있고 일시불만 있어, 이 처리로 옵션 0 product 가 사라진다.
  * variant_code: 구분(신규/단종/프로모션 등)은 변형 아님 → ''.
  *   같은 모델코드 다채널(일반/특가/직영/현장)은 모델명 prefix 로 행 분리되어
- *   model 식별이 다르므로 별도 product. 변형 충돌은 finalizeVariants 처리.
+ *   model 식별이 다르므로 별도 product. 일시불은 'lumpsum'.
+ *   잔여 충돌은 finalizeVariants 처리.
  */
 function adaptLgHello(aoa, ctx) {
   const HEADER = 2;
@@ -642,6 +647,8 @@ function adaptLgHello(aoa, ctx) {
     { months: 48, mCol: 22, tCol: 23 },
     { months: 60, mCol: 24, tCol: 25 },
   ];
+  const LUMP_COL = 26;   // 일시불가
+  const POLICY_COL = 27; // 수수료정책 (정률/정액/해당없음)
 
   for (let r = HEADER + 1; r < aoa.length; r++) {
     const row = aoa[r] || [];
@@ -683,9 +690,33 @@ function adaptLgHello(aoa, ctx) {
         variant_label: hasVal(freeM) ? `무료개월 ${toNum(freeM)}` : '',
       });
     }
+
+    // ── 일시불가 → months=0 옵션 ──
+    // total_fee = monthly_fee = 일시불가. rebate 는 약정 옵션과 동일 산정 방식
+    // (computeRebate — LG헬로 = rate 16%, total 기준). 수수료정책 '해당없음'
+    // 행도 commission 정책을 따라 산정하되 정책 텍스트를 promo_type 에 박제.
+    const lump = toNum(row[LUMP_COL]);
+    if (lump != null && lump > 0) {
+      hadOption = true;
+      const policy = clean(row[POLICY_COL]);
+      col.addOption({
+        model,
+        months: 0,
+        ownership_months: 0,
+        care_service: '셀프',
+        inspection_cycle: null,
+        monthly_fee: lump,
+        total_fee: lump,
+        // months=0 → computeRebate 의 rate base 는 totalFee(=lump) 가 직접 쓰임
+        rebate: computeRebate(ctx.commission, lump, lump, 0),
+        promo_type: [promo, policy && `수수료정책:${policy}`].filter(Boolean).join(' / ') || null,
+        variant_code: 'lumpsum',
+        variant_label: '일시불',
+      });
+    }
     if (!hadOption) skipped++;
   }
-  return { ...col.result(), skipped, skipReason: '모델없음·전약정0' };
+  return { ...col.result(), skipped, skipReason: '모델없음·전약정0·일시불없음' };
 }
 
 /**
@@ -1525,10 +1556,11 @@ export function parseBilligoGajeonExcel(input) {
       continue;
     }
 
-    const company = companyOfSheet(sheetName);
+    // company_name 은 수수료율 시트 렌탈사명과 동일해야 함 (commit 시 company 매칭키).
+    // ALIAS 가 있으면 그것을 정식 명칭으로 사용 — "LG헬로"→"LG 헬로비젼", "유버스"→"현대유버스(가전)".
     const aliasKey = COMPANY_ALIAS[sheetName.replace(/\(\d*월\)/g, '').trim()];
-    const commission = (aliasKey && commissionByName.get(aliasKey))
-      || commissionByName.get(company) || null;
+    const company = aliasKey || companyOfSheet(sheetName);
+    const commission = commissionByName.get(company) || null;
     if (!commission) {
       warnings.notes.push(`${sheetName}: 수수료 정책 미발견 (회사=${company}) — rebate=null`);
     }
