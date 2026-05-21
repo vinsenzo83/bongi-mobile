@@ -66,6 +66,9 @@ ALTER TABLE rental_product_options ALTER COLUMN rebate_otherco TYPE numeric;
 ALTER TABLE rental_product_options ALTER COLUMN rebate_half    TYPE numeric;
 ALTER TABLE rental_product_options ALTER COLUMN care_service   DROP NOT NULL;
 ALTER TABLE rental_product_options ALTER COLUMN rebate         DROP NOT NULL;
+-- 일시불 상품(커피머신·클린샤워 등)은 약정 개념 없음 → months=0 허용 (기존 months>0)
+ALTER TABLE rental_product_options DROP CONSTRAINT IF EXISTS rental_product_options_months_check;
+ALTER TABLE rental_product_options ADD  CONSTRAINT rental_product_options_months_check CHECK (months >= 0);
 UPDATE rental_product_options SET variant_code = '' WHERE variant_code IS NULL;
 -- ⚠️ null-safe UNIQUE 인덱스(자연키)는 Phase 2 import commit 직전 생성:
 --   CREATE UNIQUE INDEX uq_rental_option_natural ON rental_product_options
@@ -130,7 +133,8 @@ INSERT INTO rental_categories (slug, name, sort_order, is_active) VALUES
   ('pet-care',         '펫용품',        330, false),
   ('pest-control',     '해충방제',      340, false),
   ('air-freshener',    '방향기',        350, false),
-  ('hand-dryer',       '핸드드라이어',  360, false)
+  ('hand-dryer',       '핸드드라이어',  360, false),
+  ('misc-appliance',   '기타가전',      999, false)
 ON CONFLICT (slug) DO NOTHING;
 
 COMMIT;

@@ -10,6 +10,7 @@ import multer from 'multer';
 import { supabase } from '../db/supabase.js';
 import { authenticateJWT, optionalAuth } from '../middleware/auth.js';
 import { parseBilligoRentalExcel } from '../services/billigo-rental-parser.js';
+import { parseBilligoGajeonExcel } from '../services/billigo-gajeon-parser.js';
 
 const router = Router();
 const _isProd = process.env.NODE_ENV === 'production';
@@ -883,7 +884,7 @@ router.post('/import/preview', authenticateJWT, billigoUpload.single('file'), as
     if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
       return res.status(400).json({ error: 'year_month 형식 오류 (예: 2026-05)' });
     }
-    const fileType = '정수기';   // Phase 2 — 정수기 고정
+    const fileType = req.body.file_type === '가전' ? '가전' : '정수기';
 
     // 임시 파일 저장 후 파서 호출 (파서는 경로/Buffer 모두 지원하나 경로 우선)
     tmpPath = path.join(os.tmpdir(), `billigo-${randomUUID()}.xlsx`);
@@ -891,7 +892,9 @@ router.post('/import/preview', authenticateJWT, billigoUpload.single('file'), as
 
     let parsed;
     try {
-      parsed = parseBilligoRentalExcel(tmpPath);
+      parsed = fileType === '가전'
+        ? parseBilligoGajeonExcel(tmpPath)
+        : parseBilligoRentalExcel(tmpPath);
     } catch (e) {
       return res.status(400).json({ error: '엑셀 파싱 실패' + (_isProd ? '' : ': ' + (e?.message || '')) });
     }
