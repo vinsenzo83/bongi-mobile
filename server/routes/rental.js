@@ -280,7 +280,7 @@ router.get('/manager-override/me', authenticateJWT, async (req, res) => {
 // ─── 추천용 상품 + 메타 (RPC로 schema cache 우회) ───
 router.get('/products/for-recommend', optionalAuth, async (req, res) => {
   try {
-    const { data, error } = await supabase.rpc('rental_products_for_recommend');
+    const { data, error } = await supabase.rpc('rental_products_for_recommend').range(0, 49999);
     if (error) throw error;
     res.json({ products: data || [] });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
@@ -293,7 +293,8 @@ router.get('/products', optionalAuth, async (req, res) => {
       .from('rental_products')
       .select('*, category:rental_categories(slug, name, metadata)')
       .order('brand', { ascending: true })
-      .order('model', { ascending: true });
+      .order('model', { ascending: true })
+      .range(0, 49999);   // PostgREST 기본 1000행 cap 해제 — 가전 대량 카테고리(에어컨 1.7천 등)
     if (active_only === '1') q = q.eq('is_active', true);
     if (category) {
       const { data: cat } = await supabase.from('rental_categories').select('id').eq('slug', category).single();
