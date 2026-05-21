@@ -55,6 +55,7 @@ function normalizeNotes(s) {
 // 각 카테고리에 product_count 포함 — 어드민 필터가 데이터 있는 카테고리만 노출하도록.
 router.get('/categories', optionalAuth, async (req, res) => {
   try {
+    const { group } = req.query;
     let q = supabase
       .from('rental_categories')
       .select('*, rental_products(count)')
@@ -62,8 +63,28 @@ router.get('/categories', optionalAuth, async (req, res) => {
     if (req.query.include_inactive !== '1') q = q.eq('is_active', true);
     const { data, error } = await q;
     if (error) throw error;
+
+    // group 지정 시 — 그 그룹(company.category_group) products 로만 카테고리별 count 재산정
+    let groupCount = null;
+    if (group) {
+      const { data: cos } = await supabase.from('rental_companies').select('id').eq('category_group', group);
+      const coIds = (cos || []).map((c) => c.id);
+      groupCount = new Map();
+      if (coIds.length) {
+        for (let from = 0; ; from += 1000) {
+          const { data: prs, error: pErr } = await supabase
+            .from('rental_products').select('category_id')
+            .in('company_id', coIds).range(from, from + 999);
+          if (pErr) throw pErr;
+          for (const p of prs || []) groupCount.set(p.category_id, (groupCount.get(p.category_id) || 0) + 1);
+          if (!prs || prs.length < 1000) break;
+        }
+      }
+    }
     const categories = (data || []).map(c => {
-      const product_count = c.rental_products?.[0]?.count || 0;
+      const product_count = groupCount
+        ? (groupCount.get(c.id) || 0)
+        : (c.rental_products?.[0]?.count || 0);
       delete c.rental_products;
       return { ...c, product_count };
     });
@@ -288,12 +309,19 @@ router.get('/products/for-recommend', optionalAuth, async (req, res) => {
 
 router.get('/products', optionalAuth, async (req, res) => {
   try {
-    const { category, brand, active_only = '1' } = req.query;
+    const { category, brand, group, active_only = '1' } = req.query;
     let categoryId = null;
     if (category) {
       const { data: cat } = await supabase.from('rental_categories').select('id').eq('slug', category).single();
       if (!cat) return res.json({ products: [] });
       categoryId = cat.id;
+    }
+    // 그룹(정수기 / 가전렌탈사) 필터 — company.category_group → company_id 집합 환산
+    let groupCompanyIds = null;
+    if (group) {
+      const { data: cos } = await supabase.from('rental_companies').select('id').eq('category_group', group);
+      groupCompanyIds = (cos || []).map((c) => c.id);
+      if (!groupCompanyIds.length) return res.json({ products: [] });
     }
     // PostgREST max-rows(1000) 서버 cap 회피 — 1000행씩 페이지 누적 (가전 에어컨 1.7천·냉장고 1.3천)
     const PAGE = 1000;
@@ -307,6 +335,7 @@ router.get('/products', optionalAuth, async (req, res) => {
         .range(from, from + PAGE - 1);
       if (active_only === '1') q = q.eq('is_active', true);
       if (categoryId != null) q = q.eq('category_id', categoryId);
+      if (groupCompanyIds) q = q.in('company_id', groupCompanyIds);
       if (brand) q = q.eq('brand', brand);
       const { data, error } = await q;
       if (error) throw error;

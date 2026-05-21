@@ -146,7 +146,8 @@ async function fetchAgent() {
     <!-- ★ 상품 카테고리 탭 -->
     <div style="display:flex;gap:5px;border-bottom:2px solid #f59e0b;margin-bottom:14px">
       <div class="prod-cat-tab active" data-cat="it" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#cbd5e1;position:relative;bottom:-2px">📡 인터넷 + TV</div>
-      <div class="prod-cat-tab" data-cat="rental" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">🏠 가전렌탈(정수기) <span style="background:#f59e0b;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">NEW</span></div>
+      <div class="prod-cat-tab" data-cat="rental" data-group="정수기" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">💧 정수기 그룹</div>
+      <div class="prod-cat-tab" data-cat="rental" data-group="가전렌탈사" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">🏠 가전 그룹 <span style="background:#f59e0b;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">NEW</span></div>
     </div>
 
     <!-- ★ 가전렌탈 패널 (기본 hidden) -->
@@ -161,7 +162,7 @@ async function fetchAgent() {
 
       <div class="section" style="background:linear-gradient(135deg,rgba(245,158,11,0.06),#0f172a);border:1.5px solid #f59e0b;border-radius:8px;padding:14px 16px;margin-bottom:14px">
         <h2 style="color:#fbbf24;margin:0 0 10px;font-size:15px;display:flex;justify-content:space-between;align-items:center">
-          🏠 가전렌탈(정수기) 상품 관리
+          <span id="rp-group-title">💧 정수기 그룹 상품 관리</span>
           <span style="display:flex;gap:6px">
             <button type="button" id="rp-import-btn" style="background:linear-gradient(135deg,#06b6d4,#7c3aed);color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-weight:700">📤 빌리고 엑셀 import</button>
             <button type="button" id="rp-bulk-payback-btn" style="background:#7c3aed;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer">⚙️ 선택 모델 페이백 일괄 입력</button>
@@ -415,48 +416,54 @@ async function fetchAgent() {
       t.classList.add('active');
       t.style.color = '#cbd5e1';
       const cat = t.dataset.cat;
+      const isRental = cat === 'rental';
       F('it-panel').style.display = cat === 'it' ? '' : 'none';
-      F('rental-panel').style.display = cat === 'rental' ? '' : 'none';
-      if (cat === 'rental') initRental();
+      F('rental-panel').style.display = isRental ? '' : 'none';
+      if (isRental) initRental(t.dataset.group);
     });
   });
 
-  let _rentalInited = false;
-  async function initRental() {
-    if (_rentalInited) return;
-    _rentalInited = true;
+  let _rentalGroup = null, _rentalBaseInited = false;
+  async function initRental(group) {
+    if (_rentalGroup === group && _rentalBaseInited) return;
+    _rentalGroup = group;
     try {
-      const [cs, pol, bps] = await Promise.all([
-        fetch(RP_API + '/categories?include_inactive=1').then(r => r.json()),
-        fetch(RP_API + '/policy').then(r => r.json()),
-        fetch(RP_API + '/brand-policies').then(r => r.json()),
-      ]);
-      // 카테고리 필터 — 상품(product_count>0) 있는 카테고리만 노출
+      // 정책·브랜드정책·이벤트 바인딩·import — 최초 1회만
+      if (!_rentalBaseInited) {
+        const [pol, bps] = await Promise.all([
+          fetch(RP_API + '/policy').then(r => r.json()),
+          fetch(RP_API + '/brand-policies').then(r => r.json()),
+        ]);
+        _policy = pol.policy;
+        _brandPolicies = bps.brand_policies || [];
+        // 정책 변경 BroadcastChannel 수신 → _policy 재 fetch + 옵션 표 즉시 재계산
+        try {
+          const rpCh = new BroadcastChannel('rental-policy');
+          rpCh.addEventListener('message', async (e) => {
+            if (e.data?.type === 'policy-changed') {
+              const r = await fetch(RP_API + '/policy').then(r => r.json()).catch(()=>null);
+              if (r?.policy) _policy = r.policy;
+              if (_selectedProductId) loadOptions(_selectedProductId);
+            }
+          });
+        } catch(e) {}
+        F('rp-filter-cat').addEventListener('change', loadProducts);
+        F('rp-filter-brand').addEventListener('change', renderModels);
+        F('rp-filter-tier').addEventListener('change', renderModels);
+        F('rp-filter-promo').addEventListener('change', renderModels);
+        F('rp-filter-search').addEventListener('input', renderModels);
+        F('rp-reload-btn')?.addEventListener('click', loadProducts);
+        F('rp-bulk-payback-btn')?.addEventListener('click', bulkPayback);
+        initImport();
+        _rentalBaseInited = true;
+      }
+      const gt = F('rp-group-title');
+      if (gt) gt.textContent = (group === '정수기' ? '💧 정수기 그룹' : '🏠 가전 그룹') + ' 상품 관리';
+      // 카테고리 — 선택 그룹(정수기/가전렌탈사)의 상품 있는 것만
+      const cs = await fetch(RP_API + `/categories?include_inactive=1&group=${encodeURIComponent(group)}`).then(r => r.json());
       _cats = (cs.categories || []).filter(c => (c.product_count || 0) > 0);
       if (!_cats.length) _cats = cs.categories || [];  // 데이터 0이면 전체 노출 (fallback)
-      _policy = pol.policy;
-      _brandPolicies = bps.brand_policies || [];
-
-      // 정책 변경 BroadcastChannel 수신 → _policy 재 fetch + 옵션 표 즉시 재계산
-      try {
-        const rpCh = new BroadcastChannel('rental-policy');
-        rpCh.addEventListener('message', async (e) => {
-          if (e.data?.type === 'policy-changed') {
-            const r = await fetch(RP_API + '/policy').then(r => r.json()).catch(()=>null);
-            if (r?.policy) _policy = r.policy;
-            if (_selectedProductId) loadOptions(_selectedProductId);
-          }
-        });
-      } catch(e) {}
       F('rp-filter-cat').innerHTML = _cats.map(c => `<option value="${c.slug}">${(c.metadata?.icon||'')} ${c.name}</option>`).join('');
-      F('rp-filter-cat').addEventListener('change', loadProducts);
-      F('rp-filter-brand').addEventListener('change', renderModels);
-      F('rp-filter-tier').addEventListener('change', renderModels);
-      F('rp-filter-promo').addEventListener('change', renderModels);
-      F('rp-filter-search').addEventListener('input', renderModels);
-      F('rp-reload-btn')?.addEventListener('click', loadProducts);
-      F('rp-bulk-payback-btn')?.addEventListener('click', bulkPayback);
-      initImport();
       await loadProducts();
     } catch (e) {
       F('rp-models-tbody').innerHTML = `<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:14px">API 오류: ${e.message}</td></tr>`;
@@ -465,7 +472,7 @@ async function fetchAgent() {
 
   async function loadProducts() {
     const slug = F('rp-filter-cat').value;
-    const r = await fetch(`${RP_API}/products?category=${slug}&active_only=0`).then(r => r.json());
+    const r = await fetch(`${RP_API}/products?category=${slug}&group=${encodeURIComponent(_rentalGroup||'')}&active_only=0`).then(r => r.json());
     // 옵션 단가 등록된 모델만 (후보-only 제외)
     _products = (r.products || []).filter(p => (p.option_count || 0) > 0);
     const brands = [...new Set(_products.map(p => p.brand))].sort();
@@ -1110,7 +1117,6 @@ async function fetchAgent() {
       }
       _importBatchId = null;
       _importFile = null;
-      _rentalInited = true;  // 이미 초기화됨 — loadProducts 만 재실행
       await loadProducts();
     } catch (e) {
       importMsg('❌ ' + e.message, '#ef4444');
