@@ -11,6 +11,7 @@ import { supabase } from '../db/supabase.js';
 import { authenticateJWT, optionalAuth } from '../middleware/auth.js';
 import { parseBilligoRentalExcel } from '../services/billigo-rental-parser.js';
 import { parseBilligoGajeonExcel } from '../services/billigo-gajeon-parser.js';
+import { parseRentalRegisterExcel } from '../services/rental-register-parser.js';
 
 const router = Router();
 const _isProd = process.env.NODE_ENV === 'production';
@@ -931,7 +932,7 @@ router.post('/import/preview', authenticateJWT, billigoUpload.single('file'), as
     if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
       return res.status(400).json({ error: 'year_month 형식 오류 (예: 2026-05)' });
     }
-    const fileType = req.body.file_type === '가전' ? '가전' : '정수기';
+    const fileType = ['가전', '등록폼'].includes(req.body.file_type) ? req.body.file_type : '정수기';
 
     // 임시 파일 저장 후 파서 호출 (파서는 경로/Buffer 모두 지원하나 경로 우선)
     tmpPath = path.join(os.tmpdir(), `billigo-${randomUUID()}.xlsx`);
@@ -939,9 +940,11 @@ router.post('/import/preview', authenticateJWT, billigoUpload.single('file'), as
 
     let parsed;
     try {
-      parsed = fileType === '가전'
-        ? parseBilligoGajeonExcel(tmpPath)
-        : parseBilligoRentalExcel(tmpPath);
+      parsed = fileType === '등록폼'
+        ? parseRentalRegisterExcel(tmpPath)
+        : fileType === '가전'
+          ? parseBilligoGajeonExcel(tmpPath)
+          : parseBilligoRentalExcel(tmpPath);
     } catch (e) {
       return res.status(400).json({ error: '엑셀 파싱 실패' + (_isProd ? '' : ': ' + (e?.message || '')) });
     }
@@ -1018,12 +1021,15 @@ router.post('/import/preview', authenticateJWT, billigoUpload.single('file'), as
         productsNew++;
       }
     }
-    // 단종: 기존 정수기 상품 중 이번 파싱에 없는 것
+    // 단종: 기존 상품 중 이번 파싱에 없는 것.
+    // 등록폼(선별본)은 단종 개념이 없으므로 0 — commit 도 단종 마킹 안 함.
     let productsDiscontinued = 0;
-    for (const p of existingProducts) {
-      if (p.company_id) {
-        const key = `${p.company_id}|${p.model}`;
-        if (!parsedProductKeys.has(key)) productsDiscontinued++;
+    if (fileType !== '등록폼') {
+      for (const p of existingProducts) {
+        if (p.company_id) {
+          const key = `${p.company_id}|${p.model}`;
+          if (!parsedProductKeys.has(key)) productsDiscontinued++;
+        }
       }
     }
 
@@ -1094,8 +1100,11 @@ router.post('/import/preview', authenticateJWT, billigoUpload.single('file'), as
 // ─── 실제 UPSERT 로직 — commit 응답 후 백그라운드에서 실행 ───
 // Cloudflare 100초(524) 회피: HTTP 응답은 즉시 반환하고, 8천행 UPSERT 는
 // 여기서 await 없이 돌린다. 진행도는 rental_import_batches 컬럼으로 폴링.
-async function runImportCommit(batch_id, parsed) {
+async function runImportCommit(batch_id, parsed, fileType = '정수기') {
   const { companies, products, options } = parsed;
+  // 등록폼 = 봉이 자체 표준폼. 빌리고 원본과 달리 ① 봉이 운영값(시장성·노출순위·
+  // 등록상태·평가메모)을 포함하므로 products 에 반영, ② 선별본이라 단종 마킹은 하지 않는다.
+  const isRegisterForm = fileType === '등록폼';
 
   // ─── 1. rental_companies UPSERT (name 기준) ───
   // 기존 행은 그대로 두고, 없는 회사만 INSERT (commission 설정은 별도 화면에서 편집).
@@ -1154,11 +1163,11 @@ async function runImportCommit(batch_id, parsed) {
     const key = `${cid}|${p.model}`;
     const categoryId = p.category_slug ? (catIdBySlug.get(p.category_slug) ?? null) : null;
     const existing = productRowByKey.get(key);
-    productRowMap.set(key, {
+    const row = {
       company_id: cid,
       model: p.model,
       name: p.name,
-      brand: p.company_name,
+      brand: p.brand ?? p.company_name,
       manufacturer: p.manufacturer ?? null,
       model_key: p.model_key ?? null,
       category_id: categoryId,
@@ -1166,9 +1175,19 @@ async function runImportCommit(batch_id, parsed) {
       billigo_status: existing
         ? (existing.billigo_status === '신규' ? '신규' : '변경')
         : '신규',
-      is_active: true,
+      is_active: isRegisterForm ? (p.is_active !== false) : true,
       updated_at: new Date().toISOString(),
-    });
+    };
+    // 등록폼: 봉이 운영값 반영. null 은 행에 넣지 않아 UPSERT 가 기존값 보존.
+    // 인센티브 컬럼(point_weight·tier·margin·is_premium…)은 어느 모드든 미포함 = 보존.
+    if (isRegisterForm) {
+      if (p.display_rank != null) row.display_rank = p.display_rank;
+      if (p.market_score != null) row.market_score = p.market_score;
+      if (p.registration_status != null) row.registration_status = p.registration_status;
+      if (p.evaluation_memo != null) row.evaluation_memo = p.evaluation_memo;
+      if (p.product_url != null) row.product_url = p.product_url;
+    }
+    productRowMap.set(key, row);
   }
   // dedup 후 카운트 (키 단위 = 실제 상품 수)
   for (const key of productRowMap.keys()) {
@@ -1302,63 +1321,67 @@ async function runImportCommit(batch_id, parsed) {
     .update({ upsert_new: prodNew + optNew, upsert_updated: prodUpdated + optUpdated })
     .eq('id', batch_id);
 
-  // ─── 4. 이번 batch 에 없는 기존 정수기 옵션/상품 → 단종 마킹 ───
-  // 옵션: 이번 import 상품들의 기존 옵션 중 touchedOptionKeys 에 없는 것
+  // ─── 4. 이번 batch 에 없는 기존 옵션/상품 → 단종 마킹 ───
+  // ⚠️ 등록폼(선별본)은 단종 마킹을 하지 않는다 — 빌리고 전량 import 일 때만.
+  //    등록폼에 없는 상품 = "이번에 등록 안 한 것"이지 "단종"이 아니다.
   let discontinuedOptions = 0;
-  const discOptionIds = [];
-  for (const o of dbOptions) {
-    const key = optionDbKey(o.product_id, o);
-    if (!touchedOptionKeys.has(key)) discOptionIds.push(o.id);
-  }
-  for (let i = 0; i < discOptionIds.length; i += 200) {
-    const slice = discOptionIds.slice(i, i + 200);
-    const { error } = await supabase
-      .from('rental_product_options')
-      .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
-      .in('id', slice);
-    if (error) throw new Error(`[options 단종마킹] rows ${i}~ 실패: ${error.message}`);
-    discontinuedOptions += slice.length;
-  }
-
-  // 상품: 정수기메이커 회사 소속 상품 중 이번 import 에 없는 것
-  const importedProductKeys = new Set();
-  for (const o of options) {
-    const cid = companyIdByName.get(o.company_name);
-    if (cid != null) importedProductKeys.add(`${cid}|${o.model}`);
-  }
-  for (const p of products) {
-    const cid = companyIdByName.get(p.company_name);
-    if (cid != null) importedProductKeys.add(`${cid}|${p.model}`);
-  }
-  const billigoCompanyIds = new Set(
-    companies.map((c) => companyIdByName.get(c.name)).filter((x) => x != null),
-  );
   let discontinuedProducts = 0;
-  const discProductIds = [];
-  for (const p of dbProducts || []) {
-    if (p.company_id == null || !billigoCompanyIds.has(p.company_id)) continue;
-    const key = `${p.company_id}|${p.model}`;
-    if (!importedProductKeys.has(key) && p.billigo_status !== '단종') {
-      discProductIds.push(p.id);
+  if (!isRegisterForm) {
+    // 옵션: 이번 import 상품들의 기존 옵션 중 touchedOptionKeys 에 없는 것
+    const discOptionIds = [];
+    for (const o of dbOptions) {
+      const key = optionDbKey(o.product_id, o);
+      if (!touchedOptionKeys.has(key)) discOptionIds.push(o.id);
     }
-  }
-  for (let i = 0; i < discProductIds.length; i += 200) {
-    const slice = discProductIds.slice(i, i + 200);
-    const { error } = await supabase
-      .from('rental_products')
-      .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
-      .in('id', slice);
-    if (error) throw new Error(`[products 단종마킹] rows ${i}~ 실패: ${error.message}`);
-    discontinuedProducts += slice.length;
-  }
-  // 단종 상품의 옵션도 함께 단종 마킹 (rental_sales 참조분도 삭제 X — 마킹만)
-  for (let i = 0; i < discProductIds.length; i += 200) {
-    const slice = discProductIds.slice(i, i + 200);
-    const { error } = await supabase
-      .from('rental_product_options')
-      .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
-      .in('product_id', slice);
-    if (error) throw error;
+    for (let i = 0; i < discOptionIds.length; i += 200) {
+      const slice = discOptionIds.slice(i, i + 200);
+      const { error } = await supabase
+        .from('rental_product_options')
+        .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
+        .in('id', slice);
+      if (error) throw new Error(`[options 단종마킹] rows ${i}~ 실패: ${error.message}`);
+      discontinuedOptions += slice.length;
+    }
+
+    // 상품: 빌리고 회사 소속 상품 중 이번 import 에 없는 것
+    const importedProductKeys = new Set();
+    for (const o of options) {
+      const cid = companyIdByName.get(o.company_name);
+      if (cid != null) importedProductKeys.add(`${cid}|${o.model}`);
+    }
+    for (const p of products) {
+      const cid = companyIdByName.get(p.company_name);
+      if (cid != null) importedProductKeys.add(`${cid}|${p.model}`);
+    }
+    const billigoCompanyIds = new Set(
+      companies.map((c) => companyIdByName.get(c.name)).filter((x) => x != null),
+    );
+    const discProductIds = [];
+    for (const p of dbProducts || []) {
+      if (p.company_id == null || !billigoCompanyIds.has(p.company_id)) continue;
+      const key = `${p.company_id}|${p.model}`;
+      if (!importedProductKeys.has(key) && p.billigo_status !== '단종') {
+        discProductIds.push(p.id);
+      }
+    }
+    for (let i = 0; i < discProductIds.length; i += 200) {
+      const slice = discProductIds.slice(i, i + 200);
+      const { error } = await supabase
+        .from('rental_products')
+        .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
+        .in('id', slice);
+      if (error) throw new Error(`[products 단종마킹] rows ${i}~ 실패: ${error.message}`);
+      discontinuedProducts += slice.length;
+    }
+    // 단종 상품의 옵션도 함께 단종 마킹 (rental_sales 참조분도 삭제 X — 마킹만)
+    for (let i = 0; i < discProductIds.length; i += 200) {
+      const slice = discProductIds.slice(i, i + 200);
+      const { error } = await supabase
+        .from('rental_product_options')
+        .update({ billigo_status: '단종', is_active: false, updated_at: new Date().toISOString() })
+        .in('product_id', slice);
+      if (error) throw error;
+    }
   }
 
   // ─── 5. rental_import_batches status='committed' ───
@@ -1407,8 +1430,8 @@ router.post('/import/commit', authenticateJWT, async (req, res) => {
   res.json({ ok: true, batch_id, async: true });
 
   // ─── 백그라운드 실행 (응답 후) ───
-  const { parsed } = cached;
-  runImportCommit(batch_id, parsed)
+  const { parsed, file_type } = cached;
+  runImportCommit(batch_id, parsed, file_type)
     .then(() => {
       _importCache.delete(batch_id);   // 성공 시 캐시 해제 (메모리 회수)
     })
