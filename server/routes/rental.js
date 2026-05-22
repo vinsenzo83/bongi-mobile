@@ -1206,6 +1206,18 @@ async function runImportCommit(batch_id, parsed, fileType = '정수기') {
   for (const p of upsertedProducts) {
     productRowByKey.set(`${p.company_id}|${p.model}`, p);
   }
+  // 등록폼: 상품이 적재된 카테고리는 자동 활성화 — 계산기 탭은 is_active 카테고리만
+  // 노출하므로, "등록확정"으로 들어온 카테고리가 비활성이면 계산기에 안 보인다.
+  if (isRegisterForm) {
+    const usedCatIds = [...new Set(productRows.map((r) => r.category_id).filter((x) => x != null))];
+    if (usedCatIds.length) {
+      const { error } = await supabase
+        .from('rental_categories')
+        .update({ is_active: true })
+        .in('id', usedCatIds);
+      if (error) throw new Error(`[카테고리 활성화] 실패: ${error.message}`);
+    }
+  }
   // 진행도 1단계 — 상품 반영 완료
   await supabase.from('rental_import_batches')
     .update({ upsert_new: prodNew, upsert_updated: prodUpdated })
