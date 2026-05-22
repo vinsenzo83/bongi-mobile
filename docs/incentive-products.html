@@ -172,9 +172,10 @@ async function fetchAgent() {
             <button type="button" id="rp-reload-btn" style="background:#475569;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer">🔄 새로고침</button>
           </span>
         </h2>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 0.7fr 1fr;gap:10px;margin-bottom:8px">
+        <div id="rp-filters" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 0.7fr 1fr;gap:10px;margin-bottom:8px">
           <div><label style="font-size:11px;color:#94a3b8">카테고리</label><select id="rp-filter-cat" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"></select></div>
-          <div><label style="font-size:11px;color:#94a3b8">브랜드</label><select id="rp-filter-brand" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"><option value="">전체</option></select></div>
+          <div><label style="font-size:11px;color:#94a3b8">브랜드(제조사)</label><select id="rp-filter-brand" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"><option value="">전체</option></select></div>
+          <div id="rp-filter-company-wrap" style="display:none"><label style="font-size:11px;color:#94a3b8">렌탈사(채널)</label><select id="rp-filter-company" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"><option value="">전체</option></select></div>
           <div><label style="font-size:11px;color:#94a3b8">프로모션</label><select id="rp-filter-promo" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"><option value="">전체</option><option value="반값할인">반값할인</option><option value="타사보상">타사보상</option><option value="결합">결합</option><option value="할인">할인</option><option value="단종">단종</option></select></div>
           <div><label style="font-size:11px;color:#94a3b8">Tier</label><select id="rp-filter-tier" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"><option value="">전체</option><option value="S">S</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
           <div><label style="font-size:11px;color:#94a3b8">검색</label><input id="rp-filter-search" placeholder="모델·상품·메모" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"></div>
@@ -453,6 +454,7 @@ async function fetchAgent() {
         } catch(e) {}
         F('rp-filter-cat').addEventListener('change', loadProducts);
         F('rp-filter-brand').addEventListener('change', renderModels);
+        F('rp-filter-company')?.addEventListener('change', renderModels);
         F('rp-filter-tier').addEventListener('change', renderModels);
         F('rp-filter-promo').addEventListener('change', renderModels);
         F('rp-filter-search').addEventListener('input', renderModels);
@@ -519,12 +521,22 @@ async function fetchAgent() {
     const r = await fetch(`${RP_API}/products?category=${slug}&group=${encodeURIComponent(_rentalGroup||'')}&active_only=0`).then(r => r.json());
     // 옵션 단가 등록된 모델만 (후보-only 제외)
     _products = (r.products || []).filter(p => (p.option_count || 0) > 0);
+    // 브랜드(제조사) 필터 — 가전 그룹은 brand=제조사(삼성·LG 등)
     const brands = [...new Set(_products.map(p => p.brand))].sort();
-    F('rp-filter-brand').innerHTML = '<option value="">전체</option>' + brands.map(b => {
-      const co = (_companies || []).find(x => x.name === b);
-      const suffix = (co && _rentalGroup === '가전') ? ` (${fmtCommission(co)})` : '';
-      return `<option value="${b}">${b}${suffix}</option>`;
-    }).join('');
+    F('rp-filter-brand').innerHTML = '<option value="">전체</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+    // 가전 그룹 한정 — 렌탈사 필터 (채널) 노출
+    const wrap = F('rp-filter-company-wrap');
+    if (_rentalGroup === '가전') {
+      wrap.style.display = '';
+      const coIdsInCat = [...new Set(_products.map(p => p.company_id).filter(x => x != null))];
+      const cosInCat = (_companies || []).filter(c => coIdsInCat.includes(c.id))
+        .sort((a, b) => (b.model_count||0) - (a.model_count||0));
+      F('rp-filter-company').innerHTML = '<option value="">전체</option>' +
+        cosInCat.map(c => `<option value="${c.id}">${c.name} (${fmtCommission(c)})</option>`).join('');
+    } else {
+      wrap.style.display = 'none';
+      F('rp-filter-company').value = '';
+    }
     renderKpi();
     renderModels();
   }
@@ -542,11 +554,13 @@ async function fetchAgent() {
 
   function renderModels() {
     const brand = F('rp-filter-brand').value;
+    const company = F('rp-filter-company')?.value || '';
     const tier = F('rp-filter-tier').value;
     const promo = F('rp-filter-promo').value;
     const search = F('rp-filter-search').value.toLowerCase();
     const list = _products.filter(p => {
       if (brand && p.brand !== brand) return false;
+      if (company && String(p.company_id) !== String(company)) return false;
       if (tier && p.tier !== tier) return false;
       if (promo && !(p.promo_tag || '').includes(promo) && p.registration_status !== promo) return false;
       if (search) {
@@ -562,11 +576,17 @@ async function fetchAgent() {
       const urlIcon = p.product_url ? `<a href="${p.product_url}" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-size:11px;margin-left:4px">🔗</a>` : '';
       const monthsHTML = (p.months_available || []).map(m => `<span style="background:#334155;color:#cbd5e1;font-size:9.5px;padding:1px 4px;border-radius:3px;margin:1px">${m}M</span>`).join('') || '-';
       const caresHTML = (p.care_services || []).map(c => c === '방문' ? '🏠' : '✋').join('');
+      // 가전 그룹 — 렌탈사(채널) 뱃지. 브랜드=제조사라 렌탈사가 따로 보여야 상담사가 어느 채널 계약인지 즉시 식별.
+      const co = (_rentalGroup === '가전' && p.company_id != null)
+        ? (_companies || []).find(c => c.id === p.company_id) : null;
+      const companyBadge = co
+        ? `<span style="background:#0891b2;color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;margin-left:4px" title="렌탈사 수수료율 ${fmtCommission(co)}">🏢 ${co.name}</span>`
+        : '';
       return `
       <tr data-id="${p.id}" class="rp-model-row" style="cursor:pointer">
         <td>${p.brand}</td>
         <td>
-          <div style="font-weight:700">${p.model}${urlIcon}${statusBadge}${promoBadge}</div>
+          <div style="font-weight:700">${p.model}${urlIcon}${statusBadge}${promoBadge}${companyBadge}</div>
           <div style="font-size:10px;color:#94a3b8">${p.name}</div>
           ${p.evaluation_memo ? `<div style="font-size:9.5px;color:#fbbf24;margin-top:2px">📝 ${p.evaluation_memo}</div>` : ''}
         </td>
@@ -614,12 +634,16 @@ async function fetchAgent() {
     F('rp-option-title').innerHTML = `📦 ${product.brand} <span style="color:#fbbf24">${product.model}</span> — 옵션 디테일`;
     // 상품 정보 카드
     const bp = _brandPolicies.find(b => b.brand === product.brand);
+    // 가전 그룹 — 렌탈사(채널) 정보. 같은 모델 N채널 중 어느 곳인지 식별.
+    const co = (_rentalGroup === '가전' && product.company_id != null)
+      ? (_companies || []).find(c => c.id === product.company_id) : null;
     F('rp-product-detail').style.display = 'block';
     const promoListHTML = (product.promo_tags_list || []).map(t => `<span style="display:inline-block;background:rgba(167,139,250,0.2);color:#a78bfa;font-size:9.5px;padding:1px 6px;border-radius:3px;margin:1px">${t}</span>`).join('');
     const monthsAvail = (product.months_available || []).map(m => `<span style="background:#334155;color:#cbd5e1;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:2px">${m}M</span>`).join('');
     const careAvail = (product.care_services || []).join('·');
     F('rp-product-detail').innerHTML = `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+        ${co ? `<div style="grid-column:span 2;background:rgba(8,145,178,0.15);border:1px solid #0891b2;border-radius:4px;padding:5px 8px"><b style="color:#22d3ee">🏢 렌탈사 (채널)</b> <b style="color:#fff">${co.name}</b> · 수수료 ${fmtCommission(co)}${co.notes ? ` <span style="font-size:9.5px;color:#94a3b8">— ${co.notes}</span>` : ''}</div>` : ''}
         <div><b style="color:#fbbf24">📦 상품명</b> ${product.name}</div>
         <div><b style="color:#fbbf24">🏷️ 모델</b> ${product.model}</div>
         <div><b style="color:#fbbf24">⭐ 시장성</b> ${fmtStar(product.market_score)} (${product.market_score||'-'})</div>

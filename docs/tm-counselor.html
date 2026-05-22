@@ -5537,9 +5537,14 @@ setTimeout(() => {
       const metaHtml = metaChips.length ? `<div class="meta-chips">${metaChips.join('')}</div>` : '';
       const dataSrc = p.meta_manual_override ? '✓' : p.auto_filled_at ? '🤖' : '';
       const tierBadge = p.tier ? `<span class="rr-tier-badge rr-tier-${p.tier}">${p.tier}</span>` : '';
+      // 가전 그룹 — 렌탈사(채널) 뱃지. 같은 모델 N채널 식별.
+      const isGajeon = p.category?.product_group === '가전';
+      const coBadge = (isGajeon && p.company?.name)
+        ? `<span style="background:#0891b2;color:#fff;font-size:8.5px;padding:1px 4px;border-radius:3px;margin-left:3px;font-weight:700" title="렌탈사 채널">🏢 ${escapeHtml(p.company.name)}</span>`
+        : '';
       return `<div class="rr-card ${isTop?'top-match':''}" data-id="${p.id}" data-cat="${p.category?.slug||''}" data-brand="${p.brand||''}">
         <div class="rr-row1">
-          <span class="brand">${isTop ? '🏆 ' : ''}${p.brand||''} ${tierBadge} ${dataSrc?`<span class="data-src" title="${p.meta_manual_override?'어드민 확정':'자동 추출'}">${dataSrc}</span>`:''}</span>
+          <span class="brand">${isTop ? '🏆 ' : ''}${p.brand||''} ${tierBadge}${coBadge} ${dataSrc?`<span class="data-src" title="${p.meta_manual_override?'어드민 확정':'자동 추출'}">${dataSrc}</span>`:''}</span>
 <!-- 우수 배지 제거: 옵션별 자동 분류이므로 product 단위 표시 무의미 -->
         </div>
         <div class="model">${escapeHtml(p.name||'')}</div>
