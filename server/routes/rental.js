@@ -1396,6 +1396,48 @@ async function runImportCommit(batch_id, parsed, fileType = '정수기') {
     }
   }
 
+  // ─── 4.5 티켓 자동 발번 — ticket_number 없는 옵션에 R 번호 부여 ───
+  // 옵션 단위 발급(R0001~). 신규 옵션 등록 시 자동 R 번호. 기존 최대 R 번호 다음부터.
+  {
+    // 기존 R 번호 전부 로드해 수치 최댓값 산출 (텍스트 정렬은 R10000<R9999 함정)
+    let seq = 0;
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase
+        .from('rental_product_options')
+        .select('ticket_number')
+        .like('ticket_number', 'R%')
+        .range(from, from + 999);
+      if (error) throw new Error(`[티켓 max 조회] 실패: ${error.message}`);
+      for (const r of data || []) {
+        const n = parseInt(String(r.ticket_number).replace(/^R/, ''), 10);
+        if (Number.isFinite(n) && n > seq) seq = n;
+      }
+      if (!data || data.length < 1000) break;
+    }
+
+    const noTicket = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase
+        .from('rental_product_options')
+        .select('id, is_active')
+        .is('ticket_number', null)
+        .order('id', { ascending: true })
+        .range(from, from + 999);
+      if (error) throw new Error(`[티켓 발번 조회] 실패: ${error.message}`);
+      noTicket.push(...(data || []));
+      if (!data || data.length < 1000) break;
+    }
+    for (const o of noTicket) {
+      seq += 1;
+      const tk = 'R' + String(seq).padStart(4, '0');
+      const { error } = await supabase
+        .from('rental_product_options')
+        .update({ ticket_number: tk, ticket_active: o.is_active, updated_at: new Date().toISOString() })
+        .eq('id', o.id);
+      if (error) throw new Error(`[티켓 발번] id=${o.id} 실패: ${error.message}`);
+    }
+  }
+
   // ─── 5. rental_import_batches status='committed' ───
   const { error: bUpdErr } = await supabase
     .from('rental_import_batches')
