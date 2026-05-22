@@ -146,7 +146,8 @@ async function fetchAgent() {
     <!-- ★ 상품 카테고리 탭 -->
     <div style="display:flex;gap:5px;border-bottom:2px solid #f59e0b;margin-bottom:14px">
       <div class="prod-cat-tab active" data-cat="it" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#cbd5e1;position:relative;bottom:-2px">📡 인터넷 + TV</div>
-      <div class="prod-cat-tab" data-cat="rental" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">🏠 가전렌탈(정수기) <span style="background:#f59e0b;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">NEW</span></div>
+      <div class="prod-cat-tab" data-cat="rental" data-group="정수기" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">💧 정수기 그룹</div>
+      <div class="prod-cat-tab" data-cat="rental" data-group="가전" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">🏠 가전 그룹 <span style="background:#f59e0b;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">NEW</span></div>
     </div>
 
     <!-- ★ 가전렌탈 패널 (기본 hidden) -->
@@ -159,10 +160,14 @@ async function fetchAgent() {
         <div class="kpi-card"><div class="kpi-label">평균 리베이트</div><div class="kpi-val" id="rp-kpi-rebate">-</div><div class="kpi-sub">옵션 평균</div></div>
       </div>
 
+      <!-- 가전 그룹 — 렌탈사별 수수료율 (정수기 그룹은 숨김) -->
+      <div id="rp-company-rates" style="display:none;margin-bottom:14px"></div>
+
       <div class="section" style="background:linear-gradient(135deg,rgba(245,158,11,0.06),#0f172a);border:1.5px solid #f59e0b;border-radius:8px;padding:14px 16px;margin-bottom:14px">
         <h2 style="color:#fbbf24;margin:0 0 10px;font-size:15px;display:flex;justify-content:space-between;align-items:center">
-          🏠 가전렌탈(정수기) 상품 관리
+          <span id="rp-group-title">💧 정수기 그룹 상품 관리</span>
           <span style="display:flex;gap:6px">
+            <button type="button" id="rp-import-btn" style="background:linear-gradient(135deg,#06b6d4,#7c3aed);color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-weight:700">📤 빌리고 엑셀 import</button>
             <button type="button" id="rp-bulk-payback-btn" style="background:#7c3aed;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer">⚙️ 선택 모델 페이백 일괄 입력</button>
             <button type="button" id="rp-reload-btn" style="background:#475569;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer">🔄 새로고침</button>
           </span>
@@ -201,6 +206,59 @@ async function fetchAgent() {
           <div id="rp-product-detail" style="display:none;background:rgba(245,158,11,0.05);border:1px solid #f59e0b;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:10.5px;color:#cbd5e1;line-height:1.7"></div>
           <div id="rp-options-area" style="font-size:11.5px;color:#94a3b8;padding:20px;text-align:center">왼쪽에서 모델을 선택하세요</div>
         </div>
+      </div>
+    </div>
+
+    <!-- ★ 빌리고 엑셀 import — 숨김 파일 입력 + 모달 -->
+    <input type="file" id="rp-import-file" accept=".xlsx" style="display:none">
+    <div id="rp-import-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto">
+      <div style="background:#1e293b;border:1.5px solid #475569;border-radius:12px;width:100%;max-width:760px;padding:20px 22px">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155;padding-bottom:12px;margin-bottom:14px">
+          <div style="font-size:15px;font-weight:800;color:#fbbf24">📤 빌리고 엑셀 import</div>
+          <button type="button" id="rp-import-close" style="background:#475569;color:#fff;border:none;width:26px;height:26px;border-radius:6px;font-size:14px;cursor:pointer">✕</button>
+        </div>
+        <!-- 파일 + 기준월 -->
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
+          <div style="flex:1;min-width:200px">
+            <label style="font-size:11px;color:#94a3b8">선택 파일</label>
+            <div id="rp-import-filename" style="margin-top:3px;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;font-size:12px;color:#e2e8f0;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">-</div>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#94a3b8">기준월 (year_month)</label>
+            <input type="month" id="rp-import-ym" style="display:block;margin-top:3px;padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#94a3b8">파일 종류</label>
+            <select id="rp-import-filetype" style="display:block;margin-top:3px;padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px">
+              <option value="등록폼">봉이 표준 등록폼</option>
+              <option value="정수기">빌리고 정수기 원본</option>
+              <option value="가전">빌리고 가전 원본</option>
+            </select>
+          </div>
+          <button type="button" id="rp-import-preview-btn" style="background:#06b6d4;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:800;cursor:pointer">🔍 미리보기</button>
+        </div>
+        <!-- 미리보기 결과 -->
+        <div id="rp-import-result" style="display:none">
+          <!-- summary 카드 -->
+          <div id="rp-import-summary" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px"></div>
+          <!-- collisions / warnings -->
+          <div id="rp-import-warn" style="margin-bottom:10px"></div>
+          <!-- sample 테이블 -->
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">샘플 (최대 20건)</div>
+          <div style="max-height:280px;overflow-y:auto;margin-bottom:14px">
+            <table style="font-size:10.5px">
+              <thead style="position:sticky;top:0;background:#1e293b;z-index:1">
+                <tr><th>모델</th><th>약정</th><th>care</th><th>variant_code</th><th style="text-align:right">렌탈료</th><th style="text-align:right">rebate</th></tr>
+              </thead>
+              <tbody id="rp-import-sample"></tbody>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #334155;padding-top:12px">
+            <button type="button" id="rp-import-cancel" style="background:#475569;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">취소</button>
+            <button type="button" id="rp-import-commit-btn" style="background:#16a34a;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:800;cursor:pointer">✅ 확정 반영</button>
+          </div>
+        </div>
+        <div id="rp-import-msg" style="font-size:11.5px;margin-top:10px;min-height:16px"></div>
       </div>
     </div>
 
@@ -346,7 +404,7 @@ async function fetchAgent() {
 <script>
 (function(){
   const RP_API = '/api/rental';
-  let _cats = [], _products = [], _selectedProductId = null, _options = [], _policy = null, _brandPolicies = [];
+  let _cats = [], _products = [], _selectedProductId = null, _options = [], _policy = null, _brandPolicies = [], _companies = [];
   const F = (id) => document.getElementById(id);
   const fmtKor = n => n == null ? '-' : Math.round(Number(n)).toLocaleString();
   const fmtStar = n => n ? '★'.repeat(Number(n)) + '☆'.repeat(Math.max(0, 5 - Number(n))) : '-';
@@ -362,58 +420,111 @@ async function fetchAgent() {
       t.classList.add('active');
       t.style.color = '#cbd5e1';
       const cat = t.dataset.cat;
+      const isRental = cat === 'rental';
       F('it-panel').style.display = cat === 'it' ? '' : 'none';
-      F('rental-panel').style.display = cat === 'rental' ? '' : 'none';
-      if (cat === 'rental') initRental();
+      F('rental-panel').style.display = isRental ? '' : 'none';
+      if (isRental) initRental(t.dataset.group);
     });
   });
 
-  let _rentalInited = false;
-  async function initRental() {
-    if (_rentalInited) return;
-    _rentalInited = true;
+  let _rentalGroup = null, _rentalBaseInited = false;
+  async function initRental(group) {
+    if (_rentalGroup === group && _rentalBaseInited) return;
+    _rentalGroup = group;
     try {
-      const [cs, pol, bps] = await Promise.all([
-        fetch(RP_API + '/categories').then(r => r.json()),
-        fetch(RP_API + '/policy').then(r => r.json()),
-        fetch(RP_API + '/brand-policies').then(r => r.json()),
+      // 정책·브랜드정책·이벤트 바인딩·import — 최초 1회만
+      if (!_rentalBaseInited) {
+        const [pol, bps] = await Promise.all([
+          fetch(RP_API + '/policy').then(r => r.json()),
+          fetch(RP_API + '/brand-policies').then(r => r.json()),
+        ]);
+        _policy = pol.policy;
+        _brandPolicies = bps.brand_policies || [];
+        // 정책 변경 BroadcastChannel 수신 → _policy 재 fetch + 옵션 표 즉시 재계산
+        try {
+          const rpCh = new BroadcastChannel('rental-policy');
+          rpCh.addEventListener('message', async (e) => {
+            if (e.data?.type === 'policy-changed') {
+              const r = await fetch(RP_API + '/policy').then(r => r.json()).catch(()=>null);
+              if (r?.policy) _policy = r.policy;
+              if (_selectedProductId) loadOptions(_selectedProductId);
+            }
+          });
+        } catch(e) {}
+        F('rp-filter-cat').addEventListener('change', loadProducts);
+        F('rp-filter-brand').addEventListener('change', renderModels);
+        F('rp-filter-tier').addEventListener('change', renderModels);
+        F('rp-filter-promo').addEventListener('change', renderModels);
+        F('rp-filter-search').addEventListener('input', renderModels);
+        F('rp-reload-btn')?.addEventListener('click', loadProducts);
+        F('rp-bulk-payback-btn')?.addEventListener('click', bulkPayback);
+        initImport();
+        _rentalBaseInited = true;
+      }
+      const gt = F('rp-group-title');
+      if (gt) gt.textContent = (group === '정수기' ? '💧 정수기 그룹' : '🏠 가전 그룹') + ' 상품 관리';
+      // 카테고리 — 선택 그룹(정수기/가전렌탈사)의 상품 있는 것만
+      // 카테고리 그룹(정수기/가전) ↔ 렌탈사 그룹(정수기/가전렌탈사) 매핑
+      const companyGroup = group === '정수기' ? '정수기' : '가전렌탈사';
+      const [cs, comp] = await Promise.all([
+        fetch(RP_API + `/categories?include_inactive=1&group=${encodeURIComponent(group)}`).then(r => r.json()),
+        fetch(RP_API + `/companies?group=${encodeURIComponent(companyGroup)}`).then(r => r.json()),
       ]);
-      _cats = cs.categories || [];
-      _policy = pol.policy;
-      _brandPolicies = bps.brand_policies || [];
-
-      // 정책 변경 BroadcastChannel 수신 → _policy 재 fetch + 옵션 표 즉시 재계산
-      try {
-        const rpCh = new BroadcastChannel('rental-policy');
-        rpCh.addEventListener('message', async (e) => {
-          if (e.data?.type === 'policy-changed') {
-            const r = await fetch(RP_API + '/policy').then(r => r.json()).catch(()=>null);
-            if (r?.policy) _policy = r.policy;
-            if (_selectedProductId) loadOptions(_selectedProductId);
-          }
-        });
-      } catch(e) {}
+      _cats = (cs.categories || []).filter(c => (c.product_count || 0) > 0);
+      if (!_cats.length) _cats = cs.categories || [];  // 데이터 0이면 전체 노출 (fallback)
+      _companies = comp.companies || [];
+      renderCompanyRates(group);
       F('rp-filter-cat').innerHTML = _cats.map(c => `<option value="${c.slug}">${(c.metadata?.icon||'')} ${c.name}</option>`).join('');
-      F('rp-filter-cat').addEventListener('change', loadProducts);
-      F('rp-filter-brand').addEventListener('change', renderModels);
-      F('rp-filter-tier').addEventListener('change', renderModels);
-      F('rp-filter-promo').addEventListener('change', renderModels);
-      F('rp-filter-search').addEventListener('input', renderModels);
-      F('rp-reload-btn')?.addEventListener('click', loadProducts);
-      F('rp-bulk-payback-btn')?.addEventListener('click', bulkPayback);
       await loadProducts();
     } catch (e) {
       F('rp-models-tbody').innerHTML = `<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:14px">API 오류: ${e.message}</td></tr>`;
     }
   }
 
+  // 렌탈사 수수료 표기 — rate(%)·multiple(배수)·flat(정액)
+  function fmtCommission(c) {
+    if (!c) return '-';
+    if (c.commission_method === 'rate' && c.commission_rate != null)
+      return Math.round(Number(c.commission_rate) * 100) + '%';
+    if (c.commission_method === 'multiple' && c.commission_multiple != null)
+      return '월렌탈료 ×' + c.commission_multiple;
+    if (c.commission_method === 'flat' && c.commission_flat != null)
+      return Number(c.commission_flat).toLocaleString() + '원';
+    return c.commission_method || '-';
+  }
+  // 가전 그룹 — 렌탈사별 수수료율 패널 (정수기 그룹은 direct 라 숨김)
+  function renderCompanyRates(group) {
+    const box = F('rp-company-rates');
+    if (!box) return;
+    if (group !== '가전') { box.style.display = 'none'; return; }
+    const list = (_companies || []).filter(c => (c.model_count || 0) > 0)
+      .sort((a, b) => (b.model_count || 0) - (a.model_count || 0));
+    if (!list.length) { box.style.display = 'none'; return; }
+    box.style.display = '';
+    box.innerHTML = `
+      <div class="section" style="padding:10px 12px">
+        <h3 style="font-size:13px;color:#cbd5e1;margin:0 0 8px">🏢 렌탈사별 수수료율 <span style="font-size:10.5px;color:#94a3b8;font-weight:500">· ${list.length}개사 · 봉이 영업 수수료</span></h3>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${list.map(c => `<div style="background:#0f172a;border:1px solid #475569;border-radius:6px;padding:5px 10px;font-size:11px">
+            <span style="color:#e2e8f0;font-weight:700">${c.name}</span>
+            <span style="color:#fbbf24;font-weight:800;margin-left:5px">${fmtCommission(c)}</span>
+            <span style="color:#64748b;margin-left:4px">${(c.model_count||0).toLocaleString()}모델</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
   async function loadProducts() {
     const slug = F('rp-filter-cat').value;
-    const r = await fetch(`${RP_API}/products?category=${slug}&active_only=0`).then(r => r.json());
+    const r = await fetch(`${RP_API}/products?category=${slug}&group=${encodeURIComponent(_rentalGroup||'')}&active_only=0`).then(r => r.json());
     // 옵션 단가 등록된 모델만 (후보-only 제외)
     _products = (r.products || []).filter(p => (p.option_count || 0) > 0);
     const brands = [...new Set(_products.map(p => p.brand))].sort();
-    F('rp-filter-brand').innerHTML = '<option value="">전체</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+    F('rp-filter-brand').innerHTML = '<option value="">전체</option>' + brands.map(b => {
+      const co = (_companies || []).find(x => x.name === b);
+      const suffix = (co && _rentalGroup === '가전') ? ` (${fmtCommission(co)})` : '';
+      return `<option value="${b}">${b}${suffix}</option>`;
+    }).join('');
     renderKpi();
     renderModels();
   }
@@ -899,6 +1010,170 @@ async function fetchAgent() {
     // P·Tier 자동 계산이 다른 값(rebate/payback/point_weight)에도 의존 → 항상 재로딩으로 즉시 시각 동기화
     const autoTrigger = ['rebate','payback','point_weight','rebate_otherco','rebate_half'];
     if (autoTrigger.includes(field) && _selectedProductId) loadOptions(_selectedProductId);
+  }
+
+  // ═══════════════════════════════════════
+  // 빌리고 엑셀 import
+  // ═══════════════════════════════════════
+  let _importFile = null, _importBatchId = null;
+
+  function thisMonthYM() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
+  function importMsg(html, color) {
+    const el = F('rp-import-msg');
+    el.innerHTML = html || '';
+    el.style.color = color || '#94a3b8';
+  }
+
+  function closeImportModal() {
+    F('rp-import-modal').style.display = 'none';
+  }
+
+  function initImport() {
+    F('rp-import-btn')?.addEventListener('click', () => F('rp-import-file').click());
+    F('rp-import-file')?.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      _importFile = file;
+      _importBatchId = null;
+      F('rp-import-filename').textContent = file.name;
+      F('rp-import-ym').value = thisMonthYM();
+      F('rp-import-result').style.display = 'none';
+      F('rp-import-commit-btn').disabled = false;
+      importMsg('');
+      F('rp-import-modal').style.display = 'flex';
+      e.target.value = '';  // 동일 파일 재선택 허용
+    });
+    F('rp-import-close')?.addEventListener('click', closeImportModal);
+    F('rp-import-cancel')?.addEventListener('click', closeImportModal);
+    F('rp-import-modal')?.addEventListener('click', (e) => {
+      if (e.target === F('rp-import-modal')) closeImportModal();
+    });
+    F('rp-import-preview-btn')?.addEventListener('click', importPreview);
+    F('rp-import-commit-btn')?.addEventListener('click', importCommit);
+  }
+
+  async function importPreview() {
+    if (!_importFile) { importMsg('⚠️ 파일을 먼저 선택하세요', '#f59e0b'); return; }
+    const ym = F('rp-import-ym').value;
+    if (!/^\d{4}-\d{2}$/.test(ym)) { importMsg('⚠️ 기준월(YYYY-MM)을 입력하세요', '#f59e0b'); return; }
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    if (!tk) { importMsg('⚠️ 로그인 필요', '#ef4444'); return; }
+    const btn = F('rp-import-preview-btn');
+    btn.disabled = true;
+    const oldLabel = btn.textContent;
+    btn.textContent = '미리보기 중...';
+    importMsg('⏳ 엑셀 분석 중...', '#94a3b8');
+    try {
+      const fd = new FormData();
+      fd.append('file', _importFile);
+      fd.append('year_month', ym);
+      fd.append('file_type', F('rp-import-filetype')?.value || '정수기');
+      // FormData 전송 시 Content-Type 은 브라우저가 boundary 포함해 자동 설정
+      const res = await fetch(`${RP_API}/import/preview`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + tk },
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `미리보기 실패 (${res.status})`);
+      _importBatchId = data.batch_id;
+      renderImportPreview(data);
+      importMsg('✅ 미리보기 완료 — 내용 확인 후 [확정 반영]', '#22c55e');
+    } catch (e) {
+      F('rp-import-result').style.display = 'none';
+      importMsg('❌ ' + e.message, '#ef4444');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = oldLabel;
+    }
+  }
+
+  function renderImportPreview(data) {
+    const s = data.summary || {};
+    const cards = [
+      { label: '렌탈사', val: s.companies, color: '#60a5fa' },
+      { label: '신규상품', val: s.products_new, color: '#22c55e' },
+      { label: '변경', val: s.products_updated, color: '#fbbf24' },
+      { label: '단종', val: s.products_discontinued, color: '#ef4444' },
+      { label: '옵션 총', val: s.options_total, sub: `신규 ${s.options_new||0} / 변경 ${s.options_updated||0}`, color: '#a78bfa' },
+    ];
+    F('rp-import-summary').innerHTML = cards.map(c => `
+      <div style="background:#0f172a;border:1px solid #475569;border-radius:8px;padding:10px">
+        <div style="font-size:9.5px;color:#94a3b8;font-weight:700">${c.label}</div>
+        <div style="font-size:18px;font-weight:900;color:${c.color}">${c.val == null ? '-' : c.val}</div>
+        ${c.sub ? `<div style="font-size:9px;color:#64748b;margin-top:2px">${c.sub}</div>` : ''}
+      </div>`).join('');
+
+    // collisions / warnings
+    const collisions = data.key_collisions || [];
+    const warnings = data.warnings || [];
+    let warnHTML = '';
+    if (collisions.length) {
+      warnHTML += `<div style="background:rgba(239,68,68,0.12);border:1px solid #ef4444;border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:10.5px;color:#fca5a5">
+        🚨 키 충돌 ${collisions.length}건 — ${collisions.slice(0,8).map(c => typeof c === 'string' ? c : (c.variant_code || c.key || JSON.stringify(c))).join(', ')}${collisions.length>8?' …':''}</div>`;
+    }
+    if (warnings.length) {
+      warnHTML += `<div style="background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:6px;padding:8px 10px;font-size:10.5px;color:#fcd34d">
+        ⚠️ 경고 ${warnings.length}건 — ${warnings.slice(0,8).map(w => typeof w === 'string' ? w : (w.message || JSON.stringify(w))).join(' / ')}${warnings.length>8?' …':''}</div>`;
+    }
+    F('rp-import-warn').innerHTML = warnHTML;
+
+    // sample 20건
+    const sample = data.sample || [];
+    F('rp-import-sample').innerHTML = sample.length
+      ? sample.map(r => `<tr>
+          <td>${r.model ?? '-'}</td>
+          <td style="text-align:center">${r.contract_months ?? r.months ?? '-'}</td>
+          <td style="text-align:center">${r.care_service ?? r.care ?? '-'}</td>
+          <td style="font-family:monospace">${r.variant_code ?? '-'}</td>
+          <td style="text-align:right">${fmtKor(r.rental_fee ?? r.monthly_fee ?? r.rental ?? null)}</td>
+          <td style="text-align:right">${fmtKor(r.rebate ?? null)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:12px">샘플 없음</td></tr>';
+
+    F('rp-import-commit-btn').disabled = false;
+    F('rp-import-result').style.display = '';
+  }
+
+  async function importCommit() {
+    if (!_importBatchId) { importMsg('⚠️ 먼저 미리보기를 실행하세요', '#f59e0b'); return; }
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    if (!tk) { importMsg('⚠️ 로그인 필요', '#ef4444'); return; }
+    const btn = F('rp-import-commit-btn');
+    btn.disabled = true;
+    const oldLabel = btn.textContent;
+    btn.textContent = '반영 중...';
+    F('rp-import-preview-btn').disabled = true;
+    F('rp-import-cancel').disabled = true;
+    importMsg('⏳ DB 반영 중... (옵션 수천 건은 수 초 소요)', '#94a3b8');
+    try {
+      const res = await fetch(`${RP_API}/import/commit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
+        body: JSON.stringify({ batch_id: _importBatchId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || `반영 실패 (${res.status})`);
+      const a = data.applied || {};
+      closeImportModal();
+      if (typeof showToast === 'function') {
+        showToast(`✅ 빌리고 import 완료 — 신규 ${a.new||0} · 변경 ${a.updated||0} · 단종 ${a.discontinued||0}`);
+      }
+      _importBatchId = null;
+      _importFile = null;
+      await loadProducts();
+    } catch (e) {
+      importMsg('❌ ' + e.message, '#ef4444');
+      btn.disabled = false;
+    } finally {
+      btn.textContent = oldLabel;
+      F('rp-import-preview-btn').disabled = false;
+      F('rp-import-cancel').disabled = false;
+    }
   }
 })();
 </script>
