@@ -697,9 +697,20 @@ export function parseRentalRegisterExcel(input) {
   // 이 시트에 실제 존재하는 모델 단위 필드 — 매 행 재계산 방지
   const presentModelFields = [...new Set(Object.values(fieldByCol))]
     .filter((f) => MODEL_FIELDS.has(f));
+  // 모델 그룹 식별자 자체인 필드 — 그룹 경계 판정용. 이 3개는 항상 forward-fill
+  // 하되, 나머지 모델 단위 필드는 그룹이 바뀔 때 fill 상태를 리셋한다 (§5.1).
+  const GROUP_KEY_FIELDS = new Set(['brand', 'model', 'series_key']);
+  const groupFillFields = presentModelFields.filter((f) => GROUP_KEY_FIELDS.has(f));
+  const memberFillFields = presentModelFields.filter((f) => !GROUP_KEY_FIELDS.has(f));
 
   // ─── 행 순회 — 모델 단위 값 forward-fill, 옵션 record 생성 ───
-  const fill = makeFiller();
+  // groupFill: 그룹 식별자(브랜드·모델명·시리즈키) 상속 — 모델 경계와 무관하게
+  //   연속 유지(연속 옵션 행 묶음 식별용).
+  // memberFill: 노출순위·시장성·등록상태·평가메모 등 — 모델 그룹이 바뀌면
+  //   리셋해, 직전 모델 값이 다음 모델로 새지 않게 한다.
+  const groupFill = makeFiller();
+  let memberFill = makeFiller();
+  let prevGroupKey = null;
   const products = new Map();   // company|model → product
   const optionsRaw = [];
   const companies = new Map();  // name → company
@@ -717,9 +728,22 @@ export function parseRentalRegisterExcel(input) {
     for (const [colStr, field] of Object.entries(fieldByCol)) {
       rec[field] = row[Number(colStr)];
     }
-    // 모델 단위 필드 forward-fill (§5.1)
-    for (const f of presentModelFields) {
-      rec[f] = fill(f, rec[f]);
+    // 1) 그룹 식별 필드(브랜드·모델명·시리즈키) 먼저 forward-fill
+    for (const f of groupFillFields) {
+      rec[f] = groupFill(f, rec[f]);
+    }
+    // 2) 모델 그룹 키 산출 — 시리즈키 우선, 없으면 (브랜드+모델명).
+    //    이 키가 바뀌면 = 새 모델 시작 → memberFill 리셋 (직전 모델 값 차단).
+    const groupKey = hasVal(rec.series_key)
+      ? `S:${clean(rec.series_key)}`
+      : `M:${clean(rec.brand)}|${clean(rec.model)}`;
+    if (groupKey !== prevGroupKey) {
+      memberFill = makeFiller();   // 모델 경계 — fill 상태 리셋 (§5.1)
+      prevGroupKey = groupKey;
+    }
+    // 3) 나머지 모델 단위 필드 — 모델 그룹 안에서만 forward-fill
+    for (const f of memberFillFields) {
+      rec[f] = memberFill(f, rec[f]);
     }
 
     const brand = clean(rec.brand);
