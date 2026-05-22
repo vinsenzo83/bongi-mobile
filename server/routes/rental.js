@@ -16,6 +16,10 @@ const router = Router();
 const _isProd = process.env.NODE_ENV === 'production';
 const errMsg = (e) => _isProd ? '서버 오류 — 잠시 후 다시 시도하세요' : (e?.message || '서버 오류');
 
+// 그룹 파라미터 정규화 — rental_categories.product_group 은 '정수기'|'가전' 2값.
+// 옛 캐시 HTML 은 company.category_group 값('가전렌탈사'·'정수기메이커')을 보내므로 별칭 흡수.
+const normGroup = (g) => ({ 가전렌탈사: '가전', 정수기메이커: '정수기' }[g] || g || null);
+
 // 빌리고 엑셀 업로드 — 메모리 저장 (xlsx 8천행은 메모리로 충분), .xlsx 한정 30MB
 const billigoUpload = multer({
   storage: multer.memoryStorage(),
@@ -55,7 +59,7 @@ function normalizeNotes(s) {
 // 각 카테고리에 product_count 포함 — 어드민 필터가 데이터 있는 카테고리만 노출하도록.
 router.get('/categories', optionalAuth, async (req, res) => {
   try {
-    const { group } = req.query;
+    const group = normGroup(req.query.group);
     let q = supabase
       .from('rental_categories')
       .select('*, rental_products(count)')
@@ -311,7 +315,8 @@ router.get('/products/for-recommend', optionalAuth, async (req, res) => {
 
 router.get('/products', optionalAuth, async (req, res) => {
   try {
-    const { category, brand, group, active_only = '1' } = req.query;
+    const { category, brand, active_only = '1' } = req.query;
+    const group = normGroup(req.query.group);
     let categoryId = null;
     if (category) {
       const { data: cat } = await supabase.from('rental_categories').select('id').eq('slug', category).single();
