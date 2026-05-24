@@ -2602,19 +2602,26 @@ init();
     // 기존 동적 추가된 탭 제거
     tabsEl.querySelectorAll('.cat-tab[data-dynamic="1"]').forEach(b => b.remove());
 
-    // 권한 있는 카테고리만 탭 추가
-    _categories.forEach(cat => {
-      const allowed = _myCatsUnrestricted || _myCats.includes(cat.slug);
-      if (!allowed || !cat.is_active) return;
+    // 카테고리 → 그룹별 묶음 (정수기 / 가전). 권한 있는 카테고리만.
+    const allowedCats = _categories.filter(c => c.is_active && (_myCatsUnrestricted || _myCats.includes(c.slug)));
+    const hasJeongsugi = allowedCats.some(c => c.product_group === '정수기');
+    const hasGajeon    = allowedCats.some(c => c.product_group === '가전');
+
+    const groups = [];
+    if (hasJeongsugi) groups.push({ key: 'purifier', icon: '💧', label: '정수기 그룹' });
+    if (hasGajeon)    groups.push({ key: 'gajeon',   icon: '🏠', label: '가전 그룹' });
+
+    for (const g of groups) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'cat-tab';
-      btn.dataset.cat = cat.slug;
+      btn.dataset.cat = `rental-${g.key}`;
+      btn.dataset.group = g.key === 'purifier' ? '정수기' : '가전';
       btn.dataset.dynamic = '1';
       btn.style.cssText = 'background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;color:#94a3b8;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px';
-      btn.innerHTML = `${cat.icon || '🏠'} 가전렌탈(${cat.name})`;
+      btn.innerHTML = `${g.icon} ${g.label}`;
       tabsEl.appendChild(btn);
-    });
+    }
 
     // 탭 클릭 이벤트
     tabsEl.querySelectorAll('.cat-tab').forEach(b => {
@@ -2628,21 +2635,21 @@ init();
     });
   }
 
-  function switchPanel(slug) {
+  function switchPanel(cat) {
     const it = document.getElementById('internet-contract-panel');
     const rental = document.getElementById('rental-contract-panel');
-    if (slug === 'internet_tv') {
+    if (cat === 'internet_tv') {
       if (it) it.style.display = '';
       if (rental) rental.style.display = 'none';
-    } else {
+    } else if (cat === 'rental-purifier' || cat === 'rental-gajeon') {
       if (it) it.style.display = 'none';
       if (rental) {
         rental.style.display = '';
-        // 카테고리별 타이틀 + 계약 list 로드
-        const cat = _categories.find(c => c.slug === slug);
+        const group = cat === 'rental-purifier' ? '정수기' : '가전';
+        const icon  = group === '정수기' ? '💧' : '🏠';
         const title = document.querySelector('#rental-sales-list > div > div:first-child');
-        if (title) title.textContent = `📋 가전렌탈(${cat?.name || ''}) 계약 목록`;
-        loadRentalSales(slug);
+        if (title) title.textContent = `📋 ${icon} ${group} 그룹 계약 목록`;
+        loadRentalSales(group);
       }
     }
   }
@@ -2651,8 +2658,10 @@ init();
   window._rentalCurrentSlug = 'internet_tv';
   window._rentalTrashMode = false;
   window._rentalPage = 1;
-  async function loadRentalSales(slug) {
-    window._rentalCurrentSlug = slug;
+  // group: '정수기' | '가전' (그룹 통합 — 카테고리 개별 탭 폐기)
+  async function loadRentalSales(group) {
+    window._rentalCurrentGroup = group;
+    window._rentalCurrentSlug = 'rental-' + (group === '정수기' ? 'purifier' : 'gajeon');
     const tk = localStorage.getItem('incentive-auth-token-v1');
     const body = document.getElementById('rental-sales-tbody');
     const emptyMsg = document.getElementById('rempty-msg');
@@ -2663,9 +2672,13 @@ init();
       const url = '/api/rental/sales?limit=500' + (window._rentalTrashMode ? '&deleted=1' : '');
       const r = await fetch(url, { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json());
       let sales = (r.sales || r.rows || []);
-      // 카테고리 slug 필터
-      const cat = (window._categories || []).find(c => c.slug === slug);
-      if (cat) sales = sales.filter(s => (s.product?.category_id || s.product?.category?.id) === cat.id);
+      // 그룹 필터 — product.category.product_group 기준
+      const groupCatIds = new Set((_categories || [])
+        .filter(c => c.product_group === group).map(c => c.id));
+      sales = sales.filter(s => {
+        const cid = s.product?.category_id || s.product?.category?.id;
+        return cid != null && groupCatIds.has(cid);
+      });
       window._rentalSalesAll = sales;
       window._rentalSalesCache = sales;
       renderRentalSales();
