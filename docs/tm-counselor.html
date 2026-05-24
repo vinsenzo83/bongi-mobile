@@ -1755,6 +1755,7 @@ function bindShortcutKeys() {
           <div class="ttl">📝 렌탈 견적 입력</div>
           <div class="form-grid">
             <div class="field"><label>브랜드</label><select id="rental-brand"></select></div>
+            <div class="field" id="rental-company-wrap" style="display:none"><label>🏢 렌탈사 (채널)</label><select id="rental-company"><option value="">전체</option></select></div>
             <div class="field"><label>모델</label><select id="rental-model"></select></div>
             <div class="field"><label>약정</label><select id="rental-months"></select></div>
             <div class="field"><label>케어서비스</label><select id="rental-care"></select></div>
@@ -5357,6 +5358,7 @@ setTimeout(() => {
       catSel.innerHTML = _categories.map(c => `<option value="${c.slug}" data-id="${c.id}">${(c.metadata?.icon || '')} ${c.name}</option>`).join('');
       catSel.addEventListener('change', loadProducts);
       document.getElementById('rental-brand').addEventListener('change', () => { showBrandPolicy(); filterModels(); });
+      document.getElementById('rental-company')?.addEventListener('change', filterModels);
       document.getElementById('rental-model').addEventListener('change', loadOptions);
       document.getElementById('rental-months').addEventListener('change', selectOpt);
       document.getElementById('rental-care').addEventListener('change', selectOpt);
@@ -5775,13 +5777,34 @@ setTimeout(() => {
     const brands = [...new Set(_products.map(p => p.brand))].sort();
     document.getElementById('rental-brand').innerHTML = brands.map(b => `<option value="${b}">${b}</option>`).join('') || '<option value="">상품 없음</option>';
     document.getElementById('rental-quote-title').textContent = `${_categories.find(c=>c.slug===slug)?.metadata?.icon||''} ${_categories.find(c=>c.slug===slug)?.name||''} 견적 결과`;
+    // 가전 그룹 — 렌탈사 select 노출 + 옵션 채움 (정수기 그룹은 숨김 유지)
+    const isGajeon = (_categories.find(c => c.slug === slug)?.product_group === '가전');
+    const coWrap = document.getElementById('rental-company-wrap');
+    const coSel = document.getElementById('rental-company');
+    if (coWrap) coWrap.style.display = isGajeon ? '' : 'none';
+    if (coSel) {
+      if (isGajeon) {
+        const cos = _products.map(p => p.company).filter(c => c && c.id);
+        const uniq = [...new Map(cos.map(c => [c.id, c])).values()]
+          .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        coSel.innerHTML = '<option value="">전체</option>' +
+          uniq.map(c => `<option value="${c.id}">${c.name}${c.commission_rate != null ? ' ('+Math.round(c.commission_rate*100)+'%)' : ''}</option>`).join('');
+      } else {
+        coSel.value = '';
+      }
+    }
     await filterModels();
   }
 
   async function filterModels() {
     const brand = document.getElementById('rental-brand').value;
-    const models = _products.filter(p => p.brand === brand);
-    document.getElementById('rental-model').innerHTML = models.map(m => `<option value="${m.id}">${m.name} · ${m.model}</option>`).join('') || '<option value="">모델 없음</option>';
+    const companyId = document.getElementById('rental-company')?.value || '';
+    let models = _products.filter(p => p.brand === brand);
+    if (companyId) models = models.filter(p => String(p.company_id) === String(companyId));
+    document.getElementById('rental-model').innerHTML = models.map(m => {
+      const coTag = m.company?.name ? ` [${m.company.name}]` : '';
+      return `<option value="${m.id}">${m.name} · ${m.model}${coTag}</option>`;
+    }).join('') || '<option value="">모델 없음</option>';
     await loadOptions();
   }
 
