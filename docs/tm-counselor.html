@@ -5804,21 +5804,19 @@ setTimeout(() => {
     const brands = [...new Set(_products.map(p => p.brand))].sort();
     document.getElementById('rental-brand').innerHTML = brands.map(b => `<option value="${b}">${b}</option>`).join('') || '<option value="">상품 없음</option>';
     document.getElementById('rental-quote-title').textContent = `${_categories.find(c=>c.slug===slug)?.metadata?.icon||''} ${_categories.find(c=>c.slug===slug)?.name||''} 견적 결과`;
-    // 가전 그룹 — 렌탈사 select 노출 + 옵션 채움 (정수기 그룹은 숨김 유지)
+    // 🏢 렌탈사 select — 가전 그룹은 '채널' 선택, 정수기 그룹은 '메이커' 단순 표시(둘 다 노출)
     const isGajeon = (_categories.find(c => c.slug === slug)?.product_group === '가전');
     const coWrap = document.getElementById('rental-company-wrap');
     const coSel = document.getElementById('rental-company');
-    if (coWrap) coWrap.style.display = isGajeon ? '' : 'none';
+    const coLabel = coWrap?.querySelector('label');
+    if (coWrap) coWrap.style.display = '';   // 항상 노출
+    if (coLabel) coLabel.textContent = isGajeon ? '🏢 렌탈사 (채널)' : '🏢 메이커 (렌탈사)';
     if (coSel) {
-      if (isGajeon) {
-        const cos = _products.map(p => p.company).filter(c => c && c.id);
-        const uniq = [...new Map(cos.map(c => [c.id, c])).values()]
-          .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-        coSel.innerHTML = '<option value="">전체</option>' +
-          uniq.map(c => `<option value="${c.id}">${c.name}${c.commission_rate != null ? ' ('+Math.round(c.commission_rate*100)+'%)' : ''}</option>`).join('');
-      } else {
-        coSel.value = '';
-      }
+      const cos = _products.map(p => p.company).filter(c => c && c.id);
+      const uniq = [...new Map(cos.map(c => [c.id, c])).values()]
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      coSel.innerHTML = '<option value="">전체</option>' +
+        uniq.map(c => `<option value="${c.id}">${c.name}${c.commission_rate != null ? ' ('+Math.round(c.commission_rate*100)+'%)' : ''}</option>`).join('');
     }
     await filterModels();
   }
