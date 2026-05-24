@@ -572,7 +572,7 @@ router.post('/quote', optionalAuth, async (req, res) => {
     if (!option_id) return res.status(400).json({ error: 'option_id 필수' });
 
     const [{ data: opt }, { data: policy }] = await Promise.all([
-      supabase.from('rental_product_options').select('*, product:rental_products(*, company:rental_companies(id, name, commission_rate, commission_method, commission_flat, commission_multiple, convenience_score))').eq('id', option_id).single(),
+      supabase.from('rental_product_options').select('*, product:rental_products(*, company:rental_companies(id, name, commission_rate, commission_method, commission_flat, commission_multiple, convenience_score), category:rental_categories(id, name, slug, product_group))').eq('id', option_id).single(),
       supabase.from('rental_policy').select('*').eq('active', true).single(),
     ]);
     if (!opt || !policy) return res.status(404).json({ error: '옵션 또는 정책 없음' });
@@ -952,7 +952,7 @@ router.get('/sales', authenticateJWT, async (req, res) => {
     const { status, agent_id, limit = 500, deleted } = req.query;
     let q = supabase
       .from('rental_sales')
-      .select('*, product:rental_products(*), option:rental_product_options(months, care_service, rebate, payback, monthly_fee, normal_price, ticket_number, ticket_active), agent:incentive_agents(id, name, center)')
+      .select('*, product:rental_products(*, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group)), option:rental_product_options(months, care_service, rebate, payback, monthly_fee, normal_price, ticket_number, ticket_active), agent:incentive_agents(id, name, center)')
       .order('created_at', { ascending: false })
       .limit(Number(limit) || 500);
     if (deleted === '1' || deleted === 'true') {
