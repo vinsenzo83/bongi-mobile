@@ -337,7 +337,7 @@ router.get('/products', optionalAuth, async (req, res) => {
     for (let from = 0; ; from += PAGE) {
       let q = supabase
         .from('rental_products')
-        .select('*, category:rental_categories(slug, name, metadata)')
+        .select('*, category:rental_categories(slug, name, metadata, product_group), company:rental_companies(id, name, category_group, commission_method, commission_rate, convenience_score)')
         .order('brand', { ascending: true })
         .order('model', { ascending: true })
         .range(from, from + PAGE - 1);
