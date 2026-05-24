@@ -1624,6 +1624,13 @@ function bindShortcutKeys() {
         <input type="search" id="rr-search" placeholder="🔎 모델·브랜드 검색">
 <!-- 우수상품 필터 제거: 옵션 단위 자동 분류라 product 단위 필터 무의미 -->
       </div>
+      <!-- 다채널 추천 프로파일 토글 (가전 그룹 한정) -->
+      <div class="rr-profile-bar" id="rr-profile-bar" style="display:none">
+        <span class="rr-profile-label">🎯 고객 유형</span>
+        <button type="button" class="rr-profile-chip" data-profile="margin" title="봉이 마진·상담사 수익 우선">🏢 봉이 마진</button>
+        <button type="button" class="rr-profile-chip" data-profile="customer" title="고객 월 부담 최저">💰 월납 최소</button>
+        <button type="button" class="rr-profile-chip" data-profile="gift" title="페이백·결합혜택 여력 최대">🎁 사은품 최대</button>
+      </div>
       <div class="rr-cat-chips" id="rr-cat-chips"></div>
       <div class="rr-brand-chips" id="rr-brand-chips"></div>
       <div class="rr-stats" id="rr-stats"></div>
@@ -1696,6 +1703,28 @@ function bindShortcutKeys() {
       .rr-card .rr-tier-A { background:#60a5fa; color:#0c1f3a; }
       .rr-card .rr-tier-B { background:#94a3b8; color:#0f172a; }
       .rr-card .rr-tier-C { background:#475569; color:#cbd5e1; }
+      /* 다채널 추천 프로파일 토글 */
+      .rr-profile-bar { display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin-bottom:6px; padding:5px 7px; background:rgba(245,158,11,0.08); border:1px solid #f59e0b; border-radius:5px; }
+      .rr-profile-label { font-size:10px; font-weight:800; color:#fbbf24; margin-right:3px; }
+      .rr-profile-chip { background:#1e293b; border:1px solid #475569; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:700; color:#94a3b8; cursor:pointer; transition:all 0.15s; }
+      .rr-profile-chip:hover { background:#334155; color:#e2e8f0; }
+      .rr-profile-chip.active[data-profile="margin"]   { background:#fbbf24; color:#451a03; border-color:#f59e0b; }
+      .rr-profile-chip.active[data-profile="customer"] { background:#22c55e; color:#052e16; border-color:#16a34a; }
+      .rr-profile-chip.active[data-profile="gift"]     { background:#a855f7; color:#2e1065; border-color:#7c3aed; }
+      /* 다채널 펼침 카드 */
+      .rr-card .rr-channels { margin-top:5px; padding-top:5px; border-top:1px dashed #475569; }
+      .rr-card .rr-ch-toggle { font-size:9.5px; color:#60a5fa; cursor:pointer; user-select:none; }
+      .rr-card .rr-ch-toggle:hover { text-decoration:underline; }
+      .rr-card .rr-ch-list { display:none; margin-top:4px; padding:5px 7px; background:#0f172a; border:1px solid #1e293b; border-radius:4px; }
+      .rr-card .rr-ch-list.open { display:block; }
+      .rr-card .rr-ch-row { display:flex; align-items:center; gap:5px; font-size:9.5px; color:#cbd5e1; padding:2px 0; }
+      .rr-card .rr-ch-row .medal { font-size:11px; min-width:14px; }
+      .rr-card .rr-ch-row .co { font-weight:700; color:#67e8f9; min-width:90px; }
+      .rr-card .rr-ch-row .sc { color:#fbbf24; font-weight:700; margin-left:auto; }
+      .rr-card .rr-ch-row .tg { font-size:8.5px; padding:0 4px; border-radius:3px; background:rgba(34,197,94,0.15); color:#86efac; font-weight:700; }
+      .rr-card .rr-best-co { display:inline-block; background:#0891b2; color:#fff; font-size:8.5px; padding:1px 4px; border-radius:3px; margin-left:3px; font-weight:700; }
+      .rr-card .rr-best-co.profile-customer { background:#16a34a; }
+      .rr-card .rr-best-co.profile-gift { background:#9333ea; }
     </style>
 
     <h2>📝 메모</h2>
@@ -5225,6 +5254,12 @@ setTimeout(() => {
   let _allProducts = [];
   let _rrFilter = { category: 'all', brand: 'all', premiumOnly: false, q: '' };
   let _rrCriteria = { usage: '', people: '', features: [] }; // 추천 조건
+  // 다채널 추천 — 고객 유형 프로파일 (margin/customer/gift). localStorage 박제.
+  let _rrProfile = (function(){
+    try { return localStorage.getItem('rental_recommend_profile') || 'margin'; }
+    catch(e){ return 'margin'; }
+  })();
+  const _channelCache = new Map();   // product_id → channels payload (lazy load)
 
   // ─── 키워드 패턴 (모델명/제품명 → 기능 추출) ───
   const KW = {
@@ -5555,24 +5590,96 @@ setTimeout(() => {
         </div>
         ${metaHtml}
         ${reasonHtml}
+        ${isGajeon ? `<div class="rr-channels" data-pid="${p.id}"><span class="rr-ch-toggle" data-pid="${p.id}">🔀 다채널 비교 ▾</span><div class="rr-ch-list" data-pid="${p.id}"></div></div>` : ''}
       </div>`;
     }).join('');
 
-    // 카드 클릭 — 견적 폼 자동 채움
+    // 카드 클릭 — 견적 폼 자동 채움 (단 다채널 토글 클릭은 제외)
     listEl.querySelectorAll('.rr-card').forEach(card => {
-      card.addEventListener('click', () => selectRecCard(card.dataset.id, card.dataset.cat, card.dataset.brand));
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.rr-channels')) return;
+        selectRecCard(card.dataset.id, card.dataset.cat, card.dataset.brand);
+      });
     });
+    // 다채널 비교 토글 — lazy load
+    listEl.querySelectorAll('.rr-ch-toggle').forEach(t => {
+      t.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const pid = t.dataset.pid;
+        const list = listEl.querySelector(`.rr-ch-list[data-pid="${pid}"]`);
+        if (!list) return;
+        const open = list.classList.toggle('open');
+        t.textContent = open ? '🔀 다채널 비교 ▴' : '🔀 다채널 비교 ▾';
+        if (!open) return;
+        if (list.dataset.loaded === '1') { renderChannelList(list, pid); return; }
+        list.innerHTML = '<div style="font-size:9px;color:#94a3b8">⏳ 채널 조회…</div>';
+        try {
+          const r = await fetch(`${API}/products/${pid}/channels?profile=${_rrProfile}`).then(r => r.json());
+          if (r.error) throw new Error(r.error);
+          _channelCache.set(String(pid), r);
+          list.dataset.loaded = '1';
+          renderChannelList(list, pid);
+        } catch (err) {
+          list.innerHTML = `<div style="font-size:9px;color:#ef4444">❌ ${err.message}</div>`;
+        }
+      });
+    });
+  }
+  // 다채널 목록 렌더링 — 프로파일 점수로 정렬, 메달·태그 표시
+  function renderChannelList(listEl, pid) {
+    const r = _channelCache.get(String(pid));
+    if (!r || !r.channels) { listEl.innerHTML = '<div style="font-size:9px;color:#94a3b8">채널 없음</div>'; return; }
+    const profile = _rrProfile;
+    const sorted = r.channels.slice().sort((a, b) => (b.scores?.by_profile?.[profile] || 0) - (a.scores?.by_profile?.[profile] || 0));
+    if (sorted.length <= 1) { listEl.innerHTML = '<div style="font-size:9px;color:#94a3b8">단일 채널</div>'; return; }
+    const medals = ['🥇','🥈','🥉'];
+    listEl.innerHTML = sorted.map((c, i) => {
+      const m = medals[i] || ' ';
+      const sc = (c.scores?.by_profile?.[profile] || 0).toFixed(2);
+      const tags = (c.tags || []).map(t => `<span class="tg">${t}</span>`).join('');
+      const fee = c.best_option?.monthly_fee ? c.best_option.monthly_fee.toLocaleString() + '원' : '-';
+      const reb = c.best_option?.rebate ? Math.round(c.best_option.rebate/1000) + 'k' : '-';
+      return `<div class="rr-ch-row"><span class="medal">${m}</span><span class="co">${escapeHtml(c.company?.name||'?')}</span><span>월 ${fee}</span><span style="color:#94a3b8">·</span><span style="color:#fbbf24">리베 ${reb}</span> ${tags}<span class="sc">${sc}</span></div>`;
+    }).join('');
+  }
+  // 프로파일 토글 — 가전 그룹 카테고리에서만 활성, 변경 시 펼친 채널 재렌더
+  function setRecProfile(profile) {
+    if (!['margin','customer','gift'].includes(profile)) return;
+    _rrProfile = profile;
+    try { localStorage.setItem('rental_recommend_profile', profile); } catch(e) {}
+    document.querySelectorAll('.rr-profile-chip').forEach(c => c.classList.toggle('active', c.dataset.profile === profile));
+    // 펼친 채널 목록 재렌더 (프로파일 변경 즉시 반영, 재호출 X)
+    document.querySelectorAll('.rr-ch-list.open').forEach(list => renderChannelList(list, list.dataset.pid));
+  }
+  function updateProfileBarVisibility() {
+    const bar = document.getElementById('rr-profile-bar');
+    if (!bar) return;
+    // 현재 카테고리 그룹 확인 — 가전 그룹 카테고리 선택 시만 노출
+    const cat = _rrFilter.category;
+    const isGajeon = cat === 'all'
+      ? _allProducts.some(p => p.category?.product_group === '가전')
+      : (_categories.find(c => c.slug === cat)?.product_group === '가전');
+    bar.style.display = isGajeon ? '' : 'none';
   }
   function escapeHtml(s) {
     return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   }
   function bindRecEvents() {
     if (window._rrBound) return; window._rrBound = true;
+    // 프로파일 토글 (margin/customer/gift) — 저장값 초기 active 적용
+    document.querySelectorAll('.rr-profile-chip').forEach(c =>
+      c.classList.toggle('active', c.dataset.profile === _rrProfile));
+    document.getElementById('rr-profile-bar')?.addEventListener('click', (e) => {
+      const chip = e.target.closest('.rr-profile-chip'); if (!chip) return;
+      setRecProfile(chip.dataset.profile);
+    });
+    updateProfileBarVisibility();
     document.getElementById('rr-cat-chips').addEventListener('click', (e) => {
       const chip = e.target.closest('.rr-chip'); if (!chip) return;
       _rrFilter.category = chip.dataset.cat;
       _rrFilter.brand = 'all';
       renderRecCategoryChips(); renderRecBrandChips(); renderRecList();
+      updateProfileBarVisibility();
     });
     document.getElementById('rr-brand-chips').addEventListener('click', (e) => {
       const chip = e.target.closest('.rr-chip'); if (!chip) return;
