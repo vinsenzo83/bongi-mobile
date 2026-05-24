@@ -359,7 +359,9 @@ router.get('/products/:id/options', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const [{ data: product }, { data: options }] = await Promise.all([
-      supabase.from('rental_products').select('*, category:rental_categories(slug, name, metadata)').eq('id', id).single(),
+      supabase.from('rental_products')
+        .select('*, category:rental_categories(slug, name, metadata, product_group), company:rental_companies(id, name, category_group, commission_method, commission_rate, convenience_score, notes)')
+        .eq('id', id).single(),
       supabase.from('rental_product_options').select('*').eq('product_id', id).eq('is_active', true).order('months').order('care_service'),
     ]);
     res.json({ product, options: options || [] });

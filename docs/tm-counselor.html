@@ -5535,17 +5535,24 @@ setTimeout(() => {
     const hasCriteria = _rrCriteria.usage || _rrCriteria.people || (_rrCriteria.features||[]).length;
     if (hasCriteria) arr = arr.filter(p => passCriteria(p, _rrCriteria));
 
-    // 3) 정렬 — S Tier 옵션 있는 상품 최우선 + 마진(rebate_max) 큰 순
-    //    S Tier 추정: rebate_max × 0.9 − 0(payback 가정 0) − 1.5×70k ≥ 130k → rebate_max ≥ 약 261k
-    //    (정확한 옵션 마진은 옵션별이지만 product의 rebate_max로 후보 판정)
-    const sThr = 261000;  // 가전 S 임계 130k 역산 (rebate_max ≥ 이 값이면 S 가능성)
+    // 3) 정렬 — 고객 유형 프로파일 반영
+    //    💰 customer: 월납 최저 우선 (monthly_fee_min ASC)
+    //    🎁 gift: 사은품·마진 여력 (rebate_max DESC) — default 유사
+    //    S Tier 가능 product 항상 상단 우선 (rebate_max ≥ 261k)
+    const sThr = 261000;
     arr.sort((a,b) => {
       const aS = (Number(a.rebate_max) || 0) >= sThr ? 1 : 0;
       const bS = (Number(b.rebate_max) || 0) >= sThr ? 1 : 0;
-      if (bS !== aS) return bS - aS;  // S 우선
-      const ma = Number(a.rebate_max || 0);
-      const mb = Number(b.rebate_max || 0);
-      if (mb !== ma) return mb - ma;  // 마진 큰 순
+      if (bS !== aS) return bS - aS;
+      if (_rrProfile === 'customer') {
+        const af = Number(a.monthly_fee_min || Infinity);
+        const bf = Number(b.monthly_fee_min || Infinity);
+        if (af !== bf) return af - bf;   // 월납 적은 순
+      } else {
+        const ma = Number(a.rebate_max || 0);
+        const mb = Number(b.rebate_max || 0);
+        if (mb !== ma) return mb - ma;   // 리베/마진 큰 순 (gift = 마진 여력)
+      }
       return (a.display_rank || 999) - (b.display_rank || 999);
     });
 
@@ -5667,13 +5674,15 @@ setTimeout(() => {
       row.addEventListener('mouseleave', () => row.style.background = '');
     });
   }
-  // 프로파일 토글 — 가전 그룹 카테고리에서만 활성, 변경 시 펼친 채널 재렌더
+  // 프로파일 토글 — 가전 그룹 카테고리에서만 활성, 변경 시 메인 추천 + 펼친 채널 모두 재정렬
   function setRecProfile(profile) {
     if (!['customer','gift'].includes(profile)) return;
     _rrProfile = profile;
     try { localStorage.setItem('rental_recommend_profile', profile); } catch(e) {}
     document.querySelectorAll('.rr-profile-chip').forEach(c => c.classList.toggle('active', c.dataset.profile === profile));
-    // 펼친 채널 목록 재렌더 (프로파일 변경 즉시 반영, 재호출 X)
+    // 메인 추천 카드 재정렬 (프로파일별 우선순위)
+    renderRecList();
+    // 펼친 채널 목록 재렌더 (재호출 X, by_profile 점수로 정렬)
     document.querySelectorAll('.rr-ch-list.open').forEach(list => renderChannelList(list, list.dataset.pid));
   }
   function updateProfileBarVisibility() {
