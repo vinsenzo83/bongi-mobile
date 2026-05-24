@@ -194,6 +194,23 @@ const SECTIONS = [
 <li>견적 카드에 ⭐ <b>우수(S)</b> 배지 + 정확한 마진·P 표시</li>
 <li>좌측 상품 추천: S Tier 우선 정렬 (rebate ≥ 261k 자동 강조)</li>
 <li>R 티켓번호 빠른 조회 — 가전 단독 ticket (R0001) 입력 시 견적 즉시 복원</li>
+<li><b>🏢 렌탈사(채널) 뱃지</b> (2026-05-24) — 가전 그룹은 같은 모델이 N개 렌탈사 채널로 중개. 추천 카드 옆에 LG헬로비전 16% · KT가전구독 18% 등 채널·수수료율 즉시 식별</li>
+</ul>
+
+<h3>🎯 다채널 추천 엔진 — 고객 유형별 자동 추천 (2026-05-24 신규)</h3>
+<p class="lead">같은 모델 다채널(2~6개)인 가전은 채널 선택으로 봉이 마진·고객 월부담이 갈림. 예: 삼성 AF60F17D11 60M·셀프 → LG헬로비전 마진 507k(월 66.8k) / KT가전구독 416k(월 50k) / 현대유버스 344k(월 63.9k).</p>
+<table>
+<tr><th>프로파일</th><th>아이콘</th><th>우선 기준</th><th>사용 시나리오</th></tr>
+<tr><td><b>월납 최소형</b></td><td>💰</td><td>customer 0.60 + margin 0.20 + gift 0.05 + conv 0.15</td><td>"매달 부담 적게" 고객</td></tr>
+<tr><td><b>사은품 최대형</b></td><td>🎁</td><td>gift 0.45 + margin 0.30 + customer 0.15 + conv 0.10</td><td>"가입 시 메리트 큰 거" 고객 (페이백·결합)</td></tr>
+<tr><td><b>봉이 마진형</b> (default)</td><td>🏢</td><td>margin 0.50 + customer 0.35 + conv 0.15</td><td>고객 선호 미정 / 기본값</td></tr>
+</table>
+<div class="tip">💡 TM 계산기 상단 3-chip 토글로 프로파일 변경. 토글만 바꿔도 추천 1위가 KT가전구독(월납) ↔ LG헬로비전(사은품·마진) 동적으로 바뀜. 선택값은 브라우저 localStorage에 박제.</div>
+<ul>
+<li>스코어 = Σ(가중치 × 정규화 지표). margin/customer/gift는 그룹 내 정규화(0~1), convenience는 운영자 설정(0~1)</li>
+<li>gift_score = rebate × 0.9 / max(group.rebate × 0.9) — 리베이트 큰 채널일수록 페이백·결합혜택 줄 여력 큼</li>
+<li>convenience_score는 정책 메뉴에서 렌탈사별 편집 (대기업 0.75~0.80 / 중견 0.60~0.65 / 그 외 0.50)</li>
+<li>가중치는 정책 메뉴 <code>rental_policy.recommend_profiles</code>에서 admin 조정 가능</li>
 </ul>
 
 <h3>🎯 V5 인센티브 통합 미리보기 3행</h3>
@@ -579,13 +596,36 @@ const SECTIONS = [
 <li>[📜 변경 이력] / [📥 엑셀 다운로드] / [📤 엑셀 업로드]</li>
 </ul>
 
-<h3>🏠 가전렌탈 탭 (옵션 단위)</h3>
+<h3>🏠 가전렌탈 탭 — 정수기 그룹 / 가전 그룹 분리 (2026-05-22)</h3>
 <ul>
 <li>상품(모델) → 옵션(약정·케어 조합) 2단 구조</li>
-<li><b>모델 list 컬럼</b>: 브랜드·상품명·태그·약정·옵션·시장 (P·Tier·우수 컬럼 제거 — 옵션마다 다르므로)</li>
-<li><b>옵션 표</b>: 리베이트·페이백·사은품 입력 시 옵션별 P·Tier·우수·마진 자동 계산 + 색상 강조</li>
+<li><b>그룹 탭 2개</b>: 💧 정수기 그룹 (정수기·공기청정기·비데·얼음정수기·냉온정수기·연수기) / 🏠 가전 그룹 (에어컨·냉장고·TV·세탁기 등)</li>
+<li>그룹 기준 = <code>rental_categories.product_group</code> (품목 성격)</li>
+<li><b>가전 그룹 한정</b>: 카테고리·브랜드(제조사) 옆에 <b>렌탈사(채널) 드롭다운</b> 추가. 모델 마스터에 🏢 렌탈사 칩, 옵션 디테일 상단에 렌탈사·수수료율 박스. 같은 모델 N채널 즉시 식별.</li>
+<li><b>모델 list 컬럼</b>: 브랜드·상품명·태그·약정·옵션·시장</li>
+<li><b>옵션 표</b>: 리베이트·페이백·사은품 입력 시 옵션별 P·Tier·우수·마진 자동 계산</li>
 <li>옵션 단위 자동 분류 — 같은 모델도 약정·케어에 따라 Tier 다를 수 있음</li>
 </ul>
+
+<h3>📤 봉이 표준 등록폼 import (2026-05-22 신규)</h3>
+<p class="lead">빌리고 원본 의존을 끊고 봉이 자체 양식을 입력 경계로 확정. 빌리고든 다른 중개사든 이 양식 하나로 변환 후 import.</p>
+<div class="tip">📌 빈 템플릿: <code>docs/templates/렌탈_상품등록_양식.xlsx</code> · 정의서: <code>docs/specs/rental-register-form.md</code></div>
+<table>
+<tr><th>시트</th><th>필수</th><th>내용</th></tr>
+<tr><td><code>등록확정_상세</code></td><td>✅</td><td>1행 = 헤더, 2행~ 데이터. 1행 = 1옵션 라인 (모델×약정×케어×렌탈사×variant)</td></tr>
+<tr><td><code>수수료정책</code></td><td>선택</td><td>가전 그룹 — 렌탈사별 수수료율 (정책 갱신용)</td></tr>
+<tr><td><code>README</code></td><td>선택</td><td>참고용 (import 무시)</td></tr>
+</table>
+<ul>
+<li><b>헤더 동적 매핑</b> — 정수기 24컬럼·가전 28컬럼 한 파서로 처리. 헤더명 별칭 수용(시장성/시장성_⭐, 약정기간/약정기간(개월) 등)</li>
+<li><b>필수 컬럼</b>: 브랜드·대분류·모델명·약정기간·케어서비스·월납부액·리베이트</li>
+<li><b>모델 단위 값</b>(시장성·노출순위·시리즈키·등록상태)은 그 모델 첫 옵션 행에만 채우면 됨. 나머지는 빈칸 — import이 모델 그룹 내에서만 forward-fill</li>
+<li><b>운영값 반영</b>: 등록폼 import은 봉이 운영값(market_score·display_rank·registration_status·evaluation_memo) 자동 반영. 인센티브 컬럼(point_weight·tier·margin·is_premium·payback)은 절대 덮어쓰지 않음(보존)</li>
+<li><b>카테고리 자동 활성화</b>: 등록폼으로 들어온 카테고리는 <code>is_active=true</code> 자동 전환</li>
+<li><b>티켓 자동 발번</b>: 신규 옵션에 R번호 자동 부여 (R0001~, 기존 최대 다음부터)</li>
+<li><b>선별본 정책</b>: 등록폼은 검수 선별본이라 "이번에 없는 모델" 단종 마킹 X (빌리고 원본 import과 다름)</li>
+</ul>
+<div class="tip">📌 import 절차 — 상품관리 → 가전렌탈 탭 → 📤 빌리고 엑셀 import → 파일 종류 <b>"봉이 표준 등록폼"</b> 선택 → 파일 업로드 → 미리보기 → 확정 반영. 빌리고 원본 옵션(정수기·가전)은 레거시 유지지만 신규 적재는 등록폼으로 통일.</div>
 
 <h3>📜 변경 이력 자동 기록</h3>
 <ul>
