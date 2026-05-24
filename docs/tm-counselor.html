@@ -5732,6 +5732,16 @@ setTimeout(() => {
       catSel.value = catSlug;
       await loadProducts();
     }
+    // 가전 그룹 — 그 product 의 company_id 로 렌탈사 select 자동 지정
+    // (다채널 비교 행 클릭 시 KT가전구독·LG헬로비전 등 그 채널로 정확 매칭)
+    const targetProd = (_allProducts || []).find(p => String(p.id) === String(productId));
+    const coSel = document.getElementById('rental-company');
+    if (coSel && targetProd?.company_id != null) {
+      const v = String(targetProd.company_id);
+      if (coSel.querySelector(`option[value="${v}"]`) && coSel.value !== v) coSel.value = v;
+    } else if (coSel && coSel.value) {
+      coSel.value = '';   // 정수기 그룹 / 단일 채널이면 초기화
+    }
     // 브랜드 변경 → filterModels() 트리거
     const brandSel = document.getElementById('rental-brand');
     if (brandSel.value !== brand) {
