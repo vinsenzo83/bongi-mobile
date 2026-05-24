@@ -943,21 +943,22 @@ async function fetchAgent() {
     if (!box) return;
     box.innerHTML = '<div style="font-size:10.5px;color:#94a3b8;padding:6px 0">⏳ 채널 비교 조회…</div>';
     try {
-      const r = await fetch(`${RP_API}/products/${productId}/channels?profile=margin`).then(r => r.json());
+      const r = await fetch(`${RP_API}/products/${productId}/channels?profile=gift`).then(r => r.json());
       if (r.error) throw new Error(r.error);
       const list = r.channels || [];
       if (list.length <= 1) {
         box.innerHTML = `<div style="font-size:10px;color:#64748b;padding:4px 0">단일 채널 — 다채널 비교 N/A (그룹키: ${r.group_key})</div>`;
         return;
       }
-      // 3 프로파일 1위
-      const top = { margin: null, customer: null, gift: null };
+      // 2 프로파일 1위 (사은품 여력 = 마진 여력)
+      const top = { customer: null, gift: null };
       for (const c of list) {
-        for (const p of ['margin','customer','gift']) {
+        for (const p of ['customer','gift']) {
           if (!top[p] || (c.scores?.by_profile?.[p] || 0) > (top[p].scores?.by_profile?.[p] || 0)) top[p] = c;
         }
       }
-      const sorted = list.slice().sort((a, b) => (b.scores?.by_profile?.margin || 0) - (a.scores?.by_profile?.margin || 0));
+      // 사은품(=마진) 점수로 정렬 — 큰 리베가 페이백·결합혜택·봉이 마진 모두에 여력
+      const sorted = list.slice().sort((a, b) => (b.scores?.by_profile?.gift || 0) - (a.scores?.by_profile?.gift || 0));
       const rows = sorted.map((c, i) => {
         const m = ['🥇','🥈','🥉'][i] || ' ';
         const sc = c.scores?.by_profile || {};
@@ -972,7 +973,6 @@ async function fetchAgent() {
           <td style="text-align:right">${fee.toLocaleString()}원</td>
           <td style="text-align:right;color:#fbbf24">${reb.toLocaleString()}</td>
           <td style="text-align:right;color:#22c55e;font-weight:700">${mg.toLocaleString()}</td>
-          <td style="text-align:center;color:#fbbf24;font-weight:800">${(sc.margin||0).toFixed(2)}</td>
           <td style="text-align:center;color:#22c55e;font-weight:800">${(sc.customer||0).toFixed(2)}</td>
           <td style="text-align:center;color:#a855f7;font-weight:800">${(sc.gift||0).toFixed(2)}</td>
           <td>${tags}</td>
@@ -983,9 +983,9 @@ async function fetchAgent() {
           <div style="font-size:10.5px;color:#22d3ee;font-weight:800;margin-bottom:5px">
             🔀 다채널 비교 (${list.length}개 채널 · 그룹키 ${r.group_key})
             <span style="font-size:9px;color:#94a3b8;font-weight:500;margin-left:6px">
-              · 🏢 마진형 1위 <b style="color:#fbbf24">${top.margin?.company?.name || '-'}</b>
               · 💰 월납형 1위 <b style="color:#22c55e">${top.customer?.company?.name || '-'}</b>
               · 🎁 사은품형 1위 <b style="color:#a855f7">${top.gift?.company?.name || '-'}</b>
+              <span style="margin-left:6px;color:#64748b">(사은품 여력 = 봉이 마진 여력)</span>
             </span>
           </div>
           <table style="width:100%;font-size:10px;border-collapse:collapse">
@@ -996,9 +996,8 @@ async function fetchAgent() {
                 <th style="text-align:right">월납</th>
                 <th style="text-align:right">리베</th>
                 <th style="text-align:right">마진</th>
-                <th style="text-align:center" title="봉이 마진형 점수">🏢</th>
                 <th style="text-align:center" title="고객 월납형 점수">💰</th>
-                <th style="text-align:center" title="사은품형 점수">🎁</th>
+                <th style="text-align:center" title="사은품형 점수 (=마진 여력)">🎁</th>
                 <th style="text-align:left">태그</th>
               </tr>
             </thead>
