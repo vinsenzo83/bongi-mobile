@@ -21,7 +21,7 @@ body {
 /* ===== 레이아웃 ===== */
 html, body { overflow:hidden; }
 .tm-app {
-  display:grid; grid-template-columns: 200px minmax(0, 1fr) 420px; gap:8px;
+  display:grid; grid-template-columns: 240px minmax(0, 1fr) 300px; gap:8px;
   padding:8px; height:100vh; max-width:1800px; margin:0 auto;
 }
 .tm-panel {
@@ -345,14 +345,14 @@ html, body { overflow:hidden; }
 
 /* ===== 반응형 단계 ===== */
 @media (max-width: 1400px) {
-  .tm-app { grid-template-columns: 180px minmax(0,1fr) 380px; gap:6px; padding:6px; }
+  .tm-app { grid-template-columns: 220px minmax(0,1fr) 280px; gap:6px; padding:6px; }
   .tm-panel { padding:10px; }
   .tm-option { padding:5px 9px; font-size:11px; }
   .tm-card { padding:8px 10px; }
   .tm-card-title { font-size:10px; }
 }
 @media (max-width: 1200px) {
-  .tm-app { grid-template-columns: 170px minmax(0,1fr) 340px; gap:5px; padding:5px; }
+  .tm-app { grid-template-columns: 200px minmax(0,1fr) 260px; gap:5px; padding:5px; }
   .tm-option { padding:4px 8px; font-size:10.5px; }
   .tm-card { padding:6px 8px; }
   .tm-card-title { font-size:9.5px; }
@@ -1755,7 +1755,6 @@ function bindShortcutKeys() {
           <div class="ttl">📝 렌탈 견적 입력</div>
           <div class="form-grid">
             <div class="field"><label>브랜드</label><select id="rental-brand"></select></div>
-            <div class="field" id="rental-company-wrap" style="display:none"><label>🏢 렌탈사 (채널)</label><select id="rental-company"><option value="">전체</option></select></div>
             <div class="field"><label>모델</label><select id="rental-model"></select></div>
             <div class="field"><label>약정</label><select id="rental-months"></select></div>
             <div class="field"><label>케어서비스</label><select id="rental-care"></select></div>
@@ -1765,15 +1764,15 @@ function bindShortcutKeys() {
                 <option value="basic">기본 (정상 리베이트)</option>
               </select>
             </div>
-            <div class="field rental-purifier-only">
+            <div class="field">
               <label>반값할인 개월수 (지정)</label>
               <select id="rental-half-months"><option value="">옵션 기본값 사용</option></select>
             </div>
-            <div class="field rental-purifier-only">
+            <div class="field">
               <label>소유권 이전 개월수 (지정)</label>
               <select id="rental-ownership-months"><option value="">옵션 기본값 사용</option></select>
             </div>
-            <div class="field rental-purifier-only">
+            <div class="field">
               <label>점검주기 (개월·지정)</label>
               <select id="rental-inspection-cycle"><option value="">옵션 기본값 사용</option></select>
             </div>
@@ -5358,7 +5357,6 @@ setTimeout(() => {
       catSel.innerHTML = _categories.map(c => `<option value="${c.slug}" data-id="${c.id}">${(c.metadata?.icon || '')} ${c.name}</option>`).join('');
       catSel.addEventListener('change', loadProducts);
       document.getElementById('rental-brand').addEventListener('change', () => { showBrandPolicy(); filterModels(); });
-      document.getElementById('rental-company')?.addEventListener('change', filterModels);
       document.getElementById('rental-model').addEventListener('change', loadOptions);
       document.getElementById('rental-months').addEventListener('change', selectOpt);
       document.getElementById('rental-care').addEventListener('change', selectOpt);
@@ -5777,33 +5775,13 @@ setTimeout(() => {
     const brands = [...new Set(_products.map(p => p.brand))].sort();
     document.getElementById('rental-brand').innerHTML = brands.map(b => `<option value="${b}">${b}</option>`).join('') || '<option value="">상품 없음</option>';
     document.getElementById('rental-quote-title').textContent = `${_categories.find(c=>c.slug===slug)?.metadata?.icon||''} ${_categories.find(c=>c.slug===slug)?.name||''} 견적 결과`;
-    // 가전 그룹 — 렌탈사 select 노출 + 정수기 전용 필드(반값할인·소유권·점검) 숨김
-    const cat = _categories.find(c => c.slug === slug);
-    const isGajeon = cat?.product_group === '가전';
-    const coWrap = document.getElementById('rental-company-wrap');
-    if (coWrap) coWrap.style.display = isGajeon ? '' : 'none';
-    document.querySelectorAll('.rental-purifier-only').forEach(el => el.style.display = isGajeon ? 'none' : '');
-    // 렌탈사 옵션 채우기 (가전 그룹 한정)
-    if (isGajeon) {
-      const cos = _products.map(p => p.company).filter(c => c && c.id);
-      const uniqCo = [...new Map(cos.map(c => [c.id, c])).values()]
-        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      const sel = document.getElementById('rental-company');
-      if (sel) sel.innerHTML = '<option value="">전체</option>' +
-        uniqCo.map(c => `<option value="${c.id}">${c.name}${c.commission_rate != null ? ' ('+Math.round(c.commission_rate*100)+'%)' : ''}</option>`).join('');
-    }
     await filterModels();
   }
 
   async function filterModels() {
     const brand = document.getElementById('rental-brand').value;
-    const companyId = document.getElementById('rental-company')?.value || '';
-    let models = _products.filter(p => p.brand === brand);
-    if (companyId) models = models.filter(p => String(p.company_id) === String(companyId));
-    document.getElementById('rental-model').innerHTML = models.map(m => {
-      const coTag = m.company?.name ? ` [${m.company.name}]` : '';
-      return `<option value="${m.id}">${m.name} · ${m.model}${coTag}</option>`;
-    }).join('') || '<option value="">모델 없음</option>';
+    const models = _products.filter(p => p.brand === brand);
+    document.getElementById('rental-model').innerHTML = models.map(m => `<option value="${m.id}">${m.name} · ${m.model}</option>`).join('') || '<option value="">모델 없음</option>';
     await loadOptions();
   }
 
