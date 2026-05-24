@@ -366,6 +366,137 @@ router.get('/products/:id/options', optionalAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
+// ─── 다채널 추천 엔진 ───
+// GET /products/:id/channels?profile=margin|customer|gift
+// 같은 시리즈/model_key 그룹의 N개 채널 + 3 프로파일 스코어 동시 반환.
+// 클라이언트 토글 변경 시 재호출 없이 by_profile 로 정렬만 변경.
+// PRD: docs/specs/rental-channel-recommend-engine.md
+router.get('/products/:id/channels', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const profile = ['margin', 'customer', 'gift'].includes(req.query.profile)
+      ? req.query.profile : 'margin';
+
+    // 기준 상품 조회 — 카테고리·model_key·시리즈키 파악
+    const { data: baseProd, error: bErr } = await supabase
+      .from('rental_products')
+      .select('id, category_id, model, model_key, manufacturer, metadata, company_id')
+      .eq('id', id).single();
+    if (bErr || !baseProd) return res.status(404).json({ error: '상품 없음' });
+
+    // 그룹키 결정 (PRD §3.6) — series_key 우선, fallback (category_id, model_key|model)
+    const seriesKey = baseProd.metadata?.series_key || null;
+    const modelKey = baseProd.model_key || baseProd.model;
+
+    // 같은 그룹 상품 전체 (활성만)
+    let groupQ = supabase
+      .from('rental_products')
+      .select(`id, brand, model, name, manufacturer, model_key, metadata, company_id, is_active,
+        company:rental_companies(id, name, commission_method, commission_rate, commission_flat, convenience_score, category_group)`)
+      .eq('is_active', true);
+    if (seriesKey) {
+      groupQ = groupQ.eq('metadata->>series_key', seriesKey);
+    } else if (baseProd.category_id) {
+      groupQ = groupQ.eq('category_id', baseProd.category_id)
+        .or(`model_key.eq.${modelKey},model.eq.${baseProd.model}`);
+    }
+    const { data: groupProds, error: gErr } = await groupQ;
+    if (gErr) throw gErr;
+    const products = (groupProds || []).filter(p => p.company_id != null);
+    if (!products.length) {
+      return res.json({ group_key: seriesKey || modelKey, profile, channels: [] });
+    }
+
+    // 각 상품의 최고 마진 옵션 1건 (PRD §3.7)
+    const pids = products.map(p => p.id);
+    const { data: opts, error: oErr } = await supabase
+      .from('rental_product_options')
+      .select('id, product_id, months, care_service, inspection_cycle, ownership_months, monthly_fee, rebate, margin, tier_calculated, point_weight, variant_label')
+      .in('product_id', pids).eq('is_active', true);
+    if (oErr) throw oErr;
+    const bestByProd = new Map();
+    for (const o of opts || []) {
+      const prev = bestByProd.get(o.product_id);
+      if (!prev || (o.margin || 0) > (prev.margin || 0)) bestByProd.set(o.product_id, o);
+    }
+
+    // 채널 = (product, best_option) 쌍. 옵션 없는 product 제외.
+    const channels = products
+      .map(p => ({ product: p, best: bestByProd.get(p.id) }))
+      .filter(c => c.best);
+    if (!channels.length) {
+      return res.json({ group_key: seriesKey || modelKey, profile, channels: [] });
+    }
+
+    // 정규화 — 그룹 내 max/min
+    const maxMargin   = Math.max(...channels.map(c => c.best.margin || 0)) || 1;
+    const maxRebate   = Math.max(...channels.map(c => Number(c.best.rebate) || 0)) || 1;
+    const minMonthly  = Math.min(...channels.map(c => c.best.monthly_fee || Infinity));
+
+    // 정책에서 가중치 로드
+    const { data: pol } = await supabase
+      .from('rental_policy').select('recommend_profiles').eq('active', true).single();
+    const defaults = {
+      margin:   { margin: 0.50, customer: 0.35, gift: 0.00, convenience: 0.15 },
+      customer: { margin: 0.20, customer: 0.60, gift: 0.05, convenience: 0.15 },
+      gift:     { margin: 0.30, customer: 0.15, gift: 0.45, convenience: 0.10 },
+    };
+    const profiles = pol?.recommend_profiles || defaults;
+
+    // 각 채널 점수
+    const scored = channels.map(c => {
+      const o = c.best;
+      const margin_s = Math.max(0, Math.min(1, (o.margin || 0) / maxMargin));
+      const customer_s = (o.monthly_fee && minMonthly) ? Math.max(0, Math.min(1, minMonthly / o.monthly_fee)) : 0;
+      const gift_s = Math.max(0, Math.min(1, ((Number(o.rebate) || 0) * 0.9) / (maxRebate * 0.9)));
+      const conv_s = Number(c.product.company?.convenience_score ?? 0.5);
+      const scoreOf = (w) => Number(((w.margin || 0) * margin_s + (w.customer || 0) * customer_s + (w.gift || 0) * gift_s + (w.convenience || 0) * conv_s).toFixed(4));
+      const by_profile = {
+        margin:   scoreOf(profiles.margin   || defaults.margin),
+        customer: scoreOf(profiles.customer || defaults.customer),
+        gift:     scoreOf(profiles.gift     || defaults.gift),
+      };
+      return {
+        product_id: c.product.id, brand: c.product.brand, model: c.product.model, name: c.product.name,
+        company: c.product.company ? {
+          id: c.product.company.id, name: c.product.company.name,
+          commission_method: c.product.company.commission_method,
+          commission_rate: c.product.company.commission_rate,
+          convenience_score: c.product.company.convenience_score,
+        } : null,
+        best_option: {
+          id: o.id, months: o.months, care: o.care_service,
+          inspection_cycle: o.inspection_cycle, ownership_months: o.ownership_months,
+          monthly_fee: o.monthly_fee, rebate: Number(o.rebate) || 0,
+          margin: o.margin, tier: o.tier_calculated, point_weight: o.point_weight,
+          variant_label: o.variant_label,
+        },
+        scores: { margin: margin_s, customer: customer_s, gift: gift_s, convenience: conv_s, by_profile },
+      };
+    });
+
+    // 선택 프로파일로 정렬 + rank/tags
+    scored.sort((a, b) => b.scores.by_profile[profile] - a.scores.by_profile[profile]);
+    const maxMarginCh = scored.reduce((m, c) => c.best_option.margin > (m?.best_option.margin || 0) ? c : m, null);
+    const minFeeCh    = scored.reduce((m, c) => (!m || c.best_option.monthly_fee < m.best_option.monthly_fee) ? c : m, null);
+    const maxGiftCh   = scored.reduce((m, c) => c.best_option.rebate > (m?.best_option.rebate || 0) ? c : m, null);
+    scored.forEach((c, i) => {
+      c.rank = i + 1;
+      const tags = [];
+      if (c === maxMarginCh) tags.push('봉이 마진 최고');
+      if (c === minFeeCh) tags.push('고객 월납 최저');
+      if (c === maxGiftCh) tags.push('사은품 여력 최대');
+      c.tags = tags;
+    });
+
+    res.json({
+      group_key: seriesKey || modelKey,
+      profile,
+      channels: scored,
+    });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
 // ─── 상품 페이백 / 가중치 / Tier 편집 (admin) ───
 router.patch('/products/:id', authenticateJWT, async (req, res) => {
   try {
