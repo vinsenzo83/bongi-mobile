@@ -572,7 +572,7 @@ router.post('/quote', optionalAuth, async (req, res) => {
     if (!option_id) return res.status(400).json({ error: 'option_id 필수' });
 
     const [{ data: opt }, { data: policy }] = await Promise.all([
-      supabase.from('rental_product_options').select('*, product:rental_products(*)').eq('id', option_id).single(),
+      supabase.from('rental_product_options').select('*, product:rental_products(*, company:rental_companies(id, name, commission_rate, commission_method, commission_flat, commission_multiple, convenience_score))').eq('id', option_id).single(),
       supabase.from('rental_policy').select('*').eq('active', true).single(),
     ]);
     if (!opt || !policy) return res.status(404).json({ error: '옵션 또는 정책 없음' });
