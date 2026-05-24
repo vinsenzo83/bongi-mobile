@@ -374,8 +374,10 @@ router.get('/products/:id/options', optionalAuth, async (req, res) => {
 router.get('/products/:id/channels', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const profile = ['margin', 'customer', 'gift'].includes(req.query.profile)
-      ? req.query.profile : 'margin';
+    // 프로파일: customer(월납최소) / gift(사은품최대). default=customer.
+    // margin 은 어드민 비교표 전용으로만 by_profile 에 포함되며 토글에서는 제거됨.
+    const profile = ['customer', 'gift'].includes(req.query.profile)
+      ? req.query.profile : 'customer';
 
     // 기준 상품 조회 — 카테고리·model_key·시리즈키 파악
     const { data: baseProd, error: bErr } = await supabase
