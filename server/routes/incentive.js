@@ -3084,8 +3084,8 @@ router.get('/customers/:phone/360', authenticateJWT, async (req, res) => {
       return res.status(403).json({ error: '본인 분배 고객만 조회 가능' });
     }
 
-    // 병렬 fetch: 통화·인터넷영업·가전영업·중고폰·셀프신청·페이백·포인트·친구초대·알람
-    const [calls, itSales, rentalSales, usedPhones, applications, gifts, rewards, alarms] = await Promise.all([
+    // 병렬 fetch: 통화·인터넷영업·가전영업·중고폰·셀프신청·페이백·포인트·친구초대·알람·메모
+    const [calls, itSales, rentalSales, usedPhones, applications, gifts, rewards, alarms, notes] = await Promise.all([
       supabase.from('incentive_customer_call_log')
         .select('*, agent:incentive_agents(name)')
         .eq('customer_id', customer?.calldb_id)
@@ -3101,6 +3101,10 @@ router.get('/customers/:phone/360', authenticateJWT, async (req, res) => {
       supabase.from('bongi_gifts').select('*').eq('phone', phone).order('created_at', { ascending: false }),
       customer?.user_id ? supabase.from('bongi_rewards').select('*').eq('user_id', customer.user_id) : { data: [] },
       customer?.user_id ? supabase.from('bongi_user_alarms').select('*').eq('user_id', customer.user_id) : { data: [] },
+      customer?.calldb_id
+        ? supabase.from('incentive_customer_notes').select('*').eq('customer_id', customer.calldb_id)
+            .order('is_pinned', { ascending: false }).order('created_at', { ascending: false })
+        : { data: [] },
     ]);
 
     // 인입 history (시간순 통합)
@@ -3131,6 +3135,7 @@ router.get('/customers/:phone/360', authenticateJWT, async (req, res) => {
       gifts: gifts.data || [],
       rewards: rewards.data || [],
       alarms: alarms.data || [],
+      notes: notes.data || [],
       nba,
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -3178,6 +3183,84 @@ router.post('/customers/:phone/call-attempt', authenticateJWT, async (req, res) 
     }).eq('id', cdb.id);
 
     res.json({ ok: true, log });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/incentive/customers/:phone/notes
+// 메모 list (시간순 · pinned 우선)
+router.get('/customers/:phone/notes', authenticateJWT, async (req, res) => {
+  try {
+    const { phone } = req.params;
+    const { data: cdb } = await supabase.from('incentive_customer_db')
+      .select('id').eq('phone', phone).maybeSingle();
+    if (!cdb) return res.json({ notes: [] });
+    const { data, error } = await supabase.from('incentive_customer_notes')
+      .select('*').eq('customer_id', cdb.id)
+      .order('is_pinned', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ notes: data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/incentive/customers/:phone/notes
+// 메모 추가
+router.post('/customers/:phone/notes', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    const { phone } = req.params;
+    const { content, category, is_pinned } = req.body || {};
+    if (!content || !content.trim()) return res.status(400).json({ error: 'content 필수' });
+    const { data: cdb } = await supabase.from('incentive_customer_db')
+      .select('id').eq('phone', phone).maybeSingle();
+    if (!cdb) return res.status(404).json({ error: 'calldb 매칭 없음 — 콜DB import 후 시도' });
+    const { data, error } = await supabase.from('incentive_customer_notes')
+      .insert({
+        customer_id: cdb.id,
+        author_id: me.id,
+        author_name: me.name || null,
+        content: content.trim(),
+        category: category || '일반',
+        is_pinned: !!is_pinned,
+      }).select().single();
+    if (error) throw error;
+    res.json({ note: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/incentive/customers/notes/:id
+// 메모 삭제 (작성자 본인 또는 admin)
+router.delete('/customers/notes/:id', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    const { id } = req.params;
+    const { data: note } = await supabase.from('incentive_customer_notes')
+      .select('author_id').eq('id', id).maybeSingle();
+    if (!note) return res.status(404).json({ error: '메모 없음' });
+    if (me.role !== 'admin' && note.author_id !== me.id) {
+      return res.status(403).json({ error: '작성자 또는 admin만 삭제 가능' });
+    }
+    const { error } = await supabase.from('incentive_customer_notes').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/incentive/customers/notes/:id/pin
+// 메모 pinned 토글
+router.patch('/customers/notes/:id/pin', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    const { id } = req.params;
+    const { is_pinned } = req.body || {};
+    const { data, error } = await supabase.from('incentive_customer_notes')
+      .update({ is_pinned: !!is_pinned, updated_at: new Date().toISOString() })
+      .eq('id', id).select().single();
+    if (error) throw error;
+    res.json({ note: data });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
