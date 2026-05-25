@@ -574,7 +574,7 @@ body.queue-side-collapsed #call-queue-side .cq-header { padding:8px 12px; }
 .cq-header { padding:10px 14px; border-bottom:1px solid #334155; background:#1e293b; position:sticky; top:0; z-index:1; }
 .cq-header h3 { font-size:13px; color:#a5b4fc; font-weight:800; }
 .cq-header .meta { font-size:10.5px; color:#94a3b8; margin-top:2px; }
-.cq-item { padding:8px 12px; cursor:pointer; transition:all 0.1s; flex:0 0 auto; width:240px; min-height:108px; background:#1e293b; border:1px solid #334155; border-radius:7px; display:flex; flex-direction:column; gap:2px; font-size:11px; line-height:1.4; }
+.cq-item { position:relative; padding:8px 12px; cursor:pointer; transition:all 0.1s; flex:0 0 auto; width:240px; min-height:108px; background:#1e293b; border:1px solid #334155; border-radius:7px; display:flex; flex-direction:column; gap:2px; font-size:11px; line-height:1.4; }
 .cq-item:hover { background:rgba(59,130,246,0.18); border-color:#3b82f6; }
 .cq-item.current { background:rgba(34,197,94,0.15); border-color:#22c55e; }
 .cq-item.callback { background:rgba(251,191,36,0.08); border-color:#f59e0b; }
@@ -631,6 +631,7 @@ body.queue-side-collapsed #call-queue-side .cq-header { padding:8px 12px; }
         <span style="font-size:18px;font-weight:900" id="cm-name">-</span>
         <span style="font-family:monospace;font-size:14px;color:#bfdbfe" id="cm-phone">-</span>
         <button onclick="copyCallPhone()" style="background:#475569;color:#fff;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px">📋 복사</button>
+        <a id="cm-customer-link" href="#" target="_blank" style="background:rgba(8,145,178,0.3);color:#67e8f9;text-decoration:none;border:1px solid #0891b2;padding:4px 10px;border-radius:5px;font-size:11px;font-weight:800" title="👥 고객 360° 보기 (새 탭)">👥 고객 360°</a>
       </div>
       <div id="cm-tier-badge" style="display:inline-flex;gap:4px;margin-bottom:6px"></div>
       <div id="cm-meta" style="font-size:11.5px;color:#cbd5e1;line-height:1.6">-</div>
@@ -865,6 +866,8 @@ async function loadCallCustomer(customerId) {
     document.body.classList.add('call-mode-active');
     document.getElementById('cm-name').textContent = c.name + (c.age ? ` · ${c.age}세` : '') + (c.gender ? ` · ${c.gender}` : '');
     document.getElementById('cm-phone').textContent = c.phone;
+    const linkEl = document.getElementById('cm-customer-link');
+    if (linkEl) linkEl.href = '/docs/incentive-customer-mgmt.html?phone=' + encodeURIComponent(c.phone || '');
 
     // tier·카테고리·등급 배지
     const tierEl = document.getElementById('cm-tier-badge');
@@ -1440,6 +1443,7 @@ function renderCallQueueSide(list) {
 
     // 컴팩트 (가로 스크롤 작은 카드)
     return `<div class="${cls}" onclick="switchCallCustomer('${c.id}')" style="${isVisited?'opacity:0.5;':''}" title="${esc(c.name)} · ${esc(c.phone)}${c.memo_etc?'\n📝 '+esc(c.memo_etc):''}">
+      <div style="position:absolute;top:4px;right:4px"><a href="/docs/incentive-customer-mgmt.html?phone=${encodeURIComponent(c.phone||'')}" target="_blank" onclick="event.stopPropagation()" title="👥 고객 360° 보기 (새 탭)" style="background:rgba(8,145,178,0.25);color:#67e8f9;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;text-decoration:none;border:1px solid #0891b2">👥 360°</a></div>
       <div class="name">${esc(c.name)||'-'}${c.age?` <span style="font-size:9.5px;color:#94a3b8;font-weight:600">${c.age|0}</span>`:''}${tierBadge}${catTxt}</div>
       <div class="phone">${esc(c.phone)||'-'}${cb?` 🕒${cb}`:''}</div>
       ${devLine ? `<div class="meta-line" style="color:#cbd5e1">${devLine}</div>` : ''}
