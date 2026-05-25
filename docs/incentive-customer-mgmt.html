@@ -500,6 +500,7 @@ function renderDetail(r) {
       <div class="cross-grid">${crossHTML}</div>
     </div>
     ${renderContractDetails(r)}
+    ${renderNotes(r)}
     <div class="section">
       <div class="sec-title">💼 금융 lifecycle</div>
       <div class="fin-grid">${finHTML}</div>
@@ -639,6 +640,76 @@ function renderContractDetails(r) {
     <div class="sec-title">📋 계약 상세 내역 <span class="meta">총 ${items.length}건 · 시간순</span></div>
     ${rowsHTML}
   </div>`;
+}
+
+// ───────────── 메모 관리 ─────────────
+const NOTE_CATEGORIES = ['일반','재계약','환수','클레임','VIP','내부공유','후속조치'];
+const NOTE_CAT_COLOR = {
+  '일반':'#94a3b8','재계약':'#fbbf24','환수':'#dc2626','클레임':'#fca5a5',
+  'VIP':'#a78bfa','내부공유':'#60a5fa','후속조치':'#22c55e'
+};
+function renderNotes(r) {
+  const notes = r.notes || [];
+  const catOpts = NOTE_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+  const noteRows = notes.length ? notes.map(n => `
+    <div style="background:${n.is_pinned?'rgba(251,191,36,0.08)':'#0f172a'};border:1px solid ${n.is_pinned?'#fbbf24':'#334155'};border-left:3px solid ${NOTE_CAT_COLOR[n.category]||'#94a3b8'};border-radius:6px;padding:9px 12px;margin-bottom:5px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:6px">
+          ${n.is_pinned?'<span style="color:#fbbf24" title="상단고정">📌</span>':''}
+          <span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${NOTE_CAT_COLOR[n.category]||'#94a3b8'}33;color:${NOTE_CAT_COLOR[n.category]||'#94a3b8'}">${n.category||'일반'}</span>
+          <span style="font-size:10.5px;color:#94a3b8"><b style="color:#cbd5e1">${n.author_name||'-'}</b> · ${fmtDate(n.created_at)}</span>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="btn" style="padding:2px 6px;font-size:9.5px" onclick="togglePin(${n.id},${!n.is_pinned})">${n.is_pinned?'📌 해제':'📌 고정'}</button>
+          <button class="btn btn-danger" style="padding:2px 6px;font-size:9.5px" onclick="deleteNote(${n.id})">🗑</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#e2e8f0;line-height:1.5;white-space:pre-wrap">${(n.content||'').replace(/</g,'&lt;')}</div>
+    </div>`).join('') : '<div style="font-size:11px;color:#64748b;padding:6px 0">메모 없음 — 첫 메모를 작성하세요</div>';
+
+  return `<div class="section">
+    <div class="sec-title">📝 메모 관리 <span class="meta">${notes.length}건${notes.filter(n=>n.is_pinned).length?' · 📌 '+notes.filter(n=>n.is_pinned).length:''}</span></div>
+    ${noteRows}
+    <div style="background:rgba(34,197,94,0.05);border:1px dashed #16a34a;border-radius:6px;padding:10px 12px;margin-top:8px">
+      <div style="display:flex;gap:5px;margin-bottom:6px">
+        <select id="note-category" style="background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:5px 8px;border-radius:4px;font-size:11px;font-family:inherit">${catOpts}</select>
+        <label style="display:flex;align-items:center;gap:4px;font-size:10.5px;color:#94a3b8;cursor:pointer">
+          <input type="checkbox" id="note-pinned"> 📌 상단고정
+        </label>
+      </div>
+      <textarea id="note-content" placeholder="메모 입력 (자유 텍스트)" style="width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:4px;font-size:12px;font-family:inherit;resize:vertical;min-height:50px;margin-bottom:6px"></textarea>
+      <button class="btn btn-success" style="width:100%" onclick="addNote()">💾 메모 추가</button>
+    </div>
+  </div>`;
+}
+async function addNote() {
+  if (!_selectedPhone) return;
+  const content = document.getElementById('note-content').value.trim();
+  const category = document.getElementById('note-category').value;
+  const is_pinned = document.getElementById('note-pinned').checked;
+  if (!content) { alert('메모 내용을 입력하세요'); return; }
+  try {
+    await apiFetch(`/customers/${encodeURIComponent(_selectedPhone)}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ content, category, is_pinned }),
+    });
+    await selectCustomer(_selectedPhone);
+  } catch (e) { alert('추가 실패: ' + e.message); }
+}
+async function deleteNote(id) {
+  if (!confirm('이 메모를 삭제하시겠습니까?')) return;
+  try {
+    await apiFetch(`/customers/notes/${id}`, { method: 'DELETE' });
+    await selectCustomer(_selectedPhone);
+  } catch (e) { alert('삭제 실패: ' + e.message); }
+}
+async function togglePin(id, is_pinned) {
+  try {
+    await apiFetch(`/customers/notes/${id}/pin`, {
+      method: 'PATCH', body: JSON.stringify({ is_pinned })
+    });
+    await selectCustomer(_selectedPhone);
+  } catch (e) { alert('고정 실패: ' + e.message); }
 }
 
 // ───────────── 콜 시도 모달 ─────────────
