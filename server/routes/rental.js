@@ -1321,6 +1321,7 @@ async function runImportCommit(batch_id, parsed, fileType = '정수기') {
       if (p.registration_status != null) row.registration_status = p.registration_status;
       if (p.evaluation_memo != null) row.evaluation_memo = p.evaluation_memo;
       if (p.product_url != null) row.product_url = p.product_url;
+      if (p.image_url != null) row.image_url = p.image_url;
     }
     productRowMap.set(key, row);
   }

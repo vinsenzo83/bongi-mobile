@@ -75,6 +75,12 @@ const HEADER_MAP = {
   '모델명_정규화': 'model_key',
   '시리즈키': 'series_key',
   '상품URL': 'product_url',
+  '상품 URL': 'product_url',
+  '상품이미지': 'image_url',
+  '상품 이미지': 'image_url',
+  '이미지URL': 'image_url',
+  '이미지 URL': 'image_url',
+  '이미지': 'image_url',
   '등록상태': 'registration_status',
   '평가메모': 'evaluation_memo',
   // ─── 옵션 단위 (O) — rental_product_options ───
@@ -121,7 +127,7 @@ const HEADER_MAP = {
 const MODEL_FIELDS = new Set([
   'display_rank', 'final_rank', 'market_score', 'brand', 'model_group',
   'category_raw', 'name_mid', 'name_full', 'model', 'model_key',
-  'series_key', 'product_url', 'registration_status', 'evaluation_memo',
+  'series_key', 'product_url', 'image_url', 'registration_status', 'evaluation_memo',
 ]);
 
 /**
@@ -841,6 +847,7 @@ export function parseRentalRegisterExcel(input) {
         model: productModel,
         model_key: clean(rec.model_key) || toModelKey(model),
         product_url: clean(rec.product_url) || null,
+        image_url: clean(rec.image_url) || null,
         display_rank: toNum(rec.display_rank),
         market_score: toNum(rec.market_score),
         registration_status: clean(rec.registration_status) || null,
