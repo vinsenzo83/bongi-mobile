@@ -248,8 +248,15 @@ const CHAN_META = {
   usedphone:{icon:'🔄',label:'중고폰',cls:'ch-usedphone'}
 };
 const STATUS_META = {
-  pending:{label:'⏳ 미접촉',cls:'st-pending'}, in_progress:{label:'📞 시도중',cls:'st-in_progress'},
-  completed:{label:'✅ 완료',cls:'st-completed'}, rejected:{label:'❌ 거절',cls:'st-rejected'}
+  pending:      {label:'⏳ 미접촉',     cls:'st-pending'},
+  in_progress:  {label:'📞 시도중',     cls:'st-in_progress'},
+  callback:     {label:'📅 콜백예약',   cls:'st-pending'},
+  no_answer:    {label:'📞 부재',       cls:'st-pending'},
+  on_hold:      {label:'⏸️ 보류',       cls:'st-pending'},
+  wrong_number: {label:'🚫 잘못된번호', cls:'st-rejected'},
+  converted:    {label:'✅ 전환',       cls:'st-completed'},
+  completed:    {label:'✅ 완료',       cls:'st-completed'},
+  rejected:     {label:'❌ 거절',       cls:'st-rejected'}
 };
 
 let _customers = [];
@@ -311,7 +318,7 @@ function renderList() {
     const hasNba = c.gifts_pending > 0 || (c.it_sales_completed > 0 && c.rental_sales_completed === 0) || age > 14;
     return `<div class="lead-card" data-phone="${c.phone}" onclick="selectCustomer('${c.phone}')">
       <div class="lc-r1">
-        <div class="lc-name">${c.member_name || c.calldb_name || '(이름 없음)'}${gradeBadge}</div>
+        <div class="lc-name">${c.member_name || c.calldb_name || '익명 ' + (c.phone||'').slice(-4)}${gradeBadge}</div>
         <span class="lc-status ${st.cls}">${st.label}</span>
       </div>
       <div class="lc-r2">${maskPhone(c.phone)}</div>
@@ -366,8 +373,30 @@ function renderDetail(r) {
     c.is_app_member ? '<span class="prof-chip chip-on">✅ 앱회원</span>' : '<span class="prof-chip chip-off">○ 비회원</span>',
     c.pass_verified ? '<span class="prof-chip chip-on">🛡️ PASS</span>' : '<span class="prof-chip chip-pass-no">❌ PASS 미인증</span>',
     c.social_provider ? `<span class="prof-chip chip-social">🔗 ${c.social_provider}</span>` : '',
-    c.member_user_type ? `<span class="prof-chip chip-off">유형 ${c.member_user_type}</span>` : ''
+    c.member_user_type ? `<span class="prof-chip chip-off">유형 ${c.member_user_type}</span>` : '',
+    c.age ? `<span class="prof-chip chip-off">${c.age}세</span>` : '',
+    c.gender ? `<span class="prof-chip chip-off">${c.gender}</span>` : '',
+    c.carrier ? `<span class="prof-chip chip-off">📡 ${c.carrier}</span>` : '',
+    c.region ? `<span class="prof-chip chip-off">📍 ${c.region}</span>` : ''
   ].filter(Boolean).join('');
+
+  // 콜DB 메타 박스 (admin 운영 정보)
+  const dntBadge = c.is_dnt ? '<span class="prof-chip chip-pass-no">🚫 수신거부 (DNT)</span>' : '';
+  const priorityBadge = c.priority_score != null ? `<span class="prof-chip chip-social">⚡ 우선순위 ${c.priority_score}</span>` : '';
+  const callDbMetaHTML = `
+    <div class="section" style="background:rgba(15,23,42,0.5)">
+      <div class="sec-title">📋 콜DB 운영 정보 <span class="meta">${dntBadge} ${priorityBadge}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px">
+        <div><span style="color:#94a3b8">import 일자</span><br><b style="color:#cbd5e1">${fmtDate(c.imported_at)}</b></div>
+        <div><span style="color:#94a3b8">분배 일자</span><br><b style="color:#cbd5e1">${fmtDate(c.assigned_at)}</b></div>
+        <div><span style="color:#94a3b8">콜 누적</span><br><b style="color:#cbd5e1">${c.calldb_call_count || 0}회</b></div>
+        <div><span style="color:#94a3b8">마지막 콜</span><br><b style="color:#cbd5e1">${fmtDate(c.last_contacted_at)}</b></div>
+        <div><span style="color:#94a3b8">callback 예약</span><br><b style="color:#fbbf24">${fmtDate(c.callback_at)}</b></div>
+        <div><span style="color:#94a3b8">재시도 예정</span><br><b style="color:#fbbf24">${fmtDate(c.next_retry_at)}</b></div>
+        <div style="grid-column:span 2"><span style="color:#94a3b8">거절 사유</span><br><b style="color:#fca5a5">${c.reject_reason || '-'}</b></div>
+        ${c.notes ? `<div style="grid-column:span 4;background:rgba(251,191,36,0.05);border-left:3px solid #fbbf24;padding:6px 10px;border-radius:3px;margin-top:4px"><span style="color:#fbbf24;font-weight:700">📝 메모</span><br><span style="color:#e2e8f0">${(c.notes||'').replace(/</g,'&lt;')}</span></div>` : ''}
+      </div>
+    </div>`;
 
   const historyHTML = (r.history || []).map((h, i) => `
     <div class="tl-item">
@@ -385,7 +414,7 @@ function renderDetail(r) {
       </div>
       <div class="call-summary">${(cl.notes || '').replace(/</g,'&lt;') || '(요약 없음)'}</div>
     </div>`;
-  }).join('') : '<div style="font-size:11px;color:#64748b;padding:6px 0">통화 시도 없음 — 첫 콜 권장</div>';
+  }).join('') : `<div style="background:rgba(34,197,94,0.06);border:1px dashed #16a34a;border-radius:5px;padding:10px 12px;text-align:center;font-size:11.5px;color:#86efac;font-weight:700">📞 통화 시도 없음 — 첫 콜 시도 권장 (rotting 방지)</div>`;
   const nextCallHTML = c.callback_at ? `<div class="next-call">📅 다음 콜 예약: ${fmtDate(c.callback_at)}</div>` : '';
 
   // 4상품 cross-sell
@@ -393,16 +422,16 @@ function renderDetail(r) {
     ? {cls:'has',val:`✅ ${c.it_sales_completed}건`, sub:`${(r.it_sales||[]).slice(0,1).map(s => s.product?.name || '').join('')}`}
     : c.it_sales_progress > 0
     ? {cls:'quote',val:'⏳ 견적중',sub:`${c.it_sales_progress}건 진행`}
-    : {cls:'empty',val:'○',sub:'미접촉'};
+    : {cls:'empty',val:'🎯',sub:'권유 권장'};
   const rentalCard = c.rental_sales_completed > 0
     ? {cls:'has',val:`✅ ${c.rental_sales_completed}건`,sub:(r.rental_sales||[]).slice(0,1).map(s=>`${s.product?.brand||''} ${s.product?.model||''}`).join('')}
     : c.rental_sales_progress > 0
     ? {cls:'quote',val:'⏳ 견적중',sub:`${c.rental_sales_progress}건 진행`}
-    : {cls:'empty',val:'○',sub:'cross-sell 기회'};
+    : (c.it_sales_completed > 0 ? {cls:'quote',val:'🔥',sub:'IT 계약자 — cross-sell 적기'} : {cls:'empty',val:'🎯',sub:'권유 권장'});
   const usedCard = c.usedphone_count > 0
     ? {cls:'has',val:`✅ ${c.usedphone_count}건`,sub:'중고폰 매입'}
     : {cls:'empty',val:'○',sub:'미접촉'};
-  const mobileCard = {cls:'empty',val:'○',sub:'매장 방문 X (TM 영역 외)'};
+  const mobileCard = {cls:'empty',val:'🏪',sub:'매장 방문 영역 (TM 외)'};
   const crossHTML = [
     {icon:'🌐',label:'인터넷+TV',d:itCard},
     {icon:'🏠',label:'가전렌탈',d:rentalCard},
@@ -456,6 +485,7 @@ function renderDetail(r) {
         </div>
       </div>
     </div>
+    ${callDbMetaHTML}
     <div class="section">
       <div class="sec-title">📍 다채널 인입 history <span class="meta">${(r.history||[]).length}건</span></div>
       <div class="timeline">${historyHTML}</div>
