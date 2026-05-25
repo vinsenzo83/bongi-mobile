@@ -2785,7 +2785,7 @@ router.get('/tickets/rental', authenticateJWT, async (req, res) => {
         .select(`
           id, ticket_number, ticket_active, is_active, months, care_service,
           monthly_fee, normal_price, rebate, payback, ownership_months,
-          product:rental_products!product_id(id, brand, name, model, category_id, is_active)
+          product:rental_products!product_id(id, brand, name, model, category_id, is_active, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group))
         `)
         .not('ticket_number', 'is', null);
       if (ticket) qq = qq.eq('ticket_number', String(ticket).trim().toUpperCase());
@@ -2814,12 +2814,14 @@ router.get('/tickets/rental', authenticateJWT, async (req, res) => {
       model: o.product?.model,
       product_id: o.product?.id,
       product_active: o.product?.is_active,
+      company_name: o.product?.company?.name || null,
+      category_name: o.product?.category?.name || null,
     }));
-    // 서버측 search (brand/name도 매칭) — Supabase or 쿼리는 join column 못 씀
+    // 서버측 search (brand/name/company도 매칭) — Supabase or 쿼리는 join column 못 씀
     const filtered = search
       ? tickets.filter(t => {
           const s = String(search).toLowerCase();
-          return [t.ticket_number, t.brand, t.product_name, t.model].some(v => (v || '').toLowerCase().includes(s));
+          return [t.ticket_number, t.brand, t.product_name, t.model, t.company_name, t.category_name].some(v => (v || '').toLowerCase().includes(s));
         })
       : tickets;
     res.json({ tickets: filtered, total: filtered.length });
