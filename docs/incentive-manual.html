@@ -607,6 +607,20 @@ const SECTIONS = [
 <li>옵션 단위 자동 분류 — 같은 모델도 약정·케어에 따라 Tier 다를 수 있음</li>
 </ul>
 
+<h3>🎨 상품관리 UI 전면 개편 (2026-05-25 Round 1~5)</h3>
+<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#22d3ee">
+좌우 분할 폐기 + 옵션 대형 모달 + 인라인 편집 강화 + 이미지 직접 편집. 엑셀 양식 25컬럼 100% 매핑.
+<ul style="margin-top:6px">
+<li><b>좌우 분할 폐기</b> → 모델 마스터가 풀폭 (11컬럼: 🖼️·브랜드·모델/태그·약정·옵션수·Tier·P·⭐·시장성·활성)</li>
+<li><b>옵션 디테일은 대형 모달 팝업</b> (행 클릭 → max-width 1320px 팝업, Esc/배경 클릭 close, 행 확장 아님)</li>
+<li><b>모델 행 인라인 편집</b>: Tier select (색상 동적 변경) · P number · ⭐ 우수 · 시장성 select · 활성 — 변경 즉시 KPI 카드 재집계</li>
+<li><b>🖼️ 이미지 thumb + URL 편집 모달</b>: 모델 첫 셀 42×42 thumb · 클릭하면 청록 모달(미리보기 + 이미지 URL + 상품 페이지 URL 2 입력 · URL 즉시 미리보기) · <code>rental_products.image_url</code> 컬럼 신설</li>
+<li><b>옵션 표 25컬럼 완전 매핑</b>: 🎫 R번호 (ticket_number) + 🏷️ 변별 (variant_label) 컬럼 추가 + 각 옵션 행 아래 회색 메타 라인 chip — 📐 면적 · 🛡️ AS · 👤 가입연령 · 🔧 설치비 · ∑ 총렌탈료 · 🏷️ promo_type · 💰 net_profit · 📝 margin 수동 (모두 metadata/DB 조건부 노출)</li>
+<li><b>image_url 전 시스템 노출</b>: TM 견적 결과 카드(160×120) · 계약처리 가전 표(40×40) · 계약 상세 모달(80×80) · 티켓 관리 가전 탭(36×36 컬럼) — 모두 자동 표시</li>
+<li><b>import 파서</b>: HEADER_MAP에 '상품이미지·이미지URL' 등 별칭 5종, MODEL_FIELDS forward-fill 포함 — 다음 엑셀에 이미지 컬럼 추가만으로 자동 import</li>
+</ul>
+</div>
+
 <h3>📤 봉이 표준 등록폼 import (2026-05-22 신규)</h3>
 <p class="lead">빌리고 원본 의존을 끊고 봉이 자체 양식을 입력 경계로 확정. 빌리고든 다른 중개사든 이 양식 하나로 변환 후 import.</p>
 <div class="tip">📌 빈 템플릿: <code>docs/templates/렌탈_상품등록_양식.xlsx</code> · 정의서: <code>docs/specs/rental-register-form.md</code></div>
