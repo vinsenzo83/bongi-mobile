@@ -787,8 +787,23 @@ if (_isManualMode) {
     .tm-manual-mode #deal-db-source,
     .tm-manual-mode label[for="deal-db-source"],
     .tm-manual-mode label:has(#deal-db-source) { display:none !important; }
+    .tm-manual-bar { position:fixed; top:8px; right:14px; z-index:1000; display:flex; gap:6px; }
+    .tm-manual-bar a, .tm-manual-bar button { background:rgba(8,145,178,0.92); color:#fff; padding:7px 12px; border-radius:5px; font-size:11.5px; font-weight:800; text-decoration:none; border:1px solid #0e7490; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.3) }
+    .tm-manual-bar a:hover, .tm-manual-bar button:hover { background:#0e7490 }
+    .tm-manual-bar .b-mgmt { background:rgba(124,58,237,0.92); border-color:#7c3aed }
+    .tm-manual-bar .b-mgmt:hover { background:#6d28d9 }
   `;
   document.head.appendChild(s);
+  // 🆕 수동 모드 fixed 상단 bar — 신규 고객 등록 + 고객 관리 link
+  document.addEventListener('DOMContentLoaded', () => {
+    const bar = document.createElement('div');
+    bar.className = 'tm-manual-bar';
+    bar.innerHTML = `
+      <a href="/docs/incentive-customer-mgmt.html?action=register" target="_blank" title="신규 고객 등록 (새 탭) — 등록 후 고객관리 페이지에서 360° 즉시 보기">➕ 신규 고객 등록</a>
+      <a class="b-mgmt" href="/docs/incentive-customer-mgmt.html" target="_blank" title="전체 고객 관리 페이지 (새 탭)">👥 고객 관리</a>
+    `;
+    document.body.appendChild(bar);
+  });
 }
 if (_isReQuoteMode) {
   document.documentElement.classList.add('tm-requote-mode');
