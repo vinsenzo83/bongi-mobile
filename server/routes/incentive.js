@@ -2785,7 +2785,7 @@ router.get('/tickets/rental', authenticateJWT, async (req, res) => {
         .select(`
           id, ticket_number, ticket_active, is_active, months, care_service,
           monthly_fee, normal_price, rebate, payback, ownership_months,
-          product:rental_products!product_id(id, brand, name, model, category_id, is_active, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group))
+          product:rental_products!product_id(id, brand, name, model, category_id, is_active, image_url, product_url, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group))
         `)
         .not('ticket_number', 'is', null);
       if (ticket) qq = qq.eq('ticket_number', String(ticket).trim().toUpperCase());
@@ -2816,6 +2816,8 @@ router.get('/tickets/rental', authenticateJWT, async (req, res) => {
       product_active: o.product?.is_active,
       company_name: o.product?.company?.name || null,
       category_name: o.product?.category?.name || null,
+      image_url: o.product?.image_url || null,
+      product_url: o.product?.product_url || null,
     }));
     // 서버측 search (brand/name/company도 매칭) — Supabase or 쿼리는 join column 못 씀
     const filtered = search
@@ -2839,7 +2841,7 @@ router.get('/tickets/rental/lookup', authenticateJWT, async (req, res) => {
       .select(`
         id, ticket_number, ticket_active, is_active, months, care_service,
         monthly_fee, normal_price, rebate, payback, ownership_months,
-        product:rental_products!product_id(id, brand, name, model, category_id, description, is_active, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group))
+        product:rental_products!product_id(id, brand, name, model, category_id, description, is_active, image_url, product_url, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group))
       `)
       .eq('ticket_number', tn).single();
     if (error || !data) return res.status(404).json({ error: '티켓 없음', ticket_number: tn });
