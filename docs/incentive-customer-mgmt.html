@@ -499,6 +499,7 @@ function renderDetail(r) {
       <div class="sec-title">🎯 4상품 cross-sell 보드</div>
       <div class="cross-grid">${crossHTML}</div>
     </div>
+    ${renderContractDetails(r)}
     <div class="section">
       <div class="sec-title">💼 금융 lifecycle</div>
       <div class="fin-grid">${finHTML}</div>
@@ -513,6 +514,131 @@ function renderDetail(r) {
       <button class="btn btn-danger" onclick="openCallModal('reject')">🚫 거절 처리</button>
     </div>
   `;
+}
+
+// ───────────── 계약 상세 내역 ─────────────
+function addMonths(dateStr, months) {
+  if (!dateStr || !months) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  d.setMonth(d.getMonth() + Number(months));
+  return d;
+}
+function daysUntil(date) {
+  if (!date) return null;
+  const now = new Date();
+  return Math.floor((date - now) / (1000 * 60 * 60 * 24));
+}
+function statusBadge(s) {
+  const map = {
+    completed: {label:'✅ 완료', bg:'rgba(34,197,94,0.18)', color:'#86efac'},
+    in_progress: {label:'🚧 진행', bg:'rgba(96,165,250,0.18)', color:'#93c5fd'},
+    pending: {label:'⏳ 대기', bg:'rgba(251,191,36,0.18)', color:'#fbbf24'},
+    cancelled: {label:'❌ 취소', bg:'rgba(220,38,38,0.18)', color:'#fca5a5'},
+  };
+  const m = map[s] || {label:s||'-', bg:'rgba(148,163,184,0.15)', color:'#cbd5e1'};
+  return `<span style="background:${m.bg};color:${m.color};font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">${m.label}</span>`;
+}
+function renderContractDetails(r) {
+  const items = [];
+  // 인터넷+TV
+  (r.it_sales || []).forEach(s => {
+    items.push({
+      type: 'it', icon: '🌐', typeLabel: '인터넷+TV',
+      name: s.product?.name || '-',
+      sub: [s.product?.carrier, s.product?.type].filter(Boolean).join(' · '),
+      contract_date: s.contract_date,
+      months: null, // 인터넷+TV는 약정 product 단위·snapshot 없음
+      end_date: null,
+      monthly_fee: null,
+      payback: s.payback_snapshot,
+      rebate: s.rebate_snapshot,
+      status: s.status,
+      agent: s.agent?.name,
+      activation_date: s.activation_date,
+      cancellation_reason: s.cancellation_reason,
+      ticket: null,
+    });
+  });
+  // 가전렌탈
+  (r.rental_sales || []).forEach(s => {
+    const end = addMonths(s.contract_date, s.months_snapshot);
+    items.push({
+      type: 'rental', icon: '🏠', typeLabel: '가전렌탈',
+      name: [s.product?.brand, s.product?.name || s.product?.model].filter(Boolean).join(' '),
+      sub: [s.product?.company?.name, s.care_service_snapshot ? '케어 '+s.care_service_snapshot : ''].filter(Boolean).join(' · '),
+      contract_date: s.contract_date,
+      months: s.months_snapshot,
+      end_date: end,
+      monthly_fee: s.monthly_fee_snapshot,
+      payback: s.payback_snapshot,
+      rebate: s.rebate_snapshot,
+      status: s.status,
+      agent: s.agent?.name,
+      activation_date: s.activation_date,
+      cancellation_reason: s.cancellation_reason,
+      ticket: s.option?.ticket_number,
+    });
+  });
+  // 중고폰
+  (r.used_phones || []).forEach(s => {
+    items.push({
+      type: 'usedphone', icon: '🔄', typeLabel: '중고폰 매입',
+      name: s.model_name || s.brand || '-',
+      sub: [s.capacity, s.grade].filter(Boolean).join(' · '),
+      contract_date: s.created_at,
+      months: null, end_date: null,
+      monthly_fee: null,
+      payback: s.buyback_price,
+      rebate: null,
+      status: s.status,
+      agent: null, activation_date: null, cancellation_reason: null, ticket: null,
+    });
+  });
+  if (!items.length) {
+    return `<div class="section">
+      <div class="sec-title">📋 계약 상세 내역</div>
+      <div style="font-size:11px;color:#64748b;padding:6px 0">계약 이력 없음</div>
+    </div>`;
+  }
+  // 시간순 (최신 → 옛 순)
+  items.sort((a, b) => new Date(b.contract_date || 0) - new Date(a.contract_date || 0));
+  const rowsHTML = items.map(it => {
+    const dDay = daysUntil(it.end_date);
+    let dDayHTML = '';
+    if (it.end_date) {
+      if (dDay > 60) dDayHTML = `<span style="color:#86efac">만료 D-${dDay}</span>`;
+      else if (dDay > 0) dDayHTML = `<span style="color:#fbbf24;font-weight:800">⚠️ 만료 D-${dDay} · 재계약 권유</span>`;
+      else dDayHTML = `<span style="color:#fca5a5;font-weight:800">🔴 만료 ${-dDay}일 경과</span>`;
+    }
+    const totalPay = (it.monthly_fee && it.months) ? it.monthly_fee * it.months : null;
+    return `<div style="background:#0f172a;border:1px solid #334155;border-left:3px solid ${it.type==='it'?'#60a5fa':it.type==='rental'?'#22c55e':'#a78bfa'};border-radius:6px;padding:10px 12px;margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div>
+          <div style="font-size:9.5px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.04em">${it.icon} ${it.typeLabel}${it.ticket?' · 🎫 '+it.ticket:''}</div>
+          <div style="font-size:13px;font-weight:800;color:#f1f5f9;margin-top:2px">${it.name||'-'}</div>
+          ${it.sub?`<div style="font-size:10.5px;color:#67e8f9">${it.sub}</div>`:''}
+        </div>
+        <div style="text-align:right">${statusBadge(it.status)}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;font-size:10.5px;margin-top:8px;padding-top:8px;border-top:1px dashed #334155">
+        <div><span style="color:#94a3b8">계약일</span><br><b style="color:#cbd5e1">${(it.contract_date||'-').slice(0,10)}</b></div>
+        <div><span style="color:#94a3b8">약정</span><br><b style="color:#cbd5e1">${it.months?it.months+'M':'-'}</b></div>
+        <div style="grid-column:span 2"><span style="color:#94a3b8">약정 종료일</span><br><b style="color:${dDay && dDay<=60 && dDay>0?'#fbbf24':'#cbd5e1'}">${it.end_date?it.end_date.toISOString().slice(0,10):'-'}${dDayHTML?' · '+dDayHTML:''}</b></div>
+        ${it.monthly_fee?`<div><span style="color:#94a3b8">월납</span><br><b style="color:#f1f5f9">${fmt(it.monthly_fee)}원</b></div>`:''}
+        ${totalPay?`<div><span style="color:#94a3b8">총 납부</span><br><b style="color:#cbd5e1">${fmt(totalPay)}원</b></div>`:''}
+        ${it.rebate?`<div><span style="color:#94a3b8">리베이트</span><br><b style="color:#86efac">${fmt(it.rebate)}원</b></div>`:''}
+        ${it.payback?`<div><span style="color:#94a3b8">페이백</span><br><b style="color:#fbbf24">${fmt(it.payback)}원</b></div>`:''}
+        ${it.activation_date?`<div><span style="color:#94a3b8">설치/개통일</span><br><b style="color:#cbd5e1">${(it.activation_date||'').slice(0,10)}</b></div>`:''}
+        ${it.agent?`<div><span style="color:#94a3b8">담당 상담사</span><br><b style="color:#cbd5e1">${it.agent}</b></div>`:''}
+        ${it.cancellation_reason?`<div style="grid-column:span 4;background:rgba(220,38,38,0.08);border-left:3px solid #dc2626;padding:5px 9px;border-radius:3px;color:#fca5a5"><b>❌ 취소 사유:</b> ${it.cancellation_reason}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="section">
+    <div class="sec-title">📋 계약 상세 내역 <span class="meta">총 ${items.length}건 · 시간순</span></div>
+    ${rowsHTML}
+  </div>`;
 }
 
 // ───────────── 콜 시도 모달 ─────────────
