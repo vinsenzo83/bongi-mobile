@@ -925,7 +925,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
 
     const { data, error } = await supabase
       .from('rental_sales').update(patch).eq('id', id)
-      .select('*, product:rental_products(brand, name, model, category_id), option:rental_product_options(months, care_service, rebate, payback, ticket_number)')
+      .select('*, product:rental_products(*, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group)), option:rental_product_options(months, care_service, rebate, payback, ticket_number)')
       .single();
     if (error) throw error;
     res.json({ sale: data });
