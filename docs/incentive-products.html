@@ -259,6 +259,18 @@ async function fetchAgent() {
       </div>
     </div>
 
+    <!-- ★ 옵션 디테일 모달 (대형 팝업) -->
+    <div id="rp-options-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:9998;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto">
+      <div style="background:#0f172a;border:1.5px solid #f59e0b;border-radius:12px;width:100%;max-width:1320px;padding:14px 16px;min-height:200px">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155;padding-bottom:10px;margin-bottom:12px">
+          <h3 id="rp-option-title" style="font-size:14px;color:#fbbf24;margin:0">📦 옵션 디테일 로딩...</h3>
+          <button type="button" id="rp-options-modal-close" style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:4px 12px;border-radius:5px;cursor:pointer;font-size:11.5px">✕ 닫기 (Esc)</button>
+        </div>
+        <div id="rp-product-detail" style="display:none;background:rgba(245,158,11,0.05);border:1px solid #f59e0b;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:10.5px;color:#cbd5e1;line-height:1.7"></div>
+        <div id="rp-options-area" style="font-size:11.5px;color:#94a3b8;padding:14px;text-align:center">로딩...</div>
+      </div>
+    </div>
+
     <!-- ★ 이미지·URL 편집 모달 (Phase 3) -->
     <div id="rp-image-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:48px 16px;overflow-y:auto">
       <div style="background:#1e293b;border:1.5px solid #0891b2;border-radius:12px;width:100%;max-width:520px;padding:20px 22px">
@@ -644,39 +656,36 @@ async function fetchAgent() {
     });
   }
 
-  // 모델 행 클릭 — 같은 행 아래에 옵션 행 동적 토글 (1개만 펼침)
+  // 모델 행 클릭 — 옵션 디테일 모달 팝업 (대형)
   function toggleOptionsRow(modelRow) {
     const productId = modelRow.dataset.id;
-    const existingRow = document.getElementById('rp-options-row-' + productId);
-    // 다른 펼친 옵션 행 모두 닫기
-    document.querySelectorAll('.rp-options-row').forEach(r => r.remove());
+    const modal = document.getElementById('rp-options-modal');
+    if (!modal) return;
+    // 모달 초기 상태
+    document.getElementById('rp-option-title').textContent = '📦 옵션 디테일 로딩...';
+    document.getElementById('rp-product-detail').style.display = 'none';
+    document.getElementById('rp-product-detail').innerHTML = '';
+    document.getElementById('rp-options-area').innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8">로딩...</div>';
     document.querySelectorAll('.rp-model-row').forEach(x => x.style.background = '');
-    // 같은 행이면 닫기만 (toggle off)
-    if (existingRow) return;
-    // 새 옵션 행 동적 삽입
-    const colCount = modelRow.cells.length;
-    const optRow = document.createElement('tr');
-    optRow.className = 'rp-options-row';
-    optRow.id = 'rp-options-row-' + productId;
-    optRow.innerHTML = `<td colspan="${colCount}" style="padding:0;background:#0f172a">
-      <div style="padding:14px 16px;border-top:2px solid #f59e0b;border-bottom:2px solid #f59e0b">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <h3 id="rp-option-title" style="font-size:13px;color:#fbbf24;margin:0">📦 옵션 디테일 로딩...</h3>
-          <button type="button" id="rp-options-close" style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px">✕ 접기</button>
-        </div>
-        <div id="rp-product-detail" style="display:none;background:rgba(245,158,11,0.05);border:1px solid #f59e0b;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:10.5px;color:#cbd5e1;line-height:1.7"></div>
-        <div id="rp-options-area" style="font-size:11.5px;color:#94a3b8;padding:14px;text-align:center">로딩...</div>
-      </div>
-    </td>`;
-    modelRow.parentNode.insertBefore(optRow, modelRow.nextSibling);
     modelRow.style.background = 'rgba(245,158,11,0.15)';
-    // 접기 버튼
-    optRow.querySelector('#rp-options-close')?.addEventListener('click', () => {
-      optRow.remove();
-      modelRow.style.background = '';
-    });
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
     loadOptions(productId);
   }
+  function closeOptionsModal() {
+    const modal = document.getElementById('rp-options-modal');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
+    document.querySelectorAll('.rp-model-row').forEach(x => x.style.background = '');
+  }
+  // 모달 이벤트 (1회 등록)
+  (function bindOptionsModal() {
+    const modal = document.getElementById('rp-options-modal');
+    if (!modal) return;
+    document.getElementById('rp-options-modal-close')?.addEventListener('click', closeOptionsModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeOptionsModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display === 'flex') closeOptionsModal(); });
+  })();
 
   async function saveProduct(id, inp) {
     const tk = localStorage.getItem('incentive-auth-token-v1');
@@ -1034,9 +1043,11 @@ async function fetchAgent() {
     if (!_options.length) { F('rp-options-area').innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8">옵션 없음</div>'; return; }
     F('rp-options-area').innerHTML = `
       <div style="font-size:10.5px;color:#94a3b8;margin-bottom:6px">총 ${_options.length}개 옵션 · <b>페이백</b> 빈칸 = 자동 산출(영업이익 ${_policy.target_profit_rate}% 적용) / 값 입력 = 수동 override · 인라인 편집 · <b>마진/Tier 운영자 수동 입력</b></div>
-      <div style="max-height:560px;overflow:auto"><table style="font-size:10.5px;width:100%">
+      <div style="max-height:640px;overflow:auto"><table style="font-size:10.5px;width:100%">
         <thead style="position:sticky;top:0;background:#1e293b;z-index:1">
           <tr>
+            <th style="width:60px;color:#a5b4fc" title="R 티켓번호 (운영 식별자)">🎫 R번호</th>
+            <th style="width:70px;color:#67e8f9" title="색상/규격/할인 변별값 (variant_label)">🏷️ 변별</th>
             <th style="width:40px">약정</th>
             <th style="width:50px">케어</th>
             <th style="width:42px" title="점검주기 (개월)">점검M</th>
@@ -1183,8 +1194,34 @@ async function fetchAgent() {
     const note = o.metadata?.note || '';
     const inp = (field, val, w, color) => `<input class="rp-opt-edit" data-field="${field}" type="number" step="1000" value="${val==null?'':val}" placeholder="${field==='payback'?'자동':'-'}" style="width:${w}px;background:#0f172a;border:1px solid ${val==null && field==='payback'?'#22c55e':'#475569'};color:${color||'#cbd5e1'};padding:2px 4px;border-radius:3px;font-size:10.5px;text-align:right">`;
     const inpM = (field, val, w) => `<input class="rp-opt-edit" data-field="${field}" type="number" step="1" value="${val==null?'':val}" placeholder="-" style="width:${w}px;background:#0f172a;border:1px solid #475569;color:#cbd5e1;padding:2px 4px;border-radius:3px;font-size:10.5px;text-align:center">`;
+    // 🆕 R번호·변별값·메타 라인 (엑셀 양식 완전 매핑)
+    const fmtKR = n => n == null ? '' : Number(n).toLocaleString('ko-KR');
+    const ticketCell = o.ticket_number
+      ? `<span style="background:rgba(99,102,241,0.15);color:#a5b4fc;font-family:'SF Mono',Monaco,monospace;font-size:10px;font-weight:800;padding:1px 5px;border-radius:3px">${o.ticket_number}</span>${o.ticket_active===false?'<span style="color:#ef4444;font-size:9px;margin-left:2px" title="비활성 티켓">✕</span>':''}`
+      : '<span style="color:#64748b;font-size:9.5px">-</span>';
+    const variantCell = o.variant_label
+      ? `<span style="background:rgba(8,145,178,0.18);color:#67e8f9;font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px" title="variant_label">${o.variant_label}</span>`
+      : '<span style="color:#64748b;font-size:9.5px">-</span>';
+    // 메타 라인 chip 들 — 데이터 있을 때만
+    const md = o.metadata || {};
+    const chips = [];
+    if (md.area) chips.push(`<span style="background:rgba(132,204,22,0.15);color:#bef264;padding:1px 6px;border-radius:3px;font-weight:700">📐 면적 ${md.area}</span>`);
+    if (md.as_period) chips.push(`<span style="background:rgba(56,189,248,0.15);color:#7dd3fc;padding:1px 6px;border-radius:3px;font-weight:700">🛡️ AS ${md.as_period}</span>`);
+    if (md.age_limit) chips.push(`<span style="background:rgba(244,114,182,0.15);color:#f9a8d4;padding:1px 6px;border-radius:3px;font-weight:700">👤 가입 ${md.age_limit}</span>`);
+    if (md.install_fee) chips.push(`<span style="background:rgba(249,115,22,0.15);color:#fdba74;padding:1px 6px;border-radius:3px;font-weight:700">🔧 설치비 ${fmtKR(md.install_fee)}원</span>`);
+    if (md.total_fee) chips.push(`<span style="background:rgba(148,163,184,0.15);color:#cbd5e1;padding:1px 6px;border-radius:3px;font-weight:700">∑ 총렌탈료 ${fmtKR(md.total_fee)}원</span>`);
+    if (o.promo_type && o.promo_type !== '기본') chips.push(`<span style="background:rgba(168,85,247,0.18);color:#d8b4fe;padding:1px 6px;border-radius:3px;font-weight:700">🏷️ ${o.promo_type}</span>`);
+    if (o.net_profit != null) chips.push(`<span style="background:rgba(34,197,94,0.15);color:#86efac;padding:1px 6px;border-radius:3px;font-weight:700">💰 net ${fmtKR(o.net_profit)}원</span>`);
+    if (o.margin_manual_override) chips.push(`<span style="background:rgba(251,191,36,0.2);color:#fbbf24;padding:1px 6px;border-radius:3px;font-weight:700">📝 margin 수동</span>`);
+    if (md.care_raw && md.care_raw !== o.care_service) chips.push(`<span style="color:#64748b;font-size:9px">원본care: ${md.care_raw}</span>`);
+    if (md.model_code) chips.push(`<span style="color:#64748b;font-size:9px">model_code: ${md.model_code}</span>`);
+    const metaRow = chips.length
+      ? `<tr data-id="${o.id}" class="rp-opt-meta-row"><td colspan="20" style="background:rgba(15,23,42,0.5);border-bottom:1px solid #1e293b;padding:3px 8px 5px"><div style="display:flex;flex-wrap:wrap;gap:4px;font-size:9.5px;align-items:center"><span style="color:#475569;font-size:9px">📋 메타</span>${chips.join('')}</div></td></tr>`
+      : '';
     return `
       <tr data-id="${o.id}">
+        <td style="text-align:center">${ticketCell}</td>
+        <td style="text-align:center">${variantCell}</td>
         <td style="text-align:center;font-weight:700">${o.months}M</td>
         <td style="text-align:center">${o.care_service}</td>
         <td style="text-align:center">${inpM('inspection_cycle', o.inspection_cycle, 36)}</td>
@@ -1211,7 +1248,7 @@ async function fetchAgent() {
         </td>
         <td style="text-align:center"><input class="rp-opt-edit" data-field="is_active" type="checkbox" ${o.is_active?'checked':''}></td>
         <td><input class="rp-opt-edit" data-field="note" type="text" value="${note.replace(/"/g,'&quot;')}" placeholder="비고" style="width:130px;background:#0f172a;border:1px solid #475569;color:#cbd5e1;padding:2px 4px;border-radius:3px;font-size:10px"></td>
-      </tr>`;
+      </tr>${metaRow}`;
   }
 
   async function bulkPayback() {
