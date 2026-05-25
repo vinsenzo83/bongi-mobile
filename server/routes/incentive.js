@@ -2837,7 +2837,7 @@ router.get('/tickets/rental/lookup', authenticateJWT, async (req, res) => {
       .select(`
         id, ticket_number, ticket_active, is_active, months, care_service,
         monthly_fee, normal_price, rebate, payback, ownership_months,
-        product:rental_products!product_id(id, brand, name, model, category_id, description, is_active)
+        product:rental_products!product_id(id, brand, name, model, category_id, description, is_active, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group))
       `)
       .eq('ticket_number', tn).single();
     if (error || !data) return res.status(404).json({ error: '티켓 없음', ticket_number: tn });
