@@ -505,7 +505,7 @@ router.get('/products/:id/channels', optionalAuth, async (req, res) => {
 router.patch('/products/:id', authenticateJWT, async (req, res) => {
   try {
     const { id } = req.params;
-    const allowed = ['point_weight', 'is_premium', 'tier', 'is_active', 'promo_tag', 'evaluation_memo', 'market_score', 'display_rank', 'description', 'registration_status', 'product_url',
+    const allowed = ['point_weight', 'is_premium', 'tier', 'is_active', 'promo_tag', 'evaluation_memo', 'market_score', 'display_rank', 'description', 'registration_status', 'product_url', 'image_url',
       // 추천 메타
       'recommended_capacity', 'recommended_usage', 'feature_tags', 'spec_notes',
       'specifications', 'meta_manual_override'];
