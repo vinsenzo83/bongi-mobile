@@ -1859,7 +1859,7 @@ function bindShortcutKeys() {
                 cSel.value = r.care_service;
                 cSel.dispatchEvent(new Event('change', { bubbles: true }));
               }
-              showMsg('✓ ' + (p.brand || '-') + ' · ' + r.months + 'M · 월 ' + fmt(r.monthly_fee) + '원', 'success');
+              showMsg('✓ ' + (p.company?.name ? '🏢 '+p.company.name+' · ' : '') + (p.brand || '-') + ' · ' + r.months + 'M · 월 ' + fmt(r.monthly_fee) + '원', 'success');
             } catch (e) { showMsg('⚠️ 조회 실패: ' + e.message); }
           }
           btn.addEventListener('click', lookupRental);
@@ -6089,7 +6089,7 @@ setTimeout(() => {
         </div>
         <!-- ⚡ 매칭 정보 -->
         <div style="background:rgba(255,255,255,0.55);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:10.5px;color:#78350f">
-          ⚡ <b>매칭:</b> ${p.brand} ${p.model} · ${o.months}M · ${o.care_service} · 상담사 포인트 ${Number(c.point_weight).toFixed(2)}P${(c?.is_premium ?? p.is_premium)?' · ⭐우수(S)':''}
+          ⚡ <b>매칭:</b> ${p.company?.name ? '🏢 '+p.company.name+' · ' : ''}${p.brand} ${p.model} · ${o.months}M · ${o.care_service} · 상담사 포인트 ${Number(c.point_weight).toFixed(2)}P${(c?.is_premium ?? p.is_premium)?' · ⭐우수(S)':''}
         </div>
         <!-- 현재 vs +1건 후 -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
