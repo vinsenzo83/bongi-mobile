@@ -2907,6 +2907,7 @@ init();
         <div class="sec-title"><span class="sec-icon">📦</span>계약 상품 정보 <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">읽기 전용 (티켓 SNAPSHOT)</span></div>
         <div class="product-header">
           <div style="flex:1;min-width:280px">
+            ${p.company?.name ? `<div style="margin-bottom:4px"><span style="background:rgba(8,145,178,0.18);color:#22d3ee;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:4px;border:1px solid #0891b2">🏢 ${p.company.name}</span></div>` : ''}
             <div class="ph-meta">[${p.brand || '-'}] ${p.name || '-'} · 모델 <code style="background:#0f172a;padding:1px 5px;border-radius:3px;color:#fbbf24">${p.model || '-'}</code>${p.product_url ? ` <a href="${p.product_url}" target="_blank" style="color:#60a5fa;text-decoration:none;font-size:10.5px;margin-left:4px">🔗 상품 페이지</a>` : ''}</div>
             <div class="ph-name">🎫 <span style="color:#a5b4fc">${opt.ticket_number || '-'}</span> · ${opt.months || '-'}개월 · ${opt.care_service || '-'}${p.promo_tag ? ` <span style="background:#7c3aed;color:#fff;font-size:9.5px;padding:1px 6px;border-radius:3px;margin-left:4px;font-weight:700">${p.promo_tag}</span>` : ''}</div>
             <div class="ph-tags">
