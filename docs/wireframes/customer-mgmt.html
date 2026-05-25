@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>고객관리 — 와이어프레임 prototype</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard Variable',sans-serif;background:#0f172a;color:#e2e8f0;font-size:13px}
+.wrap{display:grid;grid-template-rows:auto 1fr;height:100vh}
+
+/* 헤더 */
+.hdr{padding:12px 18px;background:#1e293b;border-bottom:1px solid #334155;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hdr h1{font-size:16px;color:#f8fafc;font-weight:800;display:flex;align-items:center;gap:6px}
+.hdr .badge-prototype{background:#fbbf24;color:#0f172a;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1}
+.toolbar input,.toolbar select{background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:5px 10px;border-radius:5px;font-size:11.5px}
+.toolbar input{min-width:200px}
+.btn{background:#334155;color:#cbd5e1;border:1px solid #475569;padding:5px 10px;border-radius:5px;font-size:11.5px;cursor:pointer}
+.btn:hover{background:#475569}
+.btn-primary{background:#0891b2;color:#fff;border-color:#0891b2}
+.btn-primary:hover{background:#0e7490}
+.btn-warn{background:#f59e0b;color:#0f172a;border-color:#f59e0b}
+.btn-success{background:#16a34a;color:#fff;border-color:#16a34a}
+.btn-danger{background:#dc2626;color:#fff;border-color:#dc2626}
+
+/* 본문 그리드 */
+.main{display:grid;grid-template-columns:35% 65%;height:100%;overflow:hidden}
+
+/* 좌측 리드 list */
+.left{border-right:1px solid #334155;display:flex;flex-direction:column;overflow:hidden}
+.left-filter{padding:8px 12px;background:#1e293b;border-bottom:1px solid #334155;display:flex;flex-wrap:wrap;gap:4px}
+.left-filter .chip{font-size:10px;padding:3px 8px;border-radius:11px;background:#334155;color:#94a3b8;cursor:pointer;border:1px solid transparent}
+.left-filter .chip.active{background:#0891b2;color:#fff;border-color:#0891b2}
+.left-filter .chip.warn.active{background:#f59e0b;color:#0f172a;border-color:#f59e0b}
+.left-list{flex:1;overflow-y:auto;padding:6px 8px}
+.lead-card{background:#1e293b;border:1px solid #334155;border-radius:7px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.lead-card:hover{border-color:#0891b2}
+.lead-card.active{border-color:#fbbf24;background:rgba(251,191,36,0.05)}
+.lead-row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.lead-name{font-weight:700;font-size:12.5px;color:#f1f5f9}
+.lead-name .grade{display:inline-block;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle}
+.grade-S{background:#fbbf24;color:#0f172a}
+.grade-A{background:#60a5fa;color:#0f172a}
+.grade-B{background:#94a3b8;color:#0f172a}
+.grade-R{background:#a78bfa;color:#0f172a}
+.grade-C{background:#475569;color:#cbd5e1}
+.lead-status{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px}
+.st-new{background:rgba(148,163,184,0.15);color:#cbd5e1}
+.st-trying{background:rgba(96,165,250,0.18);color:#93c5fd}
+.st-quote{background:rgba(103,232,249,0.18);color:#67e8f9}
+.st-pending{background:rgba(251,191,36,0.18);color:#fbbf24}
+.st-done{background:rgba(34,197,94,0.18);color:#86efac}
+.st-reject{background:rgba(220,38,38,0.18);color:#fca5a5}
+.st-dormant{background:rgba(71,85,105,0.18);color:#94a3b8}
+.lead-row2{font-size:10.5px;color:#94a3b8;font-family:'SF Mono',Monaco,monospace}
+.lead-row3{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.channel-chip{font-size:9px;padding:2px 6px;border-radius:3px;font-weight:700}
+.ch-calldb{background:rgba(99,102,241,0.18);color:#a5b4fc}
+.ch-web{background:rgba(96,165,250,0.18);color:#60a5fa}
+.ch-app{background:rgba(134,239,172,0.18);color:#86efac}
+.ch-store{background:rgba(251,191,36,0.18);color:#fbbf24}
+.ch-usedphone{background:rgba(167,139,250,0.18);color:#a78bfa}
+.ch-ai{background:rgba(103,232,249,0.18);color:#67e8f9}
+.product-chip{font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(148,163,184,0.1);color:#cbd5e1;font-weight:600}
+.lead-row4{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.lead-age{font-size:9.5px;font-weight:700}
+.age-ok{color:#86efac}
+.age-warn{color:#fbbf24}
+.age-rotten{color:#fb923c}
+.age-dead{color:#ef4444}
+.nba-badge{background:#fbbf24;color:#0f172a;font-size:9px;font-weight:800;padding:2px 6px;border-radius:3px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.65}}
+
+/* 우측 360° 패널 */
+.right{overflow-y:auto;padding:0}
+.section{background:#1e293b;border-bottom:1px solid #334155;padding:14px 18px}
+.section-title{font-size:11px;color:#fbbf24;font-weight:800;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:0.04em}
+.section-title .meta{font-size:10px;color:#94a3b8;font-weight:600;text-transform:none;letter-spacing:0}
+
+/* A. 회원 헤더 */
+.profile-hdr{display:flex;gap:14px;align-items:center}
+.avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0891b2,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}
+.profile-meta{flex:1;min-width:0}
+.profile-name{font-size:18px;font-weight:900;color:#f8fafc;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.profile-phone{font-family:'SF Mono',Monaco,monospace;font-size:13px;color:#cbd5e1;margin-top:3px}
+.profile-chips{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.profile-chip{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700}
+.chip-pass-ok{background:rgba(34,197,94,0.18);color:#86efac}
+.chip-pass-no{background:rgba(220,38,38,0.15);color:#fca5a5}
+.chip-member{background:rgba(34,197,94,0.18);color:#86efac}
+.chip-nonmember{background:rgba(148,163,184,0.18);color:#94a3b8}
+.chip-social{background:rgba(251,191,36,0.18);color:#fbbf24}
+
+/* B. 다채널 인입 timeline */
+.timeline{position:relative;padding-left:18px}
+.timeline::before{content:'';position:absolute;left:6px;top:6px;bottom:6px;width:1.5px;background:#334155}
+.tl-item{position:relative;padding-bottom:10px}
+.tl-item::before{content:'';position:absolute;left:-15px;top:5px;width:9px;height:9px;border-radius:50%;background:#475569;border:2px solid #1e293b;z-index:1}
+.tl-item.recent::before{background:#fbbf24}
+.tl-date{font-size:10px;color:#94a3b8;font-family:'SF Mono',Monaco,monospace;margin-bottom:2px}
+.tl-desc{font-size:12px;color:#cbd5e1}
+
+/* C. 통화 timeline */
+.call-item{background:#0f172a;border:1px solid #334155;border-left:3px solid #60a5fa;border-radius:5px;padding:8px 12px;margin-bottom:6px}
+.call-item.success{border-left-color:#22c55e}
+.call-item.reject{border-left-color:#ef4444}
+.call-item.absent{border-left-color:#94a3b8}
+.call-hdr{display:flex;justify-content:space-between;font-size:11px;color:#cbd5e1;margin-bottom:3px}
+.call-hdr b{color:#fbbf24;font-weight:700}
+.call-result{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:3px}
+.cr-success{background:rgba(34,197,94,0.18);color:#86efac}
+.cr-reject{background:rgba(220,38,38,0.18);color:#fca5a5}
+.cr-absent{background:rgba(148,163,184,0.18);color:#cbd5e1}
+.cr-callback{background:rgba(251,191,36,0.18);color:#fbbf24}
+.call-summary{font-size:11px;color:#94a3b8;line-height:1.5}
+.next-call{background:rgba(251,191,36,0.08);border:1px dashed #fbbf24;border-radius:5px;padding:8px 12px;font-size:11px;color:#fbbf24;font-weight:700;text-align:center}
+
+/* D. 4상품 cross-sell 보드 */
+.cross-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cross-card{background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px 12px}
+.cross-card.has{border-color:#22c55e}
+.cross-card.quote{border-color:#fbbf24}
+.cross-card.empty{opacity:0.55}
+.cross-title{font-size:11px;color:#cbd5e1;font-weight:700;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cross-val{font-size:16px;font-weight:900;color:#f8fafc}
+.cross-sub{font-size:10px;color:#94a3b8;margin-top:2px}
+
+/* E. 금융 lifecycle */
+.fin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.fin-card{background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px 12px;text-align:center}
+.fin-label{font-size:9.5px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px}
+.fin-val{font-size:14px;font-weight:900;color:#f8fafc;font-family:'SF Mono',Monaco,monospace}
+.fin-sub{font-size:9.5px;color:#94a3b8;margin-top:2px}
+.fin-card.alert{border-color:#dc2626}
+.fin-card.alert .fin-val{color:#fca5a5}
+
+/* F. NBA */
+.nba-list{display:flex;flex-direction:column;gap:6px}
+.nba-item{background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.05));border:1px solid #fbbf24;border-radius:6px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.nba-icon{font-size:18px}
+.nba-msg{flex:1;font-size:11.5px;color:#fef3c7;line-height:1.5}
+.nba-msg b{color:#fbbf24}
+
+/* G. 콜 액션 sticky */
+.action-bar{position:sticky;bottom:0;background:rgba(15,23,42,0.95);backdrop-filter:blur(8px);border-top:2px solid #fbbf24;padding:10px 18px;display:flex;gap:6px;flex-wrap:wrap;z-index:10}
+.action-bar .btn{font-size:11.5px;padding:7px 12px;font-weight:700}
+
+/* 모달 */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#1e293b;border:1.5px solid #fbbf24;border-radius:10px;width:90%;max-width:500px;padding:18px 22px}
+.modal h3{font-size:14px;color:#fbbf24;margin-bottom:12px}
+.modal label{display:block;font-size:11px;color:#94a3b8;margin-bottom:4px;margin-top:8px}
+.modal input,.modal select,.modal textarea{width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 10px;border-radius:5px;font-size:12px;font-family:inherit}
+.modal textarea{min-height:60px;resize:vertical}
+.modal-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:14px;border-top:1px solid #334155;padding-top:12px}
+.empty-state{padding:60px 20px;text-align:center;color:#64748b;font-size:13px}
+
+/* 스크롤바 */
+.left-list::-webkit-scrollbar,.right::-webkit-scrollbar{width:6px}
+.left-list::-webkit-scrollbar-thumb,.right::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<!-- 헤더 + toolbar -->
+<div class="hdr">
+  <h1>👥 고객관리 <span class="badge-prototype">PROTOTYPE</span></h1>
+  <div class="toolbar">
+    <input type="text" placeholder="🔍 이름·전화·티켓번호·메모">
+    <select>
+      <option>📊 전체 상태</option>
+      <option>🆕 신규 리드</option>
+      <option>📞 시도중</option>
+      <option>💬 견적전달</option>
+      <option>⏳ 결정대기</option>
+      <option>✅ 계약완료</option>
+      <option>❌ 거절</option>
+      <option>💤 휴면</option>
+    </select>
+    <select>
+      <option>등급 전체</option>
+      <option>S</option><option>A</option><option>B</option><option>R</option><option>C</option>
+    </select>
+    <select>
+      <option>채널 전체</option>
+      <option>📞 콜DB</option>
+      <option>🌐 웹</option>
+      <option>📱 앱</option>
+      <option>🏪 매장</option>
+      <option>🔄 중고폰</option>
+      <option>🤖 AI</option>
+    </select>
+    <button class="btn">📥 CSV (PIPA)</button>
+    <button class="btn-primary btn">+ 수동 등록</button>
+  </div>
+</div>
+
+<!-- 본문 -->
+<div class="main">
+
+  <!-- 좌측: 리드 통합 list -->
+  <div class="left">
+    <div class="left-filter">
+      <span class="chip active">전체 5</span>
+      <span class="chip warn">⏰ rotting 2</span>
+      <span class="chip">신규 1</span>
+      <span class="chip">시도중 1</span>
+      <span class="chip">완료 1</span>
+      <span class="chip">cross-sell 기회 2</span>
+    </div>
+    <div class="left-list" id="lead-list"></div>
+  </div>
+
+  <!-- 우측: 고객 360° 패널 -->
+  <div class="right" id="detail-panel">
+    <!-- JS에서 채움 -->
+  </div>
+
+</div><!-- /main -->
+
+</div><!-- /wrap -->
+
+<!-- 콜 시도 모달 -->
+<div class="modal-bg" id="call-modal">
+  <div class="modal">
+    <h3>📞 콜 시도 결과 입력</h3>
+    <label>결과</label>
+    <select>
+      <option>✅ 성공 (상담 진행)</option>
+      <option>❌ 거절</option>
+      <option>📞 부재 (재시도 필요)</option>
+      <option>📅 콜백 예약 요청</option>
+    </select>
+    <label>통화 요약 (필수 — 녹음 시스템 없음)</label>
+    <textarea placeholder="고객 반응·관심사·다음 액션 메모"></textarea>
+    <label>다음 콜 예약 (선택)</label>
+    <input type="datetime-local">
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('call-modal').classList.remove('open')">취소</button>
+      <button class="btn-primary btn" onclick="document.getElementById('call-modal').classList.remove('open');alert('✅ 통화 로그 저장 + 다음 콜 예약 (prototype)')">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───────────────────────── 샘플 데이터 (5명 시나리오) ─────────────────────────
+const LEADS = [
+  {
+    id: 1, name: '홍길동', phone: '010-****-1234',
+    grade: 'S', status: 'trying', statusLabel: '시도중',
+    channels: ['calldb'], primary_channel: 'calldb',
+    products_held: ['인터넷'], products_quote: ['가전'],
+    age_days: 3, last_call: '오늘 10:30',
+    nba: 'cross-sell 기회',
+    is_member: false, pass: false, social: null,
+    history: [
+      {date: '2026-05-22', icon: '📞', desc: '콜DB 분배 (등급 S · 마감원장 import)'},
+      {date: '2026-05-23', icon: '📞', desc: '1차 콜 시도 (부재)'},
+      {date: '2026-05-24', icon: '📞', desc: '2차 콜 시도 (성공 — 인터넷+TV 견적 전달)'},
+      {date: '2026-05-25', icon: '📞', desc: '3차 콜 시도 (가전렌탈 cross-sell 진행 중)'}
+    ],
+    calls: [
+      {at: '2026-05-25 10:30', agent: '김상담', result: 'success', label: '성공', summary: '가전렌탈 LG헬로비전 정수기 관심. 가족 4명 사용 환경. 견적 보낸다고 함. 모레 결정.'},
+      {at: '2026-05-24 14:20', agent: '김상담', result: 'success', label: '성공', summary: 'KT 인터넷+TV 500M 계약 완료 (티켓 SK0188). 페이백 30만원 안내.'},
+      {at: '2026-05-23 11:00', agent: '김상담', result: 'absent', label: '부재', summary: '음성 메시지 남김.'}
+    ],
+    next_call: '2026-05-27 14:00',
+    products: {
+      it: {count: 1, label: 'KT 500M+TV', payback: 300000},
+      rental: {count: 0, quote: 'LG헬로비전 정수기 견적전달'},
+      mobile: null,
+      usedphone: null
+    },
+    finance: {gift_pending: 1, gift_amount: 300000, points: 5000, refs: 0, alarms: 0}
+  },
+  {
+    id: 2, name: '김영희', phone: '010-****-5678',
+    grade: 'A', status: 'new', statusLabel: '신규 리드',
+    channels: ['web'], primary_channel: 'web',
+    products_held: [], products_quote: ['인터넷'],
+    age_days: 1, last_call: null,
+    nba: '신규 리드 — 즉시 콜 권장',
+    is_member: true, pass: true, social: '카카오',
+    history: [
+      {date: '2026-05-24 18:42', icon: '🌐', desc: '셀프신청 (SK 1G+TV 견적 요청)'},
+      {date: '2026-05-24 16:00', icon: '🤖', desc: 'AI 채팅 (인터넷 추천 받음)'}
+    ],
+    calls: [],
+    next_call: null,
+    products: {
+      it: {count: 0, quote: 'SK 1G+TV 견적 요청 — 미접촉'},
+      rental: null, mobile: null, usedphone: null
+    },
+    finance: {gift_pending: 0, gift_amount: 0, points: 1500, refs: 0, alarms: 0}
+  },
+  {
+    id: 3, name: '박철수', phone: '010-****-9012',
+    grade: 'B', status: 'pending', statusLabel: '결정대기',
+    channels: ['store'], primary_channel: 'store',
+    products_held: [], products_quote: ['휴대폰'],
+    age_days: 7, last_call: '4일 전',
+    nba: 'rotting 경고 — 7일 무응답',
+    is_member: false, pass: false, social: null,
+    history: [
+      {date: '2026-05-18', icon: '🏪', desc: '광주 1호점 방문 (S26U 시세 청취)'},
+      {date: '2026-05-19', icon: '📞', desc: '매장 상담사 후속 콜 (부재)'},
+      {date: '2026-05-21', icon: '📞', desc: '2차 콜 (결정 보류 — 가족 상의)'}
+    ],
+    calls: [
+      {at: '2026-05-21 13:15', agent: '이상담', result: 'callback', label: '콜백 요청', summary: '가족 상의 후 다시 연락하겠다 함. 1주일 내 결정.'},
+      {at: '2026-05-19 10:00', agent: '이상담', result: 'absent', label: '부재', summary: '문자 안내 남김.'}
+    ],
+    next_call: null,
+    products: {
+      it: null, rental: null,
+      mobile: {count: 0, quote: 'S26U 현금가 65만 안내', store: '광주 1호점'},
+      usedphone: null
+    },
+    finance: {gift_pending: 0, gift_amount: 0, points: 0, refs: 0, alarms: 0}
+  },
+  {
+    id: 4, name: '정민수', phone: '010-****-3456',
+    grade: 'R', status: 'dormant', statusLabel: '휴면',
+    channels: ['ai'], primary_channel: 'ai',
+    products_held: [], products_quote: [],
+    age_days: 14, last_call: '14일 전',
+    nba: '⚠️ rotting 14일 — 마지막 시도 권유',
+    is_member: false, pass: false, social: null,
+    history: [
+      {date: '2026-05-11', icon: '🤖', desc: 'AI 채팅 (정수기 문의 — 가격 비교)'},
+      {date: '2026-05-12', icon: '📞', desc: '1차 콜 (관심 없음 답변)'}
+    ],
+    calls: [
+      {at: '2026-05-12 15:30', agent: '박상담', result: 'reject', label: '거절', summary: '현재 다른 회사 정수기 사용 중. 약정 1년 남음. 1년 후 재연락 동의.'}
+    ],
+    next_call: null,
+    products: {it: null, rental: {count: 0, quote: '정수기 거절 — 1년 후 재시도'}, mobile: null, usedphone: null},
+    finance: {gift_pending: 0, gift_amount: 0, points: 0, refs: 0, alarms: 0}
+  },
+  {
+    id: 5, name: '이순신 ⭐', phone: '010-****-7890',
+    grade: 'S', status: 'done', statusLabel: '계약완료 (cross-sell ALL)',
+    channels: ['app', 'calldb', 'store'], primary_channel: 'app',
+    products_held: ['인터넷', '가전', '휴대폰'], products_quote: [],
+    age_days: 30, last_call: '7일 전',
+    nba: '재계약 권유 — 약정 만료 60일 전',
+    is_member: true, pass: true, social: '카카오 · 구글',
+    history: [
+      {date: '2026-04-25', icon: '📱', desc: '앱 회원 가입 (카카오 · PASS 완료)'},
+      {date: '2026-04-26', icon: '📱', desc: '셀프신청 (LG 인터넷+TV)'},
+      {date: '2026-04-27', icon: '📞', desc: '1차 콜 → 계약 완료 (티켓 LG0042)'},
+      {date: '2026-05-05', icon: '📞', desc: '2차 콜 — 가전렌탈 cross-sell (R2150 계약)'},
+      {date: '2026-05-15', icon: '🏪', desc: '광주 3호점 방문 — S26U 기변 계약'},
+      {date: '2026-05-18', icon: '💰', desc: '현금페이백 50만원 마이페이지 수령'},
+      {date: '2026-05-20', icon: '🎁', desc: '친구초대 1명 — 보상 적립'}
+    ],
+    calls: [
+      {at: '2026-05-18 11:00', agent: '김상담', result: 'success', label: '성공', summary: '페이백 수령 안내 완료. 친구 추천 1명 진행 중.'},
+      {at: '2026-05-05 14:00', agent: '김상담', result: 'success', label: '성공', summary: '가전 cross-sell — LG헬로비전 정수기 60M 셀프 계약. 만족도 높음.'},
+      {at: '2026-04-27 10:30', agent: '김상담', result: 'success', label: '성공', summary: '인터넷 LG 1G+TV 계약. 첫 가입 환영 안내.'}
+    ],
+    next_call: '2026-07-25 10:00',
+    products: {
+      it: {count: 1, label: 'LG 1G+TV', payback: 500000},
+      rental: {count: 1, label: 'LG헬로비전 정수기 60M', ticket: 'R2150'},
+      mobile: {count: 1, label: 'S26U 기변 (광주 3호점)'},
+      usedphone: null
+    },
+    finance: {gift_pending: 0, gift_amount: 800000, points: 32000, refs: 1, alarms: 2}
+  }
+];
+
+const CHANNEL_META = {
+  calldb:    {icon:'📞', label:'콜DB',    cls:'ch-calldb'},
+  web:       {icon:'🌐', label:'웹',      cls:'ch-web'},
+  app:       {icon:'📱', label:'앱',      cls:'ch-app'},
+  store:     {icon:'🏪', label:'매장',    cls:'ch-store'},
+  usedphone: {icon:'🔄', label:'중고폰',  cls:'ch-usedphone'},
+  ai:        {icon:'🤖', label:'AI채팅', cls:'ch-ai'}
+};
+
+const STATUS_META = {
+  new:     {label:'🆕 신규',     cls:'st-new'},
+  trying:  {label:'📞 시도중',   cls:'st-trying'},
+  quote:   {label:'💬 견적전달', cls:'st-quote'},
+  pending: {label:'⏳ 결정대기', cls:'st-pending'},
+  done:    {label:'✅ 완료',     cls:'st-done'},
+  reject:  {label:'❌ 거절',     cls:'st-reject'},
+  dormant: {label:'💤 휴면',     cls:'st-dormant'}
+};
+
+function ageCls(d) {
+  if (d <= 3) return 'age-ok';
+  if (d <= 7) return 'age-warn';
+  if (d <= 14) return 'age-rotten';
+  return 'age-dead';
+}
+
+function fmt(n) { return n == null ? '-' : Number(n).toLocaleString('ko-KR'); }
+
+// ───────────────────────── 좌측 list 렌더 ─────────────────────────
+function renderList() {
+  const html = LEADS.map(l => {
+    const st = STATUS_META[l.status] || STATUS_META.new;
+    const channelChips = l.channels.map(c => {
+      const m = CHANNEL_META[c];
+      return `<span class="channel-chip ${m.cls}">${m.icon} ${m.label}</span>`;
+    }).join('');
+    const productChips = [
+      ...l.products_held.map(p => `<span class="product-chip" style="color:#86efac">✓ ${p}</span>`),
+      ...l.products_quote.map(p => `<span class="product-chip" style="color:#fbbf24">⏳ ${p}</span>`)
+    ].join('');
+    const ageLabel = l.age_days === 0 ? '오늘' : `${l.age_days}일 전`;
+    const nbaBadge = l.nba ? `<span class="nba-badge">🎯 NBA</span>` : '';
+    return `<div class="lead-card" data-id="${l.id}" onclick="selectLead(${l.id})">
+      <div class="lead-row1">
+        <div class="lead-name">${l.name}<span class="grade grade-${l.grade}">${l.grade}</span></div>
+        <span class="lead-status ${st.cls}">${st.label}</span>
+      </div>
+      <div class="lead-row2">${l.phone}</div>
+      <div class="lead-row3">${channelChips}${productChips}</div>
+      <div class="lead-row4">
+        <span class="lead-age ${ageCls(l.age_days)}">⏰ ${ageLabel}${l.last_call ? ' · 콜 '+l.last_call : ' · 미접촉'}</span>
+        ${nbaBadge}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('lead-list').innerHTML = html;
+}
+
+// ───────────────────────── 우측 360° 패널 렌더 ─────────────────────────
+function selectLead(id) {
+  document.querySelectorAll('.lead-card').forEach(c => c.classList.toggle('active', c.dataset.id == id));
+  const l = LEADS.find(x => x.id === id);
+  if (!l) return;
+
+  // A. 회원 헤더
+  const initial = l.name.charAt(0);
+  const memberChips = [
+    l.is_member ? '<span class="profile-chip chip-member">✅ 앱회원</span>' : '<span class="profile-chip chip-nonmember">○ 비회원</span>',
+    l.pass ? '<span class="profile-chip chip-pass-ok">🛡️ PASS</span>' : '<span class="profile-chip chip-pass-no">❌ PASS 미인증</span>',
+    l.social ? `<span class="profile-chip chip-social">🔗 ${l.social}</span>` : ''
+  ].filter(Boolean).join('');
+
+  // B. 인입 history
+  const historyHTML = l.history.map((h, i) => `
+    <div class="tl-item ${i === 0 ? 'recent' : ''}">
+      <div class="tl-date">${h.date}</div>
+      <div class="tl-desc">${h.icon} ${h.desc}</div>
+    </div>`).join('');
+
+  // C. 통화 timeline
+  const callsHTML = l.calls.length ? l.calls.map(c => `
+    <div class="call-item ${c.result}">
+      <div class="call-hdr">
+        <span><b>${c.agent}</b> · ${c.at}</span>
+        <span class="call-result cr-${c.result}">${c.label}</span>
+      </div>
+      <div class="call-summary">${c.summary}</div>
+    </div>`).join('') : '<div style="font-size:11px;color:#64748b;padding:8px 0">통화 시도 없음 — 첫 콜 시도 권장</div>';
+  const nextCallHTML = l.next_call ? `<div class="next-call">📅 다음 콜 예약: ${l.next_call}</div>` : '';
+
+  // D. 4상품 cross-sell
+  const cards = [
+    {key:'it',         icon:'🌐', label:'인터넷+TV', cur: l.products.it},
+    {key:'rental',     icon:'🏠', label:'가전렌탈',  cur: l.products.rental},
+    {key:'mobile',     icon:'📱', label:'휴대폰',    cur: l.products.mobile},
+    {key:'usedphone',  icon:'🔄', label:'중고폰',    cur: l.products.usedphone}
+  ];
+  const crossHTML = cards.map(c => {
+    if (!c.cur) return `<div class="cross-card empty">
+      <div class="cross-title">${c.icon} ${c.label}</div>
+      <div class="cross-val" style="color:#64748b">○</div>
+      <div class="cross-sub">미접촉 — cross-sell 기회</div>
+    </div>`;
+    const cls = c.cur.count > 0 ? 'has' : 'quote';
+    const valColor = c.cur.count > 0 ? '#86efac' : '#fbbf24';
+    return `<div class="cross-card ${cls}">
+      <div class="cross-title">${c.icon} ${c.label}</div>
+      <div class="cross-val" style="color:${valColor}">${c.cur.count > 0 ? `✅ ${c.cur.count}건` : '⏳ 견적중'}</div>
+      <div class="cross-sub">${c.cur.label || c.cur.quote || ''}${c.cur.ticket ? ' · 티켓 '+c.cur.ticket : ''}${c.cur.store ? ' · '+c.cur.store : ''}${c.cur.payback ? ' · 페이백 '+fmt(c.cur.payback)+'원' : ''}</div>
+    </div>`;
+  }).join('');
+
+  // E. 금융 lifecycle
+  const f = l.finance;
+  const finHTML = `
+    <div class="fin-card ${f.gift_pending ? 'alert' : ''}">
+      <div class="fin-label">💰 현금페이백</div>
+      <div class="fin-val">${fmt(f.gift_amount)}원</div>
+      <div class="fin-sub">${f.gift_pending ? `⚠️ 지급대기 ${f.gift_pending}건` : '완료'}</div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-label">🪙 포인트</div>
+      <div class="fin-val">${fmt(f.points)}P</div>
+      <div class="fin-sub">잔액</div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-label">🎁 친구초대</div>
+      <div class="fin-val">${f.refs}명</div>
+      <div class="fin-sub">${f.refs ? '보상 진행' : '미사용'}</div>
+    </div>
+    <div class="fin-card ${f.alarms ? 'alert' : ''}">
+      <div class="fin-label">⏰ 돈지키미</div>
+      <div class="fin-val">${f.alarms}개</div>
+      <div class="fin-sub">${f.alarms ? '약정 알람' : '없음'}</div>
+    </div>`;
+
+  // F. NBA
+  const nbaItems = [];
+  if (l.nba) nbaItems.push({icon:'🎯', msg: `<b>${l.nba}</b> — 이 고객에게 추천하는 다음 행동입니다.`});
+  if (f.gift_pending) nbaItems.push({icon:'💰', msg: `현금페이백 <b>${f.gift_pending}건 미수령</b>. 고객에게 안내하면 close 율↑`});
+  if (l.products_held.length >= 1 && l.products.rental == null && l.products.it != null)
+    nbaItems.push({icon:'🏠', msg: `인터넷 계약자 — <b>가전렌탈 cross-sell</b> 권장. 같은 회사 묶음 할인 가능.`});
+  if (l.age_days > 14 && l.status !== 'done' && l.status !== 'reject')
+    nbaItems.push({icon:'⚠️', msg: `<b>rotting ${l.age_days}일</b> — 마지막 콜 시도 후 휴면 처리 권장`});
+  if (l.status === 'done')
+    nbaItems.push({icon:'🔄', msg: `약정 만료 60일 전 — <b>재계약 권유 콜</b> 자동 알람 등록 권장`});
+
+  const nbaHTML = nbaItems.length ? nbaItems.map(n => `
+    <div class="nba-item">
+      <span class="nba-icon">${n.icon}</span>
+      <span class="nba-msg">${n.msg}</span>
+      <button class="btn btn-warn">실행</button>
+    </div>`).join('') : '<div style="font-size:11px;color:#64748b;padding:8px 0">현재 추천 액션 없음</div>';
+
+  // 합치기
+  document.getElementById('detail-panel').innerHTML = `
+    <!-- A. 회원 헤더 -->
+    <div class="section">
+      <div class="profile-hdr">
+        <div class="avatar">${initial}</div>
+        <div class="profile-meta">
+          <div class="profile-name">${l.name}
+            <span class="grade grade-${l.grade}" style="font-size:11px;padding:2px 7px">${l.grade}</span>
+          </div>
+          <div class="profile-phone">📱 ${l.phone}</div>
+          <div class="profile-chips">${memberChips}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B. 다채널 인입 history -->
+    <div class="section">
+      <div class="section-title">📍 다채널 인입 history <span class="meta">${l.history.length}건 · 첫 접점 ${l.history[0]?.date || '-'}</span></div>
+      <div class="timeline">${historyHTML}</div>
+    </div>
+
+    <!-- C. 통화 timeline -->
+    <div class="section">
+      <div class="section-title">📞 통화 시도 <span class="meta">${l.calls.length}회</span></div>
+      ${callsHTML}
+      ${nextCallHTML}
+    </div>
+
+    <!-- D. 4상품 cross-sell -->
+    <div class="section">
+      <div class="section-title">🎯 4상품 cross-sell 보드 <span class="meta">보유 ${l.products_held.length}건 · 견적중 ${l.products_quote.length}건</span></div>
+      <div class="cross-grid">${crossHTML}</div>
+    </div>
+
+    <!-- E. 금융 lifecycle -->
+    <div class="section">
+      <div class="section-title">💼 금융 lifecycle</div>
+      <div class="fin-grid">${finHTML}</div>
+    </div>
+
+    <!-- F. NBA -->
+    <div class="section">
+      <div class="section-title">🎯 다음 행동 추천 (NBA) <span class="meta">${nbaItems.length}건</span></div>
+      <div class="nba-list">${nbaHTML}</div>
+    </div>
+
+    <!-- G. 콜 액션 sticky -->
+    <div class="action-bar">
+      <button class="btn btn-success" onclick="document.getElementById('call-modal').classList.add('open')">📞 즉시 콜 시도</button>
+      <button class="btn btn-warn">📅 다음 콜 예약</button>
+      <button class="btn">📝 메모 추가</button>
+      <button class="btn">🔄 재분배 요청</button>
+      <button class="btn btn-danger">🚫 거절 처리</button>
+      <button class="btn">💤 휴면 처리</button>
+    </div>
+  `;
+}
+
+// 초기 렌더
+renderList();
+selectLead(1);
+</script>
+
+</body>
+</html>
