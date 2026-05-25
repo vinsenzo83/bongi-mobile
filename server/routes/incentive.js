@@ -3186,6 +3186,63 @@ router.post('/customers/:phone/call-attempt', authenticateJWT, async (req, res) 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// POST /api/incentive/customers/manual-register
+// 수동 고객 등록 (incentive_customer_db insert · 중복 체크 · 본인 분배 옵션)
+router.post('/customers/manual-register', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    const { name, phone, age, gender, region, carrier, notes, db_source_id, assign_to_me } = req.body || {};
+    if (!name || !phone) return res.status(400).json({ error: '이름·전화 필수' });
+    const phoneClean = String(phone).trim();
+    if (!/^[0-9-]{8,15}$/.test(phoneClean)) return res.status(400).json({ error: '전화번호 형식 오류' });
+
+    // 중복 체크
+    const { data: existing } = await supabase.from('incentive_customer_db')
+      .select('id, name, assigned_agent_id, call_status')
+      .eq('phone', phoneClean).maybeSingle();
+    if (existing) {
+      return res.status(409).json({
+        error: '이미 등록된 전화번호',
+        existing: { id: existing.id, name: existing.name, assigned_agent_id: existing.assigned_agent_id, call_status: existing.call_status },
+      });
+    }
+
+    const row = {
+      name: String(name).trim(),
+      phone: phoneClean,
+      age: age != null ? Number(age) : null,
+      gender: gender || null,
+      region: region || null,
+      carrier: carrier || null,
+      notes: notes || null,
+      db_source_id: db_source_id || null,
+      imported_at: new Date().toISOString(),
+      imported_by_user_id: me.id,
+      assigned_agent_id: assign_to_me ? me.id : null,
+      assigned_at: assign_to_me ? new Date().toISOString() : null,
+      assigned_by_user_id: assign_to_me ? me.id : null,
+      call_status: 'pending',
+      consent_status: 'manual',
+    };
+    const { data, error } = await supabase.from('incentive_customer_db')
+      .insert(row).select().single();
+    if (error) throw error;
+    res.json({ ok: true, customer: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/incentive/customers/db-sources
+// 수동 등록용 DB 출처 list
+router.get('/customers/db-sources', authenticateJWT, async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('incentive_db_sources')
+      .select('id, name, color').eq('active', true).order('name');
+    if (error) throw error;
+    res.json({ sources: data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET /api/incentive/customers/:phone/notes
 // 메모 list (시간순 · pinned 우선)
 router.get('/customers/:phone/notes', authenticateJWT, async (req, res) => {
