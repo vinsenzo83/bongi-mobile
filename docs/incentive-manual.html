@@ -423,6 +423,113 @@ const SECTIONS = [
 <p>[📜 액세스 로그] 버튼 — 최근 7일 PIPA audit 조회 (action 필터·user·IP·metadata)</p>`
   },
   {
+    id: 'customer-mgmt', group: '2️⃣ 일일 운영', title: '👥 고객 관리 (통합 360°)', roles: ['admin', 'manager', 'agent', 'contract'],
+    html: `<h2>👥 고객 관리 — 통합 360°<span class="role-tag r-all">ALL</span></h2>
+<p class="lead">N채널 lead(콜DB·웹·앱·매장·중고폰·AI 채팅)를 <b>전화번호 기준 통합</b>해 한 화면에 표시. TM 콜로 close → 고객 마이페이지에 자동 반영.</p>
+
+<div class="tip">📌 본질: <b>"여러 채널에서 유입 → 전화번호 통합 → TM 콜 close → 마이페이지 sync."</b> 웹/앱/매장은 lead 채널, 실제 계약은 CRM 콜에서 마무리.</div>
+
+<h3>🎨 화면 구성 (좌 35% list + 우 65% 360° 패널)</h3>
+
+<h3>좌측: 리드 통합 list</h3>
+<ul>
+<li>필터 — 상태·등급·채널 + quick chip (전체·rotting·신규·시도중·완료)</li>
+<li>각 카드 5라인: 이름·등급·상태 / 전화 / 채널 chip + 보유 상품 / ⏰ rotting age (0-3 초록·4-7 노랑·8-14 주황·15+ 빨강) + 🎯 NBA badge</li>
+<li>검색 — 이름·전화·티켓·메모 (3자 이상 즉시)</li>
+<li>좌측 quick chip <b>rotting</b>은 15일+ 미접촉 자동 분리 (담당 상담사 우선 시도 권장)</li>
+</ul>
+
+<h3>우측: 고객 360° 패널 (7 섹션)</h3>
+<table>
+<tr><th>#</th><th>섹션</th><th>표시 정보</th></tr>
+<tr><td>A</td><td>회원 헤더</td><td>아바타·이름·전화·등급 + chip (앱회원·PASS·소셜·나이·성별·통신사·지역)</td></tr>
+<tr><td>B</td><td>📋 콜DB 운영 정보</td><td>import/분배/마지막콜 일자·콜 누적·callback·재시도·거절사유·메모·DNT·우선순위</td></tr>
+<tr><td>C</td><td>📍 다채널 인입 history</td><td>시간순 (콜DB · 셀프신청 · 중고폰 접수 등)</td></tr>
+<tr><td>D</td><td>📞 통화 시도 timeline</td><td>성공/거절/부재/콜백 색상 + 다음 콜 예약 강조</td></tr>
+<tr><td>E</td><td>🎯 4상품 cross-sell 보드</td><td>인터넷+TV·가전렌탈·휴대폰·중고폰 (✅ 보유 / ⏳ 견적중 / 🎯 권유 권장 / 🔥 cross-sell 적기)</td></tr>
+<tr><td>F</td><td>📋 계약 상세 내역</td><td>4상품 통합 list (시간순) — 계약일·약정·<b>약정 종료일 D-day</b>·월납·페이백·담당 상담사·취소사유</td></tr>
+<tr><td>G</td><td>💼 금융 lifecycle</td><td>현금페이백·포인트·친구초대·돈지키미 (4 카드)</td></tr>
+<tr><td>H</td><td>🎯 NBA (Next Best Action)</td><td>rule-based 자동 추천 (gift 미수령·cross-sell 기회·rotting·재계약)</td></tr>
+<tr><td>I</td><td>📝 메모 관리</td><td>카테고리 7종 + 📌 고정 + 작성자·시간 + 삭제 (admin/작성자)</td></tr>
+<tr><td>J</td><td>📞 콜 액션 sticky bar</td><td>콜 시도·콜백 예약·거절 처리</td></tr>
+</table>
+
+<h3>➕ 신규 고객 수동 등록 (페이지 inline 풍부 form)</h3>
+<p>헤더 <b>+ 수동 등록</b> 클릭 → 우측 패널에 4섹션 form:</p>
+<ol>
+<li><b>📋 기본 정보</b> (필수): 이름·전화 + 나이·성별·지역·통신사</li>
+<li><b>📍 인입 채널 + 등급</b>: DB 출처·우선순위 (0~100)</li>
+<li><b>🎯 관심 상품 + 첫 메모</b>: 4상품 chip 다중 선택 + 첫 메모 textarea + 카테고리 + 📌 고정</li>
+<li><b>📞 콜 액션</b>: ✅ 본인 즉시 분배 (v1 콜큐 자동 추가) + 다음 콜 datetime 예약</li>
+</ol>
+<div class="tip">📌 등록 submit 3단계 자동 trigger — calldb row + 첫 메모 + callback 예약 한 번에. 등록 직후 자동 360° 표시.</div>
+
+<h3>📝 메모 관리 (카테고리 7종)</h3>
+<table>
+<tr><th>카테고리</th><th>색</th><th>용도</th></tr>
+<tr><td>일반</td><td>회색</td><td>기본 자유 메모</td></tr>
+<tr><td>재계약</td><td>황금</td><td>약정 만료 권유 메모</td></tr>
+<tr><td>환수</td><td>빨강</td><td>계약 취소·환수 사유</td></tr>
+<tr><td>클레임</td><td>분홍</td><td>고객 불만·이슈</td></tr>
+<tr><td>VIP</td><td>보라</td><td>우수 고객 표시</td></tr>
+<tr><td>내부공유</td><td>파랑</td><td>팀 공유용 메모</td></tr>
+<tr><td>후속조치</td><td>초록</td><td>다음 액션 알림</td></tr>
+</table>
+<div class="tip">📌 📌 상단고정 메모 = 황금 강조 박스로 항상 최상단. 카테고리·고정·삭제 모두 라이브 수정.</div>
+
+<h3>🔗 TM 상담 v1 (큐콜) ↔ 고객관리 연동</h3>
+<ul>
+<li><b>콜큐 사이드 카드 우상단 👥 360°</b> → 새 탭에서 해당 고객 통합 360°</li>
+<li><b>콜 모드 헤더 👥 고객 360°</b> → 현재 통화 고객의 phone 자동 deep link</li>
+<li><b>TM 상담 v2 (수동) 하단 중앙 floating bar</b>:
+  <ul>
+    <li>➕ 신규 고객 등록 → customer-mgmt 등록 form 새 탭 자동 open</li>
+    <li>👥 고객 관리 → customer-mgmt 전체 list 새 탭</li>
+  </ul>
+</li>
+</ul>
+
+<h3>🤖 자동 trigger (계약 close → 마이페이지 sync)</h3>
+<p>incentive_sales / rental_sales status='completed' 변경 시:</p>
+<ul>
+<li><b>bongi_gifts auto-insert</b> (지급대기) — phone 매칭된 회원 있으면 '지급대기', 아니면 '비회원대기'</li>
+<li>중복 방지 — source_sale_table + source_sale_id unique 키</li>
+<li>고객 마이페이지에 페이백 즉시 표시 (B2C 동기화)</li>
+</ul>
+
+<h3>🔐 권한 매트릭스 (4 roles)</h3>
+<table>
+<tr><th>기능</th><th>admin</th><th>manager</th><th>agent</th><th>contract</th></tr>
+<tr><td>전 고객 list 조회</td><td>✅</td><td>부서원만</td><td>본인 분배만</td><td>✅</td></tr>
+<tr><td>360° view</td><td>✅</td><td>부서원만</td><td>본인 분배만</td><td>✅</td></tr>
+<tr><td>콜 시도 기록</td><td>✅</td><td>✅</td><td>✅ (본인)</td><td>❌</td></tr>
+<tr><td>수동 등록</td><td>✅</td><td>✅</td><td>✅ (본인 분배)</td><td>❌</td></tr>
+<tr><td>메모 작성</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+<tr><td>메모 삭제</td><td>✅</td><td>작성자만</td><td>작성자만</td><td>작성자만</td></tr>
+</table>
+
+<h3>📡 API endpoint</h3>
+<table>
+<tr><th>Method</th><th>경로</th><th>역할</th></tr>
+<tr><td>GET</td><td><code>/api/incentive/customers/unified</code></td><td>리스트 (필터·검색·페이지)</td></tr>
+<tr><td>GET</td><td><code>/api/incentive/customers/:phone/360</code></td><td>360° 통합 (회원·인입·통화·4상품·금융·NBA·메모)</td></tr>
+<tr><td>POST</td><td><code>/api/incentive/customers/manual-register</code></td><td>수동 등록 (중복 체크·본인 분배)</td></tr>
+<tr><td>POST</td><td><code>/api/incentive/customers/:phone/call-attempt</code></td><td>통화 시도 기록 (text-only · 녹음 X)</td></tr>
+<tr><td>GET</td><td><code>/api/incentive/customers/:phone/nba</code></td><td>NBA 자동 추천</td></tr>
+<tr><td>GET·POST·DELETE·PATCH</td><td><code>/api/incentive/customers/:phone/notes</code></td><td>메모 CRUD + 📌 고정</td></tr>
+</table>
+
+<h3>💡 운영 팁</h3>
+<ul>
+<li><b>rotting lead 우선</b> — 좌측 quick chip [⏰ rotting]으로 15일+ 미접촉 자동 필터링</li>
+<li><b>cross-sell 적기</b> — 인터넷 close 후 6개월 → 가전렌탈 권유 NBA 자동</li>
+<li><b>약정 만료 D-day</b> — 계약 상세 종료일 D-60일 이내 황금 강조 → 재계약 권유 콜</li>
+<li><b>통화 요약 텍스트가 유일 증거</b> — 봉이는 CTI/녹음 미연동, 매번 통화 후 텍스트 입력 필수</li>
+<li><b>중복 phone</b> — 수동 등록 시 자동 체크, 이미 있으면 좌측 list 검색 안내</li>
+<li><b>회원 매칭 자동</b> — 콜DB 분배 후 phone 매칭된 bongi_user_profiles 있으면 PASS·소셜 자동 표시</li>
+</ul>`
+  },
+  {
     id: 'import-filter', group: '3️⃣ 관리자', title: '📥 인풋데이터 필터링 가이드', roles: ['admin'],
     html: `<h2>인풋데이터 필터링 가이드<span class="role-tag r-admin">ADMIN</span></h2>
 <p class="lead">마감원장 엑셀을 콜 DB로 import할 때 적용되는 <b>9단계 자동 필터 + 등급 매핑 + 4중 중복 방지</b>의 완전한 동작 명세. 룰은 모두 [콜 DB 관리] 페이지의 <b>📋 마감원장 import 룰 설정</b> 카드에서 실시간 편집 가능 (다음 import부터 즉시 적용).</p>
