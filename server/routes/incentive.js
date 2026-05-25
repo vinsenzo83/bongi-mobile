@@ -3032,4 +3032,172 @@ router.patch('/tickets/internet/:id(\\d+)/activate', authenticateJWT, async (req
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// 👥 통합 고객관리 — vw_unified_customer 기반
+// 본질: N채널 lead → 전화번호 통합 → TM 콜 close → 마이페이지 sync
+// PRD: docs/specs/customer-mgmt.md
+// ═══════════════════════════════════════════════════════════════
+
+// GET /api/incentive/customers/unified
+// 통합 리드 list (필터·검색·페이지네이션)
+router.get('/customers/unified', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    const { status, channel, grade, search, agent_id, limit = 50, offset = 0 } = req.query;
+    let q = supabase.from('vw_unified_customer').select('*', { count: 'exact' });
+    if (status) q = q.eq('call_status', status);
+    if (grade)  q = q.eq('priority_score', grade);
+    if (agent_id) q = q.eq('assigned_agent_id', agent_id);
+    if (search) {
+      const s = String(search).trim();
+      q = q.or(`calldb_name.ilike.%${s}%,phone.ilike.%${s}%,member_name.ilike.%${s}%`);
+    }
+    // 권한: agent는 본인 분배만, manager는 부서원, admin/contract는 전부
+    if (me.role === 'agent') q = q.eq('assigned_agent_id', me.id);
+    // 정렬: rotting 우선 + 신규 priority
+    q = q.order('lead_age_days', { ascending: false })
+         .order('imported_at', { ascending: false })
+         .range(Number(offset), Number(offset) + Number(limit) - 1);
+    const { data, error, count } = await q;
+    if (error) throw error;
+    res.json({ customers: data || [], total: count || 0 });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/incentive/customers/:phone/360
+// 단일 고객 전체 360° 데이터 (회원·인입 history·통화·4상품·금융·NBA)
+router.get('/customers/:phone/360', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    const { phone } = req.params;
+    if (!phone) return res.status(400).json({ error: 'phone 필수' });
+
+    // 통합 view에서 기본 row
+    const { data: customer, error: cErr } = await supabase
+      .from('vw_unified_customer').select('*').eq('phone', phone).maybeSingle();
+    if (cErr) throw cErr;
+
+    // 권한 체크 (agent는 본인 분배만)
+    if (me.role === 'agent' && customer?.assigned_agent_id !== me.id) {
+      return res.status(403).json({ error: '본인 분배 고객만 조회 가능' });
+    }
+
+    // 병렬 fetch: 통화·인터넷영업·가전영업·중고폰·셀프신청·페이백·포인트·친구초대·알람
+    const [calls, itSales, rentalSales, usedPhones, applications, gifts, rewards, alarms] = await Promise.all([
+      supabase.from('incentive_customer_call_log')
+        .select('*, agent:incentive_agents(name)')
+        .eq('customer_id', customer?.calldb_id)
+        .order('called_at', { ascending: false }),
+      supabase.from('incentive_sales')
+        .select('*, product:incentive_products(name, carrier, type), agent:incentive_agents(name)')
+        .eq('customer_phone', phone).order('created_at', { ascending: false }),
+      supabase.from('rental_sales')
+        .select('*, product:rental_products(brand, name, model, company:rental_companies(name)), option:rental_product_options(months, care_service, ticket_number), agent:incentive_agents(name)')
+        .eq('customer_phone', phone).order('created_at', { ascending: false }),
+      supabase.from('bongi_used_phone_buyback').select('*').eq('customer_phone', phone),
+      supabase.from('bongi_applications').select('*').eq('phone', phone),
+      supabase.from('bongi_gifts').select('*').eq('phone', phone).order('created_at', { ascending: false }),
+      customer?.user_id ? supabase.from('bongi_rewards').select('*').eq('user_id', customer.user_id) : { data: [] },
+      customer?.user_id ? supabase.from('bongi_user_alarms').select('*').eq('user_id', customer.user_id) : { data: [] },
+    ]);
+
+    // 인입 history (시간순 통합)
+    const history = [];
+    if (customer?.imported_at) history.push({ at: customer.imported_at, channel: 'calldb', icon: '📞', desc: `콜DB 분배 (등급 ${customer.priority_score || '-'} · ${customer.member_channel || '본사'})` });
+    (applications.data || []).forEach(a => history.push({ at: a.created_at, channel: 'web', icon: '🌐', desc: `셀프신청 (${a.product_type || '신청'})` }));
+    (usedPhones.data || []).forEach(u => history.push({ at: u.created_at, channel: 'usedphone', icon: '🔄', desc: `중고폰 매입 접수` }));
+    history.sort((a, b) => new Date(b.at) - new Date(a.at));
+
+    // NBA rule-based
+    const nba = [];
+    if (customer?.gifts_pending > 0) nba.push({ type:'gift', icon:'💰', msg:`현금페이백 ${customer.gifts_pending}건 미수령 — 고객에게 안내 권장` });
+    if (customer?.it_sales_completed > 0 && customer?.rental_sales_completed === 0 && customer?.rental_sales_progress === 0)
+      nba.push({ type:'cross-sell', icon:'🏠', msg:'인터넷 계약자 — 가전렌탈 cross-sell 기회' });
+    if (customer?.lead_age_days > 14 && customer?.call_status !== 'completed' && customer?.call_status !== 'rejected')
+      nba.push({ type:'rotting', icon:'⚠️', msg:`rotting ${customer.lead_age_days}일 — 마지막 시도 권유` });
+    if ((customer?.it_sales_completed > 0 || customer?.rental_sales_completed > 0))
+      nba.push({ type:'renew', icon:'🔄', msg:'재계약 권유 — 약정 만료 60일 전 자동 알람 등록 권장' });
+
+    res.json({
+      customer,
+      history,
+      calls: calls.data || [],
+      it_sales: itSales.data || [],
+      rental_sales: rentalSales.data || [],
+      used_phones: usedPhones.data || [],
+      applications: applications.data || [],
+      gifts: gifts.data || [],
+      rewards: rewards.data || [],
+      alarms: alarms.data || [],
+      nba,
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/incentive/customers/:phone/call-attempt
+// 통화 시도 기록 (incentive_customer_call_log insert + customer_db 갱신)
+router.post('/customers/:phone/call-attempt', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    const { phone } = req.params;
+    const { result, summary, next_call_at, reject_reason } = req.body || {};
+    if (!result || !summary) return res.status(400).json({ error: 'result + summary 필수 (녹음 없음 — 텍스트가 유일 증거)' });
+
+    // calldb row 찾기
+    const { data: cdb } = await supabase.from('incentive_customer_db')
+      .select('id, assigned_agent_id, call_count').eq('phone', phone).maybeSingle();
+    if (!cdb) return res.status(404).json({ error: 'calldb 매칭 없음' });
+    if (me.role === 'agent' && cdb.assigned_agent_id !== me.id) {
+      return res.status(403).json({ error: '본인 분배만 콜 기록 가능' });
+    }
+
+    // call_log insert
+    const { data: log, error: logErr } = await supabase.from('incentive_customer_call_log')
+      .insert({
+        customer_id: cdb.id,
+        agent_id: me.id,
+        called_at: new Date().toISOString(),
+        result,
+        notes: summary,
+        callback_at: next_call_at || null,
+        reject_reason: reject_reason || null,
+      }).select().single();
+    if (logErr) throw logErr;
+
+    // customer_db 갱신 (call_count·last_contacted_at·callback_at·call_status)
+    const statusMap = { success:'in_progress', reject:'rejected', absent:'pending', callback:'pending' };
+    await supabase.from('incentive_customer_db').update({
+      call_count: (cdb.call_count || 0) + 1,
+      last_contacted_at: new Date().toISOString(),
+      callback_at: next_call_at || null,
+      reject_reason: reject_reason || null,
+      call_status: statusMap[result] || 'pending',
+    }).eq('id', cdb.id);
+
+    res.json({ ok: true, log });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/incentive/customers/:phone/nba
+// 단일 고객 NBA (Next Best Action) rule-based 추천
+router.get('/customers/:phone/nba', authenticateJWT, async (req, res) => {
+  try {
+    const { phone } = req.params;
+    const { data: c } = await supabase.from('vw_unified_customer').select('*').eq('phone', phone).maybeSingle();
+    if (!c) return res.status(404).json({ error: '고객 없음' });
+    const nba = [];
+    if (c.gifts_pending > 0) nba.push({ type:'gift', priority:1, icon:'💰', msg:`현금페이백 ${c.gifts_pending}건 미수령`, action:'안내 콜' });
+    if (c.it_sales_completed > 0 && (c.rental_sales_completed + c.rental_sales_progress) === 0)
+      nba.push({ type:'cross-sell-rental', priority:2, icon:'🏠', msg:'인터넷 계약자 — 가전렌탈 권장', action:'cross-sell 콜' });
+    if (c.lead_age_days > 14 && c.call_status !== 'completed' && c.call_status !== 'rejected')
+      nba.push({ type:'rotting', priority:3, icon:'⚠️', msg:`rotting ${c.lead_age_days}일`, action:'마지막 시도' });
+    if ((c.it_sales_completed + c.rental_sales_completed) > 0)
+      nba.push({ type:'renew', priority:4, icon:'🔄', msg:'약정 만료 60일 전 재계약 권유', action:'알람 등록' });
+    res.json({ phone, nba });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;
