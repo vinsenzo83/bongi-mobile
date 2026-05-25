@@ -750,9 +750,23 @@ function executeNba(type) {
 document.getElementById('call-modal').addEventListener('click', e => { if (e.target.id === 'call-modal') closeCallModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('call-modal').classList.contains('open')) closeCallModal(); });
 
-// 초기 로드
-document.addEventListener('DOMContentLoaded', loadList);
-if (document.readyState !== 'loading') loadList();
+// 초기 로드 — URL ?phone=... 받으면 자동 select
+async function init() {
+  await loadList();
+  const params = new URLSearchParams(location.search);
+  const phone = params.get('phone');
+  if (phone) {
+    // list에 있으면 selectCustomer (활성화), 없어도 360° 직접 호출 (deep link 보장)
+    await selectCustomer(phone);
+    // 좌측 list에서 해당 phone 자동 scroll
+    setTimeout(() => {
+      const card = document.querySelector(`.lead-card[data-phone="${phone}"]`);
+      if (card) card.scrollIntoView({ behavior:'smooth', block:'center' });
+    }, 200);
+  }
+}
+document.addEventListener('DOMContentLoaded', init);
+if (document.readyState !== 'loading') init();
 </script>
 
 </body>
