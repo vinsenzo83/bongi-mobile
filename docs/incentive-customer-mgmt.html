@@ -207,57 +207,6 @@ h1{font-size:16px;font-weight:900;color:#f8fafc;display:flex;align-items:center;
 
 </div>
 
-<!-- 수동 고객 등록 모달 -->
-<div class="modal-bg" id="register-modal">
-  <div class="modal" style="max-width:560px">
-    <h3>➕ 고객 수동 등록</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div>
-        <label>이름 *</label>
-        <input type="text" id="rm-name" placeholder="홍길동">
-      </div>
-      <div>
-        <label>전화번호 *</label>
-        <input type="tel" id="rm-phone" placeholder="010-1234-5678" maxlength="13">
-      </div>
-      <div>
-        <label>나이</label>
-        <input type="number" id="rm-age" placeholder="40" min="10" max="100">
-      </div>
-      <div>
-        <label>성별</label>
-        <select id="rm-gender"><option value="">미선택</option><option value="남">남</option><option value="여">여</option></select>
-      </div>
-      <div>
-        <label>지역</label>
-        <input type="text" id="rm-region" placeholder="광주광역시 동구">
-      </div>
-      <div>
-        <label>현재 통신사</label>
-        <select id="rm-carrier"><option value="">미선택</option><option value="SK">SK</option><option value="KT">KT</option><option value="LGU+">LGU+</option><option value="알뜰폰">알뜰폰</option><option value="없음">없음</option></select>
-      </div>
-      <div style="grid-column:span 2">
-        <label>DB 출처</label>
-        <select id="rm-db-source"><option value="">— 출처 선택 (선택사항) —</option></select>
-      </div>
-      <div style="grid-column:span 2">
-        <label>메모 (선택)</label>
-        <textarea id="rm-notes" rows="2" placeholder="등록 사유·관심 상품·인입 채널 등"></textarea>
-      </div>
-      <div style="grid-column:span 2">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:700;color:#86efac;background:rgba(34,197,94,0.08);padding:8px 12px;border-radius:5px;border:1px solid #16a34a">
-          <input type="checkbox" id="rm-assign-me" checked> 📞 본인에게 즉시 분배 (콜 큐에 자동 추가)
-        </label>
-      </div>
-    </div>
-    <div id="rm-error" style="margin-top:8px;color:#fca5a5;font-size:11px;min-height:14px"></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeRegisterModal()">취소</button>
-      <button class="btn btn-primary" onclick="submitRegister()">💾 등록</button>
-    </div>
-  </div>
-</div>
-
 <!-- 콜 시도 모달 -->
 <div class="modal-bg" id="call-modal">
   <div class="modal">
@@ -798,68 +747,143 @@ function executeNba(type) {
   alert(`NBA 실행 (${type}) — 상세 핸들러는 다음 phase에서 구현`);
 }
 
-// ───────────── 수동 등록 모달 ─────────────
+// ───────────── 수동 등록 (페이지 inline 풍부 form) ─────────────
 let _dbSourcesLoaded = false;
-async function openRegisterModal() {
-  document.getElementById('register-modal').classList.add('open');
-  document.getElementById('rm-error').textContent = '';
-  setTimeout(() => document.getElementById('rm-name').focus(), 50);
-  // db_sources 첫 로드 시 fetch
-  if (!_dbSourcesLoaded) {
-    try {
-      const r = await apiFetch('/customers/db-sources');
-      const sel = document.getElementById('rm-db-source');
-      (r.sources || []).forEach(s => {
-        const o = document.createElement('option');
-        o.value = s.id; o.textContent = s.name;
-        sel.appendChild(o);
-      });
-      _dbSourcesLoaded = true;
-    } catch(e) { console.error(e); }
-  }
+async function loadDbSources() {
+  if (_dbSourcesLoaded) return;
+  try {
+    const r = await apiFetch('/customers/db-sources');
+    window._dbSources = r.sources || [];
+    _dbSourcesLoaded = true;
+  } catch(e) { window._dbSources = []; }
 }
-function closeRegisterModal() {
-  document.getElementById('register-modal').classList.remove('open');
-  ['rm-name','rm-phone','rm-age','rm-region','rm-notes'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('rm-gender').value='';
-  document.getElementById('rm-carrier').value='';
-  document.getElementById('rm-db-source').value='';
-  document.getElementById('rm-assign-me').checked=true;
+
+async function openRegisterModal() {
+  await loadDbSources();
+  // 우측 360° 패널 자리에 풍부한 등록 form 표시 (좌측 list는 그대로)
+  const dbSrcOpts = (window._dbSources || []).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  document.getElementById('detail-panel').innerHTML = `
+    <div style="padding:20px 24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-size:18px;font-weight:900;color:#fbbf24;margin:0">➕ 신규 고객 등록</h2>
+        <button class="btn" onclick="cancelRegister()">✕ 취소</button>
+      </div>
+      <div id="reg-error" style="display:none;background:rgba(220,38,38,0.1);border:1px solid #dc2626;color:#fca5a5;padding:8px 12px;border-radius:5px;margin-bottom:10px;font-size:11.5px"></div>
+
+      <!-- 기본 정보 -->
+      <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;margin-bottom:10px">
+        <div style="font-size:11px;color:#fbbf24;font-weight:800;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em">📋 기본 정보 (필수)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">이름 *</label><input type="text" id="rf-name" placeholder="홍길동" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit"></div>
+          <div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">전화번호 *</label><input type="tel" id="rf-phone" placeholder="010-1234-5678" maxlength="13" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit"></div>
+          <div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">나이</label><input type="number" id="rf-age" placeholder="40" min="10" max="100" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit"></div>
+          <div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">성별</label><select id="rf-gender" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit"><option value="">미선택</option><option value="남">남</option><option value="여">여</option></select></div>
+          <div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">지역</label><input type="text" id="rf-region" placeholder="광주광역시 동구" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit"></div>
+          <div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">현재 통신사</label><select id="rf-carrier" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit"><option value="">미선택</option><option value="SK">SK</option><option value="KT">KT</option><option value="LGU+">LGU+</option><option value="알뜰폰">알뜰폰</option><option value="없음">없음</option></select></div>
+        </div>
+      </div>
+
+      <!-- 인입 채널 + 등급 -->
+      <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;margin-bottom:10px">
+        <div style="font-size:11px;color:#fbbf24;font-weight:800;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em">📍 인입 채널 + 등급</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">DB 출처</label><select id="rf-db-source" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit"><option value="">— 출처 선택 (선택) —</option>${dbSrcOpts}</select></div>
+          <div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">우선순위 (0~100)</label><input type="number" id="rf-priority" value="0" min="0" max="100" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit"></div>
+        </div>
+      </div>
+
+      <!-- 4상품 관심도 + 첫 메모 -->
+      <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;margin-bottom:10px">
+        <div style="font-size:11px;color:#fbbf24;font-weight:800;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em">🎯 관심 상품 + 첫 메모</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+          <label style="background:#1e293b;border:1px solid #334155;padding:5px 12px;border-radius:18px;cursor:pointer;font-size:11.5px;color:#cbd5e1"><input type="checkbox" class="rf-int" value="인터넷+TV" style="margin-right:5px">🌐 인터넷+TV</label>
+          <label style="background:#1e293b;border:1px solid #334155;padding:5px 12px;border-radius:18px;cursor:pointer;font-size:11.5px;color:#cbd5e1"><input type="checkbox" class="rf-int" value="가전렌탈" style="margin-right:5px">🏠 가전렌탈</label>
+          <label style="background:#1e293b;border:1px solid #334155;padding:5px 12px;border-radius:18px;cursor:pointer;font-size:11.5px;color:#cbd5e1"><input type="checkbox" class="rf-int" value="휴대폰" style="margin-right:5px">📱 휴대폰</label>
+          <label style="background:#1e293b;border:1px solid #334155;padding:5px 12px;border-radius:18px;cursor:pointer;font-size:11.5px;color:#cbd5e1"><input type="checkbox" class="rf-int" value="중고폰" style="margin-right:5px">🔄 중고폰</label>
+        </div>
+        <label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">첫 메모 (등록 직후 자동 저장)</label>
+        <textarea id="rf-first-note" rows="3" placeholder="등록 사유·고객 반응·관심 상품·인입 경로 등" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+          <div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">메모 카테고리</label><select id="rf-note-cat" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit"><option value="일반">일반</option><option value="VIP">VIP</option><option value="재계약">재계약</option><option value="내부공유">내부공유</option><option value="후속조치">후속조치</option></select></div>
+          <div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">📌 상단고정</label><label style="display:flex;align-items:center;gap:5px;padding:7px 10px;background:#1e293b;border:1px solid #334155;border-radius:5px;font-size:11.5px;color:#cbd5e1;cursor:pointer"><input type="checkbox" id="rf-note-pin"> 메모 상단고정</label></div>
+        </div>
+      </div>
+
+      <!-- 콜 액션 -->
+      <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;margin-bottom:10px">
+        <div style="font-size:11px;color:#fbbf24;font-weight:800;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em">📞 콜 액션</div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:700;color:#86efac;background:rgba(34,197,94,0.08);padding:9px 12px;border-radius:5px;border:1px solid #16a34a;margin-bottom:8px">
+          <input type="checkbox" id="rf-assign-me" checked> 📞 본인에게 즉시 분배 (v1 콜 큐에 자동 추가)
+        </label>
+        <label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px">다음 콜 예약 (선택)</label>
+        <input type="datetime-local" id="rf-callback" style="width:100%;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:5px;font-size:12px;font-family:inherit">
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:14px;border-top:1px solid #334155">
+        <button class="btn" onclick="cancelRegister()">취소</button>
+        <button class="btn btn-success" style="padding:8px 22px;font-size:13px" onclick="submitRegister()">💾 등록</button>
+      </div>
+    </div>
+  `;
+  setTimeout(() => document.getElementById('rf-name')?.focus(), 50);
+}
+function cancelRegister() {
+  document.getElementById('detail-panel').innerHTML = '<div class="empty-state">← 좌측에서 고객을 선택하세요</div>';
+  if (location.search.includes('action=register')) history.replaceState(null, '', location.pathname);
 }
 async function submitRegister() {
-  const err = document.getElementById('rm-error');
-  err.textContent = '';
-  const name = document.getElementById('rm-name').value.trim();
-  const phone = document.getElementById('rm-phone').value.trim();
-  if (!name) { err.textContent = '이름 필수'; return; }
-  if (!phone) { err.textContent = '전화번호 필수'; return; }
-  if (!/^[0-9-]{8,15}$/.test(phone)) { err.textContent = '전화번호 형식 오류 (010-1234-5678)'; return; }
+  const err = document.getElementById('reg-error');
+  const showErr = (m) => { err.textContent = m; err.style.display = 'block'; };
+  err.style.display = 'none';
+  const name = document.getElementById('rf-name').value.trim();
+  const phone = document.getElementById('rf-phone').value.trim();
+  if (!name) return showErr('이름 필수');
+  if (!phone) return showErr('전화번호 필수');
+  if (!/^[0-9-]{8,15}$/.test(phone)) return showErr('전화번호 형식 오류 (010-1234-5678)');
+  const interests = Array.from(document.querySelectorAll('.rf-int:checked')).map(c => c.value);
+  const firstNote = document.getElementById('rf-first-note').value.trim();
+  const noteCat = document.getElementById('rf-note-cat').value;
+  const notePin = document.getElementById('rf-note-pin').checked;
+  // notes 자동 조합 (인입 채널/관심 상품을 콜DB notes에 prefix)
+  const autoNotes = [
+    interests.length ? '관심: ' + interests.join(', ') : '',
+    firstNote
+  ].filter(Boolean).join(' / ') || null;
   const body = {
     name, phone,
-    age: document.getElementById('rm-age').value || null,
-    gender: document.getElementById('rm-gender').value || null,
-    region: document.getElementById('rm-region').value.trim() || null,
-    carrier: document.getElementById('rm-carrier').value || null,
-    notes: document.getElementById('rm-notes').value.trim() || null,
-    db_source_id: document.getElementById('rm-db-source').value || null,
-    assign_to_me: document.getElementById('rm-assign-me').checked,
+    age: document.getElementById('rf-age').value || null,
+    gender: document.getElementById('rf-gender').value || null,
+    region: document.getElementById('rf-region').value.trim() || null,
+    carrier: document.getElementById('rf-carrier').value || null,
+    notes: autoNotes,
+    db_source_id: document.getElementById('rf-db-source').value || null,
+    assign_to_me: document.getElementById('rf-assign-me').checked,
   };
   try {
-    const r = await apiFetch('/customers/manual-register', { method: 'POST', body: JSON.stringify(body) });
-    closeRegisterModal();
-    await loadList();
-    if (r.customer?.phone) await selectCustomer(r.customer.phone);
-    alert('✅ 등록 완료');
-  } catch(e) {
-    if (e.message && e.message.includes('이미 등록된')) {
-      err.textContent = '⚠️ 이미 등록된 전화번호입니다 — 좌측 list에서 검색해 보세요';
-    } else {
-      err.textContent = '❌ ' + e.message;
+    const r = await apiFetch('/customers/manual-register', { method:'POST', body: JSON.stringify(body) });
+    // 첫 메모 별도 저장 (incentive_customer_notes — 운영자가 메모로 누적 가능)
+    if (firstNote) {
+      try { await apiFetch(`/customers/${encodeURIComponent(r.customer.phone)}/notes`, {
+        method:'POST',
+        body: JSON.stringify({ content: firstNote, category: noteCat, is_pinned: notePin }),
+      }); } catch(e) { console.error('first note save fail', e); }
     }
+    // callback 예약 별도 — 콜 시도 기록으로 저장 (result=callback)
+    const cb = document.getElementById('rf-callback').value;
+    if (cb) {
+      try { await apiFetch(`/customers/${encodeURIComponent(r.customer.phone)}/call-attempt`, {
+        method:'POST',
+        body: JSON.stringify({ result:'callback', summary:'등록 시 예약', next_call_at: cb }),
+      }); } catch(e) { console.error('callback save fail', e); }
+    }
+    if (location.search.includes('action=register')) history.replaceState(null, '', location.pathname);
+    await loadList();
+    await selectCustomer(r.customer.phone);
+  } catch(e) {
+    if (e.message?.includes('이미 등록된')) showErr('⚠️ 이미 등록된 전화번호 — 좌측 list에서 검색하세요');
+    else showErr('❌ ' + e.message);
   }
 }
-document.getElementById('register-modal').addEventListener('click', e => { if (e.target.id === 'register-modal') closeRegisterModal(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('register-modal').classList.contains('open')) closeRegisterModal(); });
 
 // 모달 외부 클릭·Esc close
 document.getElementById('call-modal').addEventListener('click', e => { if (e.target.id === 'call-modal') closeCallModal(); });
