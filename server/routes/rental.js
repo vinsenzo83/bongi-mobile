@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 import multer from 'multer';
 import { supabase } from '../db/supabase.js';
 import { authenticateJWT, optionalAuth } from '../middleware/auth.js';
+import { uploadLimiter } from '../middleware/rateLimit.js';
 import { parseBilligoRentalExcel } from '../services/billigo-rental-parser.js';
 import { parseBilligoGajeonExcel } from '../services/billigo-gajeon-parser.js';
 import { parseRentalRegisterExcel } from '../services/rental-register-parser.js';
@@ -532,7 +533,7 @@ const productImageUpload = multer({
     cb(ok ? null : new Error('이미지 파일만 업로드 가능 (jpeg/png/webp/gif)'), ok);
   },
 });
-router.post('/products/:id/image', authenticateJWT, productImageUpload.single('file'), async (req, res) => {
+router.post('/products/:id/image', uploadLimiter, authenticateJWT, productImageUpload.single('file'), async (req, res) => {
   try {
     const { id } = req.params;
     if (!req.file) return res.status(400).json({ error: '파일 첨부 필수' });

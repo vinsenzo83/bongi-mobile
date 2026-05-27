@@ -26,3 +26,12 @@ export const applicationLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// 파일 업로드 API (분당 15회·5MB×15 = 75MB cap per IP — Storage 폭증 방지)
+export const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 15,
+  message: { error: '업로드 요청이 너무 많습니다. 1분 후 다시 시도해주세요.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
