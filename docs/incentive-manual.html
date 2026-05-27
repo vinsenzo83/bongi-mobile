@@ -783,6 +783,57 @@ const SECTIONS = [
 <div class="tip"><b>비활성 대리점</b>은 신규 계약 select에서 숨김. 기존 계약의 dealer가 비활성으로 변경되면 (비활성) 표기로 select 유지 (이력 보존).</div>`
   },
   {
+    id: 'partner-cards', group: '3️⃣ 관리자', title: '🎴 제휴카드사 관리', roles: ['admin', 'manager'],
+    html: `<h2>🎴 제휴카드사 관리<span class="role-tag r-admin">ADMIN/MANAGER</span></h2>
+<p class="lead">가전렌탈 영업 시 고객 안내용 카드 할인 마스터. 11 브랜드 53+ 카드. TM 계산기·계약 모달에서 회사명 옆 🎴 버튼으로 deep link.</p>
+
+<div class="tip">📌 출처: 비에이치컴퍼니 노션 → Google Sheets 자동 import (gviz CSV). 라이브 적용 완료. 추가/편집은 어드민 페이지에서 inline.</div>
+
+<h3>🎨 화면 구성</h3>
+<ul>
+<li><b>헤더 toolbar</b> — 검색·브랜드 필터·활성 필터·신규 카드 버튼</li>
+<li><b>브랜드별 그룹 섹션</b> — 회사명 chip 자동 (rental_companies 매칭)</li>
+<li><b>각 카드 row</b>: 카드사·이름·연회비·최대할인·기간·🏷️ PROMO·1/2/3 구간(min·base·promo·total)·비고·URL·✏️ 편집</li>
+</ul>
+
+<h3>📊 데이터 구조 (24 컬럼)</h3>
+<table>
+<tr><th>그룹</th><th>컬럼</th></tr>
+<tr><td>식별</td><td>brand · brand_id · company_id (회사 매칭)</td></tr>
+<tr><td>카드</td><td>card_issuer (신한·롯데·국민…) · card_name · annual_fee · card_url</td></tr>
+<tr><td>혜택</td><td>max_discount · discount_months · has_promo (프로모션 여부)</td></tr>
+<tr><td>1 구간</td><td>tier1_min (최소실적) · tier1_base (기본) · tier1_promo (프로모) · tier1_total (총)</td></tr>
+<tr><td>2 구간</td><td>tier2_min · tier2_base · tier2_promo · tier2_total</td></tr>
+<tr><td>3 구간</td><td>tier3_min · tier3_base · tier3_promo · tier3_total</td></tr>
+<tr><td>운영</td><td>notes · is_active · display_rank · created/updated_at</td></tr>
+</table>
+
+<h3>🔗 TM·계약 연동 (Deep Link)</h3>
+<ul>
+<li><b>TM 상담 가전 견적 결과 청록 박스</b>의 🏢 회사명 옆 → 🎴 제휴카드 버튼 → 새 탭 partner-cards <code>?brand=&lt;회사명&gt;</code></li>
+<li><b>계약 처리 상세 모달</b>의 product-header 🏢 회사명 옆 → 🎴 제휴카드 버튼 → 동일</li>
+<li>이동 시 자동 브랜드 필터 적용 (해당 회사 카드만)</li>
+</ul>
+
+<h3>📡 API endpoint (4개)</h3>
+<table>
+<tr><th>Method</th><th>경로</th><th>역할</th></tr>
+<tr><td>GET</td><td><code>/api/rental/partner-cards?brand=&active=1</code></td><td>list (필터)</td></tr>
+<tr><td>GET</td><td><code>/api/rental/partner-cards/brands</code></td><td>활성 브랜드 list</td></tr>
+<tr><td>POST</td><td><code>/api/rental/partner-cards</code></td><td>신규 (admin)</td></tr>
+<tr><td>PATCH</td><td><code>/api/rental/partner-cards/:id</code></td><td>편집 (admin)</td></tr>
+<tr><td>DELETE</td><td><code>/api/rental/partner-cards/:id</code></td><td>삭제 (admin)</td></tr>
+</table>
+
+<h3>💡 운영 팁</h3>
+<ul>
+<li><b>프로모션 종료</b> — has_promo=false + tier_promo 값 0 처리, max_discount는 tier 총합 유지</li>
+<li><b>회사 매칭 미연결</b> — 삼성전자(BS ON) 등 rental_companies 미등록 회사는 company_id NULL. 영업 시 안내 가능하지만 자동 link X. 회사 신설 시 자동 매칭 SQL UPDATE 1줄.</li>
+<li><b>display_rank</b> — 같은 브랜드 안 카드 정렬용 (낮은 숫자 우선)</li>
+<li><b>비고에 조건 명시</b> — "직전 6개월 무실적자" 등 필수 조건 기재</li>
+</ul>`
+  },
+  {
     id: 'rules', group: '3️⃣ 관리자', title: '⚙️ 정책 관리 (V5 통일)', roles: ['admin'],
     html: `<h2>정책 관리<span class="role-tag r-admin">ADMIN</span></h2>
 <p class="lead">📡 <b>인터넷+TV</b>(<code>incentive_rules</code>) · 🏠 <b>가전렌탈</b>(<code>rental_policy</code>) — <b>동일 공식·동일 컬럼 구조</b>로 통일 (2026-05-18). 양쪽 탭에서 같은 항목 편집.</p>
