@@ -3186,6 +3186,97 @@ router.post('/customers/:phone/call-attempt', authenticateJWT, async (req, res) 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// PATCH /api/incentive/customers/:phone
+// 기본 정보 편집 (name·age·gender·region·carrier·notes·tags·is_dnt)
+router.patch('/customers/:phone', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    const { phone } = req.params;
+    const allowed = ['name', 'age', 'gender', 'region', 'carrier', 'notes', 'tags', 'is_dnt', 'priority_score'];
+    const update = {};
+    for (const k of allowed) if (k in (req.body || {})) update[k] = req.body[k];
+    if (Object.keys(update).length === 0) return res.status(400).json({ error: '변경 항목 없음' });
+    // agent 권한 — 본인 분배 또는 admin/manager/contract
+    const { data: cdb } = await supabase.from('incentive_customer_db')
+      .select('id, assigned_agent_id').eq('phone', phone).maybeSingle();
+    if (!cdb) return res.status(404).json({ error: '고객 없음' });
+    if (me.role === 'agent' && cdb.assigned_agent_id !== me.id) {
+      return res.status(403).json({ error: '본인 분배 고객만 편집 가능' });
+    }
+    const { data, error } = await supabase.from('incentive_customer_db')
+      .update(update).eq('id', cdb.id).select().single();
+    if (error) throw error;
+    res.json({ customer: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/incentive/customers/:phone/reassign
+// 다른 상담사에게 이관 (manager/admin)
+router.patch('/customers/:phone/reassign', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    if (!['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager만 재분배 가능' });
+    const { phone } = req.params;
+    const { new_agent_id, reason } = req.body || {};
+    if (!new_agent_id) return res.status(400).json({ error: 'new_agent_id 필수' });
+    const { data, error } = await supabase.from('incentive_customer_db')
+      .update({
+        assigned_agent_id: new_agent_id,
+        assigned_at: new Date().toISOString(),
+        assigned_by_user_id: me.id,
+      }).eq('phone', phone).select().single();
+    if (error) throw error;
+    // audit log
+    await supabase.from('incentive_customer_db_access_log').insert({
+      customer_id: data.id, user_id: me.id, action: 'reassign',
+      metadata: { new_agent_id, reason: reason || null, prev_agent_id: data.assigned_agent_id },
+    }).then(() => {}, () => {});
+    res.json({ customer: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/incentive/customers/:phone/status
+// 휴면(dormant) · 거절(rejected) 등 status 변경
+router.patch('/customers/:phone/status', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    const { phone } = req.params;
+    const { status, reason } = req.body || {};
+    const VALID = ['pending', 'in_progress', 'callback', 'no_answer', 'on_hold', 'wrong_number', 'converted', 'rejected', 'dormant'];
+    if (!VALID.includes(status)) return res.status(400).json({ error: 'status invalid' });
+    const update = { call_status: status };
+    if (status === 'rejected' || status === 'dormant') update.reject_reason = reason || null;
+    const { data: cdb } = await supabase.from('incentive_customer_db')
+      .select('id, assigned_agent_id').eq('phone', phone).maybeSingle();
+    if (!cdb) return res.status(404).json({ error: '고객 없음' });
+    if (me.role === 'agent' && cdb.assigned_agent_id !== me.id) {
+      return res.status(403).json({ error: '본인 분배만 status 변경 가능' });
+    }
+    const { data, error } = await supabase.from('incentive_customer_db')
+      .update(update).eq('id', cdb.id).select().single();
+    if (error) throw error;
+    res.json({ customer: data });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/incentive/customers/agents-for-reassign
+// 재분배 모달용 active agent list (admin/manager만)
+router.get('/customers/agents-for-reassign', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    if (!['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager만' });
+    const { data, error } = await supabase.from('incentive_agents')
+      .select('id, name, role, center, active').eq('active', true)
+      .in('role', ['agent', 'manager']).order('center').order('name');
+    if (error) throw error;
+    res.json({ agents: data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // POST /api/incentive/customers/manual-register
 // 수동 고객 등록 (incentive_customer_db insert · 중복 체크 · 본인 분배 옵션)
 router.post('/customers/manual-register', authenticateJWT, async (req, res) => {

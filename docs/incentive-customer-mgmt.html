@@ -68,6 +68,7 @@ h1{font-size:16px;font-weight:900;color:#f8fafc;display:flex;align-items:center;
 
 /* 우측 360° 패널 */
 .right{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow-y:auto;position:relative}
+#edit-overlay { position:absolute; top:0; left:0; right:0; }
 .section{padding:12px 16px;border-bottom:1px solid var(--line)}
 .sec-title{font-size:10.5px;color:var(--accent);font-weight:800;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:0.04em}
 .sec-title .meta{font-size:10px;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
@@ -205,6 +206,34 @@ h1{font-size:16px;font-weight:900;color:#f8fafc;display:flex;align-items:center;
     <div class="empty-state">← 좌측에서 고객을 선택하세요</div>
   </div>
 
+</div>
+
+<!-- 재분배 모달 -->
+<div class="modal-bg" id="reassign-modal">
+  <div class="modal">
+    <h3>🔄 다른 상담사에게 재분배</h3>
+    <label>새 담당 상담사 *</label>
+    <select id="ra-agent"></select>
+    <label>재분배 사유 (audit log 기록)</label>
+    <textarea id="ra-reason" rows="2" placeholder="휴가·역할 변경·전문 영역 매칭 등"></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('reassign-modal').classList.remove('open')">취소</button>
+      <button class="btn btn-primary" onclick="submitReassign()">💾 재분배</button>
+    </div>
+  </div>
+</div>
+
+<!-- 거절/휴면 사유 모달 -->
+<div class="modal-bg" id="status-modal">
+  <div class="modal">
+    <h3 id="sm-title">🚫 거절 처리</h3>
+    <label>사유 (필수)</label>
+    <textarea id="sm-reason" rows="3" placeholder="고객 거절 사유 또는 휴면 처리 사유"></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('status-modal').classList.remove('open')">취소</button>
+      <button class="btn btn-danger" onclick="submitStatusChange()">💾 처리</button>
+    </div>
+  </div>
 </div>
 
 <!-- 콜 시도 모달 -->
@@ -480,9 +509,11 @@ function renderDetail(r) {
         <div style="flex:1;min-width:0">
           <div class="prof-name">${c.member_name || c.calldb_name || '(이름 없음)'}
             ${c.priority_score ? `<span class="grade g-${c.priority_score}" style="font-size:11px;padding:2px 7px">${c.priority_score}</span>` : ''}
+            <button class="btn" style="padding:3px 9px;font-size:10.5px;margin-left:6px" onclick="openEditMode()">✏️ 편집</button>
           </div>
           <div class="prof-phone">📱 ${maskPhone(c.phone)}</div>
           <div class="prof-chips">${memberChips}</div>
+          ${renderTags(c.tags || [])}
         </div>
       </div>
     </div>
@@ -513,10 +544,165 @@ function renderDetail(r) {
     <div class="action-bar">
       <button class="btn btn-success" onclick="openCallModal()">📞 콜 시도</button>
       <button class="btn btn-warn" onclick="openCallModal('callback')">📅 콜백 예약</button>
-      <button class="btn btn-danger" onclick="openCallModal('reject')">🚫 거절 처리</button>
+      <button class="btn btn-danger" onclick="openStatusModal('rejected')">🚫 거절 처리</button>
+      <button class="btn" onclick="openStatusModal('dormant')">💤 휴면 처리</button>
+      <button class="btn" onclick="openReassignModal()">🔄 재분배</button>
     </div>
   `;
 }
+
+// ───────────── 태그 시스템 ─────────────
+const TAG_PRESETS = [
+  {name:'VIP', color:'#a78bfa'},
+  {name:'유망', color:'#22c55e'},
+  {name:'주의', color:'#fbbf24'},
+  {name:'신중', color:'#60a5fa'},
+  {name:'재방문', color:'#67e8f9'},
+  {name:'장년', color:'#f97316'},
+];
+function renderTags(tags) {
+  const chips = (tags || []).map(t => {
+    const p = TAG_PRESETS.find(x => x.name === t);
+    const color = p?.color || '#cbd5e1';
+    return `<span class="prof-chip" style="background:${color}33;color:${color};border:1px solid ${color}66">🏷️ ${t} <span style="margin-left:4px;cursor:pointer;color:#fca5a5" onclick="removeTag('${t.replace(/'/g,"\\'")}')">✕</span></span>`;
+  }).join('');
+  const presetBtns = TAG_PRESETS.filter(p => !(tags||[]).includes(p.name)).map(p =>
+    `<button class="btn" style="padding:2px 8px;font-size:10px;background:${p.color}22;color:${p.color};border:1px dashed ${p.color}66" onclick="addTag('${p.name}')">+ ${p.name}</button>`
+  ).join('');
+  return `<div class="prof-chips" style="margin-top:6px">${chips}${presetBtns}
+    <button class="btn" style="padding:2px 8px;font-size:10px" onclick="addTagCustom()">+ 직접</button>
+  </div>`;
+}
+async function addTag(name) {
+  if (!_selectedPhone) return;
+  const cur = (await apiFetch('/customers/' + encodeURIComponent(_selectedPhone) + '/360')).customer?.tags || [];
+  if (cur.includes(name)) return;
+  await apiFetch('/customers/' + encodeURIComponent(_selectedPhone), {
+    method:'PATCH', body: JSON.stringify({ tags: [...cur, name] })
+  });
+  await selectCustomer(_selectedPhone);
+}
+async function addTagCustom() {
+  const name = prompt('새 태그 이름 (예: 클레임진행, 추천대상)');
+  if (!name || !name.trim()) return;
+  await addTag(name.trim());
+}
+async function removeTag(name) {
+  if (!_selectedPhone || !confirm(`태그 "${name}" 제거?`)) return;
+  const cur = (await apiFetch('/customers/' + encodeURIComponent(_selectedPhone) + '/360')).customer?.tags || [];
+  await apiFetch('/customers/' + encodeURIComponent(_selectedPhone), {
+    method:'PATCH', body: JSON.stringify({ tags: cur.filter(t => t !== name) })
+  });
+  await selectCustomer(_selectedPhone);
+}
+
+// ───────────── 기본 정보 inline 편집 ─────────────
+async function openEditMode() {
+  if (!_selectedPhone) return;
+  const r = await apiFetch('/customers/' + encodeURIComponent(_selectedPhone) + '/360');
+  const c = r.customer;
+  if (!c) return;
+  const panel = document.getElementById('detail-panel');
+  // 회원 헤더 영역만 편집 모드로 (다른 섹션은 그대로 유지하지 않고 detail-panel 전체에 inline)
+  panel.insertAdjacentHTML('afterbegin', `
+    <div id="edit-overlay" style="position:absolute;top:0;left:0;right:0;background:rgba(15,23,42,0.97);z-index:5;padding:20px 24px;border-bottom:2px solid #fbbf24">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3 style="color:#fbbf24;font-size:13px;font-weight:800">✏️ 기본 정보 편집</h3>
+        <button class="btn" onclick="closeEditMode()">✕ 취소</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11.5px">
+        <div><label style="font-size:10px;color:#94a3b8">이름</label><input id="ed-name" value="${c.calldb_name || ''}" style="width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:5px 8px;border-radius:4px"></div>
+        <div><label style="font-size:10px;color:#94a3b8">나이</label><input id="ed-age" type="number" value="${c.age || ''}" style="width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:5px 8px;border-radius:4px"></div>
+        <div><label style="font-size:10px;color:#94a3b8">성별</label><select id="ed-gender" style="width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:5px 8px;border-radius:4px"><option value="">-</option><option value="남" ${c.gender==='남'?'selected':''}>남</option><option value="여" ${c.gender==='여'?'selected':''}>여</option></select></div>
+        <div><label style="font-size:10px;color:#94a3b8">통신사</label><select id="ed-carrier" style="width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:5px 8px;border-radius:4px"><option value="">-</option>${['SK','KT','LGU+','알뜰폰','없음'].map(o=>`<option value="${o}" ${c.carrier===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div style="grid-column:span 2"><label style="font-size:10px;color:#94a3b8">지역</label><input id="ed-region" value="${c.region || ''}" style="width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:5px 8px;border-radius:4px"></div>
+        <div style="grid-column:span 2"><label style="font-size:10px;color:#94a3b8">우선순위 (0~100)</label><input id="ed-priority" type="number" min="0" max="100" value="${c.priority_score||0}" style="width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:5px 8px;border-radius:4px"></div>
+        <label style="grid-column:span 2;display:flex;align-items:center;gap:6px;color:#fca5a5;font-size:11px;padding:6px 0"><input type="checkbox" id="ed-dnt" ${c.is_dnt?'checked':''}> 🚫 수신 거부 (DNT)</label>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid #334155">
+        <button class="btn" onclick="closeEditMode()">취소</button>
+        <button class="btn btn-success" onclick="submitEdit()">💾 저장</button>
+      </div>
+    </div>
+  `);
+}
+function closeEditMode() { document.getElementById('edit-overlay')?.remove(); }
+async function submitEdit() {
+  const body = {
+    name: document.getElementById('ed-name').value.trim() || null,
+    age: document.getElementById('ed-age').value ? Number(document.getElementById('ed-age').value) : null,
+    gender: document.getElementById('ed-gender').value || null,
+    carrier: document.getElementById('ed-carrier').value || null,
+    region: document.getElementById('ed-region').value.trim() || null,
+    priority_score: document.getElementById('ed-priority').value ? Number(document.getElementById('ed-priority').value) : 0,
+    is_dnt: document.getElementById('ed-dnt').checked,
+  };
+  try {
+    await apiFetch('/customers/' + encodeURIComponent(_selectedPhone), { method:'PATCH', body: JSON.stringify(body) });
+    closeEditMode();
+    await selectCustomer(_selectedPhone);
+    await loadList();
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+// ───────────── 재분배 모달 ─────────────
+let _agentsForReassignLoaded = false;
+async function openReassignModal() {
+  if (!_selectedPhone) return;
+  const modal = document.getElementById('reassign-modal');
+  if (!_agentsForReassignLoaded) {
+    try {
+      const r = await apiFetch('/customers/agents-for-reassign');
+      const sel = document.getElementById('ra-agent');
+      sel.innerHTML = '<option value="">— 상담사 선택 —</option>' +
+        (r.agents || []).map(a => `<option value="${a.id}">${a.name} (${a.role}${a.center ? ' · ' + a.center : ''})</option>`).join('');
+      _agentsForReassignLoaded = true;
+    } catch(e) {
+      alert('상담사 list 로드 실패: ' + e.message + ' (admin/manager만 가능)');
+      return;
+    }
+  }
+  modal.classList.add('open');
+}
+async function submitReassign() {
+  const new_agent_id = document.getElementById('ra-agent').value;
+  const reason = document.getElementById('ra-reason').value.trim();
+  if (!new_agent_id) { alert('상담사 선택 필수'); return; }
+  try {
+    await apiFetch('/customers/' + encodeURIComponent(_selectedPhone) + '/reassign', {
+      method:'PATCH', body: JSON.stringify({ new_agent_id, reason: reason || null })
+    });
+    document.getElementById('reassign-modal').classList.remove('open');
+    document.getElementById('ra-reason').value = '';
+    await selectCustomer(_selectedPhone);
+    await loadList();
+  } catch(e) { alert('재분배 실패: ' + e.message); }
+}
+
+// ───────────── status 변경 모달 (휴면·거절) ─────────────
+let _statusToChange = null;
+function openStatusModal(status) {
+  if (!_selectedPhone) return;
+  _statusToChange = status;
+  document.getElementById('sm-title').textContent = status === 'dormant' ? '💤 휴면 처리' : '🚫 거절 처리';
+  document.getElementById('sm-reason').value = '';
+  document.getElementById('status-modal').classList.add('open');
+}
+async function submitStatusChange() {
+  const reason = document.getElementById('sm-reason').value.trim();
+  if (!reason) { alert('사유 필수'); return; }
+  try {
+    await apiFetch('/customers/' + encodeURIComponent(_selectedPhone) + '/status', {
+      method:'PATCH', body: JSON.stringify({ status: _statusToChange, reason })
+    });
+    document.getElementById('status-modal').classList.remove('open');
+    await selectCustomer(_selectedPhone);
+    await loadList();
+  } catch(e) { alert('처리 실패: ' + e.message); }
+}
+[document.getElementById('reassign-modal'), document.getElementById('status-modal')].forEach(m => {
+  m?.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
 
 // ───────────── 계약 상세 내역 ─────────────
 function addMonths(dateStr, months) {
