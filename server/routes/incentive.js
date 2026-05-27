@@ -3044,6 +3044,8 @@ router.get('/customers/unified', authenticateJWT, async (req, res) => {
   try {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: '권한 없음' });
+    // 🔒 contract는 콜DB 조회 불필요 (계약 처리 페이지에서 sales만 봄)
+    if (me.role === 'contract') return res.status(403).json({ error: 'contract는 콜DB 조회 권한 없음 — 계약 처리 페이지 사용' });
     const { status, channel, grade, search, agent_id, limit = 50, offset = 0 } = req.query;
     let q = supabase.from('vw_unified_customer').select('*', { count: 'exact' });
     if (status) q = q.eq('call_status', status);
@@ -3054,8 +3056,21 @@ router.get('/customers/unified', authenticateJWT, async (req, res) => {
       // 메모(calldb.notes)·태그 full-text 매칭 포함
       q = q.or(`calldb_name.ilike.%${s}%,phone.ilike.%${s}%,member_name.ilike.%${s}%,notes.ilike.%${s}%`);
     }
-    // 권한: agent는 본인 분배만, manager는 부서원, admin/contract는 전부
-    if (me.role === 'agent') q = q.eq('assigned_agent_id', me.id);
+    // 권한 격리
+    //  - admin: 전체
+    //  - manager: 본인 센터 소속 agent의 분배 콜만
+    //  - agent: 본인 분배만
+    if (me.role === 'agent') {
+      q = q.eq('assigned_agent_id', me.id);
+    } else if (me.role === 'manager') {
+      // 본인 센터 agent id list 추출 (admin은 모든 센터)
+      const { data: centerAgents } = await supabase
+        .from('incentive_agents').select('id')
+        .eq('center', me.center).eq('active', true).is('deleted_at', null);
+      const ids = (centerAgents || []).map(a => a.id);
+      if (ids.length === 0) return res.json({ customers: [], total: 0 });
+      q = q.in('assigned_agent_id', ids);
+    }
     // 정렬: rotting 우선 + 신규 priority
     q = q.order('lead_age_days', { ascending: false })
          .order('imported_at', { ascending: false })
