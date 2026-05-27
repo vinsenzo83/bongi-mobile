@@ -18,6 +18,17 @@ const router = Router();
 const _isProd = process.env.NODE_ENV === 'production';
 const errMsg = (e) => _isProd ? '서버 오류 — 잠시 후 다시 시도하세요' : (e?.message || '서버 오류');
 
+// 🔒 role 권한 헬퍼 — 허용 role이 아니면 res.status(403) 반환 + null
+async function requireRole(req, res, allowed) {
+  const { data: agent } = await supabase
+    .from('incentive_agents').select('role,id,center').eq('user_id', req.user.id).maybeSingle();
+  if (!agent || !allowed.includes(agent.role)) {
+    res.status(403).json({ error: allowed.join('/') + ' 권한 필요' });
+    return null;
+  }
+  return agent;
+}
+
 // 그룹 파라미터 정규화 — rental_categories.product_group 은 '정수기'|'가전' 2값.
 // 옛 캐시 HTML 은 company.category_group 값('가전렌탈사'·'정수기메이커')을 보내므로 별칭 흡수.
 const normGroup = (g) => ({ 가전렌탈사: '가전', 정수기메이커: '정수기' }[g] || g || null);
@@ -1679,7 +1690,8 @@ router.post('/import/commit', authenticateJWT, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 
 // GET /api/rental/partner-cards?brand=&company_id=&active=1
-router.get('/partner-cards', optionalAuth, async (req, res) => {
+// 🔒 admin/manager만 (agent·contract는 TM 견적 시점에 server alias로 fetch — 직접 조회 차단)
+router.get('/partner-cards', authenticateJWT, async (req, res) => {
   try {
     const { brand, company_id, active, category } = req.query;
     let q = supabase.from('rental_partner_cards')
@@ -1718,9 +1730,10 @@ router.get('/partner-cards/brands', optionalAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
-// POST /api/rental/partner-cards (admin)
+// POST /api/rental/partner-cards (admin/manager)
 router.post('/partner-cards', authenticateJWT, async (req, res) => {
   try {
+    if (!await requireRole(req, res, ['admin','manager'])) return;
     const allowed = ['brand','brand_id','company_id','card_issuer','card_name','annual_fee','max_discount','discount_months','has_promo','tier1_min','tier1_base','tier1_promo','tier1_total','tier2_min','tier2_base','tier2_promo','tier2_total','tier3_min','tier3_base','tier3_promo','tier3_total','notes','card_url','is_active','display_rank','categories'];
     const insert = {};
     for (const k of allowed) if (k in (req.body || {})) insert[k] = req.body[k];
@@ -1731,9 +1744,10 @@ router.post('/partner-cards', authenticateJWT, async (req, res) => {
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
-// PATCH /api/rental/partner-cards/:id (admin)
+// PATCH /api/rental/partner-cards/:id (admin/manager)
 router.patch('/partner-cards/:id', authenticateJWT, async (req, res) => {
   try {
+    if (!await requireRole(req, res, ['admin','manager'])) return;
     const allowed = ['brand','brand_id','company_id','card_issuer','card_name','annual_fee','max_discount','discount_months','has_promo','tier1_min','tier1_base','tier1_promo','tier1_total','tier2_min','tier2_base','tier2_promo','tier2_total','tier3_min','tier3_base','tier3_promo','tier3_total','notes','card_url','is_active','display_rank','categories'];
     const update = {};
     for (const k of allowed) if (k in (req.body || {})) update[k] = req.body[k];
@@ -1744,9 +1758,10 @@ router.patch('/partner-cards/:id', authenticateJWT, async (req, res) => {
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
-// DELETE /api/rental/partner-cards/:id (admin)
+// DELETE /api/rental/partner-cards/:id (admin only — 삭제는 admin 전용)
 router.delete('/partner-cards/:id', authenticateJWT, async (req, res) => {
   try {
+    if (!await requireRole(req, res, ['admin'])) return;
     const { error } = await supabase.from('rental_partner_cards').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ ok: true });
