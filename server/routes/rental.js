@@ -523,6 +523,36 @@ router.patch('/products/:id', authenticateJWT, async (req, res) => {
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
+// ─── 상품 이미지 업로드 (admin) → Supabase Storage 'product-images' bucket ───
+const productImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /^image\/(jpeg|png|webp|gif)$/i.test(file.mimetype);
+    cb(ok ? null : new Error('이미지 파일만 업로드 가능 (jpeg/png/webp/gif)'), ok);
+  },
+});
+router.post('/products/:id/image', authenticateJWT, productImageUpload.single('file'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.file) return res.status(400).json({ error: '파일 첨부 필수' });
+    const ext = (req.file.originalname || '').split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const storagePath = `rental/${id}_${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('product-images')
+      .upload(storagePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+    if (upErr) throw upErr;
+    const { data: pub } = supabase.storage.from('product-images').getPublicUrl(storagePath);
+    const publicUrl = pub.publicUrl;
+    const { data, error } = await supabase
+      .from('rental_products')
+      .update({ image_url: publicUrl, updated_at: new Date().toISOString() })
+      .eq('id', id).select().single();
+    if (error) throw error;
+    res.json({ product: data, image_url: publicUrl });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
 // ─── 옵션 편집 (admin) ───
 router.patch('/options/:id', authenticateJWT, async (req, res) => {
   try {
