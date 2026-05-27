@@ -167,7 +167,7 @@ h1{font-size:16px;font-weight:900;color:#f8fafc;display:flex;align-items:center;
 <div class="hdr-bar">
   <h1>👥 고객 관리 <span style="font-size:11px;color:var(--muted);font-weight:400">· 통합 360°</span></h1>
   <div class="toolbar">
-    <input type="text" id="ft-search" placeholder="🔍 이름·전화·티켓·메모">
+    <input type="text" id="ft-search" placeholder="🔍 이름·전화·메모 full-text">
     <select id="ft-status">
       <option value="">전체 상태</option>
       <option value="pending">⏳ 미접촉</option>
@@ -180,8 +180,17 @@ h1{font-size:16px;font-weight:900;color:#f8fafc;display:flex;align-items:center;
       <option value="S">S</option><option value="A">A</option><option value="B">B</option><option value="R">R</option><option value="C">C</option>
     </select>
     <button class="btn" onclick="loadList()">🔄 새로고침</button>
+    <button class="btn" onclick="exportCsv()">📥 CSV (PIPA)</button>
     <button class="btn btn-primary" onclick="openRegisterModal()">+ 수동 등록</button>
   </div>
+</div>
+<!-- 일괄 액션 bar (체크박스 선택 시만 표시) -->
+<div id="bulk-bar" style="display:none;background:#fbbf24;color:#0f172a;padding:8px 16px;font-size:12px;font-weight:800;display:none;align-items:center;gap:10px;border-bottom:2px solid #f59e0b">
+  <span id="bulk-count">0</span>건 선택됨
+  <button class="btn" style="background:#0891b2;color:#fff;border-color:#0891b2" onclick="openBulkReassign()">🔄 일괄 재분배</button>
+  <button class="btn" onclick="openBulkStatus('dormant')">💤 일괄 휴면</button>
+  <button class="btn btn-danger" onclick="openBulkStatus('rejected')">🚫 일괄 거절</button>
+  <button class="btn" onclick="clearBulk()">✕ 선택 해제</button>
 </div>
 
 <div class="main">
@@ -348,7 +357,8 @@ function renderList() {
     const hasNba = c.gifts_pending > 0 || (c.it_sales_completed > 0 && c.rental_sales_completed === 0) || age > 14;
     return `<div class="lead-card" data-phone="${c.phone}" onclick="selectCustomer('${c.phone}')">
       <div class="lc-r1">
-        <div class="lc-name">${c.member_name || c.calldb_name || '익명 ' + (c.phone||'').slice(-4)}${gradeBadge}</div>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer" onclick="event.stopPropagation()"><input type="checkbox" class="bulk-cb" data-phone="${c.phone}" onchange="toggleBulk('${c.phone}', this.checked)"></label>
+        <div class="lc-name" style="flex:1">${c.member_name || c.calldb_name || '익명 ' + (c.phone||'').slice(-4)}${gradeBadge}</div>
         <span class="lc-status ${st.cls}">${st.label}</span>
       </div>
       <div class="lc-r2">${maskPhone(c.phone)}</div>
@@ -703,6 +713,103 @@ async function submitStatusChange() {
 [document.getElementById('reassign-modal'), document.getElementById('status-modal')].forEach(m => {
   m?.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
 });
+
+// ───────────── Phase 2: CSV export ─────────────
+async function exportCsv() {
+  const tk = getToken();
+  if (!tk) return alert('로그인 필요');
+  const search = document.getElementById('ft-search').value.trim();
+  const status = document.getElementById('ft-status').value;
+  const grade  = document.getElementById('ft-grade').value;
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (status) params.set('status', status);
+  if (grade) params.set('grade', grade);
+  try {
+    const res = await fetch(API + '/customers/export/csv?' + params, { headers: { Authorization: 'Bearer ' + tk }});
+    if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.error || res.status); }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `customers_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  } catch(e) { alert('CSV export 실패: ' + e.message); }
+}
+
+// ───────────── Phase 2: 일괄 액션 ─────────────
+const _bulkSelected = new Set();
+function toggleBulk(phone, checked) {
+  if (checked) _bulkSelected.add(phone); else _bulkSelected.delete(phone);
+  const bar = document.getElementById('bulk-bar');
+  document.getElementById('bulk-count').textContent = _bulkSelected.size;
+  bar.style.display = _bulkSelected.size > 0 ? 'flex' : 'none';
+}
+function clearBulk() {
+  _bulkSelected.clear();
+  document.querySelectorAll('.bulk-cb').forEach(cb => cb.checked = false);
+  document.getElementById('bulk-bar').style.display = 'none';
+}
+async function openBulkReassign() {
+  if (!_bulkSelected.size) return;
+  if (!_agentsForReassignLoaded) {
+    try {
+      const r = await apiFetch('/customers/agents-for-reassign');
+      const sel = document.getElementById('ra-agent');
+      sel.innerHTML = '<option value="">— 상담사 선택 —</option>' +
+        (r.agents || []).map(a => `<option value="${a.id}">${a.name} (${a.role}${a.center ? ' · ' + a.center : ''})</option>`).join('');
+      _agentsForReassignLoaded = true;
+    } catch(e) { alert('상담사 list 실패: ' + e.message); return; }
+  }
+  document.getElementById('reassign-modal').classList.add('open');
+  // submit 시 _bulkMode 인 경우 다른 endpoint 호출
+  document.querySelector('#reassign-modal .btn-primary').setAttribute('onclick', 'submitBulkReassign()');
+  document.querySelector('#reassign-modal h3').textContent = `🔄 ${_bulkSelected.size}건 일괄 재분배`;
+}
+async function submitBulkReassign() {
+  const new_agent_id = document.getElementById('ra-agent').value;
+  const reason = document.getElementById('ra-reason').value.trim();
+  if (!new_agent_id) { alert('상담사 선택 필수'); return; }
+  if (!confirm(`${_bulkSelected.size}건 일괄 재분배. 진행?`)) return;
+  try {
+    const r = await apiFetch('/customers/bulk/reassign', {
+      method:'PATCH',
+      body: JSON.stringify({ phones: [..._bulkSelected], new_agent_id, reason: reason || null })
+    });
+    document.getElementById('reassign-modal').classList.remove('open');
+    document.getElementById('ra-reason').value = '';
+    document.querySelector('#reassign-modal .btn-primary').setAttribute('onclick', 'submitReassign()');
+    document.querySelector('#reassign-modal h3').textContent = '🔄 다른 상담사에게 재분배';
+    alert(`✅ ${r.count}건 재분배 완료`);
+    clearBulk();
+    await loadList();
+  } catch(e) { alert('일괄 재분배 실패: ' + e.message); }
+}
+function openBulkStatus(status) {
+  if (!_bulkSelected.size) return;
+  _statusToChange = status;
+  document.getElementById('sm-title').textContent = `${status === 'dormant' ? '💤' : '🚫'} ${_bulkSelected.size}건 일괄 ${status === 'dormant' ? '휴면' : '거절'}`;
+  document.getElementById('sm-reason').value = '';
+  document.getElementById('status-modal').classList.add('open');
+  // submit 핸들러 swap
+  document.querySelector('#status-modal .btn-danger').setAttribute('onclick', 'submitBulkStatus()');
+}
+async function submitBulkStatus() {
+  const reason = document.getElementById('sm-reason').value.trim();
+  if (!reason) { alert('사유 필수'); return; }
+  if (!confirm(`${_bulkSelected.size}건 일괄 처리. 진행?`)) return;
+  try {
+    const r = await apiFetch('/customers/bulk/status', {
+      method:'PATCH',
+      body: JSON.stringify({ phones: [..._bulkSelected], status: _statusToChange, reason })
+    });
+    document.getElementById('status-modal').classList.remove('open');
+    document.querySelector('#status-modal .btn-danger').setAttribute('onclick', 'submitStatusChange()');
+    alert(`✅ ${r.count}건 처리 완료`);
+    clearBulk();
+    await loadList();
+  } catch(e) { alert('일괄 처리 실패: ' + e.message); }
+}
 
 // ───────────── 계약 상세 내역 ─────────────
 function addMonths(dateStr, months) {

@@ -3051,7 +3051,8 @@ router.get('/customers/unified', authenticateJWT, async (req, res) => {
     if (agent_id) q = q.eq('assigned_agent_id', agent_id);
     if (search) {
       const s = String(search).trim();
-      q = q.or(`calldb_name.ilike.%${s}%,phone.ilike.%${s}%,member_name.ilike.%${s}%`);
+      // 메모(calldb.notes)·태그 full-text 매칭 포함
+      q = q.or(`calldb_name.ilike.%${s}%,phone.ilike.%${s}%,member_name.ilike.%${s}%,notes.ilike.%${s}%`);
     }
     // 권한: agent는 본인 분배만, manager는 부서원, admin/contract는 전부
     if (me.role === 'agent') q = q.eq('assigned_agent_id', me.id);
@@ -3183,6 +3184,116 @@ router.post('/customers/:phone/call-attempt', authenticateJWT, async (req, res) 
     }).eq('id', cdb.id);
 
     res.json({ ok: true, log });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── Phase 2 ─── 고급 검색 (notes·통화 요약 full-text) ───
+// 이미 /customers/unified가 search param 받음 — 거기 search OR 절 확장
+// (코드 위 unified handler 안에 메모 매칭 추가)
+
+// GET /api/incentive/customers/export/csv
+// PIPA 마스킹 CSV export (admin·manager만)
+router.get('/customers/export/csv', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    if (!['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager만 export 가능' });
+    const { status, grade, search } = req.query;
+    let q = supabase.from('vw_unified_customer').select('*').limit(5000);
+    if (status) q = q.eq('call_status', status);
+    if (grade)  q = q.eq('priority_score', grade);
+    if (search) q = q.or(`calldb_name.ilike.%${search}%,phone.ilike.%${search}%,member_name.ilike.%${search}%,notes.ilike.%${search}%`);
+    const { data, error } = await q;
+    if (error) throw error;
+    // PIPA 마스킹
+    const maskName = n => !n ? '' : (n.length <= 1 ? n : n.charAt(0) + '*'.repeat(Math.max(1, n.length-1)));
+    const maskPhone = p => { if (!p) return ''; const s = String(p).replace(/-/g, ''); return s.length<7?p:s.slice(0,3)+'-****-'+s.slice(-4); };
+    const maskRegion = r => !r ? '' : (r.split(' ').slice(0,2).join(' ') + ' ***');
+    const headers = ['phone','name','age','gender','region','carrier','status','grade','channel_member','계약IT','계약가전','중고폰','페이백대기','페이백누적','콜시도','rotting_days','tags'];
+    const rows = (data || []).map(c => [
+      maskPhone(c.phone),
+      maskName(c.member_name || c.calldb_name),
+      c.age || '',
+      c.gender || '',
+      maskRegion(c.region),
+      c.carrier || '',
+      c.call_status || '',
+      c.priority_score ?? '',
+      c.is_app_member ? '회원' : '비회원',
+      c.it_sales_completed || 0,
+      c.rental_sales_completed || 0,
+      c.usedphone_count || 0,
+      c.gifts_pending || 0,
+      c.gifts_total_amount || 0,
+      c.call_attempts || 0,
+      c.lead_age_days || 0,
+      (c.tags || []).join(';'),
+    ]);
+    const csv = [
+      '﻿' + headers.join(','),  // BOM (Excel 한글)
+      ...rows.map(r => r.map(v => {
+        const s = String(v ?? '');
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+      }).join(','))
+    ].join('\n');
+    // audit log (PIPA 의무)
+    await supabase.from('incentive_customer_db_access_log').insert({
+      user_id: me.id, action: 'export_csv',
+      metadata: { count: rows.length, filters: { status, grade, search } },
+    }).then(() => {}, () => {});
+    const fname = `customers_${new Date().toISOString().slice(0,10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+    res.send(csv);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/incentive/customers/bulk/reassign
+// 다중 재분배 (admin·manager)
+router.patch('/customers/bulk/reassign', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    if (!['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager만' });
+    const { phones, new_agent_id, reason } = req.body || {};
+    if (!Array.isArray(phones) || !phones.length) return res.status(400).json({ error: 'phones 필수' });
+    if (!new_agent_id) return res.status(400).json({ error: 'new_agent_id 필수' });
+    const { data, error } = await supabase.from('incentive_customer_db')
+      .update({
+        assigned_agent_id: new_agent_id,
+        assigned_at: new Date().toISOString(),
+        assigned_by_user_id: me.id,
+      }).in('phone', phones).select('id, phone');
+    if (error) throw error;
+    await supabase.from('incentive_customer_db_access_log').insert({
+      user_id: me.id, action: 'bulk_reassign',
+      metadata: { count: (data||[]).length, new_agent_id, reason: reason || null, phones: phones.slice(0, 100) },
+    }).then(() => {}, () => {});
+    res.json({ ok: true, count: (data||[]).length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/incentive/customers/bulk/status
+// 다중 status 변경 (admin·manager)
+router.patch('/customers/bulk/status', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: '권한 없음' });
+    if (!['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager만' });
+    const { phones, status, reason } = req.body || {};
+    const VALID = ['pending', 'in_progress', 'callback', 'no_answer', 'on_hold', 'wrong_number', 'converted', 'rejected', 'dormant'];
+    if (!Array.isArray(phones) || !phones.length) return res.status(400).json({ error: 'phones 필수' });
+    if (!VALID.includes(status)) return res.status(400).json({ error: 'status invalid' });
+    const update = { call_status: status };
+    if (status === 'rejected' || status === 'dormant') update.reject_reason = reason || null;
+    const { data, error } = await supabase.from('incentive_customer_db')
+      .update(update).in('phone', phones).select('id');
+    if (error) throw error;
+    await supabase.from('incentive_customer_db_access_log').insert({
+      user_id: me.id, action: 'bulk_status',
+      metadata: { count: (data||[]).length, status, reason: reason || null, phones: phones.slice(0, 100) },
+    }).then(() => {}, () => {});
+    res.json({ ok: true, count: (data||[]).length });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
