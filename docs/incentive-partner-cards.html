@@ -65,6 +65,7 @@ tr:hover td{background:rgba(8,145,178,0.05)}
 <div class="toolbar">
   <input type="text" id="ft-search" placeholder="🔍 카드명·카드사·메모">
   <select id="ft-brand"><option value="">전체 브랜드</option></select>
+  <select id="ft-category"><option value="">전체 카테고리</option></select>
   <select id="ft-active">
     <option value="1">활성만</option>
     <option value="">전체 (비활성 포함)</option>
@@ -88,6 +89,8 @@ tr:hover td{background:rgba(8,145,178,0.05)}
     </div>
     <label>카드 이름 *</label>
     <input id="cm-name" placeholder="LG전자 The 구독케어 신한카드">
+    <label>📂 적용 카테고리 (쉼표로 구분 · 예: 정수기, 공기청정기, 비데)</label>
+    <input id="cm-categories" placeholder="정수기, 공기청정기, 비데">
     <div class="grid3">
       <div><label>연회비 (국내/해외)</label><input id="cm-fee" placeholder="20000"></div>
       <div><label>최대 할인</label><input id="cm-max" type="number"></div>
@@ -152,11 +155,16 @@ async function loadCards() {
     const url = '/partner-cards' + (active ? '?active=1' : '');
     const r = await apiFetch(url);
     _cards = r.cards || [];
-    // 브랜드 select 채우기 (없으면)
+    // 브랜드·카테고리 select 채우기 (없으면)
     const brSel = document.getElementById('ft-brand');
     if (brSel.options.length <= 1) {
       const brands = [...new Set(_cards.map(c => c.brand))].sort();
       brSel.innerHTML = '<option value="">전체 브랜드</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+    }
+    const catSel = document.getElementById('ft-category');
+    if (catSel.options.length <= 1) {
+      const cats = [...new Set(_cards.flatMap(c => c.categories || []))].sort();
+      catSel.innerHTML = '<option value="">전체 카테고리</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
     }
     render();
   } catch(e) {
@@ -166,12 +174,15 @@ async function loadCards() {
 function render() {
   const search = document.getElementById('ft-search').value.trim().toLowerCase();
   const brandFilter = document.getElementById('ft-brand').value;
+  const catFilter = document.getElementById('ft-category').value;
   let list = _cards;
   if (brandFilter) list = list.filter(c => c.brand === brandFilter);
+  if (catFilter) list = list.filter(c => (c.categories || []).includes(catFilter));
   if (search) list = list.filter(c =>
     (c.card_name||'').toLowerCase().includes(search) ||
     (c.card_issuer||'').toLowerCase().includes(search) ||
-    (c.notes||'').toLowerCase().includes(search)
+    (c.notes||'').toLowerCase().includes(search) ||
+    (c.categories || []).some(t => t.toLowerCase().includes(search))
   );
   // 브랜드별 그룹화
   const byBrand = {};
@@ -194,6 +205,7 @@ function render() {
       <table>
         <thead><tr>
           <th>카드사</th><th style="min-width:200px">카드 이름</th>
+          <th style="min-width:120px">📂 카테고리</th>
           <th style="width:80px;text-align:right">연회비</th>
           <th style="width:80px;text-align:right">최대할인</th>
           <th style="width:65px">기간</th>
@@ -219,9 +231,11 @@ function tierCell(t) {
   </td>`;
 }
 function renderRow(c) {
+  const cats = (c.categories || []).map(t => `<span style="font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:3px;background:rgba(167,139,250,0.18);color:#c4b5fd;margin-right:2px">${esc(t)}</span>`).join('') || '<span style="color:#64748b;font-size:9.5px">-</span>';
   return `<tr>
     <td><span class="issuer-chip">${esc(c.card_issuer)}</span></td>
     <td><div class="card-name">${esc(c.card_name)}</div>${c.card_url ? `<a class="card-url" href="${esc(c.card_url)}" target="_blank">🔗 카드정보</a>` : ''}</td>
+    <td style="white-space:normal">${cats}</td>
     <td class="amount">${c.annual_fee ? fmt(c.annual_fee.replace(/\D/g,'')) + '원' : '-'}</td>
     <td class="amount">${fmt(c.max_discount)}원</td>
     <td style="text-align:center">${c.discount_months ? c.discount_months + 'M' : '-'}</td>
@@ -235,7 +249,7 @@ function renderRow(c) {
     </td>
   </tr>`;
 }
-['ft-search','ft-brand','ft-active'].forEach(id => {
+['ft-search','ft-brand','ft-category','ft-active'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => { if (id==='ft-active') loadCards(); else render(); });
 });
 document.getElementById('ft-search').addEventListener('input', render);
@@ -243,7 +257,7 @@ document.getElementById('ft-search').addEventListener('input', render);
 // ───────── 모달 (추가·편집) ─────────
 function openAddModal() {
   document.getElementById('cm-title').textContent = '🎴 신규 카드 등록';
-  ['cm-id','cm-brand','cm-issuer','cm-name','cm-fee','cm-max','cm-months','cm-rank','cm-t1-min','cm-t1-base','cm-t1-promo','cm-t2-min','cm-t2-base','cm-t2-promo','cm-t3-min','cm-t3-base','cm-t3-promo','cm-notes','cm-url'].forEach(id => document.getElementById(id).value='');
+  ['cm-id','cm-brand','cm-issuer','cm-name','cm-categories','cm-fee','cm-max','cm-months','cm-rank','cm-t1-min','cm-t1-base','cm-t1-promo','cm-t2-min','cm-t2-base','cm-t2-promo','cm-t3-min','cm-t3-base','cm-t3-promo','cm-notes','cm-url'].forEach(id => document.getElementById(id).value='');
   document.getElementById('cm-promo').checked = false;
   document.getElementById('cm-active').checked = true;
   document.getElementById('cm-delete').style.display = 'none';
@@ -255,6 +269,7 @@ function openEditModal(c) {
   document.getElementById('cm-brand').value = c.brand || '';
   document.getElementById('cm-issuer').value = c.card_issuer || '';
   document.getElementById('cm-name').value = c.card_name || '';
+  document.getElementById('cm-categories').value = (c.categories || []).join(', ');
   document.getElementById('cm-fee').value = c.annual_fee || '';
   document.getElementById('cm-max').value = c.max_discount || '';
   document.getElementById('cm-months').value = c.discount_months || '';
@@ -279,10 +294,13 @@ function closeModal() { document.getElementById('card-modal').classList.remove('
 async function submitCard() {
   const id = document.getElementById('cm-id').value;
   const num = v => v ? Number(v) : null;
+  const catsRaw = document.getElementById('cm-categories').value;
+  const categories = catsRaw.split(',').map(s => s.trim()).filter(Boolean);
   const body = {
     brand: document.getElementById('cm-brand').value.trim(),
     card_issuer: document.getElementById('cm-issuer').value.trim(),
     card_name: document.getElementById('cm-name').value.trim(),
+    categories,
     annual_fee: document.getElementById('cm-fee').value.trim() || null,
     max_discount: num(document.getElementById('cm-max').value),
     discount_months: num(document.getElementById('cm-months').value),

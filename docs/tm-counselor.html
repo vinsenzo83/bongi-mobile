@@ -6201,7 +6201,8 @@ setTimeout(() => {
       fetch(`${API}/partner-cards?brand=${encodeURIComponent(p.company.name)}&active=1`)
         .then(r => r.json())
         .then(cardsR => {
-          const cards = (cardsR.cards || []).filter(x => x.brand === p.company.name);
+          // server alias 매핑 (LG전자 → LG전자구독 등) 결과 그대로 사용 — client 추가 filter X
+          const cards = cardsR.cards || [];
           const loading = document.getElementById('rental-card-loading');
           const empty = document.getElementById('rental-card-empty');
           const form = document.getElementById('rental-card-form');
