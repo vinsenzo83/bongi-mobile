@@ -168,6 +168,7 @@ async function fetchAgent() {
           <span id="rp-group-title">💧 정수기 그룹 상품 관리</span>
           <span style="display:flex;gap:6px">
             <button type="button" id="rp-import-btn" style="background:linear-gradient(135deg,#06b6d4,#7c3aed);color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-weight:700">📤 빌리고 엑셀 import</button>
+            <button type="button" id="rp-batch-image-btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-weight:800">🖼️ 이미지 일괄 업로드</button>
             <button type="button" id="rp-bulk-payback-btn" style="background:#7c3aed;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer">⚙️ 선택 모델 페이백 일괄 입력</button>
             <button type="button" id="rp-reload-btn" style="background:#475569;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer">🔄 새로고침</button>
           </span>
@@ -308,6 +309,61 @@ async function fetchAgent() {
             <button type="button" id="rp-img-clear" style="background:transparent;border:1px solid #ef4444;color:#fca5a5;padding:6px 12px;border-radius:5px;font-size:11.5px;cursor:pointer">🗑️ 비우기</button>
             <button type="button" id="rp-img-save" style="background:#0891b2;color:#fff;border:none;padding:6px 16px;border-radius:5px;font-size:11.5px;font-weight:700;cursor:pointer">💾 저장</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🆕 이미지 일괄 업로드 모달 -->
+    <div id="rp-batch-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto">
+      <div style="background:#1e293b;border:1.5px solid #f59e0b;border-radius:12px;width:100%;max-width:1100px;padding:20px 24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155;padding-bottom:12px;margin-bottom:14px">
+          <div style="font-size:15px;color:#fbbf24;font-weight:800">🖼️ 이미지 일괄 업로드 <span style="color:#94a3b8;font-weight:600;font-size:12px;margin-left:8px">— 파일명 ↔ 모델 자동 매칭</span></div>
+          <button type="button" id="rp-batch-close" style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px">✕ 닫기 (Esc)</button>
+        </div>
+        <div style="font-size:11px;color:#cbd5e1;background:rgba(251,191,36,0.06);border:1px dashed #f59e0b;border-radius:6px;padding:10px 12px;margin-bottom:14px;line-height:1.6">
+          💡 <b>매칭 규칙</b>: 파일명에 <b>모델명</b>(예: <code>chp-590n</code>) 또는 <b>brand+model</b>(예: <code>coway-chp590</code>)이 포함되면 자동 매칭.<br>
+          • 미매칭 파일은 표 우측 select로 직접 매핑 (현재 필터된 상품만 노출)<br>
+          • 업로드 시 카테고리 필터에 노출된 상품만 매칭 대상 — 정수기 필터를 먼저 설정하세요
+        </div>
+        <!-- 드롭존 -->
+        <div id="rp-batch-drop" style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f172a;border:2px dashed #f59e0b;border-radius:8px;min-height:140px;padding:18px;margin-bottom:14px;cursor:pointer;transition:background 0.15s">
+          <div style="font-size:32px;margin-bottom:6px">📤</div>
+          <div style="color:#fbbf24;font-weight:700;font-size:13px">파일을 드래그하거나 클릭해 선택</div>
+          <div style="color:#64748b;font-size:11px;margin-top:4px">jpg / png / webp / gif — 한 번에 여러 파일 가능 · 각 5MB 이하</div>
+          <input type="file" id="rp-batch-file-input" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none">
+        </div>
+        <!-- 통계 + 액션 -->
+        <div id="rp-batch-stats" style="display:none;justify-content:space-between;align-items:center;background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px 14px;margin-bottom:10px">
+          <div style="font-size:12px;color:#e2e8f0;display:flex;gap:18px">
+            <span>📁 전체 <b id="rpb-total" style="color:#fbbf24">0</b>건</span>
+            <span>✅ 매칭 <b id="rpb-matched" style="color:#22c55e">0</b>건</span>
+            <span>⚠️ 미매칭 <b id="rpb-unmatched" style="color:#ef4444">0</b>건</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="button" id="rp-batch-clear" style="background:transparent;border:1px solid #ef4444;color:#fca5a5;padding:6px 14px;border-radius:5px;font-size:11px;cursor:pointer">🗑️ 비우기</button>
+            <button type="button" id="rp-batch-upload-matched" style="background:#22c55e;color:#fff;border:none;padding:6px 14px;border-radius:5px;font-size:11.5px;font-weight:800;cursor:pointer">⬆️ 매칭된 것만 업로드</button>
+          </div>
+        </div>
+        <!-- progress -->
+        <div id="rp-batch-progress-wrap" style="display:none;margin-bottom:10px">
+          <div style="background:#0f172a;border:1px solid #334155;border-radius:6px;height:18px;overflow:hidden;position:relative">
+            <div id="rp-batch-progress-bar" style="background:linear-gradient(90deg,#22c55e,#16a34a);height:100%;width:0%;transition:width 0.2s"></div>
+            <div id="rp-batch-progress-text" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#fff;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.6)">0 / 0</div>
+          </div>
+        </div>
+        <!-- 매칭 결과 표 -->
+        <div id="rp-batch-table-wrap" style="display:none;max-height:50vh;overflow-y:auto;border:1px solid #334155;border-radius:6px">
+          <table style="width:100%;border-collapse:collapse;font-size:11.5px;color:#e2e8f0">
+            <thead style="position:sticky;top:0;background:#0f172a;z-index:1">
+              <tr style="border-bottom:1px solid #334155">
+                <th style="text-align:left;padding:8px 10px;color:#94a3b8;font-weight:700">📁 파일명</th>
+                <th style="text-align:left;padding:8px 10px;color:#94a3b8;font-weight:700;width:40%">🎯 매칭 상품 (수동 변경 가능)</th>
+                <th style="text-align:center;padding:8px 10px;color:#94a3b8;font-weight:700;width:90px">상태</th>
+                <th style="text-align:center;padding:8px 10px;color:#94a3b8;font-weight:700;width:50px"></th>
+              </tr>
+            </thead>
+            <tbody id="rp-batch-table-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -856,6 +912,193 @@ async function fetchAgent() {
     });
     modal.addEventListener('click', e => { if (e.target === modal) closeImageEditModal(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display === 'flex') closeImageEditModal(); });
+  })();
+
+  // ═══════════════════════════════════════════════════════════
+  // 🆕 이미지 일괄 업로드 (Phase 4) — 파일명 ↔ 모델 자동 매칭
+  // ═══════════════════════════════════════════════════════════
+  let _batchItems = []; // [{file, name, productId, status: 'pending'|'uploading'|'done'|'error'}]
+
+  const normalize = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  function getBatchTargetProducts() {
+    // 현재 카테고리 필터된 상품만 매칭 대상
+    return (_filteredProducts || _products || []);
+  }
+
+  function autoMatchFile(filename, targets) {
+    const baseName = filename.replace(/\.[^.]+$/, '');
+    const norm = normalize(baseName);
+    if (!norm) return null;
+    let best = null;
+    let bestScore = 0;
+    for (const p of targets) {
+      const candidates = [
+        normalize(`${p.brand}${p.model}`),
+        normalize(p.model),
+        normalize(`${p.brand}_${p.model}`),
+      ].filter(Boolean);
+      for (const c of candidates) {
+        if (!c || c.length < 3) continue;
+        if (norm.includes(c) || c.includes(norm)) {
+          if (c.length > bestScore) { best = p; bestScore = c.length; }
+        }
+      }
+    }
+    return best;
+  }
+
+  function openBatchModal() {
+    document.getElementById('rp-batch-modal').style.display = 'flex';
+    _batchItems = [];
+    document.getElementById('rp-batch-stats').style.display = 'none';
+    document.getElementById('rp-batch-table-wrap').style.display = 'none';
+    document.getElementById('rp-batch-progress-wrap').style.display = 'none';
+  }
+  function closeBatchModal() {
+    document.getElementById('rp-batch-modal').style.display = 'none';
+  }
+  function addFilesToBatch(fileList) {
+    const targets = getBatchTargetProducts();
+    if (!targets.length) return alert('카테고리/필터된 상품이 없습니다. 정수기 필터를 먼저 설정하세요.');
+    for (const file of fileList) {
+      if (!/^image\//.test(file.type)) continue;
+      if (file.size > 5 * 1024 * 1024) {
+        _batchItems.push({ file, name: file.name, productId: null, status: 'error', msg: '5MB 초과' });
+        continue;
+      }
+      const matched = autoMatchFile(file.name, targets);
+      _batchItems.push({ file, name: file.name, productId: matched?.id || null, status: 'pending' });
+    }
+    renderBatchTable();
+  }
+  function renderBatchTable() {
+    const tbody = document.getElementById('rp-batch-table-body');
+    const targets = getBatchTargetProducts();
+    const optsHTML = targets.map(p => `<option value="${p.id}">${(p.brand||'')} ${(p.model||'')} ${p.image_url ? '🖼️(이미 있음)' : ''}</option>`).join('');
+    tbody.innerHTML = _batchItems.map((it, i) => {
+      const statusBadge = {
+        pending: '<span style="color:#94a3b8">대기</span>',
+        uploading: '<span style="color:#fbbf24">⬆️ 업로드 중</span>',
+        done: '<span style="color:#22c55e">✓ 완료</span>',
+        error: `<span style="color:#ef4444" title="${it.msg||''}">❌ ${it.msg||'실패'}</span>`,
+      }[it.status] || '';
+      return `<tr style="border-bottom:1px solid #1e293b">
+        <td style="padding:7px 10px;color:#cbd5e1;word-break:break-all">${esc(it.name)}</td>
+        <td style="padding:7px 10px">
+          <select data-idx="${i}" class="rpb-sel" style="width:100%;padding:5px 8px;background:#0f172a;border:1px solid #334155;color:#e2e8f0;font-size:11px;border-radius:4px">
+            <option value="">— 미매칭 —</option>
+            ${optsHTML}
+          </select>
+        </td>
+        <td style="padding:7px 10px;text-align:center">${statusBadge}</td>
+        <td style="padding:7px 10px;text-align:center"><button data-idx="${i}" class="rpb-del" style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer">✕</button></td>
+      </tr>`;
+    }).join('');
+    // select 기본값 적용
+    tbody.querySelectorAll('.rpb-sel').forEach(sel => {
+      const idx = parseInt(sel.dataset.idx, 10);
+      const it = _batchItems[idx];
+      if (it.productId) sel.value = String(it.productId);
+    });
+    document.getElementById('rp-batch-stats').style.display = 'flex';
+    document.getElementById('rp-batch-table-wrap').style.display = 'block';
+    updateBatchStats();
+  }
+  function updateBatchStats() {
+    const total = _batchItems.length;
+    const matched = _batchItems.filter(it => it.productId).length;
+    document.getElementById('rpb-total').textContent = total;
+    document.getElementById('rpb-matched').textContent = matched;
+    document.getElementById('rpb-unmatched').textContent = total - matched;
+  }
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  async function uploadMatchedBatch() {
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    if (!tk) return alert('로그인 필요');
+    const targets = _batchItems.filter(it => it.productId && it.status !== 'done');
+    if (!targets.length) return alert('업로드 대상이 없습니다 (매칭된 항목이 없거나 모두 완료)');
+    if (!confirm(`${targets.length}건을 업로드합니다. 진행하시겠습니까?`)) return;
+    const wrap = document.getElementById('rp-batch-progress-wrap');
+    const bar = document.getElementById('rp-batch-progress-bar');
+    const txt = document.getElementById('rp-batch-progress-text');
+    wrap.style.display = 'block';
+    let done = 0;
+    for (const it of targets) {
+      it.status = 'uploading';
+      renderBatchTable();
+      try {
+        const fd = new FormData();
+        fd.append('file', it.file);
+        const res = await fetch(`${RP_API}/products/${it.productId}/image`, {
+          method: 'POST', headers: { Authorization: 'Bearer ' + tk }, body: fd,
+        });
+        if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || `HTTP ${res.status}`); }
+        const j = await res.json();
+        const p = _products.find(x => String(x.id) === String(it.productId));
+        if (p) p.image_url = j.image_url;
+        it.status = 'done';
+      } catch (e) {
+        it.status = 'error';
+        it.msg = e.message;
+      }
+      done++;
+      bar.style.width = (done / targets.length * 100) + '%';
+      txt.textContent = `${done} / ${targets.length}`;
+      renderBatchTable();
+    }
+    renderModels();
+    const ok = _batchItems.filter(x => x.status === 'done').length;
+    const fail = _batchItems.filter(x => x.status === 'error').length;
+    setTimeout(() => alert(`완료 — 성공 ${ok}건, 실패 ${fail}건`), 100);
+  }
+  (function bindBatchModal() {
+    const btn = document.getElementById('rp-batch-image-btn');
+    const modal = document.getElementById('rp-batch-modal');
+    if (!btn || !modal) return;
+    btn.addEventListener('click', openBatchModal);
+    document.getElementById('rp-batch-close')?.addEventListener('click', closeBatchModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeBatchModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display === 'flex') closeBatchModal(); });
+
+    const drop = document.getElementById('rp-batch-drop');
+    const inp = document.getElementById('rp-batch-file-input');
+    drop.addEventListener('click', () => inp.click());
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.style.background = 'rgba(245,158,11,0.12)'; });
+    drop.addEventListener('dragleave', e => { e.preventDefault(); drop.style.background = '#0f172a'; });
+    drop.addEventListener('drop', e => {
+      e.preventDefault();
+      drop.style.background = '#0f172a';
+      addFilesToBatch(e.dataTransfer.files);
+    });
+    inp.addEventListener('change', e => addFilesToBatch(e.target.files));
+
+    document.getElementById('rp-batch-clear')?.addEventListener('click', () => {
+      _batchItems = [];
+      document.getElementById('rp-batch-stats').style.display = 'none';
+      document.getElementById('rp-batch-table-wrap').style.display = 'none';
+      document.getElementById('rp-batch-progress-wrap').style.display = 'none';
+      inp.value = '';
+    });
+    document.getElementById('rp-batch-upload-matched')?.addEventListener('click', uploadMatchedBatch);
+
+    // table 위임 (select 변경 + 삭제)
+    document.getElementById('rp-batch-table-body')?.addEventListener('change', e => {
+      if (e.target.classList.contains('rpb-sel')) {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        _batchItems[idx].productId = e.target.value || null;
+        updateBatchStats();
+      }
+    });
+    document.getElementById('rp-batch-table-body')?.addEventListener('click', e => {
+      if (e.target.classList.contains('rpb-del')) {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        _batchItems.splice(idx, 1);
+        renderBatchTable();
+      }
+    });
   })();
 
   async function loadOptions(productId) {
