@@ -1643,4 +1643,70 @@ router.post('/import/commit', authenticateJWT, async (req, res) => {
     });
 });
 
+// ═══════════════════════════════════════════════════════════════
+// 🎴 제휴카드사 마스터 — rental_partner_cards
+// ═══════════════════════════════════════════════════════════════
+
+// GET /api/rental/partner-cards?brand=&company_id=&active=1
+router.get('/partner-cards', optionalAuth, async (req, res) => {
+  try {
+    const { brand, company_id, active } = req.query;
+    let q = supabase.from('rental_partner_cards')
+      .select('*, company:rental_companies(id, name, category_group)')
+      .order('brand').order('display_rank', { ascending: true, nullsFirst: false }).order('card_issuer');
+    if (brand) q = q.eq('brand', brand);
+    if (company_id) q = q.eq('company_id', company_id);
+    if (active === '1' || active === 'true') q = q.eq('is_active', true);
+    const { data, error } = await q.limit(500);
+    if (error) throw error;
+    res.json({ cards: data || [] });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// GET /api/rental/partner-cards/brands — 사용 가능 브랜드 list
+router.get('/partner-cards/brands', optionalAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('rental_partner_cards')
+      .select('brand').eq('is_active', true);
+    if (error) throw error;
+    const uniq = [...new Set((data || []).map(r => r.brand))].sort();
+    res.json({ brands: uniq });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// POST /api/rental/partner-cards (admin)
+router.post('/partner-cards', authenticateJWT, async (req, res) => {
+  try {
+    const allowed = ['brand','brand_id','company_id','card_issuer','card_name','annual_fee','max_discount','discount_months','has_promo','tier1_min','tier1_base','tier1_promo','tier1_total','tier2_min','tier2_base','tier2_promo','tier2_total','tier3_min','tier3_base','tier3_promo','tier3_total','notes','card_url','is_active','display_rank'];
+    const insert = {};
+    for (const k of allowed) if (k in (req.body || {})) insert[k] = req.body[k];
+    if (!insert.brand || !insert.card_issuer || !insert.card_name) return res.status(400).json({ error:'brand·card_issuer·card_name 필수' });
+    const { data, error } = await supabase.from('rental_partner_cards').insert(insert).select().single();
+    if (error) throw error;
+    res.json({ card: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// PATCH /api/rental/partner-cards/:id (admin)
+router.patch('/partner-cards/:id', authenticateJWT, async (req, res) => {
+  try {
+    const allowed = ['brand','brand_id','company_id','card_issuer','card_name','annual_fee','max_discount','discount_months','has_promo','tier1_min','tier1_base','tier1_promo','tier1_total','tier2_min','tier2_base','tier2_promo','tier2_total','tier3_min','tier3_base','tier3_promo','tier3_total','notes','card_url','is_active','display_rank'];
+    const update = {};
+    for (const k of allowed) if (k in (req.body || {})) update[k] = req.body[k];
+    update.updated_at = new Date().toISOString();
+    const { data, error } = await supabase.from('rental_partner_cards').update(update).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json({ card: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// DELETE /api/rental/partner-cards/:id (admin)
+router.delete('/partner-cards/:id', authenticateJWT, async (req, res) => {
+  try {
+    const { error } = await supabase.from('rental_partner_cards').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
 export default router;
