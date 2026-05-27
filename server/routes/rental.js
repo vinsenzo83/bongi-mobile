@@ -1652,7 +1652,7 @@ router.get('/partner-cards', optionalAuth, async (req, res) => {
   try {
     const { brand, company_id, active } = req.query;
     let q = supabase.from('rental_partner_cards')
-      .select('*, company:rental_companies(id, name, category_group)')
+      .select('*')
       .order('brand', { ascending: true })
       .order('card_issuer', { ascending: true });
     if (brand) {
