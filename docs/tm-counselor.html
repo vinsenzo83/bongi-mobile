@@ -794,13 +794,23 @@ if (_isManualMode) {
     .tm-manual-bar .b-mgmt:hover { background:#6d28d9 }
   `;
   document.head.appendChild(s);
-  // 🆕 수동 모드 fixed 상단 bar — 신규 고객 등록 + 고객 관리 link
+  // 🆕 URL ?phone= 파라미터 (역방향 link: 고객관리 → TM 콜모드) — 가전 모달 phone prefill
+  const _manualPhone = (() => { try { return new URL(location.href).searchParams.get('phone') || ''; } catch { return ''; } })();
+  if (_manualPhone) window.CALL_MODE_CUSTOMER_PHONE = _manualPhone;
+  // 🆕 수동 모드 fixed 하단 bar — phone chip + 신규 고객 등록 + 고객 관리 link
   document.addEventListener('DOMContentLoaded', () => {
     const bar = document.createElement('div');
     bar.className = 'tm-manual-bar';
+    const phoneChip = _manualPhone
+      ? `<span style="background:rgba(34,197,94,0.18);color:#86efac;padding:6px 12px;border-radius:18px;font-size:11px;font-weight:800;border:1px solid #16a34a">📞 ${_manualPhone}</span>`
+      : '';
+    const mgmtHref = _manualPhone
+      ? `/docs/incentive-customer-mgmt.html?phone=${encodeURIComponent(_manualPhone)}`
+      : '/docs/incentive-customer-mgmt.html';
     bar.innerHTML = `
+      ${phoneChip}
       <a href="/docs/incentive-customer-mgmt.html?action=register" target="_blank" title="신규 고객 등록 (새 탭) — 등록 후 고객관리 페이지에서 360° 즉시 보기">➕ 신규 고객 등록</a>
-      <a class="b-mgmt" href="/docs/incentive-customer-mgmt.html" target="_blank" title="전체 고객 관리 페이지 (새 탭)">👥 고객 관리</a>
+      <a class="b-mgmt" href="${mgmtHref}" target="_blank" title="전체 고객 관리 페이지 (새 탭)">👥 고객 관리</a>
     `;
     document.body.appendChild(bar);
   });

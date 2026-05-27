@@ -554,6 +554,9 @@ function renderDetail(r) {
     <div class="action-bar">
       <button class="btn btn-success" onclick="openCallModal()">📞 콜 시도</button>
       <button class="btn btn-warn" onclick="openCallModal('callback')">📅 콜백 예약</button>
+      <a class="btn" style="background:#0891b2;color:#fff;border-color:#0e7490;text-decoration:none;display:inline-flex;align-items:center;gap:4px"
+         href="/docs/tm-counselor.html?mode=manual&phone=${encodeURIComponent(r.phone||'')}" target="_blank"
+         title="이 고객 번호로 TM 수동 모드 진입 (새 탭) — 견적·계약 모달에 phone 자동 prefill">📞 TM 콜모드 진입 ↗</a>
       <button class="btn btn-danger" onclick="openStatusModal('rejected')">🚫 거절 처리</button>
       <button class="btn" onclick="openStatusModal('dormant')">💤 휴면 처리</button>
       <button class="btn" onclick="openReassignModal()">🔄 재분배</button>
