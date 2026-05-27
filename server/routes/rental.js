@@ -1658,14 +1658,12 @@ router.get('/partner-cards', optionalAuth, async (req, res) => {
     if (category) q = q.contains('categories', [category]);
     if (brand) {
       // brand alias 매핑 — 회사명 ↔ 카드 brand 차이 흡수
+      // LG헬로비전·삼성전자(BS ON)은 카드 brand 표준화 + 마스터 신규 등록으로 alias 불필요
       const aliases = [brand];
       const ALIAS = {
-        'LG전자': ['LG전자구독'],
-        'LG전자구독': ['LG전자'],
-        'LG헬로비전': ['LG헬로렌탈'],
-        'LG헬로렌탈': ['LG헬로비전'],
-        '현대유버스': ['현대큐밍'],   // 양쪽 다 현대 계열
-        '삼성전자': ['삼성전자(BS ON)'],
+        'LG전자': ['LG전자구독'],      // LG전자 회사 영업 시 LG전자구독 카드도 노출
+        'LG전자구독': ['LG전자'],      // 대칭성 (향후 LG전자 카드 추가 대비)
+        '현대유버스': ['현대큐밍'],    // 현대 계열 공통
       };
       if (ALIAS[brand]) aliases.push(...ALIAS[brand]);
       q = q.in('brand', aliases);
