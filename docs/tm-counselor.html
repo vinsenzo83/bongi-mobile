@@ -6170,12 +6170,95 @@ setTimeout(() => {
       <div class="row"><span class="k">브랜드 · 모델</span><span class="v">${p.brand} · ${p.model}</span></div>
       <div class="row"><span class="k">약정 · 케어</span><span class="v">${o.months}개월 · ${o.care_service}</span></div>
       ${productDetailHTML}
-      <div class="row"><span class="k">월 납부액</span><span class="v">${fmt(c.effective_monthly_fee)}원${c.promo_type==='half' ? ` <span style="color:#22c55e">(반값 ${o.half_period||''}M)</span>` : ''}</span></div>
+      <div class="row"><span class="k">월 납부액</span><span class="v" id="rental-base-monthly">${fmt(c.effective_monthly_fee)}원${c.promo_type==='half' ? ` <span style="color:#22c55e">(반값 ${o.half_period||''}M)</span>` : ''}</span></div>
       <div class="row"><span class="k">정상가</span><span class="v">${fmt(o.normal_price)}원/월</span></div>
       ${paymentSimHTML}
       ${c.bundle_apply && c.bundle_rate !== 100 ? `<div class="row"><span class="k">결합지급률</span><span class="v green">× ${c.bundle_rate}%</span></div>` : ''}
+      <!-- 🎴 제휴카드 할인 적용 -->
+      <div id="rental-card-discount-wrap" style="background:rgba(251,191,36,0.06);border:1px dashed #fbbf24;border-radius:6px;padding:8px 10px;margin:6px 0;font-size:11px">
+        <div style="font-size:10.5px;font-weight:800;color:#fbbf24;margin-bottom:5px">🎴 제휴카드 할인 적용 <span id="rental-card-loading" style="font-size:9.5px;color:#94a3b8;font-weight:500">· 로딩…</span></div>
+        <div id="rental-card-empty" style="display:none;font-size:10.5px;color:#94a3b8">${p.company?.name ? p.company.name + ' 제휴카드 데이터 없음' : '회사 매칭 없음'}</div>
+        <div id="rental-card-form" style="display:none">
+          <select id="rental-card-select" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:5px 8px;border-radius:4px;font-size:11px;font-family:inherit;margin-bottom:5px">
+            <option value="">— 카드 선택 —</option>
+          </select>
+          <div style="display:flex;gap:5px;align-items:center;margin-bottom:5px">
+            <label style="font-size:10px;color:#94a3b8;flex-shrink:0">월 카드 실적</label>
+            <input type="number" id="rental-card-spend" step="10000" placeholder="300000" style="flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:11px;text-align:right">
+            <span style="font-size:10px;color:#94a3b8">원/월</span>
+          </div>
+          <div id="rental-card-result" style="font-size:10.5px;line-height:1.5;color:#cbd5e1;padding:5px 0;border-top:1px dashed #475569;display:none"></div>
+        </div>
+      </div>
       <div class="total"><div style="font-size:10px;color:#94a3b8">📌 봉이지원금 (페이백)</div><div class="big">+ ${fmt(c.payback)}원</div></div>
       <button class="save" id="rental-save-btn">💾 ${p.category?.name||'렌탈'} 영업 접수</button>`;
+
+    // 🎴 제휴카드 fetch (회사 매칭만)
+    if (p.company?.name) {
+      fetch(`${API}/partner-cards?brand=${encodeURIComponent(p.company.name)}&active=1`)
+        .then(r => r.json())
+        .then(cardsR => {
+          const cards = (cardsR.cards || []).filter(x => x.brand === p.company.name);
+          const loading = document.getElementById('rental-card-loading');
+          const empty = document.getElementById('rental-card-empty');
+          const form = document.getElementById('rental-card-form');
+          if (loading) loading.style.display = 'none';
+          if (!cards.length) { if (empty) empty.style.display = 'block'; return; }
+          if (form) form.style.display = 'block';
+          const sel = document.getElementById('rental-card-select');
+          sel.innerHTML = '<option value="">— 카드 선택 (총 '+cards.length+'건) —</option>' +
+            cards.map(card => {
+              const max = card.max_discount ? Math.round(card.max_discount/1000)+'k' : '?';
+              const promo = card.has_promo ? ' 🏷️' : '';
+              return `<option value="${card.id}">[${card.card_issuer}] ${card.card_name} (최대 -${max}${promo})</option>`;
+            }).join('');
+          const spendInp = document.getElementById('rental-card-spend');
+          const resultEl = document.getElementById('rental-card-result');
+          const baseMonthly = c.effective_monthly_fee;
+          const updateDiscount = () => {
+            const cardId = sel.value;
+            const spend = Number(spendInp.value) || 0;
+            if (!cardId) { resultEl.style.display = 'none'; document.getElementById('rental-base-monthly').innerHTML = fmt(baseMonthly)+'원'; return; }
+            const card = cards.find(x => String(x.id) === cardId);
+            if (!card) return;
+            // 구간 결정 (높은 구간부터)
+            let tier = 0, base = 0, promo = 0, total = 0, tierMin = 0;
+            if (card.tier3_min && spend >= card.tier3_min) { tier = 3; base = card.tier3_base||0; promo = card.tier3_promo||0; tierMin = card.tier3_min; }
+            else if (card.tier2_min && spend >= card.tier2_min) { tier = 2; base = card.tier2_base||0; promo = card.tier2_promo||0; tierMin = card.tier2_min; }
+            else if (card.tier1_min && spend >= card.tier1_min) { tier = 1; base = card.tier1_base||0; promo = card.tier1_promo||0; tierMin = card.tier1_min; }
+            total = base + promo;
+            const finalMonthly = Math.max(0, baseMonthly - total);
+            const tierColor = tier === 3 ? '#fbbf24' : tier === 2 ? '#60a5fa' : tier === 1 ? '#86efac' : '#94a3b8';
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = tier === 0
+              ? `<div style="color:#fca5a5">⚠️ 실적 부족 — 최소 1구간 (${fmt(card.tier1_min)}원/월) 필요</div>`
+              : `<div>📌 적용 구간: <b style="color:${tierColor}">${tier} 구간</b> (실적 ${fmt(tierMin)}+)</div>
+                 <div>💳 기본 ${fmt(base)}원${promo ? ' + 🏷️ 프로모 '+fmt(promo)+'원' : ''} = <b style="color:#fbbf24">-${fmt(total)}원/월</b></div>
+                 ${card.discount_months ? `<div style="font-size:9.5px;color:#94a3b8">할인 기간 ${card.discount_months}개월 · 총 절감 ${fmt(total*card.discount_months)}원</div>` : ''}
+                 ${card.notes ? `<div style="font-size:9px;color:#fbbf24;margin-top:3px">📝 ${card.notes.slice(0,80)}</div>` : ''}`;
+            // 월납 표시 갱신 (카드 후)
+            document.getElementById('rental-base-monthly').innerHTML = tier === 0
+              ? fmt(baseMonthly)+'원 <span style="color:#fca5a5;font-size:10px">(카드 실적 부족)</span>'
+              : `<s style="color:#94a3b8">${fmt(baseMonthly)}원</s> → <b style="color:#86efac">${fmt(finalMonthly)}원</b> <span style="color:#fbbf24;font-size:10px">(카드 -${fmt(total)})</span>`;
+          };
+          sel.addEventListener('change', () => {
+            // 카드 선택 시 자동 실적 채우기 (1구간 min)
+            const card = cards.find(x => String(x.id) === sel.value);
+            if (card && !spendInp.value) spendInp.value = card.tier1_min || 300000;
+            updateDiscount();
+          });
+          spendInp.addEventListener('input', updateDiscount);
+        })
+        .catch(() => {
+          const loading = document.getElementById('rental-card-loading');
+          if (loading) loading.textContent = '· 로드 실패';
+        });
+    } else {
+      const loading = document.getElementById('rental-card-loading');
+      const empty = document.getElementById('rental-card-empty');
+      if (loading) loading.style.display = 'none';
+      if (empty) empty.style.display = 'block';
+    }
     // V5 인센티브 미리보기 — 가운데(form-wrap) 영역으로 이동
     const incArea = document.getElementById('rental-incentive-area');
     if (incArea) incArea.innerHTML = incentiveHTML;
