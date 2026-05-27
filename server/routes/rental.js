@@ -1653,7 +1653,8 @@ router.get('/partner-cards', optionalAuth, async (req, res) => {
     const { brand, company_id, active } = req.query;
     let q = supabase.from('rental_partner_cards')
       .select('*, company:rental_companies(id, name, category_group)')
-      .order('brand').order('display_rank', { ascending: true, nullsFirst: false }).order('card_issuer');
+      .order('brand', { ascending: true })
+      .order('card_issuer', { ascending: true });
     if (brand) {
       // brand alias 매핑 — 회사명 ↔ 카드 brand 차이 흡수
       const aliases = [brand];
