@@ -1654,7 +1654,20 @@ router.get('/partner-cards', optionalAuth, async (req, res) => {
     let q = supabase.from('rental_partner_cards')
       .select('*, company:rental_companies(id, name, category_group)')
       .order('brand').order('display_rank', { ascending: true, nullsFirst: false }).order('card_issuer');
-    if (brand) q = q.eq('brand', brand);
+    if (brand) {
+      // brand alias 매핑 — 회사명 ↔ 카드 brand 차이 흡수
+      const aliases = [brand];
+      const ALIAS = {
+        'LG전자': ['LG전자구독'],
+        'LG전자구독': ['LG전자'],
+        'LG헬로비전': ['LG헬로렌탈'],
+        'LG헬로렌탈': ['LG헬로비전'],
+        '현대유버스': ['현대큐밍'],   // 양쪽 다 현대 계열
+        '삼성전자': ['삼성전자(BS ON)'],
+      };
+      if (ALIAS[brand]) aliases.push(...ALIAS[brand]);
+      q = q.in('brand', aliases);
+    }
     if (company_id) q = q.eq('company_id', company_id);
     if (active === '1' || active === 'true') q = q.eq('is_active', true);
     const { data, error } = await q.limit(500);
