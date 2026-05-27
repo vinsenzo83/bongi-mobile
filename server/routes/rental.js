@@ -1650,11 +1650,12 @@ router.post('/import/commit', authenticateJWT, async (req, res) => {
 // GET /api/rental/partner-cards?brand=&company_id=&active=1
 router.get('/partner-cards', optionalAuth, async (req, res) => {
   try {
-    const { brand, company_id, active } = req.query;
+    const { brand, company_id, active, category } = req.query;
     let q = supabase.from('rental_partner_cards')
       .select('*')
       .order('brand', { ascending: true })
       .order('card_issuer', { ascending: true });
+    if (category) q = q.contains('categories', [category]);
     if (brand) {
       // brand alias 매핑 — 회사명 ↔ 카드 brand 차이 흡수
       const aliases = [brand];
@@ -1691,7 +1692,7 @@ router.get('/partner-cards/brands', optionalAuth, async (req, res) => {
 // POST /api/rental/partner-cards (admin)
 router.post('/partner-cards', authenticateJWT, async (req, res) => {
   try {
-    const allowed = ['brand','brand_id','company_id','card_issuer','card_name','annual_fee','max_discount','discount_months','has_promo','tier1_min','tier1_base','tier1_promo','tier1_total','tier2_min','tier2_base','tier2_promo','tier2_total','tier3_min','tier3_base','tier3_promo','tier3_total','notes','card_url','is_active','display_rank'];
+    const allowed = ['brand','brand_id','company_id','card_issuer','card_name','annual_fee','max_discount','discount_months','has_promo','tier1_min','tier1_base','tier1_promo','tier1_total','tier2_min','tier2_base','tier2_promo','tier2_total','tier3_min','tier3_base','tier3_promo','tier3_total','notes','card_url','is_active','display_rank','categories'];
     const insert = {};
     for (const k of allowed) if (k in (req.body || {})) insert[k] = req.body[k];
     if (!insert.brand || !insert.card_issuer || !insert.card_name) return res.status(400).json({ error:'brand·card_issuer·card_name 필수' });
@@ -1704,7 +1705,7 @@ router.post('/partner-cards', authenticateJWT, async (req, res) => {
 // PATCH /api/rental/partner-cards/:id (admin)
 router.patch('/partner-cards/:id', authenticateJWT, async (req, res) => {
   try {
-    const allowed = ['brand','brand_id','company_id','card_issuer','card_name','annual_fee','max_discount','discount_months','has_promo','tier1_min','tier1_base','tier1_promo','tier1_total','tier2_min','tier2_base','tier2_promo','tier2_total','tier3_min','tier3_base','tier3_promo','tier3_total','notes','card_url','is_active','display_rank'];
+    const allowed = ['brand','brand_id','company_id','card_issuer','card_name','annual_fee','max_discount','discount_months','has_promo','tier1_min','tier1_base','tier1_promo','tier1_total','tier2_min','tier2_base','tier2_promo','tier2_total','tier3_min','tier3_base','tier3_promo','tier3_total','notes','card_url','is_active','display_rank','categories'];
     const update = {};
     for (const k of allowed) if (k in (req.body || {})) update[k] = req.body[k];
     update.updated_at = new Date().toISOString();
