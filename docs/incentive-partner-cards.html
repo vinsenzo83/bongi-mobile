@@ -324,8 +324,24 @@ async function deleteCard() {
 document.getElementById('card-modal').addEventListener('click', e => { if (e.target.id === 'card-modal') closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('card-modal').classList.contains('open')) closeModal(); });
 
-document.addEventListener('DOMContentLoaded', loadCards);
-if (document.readyState !== 'loading') loadCards();
+// URL ?brand=... 자동 필터
+async function init() {
+  await loadCards();
+  const p = new URLSearchParams(location.search);
+  const brand = p.get('brand');
+  if (brand) {
+    // brand select에 값이 있으면 선택, 없으면 search로 fallback
+    const sel = document.getElementById('ft-brand');
+    if ([...sel.options].some(o => o.value === brand)) {
+      sel.value = brand;
+    } else {
+      document.getElementById('ft-search').value = brand;
+    }
+    render();
+  }
+}
+document.addEventListener('DOMContentLoaded', init);
+if (document.readyState !== 'loading') init();
 </script>
 
 </body>
