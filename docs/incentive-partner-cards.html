@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>봉이 TM CRM — 제휴카드사 관리</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="/docs/_security.js" defer></script>
+<script src="/docs/_shared/incentive-auth.js" defer></script>
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--line:#334155;--text:#e2e8f0;--muted:#94a3b8;--primary:#3617ce;--accent:#fbbf24;--green:#22c55e;--red:#dc2626;--blue:#3b82f6;--purple:#a78bfa}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Pretendard,sans-serif;font-size:13px;padding:12px}
+h1{font-size:17px;font-weight:900;color:#f8fafc;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.subtitle{font-size:11px;color:var(--muted);margin-bottom:10px}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.toolbar input,.toolbar select{background:#0f172a;border:1px solid var(--line);color:var(--text);padding:5px 9px;border-radius:5px;font-size:11.5px;font-family:inherit}
+.toolbar input{min-width:200px}
+.btn{background:#334155;color:#cbd5e1;border:1px solid var(--line);padding:5px 11px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn:hover{background:#475569}
+.btn-primary{background:#0891b2;color:#fff;border-color:#0891b2}
+.btn-success{background:#16a34a;color:#fff;border-color:#16a34a}
+.btn-danger{background:#dc2626;color:#fff;border-color:#dc2626}
+.brand-section{margin-bottom:14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.brand-hdr{padding:9px 14px;background:#0f172a;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.brand-hdr h2{font-size:13px;color:var(--accent);font-weight:800}
+.brand-hdr .meta{font-size:10.5px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#0f172a;color:var(--muted);padding:6px 8px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.04em;border-bottom:1px solid var(--line)}
+td{padding:6px 8px;border-bottom:1px solid var(--line);color:#cbd5e1;vertical-align:middle}
+tr:hover td{background:rgba(8,145,178,0.05)}
+.card-name{font-weight:700;color:#f1f5f9}
+.issuer-chip{font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(59,130,246,0.15);color:#93c5fd}
+.promo-yes{background:rgba(251,191,36,0.18);color:var(--accent);font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:3px}
+.promo-no{color:#64748b;font-size:9.5px}
+.amount{font-family:'SF Mono',Monaco,monospace;text-align:right;color:#86efac;font-weight:700}
+.tier-cell{font-family:'SF Mono',Monaco,monospace;text-align:right;font-size:10.5px}
+.tier-cell .base{color:#cbd5e1}
+.tier-cell .promo{color:#fbbf24;font-size:9.5px}
+.tier-cell .total{color:#86efac;font-weight:700}
+.action-cell{display:flex;gap:4px;justify-content:flex-end}
+.empty{padding:60px;text-align:center;color:#64748b}
+.card-url{color:#60a5fa;font-size:10px;text-decoration:none}
+.card-url:hover{text-decoration:underline}
+/* 모달 */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:100;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto}
+.modal-bg.open{display:flex}
+.modal{background:var(--panel);border:1.5px solid var(--accent);border-radius:10px;width:100%;max-width:720px;padding:18px 22px}
+.modal h3{font-size:14px;color:var(--accent);margin-bottom:14px}
+.modal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.modal label{display:block;font-size:10.5px;color:var(--muted);margin-bottom:3px;margin-top:6px}
+.modal input,.modal select,.modal textarea{width:100%;background:#0f172a;border:1px solid var(--line);color:var(--text);padding:6px 9px;border-radius:5px;font-size:11.5px;font-family:inherit}
+.modal textarea{min-height:50px;resize:vertical}
+.modal-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.tier-grp{background:#0f172a;border:1px solid var(--line);border-radius:5px;padding:8px;margin-top:6px}
+.tier-grp .title{font-size:10px;color:var(--accent);font-weight:800;margin-bottom:5px}
+</style>
+</head>
+<body>
+
+<h1>🎴 제휴카드사 관리 <span style="font-size:11px;color:var(--muted);font-weight:400">· 가전렌탈 카드 할인 마스터</span></h1>
+<div class="subtitle">11 브랜드 · 카드사별 구간 실적·할인·프로모션 통합 관리. 가전 영업 시 고객 안내용.</div>
+
+<div class="toolbar">
+  <input type="text" id="ft-search" placeholder="🔍 카드명·카드사·메모">
+  <select id="ft-brand"><option value="">전체 브랜드</option></select>
+  <select id="ft-active">
+    <option value="1">활성만</option>
+    <option value="">전체 (비활성 포함)</option>
+  </select>
+  <button class="btn" onclick="loadCards()">🔄 새로고침</button>
+  <button class="btn btn-primary" onclick="openAddModal()">+ 신규 카드</button>
+  <span style="margin-left:auto;font-size:11px;color:var(--muted)"><span id="total-count">0</span>건 (브랜드 <span id="brand-count">0</span>)</span>
+</div>
+
+<div id="cards-container"></div>
+
+<!-- 편집/추가 모달 -->
+<div class="modal-bg" id="card-modal">
+  <div class="modal">
+    <h3 id="cm-title">🎴 신규 카드 등록</h3>
+    <input type="hidden" id="cm-id">
+    <div class="grid3">
+      <div><label>브랜드 *</label><input id="cm-brand" placeholder="LG전자구독·코웨이 등"></div>
+      <div><label>카드사 *</label><input id="cm-issuer" placeholder="신한·롯데·국민…"></div>
+      <div><label>display_rank</label><input id="cm-rank" type="number"></div>
+    </div>
+    <label>카드 이름 *</label>
+    <input id="cm-name" placeholder="LG전자 The 구독케어 신한카드">
+    <div class="grid3">
+      <div><label>연회비 (국내/해외)</label><input id="cm-fee" placeholder="20000"></div>
+      <div><label>최대 할인</label><input id="cm-max" type="number"></div>
+      <div><label>할인 기간(개월)</label><input id="cm-months" type="number"></div>
+    </div>
+    <label><input type="checkbox" id="cm-promo"> 🏷️ 프로모션 진행 중</label>
+
+    <div class="tier-grp">
+      <div class="title">1 구간</div>
+      <div class="grid3">
+        <div><label>최소 실적</label><input id="cm-t1-min" type="number"></div>
+        <div><label>기본 할인</label><input id="cm-t1-base" type="number"></div>
+        <div><label>프로모 할인</label><input id="cm-t1-promo" type="number"></div>
+      </div>
+    </div>
+    <div class="tier-grp">
+      <div class="title">2 구간</div>
+      <div class="grid3">
+        <div><label>최소 실적</label><input id="cm-t2-min" type="number"></div>
+        <div><label>기본 할인</label><input id="cm-t2-base" type="number"></div>
+        <div><label>프로모 할인</label><input id="cm-t2-promo" type="number"></div>
+      </div>
+    </div>
+    <div class="tier-grp">
+      <div class="title">3 구간</div>
+      <div class="grid3">
+        <div><label>최소 실적</label><input id="cm-t3-min" type="number"></div>
+        <div><label>기본 할인</label><input id="cm-t3-base" type="number"></div>
+        <div><label>프로모 할인</label><input id="cm-t3-promo" type="number"></div>
+      </div>
+    </div>
+
+    <label>비고</label>
+    <textarea id="cm-notes" placeholder="조건·기간 등"></textarea>
+    <label>카드 정보 URL</label>
+    <input id="cm-url" type="url" placeholder="https://...">
+    <label><input type="checkbox" id="cm-active" checked> ✅ 활성</label>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="cm-delete" onclick="deleteCard()" style="margin-right:auto;display:none">🗑 삭제</button>
+      <button class="btn" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary" onclick="submitCard()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api/rental';
+function tk() { return localStorage.getItem('incentive-auth-token-v1'); }
+async function apiFetch(path, opts={}) {
+  const res = await fetch(API + path, { ...opts, headers: { 'Content-Type':'application/json', Authorization:'Bearer '+tk(), ...(opts.headers||{}) } });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || res.status); }
+  return res.json();
+}
+const fmt = n => n == null ? '' : Number(n).toLocaleString('ko-KR');
+const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+let _cards = [];
+async function loadCards() {
+  try {
+    const active = document.getElementById('ft-active').value;
+    const url = '/partner-cards' + (active ? '?active=1' : '');
+    const r = await apiFetch(url);
+    _cards = r.cards || [];
+    // 브랜드 select 채우기 (없으면)
+    const brSel = document.getElementById('ft-brand');
+    if (brSel.options.length <= 1) {
+      const brands = [...new Set(_cards.map(c => c.brand))].sort();
+      brSel.innerHTML = '<option value="">전체 브랜드</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+    }
+    render();
+  } catch(e) {
+    document.getElementById('cards-container').innerHTML = `<div class="empty" style="color:#fca5a5">로드 실패: ${e.message}</div>`;
+  }
+}
+function render() {
+  const search = document.getElementById('ft-search').value.trim().toLowerCase();
+  const brandFilter = document.getElementById('ft-brand').value;
+  let list = _cards;
+  if (brandFilter) list = list.filter(c => c.brand === brandFilter);
+  if (search) list = list.filter(c =>
+    (c.card_name||'').toLowerCase().includes(search) ||
+    (c.card_issuer||'').toLowerCase().includes(search) ||
+    (c.notes||'').toLowerCase().includes(search)
+  );
+  // 브랜드별 그룹화
+  const byBrand = {};
+  list.forEach(c => { if (!byBrand[c.brand]) byBrand[c.brand] = []; byBrand[c.brand].push(c); });
+  const brands = Object.keys(byBrand).sort();
+  document.getElementById('total-count').textContent = list.length;
+  document.getElementById('brand-count').textContent = brands.length;
+  if (!list.length) {
+    document.getElementById('cards-container').innerHTML = '<div class="empty">조건에 맞는 카드 없음</div>';
+    return;
+  }
+  document.getElementById('cards-container').innerHTML = brands.map(b => {
+    const cards = byBrand[b];
+    const co = cards[0]?.company;
+    const coLabel = co ? `🏢 ${co.name}` : '(회사 미매칭)';
+    return `<div class="brand-section">
+      <div class="brand-hdr">
+        <h2>${esc(b)} <span style="font-size:10.5px;color:#94a3b8;font-weight:500">· ${cards.length}건 카드 · ${coLabel}</span></h2>
+      </div>
+      <table>
+        <thead><tr>
+          <th>카드사</th><th style="min-width:200px">카드 이름</th>
+          <th style="width:80px;text-align:right">연회비</th>
+          <th style="width:80px;text-align:right">최대할인</th>
+          <th style="width:65px">기간</th>
+          <th style="width:55px">프로모</th>
+          <th style="text-align:right">1구간</th>
+          <th style="text-align:right">2구간</th>
+          <th style="text-align:right">3구간</th>
+          <th>비고</th>
+          <th style="width:80px"></th>
+        </tr></thead>
+        <tbody>${cards.map(renderRow).join('')}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+function tierCell(t) {
+  if (!t.min) return '<td class="tier-cell" style="color:#64748b">-</td>';
+  return `<td class="tier-cell">
+    <div style="color:#94a3b8;font-size:9.5px">≥${fmt(t.min)}</div>
+    <div class="base">${fmt(t.base)||'-'}</div>
+    ${t.promo ? `<div class="promo">+${fmt(t.promo)}p</div>` : ''}
+    ${t.total ? `<div class="total">총 ${fmt(t.total)}</div>` : ''}
+  </td>`;
+}
+function renderRow(c) {
+  return `<tr>
+    <td><span class="issuer-chip">${esc(c.card_issuer)}</span></td>
+    <td><div class="card-name">${esc(c.card_name)}</div>${c.card_url ? `<a class="card-url" href="${esc(c.card_url)}" target="_blank">🔗 카드정보</a>` : ''}</td>
+    <td class="amount">${c.annual_fee ? fmt(c.annual_fee.replace(/\D/g,'')) + '원' : '-'}</td>
+    <td class="amount">${fmt(c.max_discount)}원</td>
+    <td style="text-align:center">${c.discount_months ? c.discount_months + 'M' : '-'}</td>
+    <td style="text-align:center">${c.has_promo ? '<span class="promo-yes">PROMO</span>' : '<span class="promo-no">-</span>'}</td>
+    ${tierCell({min:c.tier1_min,base:c.tier1_base,promo:c.tier1_promo,total:c.tier1_total})}
+    ${tierCell({min:c.tier2_min,base:c.tier2_base,promo:c.tier2_promo,total:c.tier2_total})}
+    ${tierCell({min:c.tier3_min,base:c.tier3_base,promo:c.tier3_promo,total:c.tier3_total})}
+    <td style="font-size:10px;color:#94a3b8;max-width:220px;white-space:pre-wrap">${esc((c.notes||'').slice(0,80))}</td>
+    <td class="action-cell">
+      <button class="btn" style="padding:3px 8px;font-size:10px" onclick='openEditModal(${JSON.stringify(c).replace(/'/g,"\\'")})'>✏️</button>
+    </td>
+  </tr>`;
+}
+['ft-search','ft-brand','ft-active'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => { if (id==='ft-active') loadCards(); else render(); });
+});
+document.getElementById('ft-search').addEventListener('input', render);
+
+// ───────── 모달 (추가·편집) ─────────
+function openAddModal() {
+  document.getElementById('cm-title').textContent = '🎴 신규 카드 등록';
+  ['cm-id','cm-brand','cm-issuer','cm-name','cm-fee','cm-max','cm-months','cm-rank','cm-t1-min','cm-t1-base','cm-t1-promo','cm-t2-min','cm-t2-base','cm-t2-promo','cm-t3-min','cm-t3-base','cm-t3-promo','cm-notes','cm-url'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('cm-promo').checked = false;
+  document.getElementById('cm-active').checked = true;
+  document.getElementById('cm-delete').style.display = 'none';
+  document.getElementById('card-modal').classList.add('open');
+}
+function openEditModal(c) {
+  document.getElementById('cm-title').textContent = '✏️ 카드 편집 — ' + c.brand;
+  document.getElementById('cm-id').value = c.id;
+  document.getElementById('cm-brand').value = c.brand || '';
+  document.getElementById('cm-issuer').value = c.card_issuer || '';
+  document.getElementById('cm-name').value = c.card_name || '';
+  document.getElementById('cm-fee').value = c.annual_fee || '';
+  document.getElementById('cm-max').value = c.max_discount || '';
+  document.getElementById('cm-months').value = c.discount_months || '';
+  document.getElementById('cm-rank').value = c.display_rank || '';
+  document.getElementById('cm-promo').checked = !!c.has_promo;
+  document.getElementById('cm-t1-min').value = c.tier1_min || '';
+  document.getElementById('cm-t1-base').value = c.tier1_base || '';
+  document.getElementById('cm-t1-promo').value = c.tier1_promo || '';
+  document.getElementById('cm-t2-min').value = c.tier2_min || '';
+  document.getElementById('cm-t2-base').value = c.tier2_base || '';
+  document.getElementById('cm-t2-promo').value = c.tier2_promo || '';
+  document.getElementById('cm-t3-min').value = c.tier3_min || '';
+  document.getElementById('cm-t3-base').value = c.tier3_base || '';
+  document.getElementById('cm-t3-promo').value = c.tier3_promo || '';
+  document.getElementById('cm-notes').value = c.notes || '';
+  document.getElementById('cm-url').value = c.card_url || '';
+  document.getElementById('cm-active').checked = c.is_active !== false;
+  document.getElementById('cm-delete').style.display = '';
+  document.getElementById('card-modal').classList.add('open');
+}
+function closeModal() { document.getElementById('card-modal').classList.remove('open'); }
+async function submitCard() {
+  const id = document.getElementById('cm-id').value;
+  const num = v => v ? Number(v) : null;
+  const body = {
+    brand: document.getElementById('cm-brand').value.trim(),
+    card_issuer: document.getElementById('cm-issuer').value.trim(),
+    card_name: document.getElementById('cm-name').value.trim(),
+    annual_fee: document.getElementById('cm-fee').value.trim() || null,
+    max_discount: num(document.getElementById('cm-max').value),
+    discount_months: num(document.getElementById('cm-months').value),
+    display_rank: num(document.getElementById('cm-rank').value),
+    has_promo: document.getElementById('cm-promo').checked,
+    tier1_min: num(document.getElementById('cm-t1-min').value),
+    tier1_base: num(document.getElementById('cm-t1-base').value),
+    tier1_promo: num(document.getElementById('cm-t1-promo').value),
+    tier1_total: (num(document.getElementById('cm-t1-base').value)||0) + (num(document.getElementById('cm-t1-promo').value)||0) || null,
+    tier2_min: num(document.getElementById('cm-t2-min').value),
+    tier2_base: num(document.getElementById('cm-t2-base').value),
+    tier2_promo: num(document.getElementById('cm-t2-promo').value),
+    tier2_total: (num(document.getElementById('cm-t2-base').value)||0) + (num(document.getElementById('cm-t2-promo').value)||0) || null,
+    tier3_min: num(document.getElementById('cm-t3-min').value),
+    tier3_base: num(document.getElementById('cm-t3-base').value),
+    tier3_promo: num(document.getElementById('cm-t3-promo').value),
+    tier3_total: (num(document.getElementById('cm-t3-base').value)||0) + (num(document.getElementById('cm-t3-promo').value)||0) || null,
+    notes: document.getElementById('cm-notes').value.trim() || null,
+    card_url: document.getElementById('cm-url').value.trim() || null,
+    is_active: document.getElementById('cm-active').checked,
+  };
+  if (!body.brand || !body.card_issuer || !body.card_name) { alert('브랜드·카드사·카드이름 필수'); return; }
+  try {
+    if (id) await apiFetch('/partner-cards/' + id, { method:'PATCH', body: JSON.stringify(body) });
+    else await apiFetch('/partner-cards', { method:'POST', body: JSON.stringify(body) });
+    closeModal();
+    await loadCards();
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+async function deleteCard() {
+  const id = document.getElementById('cm-id').value;
+  if (!id || !confirm('이 카드를 삭제하시겠습니까?')) return;
+  try {
+    await apiFetch('/partner-cards/' + id, { method:'DELETE' });
+    closeModal();
+    await loadCards();
+  } catch(e) { alert('삭제 실패: ' + e.message); }
+}
+document.getElementById('card-modal').addEventListener('click', e => { if (e.target.id === 'card-modal') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('card-modal').classList.contains('open')) closeModal(); });
+
+document.addEventListener('DOMContentLoaded', loadCards);
+if (document.readyState !== 'loading') loadCards();
+</script>
+
+</body>
+</html>
