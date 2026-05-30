@@ -118,7 +118,11 @@ git reset --hard <last-known-good>        # ⚠️ 강제 리셋 (협업 시 위
   - 매주 일요일 KST 05:00 ephemeral postgres에 restore + row count 비교
   - 5% 이상 diff 시 GitHub Issue 자동 생성 (label: backup-failure, priority:high)
 - [ ] PITR 복구 시뮬레이션 (분기 1회) — 임의 시점 복구 → 데이터 정합성 검증
-- [ ] 사고 대응 runbook 별도 문서 (`docs/runbooks/incident-*.md`)
+- [x] ~~사고 대응 runbook 별도 문서~~ — **R17 완료** (`docs/runbooks/`)
+  - README.md (시나리오별 진입점)
+  - P0-live-down.md (5분 회복 목표)
+  - P1-data-leak.md (PIPA 통보 의무 포함)
+  - P2-db-migration-failure.md (백업 검증 fail 대응 포함)
 - [ ] **2026-06-10 unused index 재측정** — `UNUSED_INDEX_BASELINE_2026_05_30.md` 비교 → 진짜 dead 인덱스만 DROP
 
 ### Long-term (분기)
