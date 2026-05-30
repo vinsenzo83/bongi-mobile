@@ -12,6 +12,7 @@
 | **DB 마이그레이션 실패 / 트리거·정책 깨짐** | **P2** | [P2-db-migration-failure.md](./P2-db-migration-failure.md) | **15분** |
 | 백업 무결성 검증 fail (GitHub Issue) | P2 | [P2-db-migration-failure.md](./P2-db-migration-failure.md) §6 | 1시간 |
 | Sentry alert 폭증 | P1/P2 | 메시지 패턴 확인 후 분기 | 30분 |
+| **데이터 손실 — rollback 불가** (DROP/TRUNCATE 실수 등) | **P0/P2** | [PITR-recovery.md](./PITR-recovery.md) | **15~60분** |
 
 ## 공통 원칙
 

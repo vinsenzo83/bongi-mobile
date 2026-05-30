@@ -117,7 +117,10 @@ git reset --hard <last-known-good>        # ⚠️ 강제 리셋 (협업 시 위
 - [x] ~~**백업 무결성 검증** 워크플로~~ — **R16 완료** (`verify-backup.yml`)
   - 매주 일요일 KST 05:00 ephemeral postgres에 restore + row count 비교
   - 5% 이상 diff 시 GitHub Issue 자동 생성 (label: backup-failure, priority:high)
-- [ ] PITR 복구 시뮬레이션 (분기 1회) — 임의 시점 복구 → 데이터 정합성 검증
+- [x] ~~PITR 복구 시뮬레이션 (분기 1회)~~ — **R20 plan 완료** (`docs/runbooks/PITR-recovery.md`)
+  - PITR runbook (옵션 A 라이브·옵션 B 별도 프로젝트)
+  - 분기 시뮬레이션 plan (다음 실행: **2026-08-15** 권장)
+  - 자주 발생하는 함정 6종
 - [x] ~~사고 대응 runbook 별도 문서~~ — **R17 완료** (`docs/runbooks/`)
   - README.md (시나리오별 진입점)
   - P0-live-down.md (5분 회복 목표)
