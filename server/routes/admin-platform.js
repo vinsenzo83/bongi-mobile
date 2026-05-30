@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { supabase } from '../db/supabase.js';
-import { syncMemberData, syncAllMembers } from '../services/member-sync.js';
+import { syncMemberData as _syncMemberData, syncAllMembers } from '../services/member-sync.js';
 
 const router = Router();
 
@@ -553,7 +553,7 @@ router.get('/subsidy', async (req, res) => {
     let query = supabase.from('bongi_subsidy_data').select('*', { count: 'exact' }).order('model').order('carrier').range(0, 1999);
     if (model) query = query.ilike('model', `%${model}%`);
     if (carrier) query = query.eq('carrier', carrier);
-    const { data, error, count } = await query;
+    const { data, error, _count } = await query;
     if (error) throw error;
     // 마지막 업데이트 시간
     const { data: latest } = await supabase.from('bongi_subsidy_data').select('updated_date').order('created_at', { ascending: false }).limit(1);
@@ -1325,7 +1325,7 @@ router.get('/dev-specs/:page', async (req, res) => {
   try {
     const { data } = await supabase.from('bongi_dev_specs').select('*').eq('page', req.params.page).maybeSingle();
     res.json({ spec: data || null });
-  } catch (e) {
+  } catch (_e) {
     res.json({ spec: null });
   }
 });

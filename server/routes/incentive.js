@@ -150,7 +150,7 @@ router.patch('/products/:id', authenticateJWT, async (req, res) => {
         .eq('product_id', req.params.id)
         .is('changed_by_user_id', null)
         .gt('changed_at', new Date(Date.now() - 5000).toISOString());
-    } catch(e) {}
+    } catch(_e) {}
     res.json({ product: data });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
@@ -1010,7 +1010,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
         return res.status(400).json({ error: '상품 변경 사유 필수 (예: 고객 요구·시공 불가·재고 없음·기타)' });
       }
       // 새 상품 정보 조회 + 옛 상품 정보 (자동 메모 텍스트용)
-      const [{ data: newProd, error: newProdErr }, { data: oldProd }] = await Promise.all([
+      const [{ data: newProd, error: newProdErr }, { data: _oldProd }] = await Promise.all([
         supabase.from('incentive_products')
           .select('id, carrier, speed, tv_tier, payback, rebate, point_weight, is_premium')
           .eq('id', product_id).single(),
@@ -1400,7 +1400,7 @@ router.patch('/rules/:id', authenticateJWT, async (req, res) => {
         .eq('rule_id', req.params.id)
         .is('changed_by_user_id', null)
         .gt('changed_at', new Date(Date.now() - 5000).toISOString());
-    } catch(e) {}
+    } catch(_e) {}
     res.json({ rules: data });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
@@ -3046,7 +3046,7 @@ router.get('/customers/unified', authenticateJWT, async (req, res) => {
     if (!me) return res.status(403).json({ error: '권한 없음' });
     // 🔒 contract는 콜DB 조회 불필요 (계약 처리 페이지에서 sales만 봄)
     if (me.role === 'contract') return res.status(403).json({ error: 'contract는 콜DB 조회 권한 없음 — 계약 처리 페이지 사용' });
-    const { status, channel, grade, search, agent_id, limit = 50, offset = 0 } = req.query;
+    const { status, _channel, grade, search, agent_id, limit = 50, offset = 0 } = req.query;
     let q = supabase.from('vw_unified_customer').select('*', { count: 'exact' });
     if (status) q = q.eq('call_status', status);
     if (grade)  q = q.eq('priority_score', grade);

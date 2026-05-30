@@ -2,7 +2,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { TOOLS, executeTool } from './chat-tools.js';
 import { getSession, saveSession, persistMessage, updateSessionTitle } from './chat-session.js';
-import { getCachedResponse, setCachedResponse, isCacheable } from './cache.js';
+import { getCachedResponse, setCachedResponse, isCacheable as _isCacheable } from './cache.js';
 
 const client = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })

@@ -33,7 +33,7 @@ export async function authenticateJWT(req, res, next) {
     };
 
     next();
-  } catch (e) {
+  } catch (_e) {
     return res.status(401).json({ error: '인증 처리 실패' });
   }
 }

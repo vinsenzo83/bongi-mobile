@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { products, categories } from '../data/products.js';
+import { products, categories as _categories } from '../data/products.js';
 
 const client = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })

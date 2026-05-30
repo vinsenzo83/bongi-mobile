@@ -32,7 +32,7 @@ router.get('/agents', (req, res) => {
         }
       });
     }
-  } catch (e) { /* no teams */ }
+  } catch (_e) { /* no teams */ }
 
   // 2. 태스크 현황 (tasks 디렉토리에서)
   const tasks = [];
@@ -59,7 +59,7 @@ router.get('/agents', (req, res) => {
         } catch {}
       });
     }
-  } catch (e) { /* no tasks */ }
+  } catch (_e) { /* no tasks */ }
 
   // 3. Git 상태
   const git = {};

@@ -64,10 +64,10 @@ try {
 // ─── 신규 데이터 (2026-04-01 엑셀 기반) ───
 
 // 모바일 요금제 상세 (OTT혜택, 테더링 등 보강)
-let mobilePlansEnriched = [];
+let _mobilePlansEnriched = [];
 try {
   const enriched = JSON.parse(readFileSync(join(providerDir, 'mobile_plans_enriched.json'), 'utf8'));
-  mobilePlansEnriched = enriched.data || [];
+  _mobilePlansEnriched = enriched.data || [];
 } catch { /* 파일 없으면 빈 배열 */ }
 
 // 무선 제휴카드 (SKT 9 + KT 17 + LG 7 = 33개)
@@ -84,15 +84,15 @@ try {
 } catch { /* 파일 없으면 빈 객체 */ }
 
 // 휴대폰 시세표 (부가서비스 포함)
-let devicePriceTable = {};
+let _devicePriceTable = {};
 try {
-  devicePriceTable = JSON.parse(readFileSync(join(providerDir, 'device_price_table.json'), 'utf8'));
+  _devicePriceTable = JSON.parse(readFileSync(join(providerDir, 'device_price_table.json'), 'utf8'));
 } catch { /* 파일 없으면 빈 객체 */ }
 
 // AI 운영 가이드 (인터넷TV→CRM, 휴대폰→매장유도, 중고폰→트레딧)
-let aiGuide = [];
+let _aiGuide = [];
 try {
-  aiGuide = JSON.parse(readFileSync(join(providerDir, 'ai_operation_guide.json'), 'utf8'));
+  _aiGuide = JSON.parse(readFileSync(join(providerDir, 'ai_operation_guide.json'), 'utf8'));
 } catch { /* 파일 없으면 빈 배열 */ }
 
 // 무선/유선 가입 가이드
@@ -114,15 +114,15 @@ try {
 let storesUpdated = {};
 try {
   storesUpdated = JSON.parse(readFileSync(join(providerDir, 'stores_updated.json'), 'utf8'));
-} catch (e) {
+} catch (_e) {
   // 폴백: stores.js 사용 (어드민 운영 무관 — 옛 챗봇용)
   storesUpdated = { homepage: 'https://bong2mobile.com', stores: stores };
 }
 
 // 유선 3사 보강 데이터 (결합할인 상세, 장기혜택 등)
-let wiredEnriched = {};
+let _wiredEnriched = {};
 try {
-  wiredEnriched = {
+  _wiredEnriched = {
     skt: JSON.parse(readFileSync(join(providerDir, 'skt_wired_enriched.json'), 'utf8')),
     kt: JSON.parse(readFileSync(join(providerDir, 'kt_wired_enriched.json'), 'utf8')),
     lg: JSON.parse(readFileSync(join(providerDir, 'lgu_wired_enriched.json'), 'utf8')),
@@ -130,18 +130,18 @@ try {
 } catch {}
 
 // 렌트리 상품 (카테고리별)
-let rentreProducts = {};
+let _rentreProducts = {};
 try {
-  rentreProducts = JSON.parse(readFileSync(join(providerDir, 'rentre_all_products.json'), 'utf8'));
+  _rentreProducts = JSON.parse(readFileSync(join(providerDir, 'rentre_all_products.json'), 'utf8'));
 } catch {}
-let rentreCards = [];
+let _rentreCards = [];
 try {
   const rc = JSON.parse(readFileSync(join(providerDir, 'rentre_affiliate_cards.json'), 'utf8'));
-  rentreCards = rc.data || [];
+  _rentreCards = rc.data || [];
 } catch {}
 
-const mobileCount = Object.values(mobilePrices.carriers || {}).reduce((s, c) => s + (c.plans?.length || 0), 0);
-const rentalCount = Object.values(rentalProducts).reduce((s, arr) => s + arr.length, 0);
+const _mobileCount = Object.values(mobilePrices.carriers || {}).reduce((s, c) => s + (c.plans?.length || 0), 0);
+const _rentalCount = Object.values(rentalProducts).reduce((s, arr) => s + arr.length, 0);
 // 시작 로그 제거 — 어드민 운영과 무관한 챗봇용 데이터 (count 변수는 다른 곳에서 사용 가능성 유지)
 
 // Claude Tool Use 도구 정의
@@ -1056,7 +1056,7 @@ function checkStore({ region }) {
   };
 }
 
-function estimateTradein({ brand, model, condition, storage }) {
+function estimateTradein({ brand, model, _condition, storage }) {
   if (!model) return { error: '모델명을 알려주세요 (예: 아이폰 16 프로, 갤럭시 S25 울트라)', _tool: 'estimate_tradein' };
 
   const query = model.toLowerCase()
@@ -1154,7 +1154,7 @@ const RENTAL_CATEGORY_NAMES = {
   'dresser': '의류관리기',
 };
 
-async function searchRental({ category, brand, max_price }) {
+async function searchRental({ category, brand, _max_price }) {
   // 어드민 데이터(rental_tickets.json) 기반
   let items = [...rentalTickets];
 
@@ -1419,7 +1419,7 @@ async function setAlarm({ alarm_type, title, target_date, memo }, context = {}) 
         target_date,
       },
     };
-  } catch (err) {
+  } catch (_err) {
     return { success: false, message: '알람 등록에 실패했어요. 잠시 후 다시 시도해주세요.' };
   }
 }

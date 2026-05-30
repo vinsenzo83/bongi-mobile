@@ -12,7 +12,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { mkdirSync, writeFileSync, readdirSync, readFileSync, existsSync } from 'fs';
+import { mkdirSync, writeFileSync, readdirSync, readFileSync, existsSync as _existsSync } from 'fs';
 import { createHash } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

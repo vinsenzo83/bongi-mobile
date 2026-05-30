@@ -88,7 +88,7 @@ test.describe('4 roles 사이드바 메뉴 SSOT 검증', () => {
     );
     const dbActiveSlugs = dbMenus.filter(m => m.active).map(m => m.slug);
 
-    const htmlOnly = htmlSlugs.filter(s => !dbActiveSlugs.includes(s));
+    const _htmlOnly = htmlSlugs.filter(s => !dbActiveSlugs.includes(s));
     const dbOnly = dbActiveSlugs.filter(s => !htmlSlugs.includes(s));
 
     expect(dbOnly, 'DB에는 있는데 HTML 사이드바에 button 없음 (4곳 동기화 함정)').toEqual([]);

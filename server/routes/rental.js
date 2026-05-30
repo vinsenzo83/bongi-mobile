@@ -657,7 +657,7 @@ router.post('/quote', optionalAuth, async (req, res) => {
     const sMin = policy.tier_s_min_margin || 130000;
     const aMin = policy.tier_a_min_margin || 120000;
     const bMin = policy.tier_b_min_margin || 100000;
-    const premThr = policy.premium_margin_threshold || 130000;
+    const _premThr = policy.premium_margin_threshold || 130000;
     const tempMargin = Math.round((opt.rebate||0) * 0.9 - payback - 1.5 * wcUnit);
     let tempTier = 'C';
     if (tempMargin >= sMin) tempTier = 'S';
