@@ -117,6 +117,7 @@ git reset --hard <last-known-good>        # ⚠️ 강제 리셋 (협업 시 위
 - [ ] **백업 무결성 검증** 워크플로 — 매주 1회 임의 백업 파일을 스테이징 DB에 restore → schema·row count 비교
 - [ ] PITR 복구 시뮬레이션 (분기 1회) — 임의 시점 복구 → 데이터 정합성 검증
 - [ ] 사고 대응 runbook 별도 문서 (`docs/runbooks/incident-*.md`)
+- [ ] **2026-06-10 unused index 재측정** — `UNUSED_INDEX_BASELINE_2026_05_30.md` 비교 → 진짜 dead 인덱스만 DROP
 
 ### Long-term (분기)
 - [ ] Disaster Recovery 시뮬레이션 (전체 region 다운 가정)
