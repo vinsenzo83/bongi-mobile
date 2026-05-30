@@ -687,10 +687,9 @@ export async function processMessageStream(sessionId, userMessage, context = {},
 
   // 스트리밍 Claude 호출 + Tool Use 루프
   let loopCount = 0;
-  let lastResponse = null;
 
   // 첫 호출 (스트리밍)
-  lastResponse = await streamClaudeResponse(session, onChunk, systemPrompt);
+  let lastResponse = await streamClaudeResponse(session, onChunk, systemPrompt);
 
   // Tool Use 루프: 도구 호출이 필요하면 실행 후 재호출
   while (lastResponse.stop_reason === 'tool_use' && loopCount < 5) {

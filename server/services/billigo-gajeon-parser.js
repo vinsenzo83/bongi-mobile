@@ -315,7 +315,7 @@ function parseCommissionSheet(aoa, warnings) {
     // 렌탈사명 정규화 — "LG 헬로비젼" / "현대유버스(가전)" 등 괄호 제거
     const name = curName;
 
-    let method = 'rate';
+    let method;
     let basis = 'total';
     let rate = null, flat = null, multiple = null;
 

@@ -103,7 +103,7 @@ function extractMeta(productName, bodyText) {
   const ice_kg = iceMatch ? parseFloat(iceMatch[1]) : null;
 
   // 권장 인원 추정 (이름 키워드)
-  let recommended_capacity = null;
+  let recommended_capacity;
   if (/대용량|그랜드|대형|업소|상업|XL/i.test(productName)) recommended_capacity = '5+';
   else if (/초소형|미니|슬림|소형|콤팩트/i.test(productName)) recommended_capacity = '1-2';
   else recommended_capacity = '3-4';

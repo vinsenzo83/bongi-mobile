@@ -129,8 +129,8 @@ router.get('/', async (req, res) => {
   const { status, q, trash } = req.query;
   const isTrash = trash === '1' || trash === 'true';
 
-  let list = [];
-  let stats = {};
+  let list;
+  let stats;
 
   if (supabase) {
     let query = supabase.from(TABLE).select('*').order('created_at', { ascending: false });
