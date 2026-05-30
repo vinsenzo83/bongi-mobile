@@ -1093,6 +1093,7 @@ async function chunkedUpsert(table, rows, options) {
       const msg = e?.message || String(e);
       throw new Error(
         `[chunkedUpsert ${table}] chunk#${chunkNo} (rows ${i}~${i + slice.length - 1}) 실패: ${msg}`,
+        { cause: e },
       );
     }
   }
@@ -1485,12 +1486,12 @@ async function runImportCommit(batch_id, parsed, fileType = '정수기') {
         throw new Error(
           `[options INSERT] chunk#${chunkNo} (rows ${i}~${i + slice.length - 1}, `
           + `첫행 product_id=${first.product_id} months=${first.months}) 실패: ${msg}`,
+          { cause: e },
         );
       }
       optNew += slice.length;
     }
   }
-  optionInserts = null;   // 메모리 해제 — 8천행 배열 참조 끊기
 
   // 기존 옵션 UPDATE — 빌리고 필드만 (봉이 컬럼 보존, 개별 update).
   // 매칭 0건이면 이 루프는 돌지 않음 (첫 적재 = 전부 INSERT).
@@ -1500,11 +1501,10 @@ async function runImportCommit(batch_id, parsed, fileType = '정수기') {
       const { error } = await supabase.from('rental_product_options').update(fields).eq('id', id);
       if (error) throw error;
     } catch (e) {
-      throw new Error(`[options UPDATE] id=${id} 실패: ${e?.message || String(e)}`);
+      throw new Error(`[options UPDATE] id=${id} 실패: ${e?.message || String(e)}`, { cause: e });
     }
     optUpdated++;
   }
-  optionUpdates = null;   // 메모리 해제
 
   // 진행도 2단계 — 옵션 반영 완료
   await supabase.from('rental_import_batches')

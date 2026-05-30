@@ -461,7 +461,7 @@ function parseCommissionSheet(aoa, warnings) {
     const note = cNote >= 0 ? clean(row[cNote]) : '';
     if (!hasVal(basisText) && rateVal == null && flatVal == null) continue;
 
-    let method = 'rate';
+    let method;
     let basis = 'total';
     let rate = null, flat = null, multiple = null;
 
