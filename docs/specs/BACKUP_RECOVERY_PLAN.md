@@ -11,10 +11,12 @@
 |---|---|---|---|
 | `backup-core-tables.yml` | 라이브 17 핵심 테이블 (incentive_*·rental_*·customer_calls) | **KST 02:00 일일** | `backups/YYYY-MM-DD/` |
 | `backup-incentive-overrides.yml` | `incentive_calculator_overrides` JSON | **KST 03:00 일일** | `backups/incentive/YYYY-MM-DD_HHMMSS_KST_*.json` |
+| **`backup-storage.yml`** 🆕 | **Storage `product-images` bucket** (objects + manifest) | **KST 04:00 일일** | `backups/storage/YYYY-MM-DD_*.tar.gz` |
 
 - 변경 없으면 빈 커밋 방지 (sha 비교)
 - pg_dump `--data-only` 방식 (schema는 별도 마이그레이션 파일이 source of truth)
-- 30일치 보관 권장 (`.github/workflows/backup-prune.yml` 미적용 — 추가 권장)
+- **30일치 자동 prune** — 모든 워크플로에 내장 (`tail -n +31 | xargs rm`)
+- 모든 워크플로에 `workflow_dispatch` 수동 트리거 있음
 
 ### 1-2. Supabase 자체 PITR (Point-in-Time Recovery)
 
@@ -25,8 +27,8 @@
 
 ### 1-3. 미적용 (TODO)
 
-- ❌ **Supabase Storage `product-images` bucket** 백업 (오늘 신설, 현재 0 objects)
-- ❌ **`.env` Railway 환경변수** 백업 (현재 1Password 등 secret manager 미사용)
+- ✅ ~~Supabase Storage `product-images` bucket 백업~~ — **R14 완료** (`backup-storage.yml`)
+- ❌ **`.env` Railway 환경변수** 백업 (현재 1Password 등 secret manager 미사용 — 사용자 결정사항)
 - ❌ **백업 무결성 검증** 워크플로 (백업 파일이 실제로 복구 가능한지 정기 테스트)
 
 ## 2. 롤백 가능 자산
@@ -106,10 +108,10 @@ git reset --hard <last-known-good>        # ⚠️ 강제 리셋 (협업 시 위
 ## 4. 백업 강화 로드맵
 
 ### Short-term (1주)
-- [ ] Supabase Storage `product-images` bucket 일일 백업 추가
-  - script: `scripts/backup-storage.mjs` (S3 sync 또는 GitHub Actions tar)
-- [ ] 백업 prune 워크플로 (30일 보관, 그 이전 자동 삭제)
-- [ ] `.env` Railway 환경변수 → 1Password 또는 Doppler 통합
+- [x] ~~Supabase Storage `product-images` bucket 일일 백업 추가~~ — **R14 완료**
+  - `scripts/backup-storage.mjs` + `.github/workflows/backup-storage.yml`
+- [x] ~~백업 prune 워크플로~~ — **모든 cron에 내장** (`tail -n +31`)
+- [ ] `.env` Railway 환경변수 → 1Password 또는 Doppler 통합 (사용자 결정)
 
 ### Mid-term (1개월)
 - [ ] **백업 무결성 검증** 워크플로 — 매주 1회 임의 백업 파일을 스테이징 DB에 restore → schema·row count 비교
