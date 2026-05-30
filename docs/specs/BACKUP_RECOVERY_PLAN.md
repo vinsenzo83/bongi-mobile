@@ -114,7 +114,9 @@ git reset --hard <last-known-good>        # ⚠️ 강제 리셋 (협업 시 위
 - [ ] `.env` Railway 환경변수 → 1Password 또는 Doppler 통합 (사용자 결정)
 
 ### Mid-term (1개월)
-- [ ] **백업 무결성 검증** 워크플로 — 매주 1회 임의 백업 파일을 스테이징 DB에 restore → schema·row count 비교
+- [x] ~~**백업 무결성 검증** 워크플로~~ — **R16 완료** (`verify-backup.yml`)
+  - 매주 일요일 KST 05:00 ephemeral postgres에 restore + row count 비교
+  - 5% 이상 diff 시 GitHub Issue 자동 생성 (label: backup-failure, priority:high)
 - [ ] PITR 복구 시뮬레이션 (분기 1회) — 임의 시점 복구 → 데이터 정합성 검증
 - [ ] 사고 대응 runbook 별도 문서 (`docs/runbooks/incident-*.md`)
 - [ ] **2026-06-10 unused index 재측정** — `UNUSED_INDEX_BASELINE_2026_05_30.md` 비교 → 진짜 dead 인덱스만 DROP

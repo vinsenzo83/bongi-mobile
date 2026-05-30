@@ -1,0 +1,101 @@
+name: verify-backup
+# 일일 백업 무결성 검증 (R16) — 매주 일요일 KST 05:00
+# 최신 backup-core-tables tar.gz를 ephemeral postgres에 restore + row count 비교
+
+on:
+  schedule:
+    - cron: '0 20 * * 6'  # 토요일 UTC 20:00 = 일요일 KST 05:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write  # 실패 시 자동 issue
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: bongi_verify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout master (with backups/)
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 1
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install postgres client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install deps
+        run: |
+          npm ci --omit=dev --ignore-scripts \
+            || npm install --omit=dev --ignore-scripts @supabase/supabase-js dotenv
+
+      - name: Run verify
+        id: verify
+        env:
+          TEST_DATABASE_URL: postgres://postgres:testpass@localhost:5432/bongi_verify
+          SUPABASE_URL: ${{ secrets.SUPABASE_LIVE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_LIVE_SERVICE_KEY }}
+        run: |
+          node scripts/verify-backup.mjs 2>&1 | tee verify.log
+        continue-on-error: true
+
+      - name: Open GitHub Issue on failure
+        if: steps.verify.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const log = fs.existsSync('verify.log') ? fs.readFileSync('verify.log', 'utf8').slice(-2000) : '(no log)';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 백업 무결성 검증 실패 (${new Date().toISOString().slice(0,10)})`,
+              body: [
+                '## 자동 백업 검증 실패',
+                '',
+                '`verify-backup.yml` 워크플로가 일일 백업을 staging postgres에 restore했지만,',
+                '라이브 row count와 5% 이상 차이가 나거나 SQL 파일이 누락됐습니다.',
+                '',
+                '### 즉시 조치',
+                '1. Actions 탭에서 실패한 run의 로그 확인',
+                '2. `backups/` 폴더의 최신 tar.gz가 정상인지 점검',
+                '3. backup-core-tables cron 자체가 작동했는지 확인 (KST 02:00)',
+                '4. 라이브 데이터 손실 의심 시 PITR 복구 검토',
+                '',
+                '### 검증 로그 (마지막 2KB)',
+                '```',
+                log,
+                '```',
+                '',
+                '관련: `docs/specs/BACKUP_RECOVERY_PLAN.md` §3 (P2 마이그레이션 실패)',
+              ].join('\n'),
+              labels: ['backup-failure', 'priority:high'],
+            });
+
+      - name: Fail step if verify failed
+        if: steps.verify.outcome == 'failure'
+        run: exit 1
