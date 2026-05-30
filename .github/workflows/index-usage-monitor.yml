@@ -1,0 +1,57 @@
+name: index-usage-monitor
+# 라이브 인덱스 사용 stats 주간 스냅샷 (R19) — 매주 일요일 KST 06:00
+# verify-backup (05:00) 직후 — 같은 일요일 안에 모든 검증 완료
+
+on:
+  schedule:
+    - cron: '0 21 * * 6'  # 토요일 UTC 21:00 = 일요일 KST 06:00
+  workflow_dispatch:
+
+permissions:
+  contents: write  # backups/index-usage/ 자동 커밋
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 1
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install deps
+        run: |
+          npm ci --omit=dev --ignore-scripts \
+            || npm install --omit=dev --ignore-scripts @supabase/supabase-js dotenv
+
+      - name: Snapshot index usage (LIVE)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_LIVE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_LIVE_SERVICE_KEY }}
+        run: |
+          node scripts/snapshot-index-usage.mjs
+
+      - name: Keep only last 12 weeks (3개월)
+        run: |
+          if [ -d "backups/index-usage" ]; then
+            cd backups/index-usage/
+            ls -t *.json 2>/dev/null | tail -n +13 | xargs -r rm -f
+            ls -lh
+          fi
+
+      - name: Commit + push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backups/index-usage/ 2>/dev/null || true
+          git diff --staged --quiet \
+            || git commit -m "chore(monitor): index usage snapshot $(date +%Y-%m-%d) [skip ci]"
+          git push origin master
