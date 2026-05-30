@@ -1,0 +1,60 @@
+name: backup-storage
+# 봉이 Supabase Storage product-images bucket 일일 백업 (R14)
+# 트리거: 매일 KST 04:00 (UTC 19:00) — 다른 백업 cron과 시차 (02·03·04 KST)
+
+on:
+  schedule:
+    - cron: '0 19 * * *'  # KST 04:00
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # 큰 bucket 대비
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 1
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install deps (only what backup script needs)
+        run: |
+          npm ci --omit=dev --ignore-scripts \
+            || npm install --omit=dev --ignore-scripts @supabase/supabase-js dotenv
+
+      - name: Backup Storage (LIVE)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_LIVE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_LIVE_SERVICE_KEY }}
+          STORAGE_BUCKET: 'product-images'
+        run: |
+          node scripts/backup-storage.mjs
+
+      - name: Keep only last 30 days
+        run: |
+          if [ -d "backups/storage" ]; then
+            cd backups/storage/
+            # tar.gz와 manifest.json 둘 다 prune
+            ls -t *.tar.gz 2>/dev/null | tail -n +31 | xargs -r rm -f
+            ls -t *.manifest.json 2>/dev/null | tail -n +31 | xargs -r rm -f
+            ls -lh
+          fi
+
+      - name: Commit + push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backups/storage/ 2>/dev/null || true
+          git diff --staged --quiet \
+            || git commit -m "chore(backup): storage product-images $(date +%Y-%m-%d) [skip ci]"
+          git push origin master
