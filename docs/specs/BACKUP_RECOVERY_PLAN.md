@@ -128,6 +128,10 @@ git reset --hard <last-known-good>        # ⚠️ 강제 리셋 (협업 시 위
 ### Long-term (분기)
 - [ ] Disaster Recovery 시뮬레이션 (전체 region 다운 가정)
 - [ ] 멀티 region 백업 (Supabase 기본 + AWS S3 cross-region)
+- [x] ~~인덱스 stats 자동 모니터~~ — **R19 완료** (`index-usage-monitor.yml`)
+  - 매주 일요일 KST 06:00 (verify-backup 직후) stats JSON 저장
+  - 큰 unused 상위 5 자동 식별
+  - 12주(3개월) 보관 → 추세 분석 가능
 
 ## 5. 변경 관리 체크리스트 (PR/Push 전)
 
