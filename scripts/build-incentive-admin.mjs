@@ -49,7 +49,7 @@ function prefixIds(content, js, prefix) {
   // HTML 안의 id="X" 찾기
   const ids = new Set();
   for (const m of content.matchAll(/id="([^"]+)"/g)) ids.add(m[1]);
-  for (const m of content.matchAll(/data-field="([^"]+)"/g)) {} // data-field는 prefix 안함
+  for (const _m of content.matchAll(/data-field="([^"]+)"/g)) { /* data-field는 prefix 안함 */ }
 
   // JS 안의 getElementById('X') 찾기
   for (const m of js.matchAll(/getElementById\(['"]([^'"]+)['"]\)/g)) ids.add(m[1]);

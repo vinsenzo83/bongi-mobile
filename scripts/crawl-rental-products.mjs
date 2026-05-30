@@ -52,7 +52,7 @@ function extractMeta(productName, bodyText) {
   const name = productName || '';
   const txt = bodyText || '';
   const inName = (re) => re.test(name);
-  const inText = (re) => re.test(name) || re.test(txt);
+  const _inText = (re) => re.test(name) || re.test(txt);
 
   // ① 핵심 기능 — 이름에서만 추출 (정확도 핵심)
   const feature_tags = [];
@@ -182,7 +182,7 @@ async function crawlOne(page, product) {
     // manual_override 체크는 raw SQL로 (schema cache 우회)
     let manualOverride = false;
     try {
-      const r = await rawSql(`UPDATE rental_products SET id=id WHERE id=${Number(p.id)} AND meta_manual_override = true RETURNING id;`);
+      const _r = await rawSql(`UPDATE rental_products SET id=id WHERE id=${Number(p.id)} AND meta_manual_override = true RETURNING id;`);
       // exec_sql는 ok만 반환 — 우회로, 별도 SELECT는 supabase-js로 후방 처리. 일단 false 가정
       manualOverride = false;
     } catch {}

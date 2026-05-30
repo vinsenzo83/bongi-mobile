@@ -122,7 +122,7 @@ router.get('/', async (req, res) => {
         .select('*')
         .order('created_at', { ascending: false });
       if (!error && data) return res.json(data);
-    } catch (e) { /* fallback to local */ }
+    } catch (_e) { /* fallback to local */ }
   }
   res.json(localApplications);
 });

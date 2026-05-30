@@ -471,7 +471,7 @@ function adaptLgSubscription(aoa, sheetName, warnings) {
   const col = makeCollector(company, manufacturer);
 
   // 결합유형 라벨 정규화
-  const COMBO_MAP = [
+  const _COMBO_MAP = [
     { re: /단품|1년차|2~?6?년차|2~?5?년차/, code: '단품' },
     { re: /신규결합/, code: '신규결합' },
     { re: /기존결합/, code: '기존결합' },
@@ -752,7 +752,7 @@ function extractModelCode(raw) {
  * variant_code: 채널구분 정규화 (방문할인·방문할인+타사보상·셀프할인·셀프할인+타사보상).
  *   채널 셀은 블록 첫 행에만 있고 forward-fill 됨.
  */
-function adaptSkMagic(aoa, sheetName, warnings) {
+function adaptSkMagic(aoa, _sheetName, _warnings) {
   const HEADER = 7;
   const { company, manufacturer } = SHEET_META['SK매직'];
   const col = makeCollector(company, manufacturer);

@@ -310,7 +310,7 @@ router.get('/2fa/status', authenticateJWT, async (req, res) => {
       role: agent?.role,
       recommended: agent?.role === 'admin',
     });
-  } catch (e) { res.status(500).json({ error: '조회 실패' }); }
+  } catch (_e) { res.status(500).json({ error: '조회 실패' }); }
 });
 
 export default router;

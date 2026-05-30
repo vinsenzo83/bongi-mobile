@@ -5,12 +5,12 @@
 //   - API (/api/*): network only (캐시 X — 실시간 데이터 보존)
 // 버전 변경 시 강제 갱신: SW_VERSION 숫자 올리고 배포
 
-const SW_VERSION = 'v150';
+const SW_VERSION = 'v151';
 const STATIC_CACHE = 'bongi-static-' + SW_VERSION;
 const RUNTIME_CACHE = 'bongi-runtime-' + SW_VERSION;
 
 // install — 스킵: 활성화 즉시 새 SW 적용
-self.addEventListener('install', (e) => { self.skipWaiting(); });
+self.addEventListener('install', (_e) => { self.skipWaiting(); });
 
 // activate — 옛 캐시 정리
 self.addEventListener('activate', (e) => {
@@ -57,7 +57,7 @@ async function cacheFirst(req) {
     const res = await fetch(req);
     if (res.ok) cache.put(req, res.clone());
     return res;
-  } catch (e) {
+  } catch (_e) {
     return cached || new Response('', { status: 504 });
   }
 }

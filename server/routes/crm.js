@@ -45,7 +45,7 @@ router.get('/customers/:id', async (req, res) => {
 
 // ─── 고객 상태 변경 ───
 router.patch('/customers/:id', async (req, res) => {
-  const { status, memo, assigned_agent_id } = req.body;
+  const { status, memo, _assigned_agent_id } = req.body;
   const updates = { updated_at: new Date().toISOString() };
   if (status) updates.status = status;
   if (memo !== undefined) updates.memo = memo;

@@ -298,7 +298,7 @@ function naturalKey(o, withVariant) {
  */
 function parseCommissionSheet(aoa, warnings) {
   const byName = new Map();
-  const fill = makeFiller();
+  const _fill = makeFiller();
   let curName = null;
 
   for (let r = 3; r < aoa.length; r++) {

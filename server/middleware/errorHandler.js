@@ -23,7 +23,7 @@ async function postAlert(payload) {
 }
 
 // 전역 에러 핸들러
-export function errorHandler(err, req, res, next) {
+export function errorHandler(err, req, res, _next) {
   const status = err.status || 500;
   console.error(`❌ [${req.method} ${req.path}]`, err.message);
   // 5xx만 alert (4xx는 client 문제)

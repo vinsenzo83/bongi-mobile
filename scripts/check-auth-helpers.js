@@ -10,7 +10,7 @@
  * 각 헬퍼 정의가 없는 파일을 식별 → CI fail.
  */
 import { readFileSync, readdirSync } from 'node:fs';
-import { join, basename } from 'node:path';
+import { join, basename as _basename } from 'node:path';
 
 const DOCS_DIR = new URL('../docs/', import.meta.url).pathname;
 const targets = readdirSync(DOCS_DIR).filter(

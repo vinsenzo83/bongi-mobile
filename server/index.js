@@ -44,7 +44,7 @@ if (process.env.SENTRY_DSN) {
     release: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_SHA || process.env.npm_package_version || 'unknown',
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0.5,
     sendDefaultPii: false,
-    beforeSend(event, hint) {
+    beforeSend(event, _hint) {
       // 라우트 path만 보존 + body·headers·query 제거
       if (event.request) {
         delete event.request.cookies;
@@ -108,7 +108,7 @@ import { sanitizeBody } from './middleware/sanitize.js';
 import { basicAuth } from './middleware/basicAuth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiLimiter, applicationLimiter } from './middleware/rateLimit.js';
-import { authenticateJWT, optionalAuth } from './middleware/auth.js';
+import { authenticateJWT, optionalAuth as _optionalAuth } from './middleware/auth.js';
 import { requireMinRole } from './middleware/rbac.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

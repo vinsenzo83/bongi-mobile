@@ -168,7 +168,7 @@ const OPTION_SIG_FIELDS = [
 ];
 
 /** 필수 컬럼 (사양서 §5.3) — 누락 시 오류 행 */
-const REQUIRED_FIELDS = ['brand', 'category_raw', 'model', 'months', 'care_raw', 'monthly_fee', 'rebate'];
+const _REQUIRED_FIELDS = ['brand', 'category_raw', 'model', 'months', 'care_raw', 'monthly_fee', 'rebate'];
 
 // ==================================================================
 // 2. 공통 정규화 헬퍼 (빌리고 파서와 동일 시그니처)
