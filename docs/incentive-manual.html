@@ -510,24 +510,31 @@ const SECTIONS = [
 </li>
 </ul>
 
-<h3>🤖 자동 trigger (계약 close → 마이페이지 sync)</h3>
+<h3>🤖 자동 trigger (계약 close → 마이페이지 sync) — 2026-05-30 정상화</h3>
 <p>incentive_sales / rental_sales status='completed' 변경 시:</p>
 <ul>
 <li><b>bongi_gifts auto-insert</b> (지급대기) — phone 매칭된 회원 있으면 '지급대기', 아니면 '비회원대기'</li>
-<li>중복 방지 — source_sale_table + source_sale_id unique 키</li>
+<li>중복 방지 — source_sale_table + source_sale_id unique 키 (text)</li>
 <li>고객 마이페이지에 페이백 즉시 표시 (B2C 동기화)</li>
 </ul>
+<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#fbbf24">
+<b>⚠️ 2026-05-30 type fix 적용</b> — 이전엔 <code>source_sale_id</code> bigint이라
+<code>incentive_sales.id</code>(uuid)와 충돌해 트리거가 silent fail이었음.
+<code>text</code>로 통일 + 누락 8건 백필 완료. 이제 신규 completed 영업은 자동 sync 정상.
+<br>운영 영향: 5/30 이전 완료된 영업의 페이백도 마이페이지에 정상 표시됨.
+</div>
 
-<h3>🔐 권한 매트릭스 (4 roles)</h3>
+<h3>🔐 권한 매트릭스 (4 roles) — 2026-05-30 강화</h3>
 <table>
 <tr><th>기능</th><th>admin</th><th>manager</th><th>agent</th><th>contract</th></tr>
-<tr><td>전 고객 list 조회</td><td>✅</td><td>부서원만</td><td>본인 분배만</td><td>✅</td></tr>
-<tr><td>360° view</td><td>✅</td><td>부서원만</td><td>본인 분배만</td><td>✅</td></tr>
+<tr><td>전 고객 list 조회</td><td>✅</td><td><b>본인 센터만</b> 🆕</td><td>본인 분배만</td><td><b>❌</b> 🆕</td></tr>
+<tr><td>360° view</td><td>✅</td><td>센터 agent의 분배만</td><td>본인 분배만</td><td>❌</td></tr>
 <tr><td>콜 시도 기록</td><td>✅</td><td>✅</td><td>✅ (본인)</td><td>❌</td></tr>
 <tr><td>수동 등록</td><td>✅</td><td>✅</td><td>✅ (본인 분배)</td><td>❌</td></tr>
 <tr><td>메모 작성</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
 <tr><td>메모 삭제</td><td>✅</td><td>작성자만</td><td>작성자만</td><td>작성자만</td></tr>
 </table>
+<div class="tip">📌 <b>2026-05-30 변경</b>: contract는 계약 처리 전담 — 콜DB 조회 차단 (계약 처리 페이지에서 sales만 봄). manager는 본인 센터 소속 agent의 분배 콜만 보임 (다른 센터 격리).</div>
 
 <h3>📡 API endpoint</h3>
 <table>
@@ -855,15 +862,16 @@ const SECTIONS = [
 <li>이동 시 자동 브랜드 필터 적용 (해당 회사 카드만)</li>
 </ul>
 
-<h3>📡 API endpoint (4개)</h3>
+<h3>📡 API endpoint (4개) — 2026-05-30 권한 강화</h3>
 <table>
 <tr><th>Method</th><th>경로</th><th>역할</th></tr>
-<tr><td>GET</td><td><code>/api/rental/partner-cards?brand=&active=1</code></td><td>list (필터)</td></tr>
+<tr><td>GET</td><td><code>/api/rental/partner-cards?brand=&active=1</code></td><td>list (인증된 모든 role)</td></tr>
 <tr><td>GET</td><td><code>/api/rental/partner-cards/brands</code></td><td>활성 브랜드 list</td></tr>
-<tr><td>POST</td><td><code>/api/rental/partner-cards</code></td><td>신규 (admin)</td></tr>
-<tr><td>PATCH</td><td><code>/api/rental/partner-cards/:id</code></td><td>편집 (admin)</td></tr>
-<tr><td>DELETE</td><td><code>/api/rental/partner-cards/:id</code></td><td>삭제 (admin)</td></tr>
+<tr><td>POST</td><td><code>/api/rental/partner-cards</code></td><td>신규 (<b>admin/manager</b> 🆕)</td></tr>
+<tr><td>PATCH</td><td><code>/api/rental/partner-cards/:id</code></td><td>편집 (<b>admin/manager</b> 🆕)</td></tr>
+<tr><td>DELETE</td><td><code>/api/rental/partner-cards/:id</code></td><td>삭제 (<b>admin 전용</b> 🆕)</td></tr>
 </table>
+<div class="tip">📌 <b>2026-05-30 변경</b>: write endpoint(POST·PATCH·DELETE)에 role 체크 추가. 이전엔 인증만 통과하면 모든 role이 카드 추가/수정/삭제 가능했음 — agent도 수정 가능했던 보안 갭 fix.</div>
 
 <h3>💡 운영 팁</h3>
 <ul>
