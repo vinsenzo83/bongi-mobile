@@ -5,7 +5,7 @@
 //   - API (/api/*): network only (캐시 X — 실시간 데이터 보존)
 // 버전 변경 시 강제 갱신: SW_VERSION 숫자 올리고 배포
 
-const SW_VERSION = 'v152';
+const SW_VERSION = 'v153';
 const STATIC_CACHE = 'bongi-static-' + SW_VERSION;
 const RUNTIME_CACHE = 'bongi-runtime-' + SW_VERSION;
 
