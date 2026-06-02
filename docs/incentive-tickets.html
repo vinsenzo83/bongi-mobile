@@ -109,7 +109,7 @@ tbody tr:last-child td { border-bottom: none; }
 
   <nav class="tabs">
     <button class="tab-btn active" data-tab="internet">📡 인터넷+TV <span class="count" id="cnt-internet">-</span></button>
-    <button class="tab-btn" data-tab="rental">🏠 가전 렌탈(정수기) <span class="count" id="cnt-rental">-</span></button>
+    <button class="tab-btn" data-tab="rental">🏠 가전 렌탈 <span class="count" id="cnt-rental">-</span></button>
   </nav>
 
   <main class="content">
@@ -147,6 +147,9 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="tab-panel" id="panel-rental">
       <div class="toolbar">
         <input class="search-input" id="search-rental" placeholder="🔍 티켓번호·렌탈사·브랜드·상품명·모델 (예: R0683 / LG헬로비전 / 정수기)">
+        <div class="filter-pills" id="category-pills">
+          <button class="pill active" data-category="all">전체 카테고리</button>
+        </div>
         <div class="filter-pills" id="brand-pills">
           <button class="pill active" data-brand="all">전체 브랜드</button>
         </div>
@@ -179,7 +182,7 @@ tbody tr:last-child td { border-bottom: none; }
 const API = '/api/incentive';
 let INTERNET = [], RENTAL = [];
 let iCarrier = 'all', iStatus = 'all';
-let rBrand = 'all', rStatus = 'all';
+let rBrand = 'all', rStatus = 'all', rCategory = 'all';
 let currentTab = 'internet';
 
 function showToast(msg, isErr) {
@@ -346,6 +349,20 @@ async function loadRental() {
     const { tickets } = await apiFetch('/tickets/rental');
     RENTAL = tickets;
     document.getElementById('cnt-rental').textContent = tickets.length;
+    // 카테고리 필터 동적 생성
+    const cats = [...new Set(tickets.map(t => t.category_name).filter(Boolean))].sort();
+    const catPills = document.getElementById('category-pills');
+    catPills.innerHTML = '<button class="pill active" data-category="all">전체</button>' +
+      cats.map(c => {
+        const cnt = tickets.filter(t => t.category_name === c).length;
+        return `<button class="pill" data-category="${c}">${c} (${cnt})</button>`;
+      }).join('');
+    catPills.querySelectorAll('.pill').forEach(p => {
+      p.addEventListener('click', () => {
+        catPills.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+        p.classList.add('active'); rCategory = p.dataset.category; renderRental();
+      });
+    });
     // 브랜드 필터 동적 생성
     const brands = [...new Set(tickets.map(t => t.brand).filter(Boolean))].sort();
     const pills = document.getElementById('brand-pills');
@@ -367,6 +384,7 @@ async function loadRental() {
 function renderRental() {
   const search = document.getElementById('search-rental').value.trim().toLowerCase();
   const filtered = RENTAL.filter(t => {
+    if (rCategory !== 'all' && t.category_name !== rCategory) return false;
     if (rBrand !== 'all' && t.brand !== rBrand) return false;
     const active = t.is_active && t.ticket_active;
     if (rStatus === 'active' && !active) return false;

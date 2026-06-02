@@ -2793,10 +2793,15 @@ router.get('/tickets/rental', authenticateJWT, async (req, res) => {
       if (active_only === 'true' || active_only === '1') qq = qq.eq('ticket_active', true);
       return qq.order('ticket_number', { ascending: true }).range(from, to);
     };
-    const [r1, r2] = await Promise.all([buildQ(0, 999), buildQ(1000, 1999)]);
+    // 4페이지 = 4000건 cap (현재 3028건 — 향후 확장 대비)
+    const [r1, r2, r3, r4] = await Promise.all([
+      buildQ(0, 999), buildQ(1000, 1999), buildQ(2000, 2999), buildQ(3000, 3999),
+    ]);
     if (r1.error) throw r1.error;
     if (r2.error) throw r2.error;
-    const data = [...(r1.data || []), ...(r2.data || [])];
+    if (r3.error) throw r3.error;
+    if (r4.error) throw r4.error;
+    const data = [...(r1.data || []), ...(r2.data || []), ...(r3.data || []), ...(r4.data || [])];
     // 클라이언트에서 brand/name 검색을 위해 평탄화 + product 정보 inline
     const tickets = (data || []).map(o => ({
       id: o.id,
