@@ -576,6 +576,10 @@ router.patch('/options/:id', authenticateJWT, async (req, res) => {
       'half_fee', 'half_period',                            // ★ 반값할인 렌탈료·기간
       'bundle_rate', 'inspection_cycle', 'ownership_months',
       'margin_manual_override',                             // ★ 수동 마진 보존 플래그
+      // 🆕 2026-06-03 가전 그룹 신규 6컬럼
+      'as_period_months', 'signup_age_limit', 'installation_fee',
+      'commission_rate', 'commission_basis', 'total_rental_fee',
+      'promo_type', 'variant_label', 'variant_code',
     ];
     const update = {};
     for (const k of allowed) if (k in req.body) update[k] = req.body[k];
