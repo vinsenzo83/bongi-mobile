@@ -737,7 +737,8 @@ const SECTIONS = [
 <h3>🏠 가전렌탈 탭 — 정수기 그룹 / 가전 그룹 분리 (2026-05-22)</h3>
 <ul>
 <li>상품(모델) → 옵션(약정·케어 조합) 2단 구조</li>
-<li><b>그룹 탭 2개</b>: 💧 정수기 그룹 (정수기·공기청정기·비데·얼음정수기·냉온정수기·연수기) / 🏠 가전 그룹 (에어컨·냉장고·TV·세탁기 등)</li>
+<li><b>그룹 탭 2개</b>: 💧 정수기 그룹 (정수기·공기청정기·비데·매트리스·얼음정수기·냉온정수기·연수기) / 🏠 가전 그룹 (에어컨·냉장고·TV·세탁기 등)</li>
+<li><b>그룹 수수료 구조 차이 ⚠️</b> — 정수기 그룹은 <b>직접 수수료(direct)</b>, 가전 그룹은 <b>렌탈사 수수료율(rate) 기반</b>. 메트리스는 정수기 그룹.</li>
 <li>그룹 기준 = <code>rental_categories.product_group</code> (품목 성격)</li>
 <li><b>가전 그룹 한정</b>: 카테고리·브랜드(제조사) 옆에 <b>렌탈사(채널) 드롭다운</b> 추가. 모델 마스터에 🏢 렌탈사 칩, 옵션 디테일 상단에 렌탈사·수수료율 박스. 같은 모델 N채널 즉시 식별.</li>
 <li><b>모델 list 컬럼</b>: 브랜드·상품명·태그·약정·옵션·시장</li>
@@ -793,10 +794,21 @@ const SECTIONS = [
 <li><b>모델 단위 값</b>(시장성·노출순위·시리즈키·등록상태)은 그 모델 첫 옵션 행에만 채우면 됨. 나머지는 빈칸 — import이 모델 그룹 내에서만 forward-fill</li>
 <li><b>운영값 반영</b>: 등록폼 import은 봉이 운영값(market_score·display_rank·registration_status·evaluation_memo) 자동 반영. 인센티브 컬럼(point_weight·tier·margin·is_premium·payback)은 절대 덮어쓰지 않음(보존)</li>
 <li><b>카테고리 자동 활성화</b>: 등록폼으로 들어온 카테고리는 <code>is_active=true</code> 자동 전환</li>
-<li><b>티켓 자동 발번</b>: 신규 옵션에 R번호 자동 부여 (R0001~, 기존 최대 다음부터)</li>
+<li><b>티켓 자동 발번</b>: 신규 옵션에 R번호 자동 부여 (R0001~, 기존 최대 다음부터) — DB trigger로 보장 (아래 R번호 100% 발급 정책 참고)</li>
 <li><b>선별본 정책</b>: 등록폼은 검수 선별본이라 "이번에 없는 모델" 단종 마킹 X (빌리고 원본 import과 다름)</li>
 </ul>
 <div class="tip">📌 import 절차 — 상품관리 → 가전렌탈 탭 → 📤 빌리고 엑셀 import → 파일 종류 <b>"봉이 표준 등록폼"</b> 선택 → 파일 업로드 → 미리보기 → 확정 반영. 빌리고 원본 옵션(정수기·가전)은 레거시 유지지만 신규 적재는 등록폼으로 통일.</div>
+
+<h3>🎫 R번호 100% 발급 정책 + ticket_active 자동 sync (2026-06-03 신규)</h3>
+<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#22d3ee">
+<b>원칙</b>: 모든 렌탈 옵션은 활성 여부와 무관하게 <b>R번호 100% 발급</b>. 운영자는 상품 관리에서 <b>옵션 활성/비활성 토글만</b> 관리하면 티켓 상태가 자동으로 따라간다.
+<ul style="margin-top:6px">
+<li><b>trigger 1 — 자동 발번 (BEFORE INSERT)</b>: <code>trg_auto_issue_ticket_on_options</code> · 신규 옵션 INSERT 시 ticket_number가 NULL이면 R{max+1} 자동 부여. 등록폼 import·수동 추가·SQL 직접 INSERT 모두 적용.</li>
+<li><b>trigger 2 — 상태 sync (BEFORE UPDATE OF is_active)</b>: <code>trg_sync_ticket_active_on_options</code> · 옵션 <code>is_active</code> 토글 시 <code>ticket_active</code> 자동 동기화 (R번호는 보존, 재발급 X).</li>
+<li><b>운영자 동선</b>: 상품 관리 → 가전렌탈 탭 → 옵션 행 활성 체크박스 토글 → 티켓 관리 페이지에서 ticket_active 상태 자동 갱신.</li>
+<li><b>검증</b> (2026-06-03 라이브·데브): 옵션 5,444건 = R번호 5,444건(100%), ticket_active sync 미스매치 0건.</li>
+</ul>
+</div>
 
 <h3>📜 변경 이력 자동 기록</h3>
 <ul>
