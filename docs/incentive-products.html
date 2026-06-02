@@ -1361,8 +1361,15 @@ async function fetchAgent() {
     const r = await fetch(`${RP_API}/products/${productId}/options`).then(r => r.json());
     _options = r.options || [];
     if (!_options.length) { F('rp-options-area').innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8">옵션 없음</div>'; return; }
+    // 🎯 그룹별 컬럼 분기 (정책: docs/specs/rental-option-column-policy.md)
+    const _grp = product?.category?.product_group || '';
+    const _isAppliance = _grp === '가전';
+    const _isMattress = product?.category?.name === '매트리스';
+    const _showWP = !_isAppliance && !_isMattress; // 정수기 전용 컬럼 (점검·소유·증감·반값·타사보상·반값리베·결합%)
+    const _showApp = _isAppliance;                  // 가전 전용 컬럼 (A/S·연령·설치비·수수료율·기준·총렌탈료)
+    const _grpLabel = _isMattress ? '🛏️ 매트리스' : (_isAppliance ? '🏠 가전 그룹' : '💧 정수기 그룹');
     F('rp-options-area').innerHTML = `
-      <div style="font-size:10.5px;color:#94a3b8;margin-bottom:6px">총 ${_options.length}개 옵션 · <b>페이백</b> 빈칸 = 자동 산출(영업이익 ${_policy.target_profit_rate}% 적용) / 값 입력 = 수동 override · 인라인 편집 · <b>마진/Tier 운영자 수동 입력</b></div>
+      <div style="font-size:10.5px;color:#94a3b8;margin-bottom:6px">${_grpLabel} · 총 ${_options.length}개 옵션 · <b>페이백</b> 빈칸 = 자동 산출(영업이익 ${_policy.target_profit_rate}% 적용) / 값 입력 = 수동 override · 인라인 편집 · <b>마진/Tier 운영자 수동 입력</b></div>
       <div style="max-height:640px;overflow:auto"><table style="font-size:10.5px;width:100%">
         <thead style="position:sticky;top:0;background:#1e293b;z-index:1">
           <tr>
@@ -1370,16 +1377,22 @@ async function fetchAgent() {
             <th style="width:70px;color:#67e8f9" title="색상/규격/할인 변별값 (variant_label)">🏷️ 변별</th>
             <th style="width:40px">약정</th>
             <th style="width:50px">케어</th>
-            <th style="width:42px" title="점검주기 (개월)">점검M</th>
-            <th style="width:42px" title="소유권이전 (개월)">소유M</th>
-            <th style="width:80px">정상가</th>
-            <th style="width:80px">월납</th>
-            <th style="width:68px" title="월납 증감">증감</th>
-            <th style="width:75px" title="반값할인 렌탈료 / 적용기간">반값/M</th>
+            ${_showWP ? `<th style="width:42px" title="점검주기 (개월)">점검M</th>
+            <th style="width:42px" title="소유권이전 (개월)">소유M</th>` : ''}
+            ${_showApp ? `<th style="width:48px;color:#f9a8d4" title="A/S 보증 기간 (년)">A/S</th>
+            <th style="width:48px;color:#f9a8d4" title="가입 가능 연령 (만 N세)">연령</th>
+            <th style="width:60px;color:#fdba74" title="기본 설치비 (원)">설치비</th>` : ''}
+            ${_isMattress ? '' : `<th style="width:80px">${_isAppliance ? '출고가' : '정상가'}</th>`}
+            <th style="width:80px">${_isAppliance ? '월렌탈료' : '월납'}</th>
+            ${_showApp ? `<th style="width:90px;color:#cbd5e1" title="총렌탈료 = months × monthly_fee">∑ 총렌탈료</th>` : ''}
+            ${_showWP ? `<th style="width:68px" title="월납 증감">증감</th>
+            <th style="width:75px" title="반값할인 렌탈료 / 적용기간">반값/M</th>` : ''}
             <th style="width:85px" title="기본 리베이트">리베</th>
-            <th style="width:85px;color:#a855f7" title="타사보상 리베이트 (프로모션)">타사보상</th>
+            ${_showWP ? `<th style="width:85px;color:#a855f7" title="타사보상 리베이트 (프로모션)">타사보상</th>
             <th style="width:85px;color:#22c55e" title="반값 리베이트">반값리베</th>
-            <th style="width:55px" title="결합지급률 %">결합%</th>
+            <th style="width:55px" title="결합지급률 %">결합%</th>` : ''}
+            ${_showApp ? `<th style="width:55px;color:#fdba74" title="수수료율 (%)">수수료%</th>
+            <th style="width:70px;color:#fdba74" title="수수료 기준 (구독료/월렌탈료/총렌탈료)">기준</th>` : ''}
             <th style="width:85px;color:#fbbf24">페이백</th>
             <th style="width:55px" title="옵션 단위 상담사 포인트 (NULL=상품 fallback)">P</th>
             <th style="width:75px">마진</th>
@@ -1388,7 +1401,7 @@ async function fetchAgent() {
             <th style="width:140px">비고</th>
           </tr>
         </thead>
-        <tbody>${_options.map(o => optRow(o, product)).join('')}</tbody>
+        <tbody>${_options.map(o => optRow(o, product, _showWP, _showApp, _isMattress)).join('')}</tbody>
       </table></div>
       <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;line-height:1.5">
         💡 P/마진/Tier 자동 — <b>임시 P=1.5</b>로 임시 마진 계산 → 임시 Tier → <b>P 매핑</b> (S=2.0 / A=1.5 / B=1.2 / C=1.0) → 최종 margin = 리베×0.9 − 페이백 − P×${fmtKor(_policy.weight_cost_per_p||70000)} → 최종 Tier (S=${fmtKor(_policy.tier_s_min_margin||130000)} / A=${fmtKor(_policy.tier_a_min_margin||120000)} / B=${fmtKor(_policy.tier_b_min_margin||100000)}) <span style="color:#64748b">· 수동 override 가능</span>
@@ -1484,7 +1497,7 @@ async function fetchAgent() {
     }
   }
 
-  function optRow(o, product) {
+  function optRow(o, product, showWP = true, showApp = false, isMattress = false) {
     // 옵션 단위 자동 계산 (2-step: 임시 P=1.5 → 임시 Tier → 최종 P → 최종 마진)
     const wcUnit = _policy?.weight_cost_per_p || 70000;
     const sMin = _policy?.tier_s_min_margin || 130000;
@@ -1538,22 +1551,29 @@ async function fetchAgent() {
     const metaRow = chips.length
       ? `<tr data-id="${o.id}" class="rp-opt-meta-row"><td colspan="20" style="background:rgba(15,23,42,0.5);border-bottom:1px solid #1e293b;padding:3px 8px 5px"><div style="display:flex;flex-wrap:wrap;gap:4px;font-size:9.5px;align-items:center"><span style="color:#475569;font-size:9px">📋 메타</span>${chips.join('')}</div></td></tr>`
       : '';
+    const _basisOpts = ['구독료','월렌탈료','총렌탈료','총 렌탈료'].map(b => `<option value="${b}" ${o.commission_basis===b?'selected':''}>${b}</option>`).join('');
     return `
       <tr data-id="${o.id}">
         <td style="text-align:center">${ticketCell}</td>
         <td style="text-align:center">${variantCell}</td>
         <td style="text-align:center;font-weight:700">${o.months}M</td>
         <td style="text-align:center">${o.care_service}</td>
-        <td style="text-align:center">${inpM('inspection_cycle', o.inspection_cycle, 36)}</td>
-        <td style="text-align:center">${inpM('ownership_months', o.ownership_months, 36)}</td>
-        <td>${inp('normal_price', o.normal_price, 72)}</td>
+        ${showWP ? `<td style="text-align:center">${inpM('inspection_cycle', o.inspection_cycle, 36)}</td>
+        <td style="text-align:center">${inpM('ownership_months', o.ownership_months, 36)}</td>` : ''}
+        ${showApp ? `<td style="text-align:center">${inpM('as_period_months', o.as_period_months, 42)}</td>
+        <td style="text-align:center">${inpM('signup_age_limit', o.signup_age_limit, 42)}</td>
+        <td>${inp('installation_fee', o.installation_fee, 56)}</td>` : ''}
+        ${isMattress ? '' : `<td>${inp('normal_price', o.normal_price, 72)}</td>`}
         <td>${inp('monthly_fee', o.monthly_fee, 72)}</td>
-        <td>${inp('monthly_diff', o.monthly_diff, 60, diffColor)}</td>
-        <td style="text-align:right;color:#22c55e">${inp('half_fee', o.half_fee, 60, '#22c55e')}<br>${inpM('half_period', o.half_period, 38)}</td>
+        ${showApp ? `<td style="text-align:right;color:#cbd5e1">${inp('total_rental_fee', o.total_rental_fee, 82)}</td>` : ''}
+        ${showWP ? `<td>${inp('monthly_diff', o.monthly_diff, 60, diffColor)}</td>
+        <td style="text-align:right;color:#22c55e">${inp('half_fee', o.half_fee, 60, '#22c55e')}<br>${inpM('half_period', o.half_period, 38)}</td>` : ''}
         <td>${inp('rebate', o.rebate, 80)}</td>
-        <td>${inp('rebate_otherco', o.rebate_otherco, 80, '#a855f7')}</td>
+        ${showWP ? `<td>${inp('rebate_otherco', o.rebate_otherco, 80, '#a855f7')}</td>
         <td>${inp('rebate_half', o.rebate_half, 80, '#22c55e')}</td>
-        <td style="text-align:center">${inpM('bundle_rate', o.bundle_rate, 45)}</td>
+        <td style="text-align:center">${inpM('bundle_rate', o.bundle_rate, 45)}</td>` : ''}
+        ${showApp ? `<td style="text-align:center;color:#fdba74">${inp('commission_rate', o.commission_rate, 50, '#fdba74')}</td>
+        <td><select class="rp-opt-edit" data-field="commission_basis" style="width:64px;background:#0f172a;border:1px solid #475569;color:#fdba74;padding:2px 4px;border-radius:3px;font-size:10px"><option value="">-</option>${_basisOpts}</select></td>` : ''}
         <td style="white-space:nowrap">${inp('payback', o.payback, 70, '#fbbf24')}${o.payback != null ? `<button type="button" class="rp-payback-reset" data-id="${o.id}" title="자동 산출로 복귀" style="margin-left:2px;background:#475569;color:#cbd5e1;border:none;padding:2px 4px;border-radius:3px;font-size:9px;cursor:pointer">↺</button>` : ''}</td>
         <td><input class="rp-opt-edit" data-field="point_weight" type="number" step="0.1" value="${P}" title="자동 P=${P} (임시 마진 ${tempMargin.toLocaleString()}원 → ${tempTier} Tier 매핑). 수동 입력 시 override" style="width:62px;background:#0f172a;border:1px solid #a78bfa;color:#a78bfa;padding:2px 4px;border-radius:3px;font-size:10.5px;text-align:right;font-weight:700"></td>
         <td>${inp('margin', margin, 70, tierColor)}</td>
