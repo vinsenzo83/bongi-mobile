@@ -746,6 +746,31 @@ const SECTIONS = [
 <li>옵션 단위 자동 분류 — 같은 모델도 약정·케어에 따라 Tier 다를 수 있음</li>
 </ul>
 
+<h3>📐 옵션 컬럼 정책 — 그룹별 차이 (2026-06-03 확정)</h3>
+<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#fbbf24">
+정수기·매트리스·가전은 영업 룰이 달라 옵션 컬럼 의미·표시가 분기된다. 정책 정의서: <code>docs/specs/rental-option-column-policy.md</code>
+<table style="margin-top:8px;font-size:11px">
+<tr><th style="text-align:left">컬럼</th><th>💧 정수기</th><th>🛏️ 매트리스</th><th>🏠 가전</th><th>의미</th></tr>
+<tr><td>months · care · monthly_fee · rebate · payback · variant_label · promo_type</td><td>✅</td><td>✅</td><td>✅</td><td>공통</td></tr>
+<tr><td><b>inspection_cycle</b> (점검M)</td><td>✅ 필수</td><td>🚫</td><td>🚫</td><td>정수기 점검 주기 (2/4/6M)</td></tr>
+<tr><td><b>ownership_months</b> (소유M)</td><td>✅ 필수</td><td>🚫</td><td>🟡 제로렌탈만</td><td>소유권 이전 시기</td></tr>
+<tr><td><b>normal_price</b></td><td>✅ 월 정상가</td><td>🚫</td><td>✅ 출고가</td><td>그룹별 의미 다름</td></tr>
+<tr><td><b>monthly_diff</b> (증감)</td><td>✅ 필수</td><td>🚫</td><td>🚫</td><td>정가 − 월납</td></tr>
+<tr><td><b>half_fee · half_period</b> (반값)</td><td>✅ 선택</td><td>🚫</td><td>🚫</td><td>반값 행사</td></tr>
+<tr><td><b>rebate_otherco · rebate_half</b></td><td>✅ 선택</td><td>🚫</td><td>🚫</td><td>타사보상·반값 리베</td></tr>
+<tr><td><b>bundle_rate</b> (결합%)</td><td>✅ 선택</td><td>🚫</td><td>🚫</td><td>결합 비율</td></tr>
+<tr><td><b>as_period_months</b> (A/S)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>A/S 보증 기간</td></tr>
+<tr><td><b>signup_age_limit</b> (연령)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>가입 가능 연령</td></tr>
+<tr><td><b>installation_fee</b> (설치비)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>기본 설치비</td></tr>
+<tr><td><b>commission_rate</b> (수수료율%)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>옵션별 rate</td></tr>
+<tr><td><b>commission_basis</b> (수수료기준)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>구독료/월렌탈료/총렌탈료</td></tr>
+<tr><td><b>total_rental_fee</b> (총렌탈료)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>= months × monthly_fee</td></tr>
+<tr><td><b>commission_method</b></td><td>direct</td><td>direct</td><td><b>rate</b></td><td>수수료 방식</td></tr>
+</table>
+<p style="margin-top:6px"><b>UI 옵션 디테일 모달</b>: <code>product.category.product_group</code> 기준으로 컬럼 표시 분기. 🚫 컬럼은 해당 그룹 모달에서 숨김.</p>
+<p><b>매트리스 spec</b>: products.specifications JSONB에 <code>sub_category</code>·<code>size</code>·<code>firmness</code>·<code>promotion</code> 저장 (rental_categories.metadata.extra_fields 동적 폼).</p>
+</div>
+
 <h3>🎨 상품관리 UI 전면 개편 (2026-05-25 Round 1~5)</h3>
 <div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#22d3ee">
 좌우 분할 폐기 + 옵션 대형 모달 + 인라인 편집 강화 + 이미지 직접 편집. 엑셀 양식 25컬럼 100% 매핑.
