@@ -2785,6 +2785,7 @@ router.get('/tickets/rental', authenticateJWT, async (req, res) => {
         .select(`
           id, ticket_number, ticket_active, is_active, months, care_service,
           monthly_fee, normal_price, rebate, payback, ownership_months,
+          inspection_cycle, variant_code, variant_label, promo_type,
           product:rental_products!product_id(id, brand, name, model, category_id, is_active, image_url, product_url, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group))
         `)
         .not('ticket_number', 'is', null);
@@ -2809,6 +2810,10 @@ router.get('/tickets/rental', authenticateJWT, async (req, res) => {
       rebate: o.rebate,
       payback: o.payback,
       ownership_months: o.ownership_months,
+      inspection_cycle: o.inspection_cycle,
+      variant_code: o.variant_code,
+      variant_label: o.variant_label,
+      promo_type: o.promo_type,
       brand: o.product?.brand,
       product_name: o.product?.name,
       model: o.product?.model,
