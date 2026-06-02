@@ -810,6 +810,18 @@ const SECTIONS = [
 </ul>
 </div>
 
+<h3>📊 옵션→상품 집계 자동 sync (2026-06-03 신규)</h3>
+<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#22c55e">
+<b>원칙</b>: 상품 관리 list의 약정·옵션수·렌탈료 범위·리베이트 max·care·프로모 chip은 모두 <b>옵션 데이터의 roll-up</b>이다. 옵션 INSERT/UPDATE/DELETE 시 product의 집계 컬럼이 자동 갱신된다 — 수동 backfill 불필요.
+<ul style="margin-top:6px">
+<li><b>trigger 1</b>: <code>trg_sync_option_count_on_options</code> · <code>rental_products.option_count</code> 자동 sync (클라이언트가 0 초과만 list 노출하므로 필수)</li>
+<li><b>trigger 2</b>: <code>trg_sync_months_available_on_options</code> · <code>months_available</code> ARRAY 자동 sync (약정 chip 표시 source)</li>
+<li><b>trigger 3</b>: <code>trg_sync_product_aggregates_on_options</code> · <code>care_services</code>·<code>monthly_fee_min/max</code>·<code>rebate_max/otherco_max/half_max</code>·<code>half_fee_min</code>·<code>half_periods_available</code>·<code>promo_tags_list</code>·<code>promo_type_count</code> 9개 컬럼 일괄 sync</li>
+<li><b>tier·point_weight·is_premium</b>: 정책 변경·옵션 마진 변경 시 RPC <code>rental_recalc_margins_and_premium</code> 호출 (POST <code>/api/rental/recalculate-margins</code>) — 옵션 margin 재계산 + product roll-up (max margin → tier)</li>
+<li><b>검증</b> (2026-06-03): 라이브 옵션 5,442 + product 433 일괄 재계산. 매트리스 86 모델 100% 집계 컬럼 완전 채움 (tier S=78/A=8, premium=86, market_score 86)</li>
+</ul>
+</div>
+
 <h3>📜 변경 이력 자동 기록</h3>
 <ul>
 <li><code>incentive_products_history</code> · <code>rental_product_options_history</code> 트리거</li>
