@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>03. 어드민 — 제휴카드 등록</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard', sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .header { margin-bottom: 24px; }
+  .crumb { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+  h1 { font-size: 24px; font-weight: 900; color: #fbbf24; letter-spacing: -0.5px; }
+  .sub { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+  .section-title { font-size: 14px; font-weight: 800; color: #fbbf24; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 8px; }
+  .section-title .num { background: #fbbf24; color: #0f172a; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px; }
+  .field label .req { color: #ef4444; }
+  .field input, .field select { width: 100%; background: #0f172a; border: 1px solid #475569; color: #e2e8f0; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-family: inherit; }
+  .field input:focus, .field select:focus { outline: none; border-color: #fbbf24; }
+
+  .cat-chip { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cat-chip label { background: #0f172a; border: 1px solid #475569; padding: 7px 12px; border-radius: 999px; font-size: 12px; cursor: pointer; color: #cbd5e1; }
+  .cat-chip input { display: none; }
+  .cat-chip input:checked + span { color: #fbbf24; font-weight: 700; }
+
+  .tier-box { background: #0f172a; border: 1px solid #475569; border-radius: 10px; padding: 16px; margin-bottom: 10px; position: relative; }
+  .tier-box .tier-label { font-size: 11px; font-weight: 800; color: #fbbf24; margin-bottom: 10px; }
+  .tier-box.t1 { border-left: 4px solid #ef4444; }
+  .tier-box.t2 { border-left: 4px solid #f59e0b; }
+  .tier-box.t3 { border-left: 4px solid #10b981; }
+  .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tier-row { display: flex; gap: 8px; align-items: baseline; }
+  .tier-row span { font-size: 11px; color: #94a3b8; }
+  .tier-row input { flex: 1; background: transparent; border: none; border-bottom: 1px solid #475569; color: #e2e8f0; padding: 4px 0; font-size: 13px; font-weight: 700; font-family: inherit; }
+
+  .toggle-active { display: inline-flex; align-items: center; gap: 8px; background: #064e3b; color: #6ee7b7; padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .toggle-active::before { content: '●'; }
+
+  .preview { background: linear-gradient(135deg, #1e1b4b, #312e81); border-radius: 12px; padding: 14px; margin-top: 12px; }
+  .preview-label { font-size: 10px; color: #a5b4fc; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .preview-card { background: rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .preview-card .name { font-size: 13px; font-weight: 700; color: #fff; }
+  .preview-card .name small { display: block; font-size: 10px; color: #c7d2fe; font-weight: 500; margin-top: 2px; }
+  .preview-card .price { font-size: 16px; font-weight: 900; color: #fbbf24; }
+
+  .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn-cancel { background: transparent; color: #94a3b8; border: 1px solid #475569; }
+  .btn-save { background: #fbbf24; color: #0f172a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="crumb">어드민 / 제휴카드사 / 신규 등록</div>
+    <h1>🎴 제휴카드 등록</h1>
+    <div class="sub">월 카드 사용금액에 따라 렌탈료를 할인해주는 카드입니다.</div>
+  </div>
+
+  <!-- 1. 기본 -->
+  <div class="card">
+    <div class="section-title"><span class="num">1</span>카드 정보</div>
+    <div class="grid2">
+      <div class="field">
+        <label>카드사<span class="req">*</span></label>
+        <select>
+          <option>KB국민카드</option><option>삼성카드</option><option>현대카드</option>
+          <option>신한카드</option><option>NH농협카드</option><option>롯데카드</option>
+          <option>BC카드</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>카드명<span class="req">*</span></label>
+        <input placeholder="KB 청춘대로 카드">
+      </div>
+      <div class="field">
+        <label>렌탈사 / 브랜드 (얼라이어스 자동 포함)</label>
+        <select>
+          <option>코웨이</option><option>LG전자 (LG전자구독 포함)</option>
+          <option>SK매직</option><option>청호나이스 (청호 포함)</option>
+          <option>교원웰스 (웰스 포함)</option><option>BS ON (삼성전자 포함)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>활성 상태</label>
+        <div style="padding-top:8px"><span class="toggle-active">활성 — storefront 노출</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 적용 카테고리 -->
+  <div class="card">
+    <div class="section-title"><span class="num">2</span>적용 카테고리 (다중)</div>
+    <div class="cat-chip">
+      <label><input type="checkbox" checked><span>💧 정수기</span></label>
+      <label><input type="checkbox" checked><span>🌬️ 공기청정기</span></label>
+      <label><input type="checkbox"><span>🚽 비데</span></label>
+      <label><input type="checkbox"><span>🛏️ 매트리스</span></label>
+      <label><input type="checkbox"><span>❄️ 에어컨</span></label>
+      <label><input type="checkbox"><span>📺 TV</span></label>
+    </div>
+  </div>
+
+  <!-- 3. 할인 구간 (Tier) -->
+  <div class="card">
+    <div class="section-title"><span class="num">3</span>할인 구간 (전월 카드 사용 실적별)</div>
+
+    <div class="tier-box t1">
+      <div class="tier-label">🔴 1구간 — 기본 / 가장 흔하게 추천</div>
+      <div class="tier-grid">
+        <div class="tier-row"><span>전월 실적</span><input value="400000"><span>원 이상</span></div>
+        <div class="tier-row"><span>월 할인액</span><input value="10000"><span>원</span></div>
+      </div>
+    </div>
+
+    <div class="tier-box t2">
+      <div class="tier-label">🟡 2구간 — 중급</div>
+      <div class="tier-grid">
+        <div class="tier-row"><span>전월 실적</span><input value="700000"><span>원 이상</span></div>
+        <div class="tier-row"><span>월 할인액</span><input value="15000"><span>원</span></div>
+      </div>
+    </div>
+
+    <div class="tier-box t3">
+      <div class="tier-label">🟢 3구간 — 우대 / 최대 할인</div>
+      <div class="tier-grid">
+        <div class="tier-row"><span>전월 실적</span><input value="1000000"><span>원 이상</span></div>
+        <div class="tier-row"><span>월 할인액</span><input value="20000"><span>원</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 미리보기 -->
+  <div class="card">
+    <div class="section-title"><span class="num">4</span>storefront 미리보기</div>
+    <div class="preview">
+      <div class="preview-label">고객 화면에서 이렇게 보입니다</div>
+      <div class="preview-card">
+        <div class="name">🎴 KB 청춘대로 카드<small>전월 40만원 사용 시 · 1구간</small></div>
+        <div class="price">−10,000원</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-cancel">취소</button>
+    <button class="btn btn-save">저장</button>
+  </div>
+
+</div>
+</body>
+</html>

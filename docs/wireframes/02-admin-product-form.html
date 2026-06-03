@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>02. 어드민 — 상품 정보 등록</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 24px; }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  .header { margin-bottom: 24px; }
+  .crumb { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+  h1 { font-size: 24px; font-weight: 900; color: #fbbf24; letter-spacing: -0.5px; }
+  .sub { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+  .section-title { font-size: 14px; font-weight: 800; color: #fbbf24; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 8px; }
+  .section-title .num { background: #fbbf24; color: #0f172a; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px; }
+  .field label .req { color: #ef4444; }
+  .field label .hint { float: right; font-size: 10px; font-weight: 500; color: #64748b; }
+  .field input, .field select, .field textarea { width: 100%; background: #0f172a; border: 1px solid #475569; color: #e2e8f0; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-family: inherit; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #fbbf24; }
+  .field textarea { resize: vertical; min-height: 70px; }
+
+  .img-drop { background: #0f172a; border: 2px dashed #475569; border-radius: 10px; padding: 30px; text-align: center; color: #64748b; cursor: pointer; }
+  .img-drop:hover { border-color: #fbbf24; color: #fbbf24; }
+  .img-drop .icon { font-size: 32px; margin-bottom: 6px; }
+
+  .chip-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip-pick label { background: #0f172a; border: 1px solid #475569; padding: 7px 12px; border-radius: 999px; font-size: 12px; cursor: pointer; color: #cbd5e1; }
+  .chip-pick input { display: none; }
+  .chip-pick input:checked + span { color: #fbbf24; font-weight: 700; }
+
+  .ai-fill { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #8b5cf6, #6366f1); color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; cursor: pointer; border: none; font-family: inherit; }
+  .ai-fill:hover { opacity: 0.9; }
+
+  .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn-cancel { background: transparent; color: #94a3b8; border: 1px solid #475569; }
+  .btn-save { background: #fbbf24; color: #0f172a; }
+  .btn-save:hover { background: #f59e0b; }
+
+  .note { font-size: 11px; color: #64748b; background: #0c1424; border-left: 3px solid #fbbf24; padding: 10px 14px; border-radius: 4px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="crumb">어드민 / 상품 관리 / 신규 등록</div>
+    <h1>🛏️ 상품 정보 등록</h1>
+    <div class="sub">가전 렌탈 상품을 등록합니다. AI 자동 채움으로 빠르게 입력 가능합니다.</div>
+  </div>
+
+  <!-- 1. 기본 정보 -->
+  <div class="card">
+    <div class="section-title"><span class="num">1</span>기본 정보</div>
+    <div class="grid2">
+      <div class="field">
+        <label>카테고리<span class="req">*</span></label>
+        <select>
+          <option>💧 정수기</option>
+          <option>🌬️ 공기청정기</option>
+          <option>🚽 비데</option>
+          <option>🛏️ 매트리스</option>
+          <option>❄️ 에어컨</option>
+          <option>📺 TV</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>브랜드<span class="req">*</span></label>
+        <select>
+          <option>코웨이</option><option>LG전자</option><option>SK매직</option>
+          <option>쿠쿠</option><option>청호나이스</option><option>교원웰스</option>
+          <option>현대큐밍</option><option>유버스</option><option>루헨스</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>모델명<span class="req">*</span> <span class="hint">예: CHP-7220N</span></label>
+        <input placeholder="모델 코드 입력">
+      </div>
+      <div class="field">
+        <label>제품명<span class="req">*</span></label>
+        <input placeholder="아이콘3 냉온정 정수기">
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 이미지 -->
+  <div class="card">
+    <div class="section-title"><span class="num">2</span>제품 이미지</div>
+    <div class="img-drop">
+      <div class="icon">📸</div>
+      <div style="font-size:13px;font-weight:700;color:#cbd5e1">이미지를 드래그하거나 클릭해서 업로드</div>
+      <div style="font-size:11px;margin-top:4px">PNG·JPG·WebP · 정사각형 권장</div>
+    </div>
+    <div class="note">⚡ 같은 모델로 이미 등록된 상품이 있으면 자동으로 이미지를 재사용합니다.</div>
+  </div>
+
+  <!-- 3. 약정·옵션 -->
+  <div class="card">
+    <div class="section-title"><span class="num">3</span>약정 · 옵션</div>
+    <div class="field">
+      <label>가능한 약정 기간 (다중 선택)<span class="req">*</span></label>
+      <div class="chip-pick">
+        <label><input type="checkbox" checked><span>84개월</span></label>
+        <label><input type="checkbox" checked><span>72개월</span></label>
+        <label><input type="checkbox" checked><span>60개월</span></label>
+        <label><input type="checkbox"><span>48개월</span></label>
+        <label><input type="checkbox"><span>36개월</span></label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>관리 방식<span class="req">*</span></label>
+        <div class="chip-pick">
+          <label><input type="checkbox" checked><span>방문 관리</span></label>
+          <label><input type="checkbox" checked><span>셀프 관리</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label>관리 주기</label>
+        <div class="chip-pick">
+          <label><input type="checkbox"><span>4개월</span></label>
+          <label><input type="checkbox" checked><span>6개월</span></label>
+          <label><input type="checkbox"><span>12개월</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 가격 -->
+  <div class="card">
+    <div class="section-title"><span class="num">4</span>가격</div>
+    <div class="grid3">
+      <div class="field">
+        <label>정상 월 요금<span class="req">*</span> <span class="hint">원</span></label>
+        <input type="number" placeholder="35900">
+      </div>
+      <div class="field">
+        <label>최대 혜택가 <span class="hint">원</span></label>
+        <input type="number" placeholder="17900">
+      </div>
+      <div class="field">
+        <label>현금 페이백 <span class="hint">원</span></label>
+        <input type="number" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 상세 정보 (AI 자동 채움) -->
+  <div class="card">
+    <div class="section-title">
+      <span class="num">5</span>상세 정보
+      <button class="ai-fill" style="margin-left:auto">🤖 AI 자동 채움</button>
+    </div>
+    <div class="field">
+      <label>한 줄 설명</label>
+      <input placeholder="실시간 UV 살균·스마트 무빙 파우셋·가로 16cm 초소형">
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>크기 (W×D×H mm)</label>
+        <input placeholder="160×365×385mm">
+      </div>
+      <div class="field">
+        <label>무게 (kg)</label>
+        <input type="number" step="0.1" placeholder="4.7">
+      </div>
+    </div>
+    <div class="field">
+      <label>주요 기능 (쉼표 구분)</label>
+      <input placeholder="냉수, 온수, UV 살균, 스마트 무빙, IoT, 무빙코크">
+    </div>
+    <div class="field">
+      <label>운영자 메모 (storefront 비노출)</label>
+      <textarea placeholder="필터 교체 4개월·자가관리·전월실적 40만원 카드 우대"></textarea>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-cancel">취소</button>
+    <button class="btn btn-save">저장하고 storefront에 노출</button>
+  </div>
+
+</div>
+</body>
+</html>
