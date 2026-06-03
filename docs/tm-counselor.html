@@ -6233,9 +6233,10 @@ setTimeout(() => {
 
     // 🎴 제휴카드 fetch — 카테고리 매칭만 + 전체 카드 brand별 grouping (2026-06-03 수동 선택 모드)
     // 상담사가 고객 카드 확인 후 직접 선택 (회사 매칭 자동 X — 회사 row 중복·alias 복잡성 회피)
-    if (p.category?.name) {
-      const _catParam = `&category=${encodeURIComponent(p.category.name)}`;
-      fetch(`${API}/partner-cards?active=1${_catParam}`)
+    {
+      const _catParam = p.category?.name ? `&category=${encodeURIComponent(p.category.name)}` : '';
+      const _tk = (typeof authGetToken === 'function') ? authGetToken() : localStorage.getItem('incentive-auth-token-v1');
+      fetch(`${API}/partner-cards?active=1${_catParam}`, { headers: _tk ? { Authorization: 'Bearer ' + _tk } : {} })
         .then(r => r.json())
         .then(cardsR => {
           // server alias 매핑 (LG전자 → LG전자구독 등) 결과 그대로 사용 — client 추가 filter X
@@ -6303,11 +6304,6 @@ setTimeout(() => {
           const loading = document.getElementById('rental-card-loading');
           if (loading) loading.textContent = '· 로드 실패';
         });
-    } else {
-      const loading = document.getElementById('rental-card-loading');
-      const empty = document.getElementById('rental-card-empty');
-      if (loading) loading.style.display = 'none';
-      if (empty) empty.style.display = 'block';
     }
     // V5 인센티브 미리보기 — 가운데(form-wrap) 영역으로 이동
     const incArea = document.getElementById('rental-incentive-area');
