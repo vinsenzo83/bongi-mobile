@@ -6233,8 +6233,8 @@ setTimeout(() => {
 
     // 🎴 제휴카드 fetch — 카테고리 매칭만 + 전체 카드 brand별 grouping (2026-06-03 수동 선택 모드)
     // 상담사가 고객 카드 확인 후 직접 선택 (회사 매칭 자동 X — 회사 row 중복·alias 복잡성 회피)
-    {
-      const _catParam = p.category?.name ? `&category=${encodeURIComponent(p.category.name)}` : '';
+    if (p.category?.name) {
+      const _catParam = `&category=${encodeURIComponent(p.category.name)}`;
       fetch(`${API}/partner-cards?active=1${_catParam}`)
         .then(r => r.json())
         .then(cardsR => {
