@@ -8,83 +8,84 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Pretendard', sans-serif; background: #f8fafc; color: #0f172a; min-height: 100vh; }
-  .layout { display: grid; grid-template-columns: 1fr 360px; min-height: 100vh; }
-  .main { padding: 28px 40px; overflow-y: auto; }
-  .panel { background: #fff; border-left: 1px solid #e2e8f0; padding: 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-
+  .layout { display: grid; grid-template-columns: 1fr 380px; min-height: 100vh; }
+  .main { padding: 28px 36px; overflow-y: auto; }
+  .panel { background: #fff; border-left: 1px solid #e2e8f0; padding: 22px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
   .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .brand-logo { font-size: 20px; font-weight: 900; color: #6366f1; letter-spacing: -0.5px; }
   .login-btn { background: transparent; border: 1px solid #cbd5e1; color: #475569; padding: 7px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 600; }
-
-  h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 4px; }
-  .lead { font-size: 14px; color: #64748b; margin-bottom: 28px; }
-
-  .step { margin-bottom: 28px; }
-  .step-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .step-num { width: 26px; height: 26px; background: #6366f1; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
-  .step-title { font-size: 16px; font-weight: 800; }
+  h1 { font-size: 28px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .lead { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+  .step { margin-bottom: 22px; }
+  .step-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .step-num { width: 24px; height: 24px; background: #6366f1; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .step-title { font-size: 14px; font-weight: 800; }
   .step-title small { color: #94a3b8; font-weight: 500; font-size: 11px; margin-left: 6px; }
-
-  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { padding: 11px 18px; border: 2px solid #e2e8f0; border-radius: 999px; background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; color: #475569; transition: all 0.12s; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip { padding: 9px 15px; border: 2px solid #e2e8f0; border-radius: 999px; background: #fff; cursor: pointer; font-size: 12.5px; font-weight: 600; color: #475569; transition: all 0.12s; }
   .chip:hover { border-color: #cbd5e1; }
   .chip.active { background: #eef2ff; border-color: #6366f1; color: #6366f1; font-weight: 800; }
-  .chip.lg { padding: 14px 20px; font-size: 14px; }
+  .chip.lg { padding: 12px 18px; font-size: 13.5px; }
   .chip .sub { display: block; font-size: 10px; color: #94a3b8; font-weight: 500; margin-top: 2px; }
   .chip.active .sub { color: #818cf8; }
-  .chip.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+  .chip.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+  .chip.promo-half { border-color: #fca5a5; color: #b91c1c; background: #fef2f2; }
+  .chip.promo-half.active { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
 
-  .prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; max-height: 480px; overflow-y: auto; padding: 4px; }
-  .prod-card { background: #fff; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.12s; }
+  .form-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .form-row .lbl { font-size: 11px; font-weight: 700; color: #64748b; min-width: 80px; }
+  .form-row select { background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 8px; font-size: 12.5px; font-family: inherit; font-weight: 600; flex: 1; }
+
+  .prod-strip { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4px 12px; margin-bottom: 8px; }
+  .prod-card { flex: 0 0 200px; background: #fff; border: 2px solid #e2e8f0; border-radius: 10px; padding: 10px; cursor: pointer; transition: all 0.12s; }
   .prod-card:hover { border-color: #cbd5e1; transform: translateY(-2px); }
   .prod-card.active { border-color: #6366f1; background: #eef2ff; }
-  .prod-img { width: 100%; aspect-ratio: 1; background: #f1f5f9; border-radius: 8px; margin-bottom: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .prod-img { width: 100%; aspect-ratio: 1; background: #f1f5f9; border-radius: 6px; margin-bottom: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
   .prod-img img { width: 100%; height: 100%; object-fit: contain; }
-  .prod-img.placeholder { font-size: 32px; color: #cbd5e1; }
-  .prod-brand { font-size: 10.5px; color: #94a3b8; font-weight: 600; }
-  .prod-name { font-size: 12.5px; font-weight: 700; line-height: 1.35; margin: 3px 0 6px; height: 34px; overflow: hidden; }
-  .prod-price { font-size: 11px; color: #64748b; }
-  .prod-price strong { color: #6366f1; font-size: 14px; font-weight: 900; }
-  .prod-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-  .prod-tag { font-size: 9px; background: #f1f5f9; padding: 2px 7px; border-radius: 3px; color: #64748b; font-weight: 600; }
+  .prod-img.placeholder { font-size: 28px; color: #cbd5e1; }
+  .prod-brand { font-size: 9.5px; color: #94a3b8; font-weight: 600; }
+  .prod-name { font-size: 11.5px; font-weight: 700; line-height: 1.3; margin: 2px 0 4px; height: 30px; overflow: hidden; }
+  .prod-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+  .prod-tag { font-size: 8.5px; background: #f1f5f9; padding: 1px 5px; border-radius: 3px; color: #64748b; font-weight: 600; }
   .prod-tag.promo-half { background: #fee2e2; color: #991b1b; font-weight: 700; }
   .prod-tag.promo-gift { background: #fef3c7; color: #92400e; font-weight: 700; }
   .prod-tag.promo-other { background: #ede9fe; color: #5b21b6; font-weight: 700; }
 
-  .loading { padding: 30px; text-align: center; color: #94a3b8; font-size: 12px; }
+  .brand-policy { background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 6px; padding: 10px 14px; font-size: 11.5px; color: #78350f; line-height: 1.6; margin-top: 10px; }
 
-  /* 우 panel */
-  .panel-title { font-size: 14px; font-weight: 800; margin-bottom: 16px; }
-  .summary { background: #f8fafc; border-radius: 10px; padding: 14px; margin-bottom: 12px; font-size: 12px; line-height: 1.7; }
-  .summary .row { display: flex; justify-content: space-between; padding: 2px 0; }
-  .summary .row .k { color: #94a3b8; }
-  .summary .row .v { font-weight: 700; }
+  .loading { padding: 20px; text-align: center; color: #94a3b8; font-size: 12px; }
 
-  .promo-box { background: #fef3c7; border: 1px solid #fbbf24; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 11.5px; color: #92400e; }
-  .promo-box .ttl { font-weight: 800; font-size: 12px; margin-bottom: 4px; }
+  .panel-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .panel-title .ticket { font-size: 10px; background: #6366f1; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+  .summary { background: #f8fafc; border-radius: 10px; padding: 12px; margin-bottom: 10px; font-size: 11.5px; line-height: 1.7; }
+  .summary .row { display: flex; justify-content: space-between; padding: 2px 0; gap: 6px; }
+  .summary .row .k { color: #94a3b8; flex-shrink: 0; }
+  .summary .row .v { font-weight: 700; text-align: right; }
 
-  .price-box { background: linear-gradient(135deg, #eef2ff, #ede9fe); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-  .price-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
-  .price-row.normal { color: #94a3b8; text-decoration: line-through; font-size: 11.5px; }
+  .extra-info { background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 11px; color: #166534; line-height: 1.7; }
+  .extra-info .row { display: flex; justify-content: space-between; }
+
+  .promo-box { background: #fef3c7; border: 1px solid #fbbf24; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 11px; color: #92400e; }
+  .promo-box .ttl { font-weight: 800; font-size: 11.5px; margin-bottom: 4px; }
+
+  .month-sim { background: #ecfdf5; border: 1px solid #10b981; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 11px; color: #065f46; line-height: 1.6; }
+  .month-sim .ttl { font-weight: 800; font-size: 11.5px; margin-bottom: 4px; color: #047857; }
+
+  .price-box { background: linear-gradient(135deg, #eef2ff, #ede9fe); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .price-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11.5px; gap: 8px; }
   .price-row.discount { color: #6366f1; font-weight: 700; }
-  .price-row.final { font-size: 13px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #c7d2fe; align-items: baseline; }
+  .price-row.final { font-size: 13px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #c7d2fe; align-items: baseline; }
   .price-row.final .v { font-size: 24px; font-weight: 900; color: #4c1d95; }
 
-  .cta-primary, .cta-secondary { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 14px; font-weight: 800; cursor: pointer; margin-bottom: 8px; font-family: inherit; transition: all 0.12s; }
+  .cta-primary, .cta-secondary { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 13.5px; font-weight: 800; cursor: pointer; margin-bottom: 8px; font-family: inherit; transition: all 0.12s; }
   .cta-primary { background: #6366f1; color: #fff; }
   .cta-primary:hover:not(:disabled) { background: #4f46e5; }
-  .cta-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
   .cta-secondary { background: #fff; color: #6366f1; border: 2px solid #6366f1; }
   .cta-secondary:hover:not(:disabled) { background: #eef2ff; }
-  .cta-secondary:disabled { color: #cbd5e1; border-color: #cbd5e1; cursor: not-allowed; }
-
-  .empty-panel { padding: 50px 16px; text-align: center; color: #94a3b8; font-size: 12.5px; line-height: 1.7; }
-  .empty-icon { font-size: 36px; margin-bottom: 12px; }
-
-  .note { font-size: 10px; color: #94a3b8; line-height: 1.6; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #e2e8f0; }
-
-  /* 토스트 */
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 14px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; z-index: 100; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .empty-panel { padding: 40px 14px; text-align: center; color: #94a3b8; font-size: 12px; line-height: 1.7; }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; }
+  .note { font-size: 10px; color: #94a3b8; line-height: 1.6; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e2e8f0; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; z-index: 100; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 90vw; }
   .toast.show { opacity: 1; }
 </style>
 </head>
@@ -97,356 +98,390 @@
       <button class="login-btn">로그인 / 회원가입</button>
     </div>
     <h1>가전 렌탈 계산기</h1>
-    <p class="lead">조건을 골라보세요. 실시간 가격을 확인하고 셀프 또는 상담원 신청을 선택할 수 있어요.</p>
+    <p class="lead">v1 큐콜과 동일한 모든 옵션을 직관 chip으로. 약정·관리·프로모션·반값 개월수·소유권·점검주기·카드까지.</p>
 
+    <!-- Step 1: 카테고리 -->
     <div class="step">
-      <div class="step-head">
-        <div class="step-num">1</div>
-        <div class="step-title">카테고리 <small>어떤 가전을 알아보시나요?</small></div>
-      </div>
-      <div id="cat-chips" class="chip-row"><div class="loading">카테고리 로딩…</div></div>
+      <div class="step-head"><div class="step-num">1</div><div class="step-title">카테고리</div></div>
+      <div id="cat-chips" class="chip-row"><div class="loading">로딩…</div></div>
     </div>
 
+    <!-- Step 2: 브랜드·렌탈사 (조건부) -->
     <div class="step" id="step-brand" style="display:none">
-      <div class="step-head">
-        <div class="step-num">2</div>
-        <div class="step-title">제조사 <small>선호 브랜드 선택 (생략 가능)</small></div>
-      </div>
+      <div class="step-head"><div class="step-num">2</div><div class="step-title">브랜드</div></div>
       <div id="brand-chips" class="chip-row"></div>
-    </div>
-
-    <div class="step" id="step-product" style="display:none">
-      <div class="step-head">
-        <div class="step-num">3</div>
-        <div class="step-title">제품 <small>마음에 드는 모델을 선택해 주세요</small></div>
+      <div id="company-row" class="form-row" style="margin-top:10px;display:none">
+        <div class="lbl">🏢 렌탈사 (채널)</div>
+        <select id="rental-company"><option value="">전체</option></select>
       </div>
-      <div id="prod-grid" class="prod-grid"><div class="loading">상품 로딩…</div></div>
+      <div id="brand-policy-box" class="brand-policy" style="display:none"></div>
     </div>
 
+    <!-- Step 3: 제품 카드 strip -->
+    <div class="step" id="step-prod" style="display:none">
+      <div class="step-head"><div class="step-num">3</div><div class="step-title">제품 <small>마음에 드는 모델</small></div></div>
+      <div id="prod-strip" class="prod-strip"></div>
+    </div>
+
+    <!-- Step 4: 약정 -->
     <div class="step" id="step-months" style="display:none">
-      <div class="step-head">
-        <div class="step-num">4</div>
-        <div class="step-title">약정 기간</div>
-      </div>
+      <div class="step-head"><div class="step-num">4</div><div class="step-title">약정 기간</div></div>
       <div id="months-chips" class="chip-row"></div>
     </div>
 
+    <!-- Step 5: 관리 -->
     <div class="step" id="step-care" style="display:none">
-      <div class="step-head">
-        <div class="step-num">5</div>
-        <div class="step-title">관리 방식</div>
-      </div>
+      <div class="step-head"><div class="step-num">5</div><div class="step-title">관리 방식</div></div>
       <div id="care-chips" class="chip-row"></div>
     </div>
 
+    <!-- Step 6: 프로모션 -->
+    <div class="step" id="step-promo" style="display:none">
+      <div class="step-head"><div class="step-num">6</div><div class="step-title">프로모션 <small>모델별 가능 조합</small></div></div>
+      <div id="promo-chips" class="chip-row"></div>
+    </div>
+
+    <!-- Step 7: 반값할인 개월수 -->
+    <div class="step" id="step-half" style="display:none">
+      <div class="step-head"><div class="step-num">7</div><div class="step-title">반값 할인 개월수 <small>몇 개월 동안 반값?</small></div></div>
+      <div id="half-chips" class="chip-row"></div>
+    </div>
+
+    <!-- Step 8: 소유권 이전 -->
+    <div class="step" id="step-own" style="display:none">
+      <div class="step-head"><div class="step-num">8</div><div class="step-title">소유권 이전 <small>이전 시기</small></div></div>
+      <div id="own-chips" class="chip-row"></div>
+    </div>
+
+    <!-- Step 9: 점검 주기 -->
+    <div class="step" id="step-inspect" style="display:none">
+      <div class="step-head"><div class="step-num">9</div><div class="step-title">점검 주기 <small>방문 시</small></div></div>
+      <div id="inspect-chips" class="chip-row"></div>
+    </div>
+
+    <!-- Step 10: 카드 -->
     <div class="step" id="step-card" style="display:none">
-      <div class="step-head">
-        <div class="step-num">6</div>
-        <div class="step-title">제휴 카드 <small>선택하면 추가 할인</small></div>
-      </div>
+      <div class="step-head"><div class="step-num">10</div><div class="step-title">제휴 카드 <small>선택 시 추가 할인</small></div></div>
       <div id="card-chips" class="chip-row"></div>
     </div>
+
   </main>
 
   <aside class="panel">
     <div id="panel-empty" class="empty-panel">
       <div class="empty-icon">🧮</div>
       <strong style="display:block;color:#475569;margin-bottom:6px">조건을 선택해 보세요</strong>
-      카테고리부터 차근차근 골라주시면<br>실시간으로 가격이 계산됩니다.
+      카테고리 → 브랜드 → 제품 → 옵션 순으로<br>실시간 견적이 표시됩니다.
     </div>
 
     <div id="panel-content" style="display:none">
-      <div class="panel-title">예상 요금</div>
+      <div class="panel-title"><span>예상 견적</span><span class="ticket" id="ticket-num">-</span></div>
       <div id="summary-box" class="summary"></div>
+      <div id="extra-info-box" class="extra-info" style="display:none"></div>
       <div id="promo-box" style="display:none"></div>
+      <div id="month-sim" style="display:none"></div>
       <div id="price-box" class="price-box"></div>
       <button class="cta-primary" id="cta-self">💻 셀프 신청 (바로 가입)</button>
       <button class="cta-secondary" id="cta-consult">📞 상담원 신청 (전화 받기)</button>
-      <div class="note">
-        💻 본인 정보를 직접 입력하고 바로 가입합니다.<br>
-        📞 상담원이 24시간 내 전화로 안내해 드립니다.<br>
-        📋 카드 신청 시 카드사 별도 정책이 적용됩니다.
-      </div>
+      <div class="note">견적 시점 가격·프로모션이 신청 시 자동 박제됩니다.</div>
     </div>
   </aside>
-
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const API = '/api';
+const API = '/api/rental';
 const TOKEN_KEY = 'incentive-auth-token-v1';
 const tk = () => localStorage.getItem(TOKEN_KEY) || '';
 const auth = () => ({ headers: tk() ? { Authorization: 'Bearer ' + tk() } : {} });
+const authJson = () => ({ headers: { 'Content-Type': 'application/json', ...(tk() ? { Authorization: 'Bearer ' + tk() } : {}) } });
+
+const CATEGORY_ICONS = { '정수기':'💧','공기청정기':'🌬️','비데':'🚽','매트리스':'🛏️','에어컨':'❄️','TV':'📺' };
 
 const state = {
-  category: null,
-  brand: null,
-  product: null,
-  months: null,
-  careType: null,
-  card: null,
-  cards: [],
-  categories: [],
-  products: [],
+  categorySlug: null, categoryName: null,
+  brand: null, companyId: null, productId: null,
+  months: null, care: null, promo: 'basic',
+  halfPeriod: null, ownership: null, inspection: null,
+  cardId: null,
 };
+let _categories = [], _products = [], _options = [], _selectedOpt = null, _quote = null, _cards = [], _brandPolicies = [];
 
-const CATEGORY_ICONS = {
-  '정수기': '💧', '공기청정기': '🌬️', '비데': '🚽',
-  '매트리스': '🛏️', '에어컨': '❄️', 'TV': '📺',
-  '안마의자': '🪑', '세탁기': '👕', '건조기': '🌀',
-};
-
-function toast(msg, ms=2500) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), ms);
-}
-
-function fmt(n) {
-  return n == null ? '-' : Number(n).toLocaleString('ko-KR') + '원';
-}
+const fmt = n => n == null ? '-' : Math.round(n).toLocaleString('ko-KR');
+function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2500); }
 
 async function loadCategories() {
   try {
-    const r = await fetch(`${API}/rental/categories`, auth()).then(r => r.json());
-    const cats = (r.categories || r.rows || []).filter(c => c.active !== false);
-    // 활성 상품 있는 카테고리만 (storefront-friendly)
-    const counts = await fetch(`${API}/rental/products?limit=1000`, auth()).then(r => r.json());
-    const prods = counts.products || counts.rows || [];
-    const byCat = {};
-    prods.forEach(p => { byCat[p.category_id] = (byCat[p.category_id] || 0) + 1; });
-    const active = cats.filter(c => byCat[c.id] > 0);
-    state.categories = active;
-    renderCategories(byCat);
-  } catch (e) {
-    document.getElementById('cat-chips').innerHTML = `<div class="loading" style="color:#ef4444">로드 실패 — 로그인 후 다시 시도 (${e.message})</div>`;
-  }
+    const r = await fetch(`${API}/categories`, auth()).then(r => r.json());
+    _categories = (r.categories || r.rows || []).filter(c => c.active !== false);
+    const all = await fetch(`${API}/products?limit=1500`, auth()).then(r => r.json());
+    const byCat = {}; (all.products || all.rows || []).forEach(p => { byCat[p.category_id] = (byCat[p.category_id]||0) + 1; });
+    _categories = _categories.filter(c => byCat[c.id] > 0);
+    try { const bp = await fetch(`${API}/brand-policies`, auth()).then(r => r.json()); _brandPolicies = bp.policies || bp.rows || []; } catch (e) { _brandPolicies = []; }
+    const el = document.getElementById('cat-chips');
+    el.innerHTML = _categories.map(c => `<div class="chip lg" data-slug="${c.slug}" data-id="${c.id}" data-name="${c.name}">${CATEGORY_ICONS[c.name]||'📦'} ${c.name}<span class="sub">${byCat[c.id]}개</span></div>`).join('');
+    el.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => selectChip(el, chip, () => selectCategory(chip.dataset.slug, +chip.dataset.id, chip.dataset.name))));
+  } catch (e) { document.getElementById('cat-chips').innerHTML = `<div class="loading" style="color:#ef4444">${e.message}</div>`; }
 }
 
-function renderCategories(byCat) {
-  const el = document.getElementById('cat-chips');
-  el.innerHTML = state.categories.map(c => `
-    <div class="chip lg" data-cat="${c.id}" data-name="${c.name}" data-slug="${c.slug || ''}">
-      ${CATEGORY_ICONS[c.name] || '📦'} ${c.name}
-      <span class="sub">${byCat[c.id] || 0}개</span>
-    </div>
-  `).join('');
-  el.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      state.category = { id: +chip.dataset.cat, name: chip.dataset.name, slug: chip.dataset.slug };
-      state.brand = null; state.product = null; state.months = null; state.careType = null; state.card = null;
-      loadProductsForCategory();
-    });
-  });
+function selectChip(container, chip, cb) {
+  container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  cb && cb();
 }
 
-async function loadProductsForCategory() {
+async function selectCategory(slug, id, name) {
+  state.categorySlug = slug; state.categoryName = name;
+  state.brand = null; state.productId = null; state.months = null; state.care = null;
   document.getElementById('step-brand').style.display = '';
-  document.getElementById('step-product').style.display = '';
-  document.getElementById('step-months').style.display = 'none';
-  document.getElementById('step-care').style.display = 'none';
-  document.getElementById('step-card').style.display = 'none';
-  document.getElementById('prod-grid').innerHTML = '<div class="loading">상품 로딩…</div>';
-  document.getElementById('brand-chips').innerHTML = '<div class="loading">제조사 로딩…</div>';
-
+  hideSteps(['prod','months','care','promo','half','own','inspect','card']);
+  document.getElementById('brand-chips').innerHTML = '<div class="loading">로딩…</div>';
   try {
-    // server는 category=slug로 받음
-    const r = await fetch(`${API}/rental/products?category=${encodeURIComponent(state.category.slug)}`, auth()).then(r => r.json());
-    const prods = r.products || r.rows || [];
-    state.products = prods.filter(p => p.is_active !== false && p.category_id === state.category.id);
+    const r = await fetch(`${API}/products?category=${encodeURIComponent(slug)}`, auth()).then(r => r.json());
+    _products = (r.products || r.rows || []).filter(p => p.is_active !== false && (p.option_count || 0) > 0);
     renderBrands();
-    renderProducts();
-    loadCardsForCategory();
-  } catch (e) {
-    document.getElementById('prod-grid').innerHTML = `<div class="loading" style="color:#ef4444">로드 실패: ${e.message}</div>`;
-  }
+    loadCards(slug);
+  } catch (e) { document.getElementById('brand-chips').innerHTML = `<div class="loading" style="color:#ef4444">${e.message}</div>`; }
 }
+
+function hideSteps(ids) { ids.forEach(id => { const el = document.getElementById('step-'+id); if (el) el.style.display = 'none'; }); }
 
 function renderBrands() {
-  const brands = [...new Set(state.products.map(p => p.brand).filter(Boolean))].sort();
+  const brands = [...new Set(_products.map(p => p.brand).filter(Boolean))].sort();
   const el = document.getElementById('brand-chips');
-  el.innerHTML = `<div class="chip" data-brand="">전체</div>` +
-    brands.map(b => `<div class="chip" data-brand="${b}">${b}</div>`).join('');
-  el.querySelectorAll('.chip').forEach((chip, i) => {
-    if (i === 0) chip.classList.add('active');
-    chip.addEventListener('click', () => {
-      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      state.brand = chip.dataset.brand || null;
-      renderProducts();
-    });
-  });
+  el.innerHTML = brands.map(b => `<div class="chip" data-brand="${b}">${b}</div>`).join('');
+  el.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => selectChip(el, chip, () => selectBrand(chip.dataset.brand))));
+}
+
+function selectBrand(brand) {
+  state.brand = brand; state.companyId = null; state.productId = null;
+  // 렌탈사 select
+  const cos = _products.filter(p => p.brand === brand).map(p => p.company).filter(c => c && c.id);
+  const uniq = [...new Map(cos.map(c => [c.id, c])).values()].sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  const coRow = document.getElementById('company-row');
+  const coSel = document.getElementById('rental-company');
+  if (uniq.length > 1) {
+    coRow.style.display = '';
+    coSel.innerHTML = `<option value="">전체</option>` + uniq.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  } else { coRow.style.display = 'none'; }
+  coSel.onchange = () => { state.companyId = coSel.value || null; renderProducts(); };
+  // brand policy
+  const bp = _brandPolicies.find(b => b.brand === brand);
+  const div = document.getElementById('brand-policy-box');
+  if (bp) {
+    div.style.display = 'block';
+    div.innerHTML = `<strong>📋 ${bp.brand} 정책</strong><br>· <b>결합:</b> ${bp.bundle_condition||'-'}<br>· <b>타사보상:</b> ${bp.otherco_comp||'-'}<br>· <b>반값할인:</b> ${bp.half_discount_policy||'-'}<br>· <b>환수:</b> ${bp.refund_policy||'-'}`;
+  } else div.style.display = 'none';
+  document.getElementById('step-prod').style.display = '';
+  hideSteps(['months','care','promo','half','own','inspect']);
+  renderProducts();
 }
 
 function renderProducts() {
-  const list = state.brand ? state.products.filter(p => p.brand === state.brand) : state.products;
-  const el = document.getElementById('prod-grid');
-  if (!list.length) { el.innerHTML = '<div class="loading">조건에 맞는 상품이 없어요</div>'; return; }
-  el.innerHTML = list.slice(0, 60).map(p => {
-    const minFee = p.monthly_fee_min || p.half_fee_min || 0;
-    const tags = (p.promo_tags_list || []).map(t => {
-      const cls = t.includes('반값') ? 'promo-half' : t.includes('상품권') || t.includes('cashback') ? 'promo-gift' : t.includes('타사') ? 'promo-other' : '';
+  let list = _products.filter(p => p.brand === state.brand);
+  if (state.companyId) list = list.filter(p => String(p.company_id) === String(state.companyId));
+  const el = document.getElementById('prod-strip');
+  el.innerHTML = list.slice(0, 80).map(p => {
+    const tags = (p.promo_tags_list || []).slice(0, 3).map(t => {
+      const cls = t.includes('반값') ? 'promo-half' : (t.includes('상품권')||t.includes('cashback')) ? 'promo-gift' : t.includes('타사') ? 'promo-other' : '';
       return `<span class="prod-tag ${cls}">${t}</span>`;
     }).join('');
-    return `
-      <div class="prod-card" data-id="${p.id}">
-        <div class="prod-img ${p.image_url ? '' : 'placeholder'}">
-          ${p.image_url ? `<img src="${p.image_url}" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();this.parentElement.textContent='📦'">` : '📦'}
-        </div>
-        <div class="prod-brand">${p.brand || ''}</div>
-        <div class="prod-name">${p.name || ''}</div>
-        <div class="prod-price">월 <strong>${minFee ? fmt(minFee).replace('원','') : '-'}원</strong>~</div>
-        <div class="prod-tags">${tags}</div>
-      </div>
-    `;
-  }).join('');
-  el.querySelectorAll('.prod-card').forEach(card => {
-    card.addEventListener('click', () => {
-      el.querySelectorAll('.prod-card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      const id = +card.dataset.id;
-      state.product = state.products.find(p => p.id === id);
-      state.months = null; state.careType = null; state.card = null;
-      renderMonths();
-      renderCares();
-      updatePanel();
-    });
-  });
+    return `<div class="prod-card" data-id="${p.id}">
+      <div class="prod-img ${p.image_url?'':'placeholder'}">${p.image_url?`<img src="${p.image_url}" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();this.parentElement.textContent='📦'">`:'📦'}</div>
+      <div class="prod-brand">${p.brand||''}${p.company?.name?' · '+p.company.name:''}</div>
+      <div class="prod-name">${(p.name||'').slice(0,50)}</div>
+      <div class="prod-tags">${tags}</div>
+    </div>`;
+  }).join('') || '<div class="loading">상품 없음</div>';
+  el.querySelectorAll('.prod-card').forEach(card => card.addEventListener('click', () => {
+    el.querySelectorAll('.prod-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    selectProduct(+card.dataset.id);
+  }));
 }
 
-function renderMonths() {
-  const p = state.product; if (!p) return;
-  document.getElementById('step-months').style.display = '';
-  const arr = Array.isArray(p.months_available) ? p.months_available : [];
-  const el = document.getElementById('months-chips');
-  if (!arr.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:12px">옵션 정보가 없습니다.</div>'; return; }
-  el.innerHTML = arr.map(m => `<div class="chip" data-m="${m}">${m}개월</div>`).join('');
-  el.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      state.months = +chip.dataset.m;
-      updatePanel();
-    });
-  });
-}
-
-function renderCares() {
-  const p = state.product; if (!p) return;
-  document.getElementById('step-care').style.display = '';
-  const arr = Array.isArray(p.care_services) ? p.care_services : [];
-  const el = document.getElementById('care-chips');
-  const labels = arr.length ? arr : ['방문 관리', '셀프 관리'];
-  el.innerHTML = labels.map(c => `<div class="chip" data-care="${c}">${c}</div>`).join('');
-  el.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      state.careType = chip.dataset.care;
-      updatePanel();
-    });
-  });
-}
-
-async function loadCardsForCategory() {
-  if (!state.category) return;
-  document.getElementById('step-card').style.display = '';
-  document.getElementById('card-chips').innerHTML = '<div class="loading">카드 로딩…</div>';
+async function selectProduct(pid) {
+  state.productId = pid;
   try {
-    const r = await fetch(`${API}/rental/partner-cards?active=1&category=${encodeURIComponent(state.category.name)}`, auth()).then(r => r.json());
-    state.cards = r.cards || r.rows || [];
-    renderCards();
-  } catch (e) {
-    document.getElementById('card-chips').innerHTML = `<div class="loading" style="color:#ef4444">카드 로드 실패</div>`;
-  }
+    const r = await fetch(`${API}/products/${pid}/options`, auth()).then(r => r.json());
+    _options = r.options || [];
+    const prod = r.product;
+    // 약정 chip
+    const months = [...new Set(_options.map(o => o.months))].sort((a,b) => a-b);
+    renderChips('months-chips', months.map(m => ({ val: m, label: `${m}개월` })), m => { state.months = +m; selectOpt(); });
+    document.getElementById('step-months').style.display = '';
+    // 케어 chip
+    const cares = [...new Set(_options.map(o => o.care_service))];
+    renderChips('care-chips', cares.map(c => ({ val: c, label: c })), c => { state.care = c; selectOpt(); });
+    document.getElementById('step-care').style.display = '';
+    // 프로모션 chip
+    const promos = [{ val: 'basic', label: '기본' }];
+    if (_options.some(o => o.half_fee)) promos.push({ val: 'half', label: '🔴 반값 할인', cls: 'promo-half' });
+    if (_options.some(o => o.rebate_otherco) || prod?.otherco_supported) promos.push({ val: 'otherco', label: '🟣 타사 보상' });
+    (prod?.promo_tags_list || []).forEach(tag => promos.push({ val: 'custom:'+tag, label: tag }));
+    state.promo = 'basic';
+    renderChips('promo-chips', promos, p => { state.promo = p; renderQuote(); }, 'basic');
+    document.getElementById('step-promo').style.display = '';
+    // 반값 개월수 chip
+    const halfP = [...new Set(_options.map(o => o.half_period).filter(v => v != null))].sort((a,b)=>a-b);
+    if (halfP.length) {
+      renderChips('half-chips', [{ val: '', label: '옵션 기본값', sub: '' }, ...halfP.map(m => ({ val: m, label: `${m}개월` }))], v => { state.halfPeriod = v || null; selectOpt(); }, '');
+      document.getElementById('step-half').style.display = '';
+    } else document.getElementById('step-half').style.display = 'none';
+    // 소유권 chip
+    const own = [...new Set(_options.map(o => o.ownership_months).filter(v => v != null))].sort((a,b)=>a-b);
+    if (own.length) {
+      renderChips('own-chips', [{ val: '', label: '옵션 기본값' }, ...own.map(m => ({ val: m, label: `${m}개월` }))], v => { state.ownership = v || null; selectOpt(); }, '');
+      document.getElementById('step-own').style.display = '';
+    } else document.getElementById('step-own').style.display = 'none';
+    // 점검주기 chip
+    const ins = [...new Set(_options.map(o => o.inspection_cycle).filter(v => v != null))].sort((a,b)=>a-b);
+    if (ins.length) {
+      renderChips('inspect-chips', [{ val: '', label: '옵션 기본값' }, ...ins.map(m => ({ val: m, label: `${m}개월` }))], v => { state.inspection = v || null; selectOpt(); }, '');
+      document.getElementById('step-inspect').style.display = '';
+    } else document.getElementById('step-inspect').style.display = 'none';
+    document.getElementById('step-card').style.display = '';
+    // 초기 선택 자동
+    if (months.length) { state.months = months[0]; const el2 = document.getElementById('months-chips').querySelector('.chip'); el2 && el2.classList.add('active'); }
+    if (cares.length) { state.care = cares[0]; const el2 = document.getElementById('care-chips').querySelector('.chip'); el2 && el2.classList.add('active'); }
+    selectOpt();
+  } catch (e) { console.error(e); }
 }
 
-function renderCards() {
-  const el = document.getElementById('card-chips');
-  if (!state.cards.length) {
-    el.innerHTML = '<div class="chip active" data-card="">카드 없이 진행</div>';
-    state.card = null;
-    el.querySelector('.chip').addEventListener('click', () => updatePanel());
-    return;
-  }
-  el.innerHTML = `<div class="chip active" data-card="">카드 없이 진행</div>` +
-    state.cards.slice(0, 8).map(c => {
-      const t1 = c.tier1_base || c.tier1_total || 0;
-      return `<div class="chip" data-card="${c.id}" data-discount="${t1}">🎴 ${c.brand || c.company} · ${c.card_name || c.name || '카드'} <span class="sub">1구간 −${fmt(t1).replace('원','')}원</span></div>`;
-    }).join('');
+function renderChips(elId, items, onSelect, defaultVal) {
+  const el = document.getElementById(elId);
+  el.innerHTML = items.map(it => `<div class="chip ${it.cls||''}" data-val="${it.val}">${it.label}${it.sub?`<span class="sub">${it.sub}</span>`:''}</div>`).join('');
   el.querySelectorAll('.chip').forEach(chip => {
+    if (chip.dataset.val == defaultVal) chip.classList.add('active');
     chip.addEventListener('click', () => {
       el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-      const id = +chip.dataset.card || null;
-      state.card = id ? { ...state.cards.find(c => c.id === id), _discount: +chip.dataset.discount } : null;
-      updatePanel();
+      onSelect(chip.dataset.val);
     });
   });
+}
+
+function selectOpt() {
+  const m = state.months, care = state.care;
+  let matches = _options.filter(o => o.months === m && o.care_service === care);
+  if (state.inspection) { const f = matches.filter(o => String(o.inspection_cycle) === state.inspection); if (f.length) matches = f; }
+  if (state.halfPeriod) { const f = matches.filter(o => String(o.half_period) === state.halfPeriod); if (f.length) matches = f; }
+  if (state.ownership) { const f = matches.filter(o => String(o.ownership_months) === state.ownership); if (f.length) matches = f; }
+  _selectedOpt = matches[0] || null;
+  renderQuote();
+}
+
+const _quoteCache = new Map();
+let _quoteSeq = 0;
+async function renderQuote() {
+  if (!_selectedOpt) { updatePanel(); return; }
+  const mySeq = ++_quoteSeq;
+  const body = { option_id: _selectedOpt.id, promo_type: state.promo };
+  if (state.halfPeriod) body.half_period_override = Number(state.halfPeriod);
+  const key = `${body.option_id}|${state.promo}|${state.halfPeriod||''}`;
+  let r = _quoteCache.get(key);
+  if (!r) {
+    try { r = await fetch(`${API}/quote`, { method: 'POST', ...authJson(), body: JSON.stringify(body) }).then(r => r.json()); if (!r.error) _quoteCache.set(key, r); }
+    catch (e) { return; }
+  }
+  if (mySeq !== _quoteSeq) return;
+  _quote = r; updatePanel();
+}
+
+async function loadCards(slug) {
+  document.getElementById('card-chips').innerHTML = '<div class="loading">로딩…</div>';
+  try {
+    const r = await fetch(`${API}/partner-cards?active=1&category=${encodeURIComponent(slug)}`, auth()).then(r => r.json());
+    _cards = r.cards || r.rows || [];
+    const el = document.getElementById('card-chips');
+    el.innerHTML = `<div class="chip active" data-id="" data-d="0">카드 없이 진행</div>` +
+      _cards.slice(0, 12).map(c => `<div class="chip" data-id="${c.id}" data-d="${c.tier1_base||c.tier1_total||0}">🎴 ${c.brand||c.company||'-'} · ${(c.card_name||c.name||'').slice(0,15)} <span class="sub">−${fmt(c.tier1_base||c.tier1_total||0)}원</span></div>`).join('');
+    el.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
+      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.cardId = chip.dataset.id || null;
+      state._cardDiscount = +chip.dataset.d || 0;
+      updatePanel();
+    }));
+    state._cardDiscount = 0;
+  } catch (e) { document.getElementById('card-chips').innerHTML = `<div class="loading" style="color:#ef4444">${e.message}</div>`; }
 }
 
 function updatePanel() {
-  const p = state.product;
-  if (!p || !state.months || !state.careType) {
+  if (!_quote || _quote.error || !_selectedOpt) {
     document.getElementById('panel-empty').style.display = '';
     document.getElementById('panel-content').style.display = 'none';
     return;
   }
   document.getElementById('panel-empty').style.display = 'none';
   document.getElementById('panel-content').style.display = '';
+  const c = _quote.computed || {};
+  const p = _quote.product || {};
+  const o = _quote.option || _selectedOpt;
+  document.getElementById('ticket-num').textContent = p.ticket_number || o.ticket_number || '-';
 
-  // summary
   document.getElementById('summary-box').innerHTML = `
-    <div class="row"><span class="k">상품</span><span class="v">${p.brand} ${p.name?.slice(0, 18) || ''}</span></div>
-    <div class="row"><span class="k">약정</span><span class="v">${state.months}개월</span></div>
-    <div class="row"><span class="k">관리</span><span class="v">${state.careType}</span></div>
-    <div class="row"><span class="k">카드</span><span class="v">${state.card ? state.card.brand + ' · ' + (state.card.card_name || '') : '미선택'}</span></div>
+    <div class="row"><span class="k">상품</span><span class="v">${p.brand} ${(p.name||'').slice(0,18)}</span></div>
+    <div class="row"><span class="k">모델</span><span class="v">${p.model||'-'}</span></div>
+    <div class="row"><span class="k">약정</span><span class="v">${o.months}개월</span></div>
+    <div class="row"><span class="k">관리</span><span class="v">${o.care_service}</span></div>
+    ${o.inspection_cycle?`<div class="row"><span class="k">점검 주기</span><span class="v">${o.inspection_cycle}개월</span></div>`:''}
+    ${o.ownership_months?`<div class="row"><span class="k">소유권 이전</span><span class="v">${o.ownership_months}개월</span></div>`:''}
+    ${o.half_period?`<div class="row"><span class="k">반값 기간</span><span class="v">${o.half_period}개월</span></div>`:''}
+    ${o.variant_label?`<div class="row"><span class="k">변형</span><span class="v">${o.variant_label}</span></div>`:''}
+    <div class="row"><span class="k">프로모션</span><span class="v">${state.promo === 'basic' ? '기본' : state.promo}</span></div>
+    <div class="row"><span class="k">카드</span><span class="v">${state.cardId ? _cards.find(c => String(c.id)===String(state.cardId))?.brand + ' ' + (_cards.find(c=>String(c.id)===String(state.cardId))?.card_name||'').slice(0,12) : '미선택'}</span></div>
   `;
 
-  // promo
+  // 추가 정보
+  const ex = [];
+  if (o.as_period_months) ex.push(`<div class="row"><span>AS 기간</span><span><b>${o.as_period_months}개월</b></span></div>`);
+  if (o.signup_age_limit) ex.push(`<div class="row"><span>가입 연령</span><span><b>${o.signup_age_limit}세 이상</b></span></div>`);
+  if (o.installation_fee) ex.push(`<div class="row"><span>설치비</span><span><b>${fmt(o.installation_fee)}원</b></span></div>`);
+  if (o.total_rental_fee) ex.push(`<div class="row"><span>총 렌탈료</span><span><b>${fmt(o.total_rental_fee)}원</b></span></div>`);
+  if (o.commission_rate) ex.push(`<div class="row"><span>수수료율</span><span><b>${o.commission_rate}%</b></span></div>`);
+  const exBox = document.getElementById('extra-info-box');
+  if (ex.length) { exBox.style.display = ''; exBox.innerHTML = '<div style="font-weight:800;margin-bottom:4px">ℹ️ 추가 정보</div>' + ex.join(''); }
+  else exBox.style.display = 'none';
+
+  // 프로모션 box
   const promos = p.promo_tags_list || [];
+  const pbox = document.getElementById('promo-box');
   if (promos.length) {
-    document.getElementById('promo-box').className = 'promo-box';
-    document.getElementById('promo-box').style.display = '';
-    document.getElementById('promo-box').innerHTML = `
-      <div class="ttl">🎁 추가 혜택 ${promos.length}종</div>
-      ${promos.map(t => `<div>• ${t}</div>`).join('')}
-    `;
-  } else {
-    document.getElementById('promo-box').style.display = 'none';
-  }
+    pbox.className = 'promo-box'; pbox.style.display = '';
+    pbox.innerHTML = `<div class="ttl">🎁 가능 혜택 ${promos.length}종</div>${promos.map(t => `• ${t}`).join('<br>')}`;
+  } else pbox.style.display = 'none';
 
-  // price
-  const normal = p.monthly_fee_max || p.monthly_fee_min || 0;
-  const base = p.monthly_fee_min || p.half_fee_min || normal;
-  const cardDiscount = state.card?._discount || 0;
-  const final = Math.max(0, base - cardDiscount);
+  // 월별 시뮬
+  if (c.half_months && c.half_total != null) {
+    const sim = document.getElementById('month-sim');
+    sim.style.display = '';
+    sim.innerHTML = `<div class="ttl">📅 월별 납부 시뮬 (총 ${o.months}개월)</div>
+      반값 ${c.half_months}개월 · 합계 ${fmt(c.half_total)}원<br>
+      정상 ${c.normal_months||0}개월 · 합계 ${fmt(c.normal_total)}원<br>
+      <strong>총 납부 ${fmt(c.total_payment)}원</strong>`;
+  } else document.getElementById('month-sim').style.display = 'none';
 
+  // 가격
+  const base = o.monthly_fee || c.monthly_avg || 0;
+  const cardD = state._cardDiscount || 0;
+  const final = Math.max(0, base - cardD);
   document.getElementById('price-box').innerHTML = `
-    ${normal > base ? `<div class="price-row normal"><span>정상 월 요금</span><span>${fmt(normal)}</span></div>` : ''}
-    <div class="price-row"><span>기본 월 요금</span><span class="v">${fmt(base)}</span></div>
-    ${cardDiscount ? `<div class="price-row discount"><span>카드 할인</span><span class="v">−${fmt(cardDiscount)}</span></div>` : ''}
-    <div class="price-row final"><span><strong>예상 월 요금</strong></span><span class="v">${fmt(final)}</span></div>
+    <div class="price-row"><span>월 요금 (정상)</span><span class="v">${fmt(base)}원</span></div>
+    ${o.half_fee?`<div class="price-row discount"><span>반값 적용 (${o.half_period||'-'}M)</span><span class="v">${fmt(o.half_fee)}원</span></div>`:''}
+    ${o.payback?`<div class="price-row discount"><span>현금 페이백</span><span class="v">+${fmt(o.payback)}원</span></div>`:''}
+    ${cardD?`<div class="price-row discount"><span>카드 할인</span><span class="v">−${fmt(cardD)}원</span></div>`:''}
+    ${c.net_customer_burden!=null?`<div class="price-row" style="color:#94a3b8;font-size:10.5px"><span>총 부담 (실효)</span><span>${fmt(c.net_customer_burden)}원</span></div>`:''}
+    <div class="price-row final"><span><strong>예상 월 요금</strong></span><span class="v">${fmt(final)}원</span></div>
   `;
 }
 
-document.getElementById('cta-self').addEventListener('click', () => {
-  if (!state.product) return;
-  toast(`✅ 셀프 신청 — ${state.product.brand} ${state.product.name?.slice(0, 20)}`);
-  console.log('Self apply', { state });
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('cta-self').addEventListener('click', () => { if (!_quote) return; toast(`✅ 셀프 신청 — ${_quote.product.brand} ${_quote.product.name?.slice(0,20)}`); });
+  document.getElementById('cta-consult').addEventListener('click', () => { if (!_quote) return; toast('📞 상담원 신청 — 24시간 내 연락'); });
+  loadCategories();
 });
-document.getElementById('cta-consult').addEventListener('click', () => {
-  if (!state.product) return;
-  toast(`📞 상담원 신청 접수 — 24시간 내 연락`);
-  console.log('Consult request', { state });
-});
-
-loadCategories();
 </script>
 </body>
 </html>
