@@ -71,7 +71,8 @@
   .month-sim { background: #ecfdf5; border: 1px solid #10b981; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 11px; color: #065f46; line-height: 1.6; }
   .month-sim .ttl { font-weight: 800; font-size: 11.5px; margin-bottom: 4px; color: #047857; }
 
-  .price-box { background: linear-gradient(135deg, #eef2ff, #ede9fe); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .price-box { background: linear-gradient(135deg, #eef2ff, #ede9fe); border-radius: 12px; padding: 14px; margin-bottom: 12px; transition: transform 0.25s, box-shadow 0.25s; }
+  .price-box.flash { transform: scale(1.02); box-shadow: 0 8px 24px rgba(99,102,241,0.25); }
   .price-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11.5px; gap: 8px; }
   .price-row.discount { color: #6366f1; font-weight: 700; }
   .price-row.final { font-size: 13px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #c7d2fe; align-items: baseline; }
@@ -301,52 +302,92 @@ function renderProducts() {
   }));
 }
 
+let _currentProduct = null;
 async function selectProduct(pid) {
   state.productId = pid;
+  state.months = null; state.care = null; state.halfPeriod = null; state.ownership = null; state.inspection = null;
   try {
     const r = await fetch(`${API}/products/${pid}/options`, auth()).then(r => r.json());
     _options = r.options || [];
-    const prod = r.product;
-    // 약정 chip
-    const months = [...new Set(_options.map(o => o.months))].sort((a,b) => a-b);
-    renderChips('months-chips', months.map(m => ({ val: m, label: `${m}개월` })), m => { state.months = +m; selectOpt(); });
+    _currentProduct = r.product;
+    // 약정 chip (모든 가능 약정)
+    rebuildMonthsChips();
     document.getElementById('step-months').style.display = '';
-    // 케어 chip
-    const cares = [...new Set(_options.map(o => o.care_service))];
-    renderChips('care-chips', cares.map(c => ({ val: c, label: c })), c => { state.care = c; selectOpt(); });
     document.getElementById('step-care').style.display = '';
-    // 프로모션 chip
-    const promos = [{ val: 'basic', label: '기본' }];
-    if (_options.some(o => o.half_fee)) promos.push({ val: 'half', label: '🔴 반값 할인', cls: 'promo-half' });
-    if (_options.some(o => o.rebate_otherco) || prod?.otherco_supported) promos.push({ val: 'otherco', label: '🟣 타사 보상' });
-    (prod?.promo_tags_list || []).forEach(tag => promos.push({ val: 'custom:'+tag, label: tag }));
-    state.promo = 'basic';
-    renderChips('promo-chips', promos, p => { state.promo = p; renderQuote(); }, 'basic');
     document.getElementById('step-promo').style.display = '';
-    // 반값 개월수 chip
-    const halfP = [...new Set(_options.map(o => o.half_period).filter(v => v != null))].sort((a,b)=>a-b);
-    if (halfP.length) {
-      renderChips('half-chips', [{ val: '', label: '옵션 기본값', sub: '' }, ...halfP.map(m => ({ val: m, label: `${m}개월` }))], v => { state.halfPeriod = v || null; selectOpt(); }, '');
-      document.getElementById('step-half').style.display = '';
-    } else document.getElementById('step-half').style.display = 'none';
-    // 소유권 chip
-    const own = [...new Set(_options.map(o => o.ownership_months).filter(v => v != null))].sort((a,b)=>a-b);
-    if (own.length) {
-      renderChips('own-chips', [{ val: '', label: '옵션 기본값' }, ...own.map(m => ({ val: m, label: `${m}개월` }))], v => { state.ownership = v || null; selectOpt(); }, '');
-      document.getElementById('step-own').style.display = '';
-    } else document.getElementById('step-own').style.display = 'none';
-    // 점검주기 chip
-    const ins = [...new Set(_options.map(o => o.inspection_cycle).filter(v => v != null))].sort((a,b)=>a-b);
-    if (ins.length) {
-      renderChips('inspect-chips', [{ val: '', label: '옵션 기본값' }, ...ins.map(m => ({ val: m, label: `${m}개월` }))], v => { state.inspection = v || null; selectOpt(); }, '');
-      document.getElementById('step-inspect').style.display = '';
-    } else document.getElementById('step-inspect').style.display = 'none';
     document.getElementById('step-card').style.display = '';
-    // 초기 선택 자동
-    if (months.length) { state.months = months[0]; const el2 = document.getElementById('months-chips').querySelector('.chip'); el2 && el2.classList.add('active'); }
-    if (cares.length) { state.care = cares[0]; const el2 = document.getElementById('care-chips').querySelector('.chip'); el2 && el2.classList.add('active'); }
+    // 첫 약정·care 자동 선택
+    const months = [...new Set(_options.map(o => o.months))].sort((a,b) => a-b);
+    if (months.length) { state.months = months[0]; }
+    rebuildCareChips();
+    const cares = [...new Set(_options.filter(o => o.months === state.months).map(o => o.care_service))];
+    if (cares.length) { state.care = cares[0]; }
+    // 자동 active 표시
+    document.querySelector(`#months-chips .chip[data-val="${state.months}"]`)?.classList.add('active');
+    document.querySelector(`#care-chips .chip[data-val="${state.care}"]`)?.classList.add('active');
+    // 프로모션 chip
+    rebuildPromoChips();
+    // 종속 chip 재계산
+    rebuildDependentChips();
     selectOpt();
   } catch (e) { console.error(e); }
+}
+
+function rebuildMonthsChips() {
+  const months = [...new Set(_options.map(o => o.months))].sort((a,b) => a-b);
+  renderChips('months-chips', months.map(m => ({ val: m, label: `${m}개월` })), m => {
+    state.months = +m; state.care = null; state.halfPeriod = null; state.ownership = null; state.inspection = null;
+    rebuildCareChips();
+    // 첫 care 자동
+    const cares = [...new Set(_options.filter(o => o.months === state.months).map(o => o.care_service))];
+    if (cares.length) {
+      state.care = cares[0];
+      document.querySelector(`#care-chips .chip[data-val="${state.care}"]`)?.classList.add('active');
+    }
+    rebuildDependentChips();
+    selectOpt();
+  });
+}
+
+function rebuildCareChips() {
+  // 현재 months에 가능한 cares만
+  const mOpts = _options.filter(o => o.months === state.months);
+  const cares = [...new Set(mOpts.map(o => o.care_service))];
+  renderChips('care-chips', cares.map(c => ({ val: c, label: c })), c => {
+    state.care = c; state.halfPeriod = null; state.ownership = null; state.inspection = null;
+    rebuildDependentChips();
+    selectOpt();
+  });
+}
+
+function rebuildPromoChips() {
+  const prod = _currentProduct;
+  const promos = [{ val: 'basic', label: '기본' }];
+  if (_options.some(o => o.half_fee)) promos.push({ val: 'half', label: '🔴 반값 할인', cls: 'promo-half' });
+  if (_options.some(o => o.rebate_otherco) || prod?.otherco_supported) promos.push({ val: 'otherco', label: '🟣 타사 보상' });
+  (prod?.promo_tags_list || []).forEach(tag => promos.push({ val: 'custom:'+tag, label: tag }));
+  state.promo = 'basic';
+  renderChips('promo-chips', promos, p => { state.promo = p; renderQuote(); }, 'basic');
+}
+
+function rebuildDependentChips() {
+  // 현재 months + care 매칭 옵션에서 가능한 half/own/inspect 추출
+  const mc = _options.filter(o => o.months === state.months && o.care_service === state.care);
+  const halfP = [...new Set(mc.map(o => o.half_period).filter(v => v != null))].sort((a,b)=>a-b);
+  const own = [...new Set(mc.map(o => o.ownership_months).filter(v => v != null))].sort((a,b)=>a-b);
+  const ins = [...new Set(mc.map(o => o.inspection_cycle).filter(v => v != null))].sort((a,b)=>a-b);
+  if (halfP.length) {
+    renderChips('half-chips', [{ val: '', label: '옵션 기본값' }, ...halfP.map(m => ({ val: m, label: `${m}개월` }))], v => { state.halfPeriod = v || null; selectOpt(); }, '');
+    document.getElementById('step-half').style.display = '';
+  } else document.getElementById('step-half').style.display = 'none';
+  if (own.length) {
+    renderChips('own-chips', [{ val: '', label: '옵션 기본값' }, ...own.map(m => ({ val: m, label: `${m}개월` }))], v => { state.ownership = v || null; selectOpt(); }, '');
+    document.getElementById('step-own').style.display = '';
+  } else document.getElementById('step-own').style.display = 'none';
+  if (ins.length) {
+    renderChips('inspect-chips', [{ val: '', label: '옵션 기본값' }, ...ins.map(m => ({ val: m, label: `${m}개월` }))], v => { state.inspection = v || null; selectOpt(); }, '');
+    document.getElementById('step-inspect').style.display = '';
+  } else document.getElementById('step-inspect').style.display = 'none';
 }
 
 function renderChips(elId, items, onSelect, defaultVal) {
@@ -421,10 +462,22 @@ function updatePanel() {
   const o = _quote.option || _selectedOpt;
   document.getElementById('ticket-num').textContent = p.ticket_number || o.ticket_number || '-';
 
+  // AI 추천 메타
+  const recCap = p.recommended_capacity ? `<div class="row"><span class="k">추천 용량</span><span class="v">${p.recommended_capacity}</span></div>` : '';
+  const recUse = (p.recommended_usage || []).length ? `<div class="row"><span class="k">추천 대상</span><span class="v" style="text-align:right;max-width:60%">${(p.recommended_usage).slice(0,4).join(' · ')}</span></div>` : '';
+  const feat = (p.feature_tags || []).length ? `<div class="row"><span class="k">강점</span><span class="v" style="text-align:right;max-width:60%">${(p.feature_tags).slice(0,4).join(' · ')}</span></div>` : '';
+  const stars = '★'.repeat(Math.round((p.market_score || 0) / 20)) + '☆'.repeat(5 - Math.round((p.market_score||0)/20));
+  const desc = p.description ? `<div class="row"><span class="k">설명</span><span class="v" style="text-align:right;max-width:60%;font-weight:500">${p.description.slice(0,40)}…</span></div>` : '';
+
   document.getElementById('summary-box').innerHTML = `
     <div class="row"><span class="k">상품</span><span class="v">${p.brand} ${(p.name||'').slice(0,18)}</span></div>
     <div class="row"><span class="k">모델</span><span class="v">${p.model||'-'}</span></div>
-    <div class="row"><span class="k">약정</span><span class="v">${o.months}개월</span></div>
+    ${desc}
+    ${recCap}
+    ${recUse}
+    ${feat}
+    ${p.market_score?`<div class="row"><span class="k">시장성</span><span class="v" style="color:#f59e0b">${stars}</span></div>`:''}
+    <div class="row" style="border-top:1px dashed #cbd5e1;padding-top:6px;margin-top:4px"><span class="k">약정</span><span class="v">${o.months}개월</span></div>
     <div class="row"><span class="k">관리</span><span class="v">${o.care_service}</span></div>
     ${o.inspection_cycle?`<div class="row"><span class="k">점검 주기</span><span class="v">${o.inspection_cycle}개월</span></div>`:''}
     ${o.ownership_months?`<div class="row"><span class="k">소유권 이전</span><span class="v">${o.ownership_months}개월</span></div>`:''}
@@ -467,7 +520,11 @@ function updatePanel() {
   const base = o.monthly_fee || c.monthly_avg || 0;
   const cardD = state._cardDiscount || 0;
   const final = Math.max(0, base - cardD);
-  document.getElementById('price-box').innerHTML = `
+  // 가격 변경 flash
+  const pbox = document.getElementById('price-box');
+  pbox.classList.add('flash');
+  setTimeout(() => pbox.classList.remove('flash'), 250);
+  pbox.innerHTML = `
     <div class="price-row"><span>월 요금 (정상)</span><span class="v">${fmt(base)}원</span></div>
     ${o.half_fee?`<div class="price-row discount"><span>반값 적용 (${o.half_period||'-'}M)</span><span class="v">${fmt(o.half_fee)}원</span></div>`:''}
     ${o.payback?`<div class="price-row discount"><span>현금 페이백</span><span class="v">+${fmt(o.payback)}원</span></div>`:''}
