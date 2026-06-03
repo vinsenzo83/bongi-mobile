@@ -212,18 +212,23 @@ let _categories = [], _products = [], _options = [], _selectedOpt = null, _quote
 const fmt = n => n == null ? '-' : Math.round(n).toLocaleString('ko-KR');
 function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2500); }
 
+// 활성 6 카테고리 (라이브 100% 적재 완료)
+const ACTIVE_CATEGORIES = [
+  { id: 1,  slug: 'water-purifier', name: '정수기',    count: 107 },
+  { id: 2,  slug: 'air-purifier',   name: '공기청정기', count: 23 },
+  { id: 6,  slug: 'bidet',          name: '비데',       count: 19 },
+  { id: 10, slug: 'mattress',       name: '매트리스',   count: 86 },
+  { id: 22, slug: 'aircon',         name: '에어컨',     count: 120 },
+  { id: 23, slug: 'tv',             name: 'TV',         count: 76 },
+];
+
 async function loadCategories() {
-  try {
-    const r = await fetch(`${API}/categories`, auth()).then(r => r.json());
-    _categories = (r.categories || r.rows || []).filter(c => c.active !== false);
-    const all = await fetch(`${API}/products?limit=1500`, auth()).then(r => r.json());
-    const byCat = {}; (all.products || all.rows || []).forEach(p => { byCat[p.category_id] = (byCat[p.category_id]||0) + 1; });
-    _categories = _categories.filter(c => byCat[c.id] > 0);
-    try { const bp = await fetch(`${API}/brand-policies`, auth()).then(r => r.json()); _brandPolicies = bp.policies || bp.rows || []; } catch (e) { _brandPolicies = []; }
-    const el = document.getElementById('cat-chips');
-    el.innerHTML = _categories.map(c => `<div class="chip lg" data-slug="${c.slug}" data-id="${c.id}" data-name="${c.name}">${CATEGORY_ICONS[c.name]||'📦'} ${c.name}<span class="sub">${byCat[c.id]}개</span></div>`).join('');
-    el.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => selectChip(el, chip, () => selectCategory(chip.dataset.slug, +chip.dataset.id, chip.dataset.name))));
-  } catch (e) { document.getElementById('cat-chips').innerHTML = `<div class="loading" style="color:#ef4444">${e.message}</div>`; }
+  _categories = ACTIVE_CATEGORIES;
+  const el = document.getElementById('cat-chips');
+  el.innerHTML = _categories.map(c => `<div class="chip lg" data-slug="${c.slug}" data-id="${c.id}" data-name="${c.name}">${CATEGORY_ICONS[c.name]||'📦'} ${c.name}<span class="sub">${c.count}개</span></div>`).join('');
+  el.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => selectChip(el, chip, () => selectCategory(chip.dataset.slug, +chip.dataset.id, chip.dataset.name))));
+  // brand-policies background fetch (실패해도 무관)
+  fetch(`${API}/brand-policies`, auth()).then(r => r.json()).then(bp => { _brandPolicies = bp.policies || bp.rows || []; }).catch(() => { _brandPolicies = []; });
 }
 
 function selectChip(container, chip, cb) {
