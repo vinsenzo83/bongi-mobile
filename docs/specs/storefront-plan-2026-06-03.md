@@ -479,123 +479,298 @@ P2 (상품 상세 + 셀프 가입 form 통합):
 
 ---
 
-## 14. 봉이 차기 storefront 실제 디자인 (bongeestore.com / Allio) — **우리 플랫폼 확정**
+## 13. 채팅 플랫폼 UX 설계 (2026-06-03 추가 — 최신 진실)
 
-사용자 캡쳐로 확인됨 — Allio = 봉이 차기 고객 플랫폼. 이미 디자인 진행 중.
+> 사용자 캡쳐(bongeestore.com / Allio 패턴) 기반. 1~12장의 정적 카탈로그 매핑은 답변 카드 reuse 시 참고용으로 보존하되, **storefront 메인 UX는 채팅 플랫폼**으로 확정.
 
-### 14-1. 3분할 레이아웃 (홈 + 휴대폰 요금 계산기 공통)
+### 13-1. 전체 레이아웃
 
 ```
-┌─────────────┬─────────────────────────────┬──────────────────┐
-│ 좌 사이드바 │ 메인 영역                    │ 우 상세 panel    │
-│ (240px)     │ (flex)                       │ (320px, contextual)│
-├─────────────┼─────────────────────────────┼──────────────────┤
-│ Allio 로고  │                              │ (page별 다름)    │
-│ 📍 다크모드 │  [페이지 콘텐츠]             │                  │
-│ + 새로 시작 │                              │                  │
-│ 🔍 상담 검색│                              │                  │
-│             │                              │                  │
-│ 카테고리:   │                              │                  │
-│ 🏠 홈        │                              │                  │
-│ ✨ 서비스 추천│                              │                  │
-│ 📱 휴대폰    │                              │                  │
-│ 🌐 인터넷+TV │                              │                  │
-│ 🔗 결합      │                              │                  │
-│ 🧮 결합 환산 │                              │                  │
-│ 📺 가전 렌탈 │                              │                  │
-│ 🏆 이벤트   │                              │                  │
-│             │                              │                  │
-│ 최근 상담   │                              │                  │
-│ 친구 초대   │                              │                  │
-│ 로그인      │                              │                  │
-└─────────────┴─────────────────────────────┴──────────────────┘
+┌───────────────────────────┬──────────────────────────────────────────────┐
+│  좌측 사이드바 (LeftRail)  │  메인 영역 (ChatMain)                          │
+│                           │                                              │
+│  [봉이 로고]  지도·다크모드 │  ┌────── 이벤트 배너 (캐러셀) ──────┐         │
+│                           │  │ iPhone 17 특가 + 카드할인 + 이미지 │         │
+│  [ + 새로 시작 ]           │  └─────────────────────────────────┘          │
+│                           │                                              │
+│  [상담 내역 검색...]       │                                              │
+│                           │       (중앙 정렬)                              │
+│  카테고리                  │                                              │
+│   홈                       │       "궁금한 조건을 편하게 물어보세요"        │
+│   서비스 추천               │   ┌────────────────────────────────────┐    │
+│   휴대폰                   │   │ [채팅 입력] [+카테고리 chip] [전송 →] │    │
+│   인터넷+TV                │   └────────────────────────────────────┘    │
+│   인터넷                   │                                              │
+│   TV                       │   추천 prompt chip 5개                       │
+│   전화 결합                 │   [인터넷+TV 신청 도와줘] [휴대폰 추천해줘]    │
+│   결합 할인 환산            │   [중고폰 시세] [가전렌탈 추천] [이벤트]      │
+│   가전 렌탈                 │                                              │
+│   이벤트                    │   ── 대화 시작 후 ──                         │
+│   혜택                     │   user 메시지 ↓                              │
+│                           │   AI 답변 메시지 ↓                            │
+│  최근 상담 내역              │     └── ChatProductCard ──┐                 │
+│   "정수기 추천..."           │         (chip 직노출 +     │                 │
+│   "iPhone 17 카드..."        │          듀얼 CTA)         │                 │
+│                           │                                              │
+│  [친구 초대하기]            │                                              │
+│   포인트 적립 promo         │                                              │
+│                           │                                              │
+│  [로그인/회원가입]           │                                              │
+└───────────────────────────┴──────────────────────────────────────────────┘
 ```
 
-### 14-2. 홈 메인 (캡쳐 #1)
+### 13-2. 컴포넌트 분해
 
-- 상단 이벤트 캐러셀 — "iPhone 17 시리즈 마지막 특가 찬스 — 추가 지원금+카드할인" + dot indicator (4 dots)
-- 중앙 **AI 채팅 입력창**:
-  - placeholder: "궁금한 조건을 편하게 물어보세요"
-  - 좌측 chip: "+ 카테고리" (카테고리 선택 후 챗)
-  - 우측 arrow up button (전송)
-- 하단 추천 prompt chip 5개:
-  - 🌐 인터넷+TV 신청 도와줘
-  - 📱 휴대폰 추천해줘
-  - 📲 중고폰 시세 알려줘
-  - 📺 가전렌탈 추천해줘
-  - 🏆 이벤트 알려줘
-- 우 sidebar: (홈에서는 비어 있음 — 채팅 시작 후 컨텍스트 렌더)
+**좌측 사이드바 (LeftRail)** — GPT-like 채팅 navigation
 
-### 14-3. 휴대폰 요금 계산기 wizard (캡쳐 #2)
-
-메인 — step wizard 패턴 (채팅 외 정형 입력 경로):
-
-1. **Step 1**: 지금 사용 중인 통신사 — KT / LG U+ / SKT / 알뜰폰 chip 4개 (큰 로고 박스)
-2. **Step 2**: 어떻게 개통할까요? — 번호이동 / 기기변경 / 유심만 변경 chip 3개
-3. **Step 3**: 어느 통신사로 바꿀까요? — LG U+ / SKT chip (Step 1·2 입력 의존 동적)
-4. 하단: "예상 최저가 0원 · 결과 카드에서 매장을 선택하면 신청이 시작돼요"
-
-우 sidebar — **상세 요금 panel**:
-- 매장 방문 / 온라인 신청 toggle
-- **매장 select** "봉이모바일 익산점" (매장 directory)
-- 상품 요약: LG U+ · 갤럭시 S25 Edge 512GB
-- 안내사항 (휴대폰 요금제·부가서비스·약정 정보 펼침)
-- CTA: **매장 방문 신청** (큰 파란 버튼)
-
-### 14-4. 핵심 차별점
-
-| 항목 | rentre | 아정당 | **봉이 (Allio)** |
-|---|---|---|---|
-| 메인 진입 | 카탈로그 grid | 카테고리 nav | **채팅 + step wizard** 하이브리드 |
-| 상담사 연결 | 견적 funnel 후 | 우측 floating panel | 채팅 + 매장 매핑 (오프라인 직결) |
-| 매장 매핑 | X | X | ✅ **봉이모바일 익산점 등 매장 directory** |
-| 매장/온라인 분기 | X | X | ✅ 우 panel toggle |
-| AI 어시스턴트 | X | X | ✅ Claude API + tool use |
-| 포인트 시스템 | X | 쇼핑적립 | ✅ 친구 초대·적립·현금화 |
-
-### 14-5. 봉이 보유 인프라 매칭 (storefront 신규 작업 vs 기존 활용)
-
-**이미 보유 (재사용)**:
-- products 435 + AI auto-fill 8컬럼 (description·feature_tags·recommended_capacity·recommended_usage·specifications·size_mm·weight_kg·care_cycle·spec_notes)
-- partner_card 1·2·3 + brand alias + card_snapshot
-- rental_sales 박제 (snapshot + card_snapshot + metadata)
-- 매장 directory (`incentive_centers` — 8 매장)
-- 콜DB · TM 큐콜 · round-robin 분배
-- 카테고리 schema 동적 폼
-
-**신규 필요**:
-- AI 어시스턴트 backend (Claude API + tool use over rental_*·incentive_*)
-- 채팅 UI 컴포넌트 (사이드바 + 입력 + streaming answer + product card)
-- 휴대폰 요금 계산기 step wizard (`incentive_handset_prices` 활용 가능)
-- 매장 select component (`incentive_centers` 활용)
-- 매장 방문 / 온라인 신청 분기 backend
-- bongi_conversations + bongi_messages 신규 테이블 (상담 history)
-- 카카오·Apple·네이버 social login (storefront_users 신규)
-- 친구 초대 포인트 시스템 (`storefront_referrals`·`storefront_points`)
-- 이벤트 캐러셀 (`storefront_events` 신규)
-
-### 14-6. 봉이 storefront 최종 priority
-
-| Phase | 작업 | 의존 |
+| 컴포넌트 | 역할 | 봉이 매핑 |
 |---|---|---|
-| **P1** | 좌 사이드바 + 메인 라우터 + 다크모드 toggle | - |
-| **P2** | AI 채팅 UI + 답변 안 product card | Claude API + tool use |
-| **P3** | 휴대폰 요금 계산기 step wizard (3 step + 우 panel) | incentive_handset_prices |
-| **P4** | 매장 directory + 매장 방문/온라인 toggle | incentive_centers 재사용 |
-| **P5** | 카테고리별 채팅 entry (인터넷+TV·결합·가전렌탈·이벤트) | RAG 인덱싱 |
-| **P6** | 셀프 가입 form (P2 통합) + 상담사 연결 어댑터 | rental_sales 박제 패턴 |
-| **P7** | 상담 history 저장 + 카카오 로그인 | bongi_conversations |
-| **P8** | 이벤트 캐러셀 + 친구 초대 포인트 | storefront_events·storefront_referrals |
-| **P9** | 마이페이지 (내 견적·계약 현황) | - |
+| `LogoHeader` | 로고 + 지도 toggle + 다크모드 toggle | 정적 |
+| `NewChatButton` | "+ 새로 시작" — 신규 conversation 생성 | bongi_conversations.insert |
+| `ConversationSearch` | 상담 history 검색 input | bongi_conversations.title ilike |
+| `CategoryNav` | 11 카테고리 메뉴 (홈·서비스 추천·휴대폰·인터넷+TV·인터넷·TV·전화 결합·결합 할인 환산·가전 렌탈·이벤트·혜택) | rental_categories + 통신 카테고리 + 정적 ("홈"·"서비스 추천"·"이벤트"·"혜택") |
+| `ConversationHistory` | 최근 상담 history list (대화 제목 + 클릭 시 conversation 복원) | bongi_conversations order by started_at desc |
+| `InvitePromo` | 친구 초대 → 포인트 적립 | bongi_referrals (P5) |
+| `UserPanel` | 로그인/회원가입 (비로그인) 또는 프로필 (로그인) | 카카오 social login |
 
-### 14-7. 도메인명·디렉토리
+**메인 영역 (ChatMain)**
 
-- 도메인: **bongeestore.com** (Allio 브랜드)
-- 디렉토리: `client/src/pages/storefront/` 또는 `apps/storefront/` (Vite + React)
-- 백엔드 API: `/api/storefront/*` (server/routes/storefront.js 신규)
+| 컴포넌트 | 역할 | 봉이 매핑 |
+|---|---|---|
+| `EventBanner` | 상단 이벤트 캐러셀 (iPhone 17 특가 등) | storefront_events 테이블 (제목·이미지·CTA·기간) |
+| `ChatInput` | 중앙 자유 텍스트 입력 + 전송 화살표 | textarea + Enter submit |
+| `CategoryChipPicker` | 입력창 안 "+카테고리" → 카테고리 chip 선택 후 prompt에 prefix 부착 | CategoryNav와 공유 |
+| `SuggestPromptChips` | 추천 5개 chip (인터넷+TV·휴대폰·중고폰·가전렌탈·이벤트) | 정적 + 시간대별 A/B (P5) |
+| `StreamingAnswer` | AI 답변 메시지 (Claude API streaming) | Anthropic SDK + tool use |
+| `ChatProductCard` | 답변 메시지 안에 렌더되는 product card — chip 직노출 + 듀얼 CTA + 가격 dual | 아정당 8장 패턴 그대로 reuse |
+| `ChatActionBar` | 메시지 하단 (복사·재생성·신고) | 정적 |
 
-### 14-8. 메모리 update 필요
+### 13-3. ChatProductCard 패턴 (아정당 reuse)
 
-`feedback_crm_only.md` 룰("개발 범위는 CRM(어드민)만") — storefront 진입 시점에 update 필요:
-- "CRM + storefront 양방향 — storefront는 카카오 로그인 고객 진입점, 데이터는 CRM과 단일 (rental_sales 1건)"
+```
+┌────────────────────────────────────────────────────────┐
+│ [상품 이미지]  SK매직 정수기 직수 슬림                    │
+│                                                       │
+│ [약정 chip] 84개월  72개월  60개월  36개월              │
+│ [관리방법]  방문관리  자가관리                          │
+│ [관리주기]  6M반값_4개월필터 12개월관리                  │
+│                                                       │
+│ 최대 혜택가  6,400원     예상 월 렌탈료  34,400원        │
+│ (절감액 28,000원 강조)                                  │
+│                                                       │
+│ [ 셀프 가입 ]  [ 전문상담원 연결 ]                       │
+└────────────────────────────────────────────────────────┘
+```
 
+→ 클릭 시 12장 form flow로 진입 (storefront/register/product-confirm + customer-info). **데이터 모델 단일 = rental_sales insert 1건**은 9장 그대로.
+
+### 13-4. AI 어시스턴트 system prompt 설계
+
+**스택**: Claude API (Sonnet 4.7 권장) + tool use + 프롬프트 캐싱 (rental_products 카탈로그 캐시 → 5분당 1회 refresh)
+
+**System prompt 골격**:
+```
+당신은 봉이모바일 storefront AI 상담사입니다.
+- 사용자가 통신(인터넷·TV·휴대폰·결합)·가전렌탈·매장패키지에 대해 자연어로 질문하면
+- 적절한 상품을 검색해 ChatProductCard JSON으로 응답하세요.
+- 봉이 룰북: SK 인터넷+TV 기변 불가, 사은품 vs 현금 메리트 즉시지급,
+  렌탈 정책 V2(margin = rebate×0.9 − payback − P×70k).
+- 절대 가격을 임의 계산하지 말고 calculate_quote tool 사용.
+- 한국어 존댓말, 친근한 말투, 2~3문장 이내로 요약 후 카드 렌더.
+```
+
+**Tool use 정의** (Claude API tools):
+
+| tool 이름 | 역할 | 백엔드 |
+|---|---|---|
+| `search_products` | 카테고리·키워드·약정 조건으로 rental_products 검색 | Supabase RPC + AI 5컬럼 |
+| `get_partner_cards` | 활성 제휴카드 + 최대 지원금 조회 | rental_partner_cards |
+| `calculate_quote` | rental_policy V2 공식으로 월 렌탈료·최대 혜택가·절감액 계산 | rental_policy_v2 RPC |
+| `search_telco_plans` | 인터넷+TV·휴대폰 요금제 검색 | incentive_products (carrier 매핑) |
+| `check_carrier_lock` | SK인터넷+TV 기변 불가 등 룰북 체크 | 룰 함수 |
+| `create_sale` | 셀프 가입 → rental_sales insert | 9장 self-enroll 어댑터 |
+| `request_consultant` | 상담사 연결 → incentive_customer_db insert | 9장 consultant-request 어댑터 |
+| `get_event_banners` | 활성 이벤트 배너 | storefront_events |
+
+**RAG 데이터 소스**:
+- rental_products (435개) — 상품 카탈로그
+- rental_partner_cards — 제휴카드·최대 지원금
+- rental_categories.metadata.extra_fields — chip·관리방법·관리주기 schema
+- incentive_products — 통신 요금제
+- 룰북 docs (SK 기변 불가·정책 V2·사은품 룰)
+
+### 13-5. 상담 history 저장 — 신규 테이블 2개
+
+```sql
+CREATE TABLE bongi_conversations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES storefront_users(id),
+  guest_session_id text,  -- 비로그인 게스트 (localStorage)
+  title text,             -- 첫 user 메시지 요약 (Claude로 자동 생성)
+  started_at timestamptz DEFAULT now(),
+  last_message_at timestamptz DEFAULT now(),
+  message_count int DEFAULT 0,
+  resulted_in_sale_id bigint REFERENCES rental_sales(id),  -- 카드 클릭으로 가입 시 연결
+  resulted_in_lead_id bigint REFERENCES incentive_customer_db(id) -- 상담사 연결 시
+);
+CREATE INDEX idx_bongi_conv_user ON bongi_conversations(user_id, started_at DESC);
+CREATE INDEX idx_bongi_conv_guest ON bongi_conversations(guest_session_id, started_at DESC);
+
+CREATE TABLE bongi_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id uuid REFERENCES bongi_conversations(id) ON DELETE CASCADE,
+  role text CHECK (role IN ('user','assistant','tool')),
+  content text,                -- user 입력 또는 assistant 답변 text
+  tool_calls jsonb,            -- assistant 가 호출한 tool + 결과
+  product_card jsonb,          -- 답변 안 ChatProductCard payload (chip·가격·CTA)
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX idx_bongi_msg_conv ON bongi_messages(conversation_id, created_at);
+```
+
+→ 비로그인 게스트도 localStorage `guest_session_id`로 history 보존. 로그인 시 conversation `user_id` 연결 (merge).
+
+### 13-6. priority 재구성 (채팅 플랫폼 중심)
+
+> 기존 P1~P5 (정적 카탈로그)는 11~12장의 form flow reuse용으로 보존. 신규 priority는 채팅 UX 중심.
+
+- **P1 — 채팅 UI 골격** (구현 차단 요소)
+  1. 와이어프레임 (사이드바 + 메인 입력 + 이벤트 배너 + 추천 chip 5개)
+  2. `LeftRail` 컴포넌트 (LogoHeader·NewChatButton·ConversationSearch·CategoryNav·ConversationHistory·UserPanel)
+  3. `ChatMain` 컴포넌트 (EventBanner·ChatInput·CategoryChipPicker·SuggestPromptChips)
+  4. 다크모드·반응형 (모바일 사이드바 drawer)
+
+- **P2 — AI 어시스턴트 backend**
+  5. Claude API 통합 (Sonnet 4.7 + streaming + 프롬프트 캐싱 5분)
+  6. tool use 8개 구현 (search_products·get_partner_cards·calculate_quote·search_telco_plans·check_carrier_lock·create_sale·request_consultant·get_event_banners)
+  7. RAG 컨텍스트 어셈블 (rental_products·partner_cards·categories·룰북)
+  8. system prompt + 봉이 룰북 인젝션 + 한국어 톤 조정
+  9. POST /api/storefront/chat (SSE streaming) 어댑터
+
+- **P3 — 답변 안 ChatProductCard**
+  10. ChatProductCard 컴포넌트 (아정당 chip 직노출 + 가격 dual + 듀얼 CTA reuse)
+  11. 약정·관리방법·관리주기 chip 동적 렌더 (`category_schema.extra_fields` 활용)
+  12. 가격 dual 표시 (rental_policy V2 + 절감액 강조)
+  13. 듀얼 CTA → 12장 form flow 진입 (셀프 가입 prefill: product_id·snapshot·card_snapshot)
+
+- **P4 — 상담 history 저장 + 카카오 로그인**
+  14. bongi_conversations·bongi_messages 마이그레이션
+  15. 게스트 session_id (localStorage) + 로그인 시 merge
+  16. ConversationHistory 사이드바 (검색·클릭으로 복원)
+  17. 카카오 social login (1st) + Apple/Naver (P5)
+  18. conversation 제목 자동 생성 (첫 user 메시지 → Claude로 5단어 요약)
+
+- **P5 — 이벤트 배너·친구 초대·포인트**
+  19. EventBanner 캐러셀 + storefront_events 어드민 CRUD
+  20. InvitePromo (친구 초대 link + 포인트 적립)
+  21. bongi_referrals + bongi_points 테이블
+  22. 추천 prompt chip A/B 테스트 (시간대·카테고리별)
+  23. 통신+가전 통합 cross-sell (봉이 차별점) — 채팅 한 대화 안에서 multi-카테고리 견적
+
+### 13-7. DB 변경 종합 (12장 + 13장 통합)
+
+기존 12장 (rental_sales 마이그레이션):
+```sql
+ALTER TABLE rental_sales
+  ADD COLUMN customer_type text CHECK (customer_type IN ('personal','sole_proprietor','corporate','foreigner')),
+  ADD COLUMN agent_phone text,
+  ADD COLUMN agent_relation text;
+```
+
+신규 13장 (채팅 플랫폼):
+```sql
+-- 상담 history
+CREATE TABLE bongi_conversations ( /* 13-5 참조 */ );
+CREATE TABLE bongi_messages ( /* 13-5 참조 */ );
+
+-- 이벤트 배너
+CREATE TABLE storefront_events (
+  id bigserial PRIMARY KEY,
+  title text, subtitle text, image_url text,
+  cta_text text, cta_url text,
+  starts_at timestamptz, ends_at timestamptz,
+  sort_order int, is_active boolean DEFAULT true
+);
+
+-- 게스트 → 회원 merge용
+CREATE TABLE storefront_users (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  social_provider text, social_uid text,
+  phone text, name text, email text,
+  coupon_pack_granted_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+
+-- 친구 초대 (P5)
+CREATE TABLE bongi_referrals (
+  id bigserial PRIMARY KEY,
+  referrer_user_id uuid REFERENCES storefront_users(id),
+  invited_phone text, invited_user_id uuid,
+  rewarded_at timestamptz, points int
+);
+```
+
+### 13-8. 추천 디렉토리 (채팅 플랫폼)
+
+```
+client/src/pages/storefront/
+  ├─ chat.html                     메인 채팅 페이지 (사이드바 + ChatMain)
+  ├─ register/
+  │   ├─ product-confirm.html      셀프 가입 step1 (12장 reuse)
+  │   └─ customer-info.html        셀프 가입 step3 (12장 reuse)
+  ├─ consult-request.html          상담사 연결 form
+  ├─ mypage.html                   회원 마이페이지 (P5)
+  └─ _components/
+      ├─ left-rail.js              LeftRail 통합 (로고·New·검색·Nav·History·Invite·User)
+      ├─ category-nav.js           카테고리 메뉴
+      ├─ conversation-history.js   상담 history list
+      ├─ event-banner.js           상단 캐러셀
+      ├─ chat-input.js             입력창 + CategoryChipPicker + 전송
+      ├─ suggest-prompt-chips.js   추천 5개 chip
+      ├─ streaming-answer.js       SSE streaming AI 답변
+      ├─ chat-product-card.js      답변 안 product card (chip + dual price + 듀얼 CTA)
+      ├─ chat-action-bar.js        메시지 하단 (복사·재생성)
+      └─ user-panel.js             로그인/프로필
+  └─ _shared/
+      ├─ storefront-chat-api.js    POST /api/storefront/chat (SSE)
+      ├─ storefront-api.js         self-enroll · consultant-request (9장 reuse)
+      ├─ storefront-auth.js        카카오 social login
+      └─ guest-session.js          게스트 localStorage + merge
+server/api/storefront/
+  ├─ chat.js                       Claude API + tool use orchestrator
+  ├─ tools/
+  │   ├─ search-products.js
+  │   ├─ get-partner-cards.js
+  │   ├─ calculate-quote.js
+  │   ├─ search-telco-plans.js
+  │   ├─ check-carrier-lock.js
+  │   ├─ create-sale.js
+  │   ├─ request-consultant.js
+  │   └─ get-event-banners.js
+  └─ rag-context.js                카탈로그 어셈블 + 프롬프트 캐싱
+docs/storefront/
+  ├─ chat-ux.md                    채팅 플랫폼 UX spec
+  ├─ ai-system-prompt.md           system prompt + 룰북 인젝션
+  ├─ tool-use-spec.md              8 tool 정의 + 결과 스키마
+  └─ wireframe-chat.md             와이어프레임
+```
+
+### 13-9. 메모리 hint (차기 세션)
+
+- `feedback_crm_only.md` 룰("개발 범위는 CRM 어드민만, client/src 제외")은 **storefront까지 확대 필요**.
+  - 갱신 후보 문구: "개발 범위는 CRM 어드민 + storefront (채팅 플랫폼). 제외: 고객 채팅 외 client/src 레거시"
+  - `project_bongi_unified_customer.md` 의 양방향 연동 정의에 storefront 채팅도 N채널의 하나로 추가.
+- 신규 메모리 후보:
+  - `project_bongi_storefront_chat.md` — 채팅 플랫폼 spec·tool 8종·conversation 스키마·system prompt 골격
+  - `project_bongi_chat_product_card.md` — ChatProductCard 패턴 (chip 직노출 + 듀얼 CTA + rental_policy V2 dual price)
+
+### 13-10. 9장 backend 단일성 유지
+
+> 13장 채팅 UI 추가에도 9장 결론 그대로:
+> **"셀프 가입 = 상담사 연결 = rental_sales insert 1건"**
+
+- ChatProductCard "셀프 가입" 클릭 → 12장 form flow (product-confirm → customer-info) → POST /api/storefront/self-enroll → rental_sales insert
+- ChatProductCard "전문상담원 연결" 클릭 → consult-request form → POST /api/storefront/consultant-request → incentive_customer_db insert → round-robin TM 분배
+- AI 어시스턴트가 tool use로 `create_sale` 직접 호출 가능 (사용자 모든 정보 채팅 안에서 수집 시) — but 기본은 form flow 안전 우선.
+
+→ 봉이 backend 95% 준비 완료 결론은 채팅 플랫폼 전환 후에도 동일. 신규 작업 = 채팅 UI + Claude API 어댑터 + bongi_conversations 2테이블.
