@@ -1238,6 +1238,25 @@ async function fetchAgent() {
               </div>`;
           })()}
 
+          <!-- 🤖 AI auto-fill 자연어 박스 (2026-06-03 신규) -->
+          <div style="grid-column:1/-1;background:rgba(34,197,94,0.06);border:1px solid #16a34a;border-radius:6px;padding:8px 10px;margin-top:4px">
+            <div style="font-size:10.5px;color:#86efac;font-weight:800;margin-bottom:6px">🤖 AI 자동 채움 (자연어 · TM 견적 카드에 표시)</div>
+            <div style="display:grid;grid-template-columns:140px 1fr;gap:6px 10px;align-items:start;font-size:10.5px">
+              <label style="color:#86efac;font-weight:700">📝 한 줄 설명</label>
+              <input type="text" id="rp-ai-desc-${product.id}" value="${(product.description||'').replace(/"/g,'&quot;')}" placeholder="예: 코웨이 BEREX 스마트 매트리스 AI 수면 분석" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
+
+              <label style="color:#86efac;font-weight:700">👤 추천 용량/규격</label>
+              <input type="text" id="rp-ai-cap-${product.id}" value="${(product.recommended_capacity||'').replace(/"/g,'&quot;')}" placeholder="예: 2~4인 가족·중형 / 거실 65인치 / 퀸·2인용" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
+
+              <label style="color:#86efac;font-weight:700">🎯 추천 대상</label>
+              <input type="text" id="rp-ai-usage-${product.id}" value="${Array.isArray(product.recommended_usage) ? product.recommended_usage.join(', ') : ''}" placeholder="콤마 구분 — 예: 신혼, 어르신, 민감피부, 거실, 게임" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
+
+              <label style="color:#86efac;font-weight:700">✨ 강점 태그</label>
+              <input type="text" id="rp-ai-feat-${product.id}" value="${Array.isArray(product.feature_tags) ? product.feature_tags.join(', ') : ''}" placeholder="콤마 구분 — 예: 체압분산, 5존지지, 항균커버" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
+            </div>
+            <div style="font-size:9px;color:#64748b;margin-top:4px">💡 자연어 input은 정형 checkbox·select와 별개. TM 견적 카드의 chip·디테일에 그대로 노출됨.</div>
+          </div>
+
           <label style="color:#86efac;font-weight:700">자유 메모</label>
           <textarea id="rp-meta-notes-${product.id}" rows="2" placeholder="추천 시 강조할 포인트 / 특이사항" style="padding:5px 8px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px;resize:vertical;font-family:inherit">${(product.spec_notes||'').replace(/</g,'&lt;')}</textarea>
 
@@ -1295,6 +1314,15 @@ async function fetchAgent() {
       const cap = F(`rp-meta-cap-${product.id}`).value || null;
       const usage = Array.from(document.querySelectorAll(`.rp-meta-usage-${product.id}:checked`)).map(c => c.value);
       const features = Array.from(document.querySelectorAll(`.rp-meta-feat-${product.id}:checked`)).map(c => c.value);
+      // 🤖 AI auto-fill 자연어 input 수집 (2026-06-03 신규)
+      const aiDesc = F(`rp-ai-desc-${product.id}`)?.value.trim() || null;
+      const aiCap = F(`rp-ai-cap-${product.id}`)?.value.trim() || null;
+      const aiUsage = (F(`rp-ai-usage-${product.id}`)?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const aiFeat = (F(`rp-ai-feat-${product.id}`)?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
+      // 자연어 input이 비어있지 않으면 자연어 우선, 정형 그대로 ARRAY에 합치기 (중복 제거)
+      const finalUsage = [...new Set([...usage, ...aiUsage])];
+      const finalFeatures = [...new Set([...features, ...aiFeat])];
+      const finalCap = aiCap || cap;
       const inst = F(`rp-meta-inst-${product.id}`).value || null;
       const filt = F(`rp-meta-filt-${product.id}`).value || null;
       const size = F(`rp-meta-size-${product.id}`).value.trim() || null;
@@ -1324,9 +1352,10 @@ async function fetchAgent() {
         const res = await fetch(`${RP_API}/products/${product.id}`, {
           method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
           body: JSON.stringify({
-            recommended_capacity: cap,
-            recommended_usage: usage.length ? usage : null,
-            feature_tags: features.length ? features : null,
+            description: aiDesc !== null ? aiDesc : undefined,  // 🆕 AI 한 줄 설명
+            recommended_capacity: finalCap,
+            recommended_usage: finalUsage.length ? finalUsage : null,
+            feature_tags: finalFeatures.length ? finalFeatures : null,
             specifications: specs,
             spec_notes: notes,
             meta_manual_override: lock,
