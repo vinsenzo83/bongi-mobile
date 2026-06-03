@@ -543,10 +543,10 @@ function updatePanel() {
   const cardD = state._cardDiscount || 0;
   const final = Math.max(0, base - cardD);
   // 가격 변경 flash
-  const pbox = document.getElementById('price-box');
-  pbox.classList.add('flash');
-  setTimeout(() => pbox.classList.remove('flash'), 250);
-  pbox.innerHTML = `
+  const priceBox = document.getElementById('price-box');
+  priceBox.classList.add('flash');
+  setTimeout(() => priceBox.classList.remove('flash'), 250);
+  priceBox.innerHTML = `
     <div class="price-row"><span>월 요금 (정상)</span><span class="v">${fmt(base)}원</span></div>
     ${o.half_fee?`<div class="price-row discount"><span>반값 적용 (${o.half_period||'-'}M)</span><span class="v">${fmt(o.half_fee)}원</span></div>`:''}
     ${o.payback?`<div class="price-row discount"><span>현금 페이백</span><span class="v">+${fmt(o.payback)}원</span></div>`:''}
