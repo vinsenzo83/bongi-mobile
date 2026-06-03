@@ -5610,12 +5610,11 @@ setTimeout(() => {
       const reasons = hasCriteria ? rrReasons(p, _rrCriteria) : [];
       const isTop = hasCriteria && idx === 0; // 마진 1위 강조
       const reasonHtml = reasons.length ? `<div class="match-tags">${reasons.map(r => `<span class="mt">${r}</span>`).join('')}</div>` : '';
-      // DB 메타 칩 (권장 인원·설치·필터·기능)
+      // DB 메타 칩 (권장 인원·설치·필터·기능) — 2026-06-03 신규 schema 매핑 우회: 자연어 그대로 chip
       const metaChips = [];
-      if (p.recommended_capacity && capMap[p.recommended_capacity]) metaChips.push(`<span class="meta-chip cap">${capMap[p.recommended_capacity]}</span>`);
-      if (p.specifications?.install_type && installMap[p.specifications.install_type]) metaChips.push(`<span class="meta-chip inst">${installMap[p.specifications.install_type]}</span>`);
-      if (p.specifications?.filter_type && filterMap[p.specifications.filter_type]) metaChips.push(`<span class="meta-chip filt">${filterMap[p.specifications.filter_type]}</span>`);
-      (p.feature_tags || []).forEach(t => { if (featMap[t]) metaChips.push(`<span class="meta-chip feat">${featMap[t]}</span>`); });
+      if (p.recommended_capacity) metaChips.push(`<span class="meta-chip cap" title="추천 용량/규격">👤 ${escapeHtml(p.recommended_capacity)}</span>`);
+      (p.feature_tags || []).slice(0, 6).forEach(t => metaChips.push(`<span class="meta-chip feat" title="강점">✨ ${escapeHtml(t)}</span>`));
+      (p.recommended_usage || []).slice(0, 3).forEach(u => metaChips.push(`<span class="meta-chip usage" title="추천 사용자">🎯 ${escapeHtml(u)}</span>`));
       const metaHtml = metaChips.length ? `<div class="meta-chips">${metaChips.join('')}</div>` : '';
       const dataSrc = p.meta_manual_override ? '✓' : p.auto_filled_at ? '🤖' : '';
       const tierBadge = p.tier ? `<span class="rr-tier-badge rr-tier-${p.tier}">${p.tier}</span>` : '';
@@ -6164,14 +6163,35 @@ setTimeout(() => {
         ${coHTML}
         <div class="row"><span class="k">상품명</span><span class="v" style="text-align:right;max-width:170px;word-break:break-word">${p.name}</span></div>
         ${p.description ? `<div class="row"><span class="k">설명</span><span class="v" style="text-align:right;max-width:170px;color:#cbd5e1;font-size:10px;word-break:break-word">${p.description}</span></div>` : ''}
+        ${p.recommended_capacity ? `<div class="row"><span class="k">👤 추천 용량</span><span class="v" style="color:#22d3ee;font-weight:700">${escapeHtml(p.recommended_capacity)}</span></div>` : ''}
+        ${Array.isArray(p.recommended_usage) && p.recommended_usage.length ? `<div class="row"><span class="k">🎯 추천 대상</span><span class="v" style="text-align:right;max-width:170px"><div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:flex-end">${p.recommended_usage.slice(0,5).map(u=>`<span style="background:rgba(99,102,241,0.18);color:#a5b4fc;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700">${escapeHtml(u)}</span>`).join('')}</div></span></div>` : ''}
+        ${Array.isArray(p.feature_tags) && p.feature_tags.length ? `<div class="row"><span class="k">✨ 강점</span><span class="v" style="text-align:right;max-width:170px"><div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:flex-end">${p.feature_tags.slice(0,6).map(t=>`<span style="background:rgba(34,197,94,0.18);color:#86efac;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700">${escapeHtml(t)}</span>`).join('')}</div></span></div>` : ''}
+        ${(() => {
+          // 카테고리 schema 기반 specifications 자동 렌더 (정수기 6 / 매트리스 4 / TV 6 / 에어컨 6 등)
+          const specs = p.specifications || {};
+          const schema = p.category?.metadata?.extra_fields || [];
+          const rows = schema.filter(f => specs[f.key] != null && specs[f.key] !== '').map(f => {
+            const v = specs[f.key];
+            const label = `${f.label}${f.unit ? ' ('+f.unit+')' : ''}`;
+            return `<div class="row"><span class="k">${escapeHtml(label)}</span><span class="v">${escapeHtml(String(v))}</span></div>`;
+          });
+          return rows.length ? `<div style="border-top:1px dashed #475569;margin:6px -2px 4px;padding-top:5px"><div style="font-size:9px;color:#fbbf24;font-weight:800;margin-bottom:3px">📋 ${escapeHtml(p.category?.name||'')} 스펙</div>${rows.join('')}</div>` : '';
+        })()}
         <div class="row"><span class="k">시장성</span><span class="v" style="color:#fbbf24">${starHTML}</span></div>
-        <div class="row"><span class="k">점검주기</span><span class="v">${effInsp ? effInsp+'개월' : '-'}${inspV ? ' <span style="color:#a78bfa;font-size:9px">(지정)</span>' : ''}</span></div>
-        <div class="row"><span class="k">소유권 이전</span><span class="v">${effOwn ? effOwn+'개월 후' : '-'}${ownV ? ' <span style="color:#a78bfa;font-size:9px">(지정)</span>' : ''}</span></div>
+        ${effInsp ? `<div class="row"><span class="k">점검주기</span><span class="v">${effInsp+'개월'}${inspV ? ' <span style="color:#a78bfa;font-size:9px">(지정)</span>' : ''}</span></div>` : ''}
+        ${effOwn ? `<div class="row"><span class="k">소유권 이전</span><span class="v">${effOwn+'개월 후'}${ownV ? ' <span style="color:#a78bfa;font-size:9px">(지정)</span>' : ''}</span></div>` : ''}
         ${o.monthly_diff != null && o.monthly_diff !== 0 ? `<div class="row"><span class="k">월납 증감</span><span class="v" style="color:${o.monthly_diff < 0 ? '#22c55e' : '#f59e0b'}">${o.monthly_diff > 0 ? '+' : ''}${fmt(o.monthly_diff)}원</span></div>` : ''}
+        ${o.as_period_months ? `<div class="row"><span class="k">🛡️ A/S 기간</span><span class="v">${o.as_period_months}년</span></div>` : ''}
+        ${o.signup_age_limit ? `<div class="row"><span class="k">👤 가입 연령</span><span class="v">만 ${o.signup_age_limit}세+</span></div>` : ''}
+        ${o.installation_fee != null && o.installation_fee > 0 ? `<div class="row"><span class="k">🔧 설치비</span><span class="v">${fmt(o.installation_fee)}원</span></div>` : ''}
+        ${o.commission_rate ? `<div class="row"><span class="k">💼 수수료율</span><span class="v" style="color:#fdba74">${o.commission_rate}% (${o.commission_basis||'-'})</span></div>` : ''}
+        ${o.total_rental_fee ? `<div class="row"><span class="k">∑ 총렌탈료</span><span class="v">${fmt(o.total_rental_fee)}원</span></div>` : ''}
         ${p.promo_tag ? `<div class="row"><span class="k">프로모션 태그</span><span class="v" style="color:#a78bfa">${p.promo_tag}</span></div>` : ''}
+        ${o.promo_type ? `<div class="row"><span class="k">🏷️ 옵션 프로모</span><span class="v" style="color:#d8b4fe">${escapeHtml(o.promo_type)}</span></div>` : ''}
         ${p.is_premium ? `<div class="row"><span class="k">우수상품</span><span class="v" style="color:#fbbf24;font-weight:800">⭐ 우수 (1건당 보너스)</span></div>` : ''}
         ${p.registration_status ? `<div class="row"><span class="k">등록상태</span><span class="v" style="color:#ef4444">${p.registration_status}</span></div>` : ''}
         ${p.evaluation_memo ? `<div class="row"><span class="k">평가 메모</span><span class="v" style="color:#94a3b8;font-size:10px">${p.evaluation_memo}</span></div>` : ''}
+        ${p.spec_notes ? `<div class="row"><span class="k">스펙 메모</span><span class="v" style="color:#94a3b8;font-size:10px">${p.spec_notes}</span></div>` : ''}
         ${note ? `<div class="row"><span class="k">비고 (옵션)</span><span class="v" style="color:#cbd5e1;font-size:10px">${note}</span></div>` : ''}
         ${p.product_url ? `<div style="font-size:9.5px;margin-top:4px"><a href="${p.product_url}" target="_blank" style="color:#60a5fa">🔗 상품 카탈로그 열기</a></div>` : ''}
       </div>`;
