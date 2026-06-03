@@ -6371,6 +6371,19 @@ setTimeout(() => {
             <div class="row"><span class="k">월 렌탈료</span><span class="v" id="rdm-q-monthly">-</span></div>
             <div class="row"><span class="k">케어</span><span class="v" id="rdm-q-care">-</span></div>
             <div class="row full"><span class="k">📌 봉이지원금 (페이백)</span><span class="v" style="color:#dc2626" id="rdm-q-payback">-</span></div>
+            <!-- 🎴 제휴카드 정보 (적용 시 표시) -->
+            <div class="row full" id="rdm-q-card-row" style="display:none;background:rgba(251,191,36,0.10);border-radius:4px;padding:5px 8px;margin-top:4px">
+              <span class="k" style="color:#fbbf24;font-weight:700">🎴 제휴카드</span>
+              <span class="v" id="rdm-q-card">-</span>
+            </div>
+            <div class="row full" id="rdm-q-card-tier-row" style="display:none;background:rgba(251,191,36,0.08);border-radius:4px;padding:5px 8px">
+              <span class="k" style="color:#fbbf24;font-weight:700">💳 카드 할인</span>
+              <span class="v" id="rdm-q-card-tier" style="color:#dc2626;font-weight:800">-</span>
+            </div>
+            <div class="row full" id="rdm-q-final-row" style="display:none;background:rgba(34,197,94,0.10);border-radius:4px;padding:5px 8px">
+              <span class="k" style="color:#16a34a;font-weight:800">✅ 카드 할인 후 월납</span>
+              <span class="v" id="rdm-q-final" style="color:#16a34a;font-weight:900;font-size:14px">-</span>
+            </div>
           </div>
         </div>
       </div>
@@ -6713,7 +6726,32 @@ setTimeout(() => {
     $('rdm-q-monthly').textContent = fmt(c.monthly_fee) + '원';
     $('rdm-q-care').textContent = c.care_service || '-';
     $('rdm-q-payback').textContent = fmt(c.payback) + '원';
-    // 콜모드 prefill
+
+    // 🎴 제휴카드 할인 정보 — 견적 화면에서 적용했으면 같이 표시
+    const cardSel = document.getElementById('rental-card-select');
+    const cardTier = document.getElementById('rental-card-tier');
+    const cardRow = $('rdm-q-card-row'), tierRow = $('rdm-q-card-tier-row'), finalRow = $('rdm-q-final-row');
+    if (cardSel && cardSel.value && cardTier && cardTier.value) {
+      const cardLabel = cardSel.options[cardSel.selectedIndex]?.text || '';
+      const tierLabel = cardTier.options[cardTier.selectedIndex]?.text || '';
+      // 할인액 추출 (tier value로 직접 fetch)
+      const baseM = Number(c.monthly_fee) || 0;
+      const tierVal = Number(cardTier.value);
+      let discount = 0;
+      // 할인액은 tier text에서 추출 (예: "-15,000원/월")
+      const m = tierLabel.match(/-\s*([\d,]+)원\/월/);
+      if (m) discount = parseInt(m[1].replace(/,/g,''), 10);
+      const finalM = Math.max(0, baseM - discount);
+      cardRow.style.display = 'flex'; $('rdm-q-card').textContent = cardLabel;
+      tierRow.style.display = 'flex'; $('rdm-q-card-tier').textContent = tierLabel;
+      finalRow.style.display = 'flex'; $('rdm-q-final').textContent = `${fmt(finalM)}원 (-${fmt(discount)})`;
+      // ctx에 카드 정보 보존 (submit 시 sales metadata로 전송 가능)
+      _ctx.card = { card_label: cardLabel, tier: tierVal, discount, final_monthly: finalM };
+    } else {
+      cardRow.style.display = 'none'; tierRow.style.display = 'none'; finalRow.style.display = 'none';
+    }
+
+    // 콜모드 prefill (고객명·전화) + 콜DB 다른 필드 prefill
     if (window.CALL_MODE_CUSTOMER_NAME) $('rdm-name').value = window.CALL_MODE_CUSTOMER_NAME;
     if (window.CALL_MODE_CUSTOMER_PHONE) $('rdm-phone').value = fmtPhone(window.CALL_MODE_CUSTOMER_PHONE);
     syncType();
