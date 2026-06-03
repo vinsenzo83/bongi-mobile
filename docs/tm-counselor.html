@@ -6231,10 +6231,14 @@ setTimeout(() => {
       <div class="total"><div style="font-size:10px;color:#94a3b8">📌 봉이지원금 (페이백)</div><div class="big">+ ${fmt(c.payback)}원</div></div>
       <button class="save" id="rental-save-btn">💾 ${p.category?.name||'렌탈'} 영업 접수</button>`;
 
-    // 🎴 제휴카드 fetch — 회사(brand) + 카테고리 동시 매칭 (2026-06-03 fix)
-    if (p.company?.name) {
+    // 🎴 제휴카드 fetch
+    // 정수기 그룹: 회사명(=제조사) 사용 / 가전 그룹: 제품 brand(=제조사, LG/삼성) 사용
+    // — KT가전구독·이니·스마트·BS ON 같은 채널은 카드 없음, 제조사 카드 공유
+    {
+      const _isAppl = p.category?.product_group === '가전';
+      const _brandKey = _isAppl ? (p.brand || p.company?.name) : (p.company?.name || p.brand);
       const _catParam = p.category?.name ? `&category=${encodeURIComponent(p.category.name)}` : '';
-      fetch(`${API}/partner-cards?brand=${encodeURIComponent(p.company.name)}${_catParam}&active=1`)
+      if (_brandKey) fetch(`${API}/partner-cards?brand=${encodeURIComponent(_brandKey)}${_catParam}&active=1`)
         .then(r => r.json())
         .then(cardsR => {
           // server alias 매핑 (LG전자 → LG전자구독 등) 결과 그대로 사용 — client 추가 filter X
