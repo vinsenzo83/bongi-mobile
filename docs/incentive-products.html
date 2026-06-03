@@ -1159,48 +1159,18 @@ async function fetchAgent() {
         </div>
 
         <div style="display:grid;grid-template-columns:140px 1fr;gap:6px 10px;align-items:center;font-size:10.5px">
-          <label style="color:#86efac;font-weight:700">권장 인원</label>
-          <select id="rp-meta-cap-${product.id}" style="padding:4px 7px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px">
-            <option value="">— 선택 —</option>
-            <option value="1-2" ${product.recommended_capacity==='1-2'?'selected':''}>🧍 1~2인 (1인가구·신혼)</option>
-            <option value="3-4" ${product.recommended_capacity==='3-4'?'selected':''}>👨‍👩‍👧 3~4인 (일반 가정)</option>
-            <option value="5+"  ${product.recommended_capacity==='5+' ?'selected':''}>👨‍👩‍👧‍👦 5인+ / 대가족 / 사업장</option>
-          </select>
+          <!-- 🤖 AI 자동 채움 (자연어 · TM 견적 카드에 표시) — TM 추천 메타에 통합 (2026-06-03) -->
+          <label style="color:#86efac;font-weight:700">📝 한 줄 설명</label>
+          <input type="text" id="rp-ai-desc-${product.id}" value="${(product.description||'').replace(/"/g,'&quot;')}" placeholder="예: 코웨이 BEREX 스마트 매트리스 AI 수면 분석" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
 
-          <label style="color:#86efac;font-weight:700">사용 환경</label>
-          <div style="display:flex;gap:10px">
-            <label style="cursor:pointer"><input type="checkbox" class="rp-meta-usage-${product.id}" value="home" ${Array.isArray(product.recommended_usage)&&product.recommended_usage.includes('home')?'checked':''}> 🏠 가정</label>
-            <label style="cursor:pointer"><input type="checkbox" class="rp-meta-usage-${product.id}" value="business" ${Array.isArray(product.recommended_usage)&&product.recommended_usage.includes('business')?'checked':''}> 🏢 사업장</label>
-          </div>
+          <label style="color:#86efac;font-weight:700">👤 추천 용량/규격</label>
+          <input type="text" id="rp-ai-cap-${product.id}" value="${(product.recommended_capacity||'').replace(/"/g,'&quot;')}" placeholder="예: 2~4인 가족·중형 / 거실 65인치 / 퀸·2인용" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
 
-          <label style="color:#86efac;font-weight:700">기능 태그</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            ${['ice:🧊 얼음','coffee:☕ 커피','hot:🔥 온수','cold:❄️ 냉수','direct:🚰 직수','ro:💧 RO','uv:🛡️ UV','smart:🤖 스마트'].map(s => {
-              const [v, lbl] = s.split(':');
-              const checked = Array.isArray(product.feature_tags) && product.feature_tags.includes(v) ? 'checked' : '';
-              return `<label style="cursor:pointer"><input type="checkbox" class="rp-meta-feat-${product.id}" value="${v}" ${checked}> ${lbl}</label>`;
-            }).join('')}
-          </div>
+          <label style="color:#86efac;font-weight:700">🎯 추천 대상</label>
+          <input type="text" id="rp-ai-usage-${product.id}" value="${Array.isArray(product.recommended_usage) ? product.recommended_usage.join(', ') : ''}" placeholder="콤마 구분 — 예: 신혼, 어르신, 민감피부, 거실, 게임" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
 
-          <label style="color:#86efac;font-weight:700">설치 형태</label>
-          <select id="rp-meta-inst-${product.id}" style="padding:4px 7px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px">
-            <option value="">— 선택 —</option>
-            ${['standing:스탠드','builtin:빌트인','undersink:언더싱크','desktop:탁상'].map(s => {
-              const [v, lbl] = s.split(':');
-              const sel = product.specifications?.install_type === v ? 'selected' : '';
-              return `<option value="${v}" ${sel}>${lbl}</option>`;
-            }).join('')}
-          </select>
-
-          <label style="color:#86efac;font-weight:700">필터 종류</label>
-          <select id="rp-meta-filt-${product.id}" style="padding:4px 7px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px">
-            <option value="">— 선택 —</option>
-            ${['RO:RO (역삼투)','nano:나노필터','UF:UF (중공사막)','direct:직수'].map(s => {
-              const [v, lbl] = s.split(':');
-              const sel = product.specifications?.filter_type === v ? 'selected' : '';
-              return `<option value="${v}" ${sel}>${lbl}</option>`;
-            }).join('')}
-          </select>
+          <label style="color:#86efac;font-weight:700">✨ 강점 태그</label>
+          <input type="text" id="rp-ai-feat-${product.id}" value="${Array.isArray(product.feature_tags) ? product.feature_tags.join(', ') : ''}" placeholder="콤마 구분 — 예: 체압분산, 5존지지, 항균커버" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
 
           <label style="color:#86efac;font-weight:700">사이즈 (W×D×H mm)</label>
           <input type="text" id="rp-meta-size-${product.id}" value="${product.specifications?.size_mm || ''}" placeholder="예: 400×590×1400" style="padding:4px 7px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px">
@@ -1237,25 +1207,6 @@ async function fetchAgent() {
                 <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:8px">${items}</div>
               </div>`;
           })()}
-
-          <!-- 🤖 AI auto-fill 자연어 박스 (2026-06-03 신규) -->
-          <div style="grid-column:1/-1;background:rgba(34,197,94,0.06);border:1px solid #16a34a;border-radius:6px;padding:8px 10px;margin-top:4px">
-            <div style="font-size:10.5px;color:#86efac;font-weight:800;margin-bottom:6px">🤖 AI 자동 채움 (자연어 · TM 견적 카드에 표시)</div>
-            <div style="display:grid;grid-template-columns:140px 1fr;gap:6px 10px;align-items:start;font-size:10.5px">
-              <label style="color:#86efac;font-weight:700">📝 한 줄 설명</label>
-              <input type="text" id="rp-ai-desc-${product.id}" value="${(product.description||'').replace(/"/g,'&quot;')}" placeholder="예: 코웨이 BEREX 스마트 매트리스 AI 수면 분석" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
-
-              <label style="color:#86efac;font-weight:700">👤 추천 용량/규격</label>
-              <input type="text" id="rp-ai-cap-${product.id}" value="${(product.recommended_capacity||'').replace(/"/g,'&quot;')}" placeholder="예: 2~4인 가족·중형 / 거실 65인치 / 퀸·2인용" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
-
-              <label style="color:#86efac;font-weight:700">🎯 추천 대상</label>
-              <input type="text" id="rp-ai-usage-${product.id}" value="${Array.isArray(product.recommended_usage) ? product.recommended_usage.join(', ') : ''}" placeholder="콤마 구분 — 예: 신혼, 어르신, 민감피부, 거실, 게임" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
-
-              <label style="color:#86efac;font-weight:700">✨ 강점 태그</label>
-              <input type="text" id="rp-ai-feat-${product.id}" value="${Array.isArray(product.feature_tags) ? product.feature_tags.join(', ') : ''}" placeholder="콤마 구분 — 예: 체압분산, 5존지지, 항균커버" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
-            </div>
-            <div style="font-size:9px;color:#64748b;margin-top:4px">💡 자연어 input은 정형 checkbox·select와 별개. TM 견적 카드의 chip·디테일에 그대로 노출됨.</div>
-          </div>
 
           <label style="color:#86efac;font-weight:700">자유 메모</label>
           <textarea id="rp-meta-notes-${product.id}" rows="2" placeholder="추천 시 강조할 포인트 / 특이사항" style="padding:5px 8px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px;resize:vertical;font-family:inherit">${(product.spec_notes||'').replace(/</g,'&lt;')}</textarea>
@@ -1311,20 +1262,11 @@ async function fetchAgent() {
       const tk = localStorage.getItem('incentive-auth-token-v1');
       const msgEl = F(`rp-meta-msg-${product.id}`);
       if (!tk) { msgEl.style.color = '#dc2626'; msgEl.textContent = '로그인 필요'; return; }
-      const cap = F(`rp-meta-cap-${product.id}`).value || null;
-      const usage = Array.from(document.querySelectorAll(`.rp-meta-usage-${product.id}:checked`)).map(c => c.value);
-      const features = Array.from(document.querySelectorAll(`.rp-meta-feat-${product.id}:checked`)).map(c => c.value);
-      // 🤖 AI auto-fill 자연어 input 수집 (2026-06-03 신규)
+      // 🤖 AI 자연어 input 수집 (정형 input 폐기 후 통합 — 2026-06-03)
       const aiDesc = F(`rp-ai-desc-${product.id}`)?.value.trim() || null;
-      const aiCap = F(`rp-ai-cap-${product.id}`)?.value.trim() || null;
-      const aiUsage = (F(`rp-ai-usage-${product.id}`)?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
-      const aiFeat = (F(`rp-ai-feat-${product.id}`)?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
-      // 자연어 input이 비어있지 않으면 자연어 우선, 정형 그대로 ARRAY에 합치기 (중복 제거)
-      const finalUsage = [...new Set([...usage, ...aiUsage])];
-      const finalFeatures = [...new Set([...features, ...aiFeat])];
-      const finalCap = aiCap || cap;
-      const inst = F(`rp-meta-inst-${product.id}`).value || null;
-      const filt = F(`rp-meta-filt-${product.id}`).value || null;
+      const finalCap = F(`rp-ai-cap-${product.id}`)?.value.trim() || null;
+      const finalUsage = (F(`rp-ai-usage-${product.id}`)?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const finalFeatures = (F(`rp-ai-feat-${product.id}`)?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
       const size = F(`rp-meta-size-${product.id}`).value.trim() || null;
       const weight = parseFloat(F(`rp-meta-weight-${product.id}`).value) || null;
       const care = parseInt(F(`rp-meta-care-${product.id}`).value, 10) || null;
@@ -1339,10 +1281,8 @@ async function fetchAgent() {
         else if (t === 'number') extraValues[k] = el.value === '' ? null : Number(el.value);
         else extraValues[k] = el.value === '' ? null : el.value;
       });
-      // specifications jsonb 병합 (기존 값 + 하드코딩 input + 카테고리 동적 input)
+      // specifications jsonb 병합 (기존 값 + 사이즈/무게/케어 + 카테고리 동적 input)
       const specs = Object.assign({}, product.specifications || {}, {
-        install_type: inst,
-        filter_type: filt,
         size_mm: size,
         weight_kg: weight,
         care_cycle_months: care,
