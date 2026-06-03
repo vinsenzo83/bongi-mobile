@@ -63,6 +63,14 @@
       🏗️ 어드민 재구성 spec
       <div class="doc-meta">신규 11 메뉴 + DB ERD + 시퀀스 4종 + 권한</div>
     </button>
+    <button class="doc-btn" data-doc="rental-calculator-2026-06-03.md">
+      🧮 렌탈 계산기 spec
+      <div class="doc-meta">아정당 패턴 + 채팅↔계산기 듀얼 + 매장 매핑</div>
+    </button>
+    <button class="doc-btn" data-doc="../flow-rental.html">
+      📜 기존 flow-rental (참고)
+      <div class="doc-meta">렌트리 참고 시점 — deprecated 항목 존재</div>
+    </button>
     <div class="toc" id="toc">
       <h2>목차</h2>
     </div>
@@ -81,12 +89,14 @@
     currentDoc = doc;
     content.innerHTML = '<div class="loading">기획서 로딩 중...</div>';
     try {
-      const r = await fetch('/docs/specs/' + doc + '?v=' + Date.now());
-      const md = await r.text();
-      const html = marked.parse(md);
+      const isHtml = doc.endsWith('.html');
+      const path = isHtml ? '/docs/' + doc.replace('../', '') : '/docs/specs/' + doc;
+      const r = await fetch(path + '?v=' + Date.now());
+      const text = await r.text();
+      const html = isHtml ? text : marked.parse(text);
       content.innerHTML = `<div class="toolbar">
-        <a href="/docs/specs/${doc}" target="_blank">📄 raw md</a>
-        <a href="https://github.com/vinsenzo83/bongi-mobile/blob/master/docs/specs/${doc}" target="_blank">🐙 GitHub</a>
+        <a href="${path}" target="_blank">📄 raw</a>
+        <a href="https://github.com/vinsenzo83/bongi-mobile/blob/master${path}" target="_blank">🐙 GitHub</a>
       </div>` + html;
       buildToc();
       content.scrollTo({ top: 0 });
