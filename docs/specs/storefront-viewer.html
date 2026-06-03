@@ -51,29 +51,29 @@
   <aside class="sidebar">
     <h1>🚀 storefront 기획서</h1>
     <div class="desc">봉이 차기 채팅 플랫폼 (Allio) 기획 문서 모음</div>
-    <button class="doc-btn active" data-doc="storefront-onepager-2026-06-03.md" style="background:#fbbf24;color:#0f172a;border-color:#fbbf24">
-      ⭐ 한 장 요약 (결정문)
-      <div class="doc-meta" style="color:rgba(15,23,42,0.7)">핵심만 — 와이어프레임 + 데이터 흐름 + 5 phase</div>
+    <button class="doc-btn active" data-doc="storefront-scope-2026-06-03.md" style="background:#fbbf24;color:#0f172a;border-color:#fbbf24">
+      ⭐ 범위 (4 화면만)
+      <div class="doc-meta" style="color:rgba(15,23,42,0.7)">결정 — 더 복잡하게 가지 X</div>
     </button>
-    <button class="doc-btn" data-doc="storefront-plan-2026-06-03.md">
-      📐 storefront 설계 plan
-      <div class="doc-meta">UX 분석·UI 설계·Allio 디자인 (904줄)</div>
+    <button class="doc-btn" data-doc="../wireframes/01-customer-calculator.html">
+      ① 가전 렌탈 계산기 (고객)
+      <div class="doc-meta">chip 6 step + 매장/온라인 + 듀얼 CTA</div>
     </button>
-    <button class="doc-btn" data-doc="crm-storefront-rental-mapping-2026-06-03.md">
-      🔁 CRM↔storefront 매핑
-      <div class="doc-meta">렌탈상품 한정 양방향 매핑 (308줄)</div>
+    <button class="doc-btn" data-doc="../wireframes/02-admin-product-form.html">
+      ② 어드민 상품 정보 등록
+      <div class="doc-meta">기본·이미지·약정·가격·상세 (AI 자동 채움)</div>
     </button>
-    <button class="doc-btn" data-doc="admin-restructure-for-storefront-2026-06-03.md">
-      🏗️ 어드민 재구성 spec
-      <div class="doc-meta">신규 11 메뉴 + DB ERD + 시퀀스 4종 + 권한</div>
+    <button class="doc-btn" data-doc="../wireframes/03-admin-card-form.html">
+      ③ 어드민 카드 정보 등록
+      <div class="doc-meta">카드사·카테고리·1·2·3 구간 · 미리보기</div>
     </button>
-    <button class="doc-btn" data-doc="rental-calculator-2026-06-03.md">
-      🧮 렌탈 계산기 spec
-      <div class="doc-meta">아정당 패턴 + 채팅↔계산기 듀얼 + 매장 매핑</div>
+    <button class="doc-btn" data-doc="../wireframes/04-admin-applications.html">
+      ④ 어드민 신청서 페이지
+      <div class="doc-meta">stats·필터·table·디테일 toast</div>
     </button>
-    <button class="doc-btn" data-doc="../flow-rental.html">
-      📜 기존 flow-rental (참고)
-      <div class="doc-meta">렌트리 참고 시점 — deprecated 항목 존재</div>
+    <button class="doc-btn" data-doc="../flow-rental.html" style="opacity:0.6">
+      📜 (참고) 기존 flow-rental
+      <div class="doc-meta">렌트리 시점 — deprecated</div>
     </button>
     <div class="toc" id="toc">
       <h2>목차</h2>
@@ -87,7 +87,7 @@
   const docButtons = document.querySelectorAll('.doc-btn');
   const content = document.getElementById('content');
   const tocEl = document.getElementById('toc');
-  let currentDoc = 'storefront-onepager-2026-06-03.md';
+  let currentDoc = 'storefront-scope-2026-06-03.md';
 
   async function loadDoc(doc) {
     currentDoc = doc;
