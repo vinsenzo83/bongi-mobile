@@ -847,6 +847,23 @@ const SECTIONS = [
 </ul>
 </div>
 
+<h3>🤖 AI 자동 상담정보 채움 (2026-06-03 신규)</h3>
+<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#22c55e">
+<b>원칙</b>: 상담사가 CRM만 보고 즉시 상담 가능하도록 6 카테고리 435 product 전체에 <b>description·feature_tags·recommended_capacity·recommended_usage·specifications</b> 5컬럼 100% 적재.
+<ul style="margin-top:6px">
+<li><b>description</b> — 한 줄 50자 (예: "쿠쿠 대용량 스탠드형 얼음정수기 후속, 대용량 제빙")</li>
+<li><b>feature_tags</b> — 강점 태그 3~5개 배열 (예: ["대용량제빙","스탠드","얼음","신형"])</li>
+<li><b>recommended_capacity</b> — 추천 용량/규격 (예: "4~6인 가족·대형", "거실 대형·65인치", "퀸·2인용")</li>
+<li><b>recommended_usage</b> — 추천 사용자/상황 태그 배열 (예: ["거실","신혼","대가족","얼음필요"])</li>
+<li><b>specifications JSONB</b> — 카테고리 schema 키별 spec 값 (예: 정수기는 output_mode·hot_temp_max·filter_stages·ice_capacity·power_w·warranty_years)</li>
+</ul>
+<b>적재 방식</b>: 6 AI 에이전트(카테고리별) 백그라운드 분산 — product_url HTML fetch + 모델명 패턴 추론 결합. SPA로 텍스트 추출 실패한 사이트는 brand+model+name 도메인 지식 기반 fallback. 카테고리별 시리즈 그룹화로 같은 시리즈 동일 spec 공유.
+<br><br>
+<b>정합 결과 (라이브)</b>: TV 76 · 공청 23 · 비데 19 · 매트리스 86 · 에어컨 120 · 정수기 111 = <b>435/435 (100%)</b> 5컬럼 모두 적재.
+<br>
+<b>한계</b>: spec 일부 수치(CADR·dB·BTU)는 SPA fetch 실패로 모델명·시리즈 추론값. 정밀 보정 필요 시 운영자 수동 입력 또는 PDF 카탈로그 파싱 라운드.
+</div>
+
 <h3>📜 변경 이력 자동 기록</h3>
 <ul>
 <li><code>incentive_products_history</code> · <code>rental_product_options_history</code> 트리거</li>
@@ -863,6 +880,11 @@ const SECTIONS = [
 <tr><td>💆 안마의자</td><td>마사지 모드 수·최대 사용자 체중·180도 리클라이닝·온열 기능·소비 전력</td></tr>
 <tr><td>🚽 비데</td><td>노즐·좌석 최고온·소비 전력</td></tr>
 <tr><td>🛏️ 매트리스</td><td>소분류(매트리스/모션베드/힐링베드)·규격(S/SS/Q/K/LK)·경도(소프트/미디엄/하드)·프로모션 (2026-06-03 신규)</td></tr>
+<tr><td>💧 정수기</td><td>출수방식·온수최고온·필터단계·얼음용량·소비전력·보증기간 (2026-06-03 신규 6필드)</td></tr>
+<tr><td>🌬️ 공기청정기</td><td>적용면적(㎡)·CADR·필터등급(H11~E12)·최저소음(dB)·센서·소비전력 (2026-06-03 신규 6필드)</td></tr>
+<tr><td>🚽 비데</td><td>노즐(1중/2중/3중)·좌석최고온·세정모드·건조온도·리모컨·소비전력 (2026-06-03 신규 6필드)</td></tr>
+<tr><td>📺 TV</td><td>인치·디스플레이(OLED/QNED/QLED/UHD/Mini LED/Nano Cell)·해상도(4K/8K)·주사율(Hz)·Smart OS·설치(스탠드/벽걸이) (2026-06-03 신규 6필드)</td></tr>
+<tr><td>❄️ 에어컨</td><td>적용평수·적용면적(㎡)·냉방능력(BTU)·종류(스탠드/벽걸이/2in1/홈멀티)·에너지등급·주요기능 (2026-06-03 신규 6필드)</td></tr>
 </table>
 <ul>
 <li>입력값은 <code>rental_products.specifications</code> JSONB에 자동 병합 저장 (기존 하드코딩 input + 동적 input)</li>
