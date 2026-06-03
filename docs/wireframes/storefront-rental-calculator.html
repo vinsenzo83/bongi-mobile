@@ -3,7 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>봉이 store · 가전 렌탈 계산기</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>봉이 store · 가전 렌탈 계산기 v3</title>
+<script>
+  // SW 강제 무효화 (이 페이지 첫 로드 시)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(rs => {
+      rs.forEach(r => r.update());
+      navigator.serviceWorker.controller?.postMessage({ type: 'CLEAR_CACHE' });
+    });
+  }
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
