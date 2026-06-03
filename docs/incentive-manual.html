@@ -112,6 +112,23 @@ const SECTIONS = [
 <div class="tip" style="background:#0f172a;border-color:#ef4444;color:#e2e8f0"><b>🚨 사고 대응 runbook</b>: <code>docs/runbooks/</code> — P0(라이브 다운·5분)·P1(데이터 leak·30분)·P2(DB 마이그레이션 실패·15분) 단계별 명령어·SQL (2026-05-30 R17)</div>
 <div class="tip" style="background:#0f172a;border-color:#22c55e;color:#e2e8f0"><b>📊 종합 release 보고서 (5/27~30)</b>: <code>docs/specs/RELEASE_2026_05_27_TO_30.md</code> — 14 라운드 + 9개 운영 기능 신규 적용 종합 정리 · SW v138→v152 · CRITICAL 5건·LEAK 4건·성능 8건 fix</div>
 
+<div class="tip" style="background:#0f172a;border-color:#ec4899;color:#e2e8f0"><b>🚀 2026-06-03 종합 업데이트 (SW v158→v193)</b><br>
+<b>9가지 핵심 변경 + 검증 완료</b>:
+<ol style="margin-top:4px;font-size:11.5px">
+<li><b>매트리스·TV·에어컨 import</b> — 282 product / 3,301 옵션 신규 + 카테고리 schema 4 (매트리스), 6×3 (정수기·공청·비데), 6×2 (TV·에어컨) = 34 동적 폼 필드</li>
+<li><b>AI auto-fill</b> 435 product · description·feature_tags·recommended_capacity·recommended_usage·specifications 5컬럼 100% 자동 채움</li>
+<li><b>가전 그룹 신규 6컬럼</b> — as_period_months·signup_age_limit·installation_fee·commission_rate·commission_basis·total_rental_fee (정수기 그룹과 분리)</li>
+<li><b>R번호 100% 발급</b> — 5,442 옵션 모두 + ticket_active sync trigger + option_count·months_available·9 집계 컬럼 자동 sync</li>
+<li><b>제휴카드 매칭 정합</b> — brand·company_id alias (LG전자↔LG전자구독·청호↔청호나이스·웰스↔교원웰스·BS ON↔삼성전자(BS ON)) + 카테고리 매칭 + 1·2·3 구간 수동 선택 + Authorization 헤더 fix</li>
+<li><b>신청 모달 카드 정보</b> prefill (🎴 카드명·💳 할인·✅ 할인 후 월납 3 row) + <code>rental_sales.metadata.card_snapshot</code> 박제</li>
+<li><b>상품관리 AI 자연어 input 통합</b> — TM 추천 메타 박스 정형 input 5종 폐기 + AI 4 input 통합 (한 줄 설명·추천 용량·추천 대상·강점 태그)</li>
+<li><b>TM 견적 카드 UI 보완</b> — 카테고리 schema 동적 렌더 + 가전 신규 6컬럼 노출 + AI 자연어 chip</li>
+<li><b>이벤트 페이지 개발</b> 섹션 통합 (<code>flow-used-phone.html</code> FINAL 직후) — Tredit 폐기·봉이 자체 공용 시스템 설계 (bongi_events·applications·coupons + LP 템플릿 + 어댑터)</li>
+</ol>
+<b>검증 완료</b>: 12 endpoint 200 · 6 E2E 케이스 PASS (정수기·매트리스·TV·에어컨·카드 없는 채널·청호 alias) · 회귀 0건<br>
+<b>SW</b>: v158 → v193 (35회 bump) · master/develop sync 35+ commits
+</div>
+
 <h3>🗂️ 사이드바 카테고리 그룹 (2026-05-27 개편)</h3>
 <p>좌측 사이드바는 5 카테고리 헤더로 그룹화 — DB <code>incentive_menus.category</code> 기준 자동 분류.</p>
 <table>
