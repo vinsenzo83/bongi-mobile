@@ -242,7 +242,6 @@ async function selectCategory(slug, id, name) {
     const r = await fetch(`${API}/products?category=${encodeURIComponent(slug)}`, auth()).then(r => r.json());
     _products = (r.products || r.rows || []).filter(p => p.is_active !== false && (p.option_count || 0) > 0);
     renderBrands();
-    loadCards(slug);
   } catch (e) { document.getElementById('brand-chips').innerHTML = `<div class="loading" style="color:#ef4444">${e.message}</div>`; }
 }
 
@@ -330,6 +329,7 @@ async function selectProduct(pid) {
     // 종속 chip 재계산
     rebuildDependentChips();
     selectOpt();
+    loadCards();
   } catch (e) { console.error(e); }
 }
 
@@ -430,10 +430,15 @@ async function renderQuote() {
   _quote = r; updatePanel();
 }
 
-async function loadCards(slug) {
+async function loadCards() {
   document.getElementById('card-chips').innerHTML = '<div class="loading">로딩…</div>';
+  // categories는 한글 name 기반 + brand alias로 매칭
+  const catName = state.categoryName || '';
+  const prod = _products.find(p => p.id === state.productId);
+  const brand = prod?.brand || state.brand || '';
+  const url = `${API}/partner-cards?active=1&category=${encodeURIComponent(catName)}${brand?`&brand=${encodeURIComponent(brand)}`:''}`;
   try {
-    const r = await fetch(`${API}/partner-cards?active=1&category=${encodeURIComponent(slug)}`, auth()).then(r => r.json());
+    const r = await fetch(url, auth()).then(r => r.json());
     _cards = r.cards || r.rows || [];
     const el = document.getElementById('card-chips');
     el.innerHTML = `<div class="chip active" data-id="" data-d="0">카드 없이 진행</div>` +
@@ -462,29 +467,29 @@ function updatePanel() {
   const o = _quote.option || _selectedOpt;
   document.getElementById('ticket-num').textContent = p.ticket_number || o.ticket_number || '-';
 
-  // AI 추천 메타
-  const recCap = p.recommended_capacity ? `<div class="row"><span class="k">추천 용량</span><span class="v">${p.recommended_capacity}</span></div>` : '';
-  const recUse = (p.recommended_usage || []).length ? `<div class="row"><span class="k">추천 대상</span><span class="v" style="text-align:right;max-width:60%">${(p.recommended_usage).slice(0,4).join(' · ')}</span></div>` : '';
-  const feat = (p.feature_tags || []).length ? `<div class="row"><span class="k">강점</span><span class="v" style="text-align:right;max-width:60%">${(p.feature_tags).slice(0,4).join(' · ')}</span></div>` : '';
+  // AI 메타 — v1 패턴 (큰 상품명·설명 paragraph·chip 그리드)
   const stars = '★'.repeat(Math.round((p.market_score || 0) / 20)) + '☆'.repeat(5 - Math.round((p.market_score||0)/20));
-  const desc = p.description ? `<div class="row"><span class="k">설명</span><span class="v" style="text-align:right;max-width:60%;font-weight:500">${p.description.slice(0,40)}…</span></div>` : '';
+  const sb = document.getElementById('summary-box');
+  sb.innerHTML = `
+    <div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:3px">${p.brand} · ${p.model||''}</div>
+    <div style="font-size:14px;font-weight:900;line-height:1.3;margin-bottom:8px">${p.name||''}</div>
+    ${p.description ? `<div style="font-size:11px;color:#475569;line-height:1.5;margin-bottom:10px;padding:8px 10px;background:#fff;border-radius:6px">${p.description}</div>` : ''}
+    ${p.recommended_capacity ? `<div style="margin-bottom:8px"><div style="font-size:10px;color:#94a3b8;font-weight:700;margin-bottom:3px">👤 추천 용량</div><div style="font-size:11.5px;font-weight:700;color:#6366f1">${p.recommended_capacity}</div></div>` : ''}
+    ${(p.recommended_usage||[]).length ? `<div style="margin-bottom:8px"><div style="font-size:10px;color:#94a3b8;font-weight:700;margin-bottom:3px">🎯 추천 대상</div><div style="display:flex;flex-wrap:wrap;gap:3px">${(p.recommended_usage).map(u => `<span style="background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600">${u}</span>`).join('')}</div></div>` : ''}
+    ${(p.feature_tags||[]).length ? `<div style="margin-bottom:8px"><div style="font-size:10px;color:#94a3b8;font-weight:700;margin-bottom:3px">✨ 강점</div><div style="display:flex;flex-wrap:wrap;gap:3px">${(p.feature_tags).map(t => `<span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600">${t}</span>`).join('')}</div></div>` : ''}
+    ${p.market_score ? `<div style="margin-bottom:8px"><div style="font-size:10px;color:#94a3b8;font-weight:700;margin-bottom:3px">📊 시장성</div><div style="color:#f59e0b;font-size:14px;font-weight:700">${stars}</div></div>` : ''}
+    ${p.size_mm ? `<div style="font-size:10.5px;color:#64748b;margin-bottom:2px">📐 ${p.size_mm}${p.weight_kg?` · ${p.weight_kg}kg`:''}</div>` : ''}
 
-  document.getElementById('summary-box').innerHTML = `
-    <div class="row"><span class="k">상품</span><span class="v">${p.brand} ${(p.name||'').slice(0,18)}</span></div>
-    <div class="row"><span class="k">모델</span><span class="v">${p.model||'-'}</span></div>
-    ${desc}
-    ${recCap}
-    ${recUse}
-    ${feat}
-    ${p.market_score?`<div class="row"><span class="k">시장성</span><span class="v" style="color:#f59e0b">${stars}</span></div>`:''}
-    <div class="row" style="border-top:1px dashed #cbd5e1;padding-top:6px;margin-top:4px"><span class="k">약정</span><span class="v">${o.months}개월</span></div>
-    <div class="row"><span class="k">관리</span><span class="v">${o.care_service}</span></div>
-    ${o.inspection_cycle?`<div class="row"><span class="k">점검 주기</span><span class="v">${o.inspection_cycle}개월</span></div>`:''}
-    ${o.ownership_months?`<div class="row"><span class="k">소유권 이전</span><span class="v">${o.ownership_months}개월</span></div>`:''}
-    ${o.half_period?`<div class="row"><span class="k">반값 기간</span><span class="v">${o.half_period}개월</span></div>`:''}
-    ${o.variant_label?`<div class="row"><span class="k">변형</span><span class="v">${o.variant_label}</span></div>`:''}
-    <div class="row"><span class="k">프로모션</span><span class="v">${state.promo === 'basic' ? '기본' : state.promo}</span></div>
-    <div class="row"><span class="k">카드</span><span class="v">${state.cardId ? _cards.find(c => String(c.id)===String(state.cardId))?.brand + ' ' + (_cards.find(c=>String(c.id)===String(state.cardId))?.card_name||'').slice(0,12) : '미선택'}</span></div>
+    <div style="border-top:1px dashed #cbd5e1;padding-top:8px;margin-top:8px;font-size:11.5px;line-height:1.7">
+      <div class="row"><span class="k">약정</span><span class="v">${o.months}개월</span></div>
+      <div class="row"><span class="k">관리</span><span class="v">${o.care_service}</span></div>
+      ${o.inspection_cycle?`<div class="row"><span class="k">점검 주기</span><span class="v">${o.inspection_cycle}개월</span></div>`:''}
+      ${o.ownership_months?`<div class="row"><span class="k">소유권 이전</span><span class="v">${o.ownership_months}개월 후</span></div>`:''}
+      ${o.half_period?`<div class="row"><span class="k">반값 기간</span><span class="v">${o.half_period}개월</span></div>`:''}
+      ${o.variant_label?`<div class="row"><span class="k">변형</span><span class="v">${o.variant_label}</span></div>`:''}
+      <div class="row"><span class="k">프로모션</span><span class="v">${state.promo === 'basic' ? '기본' : state.promo}</span></div>
+      <div class="row"><span class="k">카드</span><span class="v">${state.cardId ? _cards.find(c => String(c.id)===String(state.cardId))?.brand + ' ' + (_cards.find(c=>String(c.id)===String(state.cardId))?.card_name||'').slice(0,12) : '미선택'}</span></div>
+    </div>
   `;
 
   // 추가 정보
