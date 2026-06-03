@@ -6231,11 +6231,11 @@ setTimeout(() => {
       <div class="total"><div style="font-size:10px;color:#94a3b8">📌 봉이지원금 (페이백)</div><div class="big">+ ${fmt(c.payback)}원</div></div>
       <button class="save" id="rental-save-btn">💾 ${p.category?.name||'렌탈'} 영업 접수</button>`;
 
-    // 🎴 제휴카드 fetch — company_id 매칭 (2026-06-03 정정: 모든 카드 100% 채널 제한)
-    // 카드별 company_id 컬럼이 채널 제한 — KT가전구독에서 LG전자구독 카드 사용 불가
-    if (p.company?.id) {
+    // 🎴 제휴카드 fetch — 카테고리 매칭만 + 전체 카드 brand별 grouping (2026-06-03 수동 선택 모드)
+    // 상담사가 고객 카드 확인 후 직접 선택 (회사 매칭 자동 X — 회사 row 중복·alias 복잡성 회피)
+    {
       const _catParam = p.category?.name ? `&category=${encodeURIComponent(p.category.name)}` : '';
-      fetch(`${API}/partner-cards?company_id=${p.company.id}${_catParam}&active=1`)
+      fetch(`${API}/partner-cards?active=1${_catParam}`)
         .then(r => r.json())
         .then(cardsR => {
           // server alias 매핑 (LG전자 → LG전자구독 등) 결과 그대로 사용 — client 추가 filter X
@@ -6250,30 +6250,35 @@ setTimeout(() => {
           const tierSel = document.getElementById('rental-card-tier');
           const resultEl = document.getElementById('rental-card-result');
           const baseMonthly = c.effective_monthly_fee;
-          sel.innerHTML = '<option value="">— 카드 선택 (총 '+cards.length+'건) —</option>' +
-            cards.map(card => {
-              const max = card.max_discount ? Math.round(card.max_discount/1000)+'k' : '?';
-              const promo = card.has_promo ? ' 🏷️' : '';
-              return `<option value="${card.id}">[${card.card_issuer}] ${card.card_name} (최대 -${max}${promo})</option>`;
+          // brand별 grouping (optgroup) — 카드사·카드명 한눈에
+          const byBrand = {};
+          cards.forEach(card => { (byBrand[card.brand] = byBrand[card.brand] || []).push(card); });
+          sel.innerHTML = '<option value="">— 카드 선택 (총 '+cards.length+'건 · 수동 선택) —</option>' +
+            Object.keys(byBrand).sort().map(brand => {
+              const opts = byBrand[brand].map(card => {
+                const max = card.max_discount ? Math.round(card.max_discount/1000)+'k' : '?';
+                const promo = card.has_promo ? ' 🏷️' : '';
+                return `<option value="${card.id}">[${card.card_issuer}] ${card.card_name} (최대 -${max}${promo})</option>`;
+              }).join('');
+              return `<optgroup label="🏢 ${brand} (${byBrand[brand].length}건)">${opts}</optgroup>`;
             }).join('');
-          // 카드 변경 → 구간 select 옵션 채움
+          // 카드 변경 → 구간 select 옵션 채움 (3구간 모두 노출 — 수동 선택)
           sel.addEventListener('change', () => {
-            tierSel.innerHTML = '<option value="">— 구간 선택 —</option>';
+            tierSel.innerHTML = '<option value="">— 실적 구간 선택 (고객 카드 사용액 기준) —</option>';
             const card = cards.find(x => String(x.id) === sel.value);
             if (!card) { tierSel.style.display = 'none'; resultEl.style.display = 'none'; document.getElementById('rental-base-monthly').innerHTML = fmt(baseMonthly)+'원'; return; }
-            // 카드별 가능 구간만 옵션 (tier_min 있는 것만)
+            // 카드별 모든 구간 노출 (구간별 다른 할인율 — 수동 선택)
             [1,2,3].forEach(t => {
               const min = card['tier'+t+'_min'], base = card['tier'+t+'_base']||0, promo = card['tier'+t+'_promo']||0;
               if (!min) return;
               const total = base + promo;
               const promoTxt = promo ? `+🏷️${fmt(promo)}` : '';
-              tierSel.innerHTML += `<option value="${t}">${t}구간 · 실적 ${fmt(min)}+ → -${fmt(total)}원/월 (기본 ${fmt(base)}${promoTxt})</option>`;
+              tierSel.innerHTML += `<option value="${t}">${t}구간 · 월 ${fmt(min)}원 이상 사용 → -${fmt(total)}원/월 (기본 ${fmt(base)}${promoTxt})</option>`;
             });
             tierSel.style.display = 'block';
-            // default: 1구간 자동 선택
-            const firstOpt = tierSel.querySelector('option[value="1"]') || tierSel.querySelector('option[value="2"]') || tierSel.querySelector('option[value="3"]');
-            if (firstOpt) { tierSel.value = firstOpt.value; tierSel.dispatchEvent(new Event('change')); }
-            else { resultEl.style.display = 'none'; }
+            // 자동 선택 X — 상담사가 고객 실적 따라 수동 선택
+            resultEl.style.display = 'none';
+            document.getElementById('rental-base-monthly').innerHTML = fmt(baseMonthly)+'원';
           });
           // 구간 변경 → 즉시 할인 적용
           tierSel.addEventListener('change', () => {
