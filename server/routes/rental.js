@@ -1703,10 +1703,16 @@ router.get('/partner-cards', authenticateJWT, async (req, res) => {
       .order('brand', { ascending: true })
       .order('card_issuer', { ascending: true });
     if (category) q = q.contains('categories', [category]);
-    // 🎯 정확한 매칭: company_id (채널 제한) — 모든 카드 100% 채널 제한 있음 (2026-06-03 검증)
-    // brand alias는 backward compat용 fallback — company_id 우선
+    // 🎯 매칭: company_id (채널) — 단 같은 제조사 다른 row 중복은 alias로 통합
+    // rental_companies 회사 row 중복: LG전자(4)↔LG전자구독(16), 청호(19)↔청호나이스(7), 웰스(20)↔교원웰스(8)
     if (company_id) {
-      q = q.eq('company_id', company_id);
+      const COMPANY_ALIAS = {
+        '4': [4, 16], '16': [16, 4],     // LG전자 (정수기) ↔ LG전자구독 (가전)
+        '19': [19, 7], '7': [7, 19],     // 청호 (가전) ↔ 청호나이스 (정수기)
+        '20': [20, 8], '8': [8, 20],     // 웰스 (가전) ↔ 교원웰스 (정수기)
+      };
+      const ids = COMPANY_ALIAS[String(company_id)] || [Number(company_id)];
+      q = q.in('company_id', ids);
     } else if (brand) {
       q = q.eq('brand', brand);
     }
