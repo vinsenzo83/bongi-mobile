@@ -125,6 +125,7 @@ const SECTIONS = [
 <li><b>TM 견적 카드 UI 보완</b> — 카테고리 schema 동적 렌더 + 가전 신규 6컬럼 노출 + AI 자연어 chip</li>
 <li><b>이벤트 페이지 개발</b> 섹션 통합 (<code>flow-used-phone.html</code> FINAL 직후) — Tredit 폐기·봉이 자체 공용 시스템 설계 (bongi_events·applications·coupons + LP 템플릿 + 어댑터)</li>
 <li><b>권한 관리(부서) 단순화</b> — 부서 6개(인터넷팀·정수기팀·공기청정기팀·비데팀·안마의자팀·통합관리팀) → <b>2개로 통합</b> (인터넷팀·가전팀). 가전팀.categories = water-purifier·air-purifier·bidet·mattress·aircon·tv. 빈 부서 ID 3~6은 hard delete. UI는 기존 _cats 2그룹(인터넷+TV / 가전렌탈 통합)을 그대로 사용 — 행만 6→2로 축소</li>
+<li><b>활성 카테고리 6종 이미지 100% 달성</b> — 누락 56장 backfill (same-model 17장 + 제조사 og:image fetch 39장). 정수기 111·공청 23·비데 19·매트리스 86·에어컨 120·TV 76 = <b>435/435 (100%)</b>. 4 agent 병렬(WebFetch 제조사 공식 사이트 + Supabase Storage 업로드 + image_url update)</li>
 </ol>
 <b>검증 완료</b>: 12 endpoint 200 · 6 E2E 케이스 PASS (정수기·매트리스·TV·에어컨·카드 없는 채널·청호 alias) · 회귀 0건<br>
 <b>SW</b>: v158 → v195 (37회 bump) · master/develop sync 36+ commits
