@@ -229,7 +229,7 @@ async function loadCategories() {
 function renderCategories(byCat) {
   const el = document.getElementById('cat-chips');
   el.innerHTML = state.categories.map(c => `
-    <div class="chip lg" data-cat="${c.id}" data-name="${c.name}">
+    <div class="chip lg" data-cat="${c.id}" data-name="${c.name}" data-slug="${c.slug || ''}">
       ${CATEGORY_ICONS[c.name] || '📦'} ${c.name}
       <span class="sub">${byCat[c.id] || 0}개</span>
     </div>
@@ -238,7 +238,7 @@ function renderCategories(byCat) {
     chip.addEventListener('click', () => {
       el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-      state.category = { id: +chip.dataset.cat, name: chip.dataset.name };
+      state.category = { id: +chip.dataset.cat, name: chip.dataset.name, slug: chip.dataset.slug };
       state.brand = null; state.product = null; state.months = null; state.careType = null; state.card = null;
       loadProductsForCategory();
     });
@@ -255,9 +255,10 @@ async function loadProductsForCategory() {
   document.getElementById('brand-chips').innerHTML = '<div class="loading">제조사 로딩…</div>';
 
   try {
-    const r = await fetch(`${API}/rental/products?category_id=${state.category.id}&limit=200`, auth()).then(r => r.json());
+    // server는 category=slug로 받음
+    const r = await fetch(`${API}/rental/products?category=${encodeURIComponent(state.category.slug)}`, auth()).then(r => r.json());
     const prods = r.products || r.rows || [];
-    state.products = prods.filter(p => p.is_active !== false);
+    state.products = prods.filter(p => p.is_active !== false && p.category_id === state.category.id);
     renderBrands();
     renderProducts();
     loadCardsForCategory();
