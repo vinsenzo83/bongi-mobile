@@ -6811,6 +6811,13 @@ setTimeout(() => {
       add_payback: parseInt($('rdm-add-payback').value, 10) || 0,
       tags: _tags.length ? _tags : null,
       customer_id: window.CALL_MODE_CUSTOMER_ID || null,
+      // 🎴 제휴카드 snapshot (견적 시점 카드 정보 박제)
+      card_snapshot: _ctx.card ? {
+        card_label: _ctx.card.card_label,
+        tier: _ctx.card.tier,
+        discount: _ctx.card.discount,
+        final_monthly: _ctx.card.final_monthly,
+      } : null,
     };
 
     if (customerType === 'individual') {

@@ -862,6 +862,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       phone_secondary, phone_secondary_type,
       address_detail, happy_call_time, rental_company_note,
       tags, add_payback,
+      card_snapshot,  // 🎴 제휴카드 snapshot (견적 시점 박제)
     } = req.body;
     if (!product_id || !option_id) return res.status(400).json({ error: 'product_id, option_id 필수' });
 
@@ -905,6 +906,8 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       rental_company_note: rental_company_note || null,
       tags: Array.isArray(tags) && tags.length ? tags : null,
       add_payback: add_payback != null ? Number(add_payback) : 0,
+      // 🎴 제휴카드 snapshot (metadata JSONB) — 견적 시점 카드명·구간·할인액·할인 후 월납 박제
+      metadata: card_snapshot ? { card_snapshot } : null,
       status: 'pending',
       contract_date: new Date().toISOString().slice(0,10),
       contract_pending_at: new Date().toISOString(),
