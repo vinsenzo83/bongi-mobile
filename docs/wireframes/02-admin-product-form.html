@@ -51,10 +51,16 @@
 <body>
 <div class="wrap">
 
-  <div class="header">
-    <div class="crumb">어드민 / 상품 관리 / 신규 등록</div>
-    <h1>🛏️ 상품 정보 등록</h1>
-    <div class="sub">가전 렌탈 상품을 등록합니다. AI 자동 채움으로 빠르게 입력 가능합니다.</div>
+  <div class="header" style="display:flex;justify-content:space-between;align-items:flex-end">
+    <div>
+      <div class="crumb">어드민 / 상품 관리 / 신규 등록</div>
+      <h1>🛏️ 상품 정보 등록</h1>
+      <div class="sub">가전 렌탈 상품을 등록합니다. AI 자동 채움 또는 엑셀 일괄 import 가능.</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button style="background:linear-gradient(135deg,#06b6d4,#7c3aed);color:#fff;border:none;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📤 엑셀 일괄 import</button>
+      <button style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a;border:none;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🖼️ 이미지 일괄 업로드</button>
+    </div>
   </div>
 
   <!-- 1. 기본 정보 -->
@@ -180,6 +186,50 @@
     <div class="field">
       <label>운영자 메모 (storefront 비노출)</label>
       <textarea placeholder="필터 교체 4개월·자가관리·전월실적 40만원 카드 우대"></textarea>
+    </div>
+  </div>
+
+  <!-- 6. 프로모션·특이점 (신규) -->
+  <div class="card">
+    <div class="section-title"><span class="num">6</span>프로모션 · 특이점</div>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:12px;line-height:1.6">
+      반값할인·타사보상·상품권 증정·가격 인상 등 상품별 특이 조건을 정형화해서 적재합니다.<br>
+      <strong style="color:#fbbf24">storefront 카드·상세에 자동 chip 노출 + 가격 계산에 자동 반영.</strong>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+
+      <div style="background:#0f172a;border:1px solid #475569;border-left:4px solid #ef4444;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+        <span style="background:#7f1d1d;color:#fca5a5;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800">🔴 반값할인</span>
+        <span style="flex:1;font-size:12.5px;font-weight:700">첫 12개월 반값</span>
+        <span style="font-size:11px;color:#94a3b8">2026-06-01 ~ 2026-12-31</span>
+        <span style="background:#064e3b;color:#6ee7b7;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">활성</span>
+        <button style="background:transparent;border:none;color:#fbbf24;cursor:pointer;font-size:11px">편집</button>
+      </div>
+
+      <div style="background:#0f172a;border:1px solid #475569;border-left:4px solid #fbbf24;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+        <span style="background:#78350f;color:#fcd34d;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800">🟡 상품권</span>
+        <span style="flex:1;font-size:12.5px;font-weight:700">신규 가입 시 5만원 상품권 증정</span>
+        <span style="font-size:11px;color:#94a3b8">2026-06-01 ~ 2026-08-31</span>
+        <span style="background:#064e3b;color:#6ee7b7;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">활성</span>
+        <button style="background:transparent;border:none;color:#fbbf24;cursor:pointer;font-size:11px">편집</button>
+      </div>
+
+      <div style="background:#0f172a;border:1px solid #475569;border-left:4px solid #64748b;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+        <span style="background:#334155;color:#cbd5e1;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800">⚫ 가격인상</span>
+        <span style="flex:1;font-size:12.5px;font-weight:700">13개월차부터 월 +5,000원 인상</span>
+        <span style="font-size:11px;color:#94a3b8">상시</span>
+        <span style="background:#064e3b;color:#6ee7b7;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">활성</span>
+        <button style="background:transparent;border:none;color:#fbbf24;cursor:pointer;font-size:11px">편집</button>
+      </div>
+
+    </div>
+
+    <button style="margin-top:12px;width:100%;background:transparent;border:2px dashed #475569;color:#94a3b8;padding:12px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit">+ 프로모션 추가</button>
+
+    <div style="margin-top:12px;font-size:11px;color:#64748b;background:#0c1424;padding:10px 12px;border-radius:6px;border-left:3px solid #fbbf24;line-height:1.6">
+      💡 <strong style="color:#cbd5e1">유형 6종</strong>: 반값할인 · 타사보상 · 상품권 · cashback · 가격인상 · 기타<br>
+      💡 신청 시점의 프로모션은 <strong style="color:#cbd5e1">snapshot에 자동 박제</strong> — 추후 변경되어도 고객에게 약속된 혜택은 유지.
     </div>
   </div>
 

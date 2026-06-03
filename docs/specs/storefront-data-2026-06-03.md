@@ -86,9 +86,94 @@
 
 ---
 
+## 4) 상품별 프로모션·특이점 (rental_products 기존 컬럼 활용 — 신규 테이블 X)
+
+**CRM에 이미 정형 컬럼이 모두 있다.** 신규 테이블 만들 필요 없음.
+
+### 기존 컬럼 활용
+
+| 컬럼 | 타입 | 용도 | storefront 노출 |
+|---|---|---|---|
+| `promo_tags_list` | TEXT[] | tag 배열 (반값·타사보상·상품권 등) | 카드 chip · 상세 box |
+| `promo_type_count` | int | 활성 프로모션 개수 | 카드에 "혜택 N종" 표시 |
+| `promo_tag` | text | 단일 대표 promo (옛) | 호환용 (deprecated) |
+| `otherco_supported` | bool | 타사 보상 가능 | 우 panel "타사 보상 가능" chip |
+| `rebate_otherco_max` | int | 타사 보상 시 최대 환급 | "타사 보상 시 +N원" |
+| `rebate_half_max` | int | 반값 시 최대 환급 | "반값 시 N원" |
+| `rebate_max` | int | 기본 최대 환급 | 카드 표시 |
+| `half_fee_min` | int | 반값 적용 시 최저 월 요금 | 카드 "반값 시 월 X원~" |
+| `half_periods_available` | text | 반값 적용 기간 (예: "12,24") | "첫 N개월 반값" |
+| `evaluation_memo` | text | 운영자 평가 메모 (비노출) | - |
+| `is_premium` | bool | 프리미엄 상품 | "프리미엄" 배지 |
+
+### 유형은 promo_tags_list 값으로 (정형화된 enum 6종)
+
+| tag 값 | 예시 표시 | chip 색 |
+|---|---|---|
+| `반값할인` | 🔴 첫 12개월 반값 | 빨강 |
+| `타사보상` | 🟣 타사 렌탈 보상 5만원 | 보라 |
+| `상품권` | 🟡 신규 가입 5만원 상품권 | 노랑 |
+| `cashback` | 🟢 12개월 후 10만원 환급 | 초록 |
+| `가격인상` | ⚫ 13개월차부터 +5천원 | 회색 |
+| `기타` | 🔵 자유 | 파랑 |
+
+→ 신규 promotion 추가하려면: `promo_tags_list = ARRAY['반값할인','상품권']` + 관련 컬럼 (half_fee_min·rebate_half_max 등) 동시 update.
+
+### 운영자 입력 (어드민 상품 등록 폼 + 엑셀 import)
+
+**1) 어드민 폼**: 상품 등록 폼에 "프로모션 chip 다중 선택" + 관련 입력 (반값 시 half_fee_min 등).
+
+**2) 엑셀 일괄 import** (이미 동작 중!) — `docs/incentive-products.html` `#rp-import-btn` "📤 빌리고 엑셀 import":
+
+엑셀 열 = rental_products 컬럼 1:1 매핑. 예시 헤더:
+```
+brand | model | name | image_url | months_available | care_services |
+monthly_fee_min | monthly_fee_max | rebate_max | rebate_otherco_max |
+rebate_half_max | half_fee_min | half_periods_available |
+otherco_supported | promo_tags_list | is_premium | ...
+```
+
+xlsx.full.min.js 로 parsing → UPSERT (model+brand 기준 중복 방지).
+
+### storefront 노출
+
+| 화면 | 노출 방식 |
+|---|---|
+| 상품 카드 (계산기 Step 2) | chip 1~2개 (가장 강조 promotion) |
+| 상품 상세 (선택 시) | 프로모션 box — 각 promotion 카드 (제목·기간·조건) |
+| 우 panel 가격 박스 | 활성 promotion 자동 반영 (반값일 경우 첫 N개월 가격·이후 가격 분리 표시) |
+
+### 가격 계산에 자동 반영
+
+- 첫 12개월: 기본 가격 × (1 − half_price_value)
+- 13개월부터: 기본 가격 + price_increase_value
+- 상품권·cashback은 별도 표시 (월 요금에는 미반영, "추가 혜택" box로)
+- 타사 보상은 신청 form 단계에서 별도 인증
+
+### 신청 시 박제 (rental_sales.snapshot)
+
+```
+snapshot: {
+  product_id, brand, model, name,
+  contract_months: 60,
+  care_type, care_cycle,
+  base_price: 35900,
+  active_promotions: [
+    { type: 'half_price', value: 50, duration_months: 12, title: '첫 12개월 반값' },
+    { type: 'gift_card',  value: 50000, title: '5만원 상품권 증정' }
+  ]
+}
+```
+
+→ 신청 시점 프로모션 그대로 박제. 운영자가 나중에 프로모션 변경해도 이 신청건은 약속된 혜택 유지.
+
+---
+
 ## 한 줄 요약
 
-- **상품·카드**: 운영자가 어드민에서 1번 등록 → storefront 즉시 노출 (캐시 자동 invalidate)
-- **신청**: 고객이 계산기에서 선택 → 셀프/상담원 2 분기 → `rental_sales` 1건 박제 → 어드민에서 처리
+- **상품·카드·프로모션**: 어드민에서 1번 등록 → storefront 즉시 노출 (캐시 자동 invalidate)
+- **신청**: 고객 계산기 → 셀프/상담원 2분기 → `rental_sales` 1건 박제 (snapshot + card_snapshot + active_promotions)
+- **특이점 적재의 핵심**: 자유 텍스트 X · **promo_tags_list 6 enum + 기존 정형 컬럼** (rebate_half_max·half_fee_min·otherco_supported 등) 활용 — 신규 테이블 만들 필요 X
+- **엑셀 import**: 이미 동작 중 (`📤 빌리고 엑셀 import`) — 한 번에 수십~수백 상품 등록 가능
 
-> 더 복잡한 데이터(이벤트·포인트·회원·사기방지·dashboard 등)는 추후. 지금은 이 3개만.
+> 더 복잡한 데이터(이벤트·포인트·회원·사기방지·dashboard)는 추후. 지금은 4개만.
