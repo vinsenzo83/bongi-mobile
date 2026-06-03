@@ -2786,7 +2786,16 @@ router.get('/tickets/rental', authenticateJWT, async (req, res) => {
           id, ticket_number, ticket_active, is_active, months, care_service,
           monthly_fee, normal_price, rebate, payback, ownership_months,
           inspection_cycle, variant_code, variant_label, promo_type,
-          product:rental_products!product_id(id, brand, name, model, category_id, is_active, image_url, product_url, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group))
+          as_period_months, signup_age_limit, installation_fee,
+          commission_rate, commission_basis, total_rental_fee,
+          margin, tier_calculated, point_weight,
+          product:rental_products!product_id(
+            id, brand, name, model, category_id, is_active, image_url, product_url,
+            description, feature_tags, recommended_capacity, recommended_usage, specifications,
+            market_score, tier, point_weight, is_premium, promo_tag, evaluation_memo, spec_notes,
+            company:rental_companies(id, name, commission_method, commission_rate),
+            category:rental_categories(id, name, slug, product_group, metadata)
+          )
         `)
         .not('ticket_number', 'is', null);
       if (ticket) qq = qq.eq('ticket_number', String(ticket).trim().toUpperCase());
@@ -2825,15 +2834,47 @@ router.get('/tickets/rental', authenticateJWT, async (req, res) => {
       variant_code: o.variant_code,
       variant_label: o.variant_label,
       promo_type: o.promo_type,
+      // 🆕 가전 그룹 신규 6컬럼
+      as_period_months: o.as_period_months,
+      signup_age_limit: o.signup_age_limit,
+      installation_fee: o.installation_fee,
+      commission_rate: o.commission_rate,
+      commission_basis: o.commission_basis,
+      total_rental_fee: o.total_rental_fee,
+      // 인센티브
+      margin: o.margin,
+      tier_calculated: o.tier_calculated,
+      option_point_weight: o.point_weight,
+      // product 평탄화
       brand: o.product?.brand,
       product_name: o.product?.name,
       model: o.product?.model,
       product_id: o.product?.id,
       product_active: o.product?.is_active,
       company_name: o.product?.company?.name || null,
+      commission_method: o.product?.company?.commission_method || null,
+      company_rate: o.product?.company?.commission_rate || null,
+      category_id: o.product?.category?.id || null,
       category_name: o.product?.category?.name || null,
+      category_slug: o.product?.category?.slug || null,
+      product_group: o.product?.category?.product_group || null,
+      category_metadata: o.product?.category?.metadata || null,
       image_url: o.product?.image_url || null,
       product_url: o.product?.product_url || null,
+      // 🆕 AI auto-fill 5컬럼
+      description: o.product?.description || null,
+      feature_tags: o.product?.feature_tags || null,
+      recommended_capacity: o.product?.recommended_capacity || null,
+      recommended_usage: o.product?.recommended_usage || null,
+      specifications: o.product?.specifications || null,
+      // 운영자 평가
+      market_score: o.product?.market_score ?? null,
+      product_tier: o.product?.tier || null,
+      product_point_weight: o.product?.point_weight ?? null,
+      is_premium: o.product?.is_premium || false,
+      promo_tag: o.product?.promo_tag || null,
+      evaluation_memo: o.product?.evaluation_memo || null,
+      spec_notes: o.product?.spec_notes || null,
     }));
     // 서버측 search (brand/name/company도 매칭) — Supabase or 쿼리는 join column 못 씀
     const filtered = search
@@ -2857,7 +2898,18 @@ router.get('/tickets/rental/lookup', authenticateJWT, async (req, res) => {
       .select(`
         id, ticket_number, ticket_active, is_active, months, care_service,
         monthly_fee, normal_price, rebate, payback, ownership_months,
-        product:rental_products!product_id(id, brand, name, model, category_id, description, is_active, image_url, product_url, company:rental_companies(id, name), category:rental_categories(id, name, slug, product_group))
+        inspection_cycle, variant_code, variant_label, promo_type,
+        as_period_months, signup_age_limit, installation_fee,
+        commission_rate, commission_basis, total_rental_fee,
+        margin, tier_calculated, point_weight,
+        product:rental_products!product_id(
+          id, brand, name, model, category_id, description, feature_tags,
+          recommended_capacity, recommended_usage, specifications,
+          market_score, tier, point_weight, is_premium, promo_tag,
+          evaluation_memo, spec_notes, is_active, image_url, product_url,
+          company:rental_companies(id, name, commission_method, commission_rate),
+          category:rental_categories(id, name, slug, product_group, metadata)
+        )
       `)
       .eq('ticket_number', tn).single();
     if (error || !data) return res.status(404).json({ error: '티켓 없음', ticket_number: tn });
