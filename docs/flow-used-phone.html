@@ -609,6 +609,162 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   </div>
 </div>
 
+<!-- ===== 이벤트 페이지 개발 ===== -->
+<div style="margin-top:24px"></div>
+<div class="step-label" style="background:#db2777">🎁 이벤트 페이지 개발 — 시세조회 유입 + 공용 시스템 (트레딧 폐기·자체 구축)</div>
+<div class="step-card" style="border:2px solid #db2777">
+
+  <div class="grid2" style="margin-bottom:14px">
+    <div class="card-mock" style="border:2px solid var(--red)">
+      <div style="font-weight:900;color:var(--red);font-size:11px;margin-bottom:4px">기존 (트레딧 외부 이벤트 LP)</div>
+      <code style="font-size:10px">bonge.tredit.ai/event/</code>에서 운영<br>
+      → 외부 도메인 = 신뢰도 위탁업체 귀속<br>
+      → 신청자 데이터(이름·연락처·CI) 봉이가 직접 수집 불가<br>
+      → 쿠폰 발급·알림톡 모두 위탁업체 의존
+    </div>
+    <div class="card-mock" style="border:2px solid var(--green)">
+      <div style="font-weight:900;color:var(--green);font-size:11px;margin-bottom:4px">신규 (봉이 자체 이벤트 시스템)</div>
+      <code style="font-size:10px">prexymarket.com/event/{slug}</code>에서 운영<br>
+      → 신뢰도 봉이에 귀속 + UTM·전환 직접 추적<br>
+      → 신청자 즉시 콜DB(<code>incentive_customer_db</code>) 적재 → 상담 자동 배정<br>
+      → 외부 API(쿠폰사·알림톡)는 봉이 어댑터 호출
+    </div>
+  </div>
+
+  <div style="background:linear-gradient(135deg,#fce7f3,#fef3c7);border-left:4px solid #db2777;padding:10px 14px;border-radius:6px;font-size:11.5px;color:#831843;margin-bottom:14px">
+    <strong>🎯 핵심 목표</strong>: 1 인프라로 <strong>N 이벤트</strong> 운영. 슬러그 1줄 + 어드민 입력만으로 신규 이벤트 LP 즉시 가동. 트레딧 같은 외부 의존 0.<br>
+    <strong>현재 사용처</strong>: <strong>중고폰 시세조회 미끼</strong> (예: 메가커피 5,000잔 쿠폰)<br>
+    <strong>향후 확장</strong>: 인터넷+TV 가입 결합 사은품 · 가전렌탈 시즌 프로모션 · 친구 초대 캠페인 · 매장 QR 방문 인증 · 추첨형 응모
+  </div>
+
+  <!-- 도메인 모델 -->
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">🗄️ 도메인 모델 (DB 3 테이블)</div>
+  <div style="background:#1a2744;color:#e2e8f0;padding:12px 14px;border-radius:8px;font-size:10.5px;line-height:1.7;font-family:'SF Mono',Monaco,monospace;margin-bottom:14px">
+bongi_events (이벤트 마스터 — 1행=1이벤트, 슬러그 기준)<br>
+  · slug · title · subtitle · hero_image_url<br>
+  · coupon_name · coupon_provider('giftshow'|'biztalk'|'manual') · max_applications · current_count<br>
+  · start_at · end_at · is_active<br>
+  · agreement_texts JSONB (개인정보·제3자·마케팅)<br>
+  · cta_primary/secondary_label/url<br>
+  · auth_method('pass'|'sms'|'none') · age_minimum<br>
+  · alimtalk_template_id · partner_logo_url · metadata JSONB<br>
+<br>
+bongi_event_applications (신청자)<br>
+  · event_id · name · phone(마스킹) · ci(PASS 토큰)<br>
+  · agreed_at · agreement_types JSONB · agreement_ip<br>
+  · coupon_serial · coupon_issued_at · alimtalk_sent_count<br>
+  · received · received_at · assigned_store_id · queue_position<br>
+  · source_utm JSONB · referrer · customer_db_id<br>
+<br>
+bongi_event_coupons (수동형 사전 등록 풀)<br>
+  · event_id · serial · status('available'|'issued'|'used'|'expired')
+  </div>
+
+  <!-- 페이지 템플릿 -->
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">🎨 페이지 템플릿 (1 HTML이 N 이벤트 처리)</div>
+  <table style="font-size:11px;margin-bottom:14px">
+    <thead><tr><th>섹션</th><th>구성</th><th>데이터 원천</th></tr></thead>
+    <tbody>
+      <tr><td>헤더</td><td>봉이 로고 × 파트너 로고</td><td><code>brand/partner_logo_url</code></td></tr>
+      <tr><td>Hero</td><td>제목 + 부제 + 이미지 + 선착순 N잔 뱃지</td><td><code>title · subtitle · hero_image_url · max_applications</code></td></tr>
+      <tr><td>주의사항</td><td>* 선착순 · PASS 후 순차 발송</td><td><code>metadata.notices[]</code></td></tr>
+      <tr><td>약관 동의</td><td>체크박스 3종 + 내용보기 모달</td><td><code>agreement_texts JSONB</code></td></tr>
+      <tr><td>CTA 1차</td><td>"쿠폰 이벤트 참여하기" (동의 후 활성)</td><td><code>cta_primary_label</code></td></tr>
+      <tr><td>CTA 2차</td><td>"중고 보상 접수하기" → <code>/buyback</code></td><td><code>cta_secondary_label/url</code></td></tr>
+      <tr><td>주의 footer</td><td>1인 1회 · 14세 미만 제한</td><td><code>age_minimum</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- 외부 API 어댑터 -->
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">🔌 외부 API 어댑터 (이벤트별로 다른 제공자 선택)</div>
+  <div class="grid3" style="margin-bottom:14px">
+    <div class="card-mock" style="border:1.5px solid var(--blue);font-size:11px">
+      <div style="font-weight:900;color:var(--blue);margin-bottom:4px">본인인증</div>
+      • PASS (KCB/NICE/KMC) — 만 14세·CI<br>
+      • SMS (Solapi/NHN) — 휴대폰 보유만<br>
+      • none — 전화번호만 (봇 위험)
+    </div>
+    <div class="card-mock" style="border:1.5px solid var(--orange);font-size:11px">
+      <div style="font-weight:900;color:var(--orange);margin-bottom:4px">쿠폰 발급</div>
+      • 기프티콘몰 API — 실시간 시리얼<br>
+      • 카카오 Biztalk — 알림톡 일체<br>
+      • 수동 — 엑셀 CSV 사전 import
+    </div>
+    <div class="card-mock" style="border:1.5px solid var(--green);font-size:11px">
+      <div style="font-weight:900;color:var(--green);margin-bottom:4px">알림톡</div>
+      • Solapi · NHN Cloud · KakaoBiz<br>
+      • 템플릿 ID + 변수 매핑<br>
+      • 실패 시 09:25 cron 재시도
+    </div>
+  </div>
+
+  <!-- 신청 상태 전이 -->
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">🔄 신청 상태 전이 (9단계)</div>
+  <div style="background:#f9fafb;border-radius:6px;padding:10px 14px;font-size:11px;line-height:1.9;margin-bottom:14px">
+    <strong>0.</strong> LP 진입 (utm tracking) → <strong>1.</strong> 약관 3종 동의 → <strong>2.</strong> 본인인증 (auth_method) → <strong>3.</strong> 신청 INSERT (queue_position) → <strong>4.</strong> 정원 검증 (current_count &lt; max) → <strong>5.</strong> 쿠폰 발급 (provider API or 풀에서 dequeue) → <strong>6.</strong> 알림톡 발송 → <strong>7.</strong> <strong>콜DB 자동 적재</strong> (<code>incentive_customer_db</code> · source='event:{slug}') → <strong>8.</strong> 접수 처리 (매장 매니저) → <strong>9.</strong> 쿠폰 사용·매장 방문·계약 전환 KPI
+  </div>
+
+  <!-- 어드민 -->
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">👨‍💼 어드민 화면 (2개 신규)</div>
+  <div class="grid2" style="margin-bottom:14px">
+    <div class="card-mock" style="border:1.5px solid var(--purple);font-size:11px">
+      <div style="font-weight:900;color:var(--purple);margin-bottom:4px">이벤트 마스터 (incentive-events.html)</div>
+      슬러그·제목·이미지·약관·쿠폰사·알림톡 ID 입력<br>
+      미리보기 (데스크탑/모바일)<br>
+      복제·활성/종료 토글
+    </div>
+    <div class="card-mock" style="border:1.5px solid var(--purple);font-size:11px">
+      <div style="font-weight:900;color:var(--purple);margin-bottom:4px">신청자 list (incentive-event-applications.html)</div>
+      Tredit 패턴 — 순번·이름(마스킹)·전화·신청일·쿠폰지급·알림톡·접수<br>
+      필터: 이벤트·쿠폰지급·접수·검색<br>
+      CSV 다운로드 · 일괄 재발송 · 매장 배정
+    </div>
+  </div>
+
+  <!-- 첫 이벤트 예시 -->
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">🎬 첫 이벤트 — 메가커피 5,000잔 (중고폰 시세조회 미끼)</div>
+  <table style="font-size:11px;margin-bottom:14px">
+    <tbody>
+      <tr><td style="width:140px"><strong>slug</strong></td><td><code>megacoffee5000</code></td></tr>
+      <tr><td><strong>title / subtitle</strong></td><td>중고 보상 시세조회만 해도 / 메가커피 쿠폰 증정!</td></tr>
+      <tr><td><strong>쿠폰</strong></td><td>메가커피 아이스아메리카노 · max 5,000명 · provider=giftshow</td></tr>
+      <tr><td><strong>auth · age</strong></td><td>PASS · 만 14세 이상</td></tr>
+      <tr><td><strong>CTA</strong></td><td>1차 "쿠폰 이벤트 참여" / 2차 "중고 보상 접수" → <code>/buyback</code></td></tr>
+      <tr><td><strong>기간</strong></td><td>2026-06-10 ~ 2026-06-30</td></tr>
+      <tr><td><strong>알림톡</strong></td><td>BONGI_EVENT_COUPON_001 · 변수=쿠폰 시리얼+사용 link</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 향후 확장 -->
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">📈 향후 확장 시나리오 (같은 인프라 재사용)</div>
+  <table style="font-size:11px;margin-bottom:14px">
+    <thead><tr><th>이벤트 패턴</th><th>설명</th><th>재사용 정도</th></tr></thead>
+    <tbody>
+      <tr><td>중고폰 시세조회 미끼</td><td>현재 · 메가커피 등 쿠폰</td><td>100%</td></tr>
+      <tr><td>인터넷+TV 가입 결합 사은품</td><td>가입 시 추가 사은품 신청</td><td>hero·CTA만 변경</td></tr>
+      <tr><td>가전렌탈 시즌 프로모션</td><td>특정 기간 가입 시 캐시백</td><td>+ rental_sales 연동</td></tr>
+      <tr><td>친구 초대 캠페인</td><td>초대코드 + 양방향 보상</td><td>+ referral 모듈</td></tr>
+      <tr><td>매장 QR 방문 인증</td><td>QR 스캔 + 매장 방문 인증</td><td>+ store_visit 모듈</td></tr>
+      <tr><td>추첨형 응모</td><td>마감 후 cron 무작위 추첨</td><td>+ is_winner 플래그</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 개발 Phase -->
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">🗓️ 개발 Phase (2주 스프린트)</div>
+  <div style="font-size:11.5px;line-height:1.8">
+    <strong style="color:var(--blue)">Phase 1 (Week 1)</strong> — MVP: 메가커피 단일 이벤트 하드코딩, 공개 LP 1개, SMS 인증 폴백, 쿠폰 엑셀 수동 발급, 콜DB 자동 적재, 모바일 360px<br>
+    <strong style="color:var(--orange)">Phase 2 (Week 2)</strong> — 일반화: 슬러그 기반 동적 LP, 어드민 마스터 CRUD + preview, PASS 본인인증 연동, 외부 쿠폰사 API, 통계 대시보드, UTM 추적<br>
+    <strong style="color:var(--green)">Phase 3 (병렬)</strong> — 확장: 추첨형, 친구 초대 연동, 매장 QR 인증, A/B 테스트, 봉이 고객 앱 통합
+  </div>
+
+  <!-- 보안 -->
+  <div style="margin-top:14px;background:var(--orange2);border:1px solid #f7c94f;border-radius:6px;padding:10px 14px;font-size:11px;color:#78350f">
+    <strong>🛡️ 보안·법적</strong>: PIPA(약관 동의 IP·UA·시각 기록·마케팅 별도) · 만 14세 미만 자동 차단 (PASS) · 중복 신청 (phone+event_id UNIQUE) · 봇 방지 (hCaptcha + IP rate limit) · 마스킹 (이름 '홍길*' · 전화 '010-9999-****') · 감사 로그 (쿠폰 지급·접수·배정 모두 변경자·시각)
+  </div>
+
+</div>
+<div class="arrow-down">↓</div>
+
 <!-- ===== 예외 케이스 ===== -->
 <div style="margin-top:24px"></div>
 <div class="step-label" style="background:#6b7280">예외 케이스 — 중고폰 매입</div>
