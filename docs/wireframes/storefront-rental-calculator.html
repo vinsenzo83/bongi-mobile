@@ -2,283 +2,450 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>봉이 storefront — 가전 렌탈 계산기 prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>봉이 store · 가전 렌탈 계산기</title>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Pretendard', sans-serif; background: #f8fafc; color: #0f172a; min-height: 100vh; }
-  .layout { display: grid; grid-template-columns: 240px 1fr 340px; height: 100vh; }
+  .layout { display: grid; grid-template-columns: 1fr 360px; min-height: 100vh; }
+  .main { padding: 28px 40px; overflow-y: auto; }
+  .panel { background: #fff; border-left: 1px solid #e2e8f0; padding: 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 
-  /* 좌 사이드바 */
-  .sidebar { background: #fff; border-right: 1px solid #e2e8f0; padding: 20px 14px; overflow-y: auto; }
-  .logo { font-size: 22px; font-weight: 900; color: #6366f1; margin-bottom: 18px; letter-spacing: -0.5px; }
-  .new-btn { display: block; width: 100%; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; border-radius: 10px; padding: 11px; font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 12px; font-family: inherit; }
-  .search { width: 100%; background: #f1f5f9; border: none; border-radius: 8px; padding: 10px 14px; font-size: 12px; margin-bottom: 18px; font-family: inherit; }
-  .nav-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; padding-left: 8px; }
-  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #475569; transition: all 0.15s; font-weight: 500; }
-  .nav-item:hover { background: #f1f5f9; }
-  .nav-item.active { background: #eef2ff; color: #6366f1; font-weight: 700; }
-  .nav-item .badge { margin-left: auto; background: #f1f5f9; color: #64748b; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; }
-  .history { margin-top: 18px; padding: 10px; background: #f8fafc; border-radius: 8px; font-size: 11px; color: #64748b; }
-  .invite { margin-top: 16px; padding: 12px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; font-size: 11px; font-weight: 600; color: #92400e; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .brand-logo { font-size: 20px; font-weight: 900; color: #6366f1; letter-spacing: -0.5px; }
+  .login-btn { background: transparent; border: 1px solid #cbd5e1; color: #475569; padding: 7px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 600; }
 
-  /* 메인 */
-  .main { padding: 24px 32px; overflow-y: auto; background: #f8fafc; }
-  .breadcrumb { font-size: 11px; color: #94a3b8; margin-bottom: 6px; }
-  h1.title { font-size: 26px; font-weight: 900; margin-bottom: 4px; letter-spacing: -0.5px; }
-  .subtitle { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+  h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .lead { font-size: 14px; color: #64748b; margin-bottom: 28px; }
 
   .step { margin-bottom: 28px; }
-  .step-num { display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; background: #6366f1; color: #fff; border-radius: 50%; font-size: 11px; font-weight: 700; margin-right: 8px; }
-  .step-title { font-size: 15px; font-weight: 800; margin-bottom: 12px; }
-  .step-title .req { color: #ef4444; font-size: 11px; margin-left: 6px; }
+  .step-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .step-num { width: 26px; height: 26px; background: #6366f1; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .step-title { font-size: 16px; font-weight: 800; }
+  .step-title small { color: #94a3b8; font-weight: 500; font-size: 11px; margin-left: 6px; }
 
-  /* chip */
   .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { padding: 11px 18px; border: 2px solid #e2e8f0; border-radius: 999px; background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.15s; color: #475569; }
+  .chip { padding: 11px 18px; border: 2px solid #e2e8f0; border-radius: 999px; background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; color: #475569; transition: all 0.12s; }
   .chip:hover { border-color: #cbd5e1; }
-  .chip.active { background: #eef2ff; border-color: #6366f1; color: #6366f1; }
-  .chip.lg { padding: 16px 22px; font-size: 14px; }
+  .chip.active { background: #eef2ff; border-color: #6366f1; color: #6366f1; font-weight: 800; }
+  .chip.lg { padding: 14px 20px; font-size: 14px; }
   .chip .sub { display: block; font-size: 10px; color: #94a3b8; font-weight: 500; margin-top: 2px; }
   .chip.active .sub { color: #818cf8; }
+  .chip.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
-  /* 상품 카드 grid */
-  .prod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .prod-card { background: #fff; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.15s; }
+  .prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; max-height: 480px; overflow-y: auto; padding: 4px; }
+  .prod-card { background: #fff; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.12s; }
   .prod-card:hover { border-color: #cbd5e1; transform: translateY(-2px); }
   .prod-card.active { border-color: #6366f1; background: #eef2ff; }
-  .prod-badge { display: inline-block; background: #fbbf24; color: #78350f; padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 800; margin-bottom: 6px; }
-  .prod-img { width: 100%; aspect-ratio: 1; background: #f1f5f9; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
-  .prod-brand { font-size: 10px; color: #94a3b8; font-weight: 600; }
-  .prod-name { font-size: 12px; font-weight: 700; margin-bottom: 6px; height: 32px; overflow: hidden; }
+  .prod-img { width: 100%; aspect-ratio: 1; background: #f1f5f9; border-radius: 8px; margin-bottom: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .prod-img img { width: 100%; height: 100%; object-fit: contain; }
+  .prod-img.placeholder { font-size: 32px; color: #cbd5e1; }
+  .prod-brand { font-size: 10.5px; color: #94a3b8; font-weight: 600; }
+  .prod-name { font-size: 12.5px; font-weight: 700; line-height: 1.35; margin: 3px 0 6px; height: 34px; overflow: hidden; }
   .prod-price { font-size: 11px; color: #64748b; }
   .prod-price strong { color: #6366f1; font-size: 14px; font-weight: 900; }
-  .prod-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-  .tag { font-size: 9px; background: #f1f5f9; padding: 1px 6px; border-radius: 3px; color: #64748b; font-weight: 600; }
+  .prod-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .prod-tag { font-size: 9px; background: #f1f5f9; padding: 2px 7px; border-radius: 3px; color: #64748b; font-weight: 600; }
+  .prod-tag.promo-half { background: #fee2e2; color: #991b1b; font-weight: 700; }
+  .prod-tag.promo-gift { background: #fef3c7; color: #92400e; font-weight: 700; }
+  .prod-tag.promo-other { background: #ede9fe; color: #5b21b6; font-weight: 700; }
 
-  /* 채팅 escape */
-  .chat-cta { margin-top: 28px; padding: 14px 18px; background: linear-gradient(135deg, #ede9fe, #ddd6fe); border-radius: 12px; display: flex; gap: 10px; align-items: center; cursor: pointer; }
-  .chat-cta-icon { width: 38px; height: 38px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  .chat-cta-text { font-size: 12px; color: #5b21b6; }
-  .chat-cta-text strong { display: block; font-size: 14px; font-weight: 800; margin-bottom: 2px; color: #4c1d95; }
+  .loading { padding: 30px; text-align: center; color: #94a3b8; font-size: 12px; }
 
   /* 우 panel */
-  .panel { background: #fff; border-left: 1px solid #e2e8f0; padding: 24px 20px; overflow-y: auto; }
-  .panel-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; }
-  .toggle-row { display: flex; background: #f1f5f9; border-radius: 10px; padding: 4px; margin-bottom: 16px; }
-  .toggle-row button { flex: 1; background: transparent; border: none; padding: 9px; font-size: 12px; font-weight: 700; cursor: pointer; border-radius: 7px; color: #64748b; font-family: inherit; }
-  .toggle-row button.active { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-
-  .store-select { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; cursor: pointer; margin-bottom: 16px; }
-  .store-select .label { font-size: 10px; color: #94a3b8; margin-bottom: 4px; }
-  .store-select .value { font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
-
-  .summary { background: #f8fafc; border-radius: 10px; padding: 14px; margin-bottom: 14px; font-size: 12px; line-height: 1.7; }
+  .panel-title { font-size: 14px; font-weight: 800; margin-bottom: 16px; }
+  .summary { background: #f8fafc; border-radius: 10px; padding: 14px; margin-bottom: 12px; font-size: 12px; line-height: 1.7; }
   .summary .row { display: flex; justify-content: space-between; padding: 2px 0; }
   .summary .row .k { color: #94a3b8; }
   .summary .row .v { font-weight: 700; }
 
+  .promo-box { background: #fef3c7; border: 1px solid #fbbf24; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 11.5px; color: #92400e; }
+  .promo-box .ttl { font-weight: 800; font-size: 12px; margin-bottom: 4px; }
+
   .price-box { background: linear-gradient(135deg, #eef2ff, #ede9fe); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-  .price-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-size: 12px; }
-  .price-row.normal { color: #94a3b8; text-decoration: line-through; }
+  .price-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+  .price-row.normal { color: #94a3b8; text-decoration: line-through; font-size: 11.5px; }
   .price-row.discount { color: #6366f1; font-weight: 700; }
-  .price-row.final { font-size: 13px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #c7d2fe; }
-  .price-row.final .v { font-size: 22px; font-weight: 900; color: #4c1d95; }
+  .price-row.final { font-size: 13px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #c7d2fe; align-items: baseline; }
+  .price-row.final .v { font-size: 24px; font-weight: 900; color: #4c1d95; }
 
-  .cta-primary, .cta-secondary { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 14px; font-weight: 800; cursor: pointer; margin-bottom: 8px; font-family: inherit; }
+  .cta-primary, .cta-secondary { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 14px; font-weight: 800; cursor: pointer; margin-bottom: 8px; font-family: inherit; transition: all 0.12s; }
   .cta-primary { background: #6366f1; color: #fff; }
-  .cta-primary:hover { background: #4f46e5; }
+  .cta-primary:hover:not(:disabled) { background: #4f46e5; }
+  .cta-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
   .cta-secondary { background: #fff; color: #6366f1; border: 2px solid #6366f1; }
-  .cta-tertiary { width: 100%; padding: 10px; border: none; background: transparent; color: #94a3b8; font-size: 11px; cursor: pointer; text-decoration: underline; font-family: inherit; }
+  .cta-secondary:hover:not(:disabled) { background: #eef2ff; }
+  .cta-secondary:disabled { color: #cbd5e1; border-color: #cbd5e1; cursor: not-allowed; }
 
-  .empty-panel { padding: 40px 14px; text-align: center; color: #94a3b8; font-size: 12px; line-height: 1.7; }
-  .empty-panel-icon { font-size: 32px; margin-bottom: 10px; }
+  .empty-panel { padding: 50px 16px; text-align: center; color: #94a3b8; font-size: 12.5px; line-height: 1.7; }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+
+  .note { font-size: 10px; color: #94a3b8; line-height: 1.6; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #e2e8f0; }
+
+  /* 토스트 */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 14px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; z-index: 100; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 <div class="layout">
 
-  <aside class="sidebar">
-    <div class="logo">봉이 store</div>
-    <button class="new-btn">+ 새로 시작</button>
-    <input class="search" placeholder="🔍 상담 내역 검색">
-
-    <div class="nav-label">카테고리</div>
-    <div class="nav-item">🏠 홈</div>
-    <div class="nav-item">✨ 서비스 추천</div>
-    <div class="nav-item">📱 휴대폰</div>
-    <div class="nav-item">🌐 인터넷+TV</div>
-    <div class="nav-item">🔗 인터넷·TV·전화 결합</div>
-    <div class="nav-item">🧮 결합 할인 환산</div>
-    <div class="nav-item active">📺 가전 렌탈 <span class="badge">435</span></div>
-    <div class="nav-item">🏆 이벤트·혜택</div>
-
-    <div class="nav-label">최근 상담</div>
-    <div class="history">정수기 추천<br><span style="color:#94a3b8;font-size:10px">2분 전</span></div>
-
-    <div class="invite">🤝 친구 초대하기<br><span style="font-weight:400">적립한 포인트 현금으로 꺼내쓰세요</span></div>
-  </aside>
-
   <main class="main">
-    <div class="breadcrumb">홈 / 가전 렌탈</div>
-    <h1 class="title">가전 렌탈 계산기</h1>
-    <p class="subtitle">조건을 골라보세요. 매장과 온라인 가격을 실시간으로 비교해 드려요.</p>
+    <div class="top-bar">
+      <div class="brand-logo">봉이 store</div>
+      <button class="login-btn">로그인 / 회원가입</button>
+    </div>
+    <h1>가전 렌탈 계산기</h1>
+    <p class="lead">조건을 골라보세요. 실시간 가격을 확인하고 셀프 또는 상담원 신청을 선택할 수 있어요.</p>
 
     <div class="step">
-      <div class="step-title"><span class="step-num">1</span>어떤 가전을 알아보시나요?<span class="req">*</span></div>
-      <div class="chip-row">
-        <div class="chip lg active">💧 정수기 <span class="sub">111</span></div>
-        <div class="chip lg">🌬️ 공기청정기 <span class="sub">23</span></div>
-        <div class="chip lg">🚽 비데 <span class="sub">19</span></div>
-        <div class="chip lg">🛏️ 매트리스 <span class="sub">86</span></div>
-        <div class="chip lg">❄️ 에어컨 <span class="sub">120</span></div>
-        <div class="chip lg">📺 TV <span class="sub">76</span></div>
+      <div class="step-head">
+        <div class="step-num">1</div>
+        <div class="step-title">카테고리 <small>어떤 가전을 알아보시나요?</small></div>
       </div>
+      <div id="cat-chips" class="chip-row"><div class="loading">카테고리 로딩…</div></div>
     </div>
 
-    <div class="step">
-      <div class="step-title"><span class="step-num">2</span>마음에 드는 모델을 선택해 주세요<span class="req">*</span></div>
-      <div class="prod-grid">
-
-        <div class="prod-card active">
-          <span class="prod-badge">BEST</span>
-          <div class="prod-img">💧</div>
-          <div class="prod-brand">코웨이</div>
-          <div class="prod-name">아이콘3 냉온정 정수기 (CHP-7220N)</div>
-          <div class="prod-price">월 <strong>17,900원</strong>~</div>
-          <div class="prod-tags"><span class="tag">스마트 무빙</span><span class="tag">초소형</span><span class="tag">UV 살균</span></div>
-        </div>
-
-        <div class="prod-card">
-          <span class="prod-badge" style="background:#a78bfa;color:#fff">NEW</span>
-          <div class="prod-img">💧</div>
-          <div class="prod-brand">LG전자</div>
-          <div class="prod-name">퓨리케어 오브제컬렉션 (WD523VC)</div>
-          <div class="prod-price">월 <strong>16,450원</strong>~</div>
-          <div class="prod-tags"><span class="tag">맞춤출수</span><span class="tag">베이지</span></div>
-        </div>
-
-        <div class="prod-card">
-          <div class="prod-img">💧</div>
-          <div class="prod-brand">SK매직</div>
-          <div class="prod-name">초소형 플러스 직수 (WPUJAC115S)</div>
-          <div class="prod-price">월 <strong>15,700원</strong>~</div>
-          <div class="prod-tags"><span class="tag">직수</span><span class="tag">자가관리</span></div>
-        </div>
-
+    <div class="step" id="step-brand" style="display:none">
+      <div class="step-head">
+        <div class="step-num">2</div>
+        <div class="step-title">제조사 <small>선호 브랜드 선택 (생략 가능)</small></div>
       </div>
+      <div id="brand-chips" class="chip-row"></div>
     </div>
 
-    <div class="step">
-      <div class="step-title"><span class="step-num">3</span>약정 기간<span class="req">*</span></div>
-      <div class="chip-row">
-        <div class="chip">84개월</div>
-        <div class="chip">72개월</div>
-        <div class="chip active">60개월</div>
-        <div class="chip">48개월</div>
-        <div class="chip">36개월</div>
+    <div class="step" id="step-product" style="display:none">
+      <div class="step-head">
+        <div class="step-num">3</div>
+        <div class="step-title">제품 <small>마음에 드는 모델을 선택해 주세요</small></div>
       </div>
+      <div id="prod-grid" class="prod-grid"><div class="loading">상품 로딩…</div></div>
     </div>
 
-    <div class="step">
-      <div class="step-title"><span class="step-num">4</span>관리 방식<span class="req">*</span></div>
-      <div class="chip-row">
-        <div class="chip">방문 관리</div>
-        <div class="chip active">셀프 관리</div>
+    <div class="step" id="step-months" style="display:none">
+      <div class="step-head">
+        <div class="step-num">4</div>
+        <div class="step-title">약정 기간</div>
       </div>
+      <div id="months-chips" class="chip-row"></div>
     </div>
 
-    <div class="step">
-      <div class="step-title"><span class="step-num">5</span>관리 주기</div>
-      <div class="chip-row">
-        <div class="chip">4개월</div>
-        <div class="chip active">6개월</div>
-        <div class="chip">12개월</div>
+    <div class="step" id="step-care" style="display:none">
+      <div class="step-head">
+        <div class="step-num">5</div>
+        <div class="step-title">관리 방식</div>
       </div>
+      <div id="care-chips" class="chip-row"></div>
     </div>
 
-    <div class="step">
-      <div class="step-title"><span class="step-num">6</span>제휴카드 (선택)</div>
-      <div class="chip-row">
-        <div class="chip active">🎴 KB · 40만 (1구간 ₩10,000)</div>
-        <div class="chip">🎴 삼성 · 30만 (1구간 ₩8,500)</div>
-        <div class="chip">카드 없이 진행</div>
+    <div class="step" id="step-card" style="display:none">
+      <div class="step-head">
+        <div class="step-num">6</div>
+        <div class="step-title">제휴 카드 <small>선택하면 추가 할인</small></div>
       </div>
+      <div id="card-chips" class="chip-row"></div>
     </div>
-
-    <div class="chat-cta">
-      <div class="chat-cta-icon">💬</div>
-      <div class="chat-cta-text">
-        <strong>다른 추천도 받아볼까요?</strong>
-        AI 상담사가 비슷한 정수기 더 골라드려요
-      </div>
-    </div>
-
   </main>
 
   <aside class="panel">
-    <div class="panel-title">예상 요금</div>
-
-    <div class="toggle-row">
-      <button class="active">🏪 매장 방문</button>
-      <button>💻 온라인 신청</button>
+    <div id="panel-empty" class="empty-panel">
+      <div class="empty-icon">🧮</div>
+      <strong style="display:block;color:#475569;margin-bottom:6px">조건을 선택해 보세요</strong>
+      카테고리부터 차근차근 골라주시면<br>실시간으로 가격이 계산됩니다.
     </div>
 
-    <div class="store-select">
-      <div class="label">방문 매장</div>
-      <div class="value">📍 봉이모바일 익산점 <span style="color:#94a3b8">▼</span></div>
-    </div>
-
-    <div class="summary">
-      <div class="row"><span class="k">상품</span><span class="v">코웨이 아이콘3</span></div>
-      <div class="row"><span class="k">약정</span><span class="v">60개월</span></div>
-      <div class="row"><span class="k">관리</span><span class="v">셀프 6개월</span></div>
-      <div class="row"><span class="k">카드</span><span class="v">KB · 40만</span></div>
-    </div>
-
-    <div class="price-box">
-      <div class="price-row normal"><span class="k">정상 월 요금</span><span class="v">35,900원</span></div>
-      <div class="price-row discount"><span class="k">제휴카드 할인</span><span class="v">−10,000원</span></div>
-      <div class="price-row final"><span class="k">예상 월 요금</span><span class="v">17,900원~</span></div>
-    </div>
-
-    <button class="cta-primary">🏪 매장 방문 신청</button>
-    <button class="cta-secondary">💻 온라인 셀프 가입</button>
-    <button class="cta-tertiary">📞 전문 상담사 연결</button>
-
-    <div style="margin-top:18px;font-size:10px;color:#94a3b8;line-height:1.6">
-      📋 카드 신청 시 12개월 사용 의무·중도 해지 시 카드사 별도 정책 적용. 매장 방문 시 추가 사은품 가능.
+    <div id="panel-content" style="display:none">
+      <div class="panel-title">예상 요금</div>
+      <div id="summary-box" class="summary"></div>
+      <div id="promo-box" style="display:none"></div>
+      <div id="price-box" class="price-box"></div>
+      <button class="cta-primary" id="cta-self">💻 셀프 신청 (바로 가입)</button>
+      <button class="cta-secondary" id="cta-consult">📞 상담원 신청 (전화 받기)</button>
+      <div class="note">
+        💻 본인 정보를 직접 입력하고 바로 가입합니다.<br>
+        📞 상담원이 24시간 내 전화로 안내해 드립니다.<br>
+        📋 카드 신청 시 카드사 별도 정책이 적용됩니다.
+      </div>
     </div>
   </aside>
 
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-  // chip 토글
-  document.querySelectorAll('.chip-row').forEach(row => {
-    row.querySelectorAll('.chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        row.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-      });
+const API = '/api';
+const TOKEN_KEY = 'incentive-auth-token-v1';
+const tk = () => localStorage.getItem(TOKEN_KEY) || '';
+const auth = () => ({ headers: tk() ? { Authorization: 'Bearer ' + tk() } : {} });
+
+const state = {
+  category: null,
+  brand: null,
+  product: null,
+  months: null,
+  careType: null,
+  card: null,
+  cards: [],
+  categories: [],
+  products: [],
+};
+
+const CATEGORY_ICONS = {
+  '정수기': '💧', '공기청정기': '🌬️', '비데': '🚽',
+  '매트리스': '🛏️', '에어컨': '❄️', 'TV': '📺',
+  '안마의자': '🪑', '세탁기': '👕', '건조기': '🌀',
+};
+
+function toast(msg, ms=2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+}
+
+function fmt(n) {
+  return n == null ? '-' : Number(n).toLocaleString('ko-KR') + '원';
+}
+
+async function loadCategories() {
+  try {
+    const r = await fetch(`${API}/rental/categories`, auth()).then(r => r.json());
+    const cats = (r.categories || r.rows || []).filter(c => c.active !== false);
+    // 활성 상품 있는 카테고리만 (storefront-friendly)
+    const counts = await fetch(`${API}/rental/products?limit=1000`, auth()).then(r => r.json());
+    const prods = counts.products || counts.rows || [];
+    const byCat = {};
+    prods.forEach(p => { byCat[p.category_id] = (byCat[p.category_id] || 0) + 1; });
+    const active = cats.filter(c => byCat[c.id] > 0);
+    state.categories = active;
+    renderCategories(byCat);
+  } catch (e) {
+    document.getElementById('cat-chips').innerHTML = `<div class="loading" style="color:#ef4444">로드 실패 — 로그인 후 다시 시도 (${e.message})</div>`;
+  }
+}
+
+function renderCategories(byCat) {
+  const el = document.getElementById('cat-chips');
+  el.innerHTML = state.categories.map(c => `
+    <div class="chip lg" data-cat="${c.id}" data-name="${c.name}">
+      ${CATEGORY_ICONS[c.name] || '📦'} ${c.name}
+      <span class="sub">${byCat[c.id] || 0}개</span>
+    </div>
+  `).join('');
+  el.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.category = { id: +chip.dataset.cat, name: chip.dataset.name };
+      state.brand = null; state.product = null; state.months = null; state.careType = null; state.card = null;
+      loadProductsForCategory();
     });
   });
-  document.querySelectorAll('.prod-grid').forEach(grid => {
-    grid.querySelectorAll('.prod-card').forEach(card => {
-      card.addEventListener('click', () => {
-        grid.querySelectorAll('.prod-card').forEach(c => c.classList.remove('active'));
-        card.classList.add('active');
-      });
+}
+
+async function loadProductsForCategory() {
+  document.getElementById('step-brand').style.display = '';
+  document.getElementById('step-product').style.display = '';
+  document.getElementById('step-months').style.display = 'none';
+  document.getElementById('step-care').style.display = 'none';
+  document.getElementById('step-card').style.display = 'none';
+  document.getElementById('prod-grid').innerHTML = '<div class="loading">상품 로딩…</div>';
+  document.getElementById('brand-chips').innerHTML = '<div class="loading">제조사 로딩…</div>';
+
+  try {
+    const r = await fetch(`${API}/rental/products?category_id=${state.category.id}&limit=200`, auth()).then(r => r.json());
+    const prods = r.products || r.rows || [];
+    state.products = prods.filter(p => p.is_active !== false);
+    renderBrands();
+    renderProducts();
+    loadCardsForCategory();
+  } catch (e) {
+    document.getElementById('prod-grid').innerHTML = `<div class="loading" style="color:#ef4444">로드 실패: ${e.message}</div>`;
+  }
+}
+
+function renderBrands() {
+  const brands = [...new Set(state.products.map(p => p.brand).filter(Boolean))].sort();
+  const el = document.getElementById('brand-chips');
+  el.innerHTML = `<div class="chip" data-brand="">전체</div>` +
+    brands.map(b => `<div class="chip" data-brand="${b}">${b}</div>`).join('');
+  el.querySelectorAll('.chip').forEach((chip, i) => {
+    if (i === 0) chip.classList.add('active');
+    chip.addEventListener('click', () => {
+      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.brand = chip.dataset.brand || null;
+      renderProducts();
     });
   });
-  document.querySelectorAll('.toggle-row').forEach(row => {
-    row.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        row.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      });
+}
+
+function renderProducts() {
+  const list = state.brand ? state.products.filter(p => p.brand === state.brand) : state.products;
+  const el = document.getElementById('prod-grid');
+  if (!list.length) { el.innerHTML = '<div class="loading">조건에 맞는 상품이 없어요</div>'; return; }
+  el.innerHTML = list.slice(0, 60).map(p => {
+    const minFee = p.monthly_fee_min || p.half_fee_min || 0;
+    const tags = (p.promo_tags_list || []).map(t => {
+      const cls = t.includes('반값') ? 'promo-half' : t.includes('상품권') || t.includes('cashback') ? 'promo-gift' : t.includes('타사') ? 'promo-other' : '';
+      return `<span class="prod-tag ${cls}">${t}</span>`;
+    }).join('');
+    return `
+      <div class="prod-card" data-id="${p.id}">
+        <div class="prod-img ${p.image_url ? '' : 'placeholder'}">
+          ${p.image_url ? `<img src="${p.image_url}" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();this.parentElement.textContent='📦'">` : '📦'}
+        </div>
+        <div class="prod-brand">${p.brand || ''}</div>
+        <div class="prod-name">${p.name || ''}</div>
+        <div class="prod-price">월 <strong>${minFee ? fmt(minFee).replace('원','') : '-'}원</strong>~</div>
+        <div class="prod-tags">${tags}</div>
+      </div>
+    `;
+  }).join('');
+  el.querySelectorAll('.prod-card').forEach(card => {
+    card.addEventListener('click', () => {
+      el.querySelectorAll('.prod-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      const id = +card.dataset.id;
+      state.product = state.products.find(p => p.id === id);
+      state.months = null; state.careType = null; state.card = null;
+      renderMonths();
+      renderCares();
+      updatePanel();
     });
   });
+}
+
+function renderMonths() {
+  const p = state.product; if (!p) return;
+  document.getElementById('step-months').style.display = '';
+  const arr = Array.isArray(p.months_available) ? p.months_available : [];
+  const el = document.getElementById('months-chips');
+  if (!arr.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:12px">옵션 정보가 없습니다.</div>'; return; }
+  el.innerHTML = arr.map(m => `<div class="chip" data-m="${m}">${m}개월</div>`).join('');
+  el.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.months = +chip.dataset.m;
+      updatePanel();
+    });
+  });
+}
+
+function renderCares() {
+  const p = state.product; if (!p) return;
+  document.getElementById('step-care').style.display = '';
+  const arr = Array.isArray(p.care_services) ? p.care_services : [];
+  const el = document.getElementById('care-chips');
+  const labels = arr.length ? arr : ['방문 관리', '셀프 관리'];
+  el.innerHTML = labels.map(c => `<div class="chip" data-care="${c}">${c}</div>`).join('');
+  el.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.careType = chip.dataset.care;
+      updatePanel();
+    });
+  });
+}
+
+async function loadCardsForCategory() {
+  if (!state.category) return;
+  document.getElementById('step-card').style.display = '';
+  document.getElementById('card-chips').innerHTML = '<div class="loading">카드 로딩…</div>';
+  try {
+    const r = await fetch(`${API}/rental/partner-cards?active=1&category=${encodeURIComponent(state.category.name)}`, auth()).then(r => r.json());
+    state.cards = r.cards || r.rows || [];
+    renderCards();
+  } catch (e) {
+    document.getElementById('card-chips').innerHTML = `<div class="loading" style="color:#ef4444">카드 로드 실패</div>`;
+  }
+}
+
+function renderCards() {
+  const el = document.getElementById('card-chips');
+  if (!state.cards.length) {
+    el.innerHTML = '<div class="chip active" data-card="">카드 없이 진행</div>';
+    state.card = null;
+    el.querySelector('.chip').addEventListener('click', () => updatePanel());
+    return;
+  }
+  el.innerHTML = `<div class="chip active" data-card="">카드 없이 진행</div>` +
+    state.cards.slice(0, 8).map(c => {
+      const t1 = c.tier1_base || c.tier1_total || 0;
+      return `<div class="chip" data-card="${c.id}" data-discount="${t1}">🎴 ${c.brand || c.company} · ${c.card_name || c.name || '카드'} <span class="sub">1구간 −${fmt(t1).replace('원','')}원</span></div>`;
+    }).join('');
+  el.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const id = +chip.dataset.card || null;
+      state.card = id ? { ...state.cards.find(c => c.id === id), _discount: +chip.dataset.discount } : null;
+      updatePanel();
+    });
+  });
+}
+
+function updatePanel() {
+  const p = state.product;
+  if (!p || !state.months || !state.careType) {
+    document.getElementById('panel-empty').style.display = '';
+    document.getElementById('panel-content').style.display = 'none';
+    return;
+  }
+  document.getElementById('panel-empty').style.display = 'none';
+  document.getElementById('panel-content').style.display = '';
+
+  // summary
+  document.getElementById('summary-box').innerHTML = `
+    <div class="row"><span class="k">상품</span><span class="v">${p.brand} ${p.name?.slice(0, 18) || ''}</span></div>
+    <div class="row"><span class="k">약정</span><span class="v">${state.months}개월</span></div>
+    <div class="row"><span class="k">관리</span><span class="v">${state.careType}</span></div>
+    <div class="row"><span class="k">카드</span><span class="v">${state.card ? state.card.brand + ' · ' + (state.card.card_name || '') : '미선택'}</span></div>
+  `;
+
+  // promo
+  const promos = p.promo_tags_list || [];
+  if (promos.length) {
+    document.getElementById('promo-box').className = 'promo-box';
+    document.getElementById('promo-box').style.display = '';
+    document.getElementById('promo-box').innerHTML = `
+      <div class="ttl">🎁 추가 혜택 ${promos.length}종</div>
+      ${promos.map(t => `<div>• ${t}</div>`).join('')}
+    `;
+  } else {
+    document.getElementById('promo-box').style.display = 'none';
+  }
+
+  // price
+  const normal = p.monthly_fee_max || p.monthly_fee_min || 0;
+  const base = p.monthly_fee_min || p.half_fee_min || normal;
+  const cardDiscount = state.card?._discount || 0;
+  const final = Math.max(0, base - cardDiscount);
+
+  document.getElementById('price-box').innerHTML = `
+    ${normal > base ? `<div class="price-row normal"><span>정상 월 요금</span><span>${fmt(normal)}</span></div>` : ''}
+    <div class="price-row"><span>기본 월 요금</span><span class="v">${fmt(base)}</span></div>
+    ${cardDiscount ? `<div class="price-row discount"><span>카드 할인</span><span class="v">−${fmt(cardDiscount)}</span></div>` : ''}
+    <div class="price-row final"><span><strong>예상 월 요금</strong></span><span class="v">${fmt(final)}</span></div>
+  `;
+}
+
+document.getElementById('cta-self').addEventListener('click', () => {
+  if (!state.product) return;
+  toast(`✅ 셀프 신청 — ${state.product.brand} ${state.product.name?.slice(0, 20)}`);
+  console.log('Self apply', { state });
+});
+document.getElementById('cta-consult').addEventListener('click', () => {
+  if (!state.product) return;
+  toast(`📞 상담원 신청 접수 — 24시간 내 연락`);
+  console.log('Consult request', { state });
+});
+
+loadCategories();
 </script>
 </body>
 </html>
