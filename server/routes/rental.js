@@ -1714,7 +1714,24 @@ router.get('/partner-cards', authenticateJWT, async (req, res) => {
       const ids = COMPANY_ALIAS[String(company_id)] || [Number(company_id)];
       q = q.in('company_id', ids);
     } else if (brand) {
-      q = q.eq('brand', brand);
+      // brand alias — 회사명·제조사 ↔ 카드 brand 차이 흡수
+      const BRAND_ALIAS = {
+        '청호': ['청호','청호나이스'],
+        '청호나이스': ['청호나이스','청호'],
+        '웰스': ['웰스','교원웰스'],
+        '교원웰스': ['교원웰스','웰스'],
+        'BS ON': ['BS ON','삼성전자(BS ON)','삼성전자','삼성'],
+        '삼성': ['삼성','삼성전자(BS ON)','삼성전자','BS ON'],
+        '삼성전자': ['삼성전자','삼성전자(BS ON)','삼성','BS ON'],
+        '삼성전자(BS ON)': ['삼성전자(BS ON)','BS ON','삼성전자','삼성'],
+        'LG': ['LG','LG전자','LG전자구독','LG헬로비전'],
+        'LG전자': ['LG전자','LG전자구독','LG','LG헬로비전'],
+        'LG전자구독': ['LG전자구독','LG전자','LG','LG헬로비전'],
+        '현대유버스': ['현대유버스','현대큐밍'],
+        '현대큐밍': ['현대큐밍','현대유버스'],
+      };
+      const brands = BRAND_ALIAS[brand] || [brand];
+      q = q.in('brand', brands);
     }
     if (active === '1' || active === 'true') q = q.eq('is_active', true);
     const { data, error } = await q.limit(500);
