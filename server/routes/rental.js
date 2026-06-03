@@ -1704,21 +1704,25 @@ router.get('/partner-cards', authenticateJWT, async (req, res) => {
       .order('card_issuer', { ascending: true });
     if (category) q = q.contains('categories', [category]);
     if (brand) {
-      // brand alias 매핑 — 회사명 ↔ 카드 brand 차이 흡수
-      // 2026-06-03 fix: 청호·웰스·BS ON 매칭 회귀 해결
+      // brand alias 매핑 — 회사명·제조사 ↔ 카드 brand 차이 흡수
+      // 2026-06-03 가전 그룹: 채널(KT가전구독·이니·스마트)은 카드 없음 → 제조사(LG·삼성) 카드 사용
       const aliases = [brand];
       const ALIAS = {
-        'LG전자': ['LG전자구독'],
-        'LG전자구독': ['LG전자'],
+        // 정수기 그룹 — 회사명 ↔ 카드 brand
+        '청호': ['청호나이스'],
+        '청호나이스': ['청호'],
+        '웰스': ['교원웰스'],
+        '교원웰스': ['웰스'],
         '현대유버스': ['현대큐밍'],
         '현대큐밍': ['현대유버스'],
-        '청호': ['청호나이스'],          // 회사명 '청호' ↔ 카드 brand '청호나이스'
-        '청호나이스': ['청호'],
-        '웰스': ['교원웰스'],            // 회사명 '웰스' ↔ 카드 brand '교원웰스'
-        '교원웰스': ['웰스'],
-        'BS ON': ['삼성전자(BS ON)', '삼성전자'],  // 회사명 'BS ON' ↔ 카드 brand '삼성전자(BS ON)'
-        '삼성전자(BS ON)': ['BS ON', '삼성전자'],
-        '삼성': ['삼성전자(BS ON)', 'BS ON', '삼성전자'],
+        // 가전 그룹 — 제조사 ↔ 가전 카드 brand (KT·이니·스마트·LG헬로비전·BS ON 채널 모두 동일 제조사 카드 공유)
+        'LG': ['LG전자구독', 'LG전자', 'LG헬로비전'],
+        'LG전자': ['LG전자구독', 'LG', 'LG헬로비전'],
+        'LG전자구독': ['LG전자', 'LG', 'LG헬로비전'],
+        '삼성': ['삼성전자(BS ON)', '삼성전자', 'BS ON'],
+        '삼성전자': ['삼성전자(BS ON)', '삼성', 'BS ON'],
+        'BS ON': ['삼성전자(BS ON)', '삼성전자', '삼성'],
+        '삼성전자(BS ON)': ['BS ON', '삼성전자', '삼성'],
       };
       if (ALIAS[brand]) aliases.push(...ALIAS[brand]);
       q = q.in('brand', aliases);
