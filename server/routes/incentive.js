@@ -274,12 +274,15 @@ router.get('/agents', authenticateJWT, async (req, res) => {
     // contract는 전체 보임 (모든 센터의 계약 처리)
     const { data, error } = await q.order('hire_date');
     if (error) throw error;
-    // 2026-06-04: auth.users.email 첨부 (상담사 목록에 로그인 ID 노출)
+    // 2026-06-04: auth.users.email 첨부 (RPC admin_get_user_emails — listUsers는 50/page 한계)
     try {
-      const { data: list } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-      const emailMap = Object.fromEntries((list?.users || []).map(u => [u.id, u.email]));
-      data.forEach(a => { a.email = emailMap[a.user_id] || null; });
-    } catch (e) { /* 권한 없으면 무시 */ }
+      const userIds = data.filter(a => a.user_id).map(a => a.user_id);
+      if (userIds.length) {
+        const { data: emails } = await supabase.rpc('admin_get_user_emails', { user_ids: userIds });
+        const emailMap = Object.fromEntries((emails || []).map(r => [r.id, r.email]));
+        data.forEach(a => { a.email = emailMap[a.user_id] || null; });
+      }
+    } catch (e) { /* RPC 권한 없으면 무시 */ }
     res.json({ agents: data, count: data.length });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
@@ -402,9 +405,15 @@ router.patch('/agents/:id', authenticateJWT, async (req, res) => {
       if (!email) {
         update.user_id = null;
       } else {
+        // 단일 email lookup — auth.admin.listUsers의 filter 옵션 사용
         try {
-          const { data: list } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-          const found = (list?.users || []).find(u => (u.email || '').toLowerCase() === email);
+          const { data: list } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+          let found = (list?.users || []).find(u => (u.email || '').toLowerCase() === email);
+          if (!found) {
+            // RPC fallback (50/page 한계 우회)
+            const { data: rpcRes } = await supabase.rpc('admin_get_user_id_by_email', { email_lookup: email });
+            if (rpcRes && rpcRes.length) found = { id: rpcRes[0].id, email };
+          }
           if (!found) return res.status(400).json({ error: `이메일 미가입: ${email} — 먼저 가입(신규 발급) 후 매핑하세요` });
           update.user_id = found.id;
         } catch (e) { return res.status(500).json({ error: 'auth.users 조회 실패: ' + (e.message || '') }); }
