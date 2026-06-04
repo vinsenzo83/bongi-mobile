@@ -274,15 +274,13 @@ router.get('/agents', authenticateJWT, async (req, res) => {
     // contract는 전체 보임 (모든 센터의 계약 처리)
     const { data, error } = await q.order('hire_date');
     if (error) throw error;
-    // 2026-06-04: auth.users.email 첨부 (RPC admin_get_user_emails — listUsers는 50/page 한계)
-    try {
-      const userIds = data.filter(a => a.user_id).map(a => a.user_id);
-      if (userIds.length) {
-        const { data: emails } = await supabase.rpc('admin_get_user_emails', { user_ids: userIds });
-        const emailMap = Object.fromEntries((emails || []).map(r => [r.id, r.email]));
-        data.forEach(a => { a.email = emailMap[a.user_id] || null; });
-      }
-    } catch (e) { /* RPC 권한 없으면 무시 */ }
+    // 2026-06-04: auth.users.email 첨부 — getUserById N+1 (가장 안정)
+    await Promise.all(data.filter(a => a.user_id).map(async (a) => {
+      try {
+        const { data: u } = await supabase.auth.admin.getUserById(a.user_id);
+        a.email = u?.user?.email || null;
+      } catch (e) { a.email = null; }
+    }));
     res.json({ agents: data, count: data.length });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
