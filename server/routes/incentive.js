@@ -274,6 +274,12 @@ router.get('/agents', authenticateJWT, async (req, res) => {
     // contract는 전체 보임 (모든 센터의 계약 처리)
     const { data, error } = await q.order('hire_date');
     if (error) throw error;
+    // 2026-06-04: auth.users.email 첨부 (상담사 목록에 로그인 ID 노출)
+    try {
+      const { data: list } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+      const emailMap = Object.fromEntries((list?.users || []).map(u => [u.id, u.email]));
+      data.forEach(a => { a.email = emailMap[a.user_id] || null; });
+    } catch (e) { /* 권한 없으면 무시 */ }
     res.json({ agents: data, count: data.length });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
