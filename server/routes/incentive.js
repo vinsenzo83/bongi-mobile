@@ -477,6 +477,13 @@ router.get('/agents/all', authenticateJWT, async (req, res) => {
     }
     const { data, error } = await q.order('hire_date', { ascending: false });
     if (error) throw error;
+    // 2026-06-04: auth.users.email 첨부 (incentive-agents.html에서 실제 사용하는 endpoint)
+    await Promise.all(data.filter(a => a.user_id).map(async (a) => {
+      try {
+        const { data: u } = await supabase.auth.admin.getUserById(a.user_id);
+        a.email = u?.user?.email || null;
+      } catch (_e) { a.email = null; }
+    }));
     res.json({ agents: data, count: data.length, trash });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
