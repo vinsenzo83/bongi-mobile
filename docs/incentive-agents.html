@@ -409,11 +409,11 @@ function openEditAgent(id) {
       </div>
       <div style="padding:18px 20px">
         <div class="field" style="margin-bottom:14px">
-          <label>📧 이메일 (로그인 ID)</label>
-          <input type="email" id="e-email" value="${(a.email||'').replace(/"/g,'&quot;')}" readonly
-                 style="background:#0f172a;color:#a78bfa;border:1px solid #334155;cursor:default"
-                 title="이메일은 auth.users 기반 — 변경 시 별도 처리 필요">
-          <div class="hint">${a.email ? '읽기 전용 — 변경하려면 supabase auth에서 직접' : '⚠️ user_id 매핑 없음 (auth.users에 연결 없음)'}</div>
+          <label>📧 이메일 (로그인 ID) — 가입된 이메일 입력 시 자동 매핑</label>
+          <input type="email" id="e-email" value="${(a.email||'').replace(/"/g,'&quot;')}"
+                 placeholder="예: agent@bongi.test"
+                 style="background:#0f172a;color:#a78bfa;border:1.5px solid #6366f1">
+          <div class="hint">${a.email ? `현재 매핑: <b>${a.email}</b>` : '⚠️ 미매핑 — 이미 auth.users에 가입된 이메일을 입력하면 user_id가 자동 연결됩니다'}</div>
         </div>
         <div class="row cols-3">
           <div class="field"><label>이름 *</label>
@@ -471,6 +471,7 @@ async function saveEditAgent(id) {
     hire_date: document.getElementById('e-hire-date').value || null,
     base_salary: parseInt(document.getElementById('e-base-salary').value) || 0,
     active: document.getElementById('e-active').value === 'true',
+    email: document.getElementById('e-email').value.trim().toLowerCase() || null,
   };
   if (!body.name || !body.center) { alert('이름과 센터 필수'); return; }
   await patchAgent(id, body, '✅ 변경사항 저장 완료');
