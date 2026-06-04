@@ -408,6 +408,13 @@ function openEditAgent(id) {
         <button onclick="closeEditAgent()" style="background:#475569;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700">✕ 닫기</button>
       </div>
       <div style="padding:18px 20px">
+        <div class="field" style="margin-bottom:14px">
+          <label>📧 이메일 (로그인 ID)</label>
+          <input type="email" id="e-email" value="${(a.email||'').replace(/"/g,'&quot;')}" readonly
+                 style="background:#0f172a;color:#a78bfa;border:1px solid #334155;cursor:default"
+                 title="이메일은 auth.users 기반 — 변경 시 별도 처리 필요">
+          <div class="hint">${a.email ? '읽기 전용 — 변경하려면 supabase auth에서 직접' : '⚠️ user_id 매핑 없음 (auth.users에 연결 없음)'}</div>
+        </div>
         <div class="row cols-3">
           <div class="field"><label>이름 *</label>
             <input type="text" id="e-name" value="${(a.name||'').replace(/"/g,'&quot;')}" required>
