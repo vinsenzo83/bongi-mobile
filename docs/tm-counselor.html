@@ -5723,12 +5723,9 @@ setTimeout(() => {
   function updateProfileBarVisibility() {
     const bar = document.getElementById('rr-profile-bar');
     if (!bar) return;
-    // 현재 카테고리 그룹 확인 — 가전 그룹 카테고리 선택 시만 노출
-    const cat = _rrFilter.category;
-    const isGajeon = cat === 'all'
-      ? _allProducts.some(p => p.category?.product_group === '가전')
-      : (_categories.find(c => c.slug === cat)?.product_group === '가전');
-    bar.style.display = isGajeon ? '' : 'none';
+    // 2026-06-04 fix: 모든 카테고리에서 고객유형 chip 노출
+    // (월납 최소·사은품 최대는 정수기·공청·비데·매트리스에도 의미 있음)
+    bar.style.display = '';
   }
   function escapeHtml(s) {
     return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
