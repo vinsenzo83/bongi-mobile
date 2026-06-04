@@ -396,6 +396,21 @@ router.patch('/agents/:id', authenticateJWT, async (req, res) => {
     if (update.department_id === '' || update.department_id === 0) update.department_id = null;
     if (Array.isArray(update.handle_categories) && update.handle_categories.length === 0) update.handle_categories = null;
 
+    // 2026-06-04: email → user_id 자동 매핑 (가입된 auth.users 이메일 입력 시)
+    if (req.body.email !== undefined) {
+      const email = (req.body.email || '').trim().toLowerCase();
+      if (!email) {
+        update.user_id = null;
+      } else {
+        try {
+          const { data: list } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+          const found = (list?.users || []).find(u => (u.email || '').toLowerCase() === email);
+          if (!found) return res.status(400).json({ error: `이메일 미가입: ${email} — 먼저 가입(신규 발급) 후 매핑하세요` });
+          update.user_id = found.id;
+        } catch (e) { return res.status(500).json({ error: 'auth.users 조회 실패: ' + (e.message || '') }); }
+      }
+    }
+
     const { data, error } = await supabase
       .from('incentive_agents')
       .update(update).eq('id', req.params.id).select().single();
