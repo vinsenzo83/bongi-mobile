@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>② 고객 — *#06# EID 분기</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#f8fafc;color:#0f172a;padding:24px;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.wrap{max-width:560px;width:100%;background:#fff;border-radius:16px;padding:32px 30px;box-shadow:0 8px 28px rgba(0,0,0,.06)}
+h1{font-size:22px;font-weight:900;margin-bottom:6px}
+.lead{font-size:13px;color:#64748b;margin-bottom:24px}
+.code-box{background:linear-gradient(135deg,#1e293b,#0f172a);color:#fbbf24;border-radius:12px;padding:24px;text-align:center;margin-bottom:18px}
+.code-box .code{font-family:monospace;font-size:34px;font-weight:900;letter-spacing:4px;margin-bottom:8px}
+.code-box .hint{font-size:11.5px;color:#cbd5e1;line-height:1.5}
+.step-num{display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;background:#6366f1;color:#fff;border-radius:50%;font-size:12px;font-weight:800;margin-right:6px}
+.howto{background:#f8fafc;border-left:3px solid #6366f1;border-radius:6px;padding:14px;font-size:12.5px;line-height:1.7;color:#475569;margin-bottom:24px}
+.howto strong{color:#0f172a}
+.options{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.option{display:flex;align-items:center;gap:14px;padding:18px;border:2px solid #e2e8f0;border-radius:12px;cursor:pointer;transition:all .12s;background:#fff}
+.option:hover{border-color:#cbd5e1;transform:translateY(-1px)}
+.option.esim{border-color:#6366f1;background:#eef2ff}
+.option.physical{border-color:#16a34a;background:#dcfce7}
+.option .ic{font-size:32px;flex-shrink:0}
+.option .body{flex:1}
+.option .ttl{font-weight:800;font-size:14.5px;margin-bottom:3px}
+.option .desc{font-size:11.5px;color:#64748b;line-height:1.4}
+.option .arrow{font-size:20px;color:#94a3b8}
+.skip{margin-top:20px;text-align:center}
+.skip a{font-size:11.5px;color:#94a3b8;text-decoration:underline;cursor:pointer}
+</style></head><body>
+<div class="wrap">
+  <h1>가입 가능 여부 확인</h1>
+  <p class="lead">사용 중 휴대폰에서 다음 번호를 눌러주세요. 즉시 가입 가능한지 안내해 드릴게요.</p>
+
+  <div class="code-box">
+    <div class="code">*#06#</div>
+    <div class="hint">사용 중 휴대폰 전화 앱에서<br>위 코드를 그대로 입력하세요</div>
+  </div>
+
+  <div class="howto">
+    <span class="step-num">1</span><strong>휴대폰 전화 앱</strong> 열기<br>
+    <span class="step-num">2</span><strong>*#06#</strong> 입력<br>
+    <span class="step-num">3</span>화면에 <strong>EID 번호 (32자리)</strong> 표시 여부 확인
+  </div>
+
+  <div style="font-size:14px;font-weight:800;margin-bottom:10px">EID 번호가 보이셨나요?</div>
+  <div class="options">
+    <div class="option esim">
+      <div class="ic">✅</div>
+      <div class="body">
+        <div class="ttl">네, 32자리 숫자 보여요</div>
+        <div class="desc">eSIM 즉시 개통 가능 · 5분 내 사용 시작</div>
+      </div>
+      <div class="arrow">→</div>
+    </div>
+    <div class="option physical">
+      <div class="ic">📦</div>
+      <div class="body">
+        <div class="ttl">아니요, 안 보여요</div>
+        <div class="desc">실물 유심 필요 · 매장 (광주·전남) 또는 택배 1~2일</div>
+      </div>
+      <div class="arrow">→</div>
+    </div>
+    <div class="option">
+      <div class="ic">🤔</div>
+      <div class="body">
+        <div class="ttl">모르겠어요 · 도와주세요</div>
+        <div class="desc">단말기 모델명 입력 시 자동 안내</div>
+      </div>
+      <div class="arrow">→</div>
+    </div>
+  </div>
+
+  <div class="skip"><a>이미 EID 확인했어요 → 건너뛰기</a></div>
+</div>
+</body></html>

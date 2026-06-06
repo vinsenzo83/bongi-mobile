@@ -64,11 +64,20 @@
 - `mobing-reference.md` — 가입 form 4 step 분석
 - `env-vars.md` — 환경 변수
 
-### wireframe HTML
-- `01-customer-plan-list.html` — 요금제 비교 list
-- `02-customer-signup-form.html` — 가입 4 step form
-- `03-admin-plan-form.html` — 어드민 요금제 등록
-- `04-admin-subscriptions.html` — 어드민 신청서 처리
+### wireframe HTML — 5 SKU 기반 (2026-06-06 갱신)
+
+**프론트 (고객용 4종)**:
+- `wf-customer-01-plan-list.html` — 5 SKU 비교 list (베이직 ★ 강조 카드)
+- `wf-customer-02-eid-check.html` — *#06# EID 자가 분기 화면 (eSIM/매장/택배)
+- `wf-customer-03-signup-step.html` — 가입 4 step (확인·유형·정보·약관)
+- `wf-customer-04-complete.html` — 가입 완료 (M-ticket·다음 단계·친구초대)
+
+**어드민 5종**:
+- `wf-admin-01-plan-list.html` — 5 SKU 요금제 list (역할·MVNO·수수료·신청수)
+- `wf-admin-02-plan-edit.html` — 요금제 편집 (역할·MVNO·제공량·요금·프로모션·사은품)
+- `wf-admin-03-subscriptions.html` — 신청서 list + 디테일 toast (snapshot 박제 표시)
+- `wf-admin-04-store-stock.html` — 8 매장 망별 유심 재고 + 5분 개통 SOP
+- `wf-admin-05-kpi.html` — KPI 대시보드 (5 SKU 분포·전환 funnel·잔존율)
 
 ---
 

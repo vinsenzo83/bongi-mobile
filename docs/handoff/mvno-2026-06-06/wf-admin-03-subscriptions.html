@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>⑦ 어드민 — 신청서 처리</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#0f172a;color:#e2e8f0;padding:24px}
+.wrap{max-width:1280px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px}
+.crumb{font-size:11px;color:#64748b;margin-bottom:4px}
+h1{font-size:24px;font-weight:900;color:#fbbf24}
+.stats{display:flex;gap:10px}
+.stat-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:11px 16px;text-align:right;min-width:96px}
+.stat-card .v{font-size:22px;font-weight:900;color:#fbbf24}
+.stat-card .k{font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-top:2px}
+
+.filters{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
+.fc{background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:7px 13px;border-radius:999px;font-size:11.5px;cursor:pointer;font-weight:600}
+.fc.active{background:#fbbf24;color:#0f172a;border-color:#fbbf24;font-weight:800}
+
+.search{margin-bottom:14px;display:flex;gap:8px}
+.search input{flex:1;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:10px 13px;border-radius:8px;font-size:12.5px;font-family:inherit}
+
+table{width:100%;background:#1e293b;border:1px solid #334155;border-radius:12px;border-collapse:separate;border-spacing:0;overflow:hidden}
+th{background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase}
+td{padding:13px 11px;font-size:12.5px;border-top:1px solid #334155;color:#cbd5e1}
+tr:hover td{background:#0c1424;cursor:pointer}
+td.idx{color:#fbbf24;font-size:11px;font-weight:800;font-family:monospace}
+td.cust strong{display:block;color:#f8fafc;margin-bottom:2px}
+td.cust small{color:#64748b;font-size:10.5px}
+td.plan{font-weight:600}
+td.plan small{display:block;color:#94a3b8;font-size:10.5px;margin-top:2px;font-weight:400}
+
+.role-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:800}
+.r-mikki{background:#334155;color:#cbd5e1}
+.r-main{background:#831843;color:#fbcfe8}
+.r-up{background:#1e3a8a;color:#93c5fd}
+.r-prem{background:#78350f;color:#fcd34d}
+.r-hyodo{background:#064e3b;color:#6ee7b7}
+
+.signup-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:800}
+.st-new{background:#1e3a8a;color:#93c5fd}
+.st-mnp{background:#581c87;color:#d8b4fe}
+.st-usim{background:#831843;color:#fbcfe8}
+
+.src-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:800}
+.src-storefront{background:#1e3a8a;color:#93c5fd}
+.src-call{background:#422006;color:#fcd34d}
+.src-store{background:#581c87;color:#d8b4fe}
+.src-admin{background:#064e3b;color:#6ee7b7}
+
+.status-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:800}
+.ss-pending{background:#ef4444;color:#fff}
+.ss-verified{background:#f59e0b;color:#0f172a}
+.ss-processing{background:#3b82f6;color:#fff}
+.ss-activated{background:#10b981;color:#fff}
+.ss-cancelled{background:#475569;color:#cbd5e1}
+
+td.act button{background:#fbbf24;color:#0f172a;border:none;padding:5px 11px;border-radius:5px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* 디테일 슬라이드 (우측 패널) */
+.detail{position:fixed;right:24px;top:24px;width:380px;background:#1e293b;border:1px solid #fbbf24;border-radius:14px;padding:22px;box-shadow:0 14px 40px rgba(0,0,0,.5);max-height:calc(100vh - 48px);overflow-y:auto}
+.detail h3{font-size:15px;color:#fbbf24;margin-bottom:10px;display:flex;justify-content:space-between}
+.detail h3 .close{cursor:pointer;color:#94a3b8;font-size:12px;font-weight:400}
+.dt-row{display:flex;justify-content:space-between;padding:5px 0;font-size:11.5px;border-bottom:1px dashed #334155}
+.dt-row .k{color:#94a3b8}
+.dt-row .v{font-weight:700;text-align:right}
+.snapshot-box{background:#0c1424;border-radius:8px;padding:10px;margin-top:10px;font-size:11px;color:#cbd5e1;line-height:1.6}
+.snapshot-box strong{color:#fbbf24}
+.dt-actions{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.dt-actions button{padding:9px;border:none;border-radius:7px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-verify{background:#f59e0b;color:#0f172a}
+.btn-activate{background:#10b981;color:#fff}
+.btn-call{background:#fbbf24;color:#0f172a}
+.btn-cancel{background:transparent;color:#fca5a5;border:1px solid #334155 !important}
+</style></head><body>
+<div class="wrap">
+  <div class="header">
+    <div><div class="crumb">어드민 / 알뜰폰 / 가입 신청 처리</div><h1>📋 알뜰폰 신청서</h1></div>
+    <div class="stats">
+      <div class="stat-card"><div class="v">42</div><div class="k">신청 접수</div></div>
+      <div class="stat-card"><div class="v">15</div><div class="k">개통중</div></div>
+      <div class="stat-card"><div class="v">7</div><div class="k">완료 (오늘)</div></div>
+      <div class="stat-card"><div class="v">3.2M</div><div class="k">월 수수료 (₩)</div></div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="fc active">전체 64</div>
+    <div class="fc">🔴 신청 접수 42</div>
+    <div class="fc">🟡 본인확인 완료 15</div>
+    <div class="fc">🔵 개통중 7</div>
+    <div class="fc">🟢 완료 0</div>
+    <div class="fc" style="margin-left:8px">🆕 신규</div>
+    <div class="fc">🔄 MNP</div>
+    <div class="fc">📱 유심만</div>
+    <div class="fc" style="margin-left:8px">⭐ 베이직</div>
+    <div class="fc">⬆️ 점보</div>
+    <div class="fc">👵 효도</div>
+  </div>
+
+  <div class="search">
+    <input placeholder="🔍 티켓번호·고객명·전화번호로 검색">
+    <button style="background:#fbbf24;color:#0f172a;border:none;padding:0 18px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer">검색</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>티켓</th><th>고객</th><th>요금제</th><th>가입유형</th><th>경로</th><th>상태</th><th>접수</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background:rgba(251,191,36,0.06)">
+        <td class="idx">M00042</td>
+        <td class="cust"><strong>김** 010-12**-3456</strong><small>1990 · 개인 · eSIM 가능</small></td>
+        <td class="plan"><span class="role-tag r-main">🎯 주력</span><strong>봉이 베이직</strong><small>LGU+ LTE · 미디어로그 · 9,900원</small></td>
+        <td><span class="signup-badge st-mnp">🔄 MNP</span><small style="color:#94a3b8;display:block;margin-top:2px">← SKT</small></td>
+        <td><span class="src-badge src-storefront">storefront</span></td>
+        <td><span class="status-badge ss-pending">신청 접수</span></td>
+        <td><small>방금</small></td>
+        <td class="act"><button>처리</button></td>
+      </tr>
+      <tr>
+        <td class="idx">M00041</td>
+        <td class="cust"><strong>이** 010-9***-1234</strong><small>1988 · 개인 · 대리인</small></td>
+        <td class="plan"><span class="role-tag r-up">⬆️ 업셀</span><strong>봉이 점보</strong><small>KT LTE · KT엠모바일 · 16,900원</small></td>
+        <td><span class="signup-badge st-new">🆕 신규</span></td>
+        <td><span class="src-badge src-storefront">storefront</span></td>
+        <td><span class="status-badge ss-verified">본인확인 완료</span></td>
+        <td><small>15분 전</small></td>
+        <td class="act"><button>처리</button></td>
+      </tr>
+      <tr>
+        <td class="idx">M00040</td>
+        <td class="cust"><strong>박** 010-5***-7890</strong><small>1958 · 개인 · 매장 가입 (광주점)</small></td>
+        <td class="plan"><span class="role-tag r-hyodo">👵 효도</span><strong>봉이 효도 든든 (7GB)</strong><small>LGU+ LTE · 미디어로그 · 11,900원</small></td>
+        <td><span class="signup-badge st-usim">📱 유심</span></td>
+        <td><span class="src-badge src-store">매장</span></td>
+        <td><span class="status-badge ss-processing">개통중</span></td>
+        <td><small>1시간 전</small></td>
+        <td class="act"><button>처리</button></td>
+      </tr>
+      <tr>
+        <td class="idx">M00039</td>
+        <td class="cust"><strong>최** 010-3***-2233</strong><small>1995 · 개인</small></td>
+        <td class="plan"><span class="role-tag r-mikki">🐟 미끼</span><strong>봉이 라이트</strong><small>LGU+ LTE · 미디어로그 · 0원</small></td>
+        <td><span class="signup-badge st-new">🆕 신규</span></td>
+        <td><span class="src-badge src-storefront">storefront</span></td>
+        <td><span class="status-badge ss-activated">완료</span></td>
+        <td><small>3시간 전</small></td>
+        <td class="act"><button>보기</button></td>
+      </tr>
+      <tr>
+        <td class="idx">M00038</td>
+        <td class="cust"><strong>강** 010-2***-4455</strong><small>1985 · 개인 · 5G eSIM</small></td>
+        <td class="plan"><span class="role-tag r-prem">💎 프리미엄</span><strong>봉이 프리미엄</strong><small>LGU+ 5G · 미디어로그 · 실질 34,000원</small></td>
+        <td><span class="signup-badge st-mnp">🔄 MNP</span><small style="color:#94a3b8;display:block;margin-top:2px">← KT</small></td>
+        <td><span class="src-badge src-call">tm_call</span></td>
+        <td><span class="status-badge ss-activated">완료</span></td>
+        <td><small>6시간 전</small></td>
+        <td class="act"><button>보기</button></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 디테일 toast (M00042 클릭 상태) -->
+<div class="detail">
+  <h3>M00042 신청 상세 <span class="close">✕</span></h3>
+  <div class="dt-row"><span class="k">접수</span><span class="v">2026-06-06 20:30</span></div>
+  <div class="dt-row"><span class="k">고객</span><span class="v">김봉이 · 1990-03-15</span></div>
+  <div class="dt-row"><span class="k">연락처</span><span class="v">010-1234-3456</span></div>
+  <div class="dt-row"><span class="k">가입 유형</span><span class="v">🔄 MNP (SKT → LGU+)</span></div>
+  <div class="dt-row"><span class="k">이전 번호</span><span class="v">010-9876-5432</span></div>
+  <div class="dt-row"><span class="k">요금제</span><span class="v">⭐ 봉이 베이직</span></div>
+  <div class="dt-row"><span class="k">월 요금</span><span class="v" style="color:#fbbf24">9,900원 (프로모)</span></div>
+  <div class="dt-row"><span class="k">유심</span><span class="v">eSIM (EID 확인 ✅)</span></div>
+  <div class="dt-row"><span class="k">사은품</span><span class="v" style="color:#10b981">5,000P + MNP 5,000P</span></div>
+
+  <div class="snapshot-box">
+    <strong>📦 신청 시점 박제 (snapshot)</strong><br>
+    plan_code: BONGI-BASIC-11GB-DAILY-2GB<br>
+    provider: 미디어로그 (MLG-LTE-11G-DAILY-2G)<br>
+    monthly_fee: 9,900원 (프로모 7M) → 39,600원<br>
+    commission: 25,000원/건<br>
+    promos: [SIGNUP_5000P, MNP_5000P]
+  </div>
+
+  <div class="dt-actions">
+    <button class="btn-call">📞 1차 통화 (본인확인)</button>
+    <button class="btn-verify">⚡ 본인확인 완료 처리</button>
+    <button class="btn-activate">✅ 미디어로그에 가입 신청 전달</button>
+    <button class="btn-cancel">취소 처리</button>
+  </div>
+</div>
+</body></html>

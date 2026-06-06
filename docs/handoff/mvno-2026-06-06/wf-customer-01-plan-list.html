@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>① 고객 — 5 SKU 요금제 비교</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#f8fafc;color:#0f172a;padding:24px}
+.wrap{max-width:1180px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.logo{font-size:20px;font-weight:900;color:#6366f1}
+.login{background:transparent;border:1px solid #cbd5e1;color:#475569;padding:7px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
+h1{font-size:28px;font-weight:900;letter-spacing:-0.5px}
+.lead{font-size:13px;color:#64748b;margin:4px 0 22px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.chip{padding:8px 14px;border:2px solid #e2e8f0;border-radius:999px;background:#fff;cursor:pointer;font-size:12.5px;font-weight:600;color:#475569}
+.chip.active{background:#eef2ff;border-color:#6366f1;color:#6366f1;font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card{background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:18px;cursor:pointer;position:relative;transition:all .12s}
+.card:hover{border-color:#cbd5e1;transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.card.main{border-color:#ec4899;border-width:3px}
+.card.main::before{content:'⭐ 주력 상품';position:absolute;top:-12px;left:14px;background:#ec4899;color:#fff;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:800}
+.role{position:absolute;top:14px;right:14px;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px}
+.r-mikki{background:#f1f5f9;color:#475569}
+.r-main{background:#fce7f3;color:#9f1239}
+.r-up{background:#dbeafe;color:#1e3a8a}
+.r-prem{background:#fef3c7;color:#92400e}
+.r-hyodo{background:#dcfce7;color:#166534}
+.tag{display:inline-block;background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800;margin-bottom:8px;margin-right:4px}
+.name{font-size:17px;font-weight:900;margin-bottom:4px;line-height:1.2}
+.tagline{font-size:11.5px;color:#64748b;margin-bottom:14px;line-height:1.4}
+.spec-row{display:flex;justify-content:space-between;padding:5px 0;font-size:11.5px;border-bottom:1px dashed #e2e8f0}
+.spec-row .k{color:#94a3b8}
+.spec-row .v{font-weight:700}
+.price{margin:14px 0 0;padding-top:14px;border-top:2px solid #f1f5f9}
+.promo{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.strike{text-decoration:line-through;color:#94a3b8;font-size:11.5px}
+.now{font-size:24px;font-weight:900;color:#6366f1}
+.period{font-size:10.5px;color:#ec4899;font-weight:700;margin-bottom:8px}
+.cta{width:100%;margin-top:12px;padding:11px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
+.cta.hyodo{background:#16a34a}
+.cta.prem{background:linear-gradient(135deg,#f59e0b,#ef4444)}
+.bench{margin-top:30px;padding:14px 16px;background:#fffbeb;border:1px solid #fbbf24;border-radius:10px;font-size:11.5px;color:#78350f}
+</style></head><body>
+<div class="wrap">
+  <div class="top"><div class="logo">📱 봉이 알뜰폰</div><button class="login">로그인 / 회원가입</button></div>
+  <h1>봉이 알뜰폰 5종</h1>
+  <p class="lead">미끼·주력·업셀·프리미엄·효도 — 봉이만의 5 라인업.</p>
+
+  <div class="filters">
+    <div class="chip active">전체 5</div>
+    <div class="chip">🐟 미끼</div>
+    <div class="chip">🎯 주력</div>
+    <div class="chip">⬆️ 업셀</div>
+    <div class="chip">💎 프리미엄</div>
+    <div class="chip">👵 효도</div>
+    <div class="chip" style="margin-left:8px">📡 KT망</div>
+    <div class="chip">📡 LGU+ 망</div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ① 라이트 -->
+    <div class="card">
+      <span class="role r-mikki">🐟 미끼</span>
+      <span class="tag">LGU+ LTE</span>
+      <span class="tag">eSIM</span>
+      <div class="name">봉이 라이트</div>
+      <div class="tagline">공짜로 알뜰폰 시작 · 7개월 0원</div>
+      <div class="spec-row"><span class="k">데이터</span><span class="v">4.5GB + 1Mbps 무제한</span></div>
+      <div class="spec-row"><span class="k">음성·문자</span><span class="v">무제한</span></div>
+      <div class="spec-row"><span class="k">약정</span><span class="v">없음</span></div>
+      <div class="price">
+        <div class="promo"><span class="strike">20,900원</span><span class="now">0원</span></div>
+        <div class="period">7개월 한정 · 이후 20,900원/월</div>
+      </div>
+      <button class="cta">7개월 무료 시작 →</button>
+    </div>
+
+    <!-- ② 베이직 ★ -->
+    <div class="card main">
+      <span class="role r-main">🎯 주력</span>
+      <span class="tag">LGU+ LTE</span>
+      <span class="tag">eSIM</span>
+      <span class="tag" style="background:#fee2e2;color:#991b1b">매일 2GB 덤</span>
+      <div class="name">봉이 베이직 ★</div>
+      <div class="tagline">11GB + 매일 2GB. 한 달 내내 마음껏.</div>
+      <div class="spec-row"><span class="k">데이터</span><span class="v">11GB + 매일 2GB + 3Mbps</span></div>
+      <div class="spec-row"><span class="k">음성·문자</span><span class="v">무제한</span></div>
+      <div class="spec-row"><span class="k">약정</span><span class="v">없음</span></div>
+      <div class="spec-row"><span class="k">사은품</span><span class="v">5,000P · MNP +5,000P</span></div>
+      <div class="price">
+        <div class="promo"><span class="strike">39,600원</span><span class="now">9,900원</span></div>
+        <div class="period">7개월 한정 · 이후 39,600원/월</div>
+      </div>
+      <button class="cta">가입 신청 →</button>
+    </div>
+
+    <!-- ③ 점보 -->
+    <div class="card">
+      <span class="role r-up">⬆️ 업셀</span>
+      <span class="tag">KT LTE</span>
+      <span class="tag">eSIM</span>
+      <div class="name">봉이 점보</div>
+      <div class="tagline">100GB + 무제한 통화. 데이터 부족 끝.</div>
+      <div class="spec-row"><span class="k">데이터</span><span class="v">100GB + 5Mbps 무제한</span></div>
+      <div class="spec-row"><span class="k">음성·문자</span><span class="v">무제한</span></div>
+      <div class="spec-row"><span class="k">약정</span><span class="v">없음</span></div>
+      <div class="price">
+        <div class="promo"><span class="strike">40,700원</span><span class="now">16,900원</span></div>
+        <div class="period">7개월 한정 · 이후 40,700원/월</div>
+      </div>
+      <button class="cta">100GB 시작 →</button>
+    </div>
+
+    <!-- ④ 프리미엄 -->
+    <div class="card">
+      <span class="role r-prem">💎 프리미엄</span>
+      <span class="tag">LGU+ 5G</span>
+      <span class="tag">eSIM</span>
+      <span class="tag" style="background:#fef3c7;color:#92400e">페이백 24M</span>
+      <div class="name">봉이 프리미엄</div>
+      <div class="tagline">5G 완전 무제한. 페이백으로 실질 3만원대.</div>
+      <div class="spec-row"><span class="k">데이터</span><span class="v">완전 무제한 (속도제한 X)</span></div>
+      <div class="spec-row"><span class="k">음성·문자</span><span class="v">무제한</span></div>
+      <div class="spec-row"><span class="k">약정</span><span class="v">24개월 (페이백 회수)</span></div>
+      <div class="spec-row"><span class="k">페이백</span><span class="v" style="color:#10b981">월 25,000원 × 24M</span></div>
+      <div class="price">
+        <div class="promo"><span class="strike">59,000원</span><span class="now" style="color:#ef4444">실질 34,000원</span></div>
+        <div class="period">24개월 약정 · 페이백 적용가</div>
+      </div>
+      <button class="cta prem">5G 무제한 시작 →</button>
+    </div>
+
+    <!-- ⑤ 효도 -->
+    <div class="card">
+      <span class="role r-hyodo">👵 효도</span>
+      <span class="tag">LGU+ LTE</span>
+      <span class="tag" style="background:#fee2e2;color:#991b1b">매장 5분</span>
+      <span class="tag">실물 유심</span>
+      <div class="name">봉이 효도</div>
+      <div class="tagline">부모님 효도폰 · 8 매장 5분 개통.</div>
+      <div class="spec-row"><span class="k">미니</span><span class="v">1.5GB · 100분 · 6,900원</span></div>
+      <div class="spec-row"><span class="k">안심</span><span class="v">3GB · 200분 · 8,900원</span></div>
+      <div class="spec-row"><span class="k">든든</span><span class="v">7GB · 무제한 · 11,900원</span></div>
+      <div class="spec-row"><span class="k">수령</span><span class="v">매장 (광주·전남) / 택배</span></div>
+      <div class="price">
+        <div class="promo"><span class="now" style="color:#16a34a">6,900원~</span></div>
+        <div class="period">자녀가 부모님께 가입 가능</div>
+      </div>
+      <button class="cta hyodo">효도폰 신청 →</button>
+    </div>
+
+  </div>
+
+  <div class="bench">💡 <strong>봉이 단독 혜택</strong>: 가전렌탈·인터넷+TV 보유 시 월 2,000원 추가 할인 · 친구결합 회선당 1,100원 × 3회선 · 미사용 데이터 1GB = 1,000P 적립.</div>
+</div>
+</body></html>

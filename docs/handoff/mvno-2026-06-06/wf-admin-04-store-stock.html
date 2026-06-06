@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>⑧ 어드민 — 매장 유심 재고</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#0f172a;color:#e2e8f0;padding:24px}
+.wrap{max-width:1180px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px}
+.crumb{font-size:11px;color:#64748b;margin-bottom:4px}
+h1{font-size:24px;font-weight:900;color:#fbbf24}
+.sub{font-size:12px;color:#94a3b8;margin-top:3px}
+.btn-order{background:linear-gradient(135deg,#06b6d4,#7c3aed);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.s-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px}
+.s-card.warn{border-color:#ef4444;background:#7f1d1d}
+.s-card .ic{font-size:24px;margin-bottom:4px}
+.s-card .v{font-size:22px;font-weight:900;color:#fbbf24}
+.s-card.warn .v{color:#fca5a5}
+.s-card .k{font-size:11px;color:#94a3b8;font-weight:700}
+
+table{width:100%;background:#1e293b;border:1px solid #334155;border-radius:12px;border-collapse:separate;border-spacing:0;overflow:hidden}
+th{background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase}
+td{padding:13px 11px;font-size:12.5px;border-top:1px solid #334155;color:#cbd5e1}
+tr:hover td{background:#0c1424}
+.store-name{font-weight:800;color:#f8fafc}
+.store-name small{display:block;color:#94a3b8;font-size:10.5px;font-weight:400;margin-top:2px}
+
+.stock-num{font-family:monospace;font-weight:800;font-size:13px}
+.stock-num.ok{color:#10b981}
+.stock-num.low{color:#f59e0b}
+.stock-num.empty{color:#ef4444}
+
+.progress{display:inline-block;width:60px;height:6px;background:#334155;border-radius:3px;vertical-align:middle;margin-left:6px}
+.progress .fill{display:block;height:100%;background:#10b981;border-radius:3px}
+.progress .fill.low{background:#f59e0b}
+.progress .fill.empty{background:#ef4444}
+
+.act-btn{background:#fbbf24;color:#0f172a;border:none;padding:5px 11px;border-radius:5px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit}
+
+.note-box{margin-top:14px;background:#1e293b;border:1px solid #334155;border-left:3px solid #fbbf24;border-radius:8px;padding:14px;font-size:11.5px;color:#cbd5e1;line-height:1.6}
+.note-box strong{color:#fbbf24}
+</style></head><body>
+<div class="wrap">
+  <div class="header">
+    <div><div class="crumb">어드민 / 알뜰폰 / 매장 운영 / 유심 재고</div><h1>🏪 매장 유심 재고</h1><div class="sub">8 직영 매장 · 망별 실물 유심 재고 + 발주</div></div>
+    <button class="btn-order">📦 발주 신청</button>
+  </div>
+
+  <div class="summary">
+    <div class="s-card"><div class="ic">🏪</div><div class="v">8</div><div class="k">활성 매장</div></div>
+    <div class="s-card"><div class="ic">📡</div><div class="v">1,247</div><div class="k">전체 재고 (개)</div></div>
+    <div class="s-card warn"><div class="ic">⚠️</div><div class="v">3</div><div class="k">재고 부족 매장</div></div>
+    <div class="s-card"><div class="ic">📊</div><div class="v">237</div><div class="k">금주 매장 개통</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>매장</th>
+        <th>KT (KT엠모바일·KT스카이라이프)</th>
+        <th>LGU+ (미디어로그·LG헬로비전)</th>
+        <th>SKT (SK텔링크)</th>
+        <th>금주 개통</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><div class="store-name">광주 본점<small>광주광역시 동구 · 1599-0001</small></div></td>
+        <td><span class="stock-num ok">82</span><span class="progress"><span class="fill" style="width:82%"></span></span></td>
+        <td><span class="stock-num ok">126</span><span class="progress"><span class="fill" style="width:90%"></span></span></td>
+        <td><span class="stock-num ok">45</span><span class="progress"><span class="fill" style="width:60%"></span></span></td>
+        <td><strong style="color:#10b981">68</strong>건</td>
+        <td><button class="act-btn">발주</button></td>
+      </tr>
+      <tr>
+        <td><div class="store-name">광주 첨단점<small>광주광역시 광산구</small></div></td>
+        <td><span class="stock-num ok">55</span><span class="progress"><span class="fill" style="width:65%"></span></span></td>
+        <td><span class="stock-num ok">98</span><span class="progress"><span class="fill" style="width:80%"></span></span></td>
+        <td><span class="stock-num low">12</span><span class="progress"><span class="fill low" style="width:18%"></span></span></td>
+        <td><strong style="color:#10b981">42</strong>건</td>
+        <td><button class="act-btn">발주</button></td>
+      </tr>
+      <tr>
+        <td><div class="store-name">전남 목포점<small>전남 목포시</small></div></td>
+        <td><span class="stock-num low">15</span><span class="progress"><span class="fill low" style="width:22%"></span></span></td>
+        <td><span class="stock-num ok">67</span><span class="progress"><span class="fill" style="width:75%"></span></span></td>
+        <td><span class="stock-num empty">0</span><span class="progress"><span class="fill empty" style="width:0%"></span></span></td>
+        <td><strong style="color:#fbbf24">31</strong>건</td>
+        <td><button class="act-btn" style="background:#ef4444;color:#fff">긴급 발주</button></td>
+      </tr>
+      <tr>
+        <td><div class="store-name">전남 여수점<small>전남 여수시</small></div></td>
+        <td><span class="stock-num ok">42</span><span class="progress"><span class="fill" style="width:55%"></span></span></td>
+        <td><span class="stock-num ok">88</span><span class="progress"><span class="fill" style="width:85%"></span></span></td>
+        <td><span class="stock-num ok">35</span><span class="progress"><span class="fill" style="width:50%"></span></span></td>
+        <td><strong style="color:#10b981">28</strong>건</td>
+        <td><button class="act-btn">발주</button></td>
+      </tr>
+      <tr>
+        <td><div class="store-name">광주 송정점<small>광주광역시 광산구</small></div></td>
+        <td><span class="stock-num ok">38</span><span class="progress"><span class="fill" style="width:50%"></span></span></td>
+        <td><span class="stock-num low">21</span><span class="progress"><span class="fill low" style="width:28%"></span></span></td>
+        <td><span class="stock-num ok">28</span><span class="progress"><span class="fill" style="width:40%"></span></span></td>
+        <td><strong style="color:#fbbf24">25</strong>건</td>
+        <td><button class="act-btn">발주</button></td>
+      </tr>
+      <tr>
+        <td><div class="store-name">전남 순천점<small>전남 순천시</small></div></td>
+        <td><span class="stock-num ok">52</span><span class="progress"><span class="fill" style="width:62%"></span></span></td>
+        <td><span class="stock-num ok">75</span><span class="progress"><span class="fill" style="width:78%"></span></span></td>
+        <td><span class="stock-num ok">22</span><span class="progress"><span class="fill" style="width:32%"></span></span></td>
+        <td><strong style="color:#10b981">22</strong>건</td>
+        <td><button class="act-btn">발주</button></td>
+      </tr>
+      <tr>
+        <td><div class="store-name">전남 광양점<small>전남 광양시</small></div></td>
+        <td><span class="stock-num empty">5</span><span class="progress"><span class="fill empty" style="width:5%"></span></span></td>
+        <td><span class="stock-num ok">42</span><span class="progress"><span class="fill" style="width:55%"></span></span></td>
+        <td><span class="stock-num ok">18</span><span class="progress"><span class="fill" style="width:28%"></span></span></td>
+        <td><strong style="color:#94a3b8">12</strong>건</td>
+        <td><button class="act-btn" style="background:#ef4444;color:#fff">긴급 발주</button></td>
+      </tr>
+      <tr>
+        <td><div class="store-name">광주 상무점<small>광주광역시 서구</small></div></td>
+        <td><span class="stock-num ok">68</span><span class="progress"><span class="fill" style="width:75%"></span></span></td>
+        <td><span class="stock-num ok">112</span><span class="progress"><span class="fill" style="width:88%"></span></span></td>
+        <td><span class="stock-num low">8</span><span class="progress"><span class="fill low" style="width:12%"></span></span></td>
+        <td><strong style="color:#10b981">35</strong>건</td>
+        <td><button class="act-btn">발주</button></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    📋 <strong>5분 개통 SOP</strong>: ① 단말기 *#06# EID 확인 (eSIM 가능 여부) → ② 가입자 신분증 확인 → ③ MNP 시 이전 통신사 명의 확인 (PASS) → ④ 봉이 어드민 신청서 입력 → ⑤ 미디어로그/KT엠 API 호출 (자동) → ⑥ 유심 발급 (eSIM = QR / 실물 = 재고에서) → ⑦ 가입 완료 SMS + 봉이포인트 5,000P 적립 안내.
+  </div>
+</div>
+</body></html>
