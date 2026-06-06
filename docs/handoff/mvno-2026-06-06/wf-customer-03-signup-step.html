@@ -3,7 +3,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Pretendard',sans-serif;background:#f8f9ff;color:#1a1a1a;min-height:100vh}
+body{font-family:'Pretendard',sans-serif;background:#f8f9ff;color:#1a1a1a;min-height:100vh;padding-left:240px}
 .header{background:#fff;border-bottom:1px solid #e8e6f0;padding:18px 0}
 .header-inner{max-width:1280px;margin:0 auto;padding:0 30px;display:flex;align-items:center;gap:40px}
 .logo{font-size:22px;font-weight:900;color:#1d4ed8;background:#dbeafe;padding:7px 14px;border-radius:8px}
@@ -42,25 +42,33 @@ h1{font-size:24px;font-weight:900;margin-bottom:24px}
 .cta-pay{background:#1d4ed8;color:#fff;border:none;padding:16px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;width:100%}
 .float-chat{position:fixed;right:30px;bottom:30px;width:54px;height:54px;background:#1d4ed8;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;color:#fff;box-shadow:0 4px 14px rgba(29,78,216,.3)}
 </style></head><body>
-<div class="header">
-  <div class="header-inner">
-    <div class="logo">📱 봉이</div>
-    <div class="menu">
-      <a>개통안내</a>
-      <a>요금제</a>
-      <a class="active">유심구매</a>
-      <a>이벤트</a>
-      <a>고객지원</a>
-      <a>MY정보</a>
-    </div>
-    <div class="header-right">
-      <a>🔎 실시간사용량조회</a>
-      <a>👤 로그인</a>
-    </div>
+<aside class="nav-aside" style="position:fixed;left:0;top:0;width:240px;height:100vh;background:#fff;border-right:1px solid #e8e6f0;padding:18px 16px;display:flex;flex-direction:column;gap:12px;z-index:100;overflow-y:auto;font-family:'Pretendard',sans-serif">
+  <div style="font-size:22px;font-weight:900;color:#1d4ed8;letter-spacing:-1px;padding:4px 0">📱 봉이<span style="color:#fbbf24">모바일</span></div>
+  <div style="font-size:12.5px;color:#8a8a8a;padding:0 4px;margin-bottom:4px">📍 광주 본점 · 🌙</div>
+  <button style="background:#1d4ed8;color:#fff;border:none;padding:12px;border-radius:11px;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit">+ 새로 시작</button>
+  <input placeholder="🔎  상담 내역 검색" style="background:#f8f7f0;border:none;padding:11px 14px;border-radius:9px;font-size:12.5px;color:#8a8a8a;font-family:inherit">
+  <div style="font-size:11px;font-weight:700;color:#8a8a8a;margin:8px 0 4px;padding:0 6px;text-transform:uppercase">카테고리</div>
+  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">🏠  홈</a>
+  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">📱  휴대폰</a>
+  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">🌐  인터넷+TV</a>
+  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">🧩  결합 할인</a>
+  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;font-weight:800;text-decoration:none;cursor:pointer;background:linear-gradient(135deg,#fde68a,#fef3c7);color:#78350f">📡  알뜰폰 <span style="background:#dc2626;color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:800;margin-left:auto">진행중</span></a>
+  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">🛋️  가전 렌탈</a>
+  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">🎁  이벤트·혜택</a>
+  <div style="font-size:11px;font-weight:700;color:#8a8a8a;margin:12px 0 4px;padding:0 6px;text-transform:uppercase">최근 상담</div>
+  <div style="font-size:12px;color:#6a6a6a;padding:6px 10px;border-radius:6px">알뜰폰 KT 점보 상담</div>
+  <div style="font-size:12px;color:#6a6a6a;padding:6px 10px;border-radius:6px">인터넷+TV 신청</div>
+  <div style="margin-top:auto;background:#fef9c3;border-radius:10px;padding:12px;display:flex;gap:8px;align-items:center;cursor:pointer">
+    <div style="font-size:24px">🪙</div>
+    <div style="font-size:11px;font-weight:600;color:#78350f;line-height:1.4"><b style="color:#78350f">친구 초대하기</b><br>적립한 포인트, 현금으로 꺼내 쓰세요</div>
   </div>
-</div>
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:13px;color:#4a4a4a;font-weight:600;cursor:pointer">👤  로그인 / 회원가입</div>
+</aside>
+
+
 
 <div class="wrap">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:#fff;border:1.5px solid #e8e6f0;border-radius:14px;margin-bottom:20px;font-family:'Pretendard',sans-serif"><div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">✓</div><div style="font-size:10.5px;color:#16a34a;font-weight:700;text-align:center;white-space:nowrap">요금제 선택</div></div><div style="flex:1;height:2px;background:#16a34a;margin:0 5px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">✓</div><div style="font-size:10.5px;color:#16a34a;font-weight:700;text-align:center;white-space:nowrap">가입 옵션</div></div><div style="flex:1;height:2px;background:#cbd5e1;margin:0 5px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#1d4ed8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">3</div><div style="font-size:10.5px;color:#1d4ed8;font-weight:700;text-align:center;white-space:nowrap">본인 인증</div></div><div style="flex:1;height:2px;background:#cbd5e1;margin:0 5px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#e8e6f0;color:#8a8a8a;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">4</div><div style="font-size:10.5px;color:#8a8a8a;font-weight:700;text-align:center;white-space:nowrap">주소·결제·약관</div></div><div style="flex:1;height:2px;background:#cbd5e1;margin:0 5px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#e8e6f0;color:#8a8a8a;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">5</div><div style="font-size:10.5px;color:#8a8a8a;font-weight:700;text-align:center;white-space:nowrap">신청 완료</div></div></div>
   <h1>유심 구매 · 배송지 정보</h1>
 
   <div class="layout">
