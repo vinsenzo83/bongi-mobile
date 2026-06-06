@@ -386,7 +386,7 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       </div>
       <div style="font-size:9.5px;color:#dc2626;font-weight:700">⚠️ 본인 명의 카드·계좌만 입력 가능</div>
       <div style="background:#dcfce7;border:1.5px solid #86efac;border-radius:7px;padding:8px 11px;margin-top:6px;font-size:9.5px;color:#15803d;line-height:1.5">
-        ✅ <b>계좌이체 선택 시</b> — 신규가입은 STEP 4에서 본인 인증한 계좌가 자동 매핑됨 (모빙은 중복 입력, 봉이는 1회)
+        ✅ <b>계좌이체 선택 시</b> — 계좌 <b>유효성 검증만</b> 진행 (실재 계좌 + 명의 일치). 1원 송금 인증 X (PASS 본인 인증으로 충분)
       </div>
 
       <div class="mock-cta">다음 (본인 인증) ▶</div>
@@ -398,7 +398,7 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
         <li>9·2 연락처 (휴대폰·이메일)</li>
         <li>9·3 청구지 주소</li>
         <li>9·4 번호이동 정보 <b>(MNP 시)</b></li>
-        <li>9·5 결제·자동이체 <span style="color:#15803d">✅ 본인 인증 계좌 자동 매핑</span></li>
+        <li>9·5 결제·자동이체 <span style="color:#15803d">✅ 계좌 유효성 검증만</span></li>
         <li>9·6 배송지 <b>(USIM 미보유 시)</b></li>
       </ul>
       <div class="h" style="margin-top:10px">⚡ 모빙 추가 필드</div>
@@ -495,7 +495,7 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       <ul>
         <li><b>10·1 신분증 진위</b> (행안부)</li>
         <li><b>10·2 본인 인증</b> (전자서명)</li>
-        <li><b>10·3 본인 계좌 등록 인증</b> (1원 송금 · 신규가입만 2중)</li>
+        
       </ul>
       <div class="h" style="margin-top:10px">🔐 전자서명 3종</div>
       <ul>
@@ -506,7 +506,13 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       <div class="h" style="margin-top:10px">⚠️ 둘 다 필수</div>
       <ul>
         <li>신분증 진위 → 위조 차단</li>
-        <li>본인 인증 → 도용 차단</li>
+        <li>전자서명 본인 인증 → 도용 차단</li>
+      </ul>
+      <div class="h" style="margin-top:10px">📌 봉이 단순화</div>
+      <ul>
+        <li>계좌 1원 송금 인증 <b>X</b> (PASS만으로 충분)</li>
+        <li>자동이체 계좌는 <b>유효성 검증만</b></li>
+        <li>인증값 최소화 — UX 단순</li>
       </ul>
     </div>
   </div>
