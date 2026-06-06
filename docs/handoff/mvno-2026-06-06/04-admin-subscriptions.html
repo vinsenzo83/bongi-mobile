@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>④ 어드민 — 알뜰폰 신청서 처리</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard', sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 18px; }
+  .crumb { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+  h1 { font-size: 24px; font-weight: 900; color: #fbbf24; }
+  .stats { display: flex; gap: 10px; }
+  .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 11px 16px; text-align: right; min-width: 92px; }
+  .stat-card .v { font-size: 22px; font-weight: 900; color: #fbbf24; }
+  .stat-card .k { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
+
+  .filters { display: flex; gap: 7px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-chip { background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 7px 13px; border-radius: 999px; font-size: 11.5px; cursor: pointer; font-weight: 600; }
+  .filter-chip.active { background: #fbbf24; color: #0f172a; border-color: #fbbf24; font-weight: 800; }
+
+  .app-table { background: #1e293b; border: 1px solid #334155; border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #0c1424; padding: 11px; text-align: left; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 12px 11px; font-size: 12.5px; border-top: 1px solid #334155; color: #cbd5e1; }
+  tr:hover { background: #0c1424; }
+  td.idx { color: #fbbf24; font-size: 11px; font-weight: 800; }
+  td.cust strong { display: block; color: #f8fafc; }
+  td.cust small { color: #64748b; font-size: 10.5px; }
+  td.plan { font-weight: 600; }
+  td.plan small { display: block; color: #94a3b8; font-size: 10.5px; margin-top: 2px; font-weight: 400; }
+  td.action button { background: #fbbf24; color: #0f172a; border: none; padding: 5px 11px; border-radius: 5px; font-size: 10.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+  .src-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 9.5px; font-weight: 800; }
+  .src-storefront { background: #1e3a8a; color: #93c5fd; }
+  .src-call { background: #422006; color: #fcd34d; }
+  .src-store { background: #581c87; color: #d8b4fe; }
+  .src-admin { background: #064e3b; color: #6ee7b7; }
+
+  .signup-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 9.5px; font-weight: 800; }
+  .st-new { background: #1e3a8a; color: #93c5fd; }
+  .st-mnp { background: #581c87; color: #d8b4fe; }
+  .st-usim { background: #831843; color: #fbcfe8; }
+
+  .status-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 9.5px; font-weight: 800; }
+  .ss-pending { background: #ef4444; color: #fff; }
+  .ss-verified { background: #f59e0b; color: #0f172a; }
+  .ss-processing { background: #3b82f6; color: #fff; }
+  .ss-activated { background: #10b981; color: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <div class="crumb">어드민 / 알뜰폰 / 가입 신청 관리</div>
+      <h1>📋 알뜰폰 신청서</h1>
+    </div>
+    <div class="stats">
+      <div class="stat-card"><div class="v">42</div><div class="k">신규 (M-prefix)</div></div>
+      <div class="stat-card"><div class="v">15</div><div class="k">개통중</div></div>
+      <div class="stat-card"><div class="v">7</div><div class="k">완료</div></div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-chip active">전체 64</div>
+    <div class="filter-chip">🔴 신청 접수 42</div>
+    <div class="filter-chip">🟡 본인확인 완료 15</div>
+    <div class="filter-chip">🔵 개통중 7</div>
+    <div class="filter-chip">🟢 개통 완료 0</div>
+    <div class="filter-chip" style="margin-left:8px">🆕 신규</div>
+    <div class="filter-chip">🔄 번호이동</div>
+    <div class="filter-chip">📱 유심만</div>
+    <div class="filter-chip" style="margin-left:8px">📡 KT</div>
+    <div class="filter-chip">📡 SKT</div>
+    <div class="filter-chip">📡 LGU+</div>
+  </div>
+
+  <div class="app-table">
+    <table>
+      <thead>
+        <tr>
+          <th>티켓</th><th>고객</th><th>요금제</th><th>유형</th><th>경로</th><th>상태</th><th>접수</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="idx">M00042</td>
+          <td class="cust"><strong>김** 010-12**-3456</strong><small>1990년 · 개인 · 본인 가입</small></td>
+          <td class="plan">봉이 LTE 7GB+ <small>KT 망 · 19,900원 (첫3개월 9,900)</small></td>
+          <td><span class="signup-badge st-new">🆕 신규</span></td>
+          <td><span class="src-badge src-storefront">storefront</span></td>
+          <td><span class="status-badge ss-pending">신청 접수</span></td>
+          <td><small>방금</small></td>
+          <td class="action"><button>처리</button></td>
+        </tr>
+        <tr>
+          <td class="idx">M00041</td>
+          <td class="cust"><strong>이** 010-9***-1234</strong><small>1988년 · 개인 · 대리인</small></td>
+          <td class="plan">봉이 5G 데이터 무제한 <small>SKT 망 · 39,900원</small></td>
+          <td><span class="signup-badge st-mnp">🔄 MNP</span></td>
+          <td><span class="src-badge src-storefront">storefront</span></td>
+          <td><span class="status-badge ss-verified">본인확인 완료</span></td>
+          <td><small>15분 전</small></td>
+          <td class="action"><button>처리</button></td>
+        </tr>
+        <tr>
+          <td class="idx">M00040</td>
+          <td class="cust"><strong>박** 010-5***-7890</strong><small>1975년 · 개인 · 본인</small></td>
+          <td class="plan">봉이 LTE 11GB 슬림 <small>LGU+ 망 · 15,900원 · 24개월</small></td>
+          <td><span class="signup-badge st-usim">📱 유심</span></td>
+          <td><span class="src-badge src-call">tm_call</span></td>
+          <td><span class="status-badge ss-processing">개통중</span></td>
+          <td><small>1시간 전</small></td>
+          <td class="action"><button>처리</button></td>
+        </tr>
+        <tr>
+          <td class="idx">M00039</td>
+          <td class="cust"><strong>최** 010-3***-2233</strong><small>1995년 · 개인 · 본인</small></td>
+          <td class="plan">봉이 시니어 안심 LTE <small>SKT · 7,700원</small></td>
+          <td><span class="signup-badge st-new">🆕 신규</span></td>
+          <td><span class="src-badge src-store">store_offline</span></td>
+          <td><span class="status-badge ss-activated">개통 완료</span></td>
+          <td><small>3시간 전</small></td>
+          <td class="action"><button>보기</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>
