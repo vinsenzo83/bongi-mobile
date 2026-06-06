@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>⑥ 어드민 — 요금제 등록·편집</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#0f172a;color:#e2e8f0;padding:24px}
+.wrap{max-width:900px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px}
+.crumb{font-size:11px;color:#64748b;margin-bottom:4px}
+h1{font-size:22px;font-weight:900;color:#fbbf24}
+.sub{font-size:11.5px;color:#94a3b8;margin-top:3px}
+
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:22px;margin-bottom:14px}
+.section-title{font-size:13px;font-weight:800;color:#fbbf24;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #334155;display:flex;align-items:center;gap:8px}
+.num{background:#fbbf24;color:#0f172a;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:700;color:#cbd5e1;margin-bottom:5px}
+.req{color:#ef4444}
+.field input,.field select,.field textarea{width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:9px 11px;border-radius:7px;font-size:12.5px;font-family:inherit}
+.field textarea{min-height:60px;resize:vertical}
+.hint{font-size:10.5px;color:#64748b;margin-top:4px}
+
+.role-chips{display:flex;gap:6px}
+.role-chips label{flex:1;padding:11px;border:2px solid #475569;background:#0f172a;border-radius:8px;cursor:pointer;text-align:center;font-size:11.5px;font-weight:700;color:#cbd5e1}
+.role-chips input{display:none}
+.role-chips input:checked + span{display:block;color:#fbbf24}
+
+.commission-box{background:#0c1424;border:1px dashed #334155;border-radius:8px;padding:12px;margin-top:6px}
+.commission-box .row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0}
+.commission-box .row .k{color:#94a3b8}
+.commission-box .row .v{font-weight:700;color:#fbbf24}
+
+.promo-list{display:flex;flex-direction:column;gap:8px}
+.promo-row{background:#0f172a;border:1px solid #475569;border-left:4px solid #ec4899;border-radius:7px;padding:10px 12px;display:flex;gap:8px;align-items:center;font-size:11.5px}
+.promo-row .type{background:#831843;color:#fbcfe8;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:800}
+.add-btn{width:100%;background:transparent;border:2px dashed #475569;color:#94a3b8;padding:10px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit}
+
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.btn{padding:11px 22px;border:none;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-cancel{background:transparent;color:#94a3b8;border:1px solid #475569}
+.btn-save{background:#fbbf24;color:#0f172a}
+</style></head><body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <div class="crumb">어드민 / 알뜰폰 / 요금제 / 편집</div>
+      <h1>📝 봉이 베이직 ★ 편집</h1>
+      <div class="sub">plan_code: BONGI-BASIC-11GB-DAILY-2GB · 현재 신청 128건 · 활성</div>
+    </div>
+  </div>
+
+  <!-- 1. 역할 + 기본 -->
+  <div class="card">
+    <div class="section-title"><span class="num">1</span>기본 정보</div>
+    <div class="field">
+      <label>SKU 역할 <span class="req">*</span></label>
+      <div class="role-chips">
+        <label><input type="radio" name="role"><span>🐟 미끼</span></label>
+        <label><input type="radio" name="role" checked><span>🎯 주력 ★</span></label>
+        <label><input type="radio" name="role"><span>⬆️ 업셀</span></label>
+        <label><input type="radio" name="role"><span>💎 프리미엄</span></label>
+        <label><input type="radio" name="role"><span>👵 효도</span></label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>plan_code <span class="req">*</span></label><input value="BONGI-BASIC-11GB-DAILY-2GB"></div>
+      <div class="field"><label>요금제명 <span class="req">*</span></label><input value="봉이 베이직"></div>
+    </div>
+    <div class="field">
+      <label>한 줄 설명 (storefront 노출)</label>
+      <input value="11GB + 매일 2GB. 한 달 내내 마음껏.">
+    </div>
+  </div>
+
+  <!-- 2. 제휴 MVNO -->
+  <div class="card">
+    <div class="section-title"><span class="num">2</span>제휴 MVNO 본사 · 망</div>
+    <div class="grid2">
+      <div class="field">
+        <label>MVNO 본사 <span class="req">*</span></label>
+        <select>
+          <option>KT엠모바일</option>
+          <option selected>미디어로그</option>
+          <option>SK텔링크</option>
+          <option>LG헬로비전</option>
+          <option>KT스카이라이프</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>망 (자동 매핑)</label>
+        <input value="LGU+" readonly style="background:#1e293b;color:#94a3b8">
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>MVNO 본사 측 plan_code (전달용)</label>
+        <input value="MLG-LTE-11G-DAILY-2G">
+      </div>
+      <div class="field">
+        <label>네트워크</label>
+        <select><option selected>LTE</option><option>5G</option><option>3G</option></select>
+      </div>
+    </div>
+    <div class="commission-box">
+      <div class="row"><span class="k">대리점 수수료 (이 SKU)</span><span class="v">25,000원/건</span></div>
+      <div class="row"><span class="k">미디어로그 기본 수수료</span><span class="v">25,000원 (override 없음)</span></div>
+      <div class="row"><span class="k">월 수수료 매출 (현재 128건 × 25k)</span><span class="v">3,200,000원</span></div>
+    </div>
+  </div>
+
+  <!-- 3. 제공량 -->
+  <div class="card">
+    <div class="section-title"><span class="num">3</span>제공량</div>
+    <div class="grid3">
+      <div class="field"><label>데이터 (GB)</label><input type="number" value="11"></div>
+      <div class="field"><label>데이터 추가 매일 (GB)</label><input type="number" value="2"><div class="hint">매일 자정 리셋</div></div>
+      <div class="field"><label>소진 후 속도 (Mbps)</label><input type="number" value="3"></div>
+      <div class="field"><label>음성 통화 (분 · 비움 = 무제한)</label><input placeholder="무제한"></div>
+      <div class="field"><label>문자 (건)</label><input placeholder="무제한"></div>
+      <div class="field"><label>유심 타입</label><select><option selected>eSIM + 실물 (both)</option><option>eSIM 전용</option><option>실물 전용</option></select></div>
+    </div>
+  </div>
+
+  <!-- 4. 요금 -->
+  <div class="card">
+    <div class="section-title"><span class="num">4</span>요금</div>
+    <div class="grid3">
+      <div class="field"><label>정상 월정액 (원) <span class="req">*</span></label><input type="number" value="39600"></div>
+      <div class="field"><label>프로모션 월정액</label><input type="number" value="9900"></div>
+      <div class="field"><label>프로모션 기간 (개월)</label><input type="number" value="7"></div>
+      <div class="field"><label>약정 (개월)</label><select><option selected>0 (약정없음)</option><option>12</option><option>24</option></select></div>
+      <div class="field"><label>유심비 (eSIM)</label><input type="number" value="0"></div>
+      <div class="field"><label>유심비 (실물)</label><input type="number" value="7700"></div>
+    </div>
+  </div>
+
+  <!-- 5. 타겟·강점 -->
+  <div class="card">
+    <div class="section-title"><span class="num">5</span>타겟 · 강점</div>
+    <div class="field"><label>타겟 세그먼트</label>
+      <select multiple style="height:60px"><option selected>전체</option><option>청년 (Youth)</option><option>시니어 (Senior)</option><option>가족 (Family)</option></select>
+    </div>
+    <div class="field"><label>강점 태그 (쉼표 구분)</label><input value="매일2GB덤, 11GB, 통화무제한, 무약정, eSIM"></div>
+    <div class="field"><label>프로모션 태그</label><input value="첫7개월할인, MNP보너스"></div>
+  </div>
+
+  <!-- 6. 프로모션·사은품 -->
+  <div class="card">
+    <div class="section-title"><span class="num">6</span>프로모션 · 사은품 (별도 테이블)</div>
+    <div class="promo-list">
+      <div class="promo-row">
+        <span class="type">🎁 SIGNUP_POINT</span>
+        <span style="flex:1;font-weight:700">가입 시 봉이포인트 5,000P</span>
+        <span style="color:#94a3b8">즉시 지급</span>
+        <button style="background:transparent;border:none;color:#fbbf24;cursor:pointer;font-size:11px">편집</button>
+      </div>
+      <div class="promo-row">
+        <span class="type">🔄 MNP_BONUS</span>
+        <span style="flex:1;font-weight:700">번호이동 시 +5,000P</span>
+        <span style="color:#94a3b8">개통 후 30일</span>
+        <button style="background:transparent;border:none;color:#fbbf24;cursor:pointer;font-size:11px">편집</button>
+      </div>
+      <div class="promo-row">
+        <span class="type">⏳ RETENTION</span>
+        <span style="flex:1;font-weight:700">12개월 유지 시 +5,000P</span>
+        <span style="color:#94a3b8">자동 적립</span>
+        <button style="background:transparent;border:none;color:#fbbf24;cursor:pointer;font-size:11px">편집</button>
+      </div>
+      <div class="promo-row">
+        <span class="type">👥 REFERRAL</span>
+        <span style="flex:1;font-weight:700">친구 추천 시 양쪽 각 10,000P</span>
+        <span style="color:#94a3b8">개통 검증</span>
+        <button style="background:transparent;border:none;color:#fbbf24;cursor:pointer;font-size:11px">편집</button>
+      </div>
+    </div>
+    <button class="add-btn" style="margin-top:10px">+ 프로모션 추가</button>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-cancel">취소</button>
+    <button class="btn btn-save">💾 저장하고 storefront 반영</button>
+  </div>
+</div>
+</body></html>

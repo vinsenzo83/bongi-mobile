@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>⑨ 어드민 — KPI 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#0f172a;color:#e2e8f0;padding:24px}
+.wrap{max-width:1280px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px}
+.crumb{font-size:11px;color:#64748b;margin-bottom:4px}
+h1{font-size:24px;font-weight:900;color:#fbbf24}
+.month-select{display:flex;gap:6px}
+.month-select button{background:#1e293b;border:1px solid #334155;color:#cbd5e1;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit}
+.month-select button.active{background:#fbbf24;color:#0f172a;border-color:#fbbf24;font-weight:800}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px}
+.kpi-card .ic{font-size:22px;margin-bottom:6px}
+.kpi-card .v{font-size:26px;font-weight:900;color:#fbbf24;margin-bottom:2px}
+.kpi-card .k{font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase}
+.kpi-card .trend{font-size:11px;font-weight:700;margin-top:4px}
+.kpi-card .trend.up{color:#10b981}
+.kpi-card .trend.down{color:#ef4444}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px}
+.panel-title{font-size:13px;font-weight:800;color:#fbbf24;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #334155}
+
+/* SKU별 분포 chart */
+.dist-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px}
+.dist-row .lbl{width:120px;color:#cbd5e1;font-weight:600;display:flex;align-items:center;gap:6px}
+.dist-row .bar{flex:1;height:24px;background:#0c1424;border-radius:4px;overflow:hidden;position:relative}
+.dist-row .bar .fill{height:100%;display:flex;align-items:center;padding-left:8px;font-weight:800;color:#fff;font-size:11.5px}
+.dist-row .pct{width:50px;text-align:right;color:#cbd5e1;font-weight:800}
+.role-mikki{background:#475569}
+.role-main{background:#831843}
+.role-up{background:#1e3a8a}
+.role-prem{background:#78350f}
+.role-hyodo{background:#064e3b}
+
+/* 일별 trend 가짜 line */
+.line-chart{height:200px;background:#0c1424;border-radius:8px;position:relative;padding:14px}
+.line-chart svg{width:100%;height:100%}
+
+/* funnel */
+.funnel{display:flex;flex-direction:column;gap:8px}
+.funnel-row{display:flex;justify-content:space-between;align-items:center;background:#0c1424;border-radius:8px;padding:11px 14px;font-size:12px}
+.funnel-row .lbl{font-weight:700;color:#cbd5e1}
+.funnel-row .val{font-weight:900;color:#fbbf24}
+.funnel-row .conv{font-size:10.5px;color:#10b981;margin-top:2px}
+
+/* 잔존 표 */
+.retention-table{width:100%;font-size:11.5px;color:#cbd5e1}
+.retention-table th{padding:8px 6px;background:#0c1424;color:#94a3b8;font-weight:700;text-transform:uppercase;font-size:10px;text-align:right}
+.retention-table th:first-child{text-align:left}
+.retention-table td{padding:8px 6px;border-top:1px solid #334155;text-align:right}
+.retention-table td:first-child{text-align:left;font-weight:700}
+.retention-table td.good{color:#10b981;font-weight:700}
+.retention-table td.warn{color:#f59e0b;font-weight:700}
+</style></head><body>
+<div class="wrap">
+  <div class="header">
+    <div><div class="crumb">어드민 / 알뜰폰 / KPI 대시보드</div><h1>📊 알뜰폰 KPI · 2026년 6월</h1></div>
+    <div class="month-select">
+      <button>지난달</button>
+      <button class="active">이번달</button>
+      <button>6개월</button>
+      <button>연간</button>
+    </div>
+  </div>
+
+  <!-- KPI 카드 4개 -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="ic">📋</div>
+      <div class="v">237</div>
+      <div class="k">월 신청 수</div>
+      <div class="trend up">↑ +18% (전월)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="ic">⚡</div>
+      <div class="v">68%</div>
+      <div class="k">신청→개통 전환</div>
+      <div class="trend up">↑ +5%p (목표 70%)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="ic">💰</div>
+      <div class="v">3.2M</div>
+      <div class="k">월 수수료 매출 (₩)</div>
+      <div class="trend up">↑ +24%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="ic">🔁</div>
+      <div class="v">25%</div>
+      <div class="k">가전렌탈 크로스셀</div>
+      <div class="trend up">↑ +7%p</div>
+    </div>
+  </div>
+
+  <!-- 5 SKU 분포 + 일별 신청 -->
+  <div class="row2">
+    <div class="panel">
+      <div class="panel-title">5 SKU 신청 분포</div>
+      <div class="dist-row">
+        <div class="lbl">🐟 라이트</div>
+        <div class="bar"><div class="fill role-mikki" style="width:22%">52</div></div>
+        <div class="pct">22%</div>
+      </div>
+      <div class="dist-row">
+        <div class="lbl">🎯 베이직 ★</div>
+        <div class="bar"><div class="fill role-main" style="width:54%">128</div></div>
+        <div class="pct">54%</div>
+      </div>
+      <div class="dist-row">
+        <div class="lbl">⬆️ 점보</div>
+        <div class="bar"><div class="fill role-up" style="width:17%">41</div></div>
+        <div class="pct">17%</div>
+      </div>
+      <div class="dist-row">
+        <div class="lbl">💎 프리미엄</div>
+        <div class="bar"><div class="fill role-prem" style="width:5%">12</div></div>
+        <div class="pct">5%</div>
+      </div>
+      <div class="dist-row">
+        <div class="lbl">👵 효도</div>
+        <div class="bar"><div class="fill role-hyodo" style="width:11%">27</div></div>
+        <div class="pct">11%</div>
+      </div>
+      <div style="margin-top:14px;padding:10px 12px;background:#0c1424;border-radius:8px;font-size:11px;color:#94a3b8;line-height:1.5">
+        💡 베이직(주력) 54% — 목표 50% 초과 달성. 점보·효도 캠페인 강화 권장.
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">일별 신청 추이 (이번달)</div>
+      <div class="line-chart">
+        <svg viewBox="0 0 400 200" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="grad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0 160 L40 145 L80 130 L120 110 L160 90 L200 95 L240 80 L280 65 L320 55 L360 45 L400 30 L400 200 L0 200 Z" fill="url(#grad)"/>
+          <path d="M0 160 L40 145 L80 130 L120 110 L160 90 L200 95 L240 80 L280 65 L320 55 L360 45 L400 30" fill="none" stroke="#fbbf24" stroke-width="2.5"/>
+        </svg>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-top:6px">
+        <span>6/1</span><span>6/5</span><span>6/10</span><span>6/15</span><span>6/20</span><span>6/25</span><span>6/30</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 전환 funnel + 잔존율 -->
+  <div class="row2">
+    <div class="panel">
+      <div class="panel-title">전환 funnel (이번달)</div>
+      <div class="funnel">
+        <div class="funnel-row">
+          <div><div class="lbl">storefront 방문</div><div class="conv">기준</div></div>
+          <div class="val">12,403</div>
+        </div>
+        <div class="funnel-row">
+          <div><div class="lbl">요금제 카드 클릭</div><div class="conv">↓ 19.4%</div></div>
+          <div class="val">2,403</div>
+        </div>
+        <div class="funnel-row">
+          <div><div class="lbl">*#06# EID 분기 통과</div><div class="conv">↓ 32.1%</div></div>
+          <div class="val">771</div>
+        </div>
+        <div class="funnel-row">
+          <div><div class="lbl">가입 form 완료</div><div class="conv">↓ 30.7%</div></div>
+          <div class="val">237</div>
+        </div>
+        <div class="funnel-row" style="background:rgba(16,185,129,0.1);border:1px solid #10b981">
+          <div><div class="lbl" style="color:#10b981">개통 완료</div><div class="conv">↓ 68.0%</div></div>
+          <div class="val" style="color:#10b981">161</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">SKU별 잔존율 (정가 전환 후)</div>
+      <table class="retention-table">
+        <thead>
+          <tr><th>SKU</th><th>1개월</th><th>3개월</th><th>6개월</th><th>12개월</th><th>LTV</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>🐟 라이트</td>
+            <td class="good">96%</td><td class="warn">52%</td><td>33%</td><td>22%</td><td>78,000</td>
+          </tr>
+          <tr style="background:rgba(236,72,153,0.06)">
+            <td>🎯 베이직 ★</td>
+            <td class="good">98%</td><td class="good">82%</td><td class="good">67%</td><td class="good">52%</td><td>358,000</td>
+          </tr>
+          <tr>
+            <td>⬆️ 점보</td>
+            <td class="good">95%</td><td class="good">73%</td><td>58%</td><td>42%</td><td>421,000</td>
+          </tr>
+          <tr>
+            <td>💎 프리미엄</td>
+            <td class="good">100%</td><td class="good">94%</td><td class="good">88%</td><td class="good">80%</td><td>802,000</td>
+          </tr>
+          <tr>
+            <td>👵 효도</td>
+            <td class="good">99%</td><td class="good">95%</td><td class="good">91%</td><td class="good">85%</td><td>247,000</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px;padding:10px 12px;background:#0c1424;border-radius:8px;font-size:11px;color:#94a3b8;line-height:1.5">
+        💎 프리미엄·👵 효도 = <strong style="color:#10b981">저해지 자산</strong>. 마케팅 비중 확대 권장.
+      </div>
+    </div>
+  </div>
+
+</div>
+</body></html>

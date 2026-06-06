@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>③ 고객 — 가입 4 step</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#f8fafc;color:#0f172a;padding:24px;min-height:100vh}
+.wrap{max-width:680px;margin:0 auto;background:#fff;border-radius:14px;padding:28px 32px;box-shadow:0 4px 14px rgba(0,0,0,.04)}
+h1{font-size:22px;font-weight:900;margin-bottom:4px}
+.sub{font-size:12px;color:#64748b}
+.progress{display:flex;gap:6px;margin:20px 0 24px}
+.progress .step{flex:1;height:4px;background:#e2e8f0;border-radius:2px}
+.progress .step.done{background:#6366f1}
+.progress .step.active{background:linear-gradient(90deg,#6366f1,#c7d2fe)}
+.step-label{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:8px}
+h2{font-size:17px;font-weight:800;margin-bottom:14px}
+
+/* Step 1 - 요금제 확인 */
+.plan-card{background:linear-gradient(135deg,#eef2ff,#fce7f3);border-radius:12px;padding:18px 20px;margin-bottom:16px;position:relative}
+.plan-card .role{background:#ec4899;color:#fff;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:800;display:inline-block;margin-bottom:6px}
+.plan-card .name{font-size:18px;font-weight:900;margin-bottom:4px}
+.plan-card .info{font-size:11.5px;color:#64748b;margin-bottom:14px;line-height:1.5}
+.plan-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+.plan-row .k{color:#94a3b8}
+.plan-row .v{font-weight:700}
+.plan-card .price{margin-top:10px;padding-top:12px;border-top:1px dashed rgba(0,0,0,.1);display:flex;justify-content:space-between;align-items:baseline}
+.plan-card .price .now{font-size:22px;font-weight:900;color:#6366f1}
+.promo-pill{background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:10px 12px;margin-top:12px;font-size:11.5px;color:#92400e}
+
+/* Step 2 - 가입 유형 */
+.chip-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.chip-lg{padding:20px 14px;border:2px solid #e2e8f0;border-radius:12px;background:#fff;cursor:pointer;text-align:center}
+.chip-lg.active{border-color:#6366f1;background:#eef2ff}
+.chip-lg .ic{font-size:24px;margin-bottom:6px}
+.chip-lg .lbl{font-size:13px;font-weight:800}
+.chip-lg .desc{font-size:10px;color:#94a3b8;margin-top:3px}
+
+/* Step 3 - 가입자 정보 */
+.field{margin-bottom:14px}
+.field label{font-size:11.5px;font-weight:700;color:#475569;display:block;margin-bottom:5px}
+.field input,.field select{width:100%;padding:11px 13px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;font-family:inherit;background:#fff}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gender-chips{display:flex;gap:8px}
+.gender-chips .g{flex:1;padding:10px;border:1.5px solid #cbd5e1;border-radius:8px;cursor:pointer;text-align:center;font-size:13px;font-weight:600;color:#475569}
+.gender-chips .g.active{background:#eef2ff;border-color:#6366f1;color:#6366f1;font-weight:800}
+
+/* Step 4 - 약관 */
+.terms{display:flex;flex-direction:column;gap:6px}
+.term{display:flex;gap:10px;align-items:center;padding:11px 13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px}
+.term input[type=checkbox]{width:18px;height:18px}
+.term .req{color:#ef4444;font-weight:700;margin-right:4px}
+.term .opt{color:#94a3b8;font-weight:600;margin-right:4px}
+.term-detail{color:#6366f1;text-decoration:underline;font-size:11px;cursor:pointer;margin-left:auto}
+.terms-all{padding:13px;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;font-size:12.5px;font-weight:700;color:#92400e;margin-bottom:10px;display:flex;gap:10px;align-items:center}
+
+.section{padding:18px 0;border-top:1px dashed #e2e8f0;margin-top:6px}
+.section:first-of-type{border-top:none;padding-top:0;margin-top:0}
+
+.actions{display:flex;gap:8px;margin-top:24px}
+.btn{flex:1;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-back{background:#f1f5f9;color:#64748b}
+.btn-next{background:#6366f1;color:#fff}
+</style></head><body>
+<div class="wrap">
+  <h1>가입 신청</h1>
+  <p class="sub">봉이 베이직 ★ · 봉이 알뜰폰 (LGU+ LTE · eSIM)</p>
+
+  <div class="progress">
+    <div class="step done"></div>
+    <div class="step done"></div>
+    <div class="step active"></div>
+    <div class="step"></div>
+  </div>
+
+  <!-- Step 1 ─ 요금제 확인 -->
+  <div class="section">
+    <div class="step-label">Step 1 — 신청 요금제 확인</div>
+    <div class="plan-card">
+      <span class="role">⭐ 주력</span>
+      <div class="name">봉이 베이직</div>
+      <div class="info">11GB + 매일 2GB + 3Mbps 무제한 · 통화·문자 무제한 · 무약정</div>
+      <div class="plan-row"><span class="k">망 / 망 임대</span><span class="v">LGU+ LTE · 미디어로그</span></div>
+      <div class="plan-row"><span class="k">유심</span><span class="v">eSIM 즉시 / 실물 ±7,700원</span></div>
+      <div class="plan-row"><span class="k">가입 후 사은품</span><span class="v">5,000P (즉시)</span></div>
+      <div class="price"><span>프로모션 7개월</span><span class="now">9,900원/월</span></div>
+      <div class="promo-pill">🎁 MNP(번호이동) 가입 시 +5,000P · 친구결합 회선당 −1,100원</div>
+    </div>
+  </div>
+
+  <!-- Step 2 ─ 가입 유형 -->
+  <div class="section">
+    <div class="step-label">Step 2 — 가입 유형</div>
+    <h2>어떻게 가입하시나요?</h2>
+    <div class="chip-row">
+      <div class="chip-lg">
+        <div class="ic">🆕</div>
+        <div class="lbl">신규</div>
+        <div class="desc">새 번호 발급</div>
+      </div>
+      <div class="chip-lg active">
+        <div class="ic">🔄</div>
+        <div class="lbl">번호이동 (MNP)</div>
+        <div class="desc">사용 중 번호 유지 · +5,000P</div>
+      </div>
+      <div class="chip-lg">
+        <div class="ic">📱</div>
+        <div class="lbl">유심만 변경</div>
+        <div class="desc">통신사·번호 그대로</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:8px;font-size:11.5px;color:#475569">
+      📡 <strong>이전 통신사:</strong> <select style="background:transparent;border:none;font-weight:700;color:#0f172a"><option>SKT</option><option>KT</option><option>LGU+</option><option>알뜰폰</option></select> · <strong>현재 번호:</strong> 010-xxxx-xxxx
+    </div>
+  </div>
+
+  <!-- Step 3 ─ 가입자 정보 -->
+  <div class="section">
+    <div class="step-label">Step 3 — 가입자 정보</div>
+    <h2>가입자 정보 입력</h2>
+    <div class="field">
+      <label>가입자 유형</label>
+      <div class="chip-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="chip-lg active" style="padding:12px"><div class="lbl">개인</div></div>
+        <div class="chip-lg" style="padding:12px"><div class="lbl">개인사업자</div></div>
+        <div class="chip-lg" style="padding:12px"><div class="lbl">법인사업자</div></div>
+        <div class="chip-lg" style="padding:12px"><div class="lbl">외국인</div></div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>이름 *</label><input placeholder="홍길동"></div>
+      <div class="field"><label>생년월일 *</label><input type="date" value="1990-01-01"></div>
+    </div>
+    <div class="field">
+      <label>성별 *</label>
+      <div class="gender-chips">
+        <div class="g active">남성</div>
+        <div class="g">여성</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>연락처 (상담용) *</label><input placeholder="01012345678"></div>
+      <div class="field"><label>이메일 *</label><input type="email" placeholder="user@email.com"></div>
+    </div>
+    <div class="field">
+      <label>주소 (택배 수령 시 필수)</label>
+      <div style="display:flex;gap:6px"><input placeholder="우편번호" style="flex:1"><button style="background:#f1f5f9;border:1px solid #cbd5e1;padding:0 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">📍 검색</button></div>
+      <input placeholder="상세 주소" style="margin-top:6px">
+    </div>
+  </div>
+
+  <!-- Step 4 ─ 약관 -->
+  <div class="section">
+    <div class="step-label">Step 4 — 약관 동의</div>
+    <h2>약관 동의 (필수 4종 + 선택 1)</h2>
+    <div class="terms-all">
+      <input type="checkbox"> 전체 약관에 동의합니다 (필수 + 선택)
+    </div>
+    <div class="terms">
+      <label class="term"><input type="checkbox" checked> <span class="req">필수</span> 봉이 알뜰폰 이용 약관 <span class="term-detail">전문 보기 ▶</span></label>
+      <label class="term"><input type="checkbox" checked> <span class="req">필수</span> 개인정보 수집·이용 동의 <span class="term-detail">전문 보기 ▶</span></label>
+      <label class="term"><input type="checkbox" checked> <span class="req">필수</span> 제3자 정보 제공 동의 (미디어로그) <span class="term-detail">전문 보기 ▶</span></label>
+      <label class="term"><input type="checkbox" checked> <span class="req">필수</span> LGU+ 망 임대 약관 <span class="term-detail">전문 보기 ▶</span></label>
+      <label class="term"><input type="checkbox"> <span class="opt">선택</span> 마케팅·광고 수신 동의 (이벤트·쿠폰) <span class="term-detail">전문 보기 ▶</span></label>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-back">← 이전</button>
+    <button class="btn btn-next">신청 제출 →</button>
+  </div>
+</div>
+</body></html>
