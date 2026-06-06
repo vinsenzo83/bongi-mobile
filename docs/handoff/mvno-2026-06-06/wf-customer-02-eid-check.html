@@ -1,179 +1,181 @@
 <!DOCTYPE html>
-<html lang="ko"><head><meta charset="UTF-8"><title>② 요금제 상세 + 가입 옵션 (아정당 패턴)</title>
+<html lang="ko"><head><meta charset="UTF-8"><title>② SIM 옵션 (SIM유형·유심구매·유심종류·이용안내)</title>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Pretendard',sans-serif;background:#f8f9ff;color:#1a1a1a;min-height:100vh;padding-left:240px}
-.header{background:#fff;border-bottom:1px solid #e8e6f0;padding:18px 0}
-.header-inner{max-width:1280px;margin:0 auto;padding:0 30px;display:flex;align-items:center;gap:40px}
-.logo{font-size:22px;font-weight:900;color:#1d4ed8;background:#dbeafe;padding:7px 14px;border-radius:8px;letter-spacing:-1px}
-.menu{display:flex;gap:32px;flex:1}
-.menu a{text-decoration:none;color:#4a4a4a;font-size:14.5px;font-weight:700;cursor:pointer}
-.menu a.active{color:#1d4ed8}
-.header-right{display:flex;gap:18px;font-size:13px;color:#4a4a4a}
-.header-right a{color:#4a4a4a;text-decoration:none;display:flex;align-items:center;gap:4px}
-.wrap{max-width:1280px;margin:0 auto;padding:40px 30px}
-h1{font-size:24px;font-weight:900;margin-bottom:24px}
+.wrap{max-width:1280px;margin:0 auto;padding:30px}
+h1{font-size:26px;font-weight:900;margin-bottom:6px}
+.lead{font-size:13.5px;color:#6a6a6a;margin-bottom:24px}
 .layout{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:flex-start}
+.section{background:#fff;border:1.5px solid #e8e6f0;border-radius:14px;padding:24px 28px;margin-bottom:14px}
+.section h2{font-size:16px;font-weight:900;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.section h2 .num{background:#1d4ed8;color:#fff;font-size:11px;font-weight:800;padding:3px 9px;border-radius:5px}
+.section .desc{font-size:12px;color:#8a8a8a;margin-bottom:14px;line-height:1.6}
+.chip-row{display:flex;gap:8px;flex-wrap:wrap}
+.chip{flex:1;padding:14px 16px;background:#fff;border:1.5px solid #e8e6f0;border-radius:10px;font-size:13.5px;font-weight:700;color:#4a4a4a;cursor:pointer;text-align:center}
+.chip.active{background:#eff6ff;border-color:#1d4ed8;color:#1d4ed8;border-width:2px;font-weight:800}
+.chip .sub{font-size:10.5px;color:#8a8a8a;font-weight:600;margin-top:3px;display:block}
+.chip.active .sub{color:#1d4ed8}
 
-/* 좌측 요금제 카드 */
-.plan-card{background:#f3f0ff;border:1.5px solid #e0d9ff;border-radius:16px;padding:32px}
-.plan-card .badges{display:flex;gap:6px;margin-bottom:14px}
-.plan-card .b-lgu{background:linear-gradient(135deg,#ec4899,#f43f5e);color:#fff;font-size:11px;font-weight:800;padding:4px 11px;border-radius:5px}
-.plan-card .b-promo{background:#5b21b6;color:#fff;font-size:11px;font-weight:800;padding:4px 11px;border-radius:5px}
-.plan-card .b-best{background:#fbbf24;color:#7c2d12;font-size:11px;font-weight:800;padding:4px 11px;border-radius:5px}
-.plan-card .name{font-size:24px;font-weight:900;margin-bottom:24px;letter-spacing:-0.5px}
-.plan-detail{background:#fff;border-radius:12px;padding:22px;margin-bottom:18px}
-.plan-detail .det-row{display:flex;align-items:flex-start;gap:14px;padding:12px 0;border-bottom:1px dashed #e8e6f0}
-.plan-detail .det-row:last-child{border-bottom:none}
-.plan-detail .det-row .ic{font-size:20px;flex-shrink:0;width:24px}
-.plan-detail .det-row .body .ttl{font-size:15px;font-weight:800;margin-bottom:4px}
-.plan-detail .det-row .body .desc{font-size:12px;color:#6a6a6a;line-height:1.6}
-.plan-card .price-row{display:flex;justify-content:flex-end;align-items:flex-end;gap:8px;margin-top:14px}
-.plan-card .vat{font-size:11px;color:#6a6a6a}
-.plan-card .price{font-size:34px;font-weight:900;color:#1d4ed8;letter-spacing:-1px}
-.plan-card .price .unit{font-size:18px;font-weight:700}
-.plan-card .price-after{font-size:11px;color:#6a6a6a;text-align:right;margin-top:4px}
+.dynamic{background:#f3f0ff;border:1.5px dashed #c4b5fd;border-radius:12px;padding:18px 22px;margin-top:14px}
+.dynamic .ttl{font-size:13.5px;font-weight:800;color:#5b21b6;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.dynamic .help{font-size:11.5px;color:#5b21b6;margin-bottom:14px;line-height:1.5}
+.field-row{margin-bottom:14px}
+.field-row .lbl{font-size:12.5px;font-weight:700;margin-bottom:6px;color:#4a4a4a}
+.field-row .req{color:#dc2626}
+.inp{background:#fff;border:1.5px solid #e8e6f0;padding:11px 14px;border-radius:9px;font-size:13px;width:100%;font-family:inherit}
+.row-codes{display:grid;grid-template-columns:130px 1fr;gap:10px}
+.row-imei{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
-/* 우측 sidebar */
-.aside{background:#fff;border:1.5px solid #e8e6f0;border-radius:16px;padding:24px;position:sticky;top:20px}
-.aside-section{margin-bottom:22px}
-.aside-section .lbl{font-size:13px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.aside-section .tooltip{background:#1a1a1a;color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;margin-left:auto;cursor:pointer}
-.aside-section .help{width:14px;height:14px;border-radius:50%;background:#e8e6f0;color:#6a6a6a;font-size:9px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-weight:800}
-.chips-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.chip-btn{padding:13px;background:#fff;border:1.5px solid #e8e6f0;border-radius:10px;font-size:13.5px;font-weight:700;color:#4a4a4a;cursor:pointer;text-align:center}
-.chip-btn.active{background:#fff;border-color:#1d4ed8;color:#1d4ed8;border-width:2px;font-weight:800}
-.chip-btn.full{grid-column:span 2}
-.cta-apply{background:#1d4ed8;color:#fff;border:none;padding:16px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;margin-top:8px}
-.cta-apply:hover{background:#1e40af}
+.guide{background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 16px;font-size:12px;color:#92400e;line-height:1.6}
+.guide strong{color:#78350f}
+.guide-img{margin-top:10px;background:#fff;border:1.5px dashed #fbbf24;border-radius:8px;padding:14px;text-align:center;font-size:11px;color:#92400e}
+
+.next-row{background:#fff;border:1.5px solid #e8e6f0;border-radius:14px;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px}
+.btn-prev{background:#f8f7f0;color:#4a4a4a;border:none;padding:13px 22px;border-radius:11px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.cta{background:#1d4ed8;color:#fff;border:none;padding:13px 32px;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;flex:1}
+
+.aside{background:#fff;border:1.5px solid #e8e6f0;border-radius:14px;padding:22px;position:sticky;top:20px;display:flex;flex-direction:column;gap:14px}
+.plan-mini{background:#f3f0ff;border-radius:10px;padding:14px}
+.plan-mini .nm{font-size:14px;font-weight:900;margin-bottom:4px}
+.plan-mini .meta{font-size:11px;color:#6a6a6a;margin-bottom:6px}
+.plan-mini .pr{font-size:20px;font-weight:900;color:#1d4ed8}
 .float-chat{position:fixed;right:30px;bottom:30px;width:54px;height:54px;background:#1d4ed8;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;color:#fff;box-shadow:0 4px 14px rgba(29,78,216,.3)}
 </style></head><body>
-<aside class="nav-aside" style="position:fixed;left:0;top:0;width:240px;height:100vh;background:#fff;border-right:1px solid #e8e6f0;padding:18px 16px;display:flex;flex-direction:column;gap:12px;z-index:100;overflow-y:auto;font-family:'Pretendard',sans-serif">
-  <div style="font-size:22px;font-weight:900;color:#1d4ed8;letter-spacing:-1px;padding:4px 0">📱 봉이<span style="color:#fbbf24">모바일</span></div>
-  <div style="font-size:12.5px;color:#8a8a8a;padding:0 4px;margin-bottom:4px">📍 광주 본점 · 🌙</div>
+
+<aside style="position:fixed;left:0;top:0;width:240px;height:100vh;background:#fff;border-right:1px solid #e8e6f0;padding:18px 16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto">
+  <div style="font-size:22px;font-weight:900;color:#1d4ed8;padding:4px 0">📱 봉이<span style="color:#fbbf24">모바일</span></div>
+  <div style="font-size:12.5px;color:#8a8a8a;padding:0 4px">📍 광주 본점 · 🌙</div>
   <button style="background:#1d4ed8;color:#fff;border:none;padding:12px;border-radius:11px;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit">+ 새로 시작</button>
-  <input placeholder="🔎  상담 내역 검색" style="background:#f8f7f0;border:none;padding:11px 14px;border-radius:9px;font-size:12.5px;color:#8a8a8a;font-family:inherit">
+  <input placeholder="🔎 상담 내역 검색" style="background:#f8f7f0;border:none;padding:11px 14px;border-radius:9px;font-size:12.5px;color:#8a8a8a;font-family:inherit">
   <div style="font-size:11px;font-weight:700;color:#8a8a8a;margin:8px 0 4px;padding:0 6px;text-transform:uppercase">카테고리</div>
-  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">🏠  홈</a>
-  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">📱  휴대폰</a>
-  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">🌐  인터넷+TV</a>
-  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">🧩  결합 할인</a>
-  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;font-weight:800;text-decoration:none;cursor:pointer;background:linear-gradient(135deg,#fde68a,#fef3c7);color:#78350f">📡  알뜰폰 <span style="background:#dc2626;color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:800;margin-left:auto">진행중</span></a>
-  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">🛋️  가전 렌탈</a>
-  <a style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none;cursor:pointer">🎁  이벤트·혜택</a>
-  <div style="font-size:11px;font-weight:700;color:#8a8a8a;margin:12px 0 4px;padding:0 6px;text-transform:uppercase">최근 상담</div>
-  <div style="font-size:12px;color:#6a6a6a;padding:6px 10px;border-radius:6px">알뜰폰 KT 점보 상담</div>
-  <div style="font-size:12px;color:#6a6a6a;padding:6px 10px;border-radius:6px">인터넷+TV 신청</div>
-  <div style="margin-top:auto;background:#fef9c3;border-radius:10px;padding:12px;display:flex;gap:8px;align-items:center;cursor:pointer">
-    <div style="font-size:24px">🪙</div>
-    <div style="font-size:11px;font-weight:600;color:#78350f;line-height:1.4"><b style="color:#78350f">친구 초대하기</b><br>적립한 포인트, 현금으로 꺼내 쓰세요</div>
-  </div>
-  <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:13px;color:#4a4a4a;font-weight:600;cursor:pointer">👤  로그인 / 회원가입</div>
+  <a style="padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600">🏠 홈</a>
+  <a style="padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600">📱 휴대폰</a>
+  <a style="padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600">🌐 인터넷+TV</a>
+  <a style="padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600">🧩 결합 할인</a>
+  <a style="padding:9px 10px;border-radius:8px;font-size:13.5px;font-weight:800;background:linear-gradient(135deg,#fde68a,#fef3c7);color:#78350f;display:flex;align-items:center;gap:8px">📡 알뜰폰 <span style="background:#dc2626;color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;margin-left:auto">진행중</span></a>
+  <a style="padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600">🛋️ 가전 렌탈</a>
+  <a style="padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600">🎁 이벤트·혜택</a>
 </aside>
 
-
-
 <div class="wrap">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:#fff;border:1.5px solid #e8e6f0;border-radius:14px;margin-bottom:20px"><div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">✓</div><div style="font-size:10.5px;color:#16a34a;font-weight:700">요금제 선택</div></div><div style="flex:1;height:2px;background:#cbd5e1;margin:0 5px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#1d4ed8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">2</div><div style="font-size:10.5px;color:#1d4ed8;font-weight:700">가입 옵션</div></div><div style="flex:1;height:2px;background:#cbd5e1;margin:0 5px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#e8e6f0;color:#8a8a8a;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">3</div><div style="font-size:10.5px;color:#8a8a8a;font-weight:700">본인 확인</div></div><div style="flex:1;height:2px;background:#cbd5e1;margin:0 5px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#e8e6f0;color:#8a8a8a;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">4</div><div style="font-size:10.5px;color:#8a8a8a;font-weight:700">결제·약관</div></div><div style="flex:1;height:2px;background:#cbd5e1;margin:0 5px"></div><div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#e8e6f0;color:#8a8a8a;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">5</div><div style="font-size:10.5px;color:#8a8a8a;font-weight:700">신청 완료</div></div></div>
-  <h1>요금제 상세보기</h1>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:#fff;border:1.5px solid #e8e6f0;border-radius:14px;margin-bottom:20px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">✓</div><div style="font-size:10.5px;color:#16a34a;font-weight:700">요금제 선택</div></div>
+    <div style="flex:1;height:2px;background:#16a34a;margin:0 5px"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#1d4ed8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">2</div><div style="font-size:10.5px;color:#1d4ed8;font-weight:700">SIM 옵션</div></div>
+    <div style="flex:1;height:2px;background:#cbd5e1;margin:0 5px"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#e8e6f0;color:#8a8a8a;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">3</div><div style="font-size:10.5px;color:#8a8a8a;font-weight:700">신청서</div></div>
+    <div style="flex:1;height:2px;background:#cbd5e1;margin:0 5px"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#e8e6f0;color:#8a8a8a;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">4</div><div style="font-size:10.5px;color:#8a8a8a;font-weight:700">본인 인증</div></div>
+    <div style="flex:1;height:2px;background:#cbd5e1;margin:0 5px"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#e8e6f0;color:#8a8a8a;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900">5</div><div style="font-size:10.5px;color:#8a8a8a;font-weight:700">약관·완료</div></div>
+  </div>
+
+  <h1>SIM 옵션</h1>
+  <p class="lead">SIM 유형·유심 구매 여부·종류를 선택해 주세요.</p>
 
   <div class="layout">
-    <!-- 좌측: 요금제 카드 -->
-    <div class="plan-card">
-      <div class="badges">
-        <span class="b-lgu">KT</span>
-        <span class="b-promo">7개월 프로모션</span>
-        <span class="b-best">⭐ 봉이 BEST</span>
+    <div>
+      <!-- 5. SIM유형 -->
+      <div class="section">
+        <h2><span class="num">5</span>SIM 유형</h2>
+        <div class="chip-row">
+          <div class="chip active">USIM (일반 유심)<span class="sub">단말에 꽂아 사용 · 무료</span></div>
+          <div class="chip">eSIM<span class="sub">QR 스캔 즉시 개통 · 후청구 2,750원</span></div>
+        </div>
       </div>
-      <div class="name">KT 점보 100GB + 5Mbps</div>
 
-      <div class="plan-detail">
-        <div class="det-row">
-          <div class="ic">📊</div>
-          <div class="body">
-            <div class="ttl">100GB + 5Mbps</div>
-            <div class="desc">
-              기본 제공 데이터 소진 후 5Mbps 속도로 무제한 사용 가능.<br>
-              5Mbps는 동영상·테더링·4K 스트리밍 끊김 없이 이용할 수 있는 속도입니다.<br>
-              (네트워크 상황에 따라 달라질 수 있음)
+      <!-- 6. 유심구매 -->
+      <div class="section">
+        <h2><span class="num">6</span>유심 구매</h2>
+        <div class="chip-row">
+          <div class="chip active">유심 보유<span class="sub">기존 유심 사용</span></div>
+          <div class="chip">유심 미보유<span class="sub">택배 무료 발송 (1~2일)</span></div>
+        </div>
+      </div>
+
+      <!-- 7. 유심종류 (USIM 보유 시) -->
+      <div class="section">
+        <h2><span class="num">7</span>유심 종류 <span style="font-size:11px;font-weight:700;color:#8a8a8a;margin-left:6px">USIM 보유 시</span></h2>
+        <div class="chip-row">
+          <div class="chip active">일반 유심<span class="sub">대다수 단말 호환</span></div>
+          <div class="chip">NFC 유심<span class="sub">교통카드·간편결제</span></div>
+        </div>
+
+        <div class="dynamic">
+          <div class="ttl">📇 보유 USIM 정보 입력</div>
+          <div class="help">유심카드 뒷면의 <strong>모델코드 4자리 + 일련번호 8자리</strong>를 입력해 주세요. (이미 사용된 유심은 개통 불가)</div>
+          <div class="field-row">
+            <div class="lbl">유심 정보 <span class="req">*</span></div>
+            <div class="row-codes">
+              <input class="inp" placeholder="U 8X00XX" style="text-align:center;font-family:monospace">
+              <input class="inp" placeholder="일련번호 8자리" style="font-family:monospace">
             </div>
           </div>
-        </div>
-        <div class="det-row">
-          <div class="ic">📞</div>
-          <div class="body">
-            <div class="ttl">통화 무제한</div>
-            <div class="desc">+부가통화 300분</div>
-          </div>
-        </div>
-        <div class="det-row">
-          <div class="ic">✉️</div>
-          <div class="body">
-            <div class="ttl">문자 무제한</div>
-            <div class="desc">기본 제공</div>
-          </div>
-        </div>
-        <div class="det-row">
-          <div class="ic">🎁</div>
-          <div class="body">
-            <div class="ttl">가입 즉시 3,000P + MNP 보너스 3,000P</div>
-            <div class="desc">현금화 가능 봉이 포인트</div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button style="flex:1;padding:11px;background:#fff;border:1.5px solid #f59e0b;color:#92400e;border-radius:9px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit">📷 유심카드 촬영</button>
+            <button style="flex:1;padding:11px;background:#5b21b6;border:none;color:#fff;border-radius:9px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit">확인 (개통 가능 여부)</button>
           </div>
         </div>
       </div>
 
-      <div class="price-row">
-        <div class="vat">(VAT 포함)</div>
-        <div class="price">월 <span class="unit">16,900원</span></div>
+      <!-- eSIM 시 동적 (예시 hide 상태 안내) -->
+      <div class="section" style="background:#fff7ed;border:1.5px solid #fb923c">
+        <h2 style="color:#9a3412"><span class="num" style="background:#9a3412">7b</span>eSIM 단말 정보 <span style="font-size:11px;font-weight:700;color:#9a3412;margin-left:6px">eSIM 선택 시 표시</span></h2>
+        <div style="font-size:12px;color:#9a3412;margin-bottom:14px;line-height:1.6">📱 휴대폰 다이얼에서 <strong>*#06#</strong> 입력하면 IMEI·EID 확인 가능합니다.</div>
+        <div class="field-row">
+          <div class="lbl">IMEI (15자리) <span class="req">*</span></div>
+          <input class="inp" placeholder="eSIM 이용 시 필수 입력" style="font-family:monospace">
+        </div>
+        <div class="field-row">
+          <div class="lbl">IMEI2 (eSIM IMEI, 15자리) <span class="req">*</span></div>
+          <input class="inp" placeholder="eSIM 이용 시 필수 입력" style="font-family:monospace">
+        </div>
+        <div class="field-row">
+          <div class="lbl">EID (32자리) <span class="req">*</span></div>
+          <input class="inp" placeholder="eSIM 이용 시 필수 입력" style="font-family:monospace">
+        </div>
+        <div class="field-row">
+          <div class="lbl">단말기 모델명 <span class="req">*</span></div>
+          <input class="inp" placeholder="예: iPhone 15 Pro · Galaxy S24">
+        </div>
+        <button style="width:100%;padding:13px;background:#fff;border:1.5px solid #fb923c;color:#9a3412;border-radius:9px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:6px">📷 단말 정보 이미지 첨부 (자동 인식)</button>
       </div>
-      <div class="price-after">*8개월차부터 40,700원</div>
+
+      <!-- 8. 가입안내 + 유심 이용안내 -->
+      <div class="section" style="background:#eff6ff;border:1.5px solid #93c5fd">
+        <h2 style="color:#1e3a8a"><span class="num" style="background:#1e3a8a">8</span>유심 이용 안내</h2>
+        <div style="font-size:12.5px;color:#1e3a8a;line-height:1.7">
+          <strong>📦 USIM 보유 시</strong>: 기존 유심을 단말에 꽂으면 자동 개통 (번호이동 시점 자동 처리)<br>
+          <strong>📲 eSIM 시</strong>: 가입 완료 후 SMS로 QR 발송 → 설정 → eSIM 추가 → QR 스캔 (5분 내 사용)<br>
+          <strong>🚚 USIM 미보유 시</strong>: 신청 즉시 일반 유심 무료 택배 발송 (광주·전남 익일 · 기타 1~2일)<br>
+          <strong>⚠️ 호환 단말</strong>: eSIM은 iPhone XS+ · Galaxy S20+ 이상만 가능
+        </div>
+      </div>
     </div>
 
-    <!-- 우측 sidebar -->
     <aside class="aside">
-      <div class="aside-section">
-        <div class="lbl">가입유형</div>
-        <div class="chips-row">
-          <div class="chip-btn">신규가입</div>
-          <div class="chip-btn active">번호이동</div>
-        </div>
+      <h3 style="font-size:16px;font-weight:900">선택한 옵션</h3>
+      <div class="plan-mini">
+        <div class="nm">KT 점보 100GB</div>
+        <div class="meta">번호이동 · KT · 후불 · 무약정</div>
+        <div class="pr">월 16,900원</div>
       </div>
-
-      <div class="aside-section">
-        <div class="lbl">개통방법</div>
-        <div class="chips-row">
-          <div class="chip-btn active full">셀프 개통 (eSIM QR)</div>
-        </div>
+      <div style="background:#f8f7f0;border-radius:10px;padding:14px;font-size:12px;line-height:1.7">
+        <div style="font-weight:800;margin-bottom:6px">현재 SIM 설정</div>
+        <div>· SIM 유형: <b>USIM</b></div>
+        <div>· 유심 구매: <b>보유</b></div>
+        <div>· 유심 종류: <b>일반 유심</b></div>
       </div>
-
-      <div class="aside-section">
-        <div class="lbl">유심 보유여부<span class="help">?</span></div>
-        <div class="chips-row">
-          <div class="chip-btn active">보유</div>
-          <div class="chip-btn">미보유</div>
-        </div>
-      </div>
-
-      <div class="aside-section">
-        <div class="lbl">유심 종류<span class="tooltip">유심 안내</span></div>
-        <div class="chips-row">
-          <div class="chip-btn active">일반 유심</div>
-          <div class="chip-btn">eSIM</div>
-        </div>
-      </div>
-
-      <div class="aside-section">
-        <div class="lbl">고객유형</div>
-        <div class="chips-row">
-          <div class="chip-btn active full">개인</div>
-        </div>
-      </div>
-
-      <button class="cta-apply">🌐 온라인 신청하기</button>
     </aside>
   </div>
-</div>
 
+  <div class="next-row">
+    <button class="btn-prev">◀ 이전</button>
+    <button class="cta">다음 (신청서 작성) ▶</button>
+  </div>
+</div>
 <div class="float-chat">💬</div>
 </body></html>
