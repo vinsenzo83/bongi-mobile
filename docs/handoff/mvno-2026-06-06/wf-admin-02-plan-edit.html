@@ -88,9 +88,15 @@ select.inp{appearance:none;cursor:pointer}
     <div>
       <div class="crumb">어드민 / 알뜰폰</div>
       <h1>📱 알뜰폰 어드민</h1>
-      <div class="sub">single page — 요금제 관리 · 신청서 처리 · 매장 유심 재고</div>
+      <div class="sub">single page — 요금제 관리 · 신청서 처리</div>
     </div>
   </div>
+
+  <!-- ==== Tab nav ==== -->
+  <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid #334155;padding-bottom:0">
+    <a href="#tab-plan" style="padding:11px 18px;background:#1e293b;color:#fbbf24;border:1px solid #334155;border-bottom:2px solid #fbbf24;border-radius:8px 8px 0 0;font-size:12.5px;font-weight:800;text-decoration:none">📱 요금제 관리 (15)</a>
+    <a href="#tab-sub" style="padding:11px 18px;background:transparent;color:#94a3b8;border:1px solid #334155;border-radius:8px 8px 0 0;font-size:12.5px;font-weight:700;text-decoration:none">📥 신청서 처리 (12)</a>
+      </div>
 
   <h2 id="tab-plan" style="font-size:18px;font-weight:900;color:#fbbf24;margin-bottom:4px">📱 요금제 관리 — inline 편집·일괄·복제</h2>
   <div class="sub" style="margin-bottom:14px">15 SKU 한 화면 · 망별 그룹 · 핵심 5 필드 (통신사·상품정보·월요금·프로모요금·프로모기간) inline 편집</div>
@@ -390,6 +396,62 @@ select.inp{appearance:none;cursor:pointer}
 
   <div class="note">
     💡 <strong style="color:#fbbf24">관리 편의</strong>: ① row hover → 5 필드 inline 편집 · ② 다중 선택 후 상단 toolbar 일괄 적용 · ③ 망 그룹 "복제" → 5종 자동 생성 · ④ 정책 마스터에 프로모 기본값 정의 · ⑤ 엑셀 import/export로 한 번에 15 SKU 교체 · ⑥ 📜 = SKU별 변경 이력
+  </div>
+
+  <!-- ============================================ -->
+  <!-- ====== 📥 신청서 처리 (Tab 2) ====== -->
+  <!-- ============================================ -->
+  <h2 id="tab-sub" style="font-size:18px;font-weight:900;color:#fbbf24;margin:40px 0 4px">📥 신청서 처리 — 큐·검토·모빙 전달</h2>
+  <div class="sub" style="margin-bottom:14px">고객 신청 → 상담사 검토 → 모빙 본사 전달 → 개통 완료 통보 (워크플로우 7-step)</div>
+
+  <!-- 상단 stats -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 14px"><div style="font-size:20px;font-weight:900;color:#fbbf24">12</div><div style="font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-top:2px">대기 (요청)</div></div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 14px"><div style="font-size:20px;font-weight:900;color:#3b82f6">8</div><div style="font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-top:2px">검토 중</div></div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 14px"><div style="font-size:20px;font-weight:900;color:#a855f7">23</div><div style="font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-top:2px">모빙 전달</div></div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 14px"><div style="font-size:20px;font-weight:900;color:#6ee7b7">237</div><div style="font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-top:2px">개통 완료 (월)</div></div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 14px"><div style="font-size:20px;font-weight:900;color:#ef4444">3</div><div style="font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-top:2px">반려</div></div>
+  </div>
+
+  <!-- 필터 chip -->
+  <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+    <div style="padding:7px 14px;background:#fbbf24;color:#0f172a;border-radius:999px;font-size:11.5px;font-weight:800">전체</div>
+    <div style="padding:7px 14px;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:999px;font-size:11.5px;font-weight:700">대기</div>
+    <div style="padding:7px 14px;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:999px;font-size:11.5px;font-weight:700">검토 중</div>
+    <div style="padding:7px 14px;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:999px;font-size:11.5px;font-weight:700">모빙 전달</div>
+    <div style="padding:7px 14px;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:999px;font-size:11.5px;font-weight:700">개통 완료</div>
+    <div style="padding:7px 14px;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:999px;font-size:11.5px;font-weight:700">반려</div>
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button style="background:#a855f7;color:#fff;border:none;padding:8px 14px;border-radius:7px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">📤 모빙 일괄 전달</button>
+      <button style="background:linear-gradient(135deg,#06b6d4,#7c3aed);color:#fff;border:none;padding:8px 14px;border-radius:7px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">📥 엑셀 export</button>
+    </div>
+  </div>
+
+  <!-- 신청서 table -->
+  <table style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:12px;border-collapse:separate;border-spacing:0;overflow:hidden">
+    <thead><tr>
+      <th style="background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.5px"><input type="checkbox"></th>
+      <th style="background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase">접수번호</th>
+      <th style="background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase">고객</th>
+      <th style="background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase">가입유형</th>
+      <th style="background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase">통신망 · 요금제</th>
+      <th style="background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase">유심</th>
+      <th style="background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase">접수 시각</th>
+      <th style="background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase">상태</th>
+      <th style="background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase">담당자</th>
+      <th style="background:#0c1424;padding:11px;text-align:left;font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase"></th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="padding:11px;border-top:1px solid #334155"><input type="checkbox"></td><td style="padding:11px;border-top:1px solid #334155;font-family:monospace;color:#fbbf24;font-size:11px">MV-2026-0237</td><td style="padding:11px;border-top:1px solid #334155;color:#e2e8f0;font-size:12px"><strong>김민준</strong> · 010-****-5678</td><td style="padding:11px;border-top:1px solid #334155"><span style="background:#1e3a8a;color:#93c5fd;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:800">번호이동</span></td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11.5px"><span class="net-badge kt" style="padding:3px 8px;border-radius:4px;font-size:9.5px;font-weight:800;color:#fff;background:linear-gradient(135deg,#1d4ed8,#3b82f6);margin-right:4px">KT</span>점보 ⭐</td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11.5px">eSIM</td><td style="padding:11px;border-top:1px solid #334155;color:#94a3b8;font-size:11px">14:32</td><td style="padding:11px;border-top:1px solid #334155"><span style="background:#7c2d12;color:#fbbf24;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800">⏳ 대기</span></td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11px">-</td><td style="padding:11px;border-top:1px solid #334155"><button style="background:#fbbf24;color:#0f172a;border:none;padding:5px 12px;border-radius:5px;font-size:10.5px;font-weight:800;cursor:pointer;font-family:inherit">검토</button></td></tr>
+      <tr><td style="padding:11px;border-top:1px solid #334155"><input type="checkbox" checked></td><td style="padding:11px;border-top:1px solid #334155;font-family:monospace;color:#fbbf24;font-size:11px">MV-2026-0236</td><td style="padding:11px;border-top:1px solid #334155;color:#e2e8f0;font-size:12px"><strong>박서윤</strong> · 010-****-1234</td><td style="padding:11px;border-top:1px solid #334155"><span style="background:#064e3b;color:#6ee7b7;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:800">신규</span></td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11.5px"><span style="padding:3px 8px;border-radius:4px;font-size:9.5px;font-weight:800;color:#fff;background:linear-gradient(135deg,#ec4899,#f43f5e);margin-right:4px">LGU+</span>베이직 ⭐</td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11.5px">택배</td><td style="padding:11px;border-top:1px solid #334155;color:#94a3b8;font-size:11px">14:18</td><td style="padding:11px;border-top:1px solid #334155"><span style="background:#1e3a8a;color:#93c5fd;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800">🔍 검토중</span></td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11px">김지수</td><td style="padding:11px;border-top:1px solid #334155"><button style="background:#a855f7;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:10.5px;font-weight:800;cursor:pointer;font-family:inherit">전달</button></td></tr>
+      <tr><td style="padding:11px;border-top:1px solid #334155"><input type="checkbox"></td><td style="padding:11px;border-top:1px solid #334155;font-family:monospace;color:#fbbf24;font-size:11px">MV-2026-0235</td><td style="padding:11px;border-top:1px solid #334155;color:#e2e8f0;font-size:12px"><strong>이준호</strong> · 010-****-9012</td><td style="padding:11px;border-top:1px solid #334155"><span style="background:#1e3a8a;color:#93c5fd;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:800">번호이동</span></td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11.5px"><span style="padding:3px 8px;border-radius:4px;font-size:9.5px;font-weight:800;color:#fff;background:linear-gradient(135deg,#ef4444,#dc2626);margin-right:4px">SKT</span>5G 무제한 💎</td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11.5px">보유</td><td style="padding:11px;border-top:1px solid #334155;color:#94a3b8;font-size:11px">13:42</td><td style="padding:11px;border-top:1px solid #334155"><span style="background:#581c87;color:#d8b4fe;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800">📤 전달중</span></td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11px">김지수</td><td style="padding:11px;border-top:1px solid #334155"><button style="background:#334155;color:#94a3b8;border:none;padding:5px 12px;border-radius:5px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit">로그</button></td></tr>
+      <tr><td style="padding:11px;border-top:1px solid #334155"><input type="checkbox"></td><td style="padding:11px;border-top:1px solid #334155;font-family:monospace;color:#fbbf24;font-size:11px">MV-2026-0234</td><td style="padding:11px;border-top:1px solid #334155;color:#e2e8f0;font-size:12px"><strong>최예진</strong> · 010-****-3456</td><td style="padding:11px;border-top:1px solid #334155"><span style="background:#064e3b;color:#6ee7b7;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:800">신규</span></td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11.5px"><span style="padding:3px 8px;border-radius:4px;font-size:9.5px;font-weight:800;color:#fff;background:linear-gradient(135deg,#1d4ed8,#3b82f6);margin-right:4px">KT</span>시니어 👵</td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11.5px">매장</td><td style="padding:11px;border-top:1px solid #334155;color:#94a3b8;font-size:11px">11:05</td><td style="padding:11px;border-top:1px solid #334155"><span style="background:#064e3b;color:#6ee7b7;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800">✅ 개통완료</span></td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11px">이수민</td><td style="padding:11px;border-top:1px solid #334155"><button style="background:#334155;color:#94a3b8;border:none;padding:5px 12px;border-radius:5px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit">상세</button></td></tr>
+      <tr><td style="padding:11px;border-top:1px solid #334155"><input type="checkbox"></td><td style="padding:11px;border-top:1px solid #334155;font-family:monospace;color:#fbbf24;font-size:11px">MV-2026-0233</td><td style="padding:11px;border-top:1px solid #334155;color:#e2e8f0;font-size:12px"><strong>정하늘</strong> · 010-****-7890</td><td style="padding:11px;border-top:1px solid #334155"><span style="background:#1e3a8a;color:#93c5fd;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:800">번호이동</span></td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11.5px"><span style="padding:3px 8px;border-radius:4px;font-size:9.5px;font-weight:800;color:#fff;background:linear-gradient(135deg,#1d4ed8,#3b82f6);margin-right:4px">KT</span>점보 ⭐</td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11.5px">eSIM</td><td style="padding:11px;border-top:1px solid #334155;color:#94a3b8;font-size:11px">10:21</td><td style="padding:11px;border-top:1px solid #334155"><span style="background:#7f1d1d;color:#fca5a5;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800">❌ 반려</span></td><td style="padding:11px;border-top:1px solid #334155;color:#cbd5e1;font-size:11px">박미선</td><td style="padding:11px;border-top:1px solid #334155"><button style="background:#334155;color:#94a3b8;border:none;padding:5px 12px;border-radius:5px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit">사유</button></td></tr>
+    </tbody>
+  </table>
+
+  <div class="note" style="margin-top:12px">
+    💡 <strong style="color:#fbbf24">워크플로우</strong>: ① 대기(요청) → ② 검토(본인확인·결제·유심) → ③ 모빙 전달(API 자동 또는 엑셀 batch) → ④ 모빙 처리 (4~24h) → ⑤ 개통 완료 → ⑥ 자동 SMS 통보. 반려 시 사유 기록 + 고객 SMS.
   </div>
 
 
