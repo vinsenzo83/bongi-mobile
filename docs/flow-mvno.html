@@ -226,8 +226,8 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
         <div class="col"><div class="dot w">5</div><div class="lbl">완료</div></div>
       </div>
       <div class="mock-row"><div class="l">가입유형 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip">신규가입</div><div class="mock-chip act">번호이동 (MNP)</div></div></div>
-      <div class="mock-row"><div class="l">통신망 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip">SKT</div><div class="mock-chip act">KT</div><div class="mock-chip">LG U+</div><div class="mock-chip">전체</div></div></div>
-      <div class="mock-row"><div class="l">상품유형 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip act">후불</div><div class="mock-chip">선불</div></div></div>
+      <div class="mock-row"><div class="l">통신망 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip">SKT</div><div class="mock-chip act">KT</div><div class="mock-chip">LG U+</div></div></div>
+      <div class="mock-row"><div class="l">상품유형 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip act">후불</div></div></div>
       <div style="font-size:12px;font-weight:800;margin:12px 0 6px">📡 KT 망 5개 요금제</div>
       <div class="mock-sku-grid">
         <div class="mock-sku">
@@ -261,8 +261,8 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       <div class="h">📋 입력 카테고리 (1~4)</div>
       <ul>
         <li><b>1. 가입유형</b> — 신규 / MNP (chip)</li>
-        <li><b>2. 통신망</b> — SKT / KT / LGU+ (chip)</li>
-        <li><b>3. 상품유형</b> — 후불 / 선불 (chip)</li>
+        <li><b>2. 통신망</b> — SKT / KT / LGU+ (chip · 3종)</li>
+        <li><b>3. 상품유형</b> — 후불 (chip · 1종 — 선불 미사용)</li>
         <li><b>4. 요금제</b> — 15 SKU 카드 선택</li>
       </ul>
       <div class="h" style="margin-top:10px">⚙️ 동작</div>
@@ -357,13 +357,13 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
 
       <div style="font-size:11.5px;font-weight:800;margin:6px 0">9·1 명의 정보</div>
       <div class="row2">
-        <div class="mock-field"><div class="lbl">이름 <span class="req">*</span></div><input class="mock-input filled" value="박서윤"></div>
+        <div class="mock-field"><div class="lbl">이름 <span class="req">*</span></div><input class="mock-input filled" value="홍길동"></div>
         <div class="mock-field"><div class="lbl">생년월일 <span class="req">*</span></div><input class="mock-input filled" value="950101"></div>
       </div>
 
       <div style="font-size:11.5px;font-weight:800;margin:10px 0 6px">9·2 연락처</div>
       <div class="mock-field"><div class="lbl">휴대폰 <span class="req">*</span></div><input class="mock-input filled" value="010-1234-1234"></div>
-      <div class="mock-field"><div class="lbl">이메일</div><input class="mock-input filled" value="parksy@example.com"></div>
+      <div class="mock-field"><div class="lbl">이메일</div><input class="mock-input filled" value="gildong@example.com"></div>
 
       <div style="font-size:11.5px;font-weight:800;margin:10px 0 6px">9·3 청구지 주소</div>
       <div class="mock-field"><input class="mock-input filled" value="61010 광주광역시 동구 충장로 1 (111호)"></div>
@@ -380,7 +380,7 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       <div class="mock-card-visual">
         <div class="h">신용·체크카드</div>
         <div class="n">**** **** **** 1234</div>
-        <div class="e">유효기간 12/27 · 박서윤</div>
+        <div class="e">유효기간 12/27 · 홍길동</div>
       </div>
       <div class="row2">
         <div class="mock-field"><div class="lbl">카드번호 <span class="req">*</span></div><input class="mock-input filled" value="****-****-****-1234"></div>
@@ -468,13 +468,11 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       </div>
 
       <div style="background:#fff7ed;border:1.5px solid #fb923c;border-radius:9px;padding:11px;margin-top:8px">
-        <div style="font-size:11px;font-weight:800;color:#9a3412;margin-bottom:8px">A. 전자서명 5종 중 선택</div>
-        <div class="mock-eauth">
-          <div class="mock-eauth-item kakao"><div class="lg">kakao</div><div class="nm">카카오톡</div></div>
-          <div class="mock-eauth-item naver"><div class="lg">NAVER</div><div class="nm">네이버</div></div>
-          <div class="mock-eauth-item toss"><div class="lg">toss</div><div class="nm">토스</div></div>
-          <div class="mock-eauth-item payco"><div class="lg">PAYCO</div><div class="nm">PAYCO</div></div>
-          <div class="mock-eauth-item pass act"><div class="lg">PASS</div><div class="nm">PASS</div></div>
+        <div style="font-size:11px;font-weight:800;color:#9a3412;margin-bottom:8px">A. 전자서명 인증 (PASS)</div>
+        <div style="background:#fff;border:2px solid #f97316;border-radius:9px;padding:14px;text-align:center;max-width:200px;margin:0 auto">
+          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;margin:0 auto 8px">PASS</div>
+          <div style="font-size:13px;font-weight:900;color:#9a3412">PASS 인증</div>
+          <div style="font-size:10.5px;color:#9a3412;margin-top:3px">SKT·KT·LGU+ 통합 인증 · 30초</div>
         </div>
         <div style="background:#fff;border-radius:8px;padding:11px;margin-top:8px;text-align:center">
           <div style="font-size:11px;font-weight:700;margin-bottom:8px">📩 PASS 앱에서 인증 진행해 주세요</div>
@@ -500,7 +498,7 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       </ul>
       <div class="h" style="margin-top:10px">🔐 본인 인증 비교</div>
       <ul>
-        <li><b>A. 전자서명</b> — 5종 (카카오/네이버/토스/PAYCO/PASS) · 30초 · 앱 보유</li>
+        <li><b>A. 전자서명</b> — PASS 인증 (SKT·KT·LGU+ 통합 · 30초)</li>
         <li><b>B. 계좌 1원 송금</b> — 앱 불필요 · 시니어용 · 입금자명 코드</li>
       </ul>
       <div class="h" style="margin-top:10px">⚠️ 둘 다 필수</div>
@@ -705,11 +703,11 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
         <div><span style="background:#7c2d12;color:#fbbf24;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800">⏳ 대기</span></div>
         <div><button style="background:#fbbf24;color:#0f172a;border:none;padding:4px 9px;border-radius:4px;font-size:9.5px;font-weight:800">검토</button></div>
       </div>
-      <!-- row 2: 박서윤 + expand -->
+      <!-- row 2: 홍길동 + expand -->
       <div style="display:grid;grid-template-columns:25px 95px 1fr 70px 1fr 50px 55px 75px 70px;padding:8px 12px;gap:6px;border-bottom:1px solid #334155;align-items:center;font-size:10.5px;background:#0c1424">
         <div><input type="checkbox" checked></div>
         <div style="color:#fbbf24;font-family:monospace;font-size:9.5px">MV-2026-0236 ▾</div>
-        <div style="color:#fff"><b>박서윤</b> · 010-****-1234</div>
+        <div style="color:#fff"><b>홍길동</b> · 010-****-1234</div>
         <div><span style="background:#064e3b;color:#6ee7b7;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800">신규</span></div>
         <div style="color:#cbd5e1"><span style="background:linear-gradient(135deg,#ec4899,#f43f5e);color:#fff;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800;margin-right:3px">LGU+</span>베이직 ⭐</div>
         <div style="color:#cbd5e1">택배</div>
@@ -721,7 +719,7 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       <!-- expand panel -->
       <div style="background:#0c1424;border-left:4px solid #a855f7;padding:14px 16px;font-size:10.5px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div style="font-size:12px;font-weight:900;color:#fbbf24">📄 박서윤 신청서 상세 (MV-2026-0236) — 12 카테고리 + 모빙 추가</div>
+          <div style="font-size:12px;font-weight:900;color:#fbbf24">📄 홍길동 신청서 상세 (MV-2026-0236) — 12 카테고리 + 모빙 추가</div>
           <div style="display:flex;gap:4px">
             <button style="background:#a855f7;color:#fff;border:none;padding:5px 10px;border-radius:4px;font-size:9.5px;font-weight:800">📤 모빙 전달</button>
             <button style="background:#7c2d12;color:#fbbf24;border:none;padding:5px 10px;border-radius:4px;font-size:9.5px;font-weight:800">❌ 반려</button>
@@ -749,7 +747,7 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
           <!-- STEP 3 -->
           <div style="background:#1e293b;border-radius:7px;padding:9px 11px">
             <div style="color:#d97706;font-weight:800;margin-bottom:5px;font-size:10.5px">③ 신청서</div>
-            <div style="color:#94a3b8;font-size:9.5px">9·1 이름</div><div style="color:#fff;font-weight:600">박서윤 · 950101</div>
+            <div style="color:#94a3b8;font-size:9.5px">9·1 이름</div><div style="color:#fff;font-weight:600">홍길동 · 950101</div>
             <div style="color:#94a3b8;font-size:9.5px">9·2 연락처</div><div style="color:#fff;font-weight:600">010-****-1234 <span style="color:#16a34a">✓</span></div>
             <div style="color:#94a3b8;font-size:9.5px">9·3 청구지</div><div style="color:#fff;font-weight:600;font-size:9.5px">광주 동구 충장로 1 (111호)</div>
             <div style="color:#94a3b8;font-size:9.5px">9·4 희망번호 <span style="background:#1e3a8a;color:#93c5fd;padding:0px 4px;border-radius:2px;font-size:8.5px;margin-left:2px">+모빙</span></div><div style="color:#fff;font-weight:600;font-family:monospace;font-size:9.5px">1234·5678·9012</div>
