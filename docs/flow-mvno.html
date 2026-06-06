@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이모바일 — ⑤ 알뜰폰 (MVNO 대리점) 플로우</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#f8f7f4; --bg2:#fff; --border:#e2ddd6; --navy:#1a2744; --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5; --orange:#d97706; --orange2:#fef3c7; --red:#dc2626; --red2:#fee2e2; --purple:#7c3aed; --purple2:#f3e8ff; --pink:#ec4899; --pink2:#fce7f3; --text:#1a1a1a; --text2:#4a4a4a; --text3:#8a8a8a; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; padding:40px; max-width:1400px; margin:0 auto; }
+h1 { font-size:28px; font-weight:900; color:var(--navy); margin-bottom:4px; }
+.subtitle { font-size:12px; color:var(--text3); margin-bottom:12px; font-family:'JetBrains Mono',monospace; }
+.hero-banner { background:linear-gradient(135deg,#fef3c7,#fde68a); border:2px solid var(--orange); border-radius:14px; padding:18px 24px; margin-bottom:30px; font-size:13px; color:#78350f; line-height:1.7 }
+.hero-banner strong { color:#92400e }
+.section-title { font-size:20px; font-weight:900; color:var(--navy); margin:32px 0 16px; display:flex; align-items:center; gap:10px; }
+.section-num { background:var(--orange); color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+.step-label { background:var(--navy); color:#fff; display:inline-block; padding:5px 12px; border-radius:6px; font-size:11px; font-weight:700; margin-bottom:10px; }
+.card { background:var(--bg2); border:1.5px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; }
+.card-orange { border-left:5px solid var(--orange); }
+.mono { font-family:'JetBrains Mono',monospace; font-size:10px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700; }
+.b-blue { background:var(--blue2); color:var(--blue); } .b-green { background:var(--green2); color:var(--green); }
+.b-orange { background:var(--orange2); color:var(--orange); } .b-red { background:var(--red2); color:var(--red); }
+.b-purple { background:var(--purple2); color:var(--purple); } .b-gray { background:#f3f4f6; color:#6b7280; }
+.b-pink { background:var(--pink2); color:var(--pink); }
+table { width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }
+th { background:var(--navy); color:#fff; padding:8px 10px; text-align:left; font-size:10px; }
+td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+a { color:var(--blue); text-decoration:none; }
+a:hover { text-decoration:underline; }
+.note { background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:10px 14px; font-size:11px; color:var(--navy); line-height:1.7; margin-top:10px; }
+.warn { background:#fef2f2; border:1.5px solid var(--red); border-radius:8px; padding:10px 14px; font-size:11px; color:var(--red); line-height:1.7; margin-top:8px; }
+.flow { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:10px }
+.fb { padding:10px 14px; border-radius:10px; font-size:11px; font-weight:700; text-align:center; min-width:90px; line-height:1.4 }
+.fb-user { background:var(--orange2); border:1.5px solid var(--orange); color:var(--orange) }
+.fb-neutral { background:#f8f8f6; border:1.5px solid var(--border); color:var(--text2) }
+.fb-admin { background:var(--blue2); border:1.5px solid var(--blue); color:var(--blue) }
+.fb-crm { background:var(--purple2); border:1.5px solid var(--purple); color:var(--purple) }
+.fb-db { background:#dcfce7; border:1.5px solid var(--green); color:var(--green) }
+.fb-api { background:var(--pink2); border:1.5px solid var(--pink); color:var(--pink) }
+.fa { color:var(--text3); font-size:18px; font-weight:700; padding:0 2px }
+.arrow-down { text-align:center; color:var(--orange); font-size:24px; margin:6px 0; font-weight:700 }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.grid5 { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+
+/* SKU 카드 */
+.sku-card { background:#fff; border:2px solid var(--border); border-radius:12px; padding:14px; position:relative }
+.sku-card.main { border-color:var(--pink); border-width:3px }
+.sku-card.main::before { content:'⭐ 주력'; position:absolute; top:-10px; left:10px; background:var(--pink); color:#fff; padding:2px 8px; border-radius:4px; font-size:9px; font-weight:800 }
+.sku-card .role-tag { font-size:10px; font-weight:800; margin-bottom:4px; display:inline-block; padding:2px 7px; border-radius:4px }
+.sku-card .name { font-size:14px; font-weight:900; margin:4px 0 2px; color:var(--navy) }
+.sku-card .info { font-size:10px; color:var(--text3); margin-bottom:8px; line-height:1.4 }
+.sku-card .price { font-size:13px; font-weight:900; color:var(--orange) }
+.sku-card .strike { text-decoration:line-through; color:var(--text3); font-size:10px }
+.r-mikki { background:#f3f4f6; color:#6b7280 }
+.r-main { background:var(--pink2); color:#9f1239 }
+.r-up { background:var(--blue2); color:#1e3a8a }
+.r-prem { background:var(--orange2); color:#92400e }
+.r-hyodo { background:var(--green2); color:#166534 }
+
+.doc-card { background:var(--bg2); border:2px solid var(--border); border-radius:12px; padding:14px; transition:all .15s; cursor:pointer; text-decoration:none; display:block; color:var(--text); }
+.doc-card:hover { border-color:var(--orange); box-shadow:0 4px 12px rgba(217,119,6,.18); transform:translateY(-2px); text-decoration:none }
+.doc-card .doc-icon { font-size:24px; margin-bottom:4px }
+.doc-card .doc-title { font-size:13px; font-weight:900; color:var(--navy); margin-bottom:2px }
+.doc-card .doc-desc { font-size:10px; color:var(--text3); line-height:1.4 }
+
+.bench-row { display:flex; gap:14px; align-items:center; padding:10px 14px; background:#fff; border:1.5px solid var(--border); border-radius:10px; margin-bottom:6px }
+.bench-row .icon { font-size:18px }
+.bench-row .lbl { font-size:11px; font-weight:700; min-width:120px; color:var(--navy) }
+.bench-row .v { flex:1; font-size:11px; color:var(--text2) }
+</style>
+</head>
+<body>
+
+<h1>⑤ 알뜰폰 (MVNO 대리점) 플로우</h1>
+<div class="subtitle">flow-mvno.html · 봉이 자체 MVNO 사업자 X · MVNO 대리점·전용 요금제 출시 · 2026-06-06</div>
+
+<div class="hero-banner">
+  📡 <strong>봉이 = MVNO 대리점</strong> (별정통신 면허 X). KT엠모바일·미디어로그·SK텔링크 등 본사와 제휴 → <strong>봉이 전용 5 SKU</strong> 출시 → 가입 1건당 수수료 수익. 망 임대·요금 청구는 MVNO 본사가 담당.
+</div>
+
+<!-- ==================== STEP 0: 진입 ==================== -->
+<div class="step-label">STEP 0 — 고객 진입 경로</div>
+<div class="card card-orange">
+  <div class="flow">
+    <div class="fb" style="background:var(--navy);color:#fff;font-size:10px">경로 A<br><strong>AI 채팅</strong></div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px">"휴대폰 요금 줄이고 싶어요"<br>AI가 MvnoSelectCard 오픈</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:9px">MvnoSelectCard<br>망→데이터→타겟 3단계</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:10px">5 SKU 추천</div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);font-size:9px">storefront<br>비교·가입</div>
+  </div>
+  <div class="flow">
+    <div class="fb fb-user" style="font-size:10px">경로 B<br><strong>storefront 직접</strong></div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px">홈 카테고리 ⑤ 알뜰폰<br>5 SKU 비교 list</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">상세 → 가입</div>
+  </div>
+  <div class="flow">
+    <div class="fb fb-crm" style="font-size:10px">경로 C<br><strong>매장 방문</strong></div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px">8 직영 매장<br>광주·전남</div>
+    <div class="fa">→</div>
+    <div class="fb fb-crm" style="font-size:10px">5분 즉시 개통<br>(효도·세컨폰 중심)</div>
+  </div>
+  <div class="flow">
+    <div class="fb" style="background:#fde047;border:1.5px solid #ca8a04;color:#854d0e;font-size:10px">경로 D<br><strong>크로스셀</strong></div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:9px">가전렌탈·인터넷+TV<br>기존 고객 (435+63)</div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:#fef9c3;color:#854d0e;font-size:10px">결합 할인 안내<br>−2,000원/월</div>
+  </div>
+  <div class="note">
+    <strong>경로 A·B</strong>: eSIM 즉시 개통 (전국). <strong>경로 C</strong>: 효도폰·세컨폰 실물 유심 (구형 단말 eSIM X). <strong>경로 D</strong>: 가전렌탈·인터넷+TV 기존 고객 → 알뜰폰 결합 시 봉이포인트 5,000P 보너스.
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ==================== STEP 1: 5 SKU ==================== -->
+<div class="step-label">STEP 1 — 봉이 알뜰폰 5 SKU 라인업</div>
+<div class="card card-orange">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">미끼 ① · 주력 ② ★ · 업셀 ③ · 프리미엄 ④ · 효도 ⑤ — 역할별 라인업</div>
+  <div class="grid5">
+
+    <div class="sku-card">
+      <span class="role-tag r-mikki">🐟 미끼</span>
+      <div class="name">봉이 라이트</div>
+      <div class="info">LGU+ LTE · eSIM<br>4.5GB + 1Mbps · 통화 무제한</div>
+      <div class="price">
+        <span class="strike">20,900원</span><br>
+        <span style="color:var(--green)">0원 × 7M</span>
+      </div>
+    </div>
+
+    <div class="sku-card main">
+      <span class="role-tag r-main">🎯 주력</span>
+      <div class="name">봉이 베이직 ★</div>
+      <div class="info">LGU+ LTE · eSIM<br>11GB + 매일 2GB + 3Mbps</div>
+      <div class="price">
+        <span class="strike">39,600원</span><br>
+        <span>9,900원 × 7M</span>
+      </div>
+    </div>
+
+    <div class="sku-card">
+      <span class="role-tag r-up">⬆️ 업셀</span>
+      <div class="name">봉이 점보</div>
+      <div class="info">KT LTE · eSIM<br>100GB + 5Mbps · 무제한</div>
+      <div class="price">
+        <span class="strike">40,700원</span><br>
+        <span>16,900원 × 7M</span>
+      </div>
+    </div>
+
+    <div class="sku-card">
+      <span class="role-tag r-prem">💎 프리미엄</span>
+      <div class="name">봉이 프리미엄</div>
+      <div class="info">LGU+ 5G · eSIM<br>완전 무제한 + 페이백</div>
+      <div class="price">
+        <span class="strike">59,000원</span><br>
+        <span style="color:var(--red)">실질 34,000원</span>
+      </div>
+    </div>
+
+    <div class="sku-card">
+      <span class="role-tag r-hyodo">👵 효도</span>
+      <div class="name">봉이 효도 3종</div>
+      <div class="info">LGU+ LTE · 실물 유심<br>매장 5분 / 택배</div>
+      <div class="price">
+        <span style="color:var(--green)">6,900원~</span><br>
+        <span style="font-size:9px;color:var(--text3)">평생 동일가</span>
+      </div>
+    </div>
+
+  </div>
+  <div class="note">
+    🎯 <strong>주력 = 봉이 베이직</strong> (총 신청의 50% 목표) — 수익 마진·사은품 예산 집중 / 🐟 라이트는 마진 0 미끼 / 👵 효도는 매장 자산·저해지율 90%+
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ==================== STEP 2: *#06# EID 분기 ==================== -->
+<div class="step-label">STEP 2 — *#06# EID 자가 분기 (상담 부하 감소)</div>
+<div class="card card-orange">
+  <div class="flow">
+    <div class="fb" style="background:var(--navy);color:#fff;font-size:11px;padding:14px 18px">고객<br>SKU 선택</div>
+    <div class="fa">→</div>
+    <div class="fb fb-neutral" style="font-size:10px">단말기 *#06# 입력<br>EID 확인 화면</div>
+    <div class="fa">→</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="fb" style="background:#dbeafe;border:1.5px solid var(--blue);color:var(--blue);font-size:10px;padding:7px 10px">✅ EID 있음 → eSIM 즉시 개통 (5분)</div>
+      <div class="fb" style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);font-size:10px;padding:7px 10px">📦 EID 없음 (광주·전남) → 매장 5분 개통</div>
+      <div class="fb" style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);font-size:10px;padding:7px 10px">🚚 EID 없음 (그 외) → 실물 유심 택배 1~2일</div>
+    </div>
+  </div>
+  <div class="note">
+    💡 <strong>자가 분기 효과</strong>: 고객이 스스로 갈라져서 상담 부하 30~50% 감소. eSIM 가능자는 즉시 개통으로 전환율 +20%. 효도·세컨폰 라인업은 자연 ⑤ 효도 SKU로 유입.
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ==================== STEP 3: 가입 form 4 step ==================== -->
+<div class="step-label">STEP 3 — 가입 신청 4 step (mobing 패턴)</div>
+<div class="card card-orange">
+  <div class="flow">
+    <div class="fb fb-user" style="font-size:10px">Step 1<br><strong>요금제 확인</strong><br>봉이 베이직 · 9,900원</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">Step 2<br><strong>가입 유형</strong><br>🆕 신규 / 🔄 MNP / 📱 유심</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">Step 3<br><strong>가입자 정보</strong><br>이름·생년·연락처·주소</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">Step 4<br><strong>약관 동의</strong><br>필수 4종 + 선택 1</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db" style="font-size:10px"><strong>티켓 발급</strong><br>M00001~</div>
+  </div>
+  <table>
+    <thead><tr><th>step</th><th>필드</th><th>박제 (snapshot)</th></tr></thead>
+    <tbody>
+      <tr><td>1. 요금제</td><td class="mono">plan_id · plan_code · provider</td><td>monthly_fee · promo_fee · promos[]</td></tr>
+      <tr><td>2. 가입 유형</td><td class="mono">signup_type · sim_type · from_carrier · from_phone</td><td>'new' / 'mnp' / 'usim_only'</td></tr>
+      <tr><td>3. 가입자</td><td class="mono">customer_name · birth_date · gender · phone · address · email</td><td>customer_type (개인/사업자/외국인)</td></tr>
+      <tr><td>4. 약관</td><td class="mono">agreements jsonb (필수 4 + 선택)</td><td>약관 전문 + 시점 박제</td></tr>
+    </tbody>
+  </table>
+  <div class="warn">
+    ⚠️ 약관 동의는 봉이 + MVNO 본사 양쪽 약관 모두 박제 필요 (법적 의무).
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ==================== STEP 4: 티켓 발급 + DB 박제 ==================== -->
+<div class="step-label">STEP 4 — 티켓 M00001~ 발급 + DB 박제</div>
+<div class="card card-orange">
+  <div class="flow">
+    <div class="fb fb-user" style="font-size:10px">신청 form 제출</div>
+    <div class="fa">→</div>
+    <div class="fb fb-api" style="font-size:10px">POST /api/mvno/subscriptions</div>
+    <div class="fa">→</div>
+    <div class="fb fb-db" style="font-size:10px"><strong>bongi_mvno_subscriptions</strong><br>insert + ticket M00042</div>
+    <div class="fa">→</div>
+    <div class="fb fb-user" style="font-size:10px">완료 페이지<br>M00042 · 24h 내 연락</div>
+  </div>
+  <table>
+    <thead><tr><th>티켓 번호</th><th>범위</th><th>규칙</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">M00001 ~ M99999</td><td>알뜰폰 가입 신청 1건당 1티켓</td><td>봉이 자체 발급. MVNO 본사 plan_code와 별개</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    🔢 봉이 티켓 prefix: 🌐 <strong>SK0188 / KT / LGU</strong> 인터넷+TV · 📺 <strong>R0001~</strong> 가전렌탈 · 📱 <strong>M00001~</strong> 알뜰폰
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ==================== STEP 5: 어드민 신청서 처리 ==================== -->
+<div class="step-label">STEP 5 — 어드민 신청서 처리 (status 5단계)</div>
+<div class="card card-orange">
+  <div class="flow">
+    <div class="fb" style="background:#ef4444;color:#fff;font-size:11px;padding:8px 14px">신청 접수</div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:#f59e0b;color:#0f172a;font-size:11px;padding:8px 14px">본인확인 완료</div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:#3b82f6;color:#fff;font-size:11px;padding:8px 14px">개통중</div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:#10b981;color:#fff;font-size:11px;padding:8px 14px">개통 완료</div>
+    <div class="fa">→</div>
+    <div class="fb" style="background:#475569;color:#fff;font-size:11px;padding:8px 14px">취소 (옵션)</div>
+  </div>
+  <table>
+    <thead><tr><th>status</th><th>의미</th><th>운영자 액션</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">pending</td><td>신청 접수 (기본)</td><td>📞 1차 통화 · 본인확인 시작</td></tr>
+      <tr><td class="mono">verified</td><td>본인 + EID 확인 완료</td><td>MVNO 본사에 가입 신청 전달</td></tr>
+      <tr><td class="mono">processing</td><td>MVNO 본사 개통 진행</td><td>대기 (자동 webhook 또는 수동 확인)</td></tr>
+      <tr><td class="mono">activated</td><td>개통 완료</td><td>봉이포인트 자동 적립 · SMS 안내</td></tr>
+      <tr><td class="mono">cancelled</td><td>취소 처리</td><td>14일 청약철회 또는 본인확인 실패</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ==================== STEP 6: MVNO 본사 전달 ==================== -->
+<div class="step-label">STEP 6 — MVNO 본사 가입 전달 (대리점 핵심)</div>
+<div class="card card-orange">
+  <div class="flow">
+    <div class="fb fb-admin" style="font-size:10px">어드민<br>본인확인 완료 처리</div>
+    <div class="fa">→</div>
+    <div class="fb fb-api" style="font-size:9px">조회: subscription.plan_id<br>→ plans.mvno_provider</div>
+    <div class="fa">→</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="fb" style="background:#fef3c7;border:1.5px solid var(--orange);color:var(--orange);font-size:9px;padding:5px 10px">KT엠모바일 API</div>
+      <div class="fb" style="background:#fef3c7;border:1.5px solid var(--orange);color:var(--orange);font-size:9px;padding:5px 10px">미디어로그 API</div>
+      <div class="fb" style="background:#fef3c7;border:1.5px solid var(--orange);color:var(--orange);font-size:9px;padding:5px 10px">SK텔링크 API</div>
+      <div class="fb" style="background:#fef3c7;border:1.5px solid var(--orange);color:var(--orange);font-size:9px;padding:5px 10px">LG헬로비전 API</div>
+      <div class="fb" style="background:#fef3c7;border:1.5px solid var(--orange);color:var(--orange);font-size:9px;padding:5px 10px">KT스카이라이프 API</div>
+    </div>
+    <div class="fa">→</div>
+    <div class="fb fb-crm" style="font-size:10px">본사 자체 개통<br>(망 임차 + 청구)</div>
+  </div>
+  <table>
+    <thead><tr><th>MVNO 본사</th><th>제휴 SKU</th><th>망</th><th>봉이 수수료 (가입 1건당)</th></tr></thead>
+    <tbody>
+      <tr><td>KT엠모바일</td><td>③ 봉이 점보</td><td>KT</td><td><span class="badge b-green">28,000원</span></td></tr>
+      <tr><td>미디어로그 (U+ 유모바일)</td><td>① 라이트 ② 베이직 ④ 프리미엄 ⑤ 효도</td><td>LGU+</td><td><span class="badge b-green">25,000원</span></td></tr>
+      <tr><td>SK텔링크 (SK 7모바일)</td><td>(예정 — 2026년 7월 신요금제 출시 시)</td><td>SKT</td><td><span class="badge b-gray">27,000원</span></td></tr>
+      <tr><td>LG헬로비전</td><td>(검토)</td><td>LGU+</td><td><span class="badge b-gray">25,000원</span></td></tr>
+      <tr><td>KT스카이라이프</td><td>(검토)</td><td>KT</td><td><span class="badge b-gray">22,000원</span></td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ==================== STEP 7: 개통 완료 + 봉이 자동화 ==================== -->
+<div class="step-label">STEP 7 — 개통 완료 + 봉이 자동화</div>
+<div class="card card-orange">
+  <div class="flow">
+    <div class="fb" style="background:var(--green2);border:2px solid var(--green);color:var(--green);font-size:11px;padding:10px 16px">개통 완료<br>status='activated'</div>
+    <div class="fa">→</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="fb" style="background:#fef9c3;color:#854d0e;font-size:10px;padding:5px 10px">📲 SMS 자동 발송 (개통 안내)</div>
+      <div class="fb" style="background:#fef9c3;color:#854d0e;font-size:10px;padding:5px 10px">🪙 봉이포인트 5,000P 적립</div>
+      <div class="fb" style="background:#fef9c3;color:#854d0e;font-size:10px;padding:5px 10px">🎁 MNP 시 추가 5,000P</div>
+      <div class="fb" style="background:#fef9c3;color:#854d0e;font-size:10px;padding:5px 10px">🔗 가전렌탈·인터넷+TV 결합 자동 적용</div>
+      <div class="fb" style="background:#fef9c3;color:#854d0e;font-size:10px;padding:5px 10px">📊 KPI 대시보드 자동 update</div>
+    </div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ==================== STEP 8: 후속 처리 ==================== -->
+<div class="step-label">STEP 8 — 후속 (자동 전환 알림·재가입·이탈 방어)</div>
+<div class="card card-orange">
+  <div class="grid3">
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px">
+      <div style="font-size:14px;font-weight:900;color:var(--orange);margin-bottom:6px">⏰ 정가 전환 알림</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        프로모션 종료 14일 전 SMS·앱 푸시 — "다음 달부터 39,600원 정가 전환. 다른 SKU 변경?"
+      </div>
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px">
+      <div style="font-size:14px;font-weight:900;color:var(--orange);margin-bottom:6px">🔗 결합 할인</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        가전렌탈·인터넷+TV 신규 가입 시 알뜰폰 회선당 −1,000~2,000원 자동 적용. 친구결합 회선당 −1,100원.
+      </div>
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px">
+      <div style="font-size:14px;font-weight:900;color:var(--orange);margin-bottom:6px">📞 이탈 방어 콜</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        12개월 사용 후 해지 신청 시 자동 콜DB 인입 → TM 큐콜로 재계약 제안 (1개월 무료 등)
+      </div>
+    </div>
+  </div>
+</div>
+<div class="arrow-down">↓</div>
+
+<!-- ==================== 개발 산출물 ==================== -->
+<div class="section-title"><span class="section-num">📦</span>개발 산출물 (와이어프레임 9종 + spec 8종)</div>
+
+<div class="card">
+  <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px">🖥️ 프론트 와이어프레임</div>
+  <div class="grid3">
+    <a class="doc-card" href="handoff/mvno-2026-06-06/wf-customer-01-plan-list.html">
+      <div class="doc-icon">📋</div>
+      <div class="doc-title">01 · 5 SKU 비교 list</div>
+      <div class="doc-desc">베이직 ★ 강조 카드 · 역할 라벨 · promo→정가</div>
+    </a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/wf-customer-02-eid-check.html">
+      <div class="doc-icon">🔍</div>
+      <div class="doc-title">02 · *#06# EID 자가 분기</div>
+      <div class="doc-desc">eSIM / 매장 / 택배 3 옵션 자동 안내</div>
+    </a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/wf-customer-03-signup-step.html">
+      <div class="doc-icon">📝</div>
+      <div class="doc-title">03 · 가입 4 step</div>
+      <div class="doc-desc">요금제·유형·정보·약관 통합 페이지</div>
+    </a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/wf-customer-04-complete.html">
+      <div class="doc-icon">🎉</div>
+      <div class="doc-title">04 · 가입 완료 (M-ticket)</div>
+      <div class="doc-desc">티켓·다음 단계·친구초대 추천</div>
+    </a>
+  </div>
+
+  <div style="font-size:12px;font-weight:700;color:var(--navy);margin:18px 0 10px">⚙️ 어드민 와이어프레임</div>
+  <div class="grid3">
+    <a class="doc-card" href="handoff/mvno-2026-06-06/wf-admin-01-plan-list.html">
+      <div class="doc-icon">📱</div>
+      <div class="doc-title">01 · 5 SKU 요금제 list</div>
+      <div class="doc-desc">역할 · MVNO · 수수료 · 신청수</div>
+    </a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/wf-admin-02-plan-edit.html">
+      <div class="doc-icon">📝</div>
+      <div class="doc-title">02 · 요금제 편집</div>
+      <div class="doc-desc">MVNO 본사·요금·프로모션 4종</div>
+    </a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/wf-admin-03-subscriptions.html">
+      <div class="doc-icon">📋</div>
+      <div class="doc-title">03 · 신청서 처리</div>
+      <div class="doc-desc">list·필터·디테일 toast·snapshot 박제</div>
+    </a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/wf-admin-04-store-stock.html">
+      <div class="doc-icon">🏪</div>
+      <div class="doc-title">04 · 매장 유심 재고</div>
+      <div class="doc-desc">8 매장 × 3망 + 5분 개통 SOP</div>
+    </a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/wf-admin-05-kpi.html">
+      <div class="doc-icon">📊</div>
+      <div class="doc-title">05 · KPI 대시보드</div>
+      <div class="doc-desc">5 SKU 분포·funnel·잔존율</div>
+    </a>
+  </div>
+
+  <div style="font-size:12px;font-weight:700;color:var(--navy);margin:18px 0 10px">📚 spec 문서</div>
+  <div class="grid3">
+    <a class="doc-card" href="handoff/mvno-2026-06-06/README.md"><div class="doc-icon">📖</div><div class="doc-title">README</div><div class="doc-desc">패키지 overview · 작업 P1~P5</div></a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/market-research.md"><div class="doc-icon">📊</div><div class="doc-title">시장 조사</div><div class="doc-desc">점유율 17% · 사업자 · 트렌드</div></a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/bongi-mvno-product-plan.md"><div class="doc-icon">🎯</div><div class="doc-title">상품 기획 v1.5</div><div class="doc-desc">5 SKU 페르소나·KPI·LTV·마진</div></a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/data.md"><div class="doc-icon">🗄️</div><div class="doc-title">데이터 모델</div><div class="doc-desc">5 신규 테이블 컬럼 정의</div></a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/db-schema.md"><div class="doc-icon">🔗</div><div class="doc-title">DB schema</div><div class="doc-desc">ERD · 트리거 · RLS</div></a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/api-endpoints.md"><div class="doc-icon">🌐</div><div class="doc-title">API endpoint</div><div class="doc-desc">/api/mvno/* 전체</div></a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/mobing-reference.md"><div class="doc-icon">🔬</div><div class="doc-title">mobing 분석</div><div class="doc-desc">가입 4 step 매핑</div></a>
+    <a class="doc-card" href="handoff/mvno-2026-06-06/env-vars.md"><div class="doc-icon">🔐</div><div class="doc-title">환경 변수</div><div class="doc-desc">PASS·SMS·Kakao·MNP</div></a>
+  </div>
+</div>
+
+<!-- ==================== 데이터 모델 ==================== -->
+<div class="section-title"><span class="section-num">🗄️</span>데이터 모델 (5 신규 테이블)</div>
+<div class="card">
+  <table>
+    <thead><tr><th>테이블</th><th>역할</th><th>핵심 컬럼</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono">bongi_mvno_providers</td>
+        <td>MVNO 본사 (5 사업자)</td>
+        <td>code · name · network_carrier · commission_default · contract_status</td>
+      </tr>
+      <tr>
+        <td class="mono">bongi_mvno_plans</td>
+        <td>봉이 전용 5 SKU 마스터</td>
+        <td>plan_code · mvno_provider · monthly_fee · promo_fee · data_gb · commission_amount</td>
+      </tr>
+      <tr>
+        <td class="mono">bongi_mvno_promos</td>
+        <td>SKU별 프로모션 (1:N)</td>
+        <td>type · title · value · duration_months · condition</td>
+      </tr>
+      <tr>
+        <td class="mono">bongi_mvno_subscriptions</td>
+        <td>가입 신청 박제</td>
+        <td>ticket_number(M-) · signup_type · snapshot · promo_snapshot · agreements · status · source</td>
+      </tr>
+      <tr>
+        <td class="mono">bongi_mvno_devices</td>
+        <td>단말기 동시 판매 (옵션)</td>
+        <td>device_code · brand · model · retail_price · subsidy_amount</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note">
+    🔒 RLS: `plans`·`promos`는 anon read · `subscriptions`는 server route만 (`anon insert` + `authenticated all`). `incentive_centers`·`incentive_agents` 재사용 — 봉이 보유 인프라 활용.
+  </div>
+</div>
+
+<!-- ==================== API endpoint ==================== -->
+<div class="section-title"><span class="section-num">🌐</span>API endpoint (`/api/mvno/*`)</div>
+<div class="card">
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>설명</th><th>인증</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge b-blue">GET</span></td><td class="mono">/plans?carrier=KT&active=1</td><td>요금제 list 필터</td><td>optional</td></tr>
+      <tr><td><span class="badge b-blue">GET</span></td><td class="mono">/plans/:id</td><td>단일 요금제 + 프로모션</td><td>optional</td></tr>
+      <tr><td><span class="badge b-orange">POST</span></td><td class="mono">/subscriptions</td><td>가입 신청 박제 (snapshot)</td><td>optional</td></tr>
+      <tr><td><span class="badge b-blue">GET</span></td><td class="mono">/subscriptions/:ticketNumber</td><td>신청 확인 (M00001~)</td><td>optional</td></tr>
+      <tr><td><span class="badge b-orange">POST</span></td><td class="mono">/plans</td><td>요금제 등록 (admin)</td><td>admin</td></tr>
+      <tr><td><span class="badge b-purple">PATCH</span></td><td class="mono">/plans/:id</td><td>요금제 수정</td><td>admin</td></tr>
+      <tr><td><span class="badge b-orange">POST</span></td><td class="mono">/plans/import</td><td>엑셀 일괄 등록</td><td>admin</td></tr>
+      <tr><td><span class="badge b-blue">GET</span></td><td class="mono">/subscriptions?status=pending</td><td>신청서 list (admin)</td><td>admin/manager</td></tr>
+      <tr><td><span class="badge b-orange">POST</span></td><td class="mono">/subscriptions/:id/activate</td><td>개통 완료 처리</td><td>admin/manager</td></tr>
+      <tr><td><span class="badge b-blue">GET</span></td><td class="mono">/subscriptions/stats?ym=2026-06</td><td>월별 KPI 통계</td><td>admin/manager</td></tr>
+      <tr><td><span class="badge b-blue">GET</span></td><td class="mono">/carriers</td><td>KT/SKT/LGU+ list 참조</td><td>optional</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== KPI ==================== -->
+<div class="section-title"><span class="section-num">📊</span>운영 KPI 목표</div>
+<div class="card">
+  <table>
+    <thead><tr><th>KPI</th><th>1개월</th><th>3개월</th><th>6개월</th></tr></thead>
+    <tbody>
+      <tr><td>총 신청 수</td><td>100</td><td>600</td><td><strong>1,050</strong></td></tr>
+      <tr><td>② 베이직 ★ 비중 (목표 50%)</td><td>40%</td><td>45%</td><td><strong>50%+</strong></td></tr>
+      <tr><td>신청 → 개통 전환율</td><td>25%</td><td>60%</td><td><strong>70%</strong></td></tr>
+      <tr><td>평균 수수료 단가</td><td>25,000원</td><td>27,000원</td><td><strong>28,000원</strong></td></tr>
+      <tr><td>월 수수료 매출</td><td>625만원</td><td>2,430만원</td><td><strong>4,900만원</strong></td></tr>
+      <tr><td>가전렌탈 크로스셀</td><td>5%</td><td>15%</td><td><strong>25%</strong></td></tr>
+      <tr><td>매장 가입 비중 (⑤ 중심)</td><td>40%</td><td>45%</td><td><strong>50%</strong></td></tr>
+      <tr><td>6개월 유지율</td><td>75%</td><td>78%</td><td><strong>80%</strong></td></tr>
+      <tr><td>정가 전환 잔존율 (②)</td><td>−</td><td>50%</td><td><strong>65%</strong></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== 다음 단계 ==================== -->
+<div class="section-title"><span class="section-num">▶️</span>다음 단계 (v1 → v2)</div>
+<div class="card">
+  <div class="bench-row">
+    <span class="icon">🔥</span>
+    <span class="lbl">도매 원가 견적</span>
+    <span class="v">5 SKU × 5 MVNO 본사 도매 단가 비교. 베이직 9,900원 7개월 + 정가 39,600원이 8개월 후 흑자 검증.</span>
+  </div>
+  <div class="bench-row">
+    <span class="icon">🏪</span>
+    <span class="lbl">매장 운영 표준화</span>
+    <span class="v">8 매장 망별 유심 재고 정책 + 5분 개통 SOP 매뉴얼화. 매장 직원 인센티브 5,000원·월 15건+ 100k 보너스.</span>
+  </div>
+  <div class="bench-row">
+    <span class="icon">🎁</span>
+    <span class="lbl">사은품·페이백 정책 확정</span>
+    <span class="v">베이직 5,000P + MNP 5,000P + 유지 5,000P + 추천 10,000P. 프리미엄 24M 페이백. 지급 시점 명문화.</span>
+  </div>
+  <div class="bench-row">
+    <span class="icon">🤝</span>
+    <span class="lbl">MVNO 본사 협상</span>
+    <span class="v">KT엠모바일 + 미디어로그 우선 (시장 1·2위). SK7 2026년 7월 신규 출시 시점 추가 협상. 대리점 계약 + 봉이 전용 plan_code 합의.</span>
+  </div>
+  <div class="bench-row">
+    <span class="icon">⏱️</span>
+    <span class="lbl">출시 일정</span>
+    <span class="v">T-30 도매처 협상 → T-21 SKU 등록 → T-14 매장 교육 → T-7 storefront 라이브 → <strong style="color:var(--orange)">T-day 5 SKU 동시 출시</strong> → T+30 KPI 분석 → T+90 Phase 2 확장.</span>
+  </div>
+</div>
+
+</body>
+</html>
