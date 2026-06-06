@@ -1,7 +1,8 @@
 # 봉이 알뜰폰 15 SKU spec — SK·KT·LG 각 5개
 
+> **MVNO 본사 = 모빙(mobing.co.kr) 단독 제휴** · 봉이가 모빙 대리점으로 SK·KT·LG U+ 3망 모두 봉이 전용 요금제 출시
 > 망별 **베스트 5종** = 미끼 · 주력 · 점보 · 프리미엄 · 시니어/효도
-> 시장 조사 기반 가격대 (KT엠 16,300원·핀다이렉트 21,000원 7M·평생 20,900원 등 참고)
+> 시장 조사 기반 가격대 (모빙 자체 가격 + 봉이 단독 할인)
 
 ---
 
@@ -96,23 +97,23 @@
 ```sql
 INSERT INTO bongi_mvno_plans (plan_code, name, mvno_provider, carrier, network_type, monthly_fee, promo_fee, promo_period_months, data_gb, voice_minutes, sms_count, contract_months, sim_type, commission_amount, feature_tags, is_active) VALUES
 -- SK망
-('BONGI-SK-LITE-5GB',     'SK 라이트',     'SK_TELINK', 'SKT', 'LTE', 19900, 0,     7, 5,   NULL, NULL, 0,  'both', 27000, '{미끼,5GB,통화무제한,무약정}', true),
-('BONGI-SK-BASIC-11GB',   'SK 베이직',     'SK_TELINK', 'SKT', 'LTE', 38900, 9900,  7, 11,  NULL, NULL, 0,  'both', 27000, '{주력,11GB,매일2GB,통화무제한}', true),
-('BONGI-SK-JUMBO-100GB',  'SK 점보',       'SK_TELINK', 'SKT', 'LTE', 39800, 16900, 7, 100, NULL, NULL, 0,  'both', 27000, '{데이터헤비,100GB,5Mbps}', true),
-('BONGI-SK-5G-UNLIMITED', 'SK 프리미엄 5G','SK_TELINK', 'SKT', '5G',  59000, NULL,  0, NULL,NULL, NULL, 24, 'both', 27000, '{프리미엄,5G,완전무제한,페이백24M}', true),
-('BONGI-SK-SENIOR-1.5GB', 'SK 시니어',     'SK_TELINK', 'SKT', 'LTE', 6900,  NULL,  0, 1.5, 100,  100,  0,  'both', 27000, '{시니어,평생동일가}', true),
+('BONGI-SK-LITE-5GB',     'SK 라이트',     'MOBING', 'SKT', 'LTE', 19900, 0,     7, 5,   NULL, NULL, 0,  'both', 27000, '{미끼,5GB,통화무제한,무약정}', true),
+('BONGI-SK-BASIC-11GB',   'SK 베이직',     'MOBING', 'SKT', 'LTE', 38900, 9900,  7, 11,  NULL, NULL, 0,  'both', 27000, '{주력,11GB,매일2GB,통화무제한}', true),
+('BONGI-SK-JUMBO-100GB',  'SK 점보',       'MOBING', 'SKT', 'LTE', 39800, 16900, 7, 100, NULL, NULL, 0,  'both', 27000, '{데이터헤비,100GB,5Mbps}', true),
+('BONGI-SK-5G-UNLIMITED', 'SK 프리미엄 5G','MOBING', 'SKT', '5G',  59000, NULL,  0, NULL,NULL, NULL, 24, 'both', 27000, '{프리미엄,5G,완전무제한,페이백24M}', true),
+('BONGI-SK-SENIOR-1.5GB', 'SK 시니어',     'MOBING', 'SKT', 'LTE', 6900,  NULL,  0, 1.5, 100,  100,  0,  'both', 27000, '{시니어,평생동일가}', true),
 -- KT망
-('BONGI-KT-LITE-7GB',     'KT 라이트',     'KT_MMOBILE','KT',  'LTE', 16300, 0,     7, 7,   NULL, NULL, 0,  'both', 28000, '{미끼,7GB,통화무제한,무약정}', true),
-('BONGI-KT-BASIC-11GB',   'KT 베이직',     'KT_MMOBILE','KT',  'LTE', 39600, 9900,  7, 11,  NULL, NULL, 0,  'both', 28000, '{주력,11GB,매일2GB,통화무제한}', true),
-('BONGI-KT-JUMBO-100GB',  'KT 점보',       'KT_MMOBILE','KT',  'LTE', 40700, 16900, 7, 100, NULL, NULL, 0,  'both', 28000, '{데이터헤비,100GB,5Mbps,시장1위대응}', true),
-('BONGI-KT-5G-UNLIMITED', 'KT 프리미엄 5G','KT_MMOBILE','KT',  '5G',  59000, NULL,  0, NULL,NULL, NULL, 24, 'both', 28000, '{프리미엄,5G,완전무제한,페이백24M}', true),
-('BONGI-KT-SENIOR-3GB',   'KT 시니어',     'KT_MMOBILE','KT',  'LTE', 7700,  NULL,  0, 3,   200,  NULL, 0,  'both', 28000, '{시니어,평생동일가}', true),
+('BONGI-KT-LITE-7GB',     'KT 라이트',     'MOBING','KT',  'LTE', 16300, 0,     7, 7,   NULL, NULL, 0,  'both', 28000, '{미끼,7GB,통화무제한,무약정}', true),
+('BONGI-KT-BASIC-11GB',   'KT 베이직',     'MOBING','KT',  'LTE', 39600, 9900,  7, 11,  NULL, NULL, 0,  'both', 28000, '{주력,11GB,매일2GB,통화무제한}', true),
+('BONGI-KT-JUMBO-100GB',  'KT 점보',       'MOBING','KT',  'LTE', 40700, 16900, 7, 100, NULL, NULL, 0,  'both', 28000, '{데이터헤비,100GB,5Mbps,시장1위대응}', true),
+('BONGI-KT-5G-UNLIMITED', 'KT 프리미엄 5G','MOBING','KT',  '5G',  59000, NULL,  0, NULL,NULL, NULL, 24, 'both', 28000, '{프리미엄,5G,완전무제한,페이백24M}', true),
+('BONGI-KT-SENIOR-3GB',   'KT 시니어',     'MOBING','KT',  'LTE', 7700,  NULL,  0, 3,   200,  NULL, 0,  'both', 28000, '{시니어,평생동일가}', true),
 -- LG U+망
-('BONGI-LG-LITE-4.5GB',   'LG 라이트',     'MEDIALOG',  'LGU+','LTE', 20900, 0,     7, 4.5, NULL, NULL, 0,  'both', 25000, '{미끼,4.5GB,통화무제한,무약정}', true),
-('BONGI-LG-BASIC-11GB',   'LG 베이직 ★',   'MEDIALOG',  'LGU+','LTE', 39600, 9900,  7, 11,  NULL, NULL, 0,  'both', 25000, '{주력,11GB,매일2GB,봉이BEST}', true),
-('BONGI-LG-JUMBO-100GB',  'LG 점보',       'MEDIALOG',  'LGU+','LTE', 40700, 16900, 7, 100, NULL, NULL, 0,  'both', 25000, '{데이터헤비,100GB,5Mbps}', true),
-('BONGI-LG-5G-UNLIMITED', 'LG 프리미엄 5G','MEDIALOG',  'LGU+','5G',  59000, NULL,  0, NULL,NULL, NULL, 24, 'both', 25000, '{프리미엄,5G,완전무제한,페이백24M}', true),
-('BONGI-LG-HYODO-7GB',    'LG 효도',       'MEDIALOG',  'LGU+','LTE', 11900, NULL,  0, 7,   NULL, NULL, 0,  'both', 25000, '{효도,7GB,평생동일가,매장5분}', true);
+('BONGI-LG-LITE-4.5GB',   'LG 라이트',     'MOBING',  'LGU+','LTE', 20900, 0,     7, 4.5, NULL, NULL, 0,  'both', 25000, '{미끼,4.5GB,통화무제한,무약정}', true),
+('BONGI-LG-BASIC-11GB',   'LG 베이직 ★',   'MOBING',  'LGU+','LTE', 39600, 9900,  7, 11,  NULL, NULL, 0,  'both', 25000, '{주력,11GB,매일2GB,봉이BEST}', true),
+('BONGI-LG-JUMBO-100GB',  'LG 점보',       'MOBING',  'LGU+','LTE', 40700, 16900, 7, 100, NULL, NULL, 0,  'both', 25000, '{데이터헤비,100GB,5Mbps}', true),
+('BONGI-LG-5G-UNLIMITED', 'LG 프리미엄 5G','MOBING',  'LGU+','5G',  59000, NULL,  0, NULL,NULL, NULL, 24, 'both', 25000, '{프리미엄,5G,완전무제한,페이백24M}', true),
+('BONGI-LG-HYODO-7GB',    'LG 효도',       'MOBING',  'LGU+','LTE', 11900, NULL,  0, 7,   NULL, NULL, 0,  'both', 25000, '{효도,7GB,평생동일가,매장5분}', true);
 ```
 
 → 15 row · 단순한 정형 데이터 · 엑셀 import 호환.

@@ -1,240 +1,409 @@
 <!DOCTYPE html>
-<html lang="ko"><head><meta charset="UTF-8"><title>① 고객 — 5 SKU 요금제 list (아정당 깔끔 UI)</title>
+<html lang="ko"><head><meta charset="UTF-8"><title>① 고객 — 15 SKU 카드 그리드 (망 chip 필터)</title>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Pretendard',sans-serif;background:#fff;color:#111;min-height:100vh}
+body{font-family:'Pretendard',sans-serif;background:#fafafa;color:#111;min-height:100vh}
 
 /* 헤더 */
-.nav{max-width:1200px;margin:0 auto;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee}
+.nav{background:#fff;max-width:1280px;margin:0 auto;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee}
 .logo{font-size:22px;font-weight:900;color:#2563eb;letter-spacing:-0.5px}
 .nav-right{display:flex;gap:18px;font-size:13px;color:#475569}
 .nav-right a{color:#475569;text-decoration:none;cursor:pointer}
-.nav-right a:hover{color:#2563eb}
 
-.menu{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;gap:32px;border-bottom:1px solid #eee;font-size:14.5px;font-weight:700}
+.menu{background:#fff;max-width:1280px;margin:0 auto;padding:12px 24px;display:flex;gap:32px;border-bottom:1px solid #eee;font-size:14.5px;font-weight:700}
 .menu a{color:#666;text-decoration:none;cursor:pointer;padding:6px 0}
 .menu a.active{color:#111;border-bottom:2px solid #2563eb;padding-bottom:8px}
 
-.wrap{max-width:1200px;margin:0 auto;padding:36px 24px 60px}
-h1{font-size:24px;font-weight:900;margin-bottom:6px}
-.lead{font-size:13.5px;color:#666;margin-bottom:30px}
+.wrap{max-width:1280px;margin:0 auto;padding:32px 24px 60px}
+h1{font-size:26px;font-weight:900;margin-bottom:4px;letter-spacing:-0.5px}
+.lead{font-size:13.5px;color:#666;margin-bottom:24px}
 
-/* 검색·필터 */
-.search-bar{display:flex;gap:10px;margin-bottom:24px;padding:14px;background:#f8fafc;border-radius:12px}
-.search-bar .filter{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;color:#475569;cursor:pointer;min-width:240px}
-.search-bar .search-input{flex:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 16px;font-size:13px;font-family:inherit}
+/* 망 chip 필터 */
+.net-tabs{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
+.net-tab{padding:11px 22px;background:#fff;border:1.5px solid #e2e8f0;border-radius:999px;font-size:13.5px;font-weight:700;color:#475569;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.12s}
+.net-tab:hover{border-color:#cbd5e1}
+.net-tab.active{background:#0f172a;color:#fff;border-color:#0f172a}
+.net-tab.lgu.active{background:linear-gradient(135deg,#ec4899,#f43f5e);border-color:#ec4899}
+.net-tab.kt.active{background:linear-gradient(135deg,#1d4ed8,#3b82f6);border-color:#1d4ed8}
+.net-tab.skt.active{background:linear-gradient(135deg,#ef4444,#dc2626);border-color:#ef4444}
+.net-tab .cnt{background:rgba(255,255,255,0.25);padding:1px 8px;border-radius:10px;font-size:11px;font-weight:800}
+.net-tab:not(.active) .cnt{background:#f1f5f9;color:#94a3b8}
 
-/* 요금제 카드 list */
-.list{display:flex;flex-direction:column;gap:14px}
-.card{background:#fff;border:1px solid #e8e8e8;border-radius:14px;padding:24px 26px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;cursor:pointer;transition:all 0.12s;position:relative}
-.card:hover{border-color:#2563eb;box-shadow:0 4px 16px rgba(37,99,235,0.06)}
-.card.main{border-color:#ec4899;border-width:2px;background:linear-gradient(135deg,#fff,#fef7fb)}
-.card.main::after{content:'⭐ 주력';position:absolute;top:-10px;left:20px;background:#ec4899;color:#fff;padding:3px 12px;border-radius:6px;font-size:10.5px;font-weight:800}
+/* 카드 그리드 */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card{background:#fff;border:1.5px solid #e8e8e8;border-radius:14px;padding:20px;cursor:pointer;transition:all 0.12s;position:relative;display:flex;flex-direction:column}
+.card:hover{border-color:#2563eb;box-shadow:0 6px 20px rgba(37,99,235,0.08);transform:translateY(-2px)}
+.card.main{border-color:#ec4899;border-width:2.5px}
+.card.main::before{content:'⭐ BEST';position:absolute;top:-11px;left:18px;background:#ec4899;color:#fff;padding:3px 12px;border-radius:6px;font-size:10.5px;font-weight:800;letter-spacing:0.3px}
 
-.card-left .tags{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-.tag-net{padding:3px 10px;border-radius:5px;font-size:10.5px;font-weight:800;color:#fff}
+.tags{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.tag-net{padding:3px 9px;border-radius:5px;font-size:10px;font-weight:800;color:#fff;letter-spacing:0.3px}
 .tag-net.lgu{background:linear-gradient(135deg,#ec4899,#f43f5e)}
 .tag-net.kt{background:linear-gradient(135deg,#1d4ed8,#3b82f6)}
 .tag-net.skt{background:linear-gradient(135deg,#ef4444,#dc2626)}
-.tag-promo{background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:5px;font-size:10.5px;font-weight:800;border:1px solid #fbbf24}
-.tag-pink{background:#fce7f3;color:#9f1239;padding:3px 10px;border-radius:5px;font-size:10.5px;font-weight:800;border:1px solid #f9a8d4}
-.tag-blue{background:#dbeafe;color:#1e3a8a;padding:3px 10px;border-radius:5px;font-size:10.5px;font-weight:800;border:1px solid #93c5fd}
-.tag-green{background:#dcfce7;color:#166534;padding:3px 10px;border-radius:5px;font-size:10.5px;font-weight:800;border:1px solid #86efac}
-.tag-gray{background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:5px;font-size:10.5px;font-weight:700}
+.tag-pill{padding:3px 9px;border-radius:5px;font-size:10px;font-weight:800;border:1px solid}
+.tag-promo{background:#fef3c7;color:#92400e;border-color:#fbbf24}
+.tag-pink{background:#fce7f3;color:#9f1239;border-color:#f9a8d4}
+.tag-blue{background:#dbeafe;color:#1e3a8a;border-color:#93c5fd}
+.tag-green{background:#dcfce7;color:#166534;border-color:#86efac}
+.tag-gray{background:#f1f5f9;color:#475569;border-color:#cbd5e1}
 
-.card-name{font-size:20px;font-weight:900;margin-bottom:6px;letter-spacing:-0.4px}
-.card-data{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:18px;font-weight:800;color:#111}
-.card-data .icon{font-size:18px;color:#94a3b8}
-.card-data .detail{font-size:11.5px;color:#94a3b8;font-weight:500;margin-left:2px}
+.name{font-size:17px;font-weight:900;margin-bottom:6px;letter-spacing:-0.4px}
 
-.card-spec{display:flex;gap:18px;font-size:12.5px;color:#475569;margin-bottom:4px}
-.card-spec span{display:flex;align-items:center;gap:6px}
-.card-spec .icon{color:#94a3b8}
+.data-line{display:flex;align-items:baseline;gap:6px;margin-bottom:6px}
+.data-line .icon{font-size:14px;color:#94a3b8}
+.data-line .val{font-size:16px;font-weight:800;color:#111}
+.data-detail{font-size:11px;color:#94a3b8;line-height:1.5;margin-bottom:10px}
 
-.card-right{text-align:right}
-.vat-tag{font-size:10.5px;color:#94a3b8;margin-bottom:3px}
-.price-strike{text-decoration:line-through;color:#cbd5e1;font-size:13px;margin-bottom:2px}
-.price-now{font-size:30px;font-weight:900;color:#dc2626;letter-spacing:-0.5px;line-height:1.1}
-.price-now .unit{font-size:18px;font-weight:800}
+.spec-row{font-size:12px;color:#475569;line-height:1.8}
+.spec-row .row{display:flex;gap:7px;align-items:center}
+.spec-row .ic{color:#94a3b8;font-size:12px}
+
+.spacer{flex:1}
+
+.price-area{margin-top:14px;padding-top:14px;border-top:1px dashed #e2e8f0}
+.vat{font-size:10px;color:#94a3b8;text-align:right;margin-bottom:2px}
+.price-strike{text-decoration:line-through;color:#cbd5e1;font-size:12.5px;text-align:right;margin-bottom:2px}
+.price-now{font-size:26px;font-weight:900;color:#dc2626;text-align:right;letter-spacing:-0.5px;line-height:1.1}
+.price-now .unit{font-size:14px;font-weight:700}
 .price-now.green{color:#16a34a}
 .price-now.blue{color:#1e40af}
-.price-after{font-size:11.5px;color:#94a3b8;margin-top:4px;font-weight:500}
+.price-after{font-size:10.5px;color:#94a3b8;text-align:right;margin-top:4px;font-weight:500}
 
-.add-cmp{position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:6px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:18px;cursor:pointer}
+.cta{margin-top:12px;padding:10px;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;transition:all 0.12s}
+.cta:hover{background:#1e293b}
+.card.main .cta{background:#ec4899}
+.card.main .cta:hover{background:#db2777}
+
+.add-cmp{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:6px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:16px;cursor:pointer}
 .add-cmp:hover{background:#eef2ff;color:#2563eb;border-color:#93c5fd}
 
-/* floating chat */
-.float-chat{position:fixed;right:24px;bottom:24px;width:60px;height:60px;background:#fbbf24;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.15)}
+.float-chat{position:fixed;right:24px;bottom:24px;width:58px;height:58px;background:#fbbf24;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.15)}
 </style></head><body>
 
 <div class="nav">
   <div class="logo">📱 봉이 알뜰폰</div>
-  <div class="nav-right">
-    <a>🔍 실시간 사용량 조회</a>
-    <a>👤 로그인 / 회원가입</a>
-  </div>
+  <div class="nav-right"><a>🔍 실시간 사용량</a><a>👤 로그인 / 회원가입</a></div>
 </div>
 
 <div class="menu">
-  <a>개통안내</a>
-  <a class="active">요금제</a>
-  <a>유심구매</a>
-  <a>이벤트</a>
-  <a>고객지원</a>
-  <a>MY정보</a>
+  <a>개통안내</a><a class="active">요금제</a><a>유심구매</a><a>이벤트</a><a>고객지원</a><a>MY정보</a>
 </div>
 
 <div class="wrap">
-  <h1>봉이 알뜰폰 5종 요금제</h1>
-  <p class="lead">미끼·주력·업셀·프리미엄·효도 — 봉이만의 5 라인업.</p>
+  <h1>봉이 알뜰폰 — SK·KT·LG U+ 각 5종</h1>
+  <p class="lead">모빙 단독 제휴 · 3망 모두 봉이 전용 요금제 15종.</p>
 
-  <div class="search-bar">
-    <div class="filter">⚙️ 나에게 딱 맞는 요금제 찾기 ▼</div>
-    <input class="search-input" placeholder="검색어를 입력해 주세요">
+  <!-- 망 chip 필터 -->
+  <div class="net-tabs">
+    <div class="net-tab active">전체 <span class="cnt">15</span></div>
+    <div class="net-tab skt">📡 SKT <span class="cnt">5</span></div>
+    <div class="net-tab kt">📡 KT <span class="cnt">5</span></div>
+    <div class="net-tab lgu">📡 LG U+ <span class="cnt">5</span></div>
   </div>
 
-  <div class="list">
+  <!-- 카드 그리드 -->
+  <div class="grid">
 
-    <!-- ① 라이트 -->
+    <!-- ====== SKT 5개 ====== -->
     <div class="card">
       <div class="add-cmp">+</div>
-      <div class="card-left">
-        <div class="tags">
-          <span class="tag-net lgu">LGU+</span>
-          <span class="tag-green">🆓 7개월 0원</span>
-          <span class="tag-gray">🐟 미끼</span>
-        </div>
-        <div class="card-name">봉이 라이트</div>
-        <div class="card-data">
-          <span class="icon">↕</span>
-          4.5GB + 1Mbps
-          <span class="detail">소진 후 1Mbps 무제한</span>
-        </div>
-        <div class="card-spec">
-          <span><span class="icon">📞</span>기본제공 (통화 무제한)</span>
-          <span><span class="icon">✉️</span>기본제공 (문자 무제한)</span>
-        </div>
+      <div class="tags"><span class="tag-net skt">SKT</span><span class="tag-pill tag-green">🆓 7개월 0원</span></div>
+      <div class="name">SK 라이트</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">5GB + 1Mbps</span></div>
+      <div class="data-detail">소진 후 1Mbps · SNS 끊김 없음</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>통화 무제한</div>
+        <div class="row"><span class="ic">✉️</span>문자 무제한</div>
       </div>
-      <div class="card-right">
-        <div class="vat-tag">(VAT포함)</div>
-        <div class="price-strike">20,900원</div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-strike">19,900원</div>
         <div class="price-now green">월 <span class="unit">0원</span></div>
-        <div class="price-after">*8개월차부터 20,900원</div>
+        <div class="price-after">*8개월차부터 19,900원</div>
       </div>
+      <button class="cta">7개월 무료 시작 →</button>
     </div>
 
-    <!-- ② 베이직 ★ -->
-    <div class="card main">
+    <div class="card">
       <div class="add-cmp">+</div>
-      <div class="card-left">
-        <div class="tags">
-          <span class="tag-net lgu">LGU+</span>
-          <span class="tag-promo">🔥 7개월 프로모션</span>
-          <span class="tag-pink">매일 2GB 덤</span>
-        </div>
-        <div class="card-name">봉이 베이직</div>
-        <div class="card-data">
-          <span class="icon">↕</span>
-          11GB + 매일 2GB + 3Mbps
-          <span class="detail">소진 후 3Mbps · SNS·동영상 끊김 없음</span>
-        </div>
-        <div class="card-spec">
-          <span><span class="icon">📞</span>기본제공 (통화 무제한)</span>
-          <span><span class="icon">✉️</span>기본제공 (문자 무제한)</span>
-          <span><span class="icon">🎁</span>봉이포인트 5,000P · MNP +5,000P</span>
-        </div>
+      <div class="tags"><span class="tag-net skt">SKT</span><span class="tag-pill tag-promo">🔥 7개월 프로모션</span></div>
+      <div class="name">SK 베이직</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">11GB + 매일 2GB</span></div>
+      <div class="data-detail">소진 후 3Mbps · 동영상 끊김 없음</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>통화 무제한</div>
+        <div class="row"><span class="ic">🎁</span>5,000P · MNP +5,000P</div>
       </div>
-      <div class="card-right">
-        <div class="vat-tag">(VAT포함)</div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-strike">38,900원</div>
+        <div class="price-now">월 <span class="unit">9,900원</span></div>
+        <div class="price-after">*8개월차부터 38,900원</div>
+      </div>
+      <button class="cta">가입 신청 →</button>
+    </div>
+
+    <div class="card">
+      <div class="add-cmp">+</div>
+      <div class="tags"><span class="tag-net skt">SKT</span><span class="tag-pill tag-promo">🔥 7개월 프로모션</span><span class="tag-pill tag-blue">100GB</span></div>
+      <div class="name">SK 점보</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">100GB + 5Mbps</span></div>
+      <div class="data-detail">테더링·4K 동영상 마음껏</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>통화 무제한</div>
+        <div class="row"><span class="ic">✉️</span>문자 무제한</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-strike">39,800원</div>
+        <div class="price-now">월 <span class="unit">16,900원</span></div>
+        <div class="price-after">*8개월차부터 39,800원</div>
+      </div>
+      <button class="cta">100GB 시작 →</button>
+    </div>
+
+    <div class="card">
+      <div class="add-cmp">+</div>
+      <div class="tags"><span class="tag-net skt">SKT</span><span class="tag-pill tag-promo">💎 24M 페이백</span></div>
+      <div class="name">SK 프리미엄 5G</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">5G 완전 무제한</span></div>
+      <div class="data-detail">속도제한 X · 게임·업무·스트리밍</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">💰</span>월 25,000원 페이백 × 24M</div>
+        <div class="row"><span class="ic">📅</span>24개월 약정</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-strike">59,000원</div>
+        <div class="price-now blue">실질 <span class="unit">34,000원</span></div>
+        <div class="price-after">*페이백 차감 후</div>
+      </div>
+      <button class="cta">5G 무제한 →</button>
+    </div>
+
+    <div class="card">
+      <div class="add-cmp">+</div>
+      <div class="tags"><span class="tag-net skt">SKT</span><span class="tag-pill tag-gray">평생 동일가</span></div>
+      <div class="name">SK 시니어</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">1.5GB + 400kbps</span></div>
+      <div class="data-detail">60세 이상 가입 · 자녀 안심 상담</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>100분 통화</div>
+        <div class="row"><span class="ic">✉️</span>100건 문자</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-now green">월 <span class="unit">6,900원</span></div>
+        <div class="price-after">평생 동일 · 가격 변동 없음</div>
+      </div>
+      <button class="cta">시니어 가입 →</button>
+    </div>
+
+    <!-- ====== KT 5개 ====== -->
+    <div class="card">
+      <div class="add-cmp">+</div>
+      <div class="tags"><span class="tag-net kt">KT</span><span class="tag-pill tag-green">🆓 7개월 0원</span></div>
+      <div class="name">KT 라이트</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">7GB + 1Mbps</span></div>
+      <div class="data-detail">시장 1위 모방 · 가성비 최강</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>통화 무제한</div>
+        <div class="row"><span class="ic">✉️</span>문자 무제한</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-strike">16,300원</div>
+        <div class="price-now green">월 <span class="unit">0원</span></div>
+        <div class="price-after">*8개월차부터 16,300원</div>
+      </div>
+      <button class="cta">7개월 무료 →</button>
+    </div>
+
+    <div class="card">
+      <div class="add-cmp">+</div>
+      <div class="tags"><span class="tag-net kt">KT</span><span class="tag-pill tag-promo">🔥 7개월 프로모션</span></div>
+      <div class="name">KT 베이직</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">11GB + 매일 2GB</span></div>
+      <div class="data-detail">소진 후 3Mbps · KT망 빠른 속도</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>통화 무제한</div>
+        <div class="row"><span class="ic">🎁</span>5,000P · MNP +5,000P</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
         <div class="price-strike">39,600원</div>
         <div class="price-now">월 <span class="unit">9,900원</span></div>
         <div class="price-after">*8개월차부터 39,600원</div>
       </div>
+      <button class="cta">가입 신청 →</button>
     </div>
 
-    <!-- ③ 점보 -->
-    <div class="card">
+    <div class="card main">
       <div class="add-cmp">+</div>
-      <div class="card-left">
-        <div class="tags">
-          <span class="tag-net kt">KT</span>
-          <span class="tag-promo">🔥 7개월 프로모션</span>
-          <span class="tag-blue">⬆️ 업셀 100GB</span>
-        </div>
-        <div class="card-name">봉이 점보</div>
-        <div class="card-data">
-          <span class="icon">↕</span>
-          100GB + 5Mbps
-          <span class="detail">테더링·4K 동영상 마음껏</span>
-        </div>
-        <div class="card-spec">
-          <span><span class="icon">📞</span>기본제공 (통화 무제한)</span>
-          <span><span class="icon">✉️</span>기본제공 (문자 무제한)</span>
-        </div>
+      <div class="tags"><span class="tag-net kt">KT</span><span class="tag-pill tag-promo">🔥 7개월 프로모션</span><span class="tag-pill tag-pink">⭐ 봉이 BEST</span></div>
+      <div class="name">KT 점보 ★</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">100GB + 5Mbps</span></div>
+      <div class="data-detail">시장 베스트셀러 · 테더링 4K 자유</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>통화 무제한</div>
+        <div class="row"><span class="ic">🎁</span>3,000P · MNP +3,000P</div>
       </div>
-      <div class="card-right">
-        <div class="vat-tag">(VAT포함)</div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
         <div class="price-strike">40,700원</div>
         <div class="price-now">월 <span class="unit">16,900원</span></div>
         <div class="price-after">*8개월차부터 40,700원</div>
       </div>
+      <button class="cta">100GB 시작 →</button>
     </div>
 
-    <!-- ④ 프리미엄 -->
     <div class="card">
       <div class="add-cmp">+</div>
-      <div class="card-left">
-        <div class="tags">
-          <span class="tag-net lgu">LGU+ 5G</span>
-          <span class="tag-promo">💎 24개월 페이백</span>
-        </div>
-        <div class="card-name">봉이 프리미엄</div>
-        <div class="card-data">
-          <span class="icon">↕</span>
-          5G 완전 무제한 (속도제한 X)
-          <span class="detail">테더링 100GB · 게임·업무·스트리밍</span>
-        </div>
-        <div class="card-spec">
-          <span><span class="icon">📞</span>기본제공 (통화 무제한)</span>
-          <span><span class="icon">✉️</span>기본제공 (문자 무제한)</span>
-          <span><span class="icon">💰</span>페이백 월 25,000원 × 24개월</span>
-        </div>
+      <div class="tags"><span class="tag-net kt">KT</span><span class="tag-pill tag-promo">💎 24M 페이백</span></div>
+      <div class="name">KT 프리미엄 5G</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">5G 완전 무제한</span></div>
+      <div class="data-detail">KT 5G 망 · 속도제한 X</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">💰</span>월 25,000원 페이백 × 24M</div>
+        <div class="row"><span class="ic">📅</span>24개월 약정</div>
       </div>
-      <div class="card-right">
-        <div class="vat-tag">(VAT포함)</div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
         <div class="price-strike">59,000원</div>
         <div class="price-now blue">실질 <span class="unit">34,000원</span></div>
-        <div class="price-after">*24개월 약정 · 페이백 차감 후</div>
+        <div class="price-after">*페이백 차감 후</div>
       </div>
+      <button class="cta">5G 무제한 →</button>
     </div>
 
-    <!-- ⑤ 효도 -->
     <div class="card">
       <div class="add-cmp">+</div>
-      <div class="card-left">
-        <div class="tags">
-          <span class="tag-net lgu">LGU+</span>
-          <span class="tag-green">👵 매장 5분 개통</span>
-          <span class="tag-gray">평생 동일가</span>
-        </div>
-        <div class="card-name">봉이 효도</div>
-        <div class="card-data">
-          <span class="icon">↕</span>
-          1.5GB / 3GB / 7GB
-          <span class="detail">3 라인업 · 자녀가 부모 가입 가능</span>
-        </div>
-        <div class="card-spec">
-          <span><span class="icon">📞</span>100분 ~ 무제한</span>
-          <span><span class="icon">📦</span>실물 유심 (eSIM X)</span>
-          <span><span class="icon">🏪</span>광주·전남 매장 / 택배</span>
-        </div>
+      <div class="tags"><span class="tag-net kt">KT</span><span class="tag-pill tag-gray">평생 동일가</span></div>
+      <div class="name">KT 시니어</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">3GB + 400kbps</span></div>
+      <div class="data-detail">시니어 최적 · 안심 상담</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>200분 통화</div>
+        <div class="row"><span class="ic">✉️</span>무제한 문자</div>
       </div>
-      <div class="card-right">
-        <div class="vat-tag">(VAT포함)</div>
-        <div class="price-now green">월 <span class="unit">6,900원~</span></div>
-        <div class="price-after">평생 동일가 · 가격 변동 없음</div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-now green">월 <span class="unit">7,700원</span></div>
+        <div class="price-after">평생 동일가</div>
       </div>
+      <button class="cta">시니어 가입 →</button>
+    </div>
+
+    <!-- ====== LG U+ 5개 ====== -->
+    <div class="card">
+      <div class="add-cmp">+</div>
+      <div class="tags"><span class="tag-net lgu">LGU+</span><span class="tag-pill tag-green">🆓 7개월 0원</span></div>
+      <div class="name">LG 라이트</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">4.5GB + 1Mbps</span></div>
+      <div class="data-detail">손해 없이 알뜰폰 체험</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>통화 무제한</div>
+        <div class="row"><span class="ic">✉️</span>문자 무제한</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-strike">20,900원</div>
+        <div class="price-now green">월 <span class="unit">0원</span></div>
+        <div class="price-after">*8개월차부터 20,900원</div>
+      </div>
+      <button class="cta">7개월 무료 →</button>
+    </div>
+
+    <div class="card main">
+      <div class="add-cmp">+</div>
+      <div class="tags"><span class="tag-net lgu">LGU+</span><span class="tag-pill tag-promo">🔥 7개월 프로모션</span><span class="tag-pill tag-pink">⭐ 봉이 BEST</span></div>
+      <div class="name">LG 베이직 ★</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">11GB + 매일 2GB</span></div>
+      <div class="data-detail">매일 2GB 덤 · 한 달 내내 마음껏</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>통화 무제한</div>
+        <div class="row"><span class="ic">🎁</span>5,000P · MNP +5,000P</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-strike">39,600원</div>
+        <div class="price-now">월 <span class="unit">9,900원</span></div>
+        <div class="price-after">*8개월차부터 39,600원</div>
+      </div>
+      <button class="cta">가입 신청 →</button>
+    </div>
+
+    <div class="card">
+      <div class="add-cmp">+</div>
+      <div class="tags"><span class="tag-net lgu">LGU+</span><span class="tag-pill tag-promo">🔥 7개월 프로모션</span></div>
+      <div class="name">LG 점보</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">100GB + 5Mbps</span></div>
+      <div class="data-detail">테더링·4K 동영상 마음껏</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>통화 무제한</div>
+        <div class="row"><span class="ic">🎁</span>3,000P · MNP +3,000P</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-strike">40,700원</div>
+        <div class="price-now">월 <span class="unit">16,900원</span></div>
+        <div class="price-after">*8개월차부터 40,700원</div>
+      </div>
+      <button class="cta">100GB 시작 →</button>
+    </div>
+
+    <div class="card">
+      <div class="add-cmp">+</div>
+      <div class="tags"><span class="tag-net lgu">LGU+ 5G</span><span class="tag-pill tag-promo">💎 24M 페이백</span></div>
+      <div class="name">LG 프리미엄 5G</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">5G 완전 무제한</span></div>
+      <div class="data-detail">테더링 100GB · 게임·스트리밍</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">💰</span>월 25,000원 페이백 × 24M</div>
+        <div class="row"><span class="ic">📅</span>24개월 약정</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-strike">59,000원</div>
+        <div class="price-now blue">실질 <span class="unit">34,000원</span></div>
+        <div class="price-after">*페이백 차감 후</div>
+      </div>
+      <button class="cta">5G 무제한 →</button>
+    </div>
+
+    <div class="card">
+      <div class="add-cmp">+</div>
+      <div class="tags"><span class="tag-net lgu">LGU+</span><span class="tag-pill tag-green">🏪 매장 5분</span><span class="tag-pill tag-gray">평생</span></div>
+      <div class="name">LG 효도</div>
+      <div class="data-line"><span class="icon">↕</span><span class="val">7GB + 1Mbps</span></div>
+      <div class="data-detail">매장 즉시 개통 · 자녀가 부모 가입</div>
+      <div class="spec-row">
+        <div class="row"><span class="ic">📞</span>통화 무제한</div>
+        <div class="row"><span class="ic">📦</span>광주·전남 매장 / 택배</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="price-area">
+        <div class="vat">VAT포함</div>
+        <div class="price-now green">월 <span class="unit">11,900원</span></div>
+        <div class="price-after">평생 동일가</div>
+      </div>
+      <button class="cta">효도폰 가입 →</button>
     </div>
 
   </div>
