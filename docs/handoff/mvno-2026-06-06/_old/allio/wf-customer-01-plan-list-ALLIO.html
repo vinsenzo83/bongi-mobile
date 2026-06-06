@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>① 알뜰폰 요금 계산기 (Allio 패턴)</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#fefdf8;color:#1a1a1a;min-height:100vh}
+.layout{display:grid;grid-template-columns:240px 1fr 360px;height:100vh;max-width:1600px;margin:0 auto}
+.aside-left{background:#fff;border-right:1px solid #f0eee5;padding:18px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.logo{font-size:24px;font-weight:900;color:#1d4ed8;letter-spacing:-1px;padding:4px 0}
+.logo span{color:#fbbf24}
+.icons-row{display:flex;gap:8px;color:#8a8a8a;font-size:13px;padding:0 4px}
+.btn-new{background:#2563eb;color:#fff;border:none;padding:13px;border-radius:12px;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit}
+.search-inp{background:#f8f7f0;border:none;padding:11px 14px;border-radius:10px;font-size:12.5px;color:#8a8a8a;width:100%;font-family:inherit}
+.nav-title{font-size:11px;font-weight:700;color:#8a8a8a;margin:8px 0 4px;padding:0 6px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;color:#4a4a4a;font-weight:600;text-decoration:none}
+.nav-item:hover{background:#f8f7f0}
+.nav-item.active{background:#eff6ff;color:#1d4ed8;font-weight:700}
+.nav-item.new{background:linear-gradient(135deg,#fef3c7,#fef9c3);color:#92400e;font-weight:800}
+.nav-item .badge-new{background:#dc2626;color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:800;margin-left:auto}
+.recent-item{font-size:12px;color:#6a6a6a;padding:6px 10px;border-radius:6px;cursor:pointer}
+.invite-card{background:#fef9c3;border-radius:10px;padding:12px;display:flex;gap:8px;align-items:center;margin-top:auto}
+.invite-card .ic{font-size:24px}
+.invite-card .txt{font-size:11px;font-weight:600;color:#78350f;line-height:1.4}
+.login{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:13px;color:#4a4a4a;font-weight:600}
+.main{background:#fff;padding:30px 40px;overflow-y:auto;border-right:1px solid #f0eee5}
+.main-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.back-btn{background:#f8f7f0;border:none;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;color:#4a4a4a}
+.main-title{font-size:18px;font-weight:800;flex:1;text-align:center;margin-right:50px}
+.progress{display:flex;gap:8px;margin-bottom:20px;padding:14px;background:#f8f7f0;border-radius:12px}
+.progress .dot{flex:1;height:6px;background:#e8e6dc;border-radius:3px;position:relative}
+.progress .dot.active{background:#2563eb}
+.progress .dot.done{background:#16a34a}
+.step-num{display:inline-block;background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:800;padding:2px 7px;border-radius:4px;margin-right:6px}
+.step-block{margin-bottom:28px}
+.step-q{font-size:15px;font-weight:700;margin-bottom:14px}
+.step-q b{color:#2563eb}
+.chip-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.chip-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.chip-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.chip-card{background:#fff;border:1.5px solid #e8e6dc;border-radius:12px;padding:18px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;transition:all .12s}
+.chip-card:hover{border-color:#cbd5e1}
+.chip-card.active{border-color:#2563eb;border-width:2px;background:#f0f7ff}
+.chip-card .ic{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff}
+.chip-card.ic-skt .ic{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.chip-card.ic-kt .ic{background:linear-gradient(135deg,#1d4ed8,#3b82f6)}
+.chip-card.ic-lgu .ic{background:linear-gradient(135deg,#ec4899,#f43f5e)}
+.chip-card.ic-mvno .ic{background:linear-gradient(135deg,#fbbf24,#f59e0b)}
+.chip-card .name{font-size:13.5px;font-weight:700}
+.chip-card .sub{font-size:10.5px;color:#8a8a8a;line-height:1.3}
+.chip-card.role .ic{background:#f8f7f0;color:#4a4a4a;font-size:20px}
+.chip-card.active.role .ic{background:#dbeafe;color:#1d4ed8}
+.chip-card.usim .ic{font-size:20px;color:#fff}
+.chip-card.usim.esim .ic{background:linear-gradient(135deg,#fbbf24,#f59e0b)}
+.chip-card.usim.taek .ic{background:linear-gradient(135deg,#7c3aed,#a855f7)}
+.chip-card.usim.have .ic{background:linear-gradient(135deg,#10b981,#059669)}
+.aside-right{background:#fdfcf7;padding:24px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.aside-right .title{font-size:14px;font-weight:800}
+.online-tag{background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:700;padding:4px 11px;border-radius:6px;display:inline-block;width:fit-content}
+.plan-summary{background:#fff;border:1.5px solid #e8e6dc;border-radius:12px;padding:14px}
+.plan-summary .row1{font-size:11px;color:#8a8a8a;margin-bottom:4px}
+.plan-summary .pname{font-size:17px;font-weight:900;margin-bottom:8px}
+.plan-summary .price-row{display:flex;justify-content:space-between;padding:6px 0;border-top:1px dashed #e8e6dc;font-size:12.5px;color:#4a4a4a}
+.plan-summary .price-row:first-of-type{border-top:none}
+.detail-block{background:#fff;border:1.5px solid #e8e6dc;border-radius:12px;padding:14px}
+.detail-block .hd{font-size:13px;font-weight:800;margin-bottom:8px;display:flex;justify-content:space-between}
+.detail-block .hd .badge{background:#f0f7ff;color:#1d4ed8;font-size:9.5px;padding:2px 7px;border-radius:4px;font-weight:700}
+.detail-block .item{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:#4a4a4a}
+.detail-block .item b{color:#1a1a1a;font-weight:700}
+.detail-block .item .label::before{content:'└';color:#cbd5e1;margin-right:5px}
+.notice-block{background:#fff;border:1.5px solid #e8e6dc;border-radius:12px;padding:12px 14px}
+.notice-block .hd{font-size:11px;font-weight:800;color:#4a4a4a;margin-bottom:6px}
+.notice-block ul{list-style:none;padding-left:0;font-size:10.5px;color:#6a6a6a;line-height:1.7}
+.notice-block li{padding-left:10px;position:relative}
+.notice-block li::before{content:'·';position:absolute;left:0;color:#cbd5e1}
+.total-row{background:#fff;border:1.5px solid #e8e6dc;border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center}
+.total-row .val{font-size:18px;font-weight:900;color:#2563eb}
+.cta-apply{background:#2563eb;color:#fff;border:none;padding:15px;border-radius:12px;font-size:14.5px;font-weight:800;cursor:pointer;font-family:inherit;width:100%}
+</style></head><body>
+<div class="layout">
+  <aside class="aside-left">
+    <div class="logo">📱 봉이<span>모바일</span></div>
+    <div class="icons-row">📍 광주 본점 · 🌙</div>
+    <button class="btn-new">+ 새로 시작</button>
+    <input class="search-inp" placeholder="🔎  상담 내역 검색">
+    <div class="nav-title">카테고리</div>
+    <a class="nav-item">🏠  홈</a>
+    <a class="nav-item">✨  서비스 추천</a>
+    <a class="nav-item">📱  휴대폰</a>
+    <a class="nav-item">🌐  인터넷+TV</a>
+    <a class="nav-item">🧩  결합 할인</a>
+    <a class="nav-item new active">📡  알뜰폰 <span class="badge-new">NEW</span></a>
+    <a class="nav-item">🛋️  가전 렌탈</a>
+    <a class="nav-item">🎁  이벤트·혜택</a>
+    <div class="nav-title">최근 상담 내역</div>
+    <div class="recent-item">알뜰폰 KT 점보 상담</div>
+    <div class="recent-item">인터넷+TV 신청 도와줘</div>
+    <div class="invite-card">
+      <div class="ic">🪙</div>
+      <div class="txt"><b style="color:#78350f">친구 초대하기</b><br>적립한 포인트, 현금으로 꺼내 쓰세요</div>
+    </div>
+    <div class="login">👤  로그인 / 회원가입</div>
+  </aside>
+  <main class="main">
+    <div class="main-header">
+      <button class="back-btn">◀</button>
+      <h1 class="main-title">알뜰폰 요금 계산기</h1>
+    </div>
+    <div class="progress">
+      <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <p style="font-size:12.5px;color:#6a6a6a;margin-bottom:24px;line-height:1.6">
+      <b style="color:#1a1a1a">통신망 · 가입유형 · 요금제 · 유심</b>을 골라보세요.<br>
+      모빙 단독 제휴 SK·KT·LG U+ 3망 15개 봉이 전용 요금제 비교.
+    </p>
+    <div class="step-block">
+      <div class="step-q"><span class="step-num">STEP 1·1</span>어떤 <b>통신망</b>을 원하시나요?</div>
+      <div class="chip-grid-4">
+        <div class="chip-card ic-skt"><div class="ic">SKT</div><div class="name">SKT 망</div><div class="sub">5종</div></div>
+        <div class="chip-card ic-kt active"><div class="ic">KT</div><div class="name">KT 망</div><div class="sub">5종 · 빠른 속도</div></div>
+        <div class="chip-card ic-lgu"><div class="ic">U+</div><div class="name">LG U+ 망</div><div class="sub">5종 · 효도폰</div></div>
+        <div class="chip-card ic-mvno"><div class="ic">전체</div><div class="name">전체 비교</div><div class="sub">15종 한 번에</div></div>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-q"><span class="step-num">STEP 1·2</span>어떻게 <b>가입</b>하시나요?</div>
+      <div class="chip-grid-2" style="max-width:520px">
+        <div class="chip-card role active"><div class="ic">🔄</div><div class="name">번호이동 (MNP)</div><div class="sub">기존 번호 그대로 통신사만 변경</div></div>
+        <div class="chip-card role"><div class="ic">📞</div><div class="name">신규 가입</div><div class="sub">새 번호 부여 받기</div></div>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-q"><span class="step-num">STEP 1·3</span>어떤 <b>요금제</b>를 원하시나요?</div>
+      <div class="chip-grid-3">
+        <div class="chip-card role"><div class="ic">🐟</div><div class="name">라이트 (미끼)</div><div class="sub">7M 무료 · 5~7GB</div></div>
+        <div class="chip-card role"><div class="ic">🎯</div><div class="name">베이직 (주력)</div><div class="sub">9,900×7M · 11GB+매일 2GB</div></div>
+        <div class="chip-card role active"><div class="ic">⬆️</div><div class="name">점보 ⭐</div><div class="sub">16,900×7M · 100GB+5Mbps</div></div>
+        <div class="chip-card role"><div class="ic">💎</div><div class="name">프리미엄 5G</div><div class="sub">5G 무제한 · 페이백 24M</div></div>
+        <div class="chip-card role"><div class="ic">👵</div><div class="name">시니어</div><div class="sub">평생 동일가 · 6,900원~</div></div>
+      </div>
+    </div>
+    <div class="step-block">
+      <div class="step-q"><span class="step-num">STEP 1·4</span><b>유심</b>은 어떻게 받으시나요?</div>
+      <div class="chip-grid-3">
+        <div class="chip-card usim esim active"><div class="ic">📲</div><div class="name">eSIM (5분 개통)</div><div class="sub">QR 스캔 즉시 개통<br>iPhone XS+ · 갤럭시 S20+</div></div>
+        <div class="chip-card usim taek"><div class="ic">📦</div><div class="name">일반 유심 (택배)</div><div class="sub">1~2일 배송 · 무료</div></div>
+        <div class="chip-card usim have"><div class="ic">✅</div><div class="name">기존 유심 보유</div><div class="sub">번호이동 즉시 개통</div></div>
+      </div>
+    </div>
+  </main>
+  <aside class="aside-right">
+    <div class="title">상세 요금</div>
+    <div class="online-tag">🌐 온라인 신청</div>
+    <div class="plan-summary">
+      <div class="row1">KT 점보 100GB · 무약정</div>
+      <div class="pname"><span style="color:#dc2626">16,900원</span><span style="font-size:11px;font-weight:600;color:#8a8a8a;text-decoration:line-through;margin-left:6px">40,700원</span></div>
+      <div class="price-row"><span>프로모 7개월</span><b style="color:#dc2626">−23,800원</b></div>
+      <div class="price-row"><span>가입 즉시 포인트</span><b style="color:#16a34a">+3,000P</b></div>
+      <div class="price-row"><span>MNP 보너스</span><b style="color:#16a34a">+3,000P</b></div>
+    </div>
+    <div class="detail-block">
+      <div class="hd">요금제 <span class="badge">100일 유지</span></div>
+      <div class="item"><span class="label">월 데이터</span><b>100GB</b></div>
+      <div class="item"><span class="label">데이터 소진 후</span><b>5Mbps</b></div>
+      <div class="item"><span class="label">통화</span><b>무제한</b></div>
+      <div class="item"><span class="label">문자</span><b>무제한</b></div>
+      <div class="item"><span class="label">8개월차부터</span><b>40,700원</b></div>
+    </div>
+    <div class="detail-block">
+      <div class="hd">유심 · 개통 <span class="badge">eSIM 5분</span></div>
+      <div class="item"><span class="label">유심 비용</span><b>0원</b></div>
+      <div class="item"><span class="label">개통 방식</span><b>QR 스캔</b></div>
+      <div class="item"><span class="label">번호이동</span><b>5분 내</b></div>
+    </div>
+    <div class="notice-block">
+      <div class="hd">ℹ️ 안내사항</div>
+      <ul>
+        <li>100일 이내 해지 시 위약금 발생 가능</li>
+        <li>eSIM은 iPhone XS+ · 갤럭시 S20+ 호환 단말</li>
+        <li>실제 요금은 약관·결합 조건에 따라 변동 가능</li>
+        <li>모빙 단독 제휴 · 망 사업자 KT</li>
+      </ul>
+    </div>
+    <div class="total-row">
+      <div style="font-size:13px;font-weight:800">월 납부금액</div>
+      <div class="val">16,900원</div>
+    </div>
+    <button class="cta-apply">🌐  온라인 신청하기 →</button>
+  </aside>
+</div>
+</body></html>

@@ -1,196 +1,138 @@
 <!DOCTYPE html>
-<html lang="ko"><head><meta charset="UTF-8"><title>③ 고객 — 가입 신청 (모빙 패턴 1 page)</title>
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<html lang="ko"><head><meta charset="UTF-8"><title>③ 유심 구매 (배송지·결제 · 아정당 패턴)</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Pretendard',sans-serif;background:#f8fafc;color:#0f172a;padding:24px;min-height:100vh}
-.wrap{max-width:1100px;margin:0 auto}
+body{font-family:'Pretendard',sans-serif;background:#f8f9ff;color:#1a1a1a;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #e8e6f0;padding:18px 0}
+.header-inner{max-width:1280px;margin:0 auto;padding:0 30px;display:flex;align-items:center;gap:40px}
+.logo{font-size:22px;font-weight:900;color:#1d4ed8;background:#dbeafe;padding:7px 14px;border-radius:8px}
+.menu{display:flex;gap:32px;flex:1}
+.menu a{text-decoration:none;color:#4a4a4a;font-size:14.5px;font-weight:700}
+.menu a.active{color:#1d4ed8}
+.header-right{display:flex;gap:18px;font-size:13px;color:#4a4a4a}
+.header-right a{color:#4a4a4a;text-decoration:none}
+.wrap{max-width:1280px;margin:0 auto;padding:40px 30px}
+h1{font-size:24px;font-weight:900;margin-bottom:24px}
+.layout{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:flex-start}
+.main-card{background:#fff;border:1.5px solid #e8e6f0;border-radius:16px;padding:32px}
+.section{margin-bottom:28px}
+.section-title{font-size:18px;font-weight:900;margin-bottom:18px}
+.field-row{margin-bottom:18px}
+.field-row .lbl{font-size:13px;font-weight:700;color:#6a6a6a;margin-bottom:8px}
+.field-row .req{color:#dc2626}
+.method-box{padding:18px;background:#fff;border:2px solid #1d4ed8;border-radius:12px;text-align:center;font-size:15px;font-weight:800;color:#1d4ed8;cursor:pointer}
+.inp{background:#fff;border:1.5px solid #e8e6f0;padding:13px 15px;border-radius:10px;font-size:13.5px;width:100%;font-family:inherit}
+.inp::placeholder{color:#bcbcbc}
+.inp:focus{border-color:#1d4ed8;outline:none}
+.row-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row-addr{display:grid;grid-template-columns:1fr auto;gap:10px}
+.btn-search{background:#1a1a1a;color:#fff;border:none;padding:0 22px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
+.select-row{display:flex;align-items:center;gap:8px}
+.select-inp{background:#fff;border:1.5px solid #e8e6f0;padding:13px 15px;border-radius:10px;font-size:13.5px;width:100%;font-family:inherit;color:#4a4a4a;appearance:none;cursor:pointer}
 
-/* 상단 progress */
-.progress-bar{display:flex;justify-content:center;gap:30px;padding:18px 0;border-bottom:1px solid #e2e8f0;margin-bottom:24px}
-.progress-bar .step{font-size:12.5px;color:#94a3b8;font-weight:700;position:relative;padding:0 6px}
-.progress-bar .step.active{color:#f59e0b}
-.progress-bar .step.active::after{content:'';position:absolute;bottom:-19px;left:0;right:0;height:3px;background:#f59e0b;border-radius:2px}
-
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:26px}
-
-/* 좌측 panel */
-.left .phone-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;text-align:center;margin-bottom:14px}
-.phone-mock{width:160px;height:280px;background:#fff;border:3px solid #cbd5e1;border-radius:24px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(180deg,#f8fafc 0%,#fff 100%)}
-.phone-mock .screen{padding:14px;text-align:center;font-size:13px;color:#475569;font-weight:600;line-height:1.4}
-.phone-mock .sim{position:absolute;right:-26px;top:50%;transform:translateY(-50%);width:46px;height:60px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800;writing-mode:vertical-rl;text-orientation:mixed}
-.phone-card .desc{font-size:12.5px;color:#475569;line-height:1.6}
-
-.notice{background:#eff6ff;border:1px solid #93c5fd;border-radius:10px;padding:14px;margin-bottom:10px}
-.notice .ttl{background:#3b82f6;color:#fff;display:inline-block;padding:3px 10px;border-radius:5px;font-size:10.5px;font-weight:800;margin-bottom:6px}
-.notice .body{font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:4px}
-.notice .sub{font-size:11px;color:#64748b}
-
-.warn{background:#fff7ed;border:1px solid #fb923c;border-radius:10px;padding:14px;font-size:12px;color:#9a3412;line-height:1.5}
-.warn strong{color:#7c2d12}
-
-/* 우측 form */
-.right .panel-title{font-size:18px;font-weight:900;margin-bottom:16px;color:#0f172a}
-.field-row{display:grid;grid-template-columns:90px 1fr;gap:14px;align-items:center;margin-bottom:14px}
-.field-row .lbl{font-size:13px;font-weight:700;color:#475569}
-.field-row .val{display:flex;gap:6px}
-
-.chip{padding:11px 18px;background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:700;color:#475569;cursor:pointer;flex:1;text-align:center;transition:all 0.12s;position:relative}
-.chip:hover{border-color:#cbd5e1}
-.chip.active{background:#fef3c7;border-color:#f59e0b;color:#92400e}
-.chip.active::after{content:'✓';position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#f59e0b;font-weight:900}
-
-.plan-select{background:#f97316;border:none;color:#fff;padding:14px 18px;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer;flex:1;font-family:inherit;display:flex;justify-content:center;gap:8px}
-.plan-select:hover{background:#ea580c}
-
-.tooltip{background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 12px;font-size:11.5px;color:#78350f;line-height:1.6;margin-top:6px;grid-column:2}
-
-.divider{border:none;border-top:1px solid #e2e8f0;margin:18px 0}
-
-/* 정보 입력 (간소화) */
-.info-row{display:grid;grid-template-columns:90px 1fr;gap:14px;align-items:center;margin-bottom:10px}
-.info-row input{width:100%;padding:11px 13px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;font-family:inherit}
-
-/* 약관 */
-.terms-row{margin-top:14px;padding:12px;background:#f8fafc;border-radius:8px}
-.terms-row label{display:flex;gap:8px;align-items:center;font-size:12px;color:#475569;padding:5px 0;cursor:pointer}
-.terms-row label input{width:16px;height:16px}
-.terms-row .all{font-weight:800;padding-bottom:8px;border-bottom:1px dashed #cbd5e1;margin-bottom:6px}
-.terms-row .detail{margin-left:auto;color:#3b82f6;font-size:10.5px;text-decoration:underline}
-
-/* 하단 sticky CTA */
-.sticky{margin-top:24px;background:#fff;border-radius:14px;padding:18px 22px;box-shadow:0 -4px 16px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;border:1px solid #e2e8f0}
-.sticky .price{display:flex;flex-direction:column;gap:2px}
-.sticky .price .k{font-size:12px;color:#94a3b8;font-weight:700}
-.sticky .price .v{font-size:24px;font-weight:900;color:#0f172a}
-.sticky .price .v strong{color:#f59e0b}
-.sticky .calc-toggle{font-size:11px;color:#94a3b8;cursor:pointer;text-decoration:underline}
-
-.cta-group{display:flex;gap:10px}
-.cta{padding:14px 22px;border:none;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
-.cta-primary{background:#f97316;color:#fff;min-width:170px}
-.cta-primary:hover{background:#ea580c}
-.cta-secondary{background:#fbbf24;color:#0f172a;min-width:170px}
-.cta-secondary:hover{background:#f59e0b}
-
-.help-btn{position:fixed;right:24px;bottom:96px;width:54px;height:54px;background:#fbbf24;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.aside{background:#fff;border:1.5px solid #e8e6f0;border-radius:16px;padding:24px;position:sticky;top:20px}
+.aside h3{font-size:17px;font-weight:900;margin-bottom:18px}
+.amount-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px dashed #e8e6f0;margin-bottom:14px}
+.amount-row .lbl{font-size:13px;color:#4a4a4a;font-weight:700}
+.amount-row .val{font-size:20px;font-weight:900;color:#1d4ed8}
+.consent-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#4a4a4a;margin-bottom:18px}
+.consent-row .ok{width:18px;height:18px;background:#1d4ed8;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:900}
+.consent-row .view{margin-left:auto;color:#6a6a6a;text-decoration:underline;font-size:11px;cursor:pointer}
+.cta-pay{background:#1d4ed8;color:#fff;border:none;padding:16px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;width:100%}
+.float-chat{position:fixed;right:30px;bottom:30px;width:54px;height:54px;background:#1d4ed8;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;color:#fff;box-shadow:0 4px 14px rgba(29,78,216,.3)}
 </style></head><body>
-<div class="wrap">
-
-  <!-- 상단 progress (모빙 동일) -->
-  <div class="progress-bar">
-    <div class="step active">가입접수</div>
-    <div class="step">신청서 작성</div>
-    <div class="step">결제</div>
-    <div class="step">접수완료</div>
-  </div>
-
-  <div class="cols">
-
-    <!-- 좌측: 안내 -->
-    <div class="left">
-      <div class="phone-card">
-        <div class="phone-mock">
-          <div class="screen">사용중인<br>번호 그대로</div>
-          <div class="sim">봉이</div>
-        </div>
-        <div class="desc">사용 중인 내 휴대폰에<br>구매하신 <strong>봉이 유심</strong>을 장착하여<br>사용하시면 됩니다.</div>
-      </div>
-
-      <div class="notice">
-        <div class="ttl">eSIM 출시</div>
-        <div class="body">휴대폰 하나로 2개 번호 사용가능!</div>
-        <div class="sub">eSIM 가능 단말이면 5분 내 즉시 개통.</div>
-      </div>
-
-      <div class="warn">
-        <strong>📞 개통 정보 누락 / 오입력 시</strong><br>
-        상담원이 전화 드릴 수 있습니다. (미수신 시 개통 취소 가능)
-      </div>
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">📱 봉이</div>
+    <div class="menu">
+      <a>개통안내</a>
+      <a>요금제</a>
+      <a class="active">유심구매</a>
+      <a>이벤트</a>
+      <a>고객지원</a>
+      <a>MY정보</a>
     </div>
-
-    <!-- 우측: 가입 form (1 page · chip 위주) -->
-    <div class="right">
-      <div class="panel-title">가입 정보</div>
-
-      <div class="field-row">
-        <div class="lbl">가입유형</div>
-        <div class="val">
-          <div class="chip active">신규가입</div>
-          <div class="chip">번호이동 (MNP)</div>
-        </div>
-      </div>
-      <div class="tooltip">
-        <strong>※ 제한 대상 유심 가입</strong><br>
-        - SKT 간편유심(편의점 구매) / KT망 바로유심 / LG U+망 원칩 / 타통신사 유심<br>
-        → 위 유심으로 신규 가입은 제한. <strong>번호이동은 가능.</strong>
-      </div>
-
-      <div class="field-row" style="margin-top:14px">
-        <div class="lbl">통신망</div>
-        <div class="val">
-          <div class="chip">SKT 망</div>
-          <div class="chip active">KT 망</div>
-          <div class="chip">LG U+ 망</div>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <div class="lbl">상품유형</div>
-        <div class="val">
-          <div class="chip active">후불</div>
-          <div class="chip">선불</div>
-        </div>
-      </div>
-
-      <!-- 아정당 패턴 추가: 유심 보유 여부 + 유심 종류 -->
-      <div class="field-row">
-        <div class="lbl">유심 보유</div>
-        <div class="val">
-          <div class="chip active">보유</div>
-          <div class="chip">미보유 (유심 구매)</div>
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="lbl">유심 종류</div>
-        <div class="val">
-          <div class="chip active">eSIM (즉시 개통)</div>
-          <div class="chip">일반 유심 (택배)</div>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <div class="lbl">요금제</div>
-        <div class="val">
-          <button class="plan-select">🎯 요금제 선택 →</button>
-        </div>
-      </div>
-
-      <hr class="divider">
-
-      <div class="info-row"><div class="lbl" style="font-size:13px;font-weight:700;color:#475569">이름</div><input placeholder="홍길동"></div>
-      <div class="info-row"><div class="lbl" style="font-size:13px;font-weight:700;color:#475569">연락처</div><input placeholder="010-1234-5678"></div>
-
-      <div class="terms-row">
-        <label class="all"><input type="checkbox"> 전체 약관 동의 (필수 + 선택)</label>
-        <label><input type="checkbox" checked> <span style="color:#ef4444;font-weight:700">[필수]</span> 봉이 알뜰폰 이용약관 + 개인정보 + 망 임대 <span class="detail">상세 ▶</span></label>
-        <label><input type="checkbox"> <span style="color:#94a3b8;font-weight:700">[선택]</span> 마케팅·광고 수신 동의 <span class="detail">상세 ▶</span></label>
-      </div>
-    </div>
-  </div>
-
-  <!-- 하단 sticky -->
-  <div class="sticky">
-    <div class="price">
-      <div class="k">월 납부금액 <span class="calc-toggle">계산창 열기 ▼</span></div>
-      <div class="v"><strong>9,900</strong>원</div>
-    </div>
-    <div class="cta-group">
-      <button class="cta cta-primary">📦 가입접수 (유심주문)</button>
-      <button class="cta cta-secondary">📞 가입접수 (상담원 개통)</button>
+    <div class="header-right">
+      <a>🔎 실시간사용량조회</a>
+      <a>👤 로그인</a>
     </div>
   </div>
 </div>
 
-<div class="help-btn">💬</div>
+<div class="wrap">
+  <h1>유심 구매 · 배송지 정보</h1>
+
+  <div class="layout">
+    <div class="main-card">
+      <div class="section">
+        <div class="section-title">배송 방법</div>
+        <div class="method-box">📦 택배 (1~2일 배송)</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">수령인 정보</div>
+        <div class="row-2col">
+          <div class="field-row">
+            <div class="lbl">이름 <span class="req">*</span></div>
+            <input class="inp" placeholder="이름을 입력해주세요" value="박서윤">
+          </div>
+          <div class="field-row">
+            <div class="lbl">휴대폰번호 <span class="req">*</span></div>
+            <input class="inp" placeholder="휴대폰번호를 '-' 빼고 입력해주세요" value="01012341234">
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">배송지</div>
+        <div class="field-row">
+          <div class="row-addr">
+            <input class="inp" placeholder="우편번호" value="61010">
+            <button class="btn-search">주소 검색</button>
+          </div>
+        </div>
+        <div class="field-row">
+          <input class="inp" placeholder="주소" value="광주광역시 동구 충장로 1">
+        </div>
+        <div class="field-row">
+          <input class="inp" placeholder="상세주소 입력" value="111호">
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">배송요청사항 (선택)</div>
+        <div class="select-row">
+          <select class="select-inp">
+            <option>배송 시 요청사항 선택하기</option>
+            <option>문 앞에 놓아주세요</option>
+            <option>경비실에 맡겨주세요</option>
+            <option>택배함에 넣어주세요</option>
+            <option>배송 전 연락주세요</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <aside class="aside">
+      <h3>결제 금액</h3>
+      <div class="amount-row">
+        <div class="lbl">총 결제 금액</div>
+        <div class="val">0원</div>
+      </div>
+      <div class="consent-row">
+        <span class="ok">✓</span>
+        <span>개인정보 수집 동의</span>
+        <span class="view">보기</span>
+      </div>
+      <button class="cta-pay">결제하기</button>
+      <div style="font-size:10.5px;color:#8a8a8a;line-height:1.5;margin-top:14px;text-align:center">
+        ℹ️ 유심 비용 무료 · 택배비 무료<br>
+        ℹ️ 배송 1~2영업일 (광주·전남 익일)
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="float-chat">💬</div>
 </body></html>

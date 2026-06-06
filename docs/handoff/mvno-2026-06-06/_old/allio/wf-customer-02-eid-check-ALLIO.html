@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>② 가입 정보 입력 (Allio)</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#fefdf8;min-height:100vh}
+.layout{display:grid;grid-template-columns:240px 1fr 360px;height:100vh;max-width:1600px;margin:0 auto}
+.aside-left{background:#fff;border-right:1px solid #f0eee5;padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+.logo{font-size:24px;font-weight:900;color:#1d4ed8}
+.logo span{color:#fbbf24}
+.btn-new{background:#2563eb;color:#fff;border:none;padding:13px;border-radius:12px;font-size:13.5px;font-weight:800;font-family:inherit}
+.nav-title{font-size:11px;font-weight:700;color:#8a8a8a;margin:8px 0 4px;padding:0 6px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600}
+.nav-item.new{background:linear-gradient(135deg,#fef3c7,#fef9c3);color:#92400e;font-weight:800}
+.nav-item.new.active{background:linear-gradient(135deg,#fde68a,#fef3c7);color:#78350f}
+.nav-item .badge-new{background:#dc2626;color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:800;margin-left:auto}
+.main{background:#fff;padding:30px 40px;overflow-y:auto;border-right:1px solid #f0eee5}
+.main-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.back-btn{background:#f8f7f0;border:none;width:36px;height:36px;border-radius:50%;font-size:18px;color:#4a4a4a}
+.main-title{font-size:18px;font-weight:800;flex:1;text-align:center;margin-right:50px}
+.progress{display:flex;gap:8px;margin-bottom:24px;padding:14px;background:#f8f7f0;border-radius:12px}
+.progress .dot{flex:1;height:6px;background:#e8e6dc;border-radius:3px}
+.progress .dot.done{background:#16a34a}
+.progress .dot.active{background:#2563eb}
+.field-row{margin-bottom:22px}
+.field-row .lbl{font-size:13px;font-weight:800;margin-bottom:8px;color:#1a1a1a;display:flex;align-items:center;gap:6px}
+.field-row .req{color:#dc2626;font-size:11px}
+.field-row .help{font-size:11px;color:#8a8a8a;margin-top:4px}
+.inp{background:#fff;border:1.5px solid #e8e6dc;padding:13px 15px;border-radius:10px;font-size:13.5px;width:100%;font-family:inherit}
+.chip-row{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:11px 18px;background:#fff;border:1.5px solid #e8e6dc;border-radius:10px;font-size:13px;font-weight:700;color:#4a4a4a;cursor:pointer;flex:1;text-align:center;min-width:120px}
+.chip.active{background:#eff6ff;border-color:#2563eb;color:#1d4ed8;border-width:2px}
+.notice{background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:12px 14px;font-size:11.5px;color:#92400e;line-height:1.6}
+.aside-right{background:#fdfcf7;padding:24px 22px;display:flex;flex-direction:column;gap:14px}
+.aside-right .title{font-size:14px;font-weight:800}
+.online-tag{background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:700;padding:4px 11px;border-radius:6px;width:fit-content}
+.plan-summary{background:#fff;border:1.5px solid #e8e6dc;border-radius:12px;padding:14px}
+.plan-summary .pname{font-size:16px;font-weight:900;margin-bottom:6px}
+.plan-summary .meta{font-size:11px;color:#8a8a8a;margin-bottom:8px}
+.plan-summary .price{font-size:22px;font-weight:900;color:#dc2626}
+.total-row{background:#fff;border:1.5px solid #e8e6dc;border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center}
+.total-row .val{font-size:18px;font-weight:900;color:#2563eb}
+.cta-apply{background:#2563eb;color:#fff;border:none;padding:15px;border-radius:12px;font-size:14.5px;font-weight:800;font-family:inherit}
+.btn-prev{background:#f8f7f0;color:#4a4a4a;border:none;padding:15px;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit}
+</style></head><body>
+<div class="layout">
+  <aside class="aside-left">
+    <div class="logo">📱 봉이<span>모바일</span></div>
+    <button class="btn-new">+ 새로 시작</button>
+    <div class="nav-title">카테고리</div>
+    <a class="nav-item">🏠  홈</a>
+    <a class="nav-item">✨  서비스 추천</a>
+    <a class="nav-item">📱  휴대폰</a>
+    <a class="nav-item">🌐  인터넷+TV</a>
+    <a class="nav-item new active">📡  알뜰폰 <span class="badge-new">진행중</span></a>
+    <a class="nav-item">🛋️  가전 렌탈</a>
+    <a class="nav-item">🎁  이벤트·혜택</a>
+  </aside>
+  <main class="main">
+    <div class="main-header">
+      <button class="back-btn">◀</button>
+      <h1 class="main-title">STEP 2 — 가입 정보 입력</h1>
+    </div>
+    <div class="progress">
+      <div class="dot done"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div class="field-row">
+      <div class="lbl">가입자 이름 <span class="req">*</span></div>
+      <input class="inp" placeholder="홍길동" value="박서윤">
+    </div>
+    <div class="field-row">
+      <div class="lbl">휴대폰 번호 (연락 가능) <span class="req">*</span></div>
+      <input class="inp" placeholder="010-1234-5678" value="010-1234-1234">
+      <div class="help">개통 진행 SMS 알림 발송 · 본인 확인용</div>
+    </div>
+    <div class="field-row">
+      <div class="lbl">기존 통신사 (번호이동 시) <span class="req">*</span></div>
+      <div class="chip-row">
+        <div class="chip">SKT</div>
+        <div class="chip">KT</div>
+        <div class="chip active">LG U+</div>
+        <div class="chip">알뜰폰</div>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="lbl">이동할 번호 <span class="req">*</span></div>
+      <input class="inp" placeholder="010-1234-5678" value="010-1234-1234">
+      <div class="help">번호이동(MNP) 시 기존 번호 그대로 유지</div>
+    </div>
+    <div class="notice">
+      ⚠️ <strong>본인 명의 회선만 번호이동 가능</strong>. 가족·법인 명의는 명의자 본인이 직접 신청.<br>
+      ⚠️ 이동할 번호의 <strong>현재 미납·정지 상태</strong>는 사전 해소 후 가능.
+    </div>
+    <div style="display:flex;gap:10px;margin-top:24px">
+      <button class="btn-prev" style="flex:1">◀  이전</button>
+      <button class="cta-apply" style="flex:2">다음 (본인인증)  ▶</button>
+    </div>
+  </main>
+  <aside class="aside-right">
+    <div class="title">선택한 요금제</div>
+    <div class="online-tag">🌐 온라인 신청</div>
+    <div class="plan-summary">
+      <div class="pname">KT 점보 100GB</div>
+      <div class="meta">번호이동 · eSIM · 무약정</div>
+      <div class="price">월 16,900원</div>
+      <div style="font-size:10.5px;color:#8a8a8a;margin-top:4px">*8개월차부터 40,700원</div>
+    </div>
+    <div class="total-row">
+      <div style="font-size:13px;font-weight:800">월 납부금액</div>
+      <div class="val">16,900원</div>
+    </div>
+  </aside>
+</div>
+</body></html>

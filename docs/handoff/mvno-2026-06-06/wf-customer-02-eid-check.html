@@ -1,74 +1,171 @@
 <!DOCTYPE html>
-<html lang="ko"><head><meta charset="UTF-8"><title>② 고객 — *#06# EID 분기</title>
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<html lang="ko"><head><meta charset="UTF-8"><title>② 요금제 상세 + 가입 옵션 (아정당 패턴)</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Pretendard',sans-serif;background:#f8fafc;color:#0f172a;padding:24px;min-height:100vh;display:flex;align-items:center;justify-content:center}
-.wrap{max-width:560px;width:100%;background:#fff;border-radius:16px;padding:32px 30px;box-shadow:0 8px 28px rgba(0,0,0,.06)}
-h1{font-size:22px;font-weight:900;margin-bottom:6px}
-.lead{font-size:13px;color:#64748b;margin-bottom:24px}
-.code-box{background:linear-gradient(135deg,#1e293b,#0f172a);color:#fbbf24;border-radius:12px;padding:24px;text-align:center;margin-bottom:18px}
-.code-box .code{font-family:monospace;font-size:34px;font-weight:900;letter-spacing:4px;margin-bottom:8px}
-.code-box .hint{font-size:11.5px;color:#cbd5e1;line-height:1.5}
-.step-num{display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;background:#6366f1;color:#fff;border-radius:50%;font-size:12px;font-weight:800;margin-right:6px}
-.howto{background:#f8fafc;border-left:3px solid #6366f1;border-radius:6px;padding:14px;font-size:12.5px;line-height:1.7;color:#475569;margin-bottom:24px}
-.howto strong{color:#0f172a}
-.options{display:flex;flex-direction:column;gap:10px;margin-top:8px}
-.option{display:flex;align-items:center;gap:14px;padding:18px;border:2px solid #e2e8f0;border-radius:12px;cursor:pointer;transition:all .12s;background:#fff}
-.option:hover{border-color:#cbd5e1;transform:translateY(-1px)}
-.option.esim{border-color:#6366f1;background:#eef2ff}
-.option.physical{border-color:#16a34a;background:#dcfce7}
-.option .ic{font-size:32px;flex-shrink:0}
-.option .body{flex:1}
-.option .ttl{font-weight:800;font-size:14.5px;margin-bottom:3px}
-.option .desc{font-size:11.5px;color:#64748b;line-height:1.4}
-.option .arrow{font-size:20px;color:#94a3b8}
-.skip{margin-top:20px;text-align:center}
-.skip a{font-size:11.5px;color:#94a3b8;text-decoration:underline;cursor:pointer}
+body{font-family:'Pretendard',sans-serif;background:#f8f9ff;color:#1a1a1a;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #e8e6f0;padding:18px 0}
+.header-inner{max-width:1280px;margin:0 auto;padding:0 30px;display:flex;align-items:center;gap:40px}
+.logo{font-size:22px;font-weight:900;color:#1d4ed8;background:#dbeafe;padding:7px 14px;border-radius:8px;letter-spacing:-1px}
+.menu{display:flex;gap:32px;flex:1}
+.menu a{text-decoration:none;color:#4a4a4a;font-size:14.5px;font-weight:700;cursor:pointer}
+.menu a.active{color:#1d4ed8}
+.header-right{display:flex;gap:18px;font-size:13px;color:#4a4a4a}
+.header-right a{color:#4a4a4a;text-decoration:none;display:flex;align-items:center;gap:4px}
+.wrap{max-width:1280px;margin:0 auto;padding:40px 30px}
+h1{font-size:24px;font-weight:900;margin-bottom:24px}
+.layout{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:flex-start}
+
+/* 좌측 요금제 카드 */
+.plan-card{background:#f3f0ff;border:1.5px solid #e0d9ff;border-radius:16px;padding:32px}
+.plan-card .badges{display:flex;gap:6px;margin-bottom:14px}
+.plan-card .b-lgu{background:linear-gradient(135deg,#ec4899,#f43f5e);color:#fff;font-size:11px;font-weight:800;padding:4px 11px;border-radius:5px}
+.plan-card .b-promo{background:#5b21b6;color:#fff;font-size:11px;font-weight:800;padding:4px 11px;border-radius:5px}
+.plan-card .b-best{background:#fbbf24;color:#7c2d12;font-size:11px;font-weight:800;padding:4px 11px;border-radius:5px}
+.plan-card .name{font-size:24px;font-weight:900;margin-bottom:24px;letter-spacing:-0.5px}
+.plan-detail{background:#fff;border-radius:12px;padding:22px;margin-bottom:18px}
+.plan-detail .det-row{display:flex;align-items:flex-start;gap:14px;padding:12px 0;border-bottom:1px dashed #e8e6f0}
+.plan-detail .det-row:last-child{border-bottom:none}
+.plan-detail .det-row .ic{font-size:20px;flex-shrink:0;width:24px}
+.plan-detail .det-row .body .ttl{font-size:15px;font-weight:800;margin-bottom:4px}
+.plan-detail .det-row .body .desc{font-size:12px;color:#6a6a6a;line-height:1.6}
+.plan-card .price-row{display:flex;justify-content:flex-end;align-items:flex-end;gap:8px;margin-top:14px}
+.plan-card .vat{font-size:11px;color:#6a6a6a}
+.plan-card .price{font-size:34px;font-weight:900;color:#1d4ed8;letter-spacing:-1px}
+.plan-card .price .unit{font-size:18px;font-weight:700}
+.plan-card .price-after{font-size:11px;color:#6a6a6a;text-align:right;margin-top:4px}
+
+/* 우측 sidebar */
+.aside{background:#fff;border:1.5px solid #e8e6f0;border-radius:16px;padding:24px;position:sticky;top:20px}
+.aside-section{margin-bottom:22px}
+.aside-section .lbl{font-size:13px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.aside-section .tooltip{background:#1a1a1a;color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;margin-left:auto;cursor:pointer}
+.aside-section .help{width:14px;height:14px;border-radius:50%;background:#e8e6f0;color:#6a6a6a;font-size:9px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-weight:800}
+.chips-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip-btn{padding:13px;background:#fff;border:1.5px solid #e8e6f0;border-radius:10px;font-size:13.5px;font-weight:700;color:#4a4a4a;cursor:pointer;text-align:center}
+.chip-btn.active{background:#fff;border-color:#1d4ed8;color:#1d4ed8;border-width:2px;font-weight:800}
+.chip-btn.full{grid-column:span 2}
+.cta-apply{background:#1d4ed8;color:#fff;border:none;padding:16px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;margin-top:8px}
+.cta-apply:hover{background:#1e40af}
+.float-chat{position:fixed;right:30px;bottom:30px;width:54px;height:54px;background:#1d4ed8;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;color:#fff;box-shadow:0 4px 14px rgba(29,78,216,.3)}
 </style></head><body>
-<div class="wrap">
-  <h1>가입 가능 여부 확인</h1>
-  <p class="lead">사용 중 휴대폰에서 다음 번호를 눌러주세요. 즉시 가입 가능한지 안내해 드릴게요.</p>
-
-  <div class="code-box">
-    <div class="code">*#06#</div>
-    <div class="hint">사용 중 휴대폰 전화 앱에서<br>위 코드를 그대로 입력하세요</div>
-  </div>
-
-  <div class="howto">
-    <span class="step-num">1</span><strong>휴대폰 전화 앱</strong> 열기<br>
-    <span class="step-num">2</span><strong>*#06#</strong> 입력<br>
-    <span class="step-num">3</span>화면에 <strong>EID 번호 (32자리)</strong> 표시 여부 확인
-  </div>
-
-  <div style="font-size:14px;font-weight:800;margin-bottom:10px">EID 번호가 보이셨나요?</div>
-  <div class="options">
-    <div class="option esim">
-      <div class="ic">✅</div>
-      <div class="body">
-        <div class="ttl">네, 32자리 숫자 보여요</div>
-        <div class="desc">eSIM 즉시 개통 가능 · 5분 내 사용 시작</div>
-      </div>
-      <div class="arrow">→</div>
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">📱 봉이</div>
+    <div class="menu">
+      <a>개통안내</a>
+      <a class="active">요금제</a>
+      <a>유심구매</a>
+      <a>이벤트</a>
+      <a>고객지원</a>
+      <a>MY정보</a>
     </div>
-    <div class="option physical">
-      <div class="ic">📦</div>
-      <div class="body">
-        <div class="ttl">아니요, 안 보여요</div>
-        <div class="desc">실물 유심 필요 · 매장 (광주·전남) 또는 택배 1~2일</div>
-      </div>
-      <div class="arrow">→</div>
-    </div>
-    <div class="option">
-      <div class="ic">🤔</div>
-      <div class="body">
-        <div class="ttl">모르겠어요 · 도와주세요</div>
-        <div class="desc">단말기 모델명 입력 시 자동 안내</div>
-      </div>
-      <div class="arrow">→</div>
+    <div class="header-right">
+      <a>🔎 실시간사용량조회</a>
+      <a>👤 로그인</a>
     </div>
   </div>
-
-  <div class="skip"><a>이미 EID 확인했어요 → 건너뛰기</a></div>
 </div>
+
+<div class="wrap">
+  <h1>요금제 상세보기</h1>
+
+  <div class="layout">
+    <!-- 좌측: 요금제 카드 -->
+    <div class="plan-card">
+      <div class="badges">
+        <span class="b-lgu">KT</span>
+        <span class="b-promo">7개월 프로모션</span>
+        <span class="b-best">⭐ 봉이 BEST</span>
+      </div>
+      <div class="name">KT 점보 100GB + 5Mbps</div>
+
+      <div class="plan-detail">
+        <div class="det-row">
+          <div class="ic">📊</div>
+          <div class="body">
+            <div class="ttl">100GB + 5Mbps</div>
+            <div class="desc">
+              기본 제공 데이터 소진 후 5Mbps 속도로 무제한 사용 가능.<br>
+              5Mbps는 동영상·테더링·4K 스트리밍 끊김 없이 이용할 수 있는 속도입니다.<br>
+              (네트워크 상황에 따라 달라질 수 있음)
+            </div>
+          </div>
+        </div>
+        <div class="det-row">
+          <div class="ic">📞</div>
+          <div class="body">
+            <div class="ttl">통화 무제한</div>
+            <div class="desc">+부가통화 300분</div>
+          </div>
+        </div>
+        <div class="det-row">
+          <div class="ic">✉️</div>
+          <div class="body">
+            <div class="ttl">문자 무제한</div>
+            <div class="desc">기본 제공</div>
+          </div>
+        </div>
+        <div class="det-row">
+          <div class="ic">🎁</div>
+          <div class="body">
+            <div class="ttl">가입 즉시 3,000P + MNP 보너스 3,000P</div>
+            <div class="desc">현금화 가능 봉이 포인트</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="price-row">
+        <div class="vat">(VAT 포함)</div>
+        <div class="price">월 <span class="unit">16,900원</span></div>
+      </div>
+      <div class="price-after">*8개월차부터 40,700원</div>
+    </div>
+
+    <!-- 우측 sidebar -->
+    <aside class="aside">
+      <div class="aside-section">
+        <div class="lbl">가입유형</div>
+        <div class="chips-row">
+          <div class="chip-btn">신규가입</div>
+          <div class="chip-btn active">번호이동</div>
+        </div>
+      </div>
+
+      <div class="aside-section">
+        <div class="lbl">개통방법</div>
+        <div class="chips-row">
+          <div class="chip-btn active full">셀프 개통 (eSIM QR)</div>
+        </div>
+      </div>
+
+      <div class="aside-section">
+        <div class="lbl">유심 보유여부<span class="help">?</span></div>
+        <div class="chips-row">
+          <div class="chip-btn active">보유</div>
+          <div class="chip-btn">미보유</div>
+        </div>
+      </div>
+
+      <div class="aside-section">
+        <div class="lbl">유심 종류<span class="tooltip">유심 안내</span></div>
+        <div class="chips-row">
+          <div class="chip-btn active">일반 유심</div>
+          <div class="chip-btn">eSIM</div>
+        </div>
+      </div>
+
+      <div class="aside-section">
+        <div class="lbl">고객유형</div>
+        <div class="chips-row">
+          <div class="chip-btn active full">개인</div>
+        </div>
+      </div>
+
+      <button class="cta-apply">🌐 온라인 신청하기</button>
+    </aside>
+  </div>
+</div>
+
+<div class="float-chat">💬</div>
 </body></html>

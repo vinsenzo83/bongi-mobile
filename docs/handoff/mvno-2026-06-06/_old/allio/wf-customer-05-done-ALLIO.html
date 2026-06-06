@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>⑤ 신청 완료 (Allio · 티켓번호 X)</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',sans-serif;background:#fefdf8;min-height:100vh}
+.layout{display:grid;grid-template-columns:240px 1fr 360px;height:100vh;max-width:1600px;margin:0 auto}
+.aside-left{background:#fff;border-right:1px solid #f0eee5;padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+.logo{font-size:24px;font-weight:900;color:#1d4ed8}
+.logo span{color:#fbbf24}
+.btn-new{background:#2563eb;color:#fff;border:none;padding:13px;border-radius:12px;font-size:13.5px;font-weight:800;font-family:inherit}
+.nav-title{font-size:11px;font-weight:700;color:#8a8a8a;margin:8px 0 4px;padding:0 6px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:#4a4a4a;font-weight:600}
+.nav-item.new{background:linear-gradient(135deg,#fef3c7,#fef9c3);color:#92400e;font-weight:800}
+.nav-item .badge-new{background:#dc2626;color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:800;margin-left:auto}
+.main{background:#fff;padding:30px 40px;overflow-y:auto;border-right:1px solid #f0eee5}
+.main-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.back-btn{background:#f8f7f0;border:none;width:36px;height:36px;border-radius:50%;font-size:18px;color:#4a4a4a}
+.main-title{font-size:18px;font-weight:800;flex:1;text-align:center;margin-right:50px}
+.progress{display:flex;gap:8px;margin-bottom:24px;padding:14px;background:#f8f7f0;border-radius:12px}
+.progress .dot{flex:1;height:6px;background:#e8e6dc;border-radius:3px}
+.progress .dot.done{background:#16a34a}
+.complete-hero{text-align:center;padding:40px 20px;background:linear-gradient(180deg,#f0fdf4 0%,#fff 100%);border:1.5px solid #d1fae5;border-radius:18px;margin-bottom:24px}
+.complete-hero .ic{width:72px;height:72px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;color:#fff;margin:0 auto 14px;font-weight:900}
+.complete-hero h1{font-size:24px;font-weight:900;margin-bottom:6px;color:#065f46}
+.complete-hero p{font-size:13px;color:#16a34a;line-height:1.6}
+.complete-hero p b{color:#065f46}
+.timeline{background:#fff;border:1.5px solid #e8e6dc;border-radius:14px;padding:20px;margin-bottom:18px}
+.timeline-title{font-size:15px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.tl-row{display:flex;gap:14px;padding:10px 0;align-items:center}
+.tl-row .num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;flex-shrink:0}
+.tl-row.done .num{background:#16a34a}
+.tl-row.active .num{background:#2563eb}
+.tl-row.wait .num{background:#cbd5e1}
+.tl-row .info .ttl{font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:2px}
+.tl-row .info .desc{font-size:11px;color:#8a8a8a}
+.tl-row.active .info .ttl{color:#1d4ed8;font-weight:800}
+.tl-row.wait .info .ttl{color:#8a8a8a}
+.tl-status{margin-left:auto;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:5px}
+.tl-status.done{background:#dcfce7;color:#16a34a}
+.tl-status.active{background:#dbeafe;color:#1d4ed8}
+.tl-status.wait{background:#f3f4f6;color:#8a8a8a}
+.next-card{background:#fffbeb;border:1.5px solid #fbbf24;border-radius:12px;padding:14px 18px;margin-bottom:14px}
+.next-card h3{font-size:13px;font-weight:800;color:#78350f;margin-bottom:6px}
+.next-card p{font-size:11.5px;color:#92400e;line-height:1.6}
+.action-row{display:flex;gap:10px;margin-top:14px}
+.action-row button{flex:1;padding:13px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;border:none}
+.btn-home{background:#f8f7f0;color:#4a4a4a}
+.btn-mypage{background:#2563eb;color:#fff}
+.aside-right{background:#fdfcf7;padding:24px 22px;display:flex;flex-direction:column;gap:14px}
+.aside-right .title{font-size:14px;font-weight:800}
+.online-tag{background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:4px 11px;border-radius:6px;width:fit-content}
+.plan-summary{background:#fff;border:1.5px solid #e8e6dc;border-radius:12px;padding:14px}
+.plan-summary .pname{font-size:16px;font-weight:900;margin-bottom:6px}
+.plan-summary .meta{font-size:11px;color:#8a8a8a;margin-bottom:8px}
+.plan-summary .price{font-size:22px;font-weight:900;color:#dc2626}
+.applicant-block{background:#fff;border:1.5px solid #e8e6dc;border-radius:12px;padding:14px}
+.applicant-block .hd{font-size:12px;font-weight:800;margin-bottom:8px}
+.applicant-block .row{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;color:#4a4a4a}
+.applicant-block .row b{color:#1a1a1a;font-weight:700}
+.sms-block{background:#dbeafe;border-radius:10px;padding:12px 14px;font-size:11.5px;color:#1e3a8a;line-height:1.6}
+</style></head><body>
+<div class="layout">
+  <aside class="aside-left">
+    <div class="logo">📱 봉이<span>모바일</span></div>
+    <button class="btn-new">+ 새로 시작</button>
+    <div class="nav-title">카테고리</div>
+    <a class="nav-item">🏠  홈</a>
+    <a class="nav-item">✨  서비스 추천</a>
+    <a class="nav-item">📱  휴대폰</a>
+    <a class="nav-item">🌐  인터넷+TV</a>
+    <a class="nav-item new">📡  알뜰폰 <span class="badge-new">완료</span></a>
+    <a class="nav-item">🛋️  가전 렌탈</a>
+    <a class="nav-item">🎁  이벤트·혜택</a>
+  </aside>
+  <main class="main">
+    <div class="main-header">
+      <h1 class="main-title">STEP 5 — 신청 완료</h1>
+    </div>
+    <div class="progress">
+      <div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div>
+    </div>
+
+    <div class="complete-hero">
+      <div class="ic">✓</div>
+      <h1>가입 신청이 접수되었습니다</h1>
+      <p>봉이 알뜰폰 <b>KT 점보 100GB</b> 가입 신청이 정상적으로 접수되었습니다.<br>
+      처리 진행 상황은 <b>SMS로 단계별 안내</b>드립니다.</p>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-title">📋 처리 진행 (예상 4~24시간)</div>
+      <div class="tl-row done">
+        <div class="num">✓</div>
+        <div class="info"><div class="ttl">1. 신청 접수</div><div class="desc">방금 완료 · SMS 발송</div></div>
+        <div class="tl-status done">완료</div>
+      </div>
+      <div class="tl-row active">
+        <div class="num">2</div>
+        <div class="info"><div class="ttl">2. 상담사 검토</div><div class="desc">본인인증·결제 정보·약관 확인</div></div>
+        <div class="tl-status active">진행 중</div>
+      </div>
+      <div class="tl-row wait">
+        <div class="num">3</div>
+        <div class="info"><div class="ttl">3. 모빙 본사 전달</div><div class="desc">개통 처리 요청</div></div>
+        <div class="tl-status wait">대기</div>
+      </div>
+      <div class="tl-row wait">
+        <div class="num">4</div>
+        <div class="info"><div class="ttl">4. 개통 완료 + eSIM QR 발송</div><div class="desc">QR 스캔 → 즉시 사용</div></div>
+        <div class="tl-status wait">대기</div>
+      </div>
+    </div>
+
+    <div class="next-card">
+      <h3>📲 eSIM 개통 안내</h3>
+      <p>
+        개통 완료 시 <b>SMS로 QR 코드</b>가 발송됩니다. 단말에서 <b>설정 → 셀룰러 → eSIM 추가 → QR 스캔</b> 한 번이면 5분 내 사용 가능.<br>
+        ※ 기존 LG U+ 번호는 신청 접수 시점 기준 <b>자동 번호이동</b> 처리.
+      </p>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-home">🏠 홈으로</button>
+      <button class="btn-mypage">📋 신청 내역 보기</button>
+    </div>
+  </main>
+  <aside class="aside-right">
+    <div class="title">신청 완료</div>
+    <div class="online-tag">🌐 온라인 신청 완료</div>
+    <div class="plan-summary">
+      <div class="pname">KT 점보 100GB</div>
+      <div class="meta">번호이동 · eSIM · 무약정</div>
+      <div class="price">월 16,900원</div>
+    </div>
+    <div class="applicant-block">
+      <div class="hd">📝 신청 내용</div>
+      <div class="row"><span>이름</span><b>박서윤</b></div>
+      <div class="row"><span>연락처</span><b>010-****-1234</b></div>
+      <div class="row"><span>이동 번호</span><b>010-****-1234</b></div>
+      <div class="row"><span>본인인증</span><b style="color:#16a34a">✅ PASS</b></div>
+      <div class="row"><span>결제수단</span><b>카드 ****1234</b></div>
+      <div class="row"><span>처리 상태</span><b style="color:#1d4ed8">검토 중</b></div>
+    </div>
+    <div class="sms-block">
+      📩 <b>박서윤 님</b>, 봉이 알뜰폰 가입 신청이 접수되었습니다. 진행 상황을 SMS로 안내드립니다.
+    </div>
+  </aside>
+</div>
+</body></html>
