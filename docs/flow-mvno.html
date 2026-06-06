@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>봉이모바일 — ⑤ 알뜰폰 (MVNO 대리점) 플로우</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Pretendard:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f8f7f4;--bg2:#fff;--border:#e2ddd6;--navy:#1a2744;--blue:#2563eb;--orange:#d97706;--green:#059669;--pink:#ec4899;--purple:#7c3aed;--red:#dc2626;--text:#1a1a1a;--text2:#4a4a4a;--text3:#8a8a8a}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;padding:40px;max-width:1200px;margin:0 auto;line-height:1.55}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;padding:40px;max-width:1280px;margin:0 auto;line-height:1.55}
 h1{font-size:28px;font-weight:900;color:var(--navy);margin-bottom:4px}
 .subtitle{font-size:12px;color:var(--text3);margin-bottom:18px;font-family:'JetBrains Mono',monospace}
 .hero{background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid var(--orange);border-radius:14px;padding:18px 22px;margin-bottom:28px;font-size:13px;color:#78350f;line-height:1.7}
 .hero strong{color:#92400e}
-.section{font-size:18px;font-weight:900;color:var(--navy);margin:32px 0 14px;display:flex;align-items:center;gap:10px}
-.num{background:var(--orange);color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.section{font-size:20px;font-weight:900;color:var(--navy);margin:36px 0 14px;display:flex;align-items:center;gap:10px}
+.num{background:var(--orange);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
 
-/* 15 SKU 간단 grid */
 .sku-table{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;border-collapse:separate;border-spacing:0;overflow:hidden;font-size:12px}
 .sku-table th{background:var(--navy);color:#fff;padding:9px 10px;text-align:left;font-size:11px}
 .sku-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
@@ -24,7 +23,6 @@ h1{font-size:28px;font-weight:900;color:var(--navy);margin-bottom:4px}
 .price-promo{color:var(--pink);font-weight:800}
 .price-strike{text-decoration:line-through;color:var(--text3);font-size:10.5px;margin-left:4px}
 
-/* step 흐름 */
 .flow{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:10px 0}
 .fbox{padding:14px 10px;border-radius:10px;font-size:11.5px;font-weight:700;text-align:center;line-height:1.4;background:#fff;border:1.5px solid var(--border)}
 .fbox.user{background:#fef3c7;border-color:var(--orange);color:#92400e}
@@ -33,16 +31,6 @@ h1{font-size:28px;font-weight:900;color:var(--navy);margin-bottom:4px}
 .fbox.done{background:#d1fae5;border-color:var(--green);color:#065f46}
 .fbox .lbl{font-size:9px;font-weight:800;color:var(--text3);margin-bottom:3px;text-transform:uppercase}
 
-/* 워크플로우 step 카드 */
-.wf-row{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px dashed var(--border)}
-.wf-row:last-child{border-bottom:none}
-.wf-num{background:var(--navy);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
-.wf-body .ttl{font-size:14px;font-weight:800;color:var(--navy);margin-bottom:4px}
-.wf-body .desc{font-size:12px;color:var(--text2);line-height:1.6}
-.wf-body .meta{font-size:11px;color:var(--text3);margin-top:5px;font-family:'JetBrains Mono',monospace}
-.wf-body .tag{display:inline-block;padding:2px 8px;background:#fef3c7;color:#92400e;border-radius:4px;font-size:10px;font-weight:700;margin-right:5px}
-
-/* 와이어프레임 카드 grid */
 .doc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
 .doc{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;text-decoration:none;color:var(--text);transition:all .15s}
 .doc:hover{border-color:var(--orange);box-shadow:0 4px 12px rgba(217,119,6,.15);transform:translateY(-2px)}
@@ -51,10 +39,142 @@ h1{font-size:28px;font-weight:900;color:var(--navy);margin-bottom:4px}
 .doc .sub{font-size:10.5px;color:var(--text3);line-height:1.4}
 
 .note{background:#eff6ff;border-left:3px solid var(--blue);border-radius:6px;padding:10px 14px;font-size:11.5px;color:var(--navy);line-height:1.7;margin-top:10px}
+
+/* ============ 서비스 UI mockup (Allio + 아정당 통합) ============ */
+.ui-step{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:24px;margin-bottom:14px}
+.ui-step-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed var(--border)}
+.ui-step-num{background:var(--navy);color:#fff;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0}
+.ui-step-num.s1{background:#1d4ed8}.ui-step-num.s2{background:#7c3aed}.ui-step-num.s3{background:#d97706}.ui-step-num.s4{background:#059669}.ui-step-num.s5{background:#dc2626}
+.ui-step-ttl{font-size:15px;font-weight:900;color:var(--navy)}
+.ui-step-sub{font-size:11.5px;color:var(--text3);margin-top:2px}
+
+/* mockup browser */
+.mockup{background:#fafafa;border:1.5px solid #e0e0e0;border-radius:10px;padding:16px;font-family:'Pretendard',sans-serif}
+.mock-row{background:#fff;border:1.5px solid #e8e6f0;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:center}
+.mock-row .l{font-size:11.5px;font-weight:800}
+.mock-row .r{display:flex;gap:5px;flex-wrap:wrap}
+.mock-chip{padding:7px 13px;background:#fff;border:1.5px solid #e8e6f0;border-radius:7px;font-size:11px;font-weight:700;color:#4a4a4a}
+.mock-chip.act{background:#eff6ff;border-color:#1d4ed8;color:#1d4ed8;border-width:2px}
+.mock-chip.act-purple{background:#f3e8ff;border-color:#7c3aed;color:#6b21a8;border-width:2px}
+.mock-chip.act-orange{background:#fff7ed;border-color:#f97316;color:#9a3412;border-width:2px}
+.mock-chip.act-green{background:#dcfce7;border-color:#16a34a;color:#15803d;border-width:2px}
+
+/* SKU 카드 mockup */
+.mock-sku-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.mock-sku{background:#fff;border:1.5px solid #e8e6f0;border-radius:9px;padding:11px}
+.mock-sku.selected{border-color:#1d4ed8;border-width:2.5px;background:#f0f7ff}
+.mock-sku .tags{display:flex;gap:3px;margin-bottom:5px}
+.mock-sku .name{font-size:13px;font-weight:900;margin-bottom:3px}
+.mock-sku .data{font-size:11px;font-weight:700;color:#1d4ed8;margin-bottom:6px}
+.mock-sku .specs{font-size:10px;color:#6a6a6a;line-height:1.5;margin-bottom:6px}
+.mock-sku .price-strike{text-decoration:line-through;color:#bcbcbc;font-size:10px}
+.mock-sku .price-now{font-size:15px;font-weight:900;color:#dc2626}
+
+/* form input mockup */
+.mock-input{background:#fff;border:1.5px solid #e8e6f0;border-radius:8px;padding:9px 12px;font-size:11.5px;font-weight:600;color:#4a4a4a;width:100%}
+.mock-input.filled{color:#1a1a1a;font-weight:700}
+.mock-field{margin-bottom:8px}
+.mock-field .lbl{font-size:11px;font-weight:700;color:#4a4a4a;margin-bottom:4px}
+.mock-field .req{color:#dc2626}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* dynamic expand */
+.mock-dynamic{background:#f3e8ff;border:1.5px dashed #c4b5fd;border-radius:9px;padding:12px;margin-top:8px}
+.mock-dynamic .badge{background:#7c3aed;color:#fff;font-size:9px;padding:2px 7px;border-radius:3px;font-weight:800;margin-right:6px}
+
+/* 신분증 가이드 */
+.mock-id-guide{background:#fef3c7;border:1.5px solid #fbbf24;border-radius:9px;padding:10px;display:grid;grid-template-columns:110px 1fr;gap:10px;margin-top:8px}
+.mock-id-img{background:#fff;border:1.5px dashed #f59e0b;border-radius:6px;padding:9px 6px;text-align:center;font-size:8.5px;color:#92400e;line-height:1.3;font-weight:700}
+.mock-id-img .lic{background:#fb923c;color:#fff;padding:2px 4px;border-radius:2px;font-size:8.5px;display:inline-block;margin-bottom:3px;font-family:monospace}
+.mock-id-img .dt{background:#fbbf24;color:#7c2d12;padding:2px 4px;border-radius:2px;font-size:8.5px;display:inline-block;margin-top:2px;font-weight:800}
+.mock-id-body{font-size:11px;color:#78350f;line-height:1.6}
+
+/* 전자서명 5종 */
+.mock-eauth{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+.mock-eauth-item{background:#fff;border:1.5px solid #e8e6f0;border-radius:8px;padding:9px 6px;text-align:center}
+.mock-eauth-item.act{border-color:#f97316;border-width:2px;background:#fff7ed}
+.mock-eauth-item .lg{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff;margin:0 auto 4px}
+.mock-eauth-item.kakao .lg{background:#fee500;color:#3c1e1e}
+.mock-eauth-item.naver .lg{background:#03c75a}
+.mock-eauth-item.toss .lg{background:#0064ff}
+.mock-eauth-item.payco .lg{background:#ff2939}
+.mock-eauth-item.pass .lg{background:linear-gradient(135deg,#dc2626,#ef4444)}
+.mock-eauth-item .nm{font-size:9.5px;font-weight:700;line-height:1.3}
+
+/* 약관 */
+.mock-terms{background:#f8f7f0;border-radius:8px;padding:11px}
+.mock-terms .all{font-size:11.5px;font-weight:900;padding-bottom:7px;border-bottom:1px dashed #cbd5e1;margin-bottom:5px}
+.mock-terms .it{font-size:10.5px;color:#4a4a4a;padding:3px 0;display:flex;align-items:center;gap:6px}
+.mock-terms .it .req{background:#fee2e2;color:#dc2626;font-size:8.5px;padding:1px 4px;border-radius:2px;font-weight:800}
+.mock-terms .it .opt{background:#f3f4f6;color:#6a6a6a;font-size:8.5px;padding:1px 4px;border-radius:2px;font-weight:800}
+
+/* 완료 hero */
+.mock-complete{background:linear-gradient(180deg,#dcfce7,#f0fdf4);border:1.5px solid #86efac;border-radius:12px;padding:24px;text-align:center}
+.mock-complete .ic{width:54px;height:54px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 8px;color:#fff;font-weight:900}
+.mock-complete h3{font-size:17px;font-weight:900;color:#065f46;margin-bottom:4px}
+.mock-complete p{font-size:11.5px;color:#16a34a}
+
+/* timeline */
+.mock-timeline{background:#fff;border:1.5px solid #e8e6f0;border-radius:9px;padding:14px;margin-top:8px}
+.mock-tl-row{display:flex;gap:10px;padding:6px 0;align-items:center}
+.mock-tl-row .num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff}
+.mock-tl-row.done .num{background:#16a34a}
+.mock-tl-row.active .num{background:#1d4ed8}
+.mock-tl-row.wait .num{background:#cbd5e1}
+.mock-tl-row .ttl{font-size:11.5px;font-weight:700;color:#1a1a1a}
+.mock-tl-row.wait .ttl{color:#8a8a8a}
+.mock-tl-row .status{margin-left:auto;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:4px}
+.mock-tl-row .status.done{background:#dcfce7;color:#16a34a}
+.mock-tl-row .status.active{background:#dbeafe;color:#1d4ed8}
+.mock-tl-row .status.wait{background:#f3f4f6;color:#8a8a8a}
+
+/* card visual */
+.mock-card-visual{background:linear-gradient(135deg,#1e3a8a,#3b82f6);border-radius:9px;padding:12px;color:#fff;font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+.mock-card-visual .h{font-size:9px;opacity:.8;margin-bottom:4px;font-family:'Pretendard',sans-serif}
+.mock-card-visual .n{font-size:13px;letter-spacing:1.5px;margin-bottom:8px}
+.mock-card-visual .e{font-size:9px;opacity:.85;font-family:'Pretendard',sans-serif}
+
+/* arrow */
+.arr-down{text-align:center;color:var(--text3);font-size:24px;margin:8px 0;font-weight:900}
+
+/* sidebar mini */
+.mock-aside{background:#f3e8ff;border-radius:8px;padding:11px;margin-top:8px}
+.mock-aside .h{font-size:10.5px;font-weight:800;color:#5b21b6;margin-bottom:5px}
+.mock-aside .r{display:flex;justify-content:space-between;font-size:10.5px;padding:1px 0;color:#5b21b6}
+.mock-aside .r b{color:#1a1a1a}
+
+/* progress bar */
+.mock-progress{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:#fff;border:1.5px solid #e8e6f0;border-radius:10px;margin-bottom:10px}
+.mock-progress .dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff}
+.mock-progress .dot.done{background:#16a34a}.mock-progress .dot.act{background:#1d4ed8}.mock-progress .dot.w{background:#e8e6f0;color:#8a8a8a}
+.mock-progress .lbl{font-size:9px;font-weight:700;text-align:center;margin-top:3px}
+.mock-progress .col{display:flex;flex-direction:column;align-items:center}
+.mock-progress .line{flex:1;height:2px;background:#cbd5e1;margin:0 5px}
+.mock-progress .line.done{background:#16a34a}
+
+/* CTA */
+.mock-cta{background:#1d4ed8;color:#fff;border:none;padding:11px 22px;border-radius:9px;font-size:12px;font-weight:800;width:100%;margin-top:8px;text-align:center}
+.mock-cta.orange{background:#f97316}
+
+/* layout: left=mockup, right=spec table */
+.ui-layout{display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:flex-start}
+.ui-spec{background:#f8f7f4;border:1.5px solid var(--border);border-radius:9px;padding:14px;font-size:11px;color:var(--text2);line-height:1.7}
+.ui-spec .h{font-size:11.5px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.ui-spec ul{list-style:none;padding-left:0}
+.ui-spec li{padding-left:10px;position:relative;margin-bottom:3px}
+.ui-spec li::before{content:'·';position:absolute;left:0;color:#cbd5e1}
+.ui-spec li b{color:var(--text)}
+
+table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1.5px solid var(--border);border-radius:10px;overflow:hidden}
+table th{background:var(--navy);color:#fff;padding:9px 10px;text-align:left;font-size:11px;font-weight:700}
+table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:800}
+.b-red{background:#fee2e2;color:#dc2626}.b-orange{background:#fef3c7;color:#92400e}.b-gray{background:#f3f4f6;color:#6a6a6a}
 </style></head><body>
 
 <h1>⑤ 알뜰폰 (MVNO 대리점) 플로우</h1>
-<div class="subtitle">flow-mvno.html · 2026-06-06 · 봉이 = MVNO 대리점 (자체 사업자 X)</div>
+<div class="subtitle">flow-mvno.html · 2026-06-06 · 봉이 = MVNO 대리점 (모빙 단독 제휴)</div>
 
 <div class="hero">
   📡 <strong>봉이 = MVNO 대리점</strong> · <strong>모빙(mobing.co.kr) 단독 제휴</strong> → SK·KT·LG U+ 3망 모두 봉이 전용 요금제 출시 (총 <strong>15 SKU</strong>) → 가입 1건당 수수료 수익. 망 임대·요금 청구는 모빙이 담당.
@@ -83,66 +203,416 @@ h1{font-size:28px;font-weight:900;color:var(--navy);margin-bottom:4px}
   </tbody>
 </table>
 
-<!-- ============ 2. 고객 가입 흐름 (7-step) ============ -->
-<div class="section"><span class="num">2</span>고객 가입 흐름 (7-step)</div>
-<div class="flow">
-  <div class="fbox user"><div class="lbl">STEP 1</div>요금제 list 진입</div>
-  <div class="fbox user"><div class="lbl">STEP 2</div>망 필터 선택<br>15 SKU 비교</div>
-  <div class="fbox user"><div class="lbl">STEP 3</div>가입유형 선택<br>신규 / MNP</div>
-  <div class="fbox user"><div class="lbl">STEP 4</div>신청서 작성<br>이름·번호·유심</div>
-  <div class="fbox adm"><div class="lbl">STEP 5</div>어드민 접수<br>검토·결제 확인</div>
-  <div class="fbox hq"><div class="lbl">STEP 6</div>모빙 본사 전달<br>API/엑셀</div>
-  <div class="fbox done"><div class="lbl">STEP 7</div>개통 완료<br>SMS 안내</div>
+<!-- ============ 2. 고객 가입 5-STEP UI ============ -->
+<div class="section"><span class="num">2</span>고객 가입 5-STEP 서비스 UI</div>
+
+<!-- STEP 1 -->
+<div class="ui-step">
+  <div class="ui-step-head">
+    <div class="ui-step-num s1">1</div>
+    <div><div class="ui-step-ttl">요금제 선택</div><div class="ui-step-sub">가입유형 · 통신망 · 상품유형 → 15 SKU 카드</div></div>
+  </div>
+  <div class="ui-layout">
+    <div class="mockup">
+      <div class="mock-progress">
+        <div class="col"><div class="dot act">1</div><div class="lbl" style="color:#1d4ed8">요금제</div></div>
+        <div class="line"></div>
+        <div class="col"><div class="dot w">2</div><div class="lbl">SIM</div></div>
+        <div class="line"></div>
+        <div class="col"><div class="dot w">3</div><div class="lbl">신청서</div></div>
+        <div class="line"></div>
+        <div class="col"><div class="dot w">4</div><div class="lbl">인증</div></div>
+        <div class="line"></div>
+        <div class="col"><div class="dot w">5</div><div class="lbl">완료</div></div>
+      </div>
+      <div class="mock-row"><div class="l">가입유형 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip">신규가입</div><div class="mock-chip act">번호이동 (MNP)</div></div></div>
+      <div class="mock-row"><div class="l">통신망 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip">SKT</div><div class="mock-chip act">KT</div><div class="mock-chip">LG U+</div><div class="mock-chip">전체</div></div></div>
+      <div class="mock-row"><div class="l">상품유형 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip act">후불</div><div class="mock-chip">선불</div></div></div>
+      <div style="font-size:12px;font-weight:800;margin:12px 0 6px">📡 KT 망 5개 요금제</div>
+      <div class="mock-sku-grid">
+        <div class="mock-sku">
+          <div class="tags"><span class="net-b kt">KT</span><span style="background:#dcfce7;color:#166534;padding:1px 5px;border-radius:3px;font-size:8.5px;font-weight:800">7M 무료</span></div>
+          <div class="name">KT 라이트</div>
+          <div class="data">📊 7GB+1Mbps</div>
+          <div class="specs">📞 무제한</div>
+          <div class="price-strike">16,300원</div>
+          <div class="price-now">월 0원</div>
+        </div>
+        <div class="mock-sku">
+          <div class="tags"><span class="net-b kt">KT</span><span style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:8.5px;font-weight:800">7M 프로모</span></div>
+          <div class="name">KT 베이직</div>
+          <div class="data">📊 11GB+매일 2GB</div>
+          <div class="specs">🎁 5,000P</div>
+          <div class="price-strike">39,600원</div>
+          <div class="price-now">월 9,900원</div>
+        </div>
+        <div class="mock-sku selected">
+          <div class="tags"><span class="net-b kt">KT</span><span style="background:#fce7f3;color:#9f1239;padding:1px 5px;border-radius:3px;font-size:8.5px;font-weight:800">⭐ BEST</span></div>
+          <div class="name">KT 점보 ✓</div>
+          <div class="data">📊 100GB+5Mbps</div>
+          <div class="specs">🎁 3,000P + MNP 3,000P</div>
+          <div class="price-strike">40,700원</div>
+          <div class="price-now">월 16,900원</div>
+        </div>
+      </div>
+      <div class="mock-cta">다음 (SIM 옵션) ▶</div>
+    </div>
+    <div class="ui-spec">
+      <div class="h">📋 입력 카테고리 (1~4)</div>
+      <ul>
+        <li><b>1. 가입유형</b> — 신규 / MNP (chip)</li>
+        <li><b>2. 통신망</b> — SKT / KT / LGU+ (chip)</li>
+        <li><b>3. 상품유형</b> — 후불 / 선불 (chip)</li>
+        <li><b>4. 요금제</b> — 15 SKU 카드 선택</li>
+      </ul>
+      <div class="h" style="margin-top:10px">⚙️ 동작</div>
+      <ul>
+        <li>망 선택 → 해당 망 5종만 표시</li>
+        <li>요금제 선택 → 다음 STEP 활성화</li>
+      </ul>
+    </div>
+  </div>
 </div>
-<div class="note">
-  ※ 가입유형은 <strong>신규가입·번호이동(MNP) 2종</strong>만. · 결합·티켓 발급은 차후 단계 (현재 범위 X). · 유심 보유자는 즉시 개통, 미보유자는 택배 1~2일.
+
+<!-- STEP 2 -->
+<div class="ui-step">
+  <div class="ui-step-head">
+    <div class="ui-step-num s2">2</div>
+    <div><div class="ui-step-ttl">SIM 옵션</div><div class="ui-step-sub">SIM 유형 · 유심 구매 · 유심 종류 + 동적 입력</div></div>
+  </div>
+  <div class="ui-layout">
+    <div class="mockup">
+      <div class="mock-progress">
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">요금제</div></div>
+        <div class="line done"></div>
+        <div class="col"><div class="dot act" style="background:#7c3aed">2</div><div class="lbl" style="color:#7c3aed">SIM</div></div>
+        <div class="line"></div>
+        <div class="col"><div class="dot w">3</div><div class="lbl">신청서</div></div>
+        <div class="line"></div>
+        <div class="col"><div class="dot w">4</div><div class="lbl">인증</div></div>
+        <div class="line"></div>
+        <div class="col"><div class="dot w">5</div><div class="lbl">완료</div></div>
+      </div>
+      <div class="mock-row"><div class="l">SIM 유형 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip act-purple">USIM (일반)</div><div class="mock-chip">eSIM (+2,750원)</div></div></div>
+      <div class="mock-row"><div class="l">유심 구매 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip act-purple">보유</div><div class="mock-chip">미보유 (택배)</div></div></div>
+      <div class="mock-row"><div class="l">유심 종류 <span style="color:#dc2626">*</span></div><div class="r"><div class="mock-chip act-purple">일반</div><div class="mock-chip">NFC</div></div></div>
+
+      <div class="mock-dynamic">
+        <div style="font-size:11.5px;font-weight:800;color:#5b21b6;margin-bottom:8px"><span class="badge">USIM 보유</span>유심 정보 입력</div>
+        <div class="row2">
+          <input class="mock-input" placeholder="U 8X00XX (모델코드)" value="U 8X00XX">
+          <input class="mock-input" placeholder="일련번호 8자리" value="12345678">
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="mock-cta" style="flex:1;background:#fff;border:1.5px solid #f59e0b;color:#92400e;font-size:10.5px">📷 유심카드 촬영</button>
+          <button class="mock-cta" style="flex:1;background:#7c3aed;font-size:10.5px">확인 (개통 가능)</button>
+        </div>
+      </div>
+
+      <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:8px;padding:11px;margin-top:10px;font-size:10.5px;color:#1e3a8a;line-height:1.6">
+        <b>📦 유심 이용 안내</b><br>
+        · <b>USIM 보유</b>: 기존 유심에 자동 개통<br>
+        · <b>eSIM</b>: QR 스캔 → 5분 내 사용 (iPhone XS+ · Galaxy S20+)<br>
+        · <b>USIM 미보유</b>: 무료 택배 (광주·전남 익일)
+      </div>
+      <div class="mock-cta">다음 (신청서 작성) ▶</div>
+    </div>
+    <div class="ui-spec">
+      <div class="h">📋 입력 카테고리 (5~8)</div>
+      <ul>
+        <li><b>5. SIM 유형</b> — USIM / eSIM</li>
+        <li><b>6. 유심 구매</b> — 보유 / 미보유</li>
+        <li><b>7. 유심 종류</b> — 일반 / NFC</li>
+        <li><b>8. 이용 안내</b> — 가이드 표시</li>
+      </ul>
+      <div class="h" style="margin-top:10px">🔀 분기 (동적 expand)</div>
+      <ul>
+        <li><b>USIM 보유</b> → 모델코드 + 일련번호</li>
+        <li><b>USIM 미보유</b> → 배송지 (STEP 3에)</li>
+        <li><b>eSIM</b> → IMEI + IMEI2 + EID + 모델명</li>
+      </ul>
+    </div>
+  </div>
 </div>
 
-<!-- ============ 3. 서비스 UI ============ -->
-<div class="section"><span class="num">3</span>서비스 UI</div>
+<!-- STEP 3 -->
+<div class="ui-step">
+  <div class="ui-step-head">
+    <div class="ui-step-num s3">3</div>
+    <div><div class="ui-step-ttl">신청서 작성</div><div class="ui-step-sub">명의 · 연락처 · 청구지 · 번호이동 · 결제 · 배송지[조건부]</div></div>
+  </div>
+  <div class="ui-layout">
+    <div class="mockup">
+      <div class="mock-progress">
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">요금제</div></div>
+        <div class="line done"></div>
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">SIM</div></div>
+        <div class="line done"></div>
+        <div class="col"><div class="dot act" style="background:#d97706">3</div><div class="lbl" style="color:#d97706">신청서</div></div>
+        <div class="line"></div>
+        <div class="col"><div class="dot w">4</div><div class="lbl">인증</div></div>
+        <div class="line"></div>
+        <div class="col"><div class="dot w">5</div><div class="lbl">완료</div></div>
+      </div>
 
-<!-- 🛒 고객 서비스 UI -->
-<div style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px">
-  <div style="font-size:13px;font-weight:900;color:var(--navy);margin-bottom:14px">🛒 고객 서비스 UI — 가입 3-step</div>
+      <div style="font-size:11.5px;font-weight:800;margin:6px 0">9·1 명의 정보</div>
+      <div class="row2">
+        <div class="mock-field"><div class="lbl">이름 <span class="req">*</span></div><input class="mock-input filled" value="박서윤"></div>
+        <div class="mock-field"><div class="lbl">생년월일 <span class="req">*</span></div><input class="mock-input filled" value="950101"></div>
+      </div>
 
-  <!-- STEP 1: 요금제 비교 list -->
-  <div style="font-size:11px;font-weight:800;color:var(--orange);margin-bottom:6px;border-left:3px solid var(--orange);padding-left:8px">STEP 1 — 요금제 비교 list (15 SKU 카드 그리드 + 망 chip 필터)</div>
-  <a href="handoff/mvno-2026-06-06/wf-customer-01-plan-list.html" target="_blank">
-    <img src="handoff/mvno-2026-06-06/screenshots/wf-customer-01.png" alt="요금제 비교 list" style="width:100%;max-width:1100px;border:1.5px solid var(--border);border-radius:10px;display:block;margin-bottom:6px">
-  </a>
-  <div class="arrow-down" style="margin:4px 0">↓</div>
+      <div style="font-size:11.5px;font-weight:800;margin:10px 0 6px">9·2 연락처</div>
+      <div class="mock-field"><div class="lbl">휴대폰 <span class="req">*</span></div><input class="mock-input filled" value="010-1234-1234"></div>
+      <div class="mock-field"><div class="lbl">이메일</div><input class="mock-input filled" value="parksy@example.com"></div>
 
+      <div style="font-size:11.5px;font-weight:800;margin:10px 0 6px">9·3 청구지 주소</div>
+      <div class="mock-field"><input class="mock-input filled" value="61010 광주광역시 동구 충장로 1 (111호)"></div>
 
-  <!-- STEP 2: 가입 신청 -->
-  <div style="font-size:11px;font-weight:800;color:var(--purple);margin-bottom:6px;border-left:3px solid var(--purple);padding-left:8px">STEP 2 — 가입 신청 (신규·MNP 2종 · chip form)</div>
-  <a href="handoff/mvno-2026-06-06/wf-customer-03-signup-step.html" target="_blank">
-    <img src="handoff/mvno-2026-06-06/screenshots/wf-customer-03.png" alt="가입 신청" style="width:100%;max-width:900px;border:1.5px solid var(--border);border-radius:10px;display:block;margin-bottom:6px">
-  </a>
-  <div class="arrow-down" style="margin:4px 0">↓</div>
+      <div style="font-size:11.5px;font-weight:800;margin:10px 0 6px">9·4 번호이동 (MNP 시)</div>
+      <div class="mock-row"><div class="l">기존 통신사 <span class="req">*</span></div><div class="r"><div class="mock-chip">SKT</div><div class="mock-chip">KT</div><div class="mock-chip act">LG U+</div></div></div>
 
-  <!-- STEP 3: 가입 완료 -->
-  <div style="font-size:11px;font-weight:800;color:var(--green);margin-bottom:6px;border-left:3px solid var(--green);padding-left:8px">STEP 3 — 가입 완료 (접수 + SMS 안내)</div>
-  <a href="handoff/mvno-2026-06-06/wf-customer-04-complete.html" target="_blank">
-    <img src="handoff/mvno-2026-06-06/screenshots/wf-customer-04.png" alt="가입 완료" style="width:100%;max-width:900px;border:1.5px solid var(--border);border-radius:10px;display:block">
-  </a>
+      <div class="mock-dynamic" style="background:#fff7ed;border-color:#fb923c">
+        <div style="font-size:11.5px;font-weight:800;color:#9a3412;margin-bottom:8px"><span class="badge" style="background:#9a3412">USIM 미보유 시</span>유심 배송지 (자동 표시)</div>
+        <div style="font-size:10.5px;color:#9a3412">청구지 주소와 동일 (또는 변경) · 메모 입력</div>
+      </div>
+
+      <div style="font-size:11.5px;font-weight:800;margin:10px 0 6px">9·5 결제 · 자동이체</div>
+      <div class="mock-card-visual">
+        <div class="h">신용·체크카드</div>
+        <div class="n">**** **** **** 1234</div>
+        <div class="e">유효기간 12/27 · 박서윤</div>
+      </div>
+      <div class="row2">
+        <div class="mock-field"><div class="lbl">카드번호 <span class="req">*</span></div><input class="mock-input filled" value="****-****-****-1234"></div>
+        <div class="mock-field"><div class="lbl">유효기간 <span class="req">*</span></div><input class="mock-input filled" value="12/27"></div>
+      </div>
+      <div style="font-size:9.5px;color:#dc2626;font-weight:700">⚠️ 본인 명의 카드·계좌만 입력 가능</div>
+
+      <div class="mock-cta">다음 (본인 인증) ▶</div>
+    </div>
+    <div class="ui-spec">
+      <div class="h">📋 입력 카테고리 9 (6개 하위)</div>
+      <ul>
+        <li>9·1 명의 (이름·생년월일)</li>
+        <li>9·2 연락처 (휴대폰·이메일)</li>
+        <li>9·3 청구지 주소</li>
+        <li>9·4 번호이동 정보 <b>(MNP 시)</b></li>
+        <li>9·5 결제·자동이체</li>
+        <li>9·6 배송지 <b>(USIM 미보유 시)</b></li>
+      </ul>
+      <div class="h" style="margin-top:10px">⚡ 모빙 추가 필드</div>
+      <ul>
+        <li>희망번호 뒷 4자리 (신규 시)</li>
+        <li>청구서 유형 (문자·메일·우편)</li>
+        <li>신청내역 조회 비밀번호</li>
+        <li>이메일 수신여부 동의</li>
+        <li>연락처·이메일 확인 버튼</li>
+      </ul>
+    </div>
+  </div>
 </div>
 
-<!-- ⚙️ 어드민 UI -->
+<!-- STEP 4 -->
+<div class="ui-step">
+  <div class="ui-step-head">
+    <div class="ui-step-num s4">4</div>
+    <div><div class="ui-step-ttl">본인 인증</div><div class="ui-step-sub">신분증 진위확인 + (전자서명 5종 또는 계좌 1원 송금)</div></div>
+  </div>
+  <div class="ui-layout">
+    <div class="mockup">
+      <div class="mock-progress">
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">요금제</div></div>
+        <div class="line done"></div>
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">SIM</div></div>
+        <div class="line done"></div>
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">신청서</div></div>
+        <div class="line done"></div>
+        <div class="col"><div class="dot act" style="background:#059669">4</div><div class="lbl" style="color:#059669">인증</div></div>
+        <div class="line"></div>
+        <div class="col"><div class="dot w">5</div><div class="lbl">완료</div></div>
+      </div>
+
+      <div style="font-size:13px;font-weight:900;margin:8px 0;color:#1a1a1a">10·1 신분증 진위확인</div>
+      <div class="row2">
+        <div class="mock-field"><div class="lbl">신분증 종류 <span class="req">*</span></div><input class="mock-input filled" value="운전면허증"></div>
+        <div class="mock-field"><div class="lbl">발급일자 <span class="req">*</span></div><input class="mock-input filled" value="2022-02-24"></div>
+      </div>
+      <div class="mock-id-guide">
+        <div class="mock-id-img">
+          🚗 운전면허증<br>
+          <span class="lic">12-34-123456-12</span><br>
+          홍길동<br>
+          <span class="dt">2022.2.24</span>
+        </div>
+        <div class="mock-id-body">
+          📍 <b>입력 가이드</b><br>
+          · 운전면허번호 = 상단 빨강 박스<br>
+          · 발급일자 = 하단 노란 박스<br>
+          <span style="color:#9a3412">⚠️ 미성년자는 법정대리인</span>
+        </div>
+      </div>
+      <button class="mock-cta" style="background:#1d4ed8">🔍 행안부 진위 조회 <span style="background:#dcfce7;color:#16a34a;padding:1px 6px;border-radius:3px;font-size:9px;margin-left:6px">✓ 진본</span></button>
+
+      <div style="font-size:13px;font-weight:900;margin:14px 0 8px">10·2 본인 인증 (2 옵션)</div>
+      <div class="row2">
+        <div style="background:#fff7ed;border:2px solid #f97316;border-radius:9px;padding:11px;text-align:center">
+          <div style="font-size:18px;margin-bottom:4px">📱</div>
+          <div style="font-size:12px;font-weight:900">A. 전자서명</div>
+          <div style="font-size:10px;color:#9a3412">앱 푸시 인증 (30초)</div>
+        </div>
+        <div style="background:#fff;border:1.5px solid #e8e6f0;border-radius:9px;padding:11px;text-align:center">
+          <div style="font-size:18px;margin-bottom:4px">🏦</div>
+          <div style="font-size:12px;font-weight:900">B. 계좌 인증</div>
+          <div style="font-size:10px;color:#6a6a6a">1원 송금</div>
+        </div>
+      </div>
+
+      <div style="background:#fff7ed;border:1.5px solid #fb923c;border-radius:9px;padding:11px;margin-top:8px">
+        <div style="font-size:11px;font-weight:800;color:#9a3412;margin-bottom:8px">A. 전자서명 5종 중 선택</div>
+        <div class="mock-eauth">
+          <div class="mock-eauth-item kakao"><div class="lg">kakao</div><div class="nm">카카오톡</div></div>
+          <div class="mock-eauth-item naver"><div class="lg">NAVER</div><div class="nm">네이버</div></div>
+          <div class="mock-eauth-item toss"><div class="lg">toss</div><div class="nm">토스</div></div>
+          <div class="mock-eauth-item payco"><div class="lg">PAYCO</div><div class="nm">PAYCO</div></div>
+          <div class="mock-eauth-item pass act"><div class="lg">PASS</div><div class="nm">PASS</div></div>
+        </div>
+        <div style="background:#fff;border-radius:8px;padding:11px;margin-top:8px;text-align:center">
+          <div style="font-size:11px;font-weight:700;margin-bottom:8px">📩 PASS 앱에서 인증 진행해 주세요</div>
+          <div style="display:grid;grid-template-columns:1fr 20px 1fr 20px 1fr;gap:6px;align-items:center;font-size:9px">
+            <div><div style="font-size:18px">📩</div>STEP 01<br>앱 알림 확인</div>
+            <div style="font-size:14px;color:#cbd5e1">▶</div>
+            <div><div style="font-size:18px">🔐</div>STEP 02<br>간편인증</div>
+            <div style="font-size:14px;color:#cbd5e1">▶</div>
+            <div><div style="font-size:18px">✅</div>STEP 03<br>완료 클릭</div>
+          </div>
+          <div style="background:#fef3c7;border-radius:5px;padding:6px;font-size:10px;color:#92400e;margin-top:8px">⏳ 인증 요청 중</div>
+          <button class="mock-cta orange" style="margin-top:6px">인증 완료</button>
+        </div>
+      </div>
+
+      <div class="mock-cta">다음 (약관·완료) ▶</div>
+    </div>
+    <div class="ui-spec">
+      <div class="h">📋 입력 카테고리 10</div>
+      <ul>
+        <li><b>10·1 신분증 진위</b> (행안부)</li>
+        <li><b>10·2 본인 인증</b> 2-옵션</li>
+      </ul>
+      <div class="h" style="margin-top:10px">🔐 본인 인증 비교</div>
+      <ul>
+        <li><b>A. 전자서명</b> — 5종 (카카오/네이버/토스/PAYCO/PASS) · 30초 · 앱 보유</li>
+        <li><b>B. 계좌 1원 송금</b> — 앱 불필요 · 시니어용 · 입금자명 코드</li>
+      </ul>
+      <div class="h" style="margin-top:10px">⚠️ 둘 다 필수</div>
+      <ul>
+        <li>신분증 진위 → 위조 차단</li>
+        <li>본인 인증 → 도용 차단</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 5 -->
+<div class="ui-step">
+  <div class="ui-step-head">
+    <div class="ui-step-num s5">5</div>
+    <div><div class="ui-step-ttl">약관 동의 + 신청 완료</div><div class="ui-step-sub">필수 4 + 선택 1 약관 → 접수 → 처리 timeline</div></div>
+  </div>
+  <div class="ui-layout">
+    <div class="mockup">
+      <div class="mock-progress">
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">요금제</div></div>
+        <div class="line done"></div>
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">SIM</div></div>
+        <div class="line done"></div>
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">신청서</div></div>
+        <div class="line done"></div>
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">인증</div></div>
+        <div class="line done"></div>
+        <div class="col"><div class="dot done">✓</div><div class="lbl" style="color:#16a34a">완료</div></div>
+      </div>
+
+      <div style="font-size:13px;font-weight:900;margin:8px 0">11. 약관 동의</div>
+      <div class="mock-terms">
+        <div class="all">☑ 전체 약관 동의 (필수 4 · 선택 1)</div>
+        <div class="it">☑ <span class="req">필수</span> 봉이 알뜰폰 이용약관</div>
+        <div class="it">☑ <span class="req">필수</span> 개인정보 수집·이용 동의</div>
+        <div class="it">☑ <span class="req">필수</span> 자동이체 약관</div>
+        <div class="it">☑ <span class="req">필수</span> 망 임대 통신사(KT) 정보 제공</div>
+        <div class="it">☐ <span class="opt">선택</span> 마케팅 정보 수신 동의</div>
+      </div>
+
+      <div class="mock-complete" style="margin-top:14px">
+        <div class="ic">✓</div>
+        <h3>가입 신청이 접수되었습니다</h3>
+        <p>봉이 알뜰폰 <b>KT 점보 100GB</b> 가입 신청 정상 접수<br>처리 진행 상황은 SMS로 단계별 안내</p>
+      </div>
+
+      <div class="mock-timeline">
+        <div style="font-size:12px;font-weight:800;margin-bottom:6px">📋 처리 진행 (예상 4~24시간)</div>
+        <div class="mock-tl-row done"><div class="num">✓</div><div class="ttl">1. 신청 접수 (완료)</div><div class="status done">완료</div></div>
+        <div class="mock-tl-row active"><div class="num">2</div><div class="ttl">2. 상담사 검토</div><div class="status active">진행 중</div></div>
+        <div class="mock-tl-row wait"><div class="num">3</div><div class="ttl">3. 모빙 본사 전달</div><div class="status wait">대기</div></div>
+        <div class="mock-tl-row wait"><div class="num">4</div><div class="ttl">4. 개통 완료 + SMS</div><div class="status wait">대기</div></div>
+      </div>
+    </div>
+    <div class="ui-spec">
+      <div class="h">📋 입력 카테고리 11·12</div>
+      <ul>
+        <li><b>11. 약관 동의</b> — 필수 4 + 선택 1</li>
+        <li><b>12. 가입 안내</b> — 처리 4단계 + SMS</li>
+      </ul>
+      <div class="h" style="margin-top:10px">📜 약관 (필수 4)</div>
+      <ul>
+        <li>봉이 알뜰폰 이용약관</li>
+        <li>개인정보 수집·이용</li>
+        <li>자동이체 약관</li>
+        <li>망 임대 통신사 정보 제공</li>
+      </ul>
+      <div class="h" style="margin-top:10px">📩 자동 처리</div>
+      <ul>
+        <li>접수 즉시 SMS 발송</li>
+        <li>각 단계 변경 시 SMS</li>
+        <li>개통 완료 시 사용 안내</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 3. 어드민 UI ============ -->
+<div class="section"><span class="num">3</span>어드민 UI</div>
 <div style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px">
   <div style="font-size:13px;font-weight:900;color:var(--navy);margin-bottom:14px">⚙️ 어드민 UI — 요금제 관리 single page</div>
-  <div style="font-size:11px;font-weight:800;color:var(--orange);margin-bottom:6px;border-left:3px solid var(--orange);padding-left:8px">요금제 관리 + 신청서 처리 (15 SKU inline 편집·일괄·복제)</div>
   <a href="handoff/mvno-2026-06-06/wf-admin-02-plan-edit.html" target="_blank">
     <img src="handoff/mvno-2026-06-06/screenshots/wf-admin-02.png" alt="어드민 요금제 관리" style="width:100%;max-width:1200px;border:1.5px solid var(--border);border-radius:10px;display:block">
   </a>
 </div>
 
-<!-- ============ 4. 참고 사이트 ============ -->
-<div class="section"><span class="num">4</span>참고 사이트</div>
+<!-- ============ 4. 모빙 form 추가 필드 ============ -->
+<div class="section"><span class="num">4</span>모빙 form 추가 필드 (10개)</div>
+<table>
+  <thead><tr><th style="width:50px">#</th><th style="width:200px">필드</th><th>설명</th><th style="width:160px">위치</th></tr></thead>
+  <tbody>
+    <tr><td>+1</td><td><b>희망번호 뒷 4자리</b></td><td>1·2·3순위 입력 (유사번호 소진 시 랜덤 배정)</td><td>STEP 3 (신규 가입 시)</td></tr>
+    <tr><td>+2</td><td><b>휴대폰 정보</b></td><td>모델명·일련번호·용량·IMEI(15) <span style="color:var(--text3)">(Android/iOS 가이드)</span></td><td>STEP 2 (USIM 보유)</td></tr>
+    <tr><td>+3</td><td><b>eSIM 단말 정보</b></td><td>IMEI(15) + IMEI2(15) + EID(32) + 단말 모델명</td><td>STEP 2 (eSIM)</td></tr>
+    <tr><td>+4</td><td><b>청구서 유형</b></td><td>문자 / 이메일 / 우편</td><td>STEP 3 (결제 후)</td></tr>
+    <tr><td>+5</td><td><b>자동 가입 부가서비스</b></td><td>국제전화·음성로밍·데이터로밍 차단 (3종 자동)</td><td>STEP 5 (안내)</td></tr>
+    <tr><td>+6</td><td><b>신청내역 조회 비밀번호</b></td><td>비회원 조회용 (4~6자리)</td><td>STEP 3 (고객정보)</td></tr>
+    <tr><td>+7</td><td><b>이메일 수신여부</b></td><td>동의 / 미동의</td><td>STEP 3</td></tr>
+    <tr><td>+8</td><td><b>연락처·이메일 인증</b></td><td>"연락처확인" / "이메일확인" 버튼 실시간</td><td>STEP 3</td></tr>
+    <tr><td>+9</td><td><b>배송 메모</b></td><td>"문 앞에" / 자유 입력 textarea</td><td>STEP 3 (배송지)</td></tr>
+    <tr><td>+10</td><td><b>본인 명의 안내</b></td><td>"본인 명의 카드·계좌만 입력 가능" 빨강 알림</td><td>STEP 3 (결제)</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ 5. 참고 사이트 ============ -->
+<div class="section"><span class="num">5</span>참고 사이트</div>
 <div class="doc-grid">
-  <a class="doc" href="https://www.mobing.co.kr/" target="_blank" rel="noopener"><div class="ic">📡</div><div class="ttl">모빙 (Mobing)</div><div class="sub">mobing.co.kr · 봉이 제휴 MVNO 본사 · SK·KT·LG U+ 3망 임차</div></a>
-  <a class="doc" href="https://www.mobing.co.kr/service-join/receipt" target="_blank" rel="noopener"><div class="ic">📝</div><div class="ttl">모빙 가입 form (참고)</div><div class="sub">/service-join/receipt · 가입 신청 UX 벤치마크</div></a>
-  <a class="doc" href="https://www.ajd.co.kr/" target="_blank" rel="noopener"><div class="ic">🛒</div><div class="ttl">아정당</div><div class="sub">ajd.co.kr · 알뜰폰 비교·가입 1위 · 카드 UI·프로모 패턴 벤치마크</div></a>
-  <a class="doc" href="https://www.moyoplan.com/" target="_blank" rel="noopener"><div class="ic">📊</div><div class="ttl">모요 (Moyo)</div><div class="sub">moyoplan.com · 알뜰폰 요금제 비교 플랫폼 · 망별 시세 비교</div></a>
+  <a class="doc" href="https://www.mobing.co.kr/" target="_blank" rel="noopener"><div class="ic">📡</div><div class="ttl">모빙 (Mobing)</div><div class="sub">mobing.co.kr · 봉이 제휴 MVNO 본사</div></a>
+  <a class="doc" href="https://www.mobing.co.kr/service-join/receipt" target="_blank" rel="noopener"><div class="ic">📝</div><div class="ttl">모빙 가입 form</div><div class="sub">/service-join/receipt · 가입 UX 벤치마크</div></a>
+  <a class="doc" href="https://www.ajd.co.kr/" target="_blank" rel="noopener"><div class="ic">🛒</div><div class="ttl">아정당</div><div class="sub">ajd.co.kr · 카드 UI · 우측 sidebar 패턴</div></a>
+  <a class="doc" href="https://www.moyoplan.com/" target="_blank" rel="noopener"><div class="ic">📊</div><div class="ttl">모요</div><div class="sub">moyoplan.com · 망별 시세 비교</div></a>
 </div>
 
 </body></html>
