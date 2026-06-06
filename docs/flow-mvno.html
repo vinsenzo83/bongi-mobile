@@ -851,15 +851,15 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
     <tr><td><b>메인 진입</b></td><td>좌측 카테고리 nav (휴대폰·인터넷+TV·알뜰폰 등)</td><td>가로 상단 nav (개통안내·요금제·유심구매·이벤트)</td><td>가로 상단 nav (요금제·이벤트·고객센터)</td></tr>
     <tr><td><b>요금제 list</b></td><td><b>3-column 카드 그리드</b> + 망 chip 필터 + 데이터·약정 필터</td><td>list 형태 (망별 분류) + 필터</td><td>list 형태 + 추천 배지</td></tr>
     <tr><td><b>요금제 상세 페이지</b></td><td>요금제 카드 좌측 + 우측 가입 옵션 sidebar</td><td><b>요금제 + 가입 옵션 sidebar 한 페이지</b> (보유/미보유 분기)</td><td>step별 다음 페이지로 이동</td></tr>
-    <tr><td><b>가입 flow step</b></td><td><b>5 STEP</b> (요금제·SIM·신청서·인증·완료)</td><td><b>2~3 STEP</b> (요금제+옵션·유심구매[조건부]·완료)</td><td><b>4~5 STEP</b> (요금제·가입정보·본인인증·결제·완료)</td></tr>
-    <tr><td><b>SIM 옵션</b></td><td>USIM (보유/미보유 택배) · eSIM (+2,750원)</td><td>USIM (보유/미보유 분리) · eSIM</td><td>USIM (모델코드 입력) · eSIM (IMEI·EID 사진 자동 인식)</td></tr>
-    <tr><td><b>본인 인증</b></td><td><b>PASS·카카오·네이버 3종</b> 전자서명</td><td>휴대폰 SMS 인증 또는 PASS 1개</td><td><b>5종 전자서명</b> (PASS·카카오·네이버·토스·PAYCO) + 계좌 인증 옵션</td></tr>
-    <tr><td><b>신분증 진위확인</b></td><td>행안부 실시간 (필수)</td><td>주민번호 입력만 (별도 진위 없음)</td><td><b>행안부 실시간 + 가이드 이미지</b> (운전면허증 입력 위치 시각)</td></tr>
-    <tr><td><b>결제·자동이체</b></td><td>카드 / 계좌이체 (유효성 검증만)</td><td>카드 / 계좌</td><td>카드 / 계좌이체 + <b>계좌 1원 송금 인증</b> (신규가입 시 2중)</td></tr>
+    <tr><td><b>가입 flow step</b></td><td><b>5 STEP</b> (요금제·SIM·신청서·인증·완료)</td><td><b>4 STEP</b> (요금제+옵션·유심구매[조건부]·본인인증·완료) — UI는 단순하지만 필수정보 모두 받음</td><td><b>4~5 STEP</b> (요금제·가입정보·본인인증·결제·완료)</td></tr>
+    <tr><td><b>SIM 옵션</b></td><td>USIM (보유/미보유 택배) · eSIM (+2,750원)</td><td>USIM (보유/미보유 분리) · eSIM · 모델코드·일련번호 등 입력 필수</td><td>USIM (모델코드 입력) · eSIM (IMEI·EID 사진 자동 인식)</td></tr>
+    <tr><td><b>본인 인증</b></td><td><b>PASS·카카오·네이버 3종</b> 전자서명</td><td>PASS·휴대폰 SMS (전기통신사업법에 따라 동일 필수)</td><td><b>5종 전자서명</b> (PASS·카카오·네이버·토스·PAYCO) + 계좌 인증 옵션</td></tr>
+    <tr><td><b>신분증 진위확인</b></td><td>행안부 실시간 (필수)</td><td>주민번호·신분증 정보 + 진위 조회 (모빙과 동일)</td><td><b>행안부 실시간 + 가이드 이미지</b> (운전면허증 입력 위치 시각)</td></tr>
+    <tr><td><b>결제·자동이체</b></td><td>카드 / 계좌 — 본인 명의 검증 (필수)이체 (유효성 검증만)</td><td>카드 / 계좌 — 본인 명의 검증 (필수)</td><td>카드 / 계좌 — 본인 명의 검증 (필수)이체 + <b>계좌 1원 송금 인증</b> (신규가입 시 2중)</td></tr>
     <tr><td><b>계좌 1원 인증</b></td><td>❌ 없음 (PASS 본인인증으로 충분 · UX 단순)</td><td>❌ 없음</td><td>✅ 있음 (신규가입만 2중)</td></tr>
-    <tr><td><b>약관 동의</b></td><td>필수 4 + 선택 1 (이용·개인정보·자동이체·망 임대 + 마케팅)</td><td>필수 3 + 선택</td><td>필수 4 + 선택 + 부가 조건 (SK 가입 시 카드 제한 등)</td></tr>
-    <tr><td><b>신청 완료 화면</b></td><td>티켓번호 ❌ · 처리 timeline 4단계 + SMS 안내</td><td>접수 안내 + SMS</td><td>티켓번호 ✅ (M00042) · 다음 단계 + 통화 1599-0000 문의</td></tr>
-    <tr><td><b>특수 입력 필드</b></td><td>희망번호 뒷4(신규)·청구서유형·조회 비밀번호 등 (모빙 추가 10개 차용)</td><td>최소 입력 (단순)</td><td>매우 많음 (희망번호·휴대폰 정보·EID·청구서·부가서비스·비밀번호 등)</td></tr>
+    <tr><td><b>약관 동의</b></td><td>필수 4 + 선택 1 (이용·개인정보·자동이체·망 임대 + 마케팅)</td><td>필수 4 + 선택 (이용·개인정보·자동이체·망 임대)</td><td>필수 4 + 선택 + 부가 조건 (SK 가입 시 카드 제한 등)</td></tr>
+    <tr><td><b>신청 완료 화면</b></td><td>티켓번호 ❌ · 처리 timeline 4단계 + SMS 안내</td><td>접수번호 + 진행 안내 + SMS</td><td>티켓번호 ✅ (M00042) · 다음 단계 + 통화 1599-0000 문의</td></tr>
+    <tr><td><b>특수 입력 필드</b></td><td>희망번호 뒷4(신규)·청구서유형·조회 비밀번호 등 (모빙 추가 10개 차용)</td><td>기본 필수 모두 (이름·주민·연락처·주소·결제·약관) — 단지 UI가 단순</td><td>매우 많음 (희망번호·휴대폰 정보·EID·청구서·부가서비스·비밀번호 등)</td></tr>
     <tr><td><b>자동 가입 부가서비스</b></td><td>(검토 중) 국제전화·음성로밍·데이터로밍 차단 3종</td><td>없음 (사용자가 직접 선택)</td><td><b>3종 자동 가입</b> (국제전화·음성로밍·데이터로밍 차단)</td></tr>
     <tr><td><b>분기 처리</b></td><td>USIM 미보유 → 배송지 dynamic expand (한 페이지 내)</td><td><b>유심 미보유 → 별도 페이지</b> (/buy/sim.do) — 흐름 끊김</td><td>step별 분기 (다음 페이지로)</td></tr>
     <tr><td><b>우측 sidebar</b></td><td><b>실시간 요금제 mini + 진행 상황</b> sticky</td><td>가입 옵션 chip + 온라인 신청 버튼 sticky</td><td>요금제 정보 + 월 납부금액 + 자세히보기</td></tr>
@@ -868,7 +868,7 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
     <tr style="background:#fef9c3">
       <td><b>🌟 차별 포인트</b></td>
       <td><b>15 SKU 큐레이션</b> · 모빙 단독 제휴 · 광주·전남 매장 (효도폰 5분 개통) · 자동이체 1원 인증 X</td>
-      <td><b>다수 MVNO 비교·중개</b> · 가입 form 가장 단순 · NFC 유심 옵션</td>
+      <td><b>다수 MVNO 비교·중개</b> · UI는 깔끔하지만 필수정보 동일 · NFC 유심 옵션</td>
       <td><b>자체 망 임차</b> · 통신 본사급 신뢰 · 24개월 페이백 프리미엄 · 셀프개통/상담원개통 선택</td>
     </tr>
   </tbody>
@@ -882,7 +882,7 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       <ul style="list-style:none;padding-left:0;font-size:11px;color:#4a4a4a;line-height:1.7">
         <li>· 요금제+가입 옵션 한 페이지 구조</li>
         <li>· 우측 sidebar 카드 chip UX</li>
-        <li>· 가입 form 단순화</li>
+        <li>· UI 단순화 (필수정보는 동일하게 받음)</li>
         <li>· 보유/미보유 분기 (봉이는 dynamic expand)</li>
       </ul>
     </div>
