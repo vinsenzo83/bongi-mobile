@@ -385,6 +385,9 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
         <div class="mock-field"><div class="lbl">유효기간 <span class="req">*</span></div><input class="mock-input filled" value="12/27"></div>
       </div>
       <div style="font-size:9.5px;color:#dc2626;font-weight:700">⚠️ 본인 명의 카드·계좌만 입력 가능</div>
+      <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:8px;padding:10px;margin-top:6px;font-size:10px;color:#1e3a8a;line-height:1.5">
+        🏦 <b>계좌번호 인증</b> (자동이체 계좌 선택 시) — 봉이가 입력하신 계좌로 <b>1원 송금</b> → 입금자명 4자리 코드를 다음 화면에서 입력해 본인 명의 확인 (PASS 본인 인증과는 별개)
+      </div>
 
       <div class="mock-cta">다음 (본인 인증) ▶</div>
     </div>
@@ -396,6 +399,7 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
         <li>9·3 청구지 주소</li>
         <li>9·4 번호이동 정보 <b>(MNP 시)</b></li>
         <li>9·5 결제·자동이체</li>
+        <li>9·5b <b>계좌번호 인증</b> — 1원 송금 (자동이체 계좌 본인명의 확인)</li>
         <li>9·6 배송지 <b>(USIM 미보유 시)</b></li>
       </ul>
       <div class="h" style="margin-top:10px">⚡ 모빙 추가 필드</div>
@@ -451,22 +455,9 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       </div>
       <button class="mock-cta" style="background:#1d4ed8">🔍 행안부 진위 조회 <span style="background:#dcfce7;color:#16a34a;padding:1px 6px;border-radius:3px;font-size:9px;margin-left:6px">✓ 진본</span></button>
 
-      <div style="font-size:13px;font-weight:900;margin:14px 0 8px">10·2 본인 인증 (2 옵션)</div>
-      <div class="row2">
-        <div style="background:#fff7ed;border:2px solid #f97316;border-radius:9px;padding:11px;text-align:center">
-          <div style="font-size:18px;margin-bottom:4px">📱</div>
-          <div style="font-size:12px;font-weight:900">A. 전자서명</div>
-          <div style="font-size:10px;color:#9a3412">앱 푸시 인증 (30초)</div>
-        </div>
-        <div style="background:#fff;border:1.5px solid #e8e6f0;border-radius:9px;padding:11px;text-align:center">
-          <div style="font-size:18px;margin-bottom:4px">🏦</div>
-          <div style="font-size:12px;font-weight:900">B. 계좌 인증</div>
-          <div style="font-size:10px;color:#6a6a6a">1원 송금</div>
-        </div>
-      </div>
-
+      <div style="font-size:13px;font-weight:900;margin:14px 0 8px">10·2 본인 인증 (전자서명 3종)</div>
       <div style="background:#fff7ed;border:1.5px solid #fb923c;border-radius:9px;padding:11px;margin-top:8px">
-        <div style="font-size:11px;font-weight:800;color:#9a3412;margin-bottom:8px">A. 전자서명 인증 — PASS / 카카오 / 네이버 (3종)</div>
+        <div style="font-size:11px;font-weight:800;color:#9a3412;margin-bottom:8px">전자서명 인증 — PASS · 카카오톡 · 네이버 (3종 중 1택)</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
           <div style="background:#fff;border:2px solid #f97316;border-radius:9px;padding:12px;text-align:center">
             <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;margin:0 auto 6px">PASS</div>
@@ -504,12 +495,13 @@ table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:t
       <div class="h">📋 입력 카테고리 10</div>
       <ul>
         <li><b>10·1 신분증 진위</b> (행안부)</li>
-        <li><b>10·2 본인 인증</b> 2-옵션</li>
+        <li><b>10·2 본인 인증</b> (전자서명)</li>
       </ul>
-      <div class="h" style="margin-top:10px">🔐 본인 인증 비교</div>
+      <div class="h" style="margin-top:10px">🔐 전자서명 3종</div>
       <ul>
-        <li><b>A. 전자서명</b> — PASS · 카카오톡 · 네이버 3종 (PASS 압도적)</li>
-        <li><b>B. 계좌 1원 송금</b> — 앱 불필요 · 시니어용 · 입금자명 코드</li>
+        <li><b>PASS</b> — 통신 3사 통합 (60%+)</li>
+        <li><b>카카오톡</b> — 인지도 1위 (20%)</li>
+        <li><b>네이버</b> — 간편 인증 (10%)</li>
       </ul>
       <div class="h" style="margin-top:10px">⚠️ 둘 다 필수</div>
       <ul>
