@@ -98,74 +98,8 @@ h1{font-size:28px;font-weight:900;color:var(--navy);margin-bottom:4px}
   ※ 가입유형은 <strong>신규가입·번호이동(MNP) 2종</strong>만. · 결합·티켓 발급은 차후 단계 (현재 범위 X). · 유심 보유자는 즉시 개통, 미보유자는 택배 1~2일.
 </div>
 
-<!-- ============ 3. 서비스 워크플로우 (운영 상시 사이클) ============ -->
-<div class="section"><span class="num">3</span>서비스 워크플로우 (운영 상시)</div>
-
-<div class="wf-row">
-  <div class="wf-num">1</div>
-  <div class="wf-body">
-    <div class="ttl">🛒 신청 접수 (storefront)</div>
-    <div class="desc">고객이 `flow-customer-01` 요금제 list → 가입 form 작성 → DB <code>bongi_mvno_subscriptions</code> insert (status=`requested`). 자동 SMS "접수 완료"·Slack #mvno-new alert.</div>
-    <div class="meta">DB: bongi_mvno_subscriptions · API: POST /api/mvno/subscribe</div>
-  </div>
-</div>
-
-<div class="wf-row">
-  <div class="wf-num">2</div>
-  <div class="wf-body">
-    <div class="ttl">🔍 상담사 검토 (어드민)</div>
-    <div class="desc">담당자가 어드민 `flow-admin-03-subscriptions` 큐에서 검토. <span class="tag">본인 확인</span> <span class="tag">유심 결제</span> <span class="tag">선납</span> 모두 OK → `verified` 전환. 누락·오류 시 콜 (자동 전화 X, 수동 발신).</div>
-    <div class="meta">status: requested → verified · 평균 처리: 30분~2시간</div>
-  </div>
-</div>
-
-<div class="wf-row">
-  <div class="wf-num">3</div>
-  <div class="wf-body">
-    <div class="ttl">📤 모빙 본사 전달</div>
-    <div class="desc">검토 완료 신청서를 모빙 본사에 전달. ① <strong>API 자동 전달</strong> (모빙 API 키 + endpoint 보유 시) ② <strong>엑셀 일괄 전달</strong> (일 1~2회 batch).</div>
-    <div class="meta">status: verified → sent_to_mobing · 전달 후 본사 처리 시간 평균 4~24h</div>
-  </div>
-</div>
-
-<div class="wf-row">
-  <div class="wf-num">4</div>
-  <div class="wf-body">
-    <div class="ttl">📡 개통 처리 (모빙)</div>
-    <div class="desc">모빙 본사가 통신망(SK·KT·LGU+)에 개통 신청 → 망 사업자가 회선 활성. 봉이는 모빙 webhook 또는 일 1회 batch로 결과 수신.</div>
-    <div class="meta">status: sent_to_mobing → activated · 평균 4~24h</div>
-  </div>
-</div>
-
-<div class="wf-row">
-  <div class="wf-num">5</div>
-  <div class="wf-body">
-    <div class="ttl">✅ 개통 완료 통보</div>
-    <div class="desc">DB status=`activated` 갱신 → 자동 SMS "개통 완료, 사용 가능" + 이용 안내 링크. 영업일 9~21시는 즉시, 야간/주말은 익일 오전.</div>
-    <div class="meta">자동 SMS: 개통 완료 · 자동 이메일: 영수증</div>
-  </div>
-</div>
-
-<div class="wf-row">
-  <div class="wf-num">6</div>
-  <div class="wf-body">
-    <div class="ttl">💰 정산 (월 마감)</div>
-    <div class="desc">월말 모빙 본사로부터 정산 data 수신 → DB `bongi_mvno_settlements` insert → 어드민 `flow-admin-05-kpi` 매장별·SKU별 수수료 집계 → 매장 인센티브 자동 분배.</div>
-    <div class="meta">수수료: SKT 27k·KT 28k·LGU+ 25k (SKU·망별 차등) · 매장별 자동 분배</div>
-  </div>
-</div>
-
-<div class="wf-row">
-  <div class="wf-num">7</div>
-  <div class="wf-body">
-    <div class="ttl">🔄 후속 관리</div>
-    <div class="desc">개통 후 7일·30일 만족도 SMS · 프로모 종료 1개월 전 알림 (7M → 정가 전환) · 미납·해지·MNP 이탈 모니터링 (어드민 KPI에 표시).</div>
-    <div class="meta">자동 SMS: 7D·30D 만족도 / 프로모 종료 30D 전</div>
-  </div>
-</div>
-
-<!-- ============ 4. 와이어프레임 ============ -->
-<div class="section"><span class="num">4</span>와이어프레임</div>
+<!-- ============ 3. 와이어프레임 ============ -->
+<div class="section"><span class="num">3</span>와이어프레임</div>
 <div class="doc-grid">
   <a class="doc" href="handoff/mvno-2026-06-06/wf-admin-02-plan-edit.html" style="grid-column:span 3"><div class="ic">⚙️</div><div class="ttl">요금제 관리 (어드민 single page)</div><div class="sub">15 SKU inline 편집·일괄·복제 + 신청서 처리 + 매장 유심 재고 통합</div></a>
 </div>
