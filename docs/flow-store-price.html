@@ -2429,9 +2429,110 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     <br>&nbsp;&nbsp;phone_discount_map   JSONB;        <span style="color:#64748b">-- {갤럭시 S26: -30000, Z Flip7: 'unavailable', 아이폰 16 Pro: +10000}</span>
   </div>
 
-  <div class="note" style="margin-top:12px">
-    💡 <b>상세 정책 문서</b>: <a href="flow-watch.html" style="color:#2563eb;font-weight:700">flow-watch.html</a> (요금제·필수 조건·CRM 매핑 별도)
+  <!-- ============ 워치 전용 요금제 (3사) ============ -->
+  <div style="font-size:13px;font-weight:900;color:#065f46;margin:18px 0 8px">📞 워치 전용 요금제 (3사 · 데이터쉐어링)</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
+      <span style="background:#dc2626;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:5px">SKT</span>
+      <div style="font-size:14px;font-weight:900;margin:6px 0 3px">웨어러블 5G 라이트</div>
+      <div style="font-size:10.5px;color:var(--text3);margin-bottom:8px">메인 회선 데이터 공유 (분리 X)</div>
+      <div style="font-size:20px;font-weight:900;color:#059669">월 <span style="font-size:13px">5,500원</span></div>
+      <div style="font-size:10.5px;color:var(--text2);line-height:1.6;margin-top:8px;border-top:1px dashed var(--border);padding-top:6px">📞 통화·문자 무제한<br>📊 데이터쉐어링<br>⌚ 분리 사용 불가</div>
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
+      <span style="background:#2563eb;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:5px">KT</span>
+      <div style="font-size:14px;font-weight:900;margin:6px 0 3px">워치+ 함께쓰기</div>
+      <div style="font-size:10.5px;color:var(--text3);margin-bottom:8px">데이터쉐어링 (1GB 별도)</div>
+      <div style="font-size:20px;font-weight:900;color:#059669">월 <span style="font-size:13px">11,000원</span></div>
+      <div style="font-size:10.5px;color:var(--text2);line-height:1.6;margin-top:8px;border-top:1px dashed var(--border);padding-top:6px">📞 통화·문자 무제한<br>📊 1GB 별도 + 메인 공유<br>⌚ 분리 사용 가능</div>
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
+      <span style="background:#ec4899;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:5px">LG U+</span>
+      <div style="font-size:14px;font-weight:900;margin:6px 0 3px">U+ 워치 쉐어링</div>
+      <div style="font-size:10.5px;color:var(--text3);margin-bottom:8px">메인 회선 데이터 공유</div>
+      <div style="font-size:20px;font-weight:900;color:#059669">월 <span style="font-size:13px">8,800원</span></div>
+      <div style="font-size:10.5px;color:var(--text2);line-height:1.6;margin-top:8px;border-top:1px dashed var(--border);padding-top:6px">📞 통화·문자 무제한<br>📊 데이터쉐어링<br>⌚ 자녀 워치 분리 가능</div>
+    </div>
   </div>
+
+  <!-- ============ 필수 조건 ============ -->
+  <div style="font-size:13px;font-weight:900;color:#065f46;margin:18px 0 8px">📋 필수 조건 (어드민 탭)</div>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">
+    <div style="background:#fff;border:1.5px solid var(--red);border-left-width:4px;border-radius:9px;padding:13px">
+      <div style="font-size:12.5px;font-weight:900;color:#dc2626;margin-bottom:5px">⚠️ 메인 회선 동시 개통</div>
+      <div style="font-size:10.5px;color:var(--text2);line-height:1.6">워치 단독 가입 ❌. 메인 휴대폰과 같은 명의·같은 시점 동시 개통. (KT만 기존 메인에 워치 추가 허용)</div>
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--red);border-left-width:4px;border-radius:9px;padding:13px">
+      <div style="font-size:12.5px;font-weight:900;color:#dc2626;margin-bottom:5px">⚠️ 명의 일치</div>
+      <div style="font-size:10.5px;color:var(--text2);line-height:1.6">메인 회선과 <b>동일 명의</b> 필수. 가족 명의 워치는 가족결합 시에만 예외 (자녀 워치 분리 허용).</div>
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--red);border-left-width:4px;border-radius:9px;padding:13px">
+      <div style="font-size:12.5px;font-weight:900;color:#dc2626;margin-bottom:5px">⚠️ 24개월 약정 유지</div>
+      <div style="font-size:10.5px;color:var(--text2);line-height:1.6">매장지원금 = 위약금. 24M 내 해지 시 매장지원금 환수 + 통신사 위약금. 메인 회선 해지 시 워치 회선도 자동 해지.</div>
+    </div>
+    <div style="background:#fff;border:1.5px solid #fbbf24;border-left-width:4px;border-radius:9px;padding:13px">
+      <div style="font-size:12.5px;font-weight:900;color:#92400e;margin-bottom:5px">🟡 부가서비스 (선택)</div>
+      <div style="font-size:10.5px;color:var(--text2);line-height:1.6">통신사별 부가서비스 가입 시 추가 할인 (SKT 분실보험·KT 안심·LGU+ 자녀 안심).</div>
+    </div>
+  </div>
+
+  <!-- ============ 현금 사은품 정책 ============ -->
+  <div style="font-size:13px;font-weight:900;color:#065f46;margin:18px 0 8px">💰 현금 사은품 정책 (메인 + 워치 합산)</div>
+  <table style="margin-bottom:14px">
+    <thead><tr><th style="width:200px">시나리오</th><th style="width:140px">메인 휴대폰 현금</th><th style="width:120px">워치 추가 현금</th><th>합산</th></tr></thead>
+    <tbody>
+      <tr><td>메인만 (휴대폰 단독)</td><td>10~30만원</td><td>—</td><td>10~30만원</td></tr>
+      <tr><td><b>메인 + 워치 1대</b></td><td>10~30만원</td><td><b style="color:#16a34a">+5만원</b></td><td><b>15~35만원</b></td></tr>
+      <tr><td>메인 + 워치 2대 (부모·자녀)</td><td>10~30만원</td><td><b style="color:#16a34a">+10만원</b></td><td><b>20~40만원</b></td></tr>
+      <tr><td>메인 + 워치 + 태블릿 등 풀세트</td><td>10~30만원</td><td><b style="color:#16a34a">+15만원</b></td><td><b>25~45만원</b></td></tr>
+    </tbody>
+  </table>
+  <div class="note">💰 <b>지급 시점</b>: 메인 휴대폰과 동시 개통 후 익일 일괄 입금. 워치만 별도 지급 ❌.</div>
+
+  <!-- ============ 알림톡 정책 ============ -->
+  <div style="font-size:13px;font-weight:900;color:#065f46;margin:18px 0 8px">📩 알림톡 정책</div>
+  <table style="margin-bottom:14px">
+    <thead><tr><th style="width:200px">발송 대상</th><th style="width:180px">채널</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>메인 회선 (휴대폰)</td><td><span class="badge b-orange">카카오 알림톡</span></td><td>개통·요금제 변경·부가서비스 해지 등 정상 발송</td></tr>
+      <tr><td><b>워치 회선</b></td><td><span class="badge b-gray">발송 X</span></td><td><b>워치는 카카오톡 미설치 단말</b> → 알림톡 발송 X · 메인 회선으로 워치 정보 통합 안내</td></tr>
+      <tr><td>워치 정보 안내</td><td><span class="badge b-orange">메인 회선 알림톡 통합</span></td><td>"가입정보: 메인 + 워치" 한 메시지에 표시</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    📌 <a href="flow-notifications.html" style="color:#2563eb;font-weight:700">flow-notifications.html</a> 무선개통신규 template에 워치 회선 정보 포함:<br>
+    · 통신사 : KT<br>
+    · 가입요금제 : 초이스스페셜 + <b>워치+ 함께쓰기 (워치 회선)</b><br>
+    · 요금제 변경가능일 : ...<br>
+    · 부가서비스 해지가능일 : ...
+  </div>
+
+  <!-- ============ CRM 매핑 ============ -->
+  <div style="font-size:13px;font-weight:900;color:#065f46;margin:18px 0 8px">🗄️ CRM 테이블 매핑 (기존 활용)</div>
+  <table style="margin-bottom:14px">
+    <thead><tr><th style="width:180px">대상</th><th style="width:240px">기존 테이블</th><th>저장 컬럼</th></tr></thead>
+    <tbody>
+      <tr><td><b>워치 시세</b> (매장별)</td><td class="mono">incentive_products</td><td><span class="mono">product_type='watch' · model · carrier · base_price · subsidy_official · sale_price · phone_discount_map JSONB · free_plan_threshold</span></td></tr>
+      <tr><td><b>워치 회선 개통</b></td><td class="mono">incentive_sales</td><td><span class="mono">product_type='watch' · linked_main_id (메인 FK) · watch_option JSONB · phone_extra_discount · watch_cash_bonus</span></td></tr>
+      <tr><td><b>워치 요금제 마스터</b></td><td class="mono">bongi_mobile_plans</td><td><span class="mono">plan_type='watch' · carrier · monthly_fee · data_share_type</span></td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    ✅ <b>신규 테이블 ❌</b> · 기존 무선 시세 관리 테이블에 <b>product_type='watch'</b> 분류 + <span class="mono">linked_main_id</span>로 메인 회선과 워치 회선 1:N 연결.
+  </div>
+
+  <!-- ============ 작업 Phase ============ -->
+  <div style="font-size:13px;font-weight:900;color:#065f46;margin:18px 0 8px">⏱️ 작업 Phase (총 6일)</div>
+  <table>
+    <thead><tr><th style="width:80px">Phase</th><th style="width:80px">기간</th><th>작업</th></tr></thead>
+    <tbody>
+      <tr><td><b>Phase 1</b></td><td>1d</td><td>DB ALTER — <span class="mono">incentive_products</span>에 워치 product_type · <span class="mono">incentive_sales</span>에 linked_main_id·phone_extra_discount·watch_cash_bonus · 요금제 마스터에 워치 요금제 9~12종</td></tr>
+      <tr><td><b>Phase 2</b></td><td>2d</td><td>어드민 시세 관리 — 기존 화면에 ⌚ 워치 탭 추가 (휴대폰 기종별 매핑 JSONB UI)</td></tr>
+      <tr><td><b>Phase 3</b></td><td>1d</td><td>휴대폰 신청 form — 하단에 "⌚ 워치 추가" 토글 + 펼침 영역 (시세 자동·요금제 무료 자동·휴대폰 단가 조정 자동)</td></tr>
+      <tr><td><b>Phase 4</b></td><td>1d</td><td>알림톡 통합 — 메인 무선개통신규 메시지에 워치 회선 정보 포함</td></tr>
+      <tr><td><b>Phase 5</b></td><td>1d</td><td>현금 사은품 가산 정산 · 매장지원금 환수 룰 · 테스트 · 운영 배포</td></tr>
+    </tbody>
+  </table>
 </div>
 
 </body>
