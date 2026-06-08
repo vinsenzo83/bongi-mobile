@@ -2322,8 +2322,115 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
     📌 <b>워치 = 휴대폰 신청 form 옵션</b>. 별도 워치 신청 form ❌ · 별도 워치 판매 메뉴 ❌. <b>휴대폰 신청 form 한 곳</b>에서 토글 클릭으로 워치 추가. UI는 휴대폰 입력 화면 하단에 "⌚ 워치 추가" 토글 + 펼침 영역.
   </div>
 
+  <!-- 어드민 UI mockup (A) 시세 관리 화면 + (B) 휴대폰 신청 form -->
+  <div style="font-size:13px;font-weight:900;color:#065f46;margin:18px 0 8px">🖥️ 어드민 구성 mockup</div>
+
+  <!-- A. 시세 관리 화면 -->
+  <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+    <div style="font-size:12px;font-weight:800;color:var(--navy);margin-bottom:10px">A. 시세 관리 — 기존 무선 시세 화면에 <span style="background:#dcfce7;color:#16a34a;padding:1px 7px;border-radius:4px">⌚ 워치 탭</span> 추가</div>
+    <div style="background:#0f172a;border-radius:8px;padding:12px;font-size:11px;color:#e2e8f0;font-family:'Pretendard',sans-serif">
+      <div style="display:flex;gap:6px;margin-bottom:10px;border-bottom:1px solid #334155;padding-bottom:8px">
+        <div style="padding:5px 10px;background:#334155;color:#94a3b8;border-radius:5px;font-weight:700">📊 무선</div>
+        <div style="padding:5px 10px;background:#16a34a;color:#fff;border-radius:5px;font-weight:800">⌚ 워치</div>
+        <div style="padding:5px 10px;background:#334155;color:#94a3b8;border-radius:5px;font-weight:700">📦 부가서비스</div>
+        <div style="padding:5px 10px;background:#334155;color:#94a3b8;border-radius:5px;font-weight:700">📋 필수 조건</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:10px;font-family:'JetBrains Mono',monospace">
+          <thead>
+            <tr style="background:#1e293b;color:#cbd5e1">
+              <th style="padding:6px;text-align:left;border:1px solid #334155">통신사</th>
+              <th style="padding:6px;text-align:left;border:1px solid #334155">기종</th>
+              <th style="padding:6px;text-align:right;border:1px solid #334155">출고가</th>
+              <th style="padding:6px;text-align:right;border:1px solid #334155">공시</th>
+              <th style="padding:6px;text-align:right;border:1px solid #334155">판가</th>
+              <th style="padding:6px;text-align:center;border:1px solid #334155;background:#7c2d12;color:#fbbf24" colspan="2">📱 휴대폰 영향 (모델별)</th>
+              <th style="padding:6px;text-align:center;border:1px solid #334155">동시판매</th>
+            </tr>
+            <tr style="background:#1e293b;color:#94a3b8">
+              <th colspan="5"></th>
+              <th style="padding:4px;text-align:right;border:1px solid #334155;background:#451a03;font-size:9px">기종 select</th>
+              <th style="padding:4px;text-align:right;border:1px solid #334155;background:#451a03;font-size:9px">추가 할인 (원)</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:5px;border:1px solid #334155"><span style="background:#dc2626;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px">SKT</span></td><td style="padding:5px;border:1px solid #334155">L325</td><td style="padding:5px;text-align:right;border:1px solid #334155">449,900</td><td style="padding:5px;text-align:right;border:1px solid #334155">150,000</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#fbbf24">190,000</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#6ee7b7">갤럭시 S26</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#6ee7b7">−30,000</td><td style="padding:5px;text-align:center;border:1px solid #334155;color:#6ee7b7">✓</td></tr>
+            <tr><td style="padding:5px;border:1px solid #334155"><span style="background:#dc2626;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px">SKT</span></td><td style="padding:5px;border:1px solid #334155">L325</td><td style="padding:5px;text-align:right;border:1px solid #334155">449,900</td><td style="padding:5px;text-align:right;border:1px solid #334155">150,000</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#fbbf24">190,000</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#fca5a5">Z Flip7</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#fca5a5">불가</td><td style="padding:5px;text-align:center;border:1px solid #334155;color:#fca5a5">✗</td></tr>
+            <tr><td style="padding:5px;border:1px solid #334155"><span style="background:#2563eb;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px">KT</span></td><td style="padding:5px;border:1px solid #334155">L505</td><td style="padding:5px;text-align:right;border:1px solid #334155">599,500</td><td style="padding:5px;text-align:right;border:1px solid #334155">150,000</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#fbbf24">240,000</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#6ee7b7">갤럭시 S26 Ultra</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#6ee7b7">−50,000</td><td style="padding:5px;text-align:center;border:1px solid #334155;color:#6ee7b7">✓</td></tr>
+            <tr><td style="padding:5px;border:1px solid #334155"><span style="background:#2563eb;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px">KT</span></td><td style="padding:5px;border:1px solid #334155">L505</td><td style="padding:5px;text-align:right;border:1px solid #334155">599,500</td><td style="padding:5px;text-align:right;border:1px solid #334155">150,000</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#fbbf24">240,000</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#fbbf24">아이폰 16 Pro</td><td style="padding:5px;text-align:right;border:1px solid #334155;color:#fbbf24">+10,000</td><td style="padding:5px;text-align:center;border:1px solid #334155;color:#6ee7b7">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="background:#7c2d12;color:#fbbf24;padding:8px 10px;border-radius:6px;margin-top:10px;font-size:10px;line-height:1.6">
+        📱 <b>휴대폰 추가 할인 컬럼 핵심</b>: 워치 동시판매 시 메인 휴대폰 단가에 미치는 영향. <b>음수(−)</b> = 휴대폰 추가 할인 (워치 매장지원금 일부 휴대폰으로 이전) · <b>양수(+)</b> = 휴대폰 단가 상승 (워치 손실 보전) · <b>불가</b> = 동시판매 X.<br>
+        매장별·기종별·통신사별 자유 입력 (엑셀 일괄 가능).
+      </div>
+    </div>
+  </div>
+
+  <!-- B. 휴대폰 신청 form 워치 옵션 -->
+  <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+    <div style="font-size:12px;font-weight:800;color:var(--navy);margin-bottom:10px">B. 휴대폰 신청 form — 하단에 <span style="background:#fef3c7;color:#92400e;padding:1px 7px;border-radius:4px">⌚ 워치 추가</span> 토글</div>
+    <div style="background:#f8f9ff;border:1.5px solid #e8e6f0;border-radius:10px;padding:14px;font-family:'Pretendard',sans-serif;font-size:11.5px">
+      <div style="font-weight:700;color:#1e3a8a;margin-bottom:6px">📱 휴대폰 신청 form</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:10.5px;color:#4a4a4a;margin-bottom:10px">
+        <div>통신사: <b>KT</b></div>
+        <div>기종: <b>갤럭시 S26 Ultra 256GB</b></div>
+        <div>요금제: <b>초이스스페셜 130,000원</b></div>
+        <div>가입유형: <b>번호이동</b></div>
+        <div>출고가: <b>1,800,000원</b></div>
+        <div>판가: <b style="color:#dc2626">600,000원</b></div>
+      </div>
+
+      <div style="background:#fef3c7;border:2px dashed #d97706;border-radius:8px;padding:12px;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-size:12px;font-weight:800;color:#92400e">⌚ 워치 추가 옵션</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#92400e;font-weight:700">
+            <span style="width:36px;height:18px;background:#16a34a;border-radius:99px;position:relative">
+              <span style="position:absolute;right:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%"></span>
+            </span>
+            ON
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:10.5px;color:#78350f">
+          <div>워치 모델: <b>L505</b> ▼</div>
+          <div>통신사: <b>KT</b> (자동)</div>
+          <div>출고가: <b>599,500원</b></div>
+          <div>공시지원금: <b>150,000원</b></div>
+          <div>워치 판가: <b style="color:#dc2626">240,000원</b></div>
+          <div>요금제: <b style="color:#16a34a">무료 (메인 130k ≥ 100k)</b></div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #d97706;border-radius:7px;padding:10px;margin-top:10px">
+          <div style="font-size:11px;font-weight:800;color:#92400e;margin-bottom:6px">📱 휴대폰 단가 조정 (워치 동시판매 영향)</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:#78350f">
+            <span>휴대폰 판가</span><span><b style="text-decoration:line-through;color:#94a3b8">600,000원</b> → <b style="color:#16a34a">550,000원</b> <span style="color:#16a34a;font-weight:800">(−50,000원 할인)</span></span>
+          </div>
+        </div>
+
+        <div style="background:#1e3a8a;color:#fff;border-radius:7px;padding:10px 12px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:800">
+          <span>💰 최종 합산</span>
+          <span>휴대폰 550,000 + 워치 240,000 = <span style="color:#fbbf24;font-size:14px">790,000원</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C. DB 처리 -->
+  <div style="background:#0f172a;border-radius:10px;padding:14px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6">
+    <div style="color:#fbbf24;font-weight:700;margin-bottom:6px;font-family:'Pretendard',sans-serif">C. DB 처리 — 휴대폰 단가 조정 컬럼 추가</div>
+    <span style="color:#ec4899">ALTER TABLE</span> <span style="color:#6ee7b7">incentive_sales</span> <span style="color:#ec4899">ADD COLUMN</span>
+    <br>&nbsp;&nbsp;watch_option         JSONB,        <span style="color:#64748b">-- { model_code, sale_price, plan_free }</span>
+    <br>&nbsp;&nbsp;phone_extra_discount INTEGER,     <span style="color:#64748b">-- 워치 추가 시 휴대폰 추가 할인 (음수: 할인, 양수: 상승)</span>
+    <br>&nbsp;&nbsp;watch_cash_bonus     INTEGER;     <span style="color:#64748b">-- 워치 추가 시 현금 사은품 가산 (+50,000 등)</span>
+    <br><br>
+    <span style="color:#ec4899">ALTER TABLE</span> <span style="color:#6ee7b7">bongi_watch_prices</span> <span style="color:#ec4899">ADD COLUMN</span>
+    <br>&nbsp;&nbsp;phone_discount_map   JSONB;        <span style="color:#64748b">-- {갤럭시 S26: -30000, Z Flip7: 'unavailable', 아이폰 16 Pro: +10000}</span>
+  </div>
+
   <div class="note" style="margin-top:12px">
-    💡 <b>상세 정책 문서</b>: <a href="flow-watch.html" style="color:#2563eb;font-weight:700">flow-watch.html</a> (워치 어드민 UI mockup + 요금제·필수 조건·CRM 매핑 별도 문서)
+    💡 <b>상세 정책 문서</b>: <a href="flow-watch.html" style="color:#2563eb;font-weight:700">flow-watch.html</a> (요금제·필수 조건·CRM 매핑 별도)
   </div>
 </div>
 
