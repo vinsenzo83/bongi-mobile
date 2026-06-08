@@ -3,486 +3,492 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<meta name="description" content="봉이모바일 인터넷+TV 신청 — 현금 최대 30만원 즉시 지급. KT·SKB·LGU+ 3사 비교 · 15분 내 상담사 연락">
-<title>봉이모바일 — 인터넷+TV 현금 최대 30만원 즉시 지급</title>
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<meta name="description" content="봉이모바일 인터넷+TV — 현금 즉시 지급. 15분 내 상담사 연락.">
+<title>봉이모바일 — 인터넷+TV 현금 지급</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-  --blue:#1d4ed8;--blue-dark:#1e3a8a;--blue-light:#dbeafe;
-  --yellow:#fbbf24;--orange:#ea580c;--red:#dc2626;--green:#16a34a;
-  --gray-50:#f8f9ff;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
-  --gray-500:#6b7280;--gray-700:#374151;--gray-900:#111827;
-  --pink:#ec4899;
+  --black:#0a0a0a;
+  --gray-900:#171717;
+  --gray-700:#404040;
+  --gray-500:#737373;
+  --gray-400:#a3a3a3;
+  --gray-300:#d4d4d4;
+  --gray-200:#e5e5e5;
+  --gray-100:#f5f5f5;
+  --gray-50:#fafafa;
+  --white:#fff;
+  --accent:#0066ff;
+  --accent-soft:#e6f0ff;
 }
-html{scroll-behavior:smooth}
-body{font-family:'Pretendard',system-ui,sans-serif;background:#fff;color:var(--gray-900);line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:var(--white);color:var(--black);line-height:1.6;font-size:15px;letter-spacing:-0.2px}
 
-/* ============ Sticky 헤더 ============ */
-.header{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);z-index:100;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--gray-200)}
-.logo{font-size:19px;font-weight:900;color:var(--blue);letter-spacing:-0.5px}
-.logo span{color:var(--yellow)}
-.head-call{background:var(--blue);color:#fff;padding:8px 14px;border-radius:999px;font-size:12.5px;font-weight:800;text-decoration:none;display:flex;align-items:center;gap:5px}
+/* ============ Header ============ */
+.header{position:sticky;top:0;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);z-index:100;border-bottom:1px solid var(--gray-100)}
+.header-inner{max-width:680px;margin:0 auto;padding:14px 24px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:17px;font-weight:800;color:var(--black);letter-spacing:-0.8px}
+.head-link{font-size:13.5px;font-weight:600;color:var(--gray-700);text-decoration:none}
+
+/* ============ Mini banner ============ */
+.mini-banner{background:var(--black);color:var(--white);padding:11px 24px;text-align:center;font-size:12.5px;font-weight:500;letter-spacing:-0.2px}
+.mini-banner .timer{font-weight:700;color:#fff;background:rgba(255,255,255,.12);padding:1px 8px;border-radius:5px;margin-left:6px;font-variant-numeric:tabular-nums}
 
 /* ============ Hero ============ */
-.hero{background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 50%,#3b82f6 100%);color:#fff;padding:36px 20px 50px;text-align:center;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;top:-50%;right:-30%;width:120%;height:200%;background:radial-gradient(circle,rgba(251,191,36,.15) 0%,transparent 60%);pointer-events:none}
-.hero-inner{max-width:480px;margin:0 auto;position:relative;z-index:1}
-.hero-badge{display:inline-block;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);color:#fff;font-size:12.5px;font-weight:800;padding:6px 14px;border-radius:999px;margin-bottom:16px;border:1px solid rgba(255,255,255,.25)}
-.hero h1{font-size:32px;font-weight:900;line-height:1.25;margin-bottom:8px;letter-spacing:-1.5px}
-.hero h1 .cash{color:var(--yellow);font-size:42px;display:block;margin:6px 0;text-shadow:0 4px 14px rgba(251,191,36,.5)}
-.hero p{font-size:14px;opacity:.92;margin-bottom:22px;line-height:1.6}
-.hero-pills{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:22px}
-.hero-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:99px}
-.hero-cta{display:inline-block;background:var(--yellow);color:#7c2d12;font-size:16px;font-weight:900;padding:16px 38px;border-radius:999px;text-decoration:none;box-shadow:0 8px 22px rgba(251,191,36,.45);cursor:pointer;border:none;font-family:inherit;letter-spacing:-0.3px}
-.hero-cta:active{transform:translateY(1px)}
+.hero{padding:80px 24px 60px;text-align:center;max-width:680px;margin:0 auto}
+.hero .eyebrow{display:inline-block;font-size:13px;font-weight:600;color:var(--gray-500);margin-bottom:18px;letter-spacing:-0.2px}
+.hero h1{font-size:46px;font-weight:800;line-height:1.1;letter-spacing:-2.2px;margin-bottom:18px}
+.hero h1 .accent{display:block;color:var(--accent);font-weight:900}
+.hero .lead{font-size:16px;color:var(--gray-500);max-width:420px;margin:0 auto 32px;line-height:1.55;letter-spacing:-0.3px}
+.hero-cta{display:inline-block;background:var(--black);color:var(--white);font-size:15px;font-weight:700;padding:16px 32px;border-radius:999px;text-decoration:none;letter-spacing:-0.3px;transition:transform .15s}
+.hero-cta:active{transform:scale(.98)}
+.hero-meta{display:flex;justify-content:center;gap:18px;margin-top:24px;font-size:12.5px;color:var(--gray-400);font-weight:500}
+.hero-meta b{color:var(--gray-700);font-weight:600}
 
-/* ============ Urgency 타이머 ============ */
-.urgency{background:linear-gradient(90deg,#dc2626,#ef4444);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:800;position:sticky;top:54px;z-index:90;animation:pulse 2.5s infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}50%{box-shadow:0 0 0 8px rgba(220,38,38,0)}}
-.urgency .left{display:flex;align-items:center;gap:8px}
-.urgency .ic{font-size:18px}
-.urgency b{background:rgba(255,255,255,.25);padding:2px 8px;border-radius:5px}
-.urgency .timer{background:#fff;color:var(--red);font-family:'JetBrains Mono',monospace;font-weight:900;padding:5px 11px;border-radius:6px;font-size:14px;letter-spacing:1px;min-width:96px;text-align:center}
+/* ============ Section ============ */
+section{padding:64px 24px;max-width:680px;margin:0 auto}
+.section-label{font-size:13px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.section-title{font-size:30px;font-weight:800;line-height:1.2;letter-spacing:-1.2px;margin-bottom:14px}
+.section-sub{font-size:15px;color:var(--gray-500);margin-bottom:38px;letter-spacing:-0.3px;max-width:480px}
 
-/* ============ 섹션 공통 ============ */
-section{padding:36px 18px;max-width:520px;margin:0 auto}
-.sec-ttl{font-size:22px;font-weight:900;margin-bottom:6px;letter-spacing:-0.5px;text-align:center}
-.sec-sub{font-size:13px;color:var(--gray-500);text-align:center;margin-bottom:22px}
-.sec-emoji{font-size:32px;text-align:center;margin-bottom:6px}
+/* ============ Carriers ============ */
+.carriers{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.carrier{background:var(--white);border:1px solid var(--gray-200);border-radius:18px;padding:22px 14px;text-align:center;cursor:pointer;transition:all .2s}
+.carrier:hover{border-color:var(--gray-400)}
+.carrier.active{border-color:var(--black);border-width:2px;transform:translateY(-2px)}
+.carrier .ko{font-size:11px;font-weight:700;color:var(--gray-400);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px}
+.carrier .nm{font-size:22px;font-weight:800;color:var(--black);margin-bottom:6px;letter-spacing:-0.8px}
+.carrier .cash{font-size:13px;font-weight:600;color:var(--gray-500)}
+.carrier.active .cash{color:var(--accent);font-weight:700}
 
-/* ============ 통신사 카드 ============ */
-.carriers{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:24px}
-.carrier{background:#fff;border:1.5px solid var(--gray-200);border-radius:14px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s}
-.carrier.skb{border-color:#fca5a5}
-.carrier.kt{border-color:#93c5fd}
-.carrier.lgu{border-color:#f9a8d4}
-.carrier.active{border-width:2.5px;transform:translateY(-3px);box-shadow:0 8px 18px rgba(0,0,0,.08)}
-.carrier.skb.active{border-color:#dc2626;background:#fef2f2}
-.carrier.kt.active{border-color:#1d4ed8;background:#eff6ff}
-.carrier.lgu.active{border-color:#ec4899;background:#fdf2f8}
-.carrier .logo-circle{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;margin:0 auto 8px;letter-spacing:-0.5px}
-.carrier.skb .logo-circle{background:#dc2626}
-.carrier.kt .logo-circle{background:#1d4ed8}
-.carrier.lgu .logo-circle{background:#ec4899}
-.carrier .nm{font-size:12.5px;font-weight:800;margin-bottom:3px}
-.carrier .cash-tag{display:block;font-size:10.5px;font-weight:800;background:#fef3c7;color:#92400e;padding:3px 7px;border-radius:5px;margin-top:6px}
+/* ============ Calculator ============ */
+.calc{background:var(--gray-50);border-radius:24px;padding:32px;margin-top:32px}
+.calc-opts{margin-bottom:28px}
+.opt-row{margin-bottom:22px}
+.opt-row:last-child{margin-bottom:0}
+.opt-label{font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:10px}
+.chip-row{display:flex;gap:8px;flex-wrap:wrap}
+.chip{flex:1;min-width:90px;padding:12px 14px;background:var(--white);border:1px solid var(--gray-200);border-radius:12px;font-size:13.5px;font-weight:600;color:var(--gray-700);cursor:pointer;text-align:center;transition:all .15s}
+.chip.active{background:var(--black);border-color:var(--black);color:var(--white);font-weight:700}
 
-/* ============ 견적 박스 ============ */
-.calc-box{background:linear-gradient(135deg,#fef9e7,#fef3c7);border:2px solid var(--yellow);border-radius:16px;padding:20px;margin-bottom:24px;position:relative;overflow:hidden}
-.calc-box::before{content:'LIVE';position:absolute;top:14px;right:14px;background:var(--red);color:#fff;font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:99px;animation:blink 1.5s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
-.calc-ttl{font-size:13px;font-weight:800;color:#7c2d12;margin-bottom:12px}
-.calc-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;color:#78350f}
-.calc-row b{font-weight:700;color:var(--gray-900)}
-.calc-row.minus b{color:var(--green)}
-.calc-total{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:800;color:#7c2d12;border-top:1.5px dashed var(--yellow);padding-top:10px;margin-top:6px}
-.calc-total b{font-size:24px;font-weight:900;color:var(--red)}
-.calc-cash{background:var(--red);color:#fff;border-radius:9px;padding:10px 14px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;font-size:13.5px;font-weight:800}
-.calc-cash b{font-size:18px;font-weight:900}
+.calc-result{background:var(--white);border-radius:16px;padding:24px;margin-top:24px}
+.calc-line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:13.5px;color:var(--gray-500)}
+.calc-line b{font-weight:600;color:var(--gray-900);font-variant-numeric:tabular-nums}
+.calc-line.minus b{color:var(--accent)}
+.calc-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:16px;margin-top:8px;border-top:1px solid var(--gray-100)}
+.calc-total .lbl{font-size:14px;font-weight:600;color:var(--gray-700)}
+.calc-total .val{font-size:30px;font-weight:800;color:var(--black);letter-spacing:-1.5px;font-variant-numeric:tabular-nums}
+.calc-cash{margin-top:18px;padding:16px 18px;background:var(--accent-soft);border-radius:12px;display:flex;justify-content:space-between;align-items:center}
+.calc-cash .lbl{font-size:13px;font-weight:600;color:var(--accent)}
+.calc-cash .val{font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-0.8px}
 
-/* ============ 옵션 chip ============ */
-.opt-block{margin-bottom:18px}
-.opt-lbl{font-size:13px;font-weight:800;color:var(--gray-700);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.opt-lbl .num-chip{background:var(--blue);color:#fff;font-size:10px;padding:2px 7px;border-radius:99px;font-weight:800}
-.chip-row{display:flex;gap:6px;flex-wrap:wrap}
-.chip{flex:1;min-width:80px;padding:11px 12px;background:#fff;border:1.5px solid var(--gray-200);border-radius:10px;font-size:13px;font-weight:700;color:var(--gray-700);cursor:pointer;text-align:center;transition:all .15s}
-.chip.active{background:var(--blue-light);border-color:var(--blue);color:var(--blue);border-width:2px;font-weight:800;transform:scale(1.02)}
-
-/* ============ 신청 form ============ */
-#apply{background:var(--gray-50);padding:36px 18px}
-.form-card{max-width:480px;margin:0 auto;background:#fff;border-radius:18px;padding:24px 20px;box-shadow:0 12px 32px rgba(0,0,0,.06)}
-.form-ttl{font-size:18px;font-weight:900;text-align:center;margin-bottom:16px;line-height:1.4;letter-spacing:-0.4px}
-.form-ttl .point{color:var(--red)}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:12.5px;font-weight:800;color:var(--gray-700);margin-bottom:5px}
-.field label .req{color:var(--red);font-size:11px}
-.field input{width:100%;padding:13px 15px;background:#fff;border:1.5px solid var(--gray-200);border-radius:10px;font-size:14px;font-family:inherit;font-weight:600;color:var(--gray-900)}
-.field input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px rgba(29,78,216,.12)}
+/* ============ Form ============ */
+.form-section{background:var(--gray-50);padding:64px 24px}
+.form-wrap{max-width:480px;margin:0 auto}
+.form-wrap .section-title{font-size:30px}
+.form-card{background:var(--white);border-radius:24px;padding:32px 28px;margin-top:28px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:7px}
+.field input{width:100%;padding:14px 16px;background:var(--white);border:1px solid var(--gray-200);border-radius:12px;font-size:15px;font-family:inherit;font-weight:500;color:var(--gray-900);transition:border-color .15s}
+.field input:focus{border-color:var(--black);outline:none}
 .field input::placeholder{color:var(--gray-300)}
-.terms-box{background:var(--gray-50);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:11.5px;color:var(--gray-700);line-height:1.6}
-.terms-box label{display:flex;align-items:flex-start;gap:8px;padding:5px 0;cursor:pointer}
-.terms-box input{width:18px;height:18px;flex-shrink:0;margin-top:1px;accent-color:var(--blue)}
-.terms-box .req-tag{background:#fee2e2;color:var(--red);font-size:9.5px;padding:1px 5px;border-radius:3px;font-weight:800;margin-right:4px}
-.terms-box .opt-tag{background:var(--gray-200);color:var(--gray-500);font-size:9.5px;padding:1px 5px;border-radius:3px;font-weight:800;margin-right:4px}
-.terms-box a{color:var(--blue);text-decoration:underline;font-size:10.5px;margin-left:auto}
+.field-chips{display:flex;gap:6px;flex-wrap:wrap}
+.field-chips .chip{flex:1;min-width:75px;padding:10px}
 
-.submit-btn{width:100%;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;padding:18px;border-radius:12px;font-size:16px;font-weight:900;font-family:inherit;cursor:pointer;box-shadow:0 8px 22px rgba(220,38,38,.35);letter-spacing:-0.3px}
-.submit-btn:active{transform:translateY(1px);box-shadow:0 4px 12px rgba(220,38,38,.3)}
-.submit-note{font-size:10.5px;color:var(--gray-500);text-align:center;margin-top:10px;line-height:1.5}
+.terms{margin:20px 0 24px;padding-top:18px;border-top:1px solid var(--gray-100)}
+.terms label{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12.5px;color:var(--gray-700);cursor:pointer}
+.terms input[type=checkbox]{width:18px;height:18px;accent-color:var(--black)}
+.terms a{color:var(--gray-400);margin-left:auto;font-size:11.5px;text-decoration:underline}
 
-/* ============ 실시간 신청자 ============ */
-.proof{background:#fff;border:1.5px solid var(--gray-200);border-radius:14px;padding:14px;margin-top:18px}
-.proof-head{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:800;color:var(--gray-900);margin-bottom:10px}
-.live-badge{display:inline-flex;align-items:center;gap:5px;background:var(--red);color:#fff;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px}
-.live-badge::before{content:'';width:6px;height:6px;background:#fff;border-radius:50%;animation:blink 1.5s infinite}
-.proof-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:11.5px;border-top:1px dashed var(--gray-200)}
-.proof-row:first-of-type{border-top:none}
-.proof-row .info{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
-.proof-row .info b{font-weight:700;color:var(--gray-900)}
-.proof-row .info .tag{font-size:9.5px;padding:2px 5px;border-radius:4px;font-weight:800;flex-shrink:0}
-.tag-skb{background:#fee2e2;color:var(--red)}
-.tag-kt{background:#dbeafe;color:var(--blue-dark)}
-.tag-lgu{background:#fce7f3;color:#9f1239}
-.proof-row .time{color:var(--red);font-weight:700;font-size:10.5px;flex-shrink:0;margin-left:8px}
+.submit-btn{width:100%;background:var(--black);color:var(--white);border:none;padding:18px;border-radius:14px;font-size:15.5px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:-0.3px;transition:transform .15s}
+.submit-btn:active{transform:scale(.98)}
 
-/* ============ 신뢰 섹션 ============ */
-.trust{background:#fff;padding:30px 18px;border-top:1px solid var(--gray-200)}
-.trust-grid{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.trust-card{text-align:center;padding:16px 8px;background:var(--gray-50);border-radius:12px}
-.trust-card .ic{font-size:28px;margin-bottom:6px}
-.trust-card .num{font-size:18px;font-weight:900;color:var(--blue);margin-bottom:2px}
-.trust-card .lbl{font-size:11px;color:var(--gray-500);font-weight:700}
+.submit-foot{margin-top:14px;text-align:center;font-size:11.5px;color:var(--gray-400);font-weight:500}
+
+/* ============ Live applications ============ */
+.live{margin-top:24px;background:var(--white);border:1px solid var(--gray-100);border-radius:16px;padding:18px 20px}
+.live-head{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:600;color:var(--gray-700);margin-bottom:12px}
+.live-dot{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--gray-500)}
+.live-dot::before{content:'';width:6px;height:6px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{box-shadow:0 0 0 4px rgba(34,197,94,0)}}
+.live-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:12.5px;border-top:1px solid var(--gray-100)}
+.live-row:first-child{border-top:none}
+.live-row .who{color:var(--gray-700)}
+.live-row .who b{color:var(--black);font-weight:600}
+.live-row .when{color:var(--gray-400);font-weight:500;font-size:11.5px}
+
+/* ============ Trust ============ */
+.trust{padding:48px 24px;border-top:1px solid var(--gray-100)}
+.trust-wrap{max-width:680px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.trust-card{text-align:center;padding:18px 8px}
+.trust-card .num{font-size:32px;font-weight:800;color:var(--black);letter-spacing:-1.5px;line-height:1;margin-bottom:6px;font-variant-numeric:tabular-nums}
+.trust-card .lbl{font-size:12.5px;color:var(--gray-500);font-weight:500}
 
 /* ============ Process ============ */
-.process{padding:36px 18px}
-.process-grid{max-width:520px;margin:0 auto;display:grid;gap:10px}
-.step{background:#fff;border:1.5px solid var(--gray-200);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px}
-.step-num{width:36px;height:36px;background:var(--blue);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;flex-shrink:0}
-.step-body .ttl{font-size:13.5px;font-weight:800;margin-bottom:2px}
-.step-body .desc{font-size:11.5px;color:var(--gray-500);line-height:1.5}
+.process-list{display:grid;gap:14px;margin-top:28px}
+.step-item{display:flex;gap:18px;align-items:flex-start;padding:18px 22px;background:var(--gray-50);border-radius:18px}
+.step-num{flex-shrink:0;width:30px;height:30px;background:var(--black);color:var(--white);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700}
+.step-body .ttl{font-size:15px;font-weight:700;color:var(--black);margin-bottom:3px;letter-spacing:-0.3px}
+.step-body .desc{font-size:13px;color:var(--gray-500);line-height:1.5}
 
 /* ============ FAQ ============ */
-.faq{background:var(--gray-50);padding:30px 18px}
-.faq-list{max-width:520px;margin:0 auto}
-.faq-item{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer}
-.faq-q{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;font-weight:800;color:var(--gray-900)}
-.faq-q::after{content:'+';font-size:20px;color:var(--gray-500);font-weight:300}
-.faq-item.open .faq-q::after{content:'−'}
-.faq-a{font-size:12px;color:var(--gray-500);margin-top:8px;line-height:1.6;display:none}
+.faq-list{margin-top:28px;border-top:1px solid var(--gray-100)}
+.faq-item{border-bottom:1px solid var(--gray-100);cursor:pointer}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:22px 0;font-size:16px;font-weight:600;color:var(--black);letter-spacing:-0.3px}
+.faq-q::after{content:'+';font-size:24px;color:var(--gray-400);font-weight:300;transition:transform .2s}
+.faq-item.open .faq-q::after{transform:rotate(45deg)}
+.faq-a{font-size:14px;color:var(--gray-500);line-height:1.7;padding-bottom:22px;display:none;letter-spacing:-0.2px}
 .faq-item.open .faq-a{display:block}
 
 /* ============ Footer ============ */
-.footer{background:var(--gray-900);color:#9ca3af;padding:26px 18px;font-size:11px;text-align:center;line-height:1.7}
-.footer-logo{font-size:15px;font-weight:900;color:#fff;margin-bottom:8px}
-.footer-logo span{color:var(--yellow)}
-.footer p{margin-bottom:3px}
+.footer{background:var(--gray-50);padding:40px 24px;font-size:12px;color:var(--gray-500);text-align:center;line-height:1.7;letter-spacing:-0.2px}
+.footer .brand{font-size:15px;font-weight:800;color:var(--black);margin-bottom:10px}
 
-/* ============ Sticky bottom CTA (모바일) ============ */
-.bottom-cta{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:11px 14px;box-shadow:0 -6px 18px rgba(0,0,0,.1);display:flex;gap:8px;z-index:90}
-.bottom-cta button{flex:1;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:900;font-family:inherit;cursor:pointer}
-.bottom-cta .btn-call{background:var(--gray-100);color:var(--gray-700)}
-.bottom-cta .btn-apply{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;box-shadow:0 4px 12px rgba(220,38,38,.3)}
+/* ============ Sticky bottom (mobile) ============ */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);padding:14px 20px env(safe-area-inset-bottom,14px) 20px;border-top:1px solid var(--gray-100);display:flex;gap:10px;z-index:90}
+.bottom-bar button{flex:1;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:-0.3px}
+.bottom-bar .btn-call{background:var(--gray-100);color:var(--gray-900)}
+.bottom-bar .btn-apply{background:var(--black);color:var(--white)}
+
+body{padding-bottom:74px}
 
 @media (min-width:768px){
-  .hero{padding:60px 30px 70px}
-  .hero h1{font-size:42px}
-  .hero h1 .cash{font-size:56px}
-  section{padding:50px 30px}
-  .sec-ttl{font-size:26px}
-  .bottom-cta{display:none}
+  .hero{padding:120px 24px 80px}
+  .hero h1{font-size:64px;letter-spacing:-3px}
+  .hero .lead{font-size:18px}
+  section{padding:80px 24px}
+  .section-title{font-size:38px;letter-spacing:-1.6px}
+  .bottom-bar{display:none}
   body{padding-bottom:0}
 }
-body{padding-bottom:70px}
 </style>
 </head>
 <body>
 
-<!-- ============ 헤더 ============ -->
+<!-- ============ Header ============ -->
 <header class="header">
-  <div class="logo">📡 봉이<span>모바일</span></div>
-  <a class="head-call" href="tel:1599-0000">📞 1599-0000</a>
+  <div class="header-inner">
+    <div class="logo">봉이모바일</div>
+    <a class="head-link" href="tel:1599-0000">1599-0000</a>
+  </div>
 </header>
 
-<!-- ============ 카운트다운 타이머 ============ -->
-<div class="urgency">
-  <div class="left">
-    <span class="ic">⏱️</span>
-    <span>오늘 자정 마감 — 현금 <b>+5만원</b> 추가</span>
-  </div>
-  <div class="timer" id="timer">05:23:47</div>
+<!-- ============ Mini banner ============ -->
+<div class="mini-banner">
+  오늘 자정까지 신청 시 현금 +5만원 추가
+  <span class="timer" id="timer">05:23:47</span>
 </div>
 
 <!-- ============ Hero ============ -->
-<section class="hero" style="max-width:none">
-  <div class="hero-inner">
-    <div class="hero-badge">🔥 광주·전남 신청 폭주</div>
-    <h1>
-      인터넷+TV 신청하고
-      <span class="cash">현금 최대 30만원</span>
-      <span style="font-size:18px;font-weight:700;opacity:.85">즉시 받으세요</span>
-    </h1>
-    <p>
-      KT · SKB · LG U+ 3사 비교<br>
-      사은품 X · 현금 익일 입금
-    </p>
-    <div class="hero-pills">
-      <span class="hero-pill">✓ 사은품 X</span>
-      <span class="hero-pill">✓ 익일 현금 입금</span>
-      <span class="hero-pill">✓ 3사 통합 가입</span>
-    </div>
-    <a href="#apply" class="hero-cta">🔥 1분 무료 상담 신청</a>
+<section class="hero">
+  <div class="eyebrow">봉이모바일 · 인터넷+TV</div>
+  <h1>
+    인터넷+TV
+    <span class="accent">최대 30만원</span>
+    현금 즉시
+  </h1>
+  <p class="lead">
+    KT · SKB · LG U+ 3사 비교.<br>
+    사은품 대신, 개통 익일 현금 입금.
+  </p>
+  <a href="#apply" class="hero-cta">무료 상담 신청</a>
+  <div class="hero-meta">
+    <span><b>15분</b> 내 연락</span>
+    <span><b>0원</b> 상담료</span>
+    <span><b>3사</b> 통합 비교</span>
   </div>
 </section>
 
-<!-- ============ 통신사 비교 ============ -->
+<!-- ============ Carriers ============ -->
 <section>
-  <div class="sec-emoji">📡</div>
-  <h2 class="sec-ttl">3사 중 어디가 좋은가요?</h2>
-  <p class="sec-sub">통신사별 현금 사은품·결합 혜택 비교</p>
+  <div class="section-label">선택</div>
+  <h2 class="section-title">어느 통신사가 좋은가요?</h2>
+  <p class="section-sub">3사 비교 후 가장 좋은 조건으로 안내드립니다.</p>
 
   <div class="carriers">
-    <div class="carrier kt" onclick="selCar(this,'KT',20)">
-      <div class="logo-circle">KT</div>
+    <div class="carrier" onclick="selCar(this,'KT',20)">
+      <div class="ko">KT</div>
       <div class="nm">KT</div>
-      <span class="cash-tag">현금 20만</span>
+      <div class="cash">현금 20만원</div>
     </div>
-    <div class="carrier skb active" onclick="selCar(this,'SKB',30)">
-      <div class="logo-circle">SK</div>
+    <div class="carrier active" onclick="selCar(this,'SKB',30)">
+      <div class="ko">SK</div>
       <div class="nm">SKB</div>
-      <span class="cash-tag">⭐ 현금 30만</span>
+      <div class="cash">현금 30만원</div>
     </div>
-    <div class="carrier lgu" onclick="selCar(this,'LGU+',25)">
-      <div class="logo-circle">U+</div>
+    <div class="carrier" onclick="selCar(this,'LGU+',25)">
+      <div class="ko">LG</div>
       <div class="nm">LG U+</div>
-      <span class="cash-tag">현금 25만</span>
-    </div>
-  </div>
-</section>
-
-<!-- ============ 견적 + 옵션 ============ -->
-<section id="quote">
-  <div class="sec-emoji">💰</div>
-  <h2 class="sec-ttl">예상 월 요금 미리 보기</h2>
-  <p class="sec-sub">옵션 선택하면 즉시 계산</p>
-
-  <div class="opt-block">
-    <div class="opt-lbl"><span class="num-chip">1</span>인터넷 속도</div>
-    <div class="chip-row">
-      <div class="chip" onclick="setOpt(this,'speed','100M')">100M</div>
-      <div class="chip" onclick="setOpt(this,'speed','500M')">500M</div>
-      <div class="chip active" onclick="setOpt(this,'speed','1G')">기가 1G</div>
+      <div class="cash">현금 25만원</div>
     </div>
   </div>
 
-  <div class="opt-block">
-    <div class="opt-lbl"><span class="num-chip">2</span>결합 옵션</div>
-    <div class="chip-row">
-      <div class="chip active" onclick="setOpt(this,'bundle','tv')">인터넷+TV</div>
-      <div class="chip" onclick="setOpt(this,'bundle','net')">인터넷만</div>
-    </div>
-  </div>
-
-  <div class="opt-block">
-    <div class="opt-lbl"><span class="num-chip">3</span>휴대폰 결합</div>
-    <div class="chip-row">
-      <div class="chip active" onclick="setOpt(this,'phone','yes')">있음 (할인)</div>
-      <div class="chip" onclick="setOpt(this,'phone','no')">없음</div>
-    </div>
-  </div>
-
-  <div class="calc-box">
-    <div class="calc-ttl">📊 예상 월 요금</div>
-    <div class="calc-row"><span id="planName">SKB 기가 인터넷 1G</span><b id="planPrice">32,000원</b></div>
-    <div class="calc-row" id="tvRow"><span>B tv 스탠다드 플러스</span><b>+ 23,100원</b></div>
-    <div class="calc-row minus" id="phoneRow"><span>휴대폰 결합 할인</span><b>− 5,500원</b></div>
-    <div class="calc-row minus"><span>장기 약정 할인 (36M)</span><b>− 4,500원</b></div>
-    <div class="calc-total"><span>월 합계</span><b id="totalPrice">45,100원</b></div>
-    <div class="calc-cash"><span>💰 현금 사은품</span><b id="cashAmount">30만원</b></div>
-  </div>
-  <p style="font-size:10.5px;color:var(--gray-500);text-align:center">※ 정확한 견적은 TM 상담에서 안내드립니다</p>
-</section>
-
-<!-- ============ 신청 폼 ============ -->
-<section id="apply">
-  <div class="form-card">
-    <div class="form-ttl">📝 무료 상담 신청<br><span class="point">15분 내 연락드립니다</span></div>
-
-    <form id="leadForm" onsubmit="return submitLead(event)">
-      <div class="field">
-        <label>이름 <span class="req">*</span></label>
-        <input type="text" name="name" placeholder="홍길동" required>
-      </div>
-      <div class="field">
-        <label>연락처 <span class="req">*</span></label>
-        <input type="tel" name="phone" placeholder="010-1234-5678" required>
-      </div>
-      <div class="field">
-        <label>관심 통신사</label>
+  <!-- ============ Calculator ============ -->
+  <div class="calc">
+    <div class="calc-opts">
+      <div class="opt-row">
+        <div class="opt-label">속도</div>
         <div class="chip-row">
-          <div class="chip" onclick="setForm(this,'carrier','KT')">KT</div>
-          <div class="chip active" onclick="setForm(this,'carrier','SKB')">SKB</div>
-          <div class="chip" onclick="setForm(this,'carrier','LGU+')">LG U+</div>
-          <div class="chip" onclick="setForm(this,'carrier','compare')">3사 비교</div>
+          <div class="chip" onclick="setOpt(this,'speed','100M')">100M</div>
+          <div class="chip" onclick="setOpt(this,'speed','500M')">500M</div>
+          <div class="chip active" onclick="setOpt(this,'speed','1G')">기가 1G</div>
         </div>
       </div>
-      <div class="field">
-        <label>희망 지역 <span class="req">*</span></label>
-        <input type="text" name="region" placeholder="광주광역시 동구" required>
+      <div class="opt-row">
+        <div class="opt-label">결합</div>
+        <div class="chip-row">
+          <div class="chip active" onclick="setOpt(this,'bundle','tv')">인터넷 + TV</div>
+          <div class="chip" onclick="setOpt(this,'bundle','net')">인터넷만</div>
+        </div>
       </div>
-
-      <div class="terms-box">
-        <label>
-          <input type="checkbox" required>
-          <span><span class="req-tag">필수</span>개인정보 수집·이용 동의</span>
-          <a href="#">상세 ▶</a>
-        </label>
-        <label>
-          <input type="checkbox">
-          <span><span class="opt-tag">선택</span>마케팅 수신 동의 (SMS)</span>
-          <a href="#">상세 ▶</a>
-        </label>
+      <div class="opt-row">
+        <div class="opt-label">휴대폰 결합</div>
+        <div class="chip-row">
+          <div class="chip active" onclick="setOpt(this,'phone','yes')">있음</div>
+          <div class="chip" onclick="setOpt(this,'phone','no')">없음</div>
+        </div>
       </div>
+    </div>
 
-      <button type="submit" class="submit-btn">🔥 1분 무료 상담 신청</button>
-      <p class="submit-note">신청 즉시 카카오 알림톡 발송 · 15분 내 상담사 연락</p>
-    </form>
-
-    <div class="proof">
-      <div class="proof-head">
-        <span>📞 방금 신청한 고객</span>
-        <span class="live-badge">LIVE</span>
+    <div class="calc-result">
+      <div class="calc-line"><span id="planName">SKB 기가 인터넷</span><b id="planPrice">32,000원</b></div>
+      <div class="calc-line" id="tvRow"><span>B tv 스탠다드 플러스</span><b>+ 23,100원</b></div>
+      <div class="calc-line minus" id="phoneRow"><span>휴대폰 결합 할인</span><b>− 5,500원</b></div>
+      <div class="calc-line minus"><span>장기 약정 할인 (36M)</span><b>− 4,500원</b></div>
+      <div class="calc-total">
+        <span class="lbl">월 합계</span>
+        <span class="val" id="totalPrice">45,100원</span>
       </div>
-      <div id="proofList">
-        <div class="proof-row"><div class="info"><b>박**</b>님 · <span class="tag tag-skb">SKB</span> 인터넷+TV · 광주 동구</div><div class="time">1분 전</div></div>
-        <div class="proof-row"><div class="info"><b>이**</b>님 · <span class="tag tag-kt">KT</span> 기가 인터넷 · 광주 광산구</div><div class="time">4분 전</div></div>
-        <div class="proof-row"><div class="info"><b>최**</b>님 · <span class="tag tag-lgu">LGU+</span> 인터넷+TV · 광주 북구</div><div class="time">7분 전</div></div>
-        <div class="proof-row"><div class="info"><b>김**</b>님 · <span class="tag tag-skb">SKB</span> 인터넷+TV · 광주 서구</div><div class="time">12분 전</div></div>
-        <div class="proof-row"><div class="info"><b>정**</b>님 · <span class="tag tag-kt">KT</span> 기가 인터넷 · 광주 남구</div><div class="time">18분 전</div></div>
+      <div class="calc-cash">
+        <span class="lbl">현금 사은품</span>
+        <span class="val" id="cashAmount">30만원</span>
+      </div>
+    </div>
+    <p style="font-size:11.5px;color:var(--gray-400);text-align:center;margin-top:14px;letter-spacing:-0.2px">상담 후 더 좋은 조건 가능합니다</p>
+  </div>
+</section>
+
+<!-- ============ Form ============ -->
+<section id="apply" class="form-section">
+  <div class="form-wrap">
+    <div class="section-label">신청</div>
+    <h2 class="section-title">15분 내 연락드립니다</h2>
+    <p class="section-sub">이름과 연락처만 남겨주세요. 상세 견적은 통화로 안내합니다.</p>
+
+    <div class="form-card">
+      <form id="leadForm" onsubmit="return submitLead(event)">
+        <div class="field">
+          <label>이름</label>
+          <input type="text" name="name" placeholder="이름" required>
+        </div>
+        <div class="field">
+          <label>연락처</label>
+          <input type="tel" name="phone" placeholder="010-1234-5678" required>
+        </div>
+        <div class="field">
+          <label>관심 통신사</label>
+          <div class="field-chips">
+            <div class="chip" onclick="setFormChip(this,'KT')">KT</div>
+            <div class="chip active" onclick="setFormChip(this,'SKB')">SKB</div>
+            <div class="chip" onclick="setFormChip(this,'LGU+')">LG U+</div>
+            <div class="chip" onclick="setFormChip(this,'compare')">비교</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>희망 지역</label>
+          <input type="text" name="region" placeholder="광주광역시 동구" required>
+        </div>
+
+        <div class="terms">
+          <label>
+            <input type="checkbox" required>
+            <span>개인정보 수집·이용 동의 (필수)</span>
+            <a href="#">상세</a>
+          </label>
+          <label>
+            <input type="checkbox">
+            <span>마케팅 정보 수신 동의 (선택)</span>
+            <a href="#">상세</a>
+          </label>
+        </div>
+
+        <button type="submit" class="submit-btn">무료 상담 신청</button>
+        <p class="submit-foot">신청 즉시 카카오 알림톡 발송</p>
+      </form>
+
+      <div class="live">
+        <div class="live-head">
+          <span>최근 신청</span>
+          <span class="live-dot">실시간</span>
+        </div>
+        <div id="liveList">
+          <div class="live-row"><span class="who"><b>박**</b>님 · SKB 인터넷+TV · 광주</span><span class="when">1분 전</span></div>
+          <div class="live-row"><span class="who"><b>이**</b>님 · KT 기가 인터넷 · 광주</span><span class="when">4분 전</span></div>
+          <div class="live-row"><span class="who"><b>최**</b>님 · LG U+ 인터넷+TV · 광주</span><span class="when">7분 전</span></div>
+          <div class="live-row"><span class="who"><b>김**</b>님 · SKB 인터넷+TV · 전남 목포</span><span class="when">12분 전</span></div>
+          <div class="live-row"><span class="who"><b>정**</b>님 · KT 기가 인터넷 · 전남 여수</span><span class="when">18분 전</span></div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ 신뢰 지표 ============ -->
+<!-- ============ Trust ============ -->
 <div class="trust">
-  <div class="trust-grid">
+  <div class="trust-wrap">
     <div class="trust-card">
-      <div class="ic">🏪</div>
       <div class="num">8</div>
       <div class="lbl">광주·전남 직영 매장</div>
     </div>
     <div class="trust-card">
-      <div class="ic">⭐</div>
-      <div class="num">12,000+</div>
+      <div class="num">12K+</div>
       <div class="lbl">누적 가입 고객</div>
     </div>
     <div class="trust-card">
-      <div class="ic">⚡</div>
       <div class="num">15분</div>
-      <div class="lbl">상담사 연락 시간</div>
+      <div class="lbl">상담사 연락</div>
     </div>
   </div>
 </div>
 
-<!-- ============ 진행 절차 ============ -->
-<section class="process">
-  <div class="sec-emoji">📋</div>
-  <h2 class="sec-ttl">이렇게 진행됩니다</h2>
-  <p class="sec-sub">신청부터 현금 입금까지 5단계</p>
+<!-- ============ Process ============ -->
+<section>
+  <div class="section-label">절차</div>
+  <h2 class="section-title">신청부터 현금 입금까지</h2>
+  <p class="section-sub">5단계로 끝납니다. 평균 5~7일 소요.</p>
 
-  <div class="process-grid">
-    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="ttl">📝 LP 신청</div><div class="desc">이름·연락처·지역 1분 입력</div></div></div>
-    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="ttl">📞 상담사 연락</div><div class="desc">15분 내 콜백 · 견적·할인 안내</div></div></div>
-    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="ttl">📤 통신사 신청</div><div class="desc">결정 후 즉시 본사 전달</div></div></div>
-    <div class="step"><div class="step-num">4</div><div class="step-body"><div class="ttl">🔧 개통·설치</div><div class="desc">2~5일 내 기사 방문 설치</div></div></div>
-    <div class="step"><div class="step-num">5</div><div class="step-body"><div class="ttl">💰 현금 입금</div><div class="desc">개통 익일 등록 계좌로 즉시</div></div></div>
+  <div class="process-list">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="ttl">신청</div>
+        <div class="desc">이름·연락처·지역 입력. 1분.</div>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="ttl">상담사 연락</div>
+        <div class="desc">15분 내 콜백. 견적·결합 조건 안내.</div>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="ttl">통신사 신청</div>
+        <div class="desc">결정 후 본사 전달.</div>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="ttl">개통·설치</div>
+        <div class="desc">2~5일 내 기사 방문 설치.</div>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <div class="ttl">현금 입금</div>
+        <div class="desc">개통 익일 등록 계좌로 즉시.</div>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- ============ FAQ ============ -->
-<section class="faq">
-  <div class="sec-emoji">❓</div>
-  <h2 class="sec-ttl">자주 묻는 질문</h2>
+<section>
+  <div class="section-label">질문</div>
+  <h2 class="section-title">자주 묻는 질문</h2>
 
   <div class="faq-list">
     <div class="faq-item" onclick="this.classList.toggle('open')">
       <div class="faq-q">현금은 언제 받나요?</div>
-      <div class="faq-a">개통 완료 익일 등록 계좌로 자동이체 입금됩니다. 사은품(쓰지 않을 가전·상품권)이 아닌 <b>현금 단일 지급</b>입니다.</div>
+      <div class="faq-a">개통 완료 익일에 등록 계좌로 자동이체됩니다. 사은품(가전·상품권) 대신 현금 단일 지급입니다.</div>
     </div>
     <div class="faq-item" onclick="this.classList.toggle('open')">
       <div class="faq-q">위약금이 발생하나요?</div>
-      <div class="faq-a">약정 36개월 내 해지 시 현금 사은품 환수 + 통신사 위약금이 발생합니다. 약정 만료 후 해지 시 위약금 X.</div>
+      <div class="faq-a">약정 36개월 내 해지 시 현금 환수와 통신사 위약금이 발생합니다. 약정 만료 후 해지 시 위약금은 없습니다.</div>
     </div>
     <div class="faq-item" onclick="this.classList.toggle('open')">
-      <div class="faq-q">현재 통신사를 바꿔야 하나요?</div>
-      <div class="faq-a">기존 통신사 해지·위약금은 봉이가 안내드립니다. 신규 통신사 가입 시 기존 통신사 위약금이 추가로 지원되는 경우도 있습니다.</div>
+      <div class="faq-q">기존 통신사 위약금은 어떻게 되나요?</div>
+      <div class="faq-a">상담 시 안내드립니다. 신규 가입 통신사에서 기존 위약금을 지원하는 경우도 있습니다.</div>
     </div>
     <div class="faq-item" onclick="this.classList.toggle('open')">
       <div class="faq-q">설치는 언제 가능한가요?</div>
-      <div class="faq-a">신청 후 2~5일 내 통신사 기사가 방문합니다. 희망 일자·시간은 TM 상담 시 협의 가능.</div>
+      <div class="faq-a">신청 후 2~5일 내 통신사 기사가 방문합니다. 희망 일자·시간대는 상담 시 협의 가능합니다.</div>
     </div>
   </div>
 </section>
 
 <!-- ============ Footer ============ -->
 <footer class="footer">
-  <div class="footer-logo">📡 봉이<span>모바일</span></div>
-  <p><b>(주) 파이어니컴퍼니</b> · 통신판매업: 광주광역시 동구</p>
-  <p>대표번호: 1599-0000 · 영업시간: 평일 09:00 ~ 21:00</p>
-  <p style="margin-top:10px;font-size:10px">© 2026 봉이모바일. All rights reserved.</p>
+  <div class="brand">봉이모바일</div>
+  <p>(주) 파이어니컴퍼니 · 광주광역시 동구</p>
+  <p>1599-0000 · 평일 09:00 – 21:00</p>
+  <p style="margin-top:12px;font-size:11px;color:var(--gray-400)">© 2026 BongiMobile.</p>
 </footer>
 
 <!-- ============ Sticky bottom CTA ============ -->
-<div class="bottom-cta">
-  <button class="btn-call" onclick="location.href='tel:1599-0000'">📞 전화</button>
-  <button class="btn-apply" onclick="document.querySelector('#apply').scrollIntoView({behavior:'smooth'})">🔥 무료 상담 신청</button>
+<div class="bottom-bar">
+  <button class="btn-call" onclick="location.href='tel:1599-0000'">전화</button>
+  <button class="btn-apply" onclick="document.querySelector('#apply').scrollIntoView({behavior:'smooth'})">신청</button>
 </div>
 
 <script>
-/* ============ 카운트다운 타이머 ============ */
+/* ========== 타이머 ========== */
 const timer = document.getElementById('timer');
 const endTime = new Date(); endTime.setHours(23,59,59);
 setInterval(() => {
-  const now = new Date();
-  let diff = (endTime - now) / 1000;
+  let diff = (endTime - new Date()) / 1000;
   if (diff < 0) diff = 0;
-  const h = Math.floor(diff / 3600);
-  const m = Math.floor((diff % 3600) / 60);
-  const s = Math.floor(diff % 60);
-  timer.textContent = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  const h = Math.floor(diff / 3600), m = Math.floor((diff % 3600) / 60), s = Math.floor(diff % 60);
+  timer.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }, 1000);
 
-/* ============ 통신사 선택 ============ */
-let carrier = 'SKB';
-let cash = 30;
-const carrierBasePrice = { KT: 32500, SKB: 32000, 'LGU+': 31000 };
-const carrierName = { KT: 'KT 기가 인터넷 1G', SKB: 'SKB 기가 인터넷 1G', 'LGU+': 'LG U+ 기가 인터넷 1G' };
-function selCar(el, c, cashM) {
-  document.querySelectorAll('.carrier').forEach(x => x.classList.remove('active'));
+/* ========== 통신사 ========== */
+let carrier = 'SKB', cash = 30;
+const basePrice = { KT: 32500, SKB: 32000, 'LGU+': 31000 };
+const planName = { KT: 'KT 기가 인터넷', SKB: 'SKB 기가 인터넷', 'LGU+': 'LG U+ 기가 인터넷' };
+function selCar(el, c, m) {
+  document.querySelectorAll('.carriers .carrier').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
-  carrier = c;
-  cash = cashM;
-  document.querySelector('#leadForm [name="carrier"]')?.setAttribute('value', c);
-  recalc();
+  carrier = c; cash = m; recalc();
 }
 
-/* ============ 옵션 ============ */
+/* ========== 옵션 ========== */
 const opts = { speed: '1G', bundle: 'tv', phone: 'yes' };
 function setOpt(el, key, val) {
-  const parent = el.parentElement;
-  parent.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  el.parentElement.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
-  opts[key] = val;
-  recalc();
+  opts[key] = val; recalc();
 }
 
-/* ============ form 옵션 ============ */
-function setForm(el, key, val) {
-  const parent = el.parentElement;
-  parent.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+/* ========== form chip ========== */
+function setFormChip(el, val) {
+  el.parentElement.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
-  if (key === 'carrier') {
-    const cashMap = { KT: 20, SKB: 30, 'LGU+': 25, compare: 30 };
-    cash = cashMap[val];
-    if (val !== 'compare') {
-      carrier = val;
-      const car = document.querySelector(`.carrier.${val.toLowerCase().replace('+','')}`);
-      if (car) selCar(car, val, cashMap[val]);
-    }
+  if (val !== 'compare') {
+    const cashMap = { KT: 20, SKB: 30, 'LGU+': 25 };
+    cash = cashMap[val]; carrier = val;
+    const car = Array.from(document.querySelectorAll('.carriers .carrier')).find(c => c.querySelector('.nm').textContent === val.replace('+','').replace('LGU','LG U+').replace('LG U+','LG U+'));
+    document.querySelectorAll('.carriers .carrier').forEach(c => {
+      if (c.querySelector('.nm').textContent === val.replace('+','')) { selCar(c, val, cashMap[val]); }
+    });
+    recalc();
   }
 }
 
-/* ============ 견적 계산 ============ */
+/* ========== 계산 ========== */
 function recalc() {
   const speedMul = { '100M': 0.7, '500M': 0.85, '1G': 1 };
-  const base = Math.round(carrierBasePrice[carrier] * speedMul[opts.speed]);
+  const base = Math.round(basePrice[carrier] * speedMul[opts.speed]);
   const tv = opts.bundle === 'tv' ? 23100 : 0;
   const phone = opts.phone === 'yes' ? -5500 : 0;
   const contract = -4500;
   const total = base + tv + phone + contract;
-
-  document.getElementById('planName').textContent = carrierName[carrier].replace('1G', opts.speed === '100M' ? '100M' : opts.speed === '500M' ? '500M' : '1G');
+  document.getElementById('planName').textContent = planName[carrier] + (opts.speed === '1G' ? '' : ' (' + opts.speed + ')');
   document.getElementById('planPrice').textContent = base.toLocaleString() + '원';
   document.getElementById('tvRow').style.display = opts.bundle === 'tv' ? 'flex' : 'none';
   document.getElementById('phoneRow').style.display = opts.phone === 'yes' ? 'flex' : 'none';
@@ -490,45 +496,35 @@ function recalc() {
   document.getElementById('cashAmount').textContent = cash + '만원';
 }
 
-/* ============ 신청 제출 ============ */
+/* ========== 신청 ========== */
 function submitLead(e) {
   e.preventDefault();
-  const form = e.target;
-  const data = {
-    name: form.name.value,
-    phone: form.phone.value,
-    region: form.region.value,
-    carrier: carrier,
-    source: 'landing_wired'
-  };
-  alert(`✅ ${data.name}님 신청이 접수되었습니다!\n15분 내 상담사가 연락드립니다.\n\n현금 ${cash}만원 사은품 안내 예정.`);
-  // TODO: POST /api/landing/apply
+  alert('신청이 접수되었습니다.\n15분 내 상담사가 연락드립니다.');
   return false;
 }
 
-/* ============ 신청자 자동 갱신 (시뮬레이션) ============ */
-const names = ['김','이','박','최','정','강','조','윤','장','임'];
-const surnames = ['*','*','*'];
-const regions = ['광주 동구','광주 광산구','광주 북구','광주 서구','광주 남구','전남 목포','전남 여수','전남 순천'];
-const carriers = [
-  { name: 'SKB', tag: 'tag-skb', plan: 'SKB 인터넷+TV' },
-  { name: 'KT', tag: 'tag-kt', plan: 'KT 기가 인터넷' },
-  { name: 'LGU+', tag: 'tag-lgu', plan: 'LGU+ 인터넷+TV' }
+/* ========== Live 자동 갱신 ========== */
+const fNames = ['김','이','박','최','정','강','조','윤','장','임','한','오'];
+const fRegions = ['광주 동구','광주 광산구','광주 북구','광주 서구','광주 남구','전남 목포','전남 여수','전남 순천'];
+const fCarriers = [
+  { name: 'SKB', plan: 'SKB 인터넷+TV' },
+  { name: 'KT', plan: 'KT 기가 인터넷' },
+  { name: 'LG U+', plan: 'LG U+ 인터넷+TV' }
 ];
 setInterval(() => {
-  const list = document.getElementById('proofList');
+  const list = document.getElementById('liveList');
   if (!list) return;
-  const n = names[Math.floor(Math.random()*names.length)] + '**';
-  const r = regions[Math.floor(Math.random()*regions.length)];
-  const c = carriers[Math.floor(Math.random()*carriers.length)];
-  const newRow = document.createElement('div');
-  newRow.className = 'proof-row';
-  newRow.innerHTML = `<div class="info"><b>${n}</b>님 · <span class="tag ${c.tag}">${c.name}</span> ${c.plan} · ${r}</div><div class="time">방금</div>`;
-  newRow.style.opacity = '0';
-  list.insertBefore(newRow, list.firstChild);
-  setTimeout(() => { newRow.style.transition = 'opacity 0.5s'; newRow.style.opacity = '1'; }, 50);
+  const n = fNames[Math.floor(Math.random() * fNames.length)] + '**';
+  const r = fRegions[Math.floor(Math.random() * fRegions.length)];
+  const c = fCarriers[Math.floor(Math.random() * fCarriers.length)];
+  const row = document.createElement('div');
+  row.className = 'live-row';
+  row.innerHTML = `<span class="who"><b>${n}</b>님 · ${c.plan} · ${r}</span><span class="when">방금</span>`;
+  row.style.opacity = '0';
+  list.insertBefore(row, list.firstChild);
+  requestAnimationFrame(() => { row.style.transition = 'opacity .4s'; row.style.opacity = '1'; });
   if (list.children.length > 5) list.removeChild(list.lastChild);
-}, 8000);
+}, 9000);
 </script>
 
 </body></html>
