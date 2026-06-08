@@ -73,6 +73,31 @@ table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:t
 .quote-box .cash-row{background:#dc2626;color:#fff;border-radius:6px;padding:6px 10px;margin-top:6px;display:flex;justify-content:space-between;font-size:11px;font-weight:700}
 .quote-box .cash-row b{font-size:14px;font-weight:900}
 
+
+/* 카운트다운 타이머 */
+.urgency-bar{background:linear-gradient(90deg,#dc2626,#ef4444);color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;animation:pulse 2s infinite}
+.urgency-bar .ic{font-size:18px}
+.urgency-bar b{background:rgba(255,255,255,.25);padding:2px 8px;border-radius:5px;margin:0 2px}
+.urgency-bar .timer{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:900;background:#fff;color:#dc2626;padding:3px 10px;border-radius:5px;letter-spacing:1px}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
+
+/* 실시간 신청자 list */
+.proof-list{background:#f8f7f0;border:1.5px solid #e8e6dc;border-radius:9px;padding:12px;margin-top:10px}
+.proof-ttl{font-size:11px;font-weight:800;color:#1a1a1a;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.proof-ttl .live-dot{display:inline-flex;align-items:center;gap:4px;background:#dc2626;color:#fff;font-size:9px;padding:2px 7px;border-radius:99px;font-weight:800}
+.proof-ttl .live-dot::before{content:'';width:6px;height:6px;background:#fff;border-radius:50%;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.proof-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:10.5px;color:#4a4a4a;border-top:1px dashed #e8e6dc}
+.proof-row:first-of-type{border-top:none}
+.proof-row .who{display:flex;align-items:center;gap:6px}
+.proof-row .who b{color:#1a1a1a;font-weight:700}
+.proof-row .who .badge-mini{background:#dbeafe;color:#1e3a8a;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:800}
+.proof-row .who .badge-mini.skb{background:#fee2e2;color:#dc2626}
+.proof-row .who .badge-mini.kt{background:#dbeafe;color:#1e3a8a}
+.proof-row .who .badge-mini.lgu{background:#fce7f3;color:#9f1239}
+.proof-row .who .badge-mini.skt{background:#fee2e2;color:#dc2626}
+.proof-row .time{color:#dc2626;font-weight:700;font-size:9.5px}
+
 </style></head><body>
 
 <h1>📝 봉이 유선·유심 리드 폼 LP</h1>
@@ -110,6 +135,10 @@ table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:t
       <p>KT · SKB · LG U+ 3사 비교 · 사은품 X · 익일 입금</p>
     </div>
     <div class="lp-form">
+      <div class="urgency-bar">
+        <span><span class="ic">⏱️</span> 오늘 자정 마감 — <b>현금 +5만원</b> 추가 지급</span>
+        <span class="timer">05:23:47</span>
+      </div>
       <div class="ttl">📝 1분 신청 → 15분 내 상담사 연락</div>
       <div class="lp-row">
         <div class="lbl">이름 <span class="req">*</span></div>
@@ -162,6 +191,14 @@ table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:t
 
       <button class="lp-cta">🔥 무료 상담 신청</button>
       <div class="lp-consent">개인정보 수집·이용 동의 (필수) · 마케팅 수신 동의 (선택)</div>
+
+      <div class="proof-list">
+        <div class="proof-ttl"><span>📞 방금 신청한 고객</span><span class="live-dot">LIVE</span></div>
+        <div class="proof-row"><div class="who"><b>박**</b>님 · <span class="badge-mini skb">SKB</span> 인터넷+TV · 광주 동구</div><div class="time">1분 전</div></div>
+        <div class="proof-row"><div class="who"><b>이**</b>님 · <span class="badge-mini kt">KT</span> 기가 인터넷 · 광주 광산구</div><div class="time">4분 전</div></div>
+        <div class="proof-row"><div class="who"><b>최**</b>님 · <span class="badge-mini lgu">LGU+</span> 인터넷+TV · 광주 북구</div><div class="time">7분 전</div></div>
+        <div class="proof-row"><div class="who"><b>김**</b>님 · <span class="badge-mini skb">SKB</span> 인터넷+TV · 광주 서구</div><div class="time">12분 전</div></div>
+      </div>
     </div>
   </div>
 
@@ -173,6 +210,10 @@ table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:t
       <p>SKT · KT · LG U+ 본사 직접 유심 · 익일 입금</p>
     </div>
     <div class="lp-form">
+      <div class="urgency-bar" style="background:linear-gradient(90deg,#ea580c,#f97316)">
+        <span><span class="ic">⏱️</span> 오늘 자정 마감 — <b>현금 +3만원</b> 추가 지급</span>
+        <span class="timer" style="color:#ea580c">05:23:47</span>
+      </div>
       <div class="ttl">📝 1분 신청 → 15분 내 상담사 연락</div>
       <div class="lp-row">
         <div class="lbl">이름 <span class="req">*</span></div>
@@ -221,6 +262,14 @@ table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:t
 
       <button class="lp-cta orange">🔥 무료 상담 신청</button>
       <div class="lp-consent">개인정보 수집·이용 동의 (필수) · 마케팅 수신 동의 (선택)</div>
+
+      <div class="proof-list">
+        <div class="proof-ttl"><span>📞 방금 신청한 고객</span><span class="live-dot">LIVE</span></div>
+        <div class="proof-row"><div class="who"><b>정**</b>님 · <span class="badge-mini kt">KT</span> 5G 베이직 · MNP</div><div class="time">2분 전</div></div>
+        <div class="proof-row"><div class="who"><b>윤**</b>님 · <span class="badge-mini skt">SKT</span> 5G 슬림 · 신규</div><div class="time">6분 전</div></div>
+        <div class="proof-row"><div class="who"><b>강**</b>님 · <span class="badge-mini lgu">LGU+</span> 5G 라이트 · MNP</div><div class="time">9분 전</div></div>
+        <div class="proof-row"><div class="who"><b>한**</b>님 · <span class="badge-mini kt">KT</span> 5G 베이직 · MNP</div><div class="time">14분 전</div></div>
+      </div>
     </div>
   </div>
 </div>
@@ -240,6 +289,8 @@ table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:t
     <tr><td>5</td><td><b>가입 유형</b></td><td>—</td><td><span class="badge b-orange">선택</span> (신규·MNP)</td><td>chip</td></tr>
     <tr><td>6</td><td><b>개인정보 동의</b></td><td><span class="badge b-red">필수</span></td><td><span class="badge b-red">필수</span></td><td>checkbox</td></tr>
     <tr><td>7</td><td><b>마케팅 수신 동의</b></td><td><span class="badge b-gray">선택</span></td><td><span class="badge b-gray">선택</span></td><td>checkbox</td></tr>
+    <tr><td>+1</td><td><b>카운트다운 타이머</b></td><td colspan="2"><span class="badge b-red">전환률 +15~30%</span> "오늘 자정 마감 — 현금 +5만원 추가"</td><td>auto</td></tr>
+    <tr><td>+2</td><td><b>실시간 신청자 list</b></td><td colspan="2"><span class="badge b-red">사회적 증명</span> 마스킹된 최근 신청자 4~10명 (1분~14분 전)</td><td>auto rotate</td></tr>
   </tbody>
 </table>
 <div class="note">
