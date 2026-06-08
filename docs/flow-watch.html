@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>봉이모바일 — ⌚ 워치(세컨디바이스) 판매 정책</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Pretendard:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f8f7f4;--bg2:#fff;--border:#e2ddd6;--navy:#1a2744;--blue:#2563eb;--orange:#d97706;--green:#059669;--pink:#ec4899;--purple:#7c3aed;--red:#dc2626;--text:#1a1a1a;--text2:#4a4a4a;--text3:#8a8a8a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;padding:40px;max-width:1280px;margin:0 auto;line-height:1.55}
+h1{font-size:28px;font-weight:900;color:var(--navy);margin-bottom:4px}
+.subtitle{font-size:12px;color:var(--text3);margin-bottom:18px;font-family:'JetBrains Mono',monospace}
+.hero{background:linear-gradient(135deg,#dcfce7,#bbf7d0);border:2px solid var(--green);border-radius:14px;padding:18px 22px;margin-bottom:28px;font-size:13px;color:#065f46;line-height:1.7}
+.hero strong{color:#064e3b}
+.section{font-size:20px;font-weight:900;color:var(--navy);margin:36px 0 14px;display:flex;align-items:center;gap:10px}
+.num{background:var(--green);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px}
+table th{background:var(--navy);color:#fff;padding:9px 10px;text-align:left;font-size:11px;font-weight:700}
+table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:800}
+.b-red{background:#fee2e2;color:#dc2626}.b-orange{background:#fef3c7;color:#92400e}.b-gray{background:#f3f4f6;color:#6a6a6a}.b-green{background:#dcfce7;color:#16a34a}.b-blue{background:#dbeafe;color:#1e3a8a}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px}
+.note{background:#eff6ff;border-left:3px solid var(--blue);border-radius:6px;padding:10px 14px;font-size:11.5px;color:var(--navy);line-height:1.7;margin-top:10px}
+.warn{background:#fef2f2;border-left:3px solid var(--red);border-radius:6px;padding:10px 14px;font-size:11.5px;color:var(--red);line-height:1.7;margin-top:10px}
+
+/* 어드민 시세 관리 mockup */
+.admin-box{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px}
+.admin-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed var(--border);flex-wrap:wrap;gap:8px}
+.admin-ttl{font-size:14px;font-weight:900;color:var(--navy);display:flex;align-items:center;gap:8px}
+.admin-meta{font-size:11px;color:var(--text3)}
+.admin-tabs{display:flex;gap:6px;margin-bottom:12px}
+.adm-tab{padding:8px 14px;background:#f3f4f6;color:#4a4a4a;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer}
+.adm-tab.act{background:#1a2744;color:#fff}
+.adm-actions{display:flex;gap:5px;flex-wrap:wrap}
+.adm-actions button{padding:5px 11px;background:#fff;border:1px solid var(--border);border-radius:5px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.adm-actions .primary{background:#16a34a;color:#fff;border-color:#16a34a}
+
+.price-table{width:100%;border-collapse:collapse;font-size:10.5px}
+.price-table th{background:#0f172a;color:#fff;padding:7px 6px;text-align:center;font-size:9.5px;font-weight:700;border-right:1px solid #334155}
+.price-table th.l1{background:#1e293b}
+.price-table td{padding:6px 6px;text-align:center;border-bottom:1px solid #e8e6dc;font-family:'JetBrains Mono',monospace}
+.price-table tr:hover td{background:#fffbeb}
+.price-table td.nm{font-family:'Pretendard',sans-serif;font-weight:700;text-align:left}
+.price-table td.cap{color:var(--text3);font-size:10px}
+.price-table td.minus{color:#dc2626}
+.price-table .col-group{background:#334155;color:#fff;padding:5px;font-weight:700;text-align:center;font-size:10px}
+
+/* 요금제 카드 */
+.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.plan-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px}
+.plan-card .net{display:inline-block;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:800;color:#fff;margin-bottom:6px}
+.plan-card .net.skt{background:#dc2626}.plan-card .net.kt{background:#2563eb}.plan-card .net.lgu{background:#ec4899}
+.plan-card .nm{font-size:14px;font-weight:900;margin-bottom:3px}
+.plan-card .desc{font-size:10.5px;color:var(--text3);margin-bottom:10px}
+.plan-card .price{font-size:20px;font-weight:900;color:var(--green)}
+.plan-card .price .unit{font-size:13px;font-weight:700}
+.plan-card .features{font-size:10.5px;color:var(--text2);line-height:1.6;margin-top:10px;border-top:1px dashed var(--border);padding-top:8px}
+
+/* 필수 조건 */
+.cond-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.cond-card{background:#fff;border:1.5px solid var(--red);border-left-width:4px;border-radius:9px;padding:13px}
+.cond-card .ttl{font-size:12.5px;font-weight:900;color:#dc2626;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.cond-card .desc{font-size:10.5px;color:var(--text2);line-height:1.6}
+.cond-card.opt{border-color:#fbbf24}
+.cond-card.opt .ttl{color:#92400e}
+
+/* 흐름 step */
+.flow{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr 28px 1fr 28px 1fr;gap:6px;align-items:center;margin:12px 0}
+.fbox{padding:14px 10px;border-radius:10px;font-size:11.5px;font-weight:700;text-align:center;line-height:1.4;background:#fff;border:1.5px solid var(--border)}
+.fbox .lbl{font-size:9px;font-weight:800;color:var(--text3);margin-bottom:3px;text-transform:uppercase}
+.fbox.user{background:#dbeafe;border-color:#2563eb;color:#1e3a8a}
+.fbox.bundle{background:#dcfce7;border-color:#16a34a;color:#15803d}
+.fbox.adm{background:#fef3c7;border-color:#d97706;color:#92400e}
+.fbox.done{background:#f3e8ff;border-color:#7c3aed;color:#6b21a8}
+.fa{text-align:center;color:var(--text3);font-size:16px;font-weight:700}
+</style></head><body>
+
+<h1>⌚ 봉이모바일 워치 (세컨디바이스) 판매 정책</h1>
+<div class="subtitle">flow-watch.html · 2026-06-08 · 워치 단독 판매 X · 메인 휴대폰 동시 개통 필수</div>
+
+<div class="hero">
+  ⌚ <strong>워치는 세컨디바이스 — 메인 휴대폰과 동시 개통 필수</strong>. 단독 가입 X · 메인 명의 일치 · 데이터쉐어링 기반 · 24개월 약정 의무. 메인 휴대폰 가입 시 워치 옵션으로 추가하는 구조.
+</div>
+
+<!-- ============ 1. 핵심 정책 ============ -->
+<div class="section"><span class="num">1</span>핵심 정책</div>
+<table>
+  <thead><tr><th style="width:160px">항목</th><th>내용</th></tr></thead>
+  <tbody>
+    <tr><td><b>판매 구조</b></td><td>메인 휴대폰 + 워치 <b>동시 개통</b> (워치 단독 가입 ❌) · 메인 명의 일치 필수</td></tr>
+    <tr><td><b>요금제 방식</b></td><td>워치 전용 요금제 (데이터쉐어링 기반) · 월 5,500~11,000원</td></tr>
+    <tr><td><b>약정</b></td><td><b>24개월</b> 의무 유지 (해지 시 매장지원금·기기값 환수)</td></tr>
+    <tr><td><b>지원 워치</b></td><td>Apple Watch (Cellular 모델) · Galaxy Watch · Pixel Watch 등 통신 모델</td></tr>
+    <tr><td><b>현금 사은품</b></td><td>메인 휴대폰 가입 시 워치 추가 = <b>+5~10만원 현금 추가</b> (메인 + 세컨 합산)</td></tr>
+    <tr><td><b>알림톡</b></td><td>워치는 카카오톡 미설치 단말 → <b>알림톡 X</b> (메모리: 채널톡 운영안 기준) · 메인 회선으로만 알림 발송</td></tr>
+    <tr><td><b>매장 운영</b></td><td>매장별 시세 자율 (무선 시세 관리 패턴 적용)</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ 2. 가입 흐름 ============ -->
+<div class="section"><span class="num">2</span>가입 흐름</div>
+<div class="flow">
+  <div class="fbox user"><div class="lbl">STEP 1</div>메인 휴대폰<br>가입 결정</div>
+  <div class="fa">▶</div>
+  <div class="fbox bundle"><div class="lbl">STEP 2</div>워치 옵션<br>추가 (선택)</div>
+  <div class="fa">▶</div>
+  <div class="fbox adm"><div class="lbl">STEP 3</div>매장 시세 확인<br>(워치 시세)</div>
+  <div class="fa">▶</div>
+  <div class="fbox adm"><div class="lbl">STEP 4</div>워치 요금제<br>선택 (데이터쉐어링)</div>
+  <div class="fa">▶</div>
+  <div class="fbox done"><div class="lbl">STEP 5</div>동시 개통<br>(메인+워치)</div>
+</div>
+
+<!-- ============ 3. 워치 시세 관리 (어드민 UI · 무선 패턴 차용) ============ -->
+<div class="section"><span class="num">3</span>워치 시세 관리 (매장별 어드민 UI)</div>
+<div class="admin-box">
+  <div class="admin-head">
+    <div class="admin-ttl">⌚ 봉이모바일 남악점 — 워치 시세 관리</div>
+    <div class="admin-meta">마지막 업데이트: 2026.06.08</div>
+  </div>
+  <div class="admin-tabs">
+    <div class="adm-tab act">📊 시세</div>
+    <div class="adm-tab">📦 부가서비스</div>
+    <div class="adm-tab">📋 필수 조건</div>
+  </div>
+  <div class="admin-actions" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div class="adm-actions">
+      <button>✏️ 직접 편집</button>
+      <button class="primary">💾 저장 (새 차수)</button>
+    </div>
+    <div class="adm-actions">
+      <button>📥 양식 다운로드</button>
+      <button>📤 엑셀 일괄 업로드</button>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:10px">기종 (12개 노출): <b style="color:var(--text)">활성화 편집</b> · 요금제: <span class="badge b-green">워치 라이트 · 5,500원</span></div>
+  <div class="warn">⚠️ 번이 매장지원금은 위약금으로 처리되며, 24개월 유지 의무가 있습니다. (메인 휴대폰 회선 해지 시 워치 회선도 자동 해지)</div>
+
+  <div style="overflow-x:auto;margin-top:12px">
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th rowspan="2" style="width:180px">모델</th>
+          <th rowspan="2" style="width:70px">크기</th>
+          <th rowspan="2" style="width:80px">출고가</th>
+          <th colspan="4" class="col-group">번이</th>
+          <th colspan="4" class="col-group">기변</th>
+          <th rowspan="2" style="width:90px;background:#1e293b">공시<br>(지원금)</th>
+        </tr>
+        <tr>
+          <th class="l1">공시</th><th class="l1">선약</th><th class="l1">공시매장</th><th class="l1">선약매장</th>
+          <th class="l1">공시</th><th class="l1">선약</th><th class="l1">공시매장</th><th class="l1">선약매장</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="nm">Apple Watch S10 LTE</td><td class="cap">42mm</td><td>590,000</td><td>0</td><td>180,000</td><td>120,000</td><td>120,000</td><td class="minus">−30,000</td><td>120,000</td><td>120,000</td><td>120,000</td><td>240,000</td></tr>
+        <tr><td class="nm">Apple Watch S10 LTE</td><td class="cap">46mm</td><td>620,000</td><td>0</td><td>180,000</td><td>120,000</td><td>120,000</td><td class="minus">−30,000</td><td>120,000</td><td>120,000</td><td>120,000</td><td>240,000</td></tr>
+        <tr><td class="nm">Apple Watch Ultra 3</td><td class="cap">49mm</td><td>1,090,000</td><td>50,000</td><td>250,000</td><td>120,000</td><td>120,000</td><td>20,000</td><td>180,000</td><td>120,000</td><td>120,000</td><td>240,000</td></tr>
+        <tr><td class="nm">Apple Watch SE 3</td><td class="cap">40mm</td><td>359,000</td><td class="minus">−80,000</td><td>100,000</td><td>120,000</td><td>120,000</td><td class="minus">−110,000</td><td>50,000</td><td>120,000</td><td>120,000</td><td>200,000</td></tr>
+        <tr><td class="nm">Apple Watch SE 3</td><td class="cap">44mm</td><td>389,000</td><td class="minus">−70,000</td><td>110,000</td><td>120,000</td><td>120,000</td><td class="minus">−100,000</td><td>60,000</td><td>120,000</td><td>120,000</td><td>200,000</td></tr>
+        <tr><td class="nm">Galaxy Watch7 LTE</td><td class="cap">40mm</td><td>430,000</td><td class="minus">−40,000</td><td>150,000</td><td>120,000</td><td>120,000</td><td class="minus">−70,000</td><td>100,000</td><td>120,000</td><td>120,000</td><td>220,000</td></tr>
+        <tr><td class="nm">Galaxy Watch7 LTE</td><td class="cap">44mm</td><td>460,000</td><td class="minus">−30,000</td><td>160,000</td><td>120,000</td><td>120,000</td><td class="minus">−60,000</td><td>110,000</td><td>120,000</td><td>120,000</td><td>220,000</td></tr>
+        <tr><td class="nm">Galaxy Watch Ultra</td><td class="cap">47mm</td><td>1,099,000</td><td>30,000</td><td>240,000</td><td>120,000</td><td>120,000</td><td>0</td><td>170,000</td><td>120,000</td><td>120,000</td><td>240,000</td></tr>
+        <tr><td class="nm">Pixel Watch 3 LTE</td><td class="cap">41mm</td><td>499,000</td><td class="minus">−20,000</td><td>170,000</td><td>120,000</td><td>120,000</td><td class="minus">−50,000</td><td>120,000</td><td>120,000</td><td>120,000</td><td>220,000</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 4. 워치 전용 요금제 ============ -->
+<div class="section"><span class="num">4</span>워치 전용 요금제 (3사 · 데이터쉐어링)</div>
+<div class="plan-grid">
+  <div class="plan-card">
+    <span class="net skt">SKT</span>
+    <div class="nm">웨어러블 5G 라이트</div>
+    <div class="desc">메인 회선 데이터 공유 (분리 X)</div>
+    <div class="price">월 <span class="unit">5,500원</span></div>
+    <div class="features">
+      📞 통화 · 문자 무제한<br>
+      📊 데이터쉐어링 (메인과 공유)<br>
+      ⌚ 분리 사용 불가
+    </div>
+  </div>
+  <div class="plan-card">
+    <span class="net kt">KT</span>
+    <div class="nm">워치+ 함께쓰기</div>
+    <div class="desc">데이터쉐어링 (1GB 별도 제공)</div>
+    <div class="price">월 <span class="unit">11,000원</span></div>
+    <div class="features">
+      📞 통화 · 문자 무제한<br>
+      📊 1GB 별도 + 메인 공유<br>
+      ⌚ 분리 사용 (메인 OFF 시도)
+    </div>
+  </div>
+  <div class="plan-card">
+    <span class="net lgu">LG U+</span>
+    <div class="nm">U+ 워치 쉐어링</div>
+    <div class="desc">메인 회선 데이터 공유</div>
+    <div class="price">월 <span class="unit">8,800원</span></div>
+    <div class="features">
+      📞 통화 · 문자 무제한<br>
+      📊 데이터쉐어링<br>
+      ⌚ 자녀 워치 분리 가능
+    </div>
+  </div>
+</div>
+
+<!-- ============ 5. 필수 조건 (어드민 탭) ============ -->
+<div class="section"><span class="num">5</span>필수 조건 (어드민 탭)</div>
+<div class="cond-grid">
+  <div class="cond-card">
+    <div class="ttl">⚠️ 메인 회선 동시 개통</div>
+    <div class="desc">워치 단독 가입 ❌. 메인 휴대폰과 같은 명의·같은 시점 동시 개통 필수. 메인 회선이 이미 개통된 상태에서 워치만 추가는 일부 통신사만 허용 (KT만 가능, SKT·LGU+는 동시 개통 한정).</div>
+  </div>
+  <div class="cond-card">
+    <div class="ttl">⚠️ 명의 일치</div>
+    <div class="desc">메인 회선과 <b>동일 명의</b> 필수. 가족 명의 워치는 부모·자녀 가족결합 시에만 예외 허용 (자녀 워치 분리).</div>
+  </div>
+  <div class="cond-card">
+    <div class="ttl">⚠️ 24개월 약정 유지</div>
+    <div class="desc">매장지원금 = 위약금 처리. 24개월 내 해지 시 매장지원금 환수 + 통신사 위약금. 메인 회선 해지 시 워치 회선도 자동 해지.</div>
+  </div>
+  <div class="cond-card opt">
+    <div class="ttl">🟡 부가서비스 (선택)</div>
+    <div class="desc">통신사별 부가서비스 가입 시 추가 할인 가능 (SKT: 워치 분실보험 · KT: 안심 서비스 · LGU+: 자녀 안심).</div>
+  </div>
+</div>
+
+<!-- ============ 6. 현금 사은품 정책 ============ -->
+<div class="section"><span class="num">6</span>현금 사은품 정책 (메인 + 워치 합산)</div>
+<table>
+  <thead><tr><th style="width:160px">시나리오</th><th style="width:140px">메인 휴대폰 현금</th><th style="width:120px">워치 추가 현금</th><th>합산</th></tr></thead>
+  <tbody>
+    <tr><td>메인만 (휴대폰 단독)</td><td>10~30만원</td><td>—</td><td>10~30만원</td></tr>
+    <tr><td><b>메인 + 워치 1대</b></td><td>10~30만원</td><td><b style="color:var(--green)">+5만원</b></td><td><b>15~35만원</b></td></tr>
+    <tr><td>메인 + 워치 2대 (부모·자녀)</td><td>10~30만원</td><td><b style="color:var(--green)">+10만원</b></td><td><b>20~40만원</b></td></tr>
+    <tr><td>메인 + 워치 + 태블릿 등 풀세트</td><td>10~30만원</td><td><b style="color:var(--green)">+15만원</b></td><td><b>25~45만원</b></td></tr>
+  </tbody>
+</table>
+<div class="note">
+  💰 <b>지급 시점</b>: 메인 휴대폰과 동시 개통 후 익일 일괄 입금. 워치만 별도 지급 X.
+</div>
+
+<!-- ============ 7. CRM 테이블 매핑 (기존 활용) ============ -->
+<div class="section"><span class="num">7</span>CRM 테이블 매핑 (기존 활용)</div>
+<table>
+  <thead><tr><th style="width:200px">대상</th><th style="width:240px">기존 테이블</th><th>저장 컬럼 (예시)</th></tr></thead>
+  <tbody>
+    <tr><td><b>워치 시세</b> (매장별)</td><td class="mono">incentive_products</td><td><span class="mono">product_type='watch' · model · capacity(42mm) · carrier · base_price · subsidy_official · subsidy_select · subsidy_official_store · subsidy_select_store · subsidy_official_change · ...</span></td></tr>
+    <tr><td><b>워치 회선 개통</b></td><td class="mono">incentive_sales</td><td><span class="mono">product_type='watch' · linked_main_id (메인 회선 FK) · carrier · plan_name(웨어러블 5G 라이트) · contract_months(24) · cash_amount</span></td></tr>
+    <tr><td><b>워치 요금제 마스터</b></td><td class="mono">bongi_mobile_plans</td><td><span class="mono">plan_type='watch' · carrier · monthly_fee · data_share_type</span></td></tr>
+  </tbody>
+</table>
+<div class="note">
+  ✅ <b>신규 테이블 ❌</b>: 기존 무선 시세 관리 테이블에 <b>product_type='watch'</b> 분류 + 매장별 시세 그대로 활용. <span class="mono">linked_main_id</span> 컬럼 추가로 메인 회선과 워치 회선 1:N 연결.
+</div>
+
+<!-- ============ 8. 알림톡 정책 (메모리: 워치 알림톡 X) ============ -->
+<div class="section"><span class="num">8</span>알림톡 정책</div>
+<table>
+  <thead><tr><th style="width:160px">발송 대상</th><th>채널</th><th>비고</th></tr></thead>
+  <tbody>
+    <tr><td>메인 회선 (휴대폰)</td><td><span class="badge b-orange">카카오 알림톡</span></td><td>개통 알림 · 요금제 변경 가능일 · 부가서비스 해지 등 정상 발송</td></tr>
+    <tr><td><b>워치 회선</b></td><td><span class="badge b-gray">발송 X</span></td><td><b>워치는 카카오톡 미설치 단말</b> → 알림톡 발송 X · 메인 회선으로 워치 정보 같이 안내</td></tr>
+    <tr><td>워치 정보 안내</td><td><span class="badge b-orange">메인 회선 알림톡 통합</span></td><td>"가입정보 안내: 메인 + 워치" 한 메시지에 표시</td></tr>
+  </tbody>
+</table>
+<div class="note">
+  📌 <a href="flow-notifications.html" style="color:var(--blue)">flow-notifications.html</a> 알림톡 ① 무선개통신규 메시지 template에 워치 회선 정보 같이 포함:<br>
+  · 통신사 : KT<br>
+  · 가입요금제 : 초이스스페셜 + <b>워치+ 함께쓰기 (워치 회선)</b><br>
+  · 요금제 변경가능일 : ...<br>
+  · 부가서비스 해지가능일 : ...
+</div>
+
+<!-- ============ 9. 작업 Phase ============ -->
+<div class="section"><span class="num">9</span>작업 Phase (총 6일)</div>
+<table>
+  <thead><tr><th style="width:80px">Phase</th><th style="width:80px">기간</th><th>작업</th></tr></thead>
+  <tbody>
+    <tr><td><b>Phase 1</b></td><td>1d</td><td>DB — <span class="mono">incentive_products</span>에 <span class="mono">product_type='watch'</span> 추가 · <span class="mono">incentive_sales</span>에 <span class="mono">linked_main_id</span> · 요금제 마스터에 워치 요금제 9~12종</td></tr>
+    <tr><td><b>Phase 2</b></td><td>2d</td><td>어드민 시세 관리 — 무선 시세 관리 화면에 워치 탭 추가 (기존 화면 패턴 확장)</td></tr>
+    <tr><td><b>Phase 3</b></td><td>1d</td><td>TM 상담 v2 — 메인 휴대폰 가입 폼에 "워치 추가" 옵션 + 워치 시세 + 요금제 자동 매칭</td></tr>
+    <tr><td><b>Phase 4</b></td><td>1d</td><td>알림톡 통합 — 메인 메시지에 워치 회선 정보 같이 표시 (template 수정)</td></tr>
+    <tr><td><b>Phase 5</b></td><td>1d</td><td>현금 사은품 추가 정산 · 테스트 · 운영 배포</td></tr>
+  </tbody>
+</table>
+
+<div class="note" style="margin-top:18px">
+  💡 <b>다음 단계</b>: 본 flow-watch.html 컨펌 후 어드민 시세 관리 화면 mockup 및 TM 폼 보완 진행.<br>
+  💡 <b>향후 확장</b>: 태블릿·키즈폰·라우터 등 다른 세컨디바이스도 동일 패턴 (product_type 분류 + 메인 회선 묶음).
+</div>
+
+</body></html>
