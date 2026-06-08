@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>봉이모바일 — 🔔 알림 통합 관리 시스템</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Pretendard:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f8f7f4;--bg2:#fff;--border:#e2ddd6;--navy:#1a2744;--blue:#2563eb;--orange:#d97706;--green:#059669;--pink:#ec4899;--purple:#7c3aed;--red:#dc2626;--text:#1a1a1a;--text2:#4a4a4a;--text3:#8a8a8a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;padding:40px;max-width:1280px;margin:0 auto;line-height:1.55}
+h1{font-size:28px;font-weight:900;color:var(--navy);margin-bottom:4px}
+.subtitle{font-size:12px;color:var(--text3);margin-bottom:18px;font-family:'JetBrains Mono',monospace}
+.hero{background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid var(--orange);border-radius:14px;padding:18px 22px;margin-bottom:28px;font-size:13px;color:#78350f;line-height:1.7}
+.hero strong{color:#92400e}
+.section{font-size:20px;font-weight:900;color:var(--navy);margin:36px 0 14px;display:flex;align-items:center;gap:10px}
+.num{background:var(--orange);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+
+table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px}
+table th{background:var(--navy);color:#fff;padding:9px 10px;text-align:left;font-size:11px;font-weight:700}
+table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:800}
+.b-red{background:#fee2e2;color:#dc2626}.b-orange{background:#fef3c7;color:#92400e}.b-gray{background:#f3f4f6;color:#6a6a6a}.b-green{background:#dcfce7;color:#16a34a}.b-blue{background:#dbeafe;color:#1e3a8a}.b-purple{background:#f3e8ff;color:#6b21a8}.b-pink{background:#fce7f3;color:#9f1239}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px}
+.note{background:#eff6ff;border-left:3px solid var(--blue);border-radius:6px;padding:10px 14px;font-size:11.5px;color:var(--navy);line-height:1.7;margin-top:10px}
+.warn{background:#fef2f2;border-left:3px solid var(--red);border-radius:6px;padding:10px 14px;font-size:11.5px;color:var(--red);line-height:1.7;margin-top:10px}
+
+/* 채널 카드 */
+.ch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.ch-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.ch-card.kakao{border-color:#fbbf24;background:#fffbeb}
+.ch-card.push{border-color:#3b82f6;background:#eff6ff}
+.ch-card.sms{border-color:#ec4899;background:#fdf2f8}
+.ch-card.channel{border-color:#a855f7;background:#faf5ff}
+.ch-card .ic{font-size:28px;margin-bottom:4px}
+.ch-card .name{font-size:13px;font-weight:900;margin-bottom:3px}
+.ch-card .cost{font-size:10.5px;font-weight:800;margin-bottom:6px;padding:2px 8px;border-radius:99px;display:inline-block}
+.ch-card.kakao .cost{background:#fbbf24;color:#7c2d12}
+.ch-card.push .cost{background:#1d4ed8;color:#fff}
+.ch-card.sms .cost{background:#ec4899;color:#fff}
+.ch-card.channel .cost{background:#a855f7;color:#fff}
+.ch-card .desc{font-size:10.5px;color:var(--text2);line-height:1.5}
+
+/* 메시지 mockup */
+.msg-card{background:#fef3c7;border:1.5px solid #fbbf24;border-radius:14px;padding:18px;font-size:12px;color:#78350f;line-height:1.7;margin-bottom:10px;max-width:520px}
+.msg-card .header{background:#fbbf24;color:#fff;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:800;display:inline-block;margin-bottom:10px}
+.msg-card pre{background:#fff;border-radius:8px;padding:12px;font-family:'Pretendard',sans-serif;white-space:pre-wrap;color:#1a1a1a;font-size:11.5px;border:1px solid #fde68a}
+.msg-card .footer{color:#92400e;font-size:10.5px;margin-top:8px}
+
+/* 트리거 흐름 */
+.flow-trigger{display:grid;grid-template-columns:1fr 30px 1fr 30px 1fr 30px 1fr;gap:8px;align-items:center;margin:14px 0}
+.flow-step{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.flow-step .lbl{font-size:9.5px;color:var(--text3);font-weight:800;text-transform:uppercase;margin-bottom:4px}
+.flow-step .ic{font-size:18px;margin-bottom:4px}
+.flow-step .name{font-size:11.5px;font-weight:800;color:var(--navy)}
+.flow-step.db{background:#eff6ff;border-color:var(--blue);color:var(--blue)}
+.flow-step.engine{background:#fef3c7;border-color:#fbbf24}
+.flow-step.api{background:#f3e8ff;border-color:var(--purple)}
+.flow-step.send{background:#dcfce7;border-color:var(--green)}
+.flow-arr{text-align:center;color:var(--text3);font-size:16px;font-weight:900}
+
+/* DB 스키마 */
+.schema{background:#0f172a;border-radius:12px;padding:18px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.6;overflow-x:auto}
+.schema .kw{color:#ec4899}
+.schema .typ{color:#fbbf24}
+.schema .cmt{color:#64748b}
+.schema .tbl{color:#6ee7b7;font-weight:800}
+
+.phase-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+.phase{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.phase .p{font-size:10.5px;color:var(--text3);font-weight:800;text-transform:uppercase}
+.phase .num-big{font-size:24px;font-weight:900;color:var(--orange)}
+.phase .name{font-size:11.5px;font-weight:800;color:var(--navy);margin-top:3px}
+.phase .days{font-size:10px;color:var(--text3);margin-top:2px}
+</style></head><body>
+
+<h1>🔔 봉이모바일 알림 통합 관리 시스템</h1>
+<div class="subtitle">flow-notifications.html · 2026-06-08 · 카카오 알림톡 + 앱 푸시 + SMS + 채널톡 통합 운영</div>
+
+<div class="hero">
+  📢 <strong>봉이모바일 모든 알림을 단일 시스템으로 통합 관리</strong> — 채널 3종(카카오 알림톡·앱 푸시·SMS), 카테고리 3종(개통/법정·마케팅·운영), 봉이 DB 연결 자동 트리거 + cron 리마인드 + SMS fallback.
+</div>
+
+<!-- ============ 1. 알림 채널 종합 ============ -->
+<div class="section"><span class="num">1</span>알림 채널 3종</div>
+<div class="ch-grid" style="grid-template-columns:repeat(3,1fr)">
+  <div class="ch-card kakao">
+    <div class="ic">💬</div>
+    <div class="name">카카오 알림톡</div>
+    <div class="cost">유료 (건당 8~12원)</div>
+    <div class="desc">법정 안내 · 개통 알림 · 페이백 입금<br>(카카오톡 채널 미추가 고객도 발송 가능)</div>
+  </div>
+  <div class="ch-card push">
+    <div class="ic">📲</div>
+    <div class="name">앱 푸시</div>
+    <div class="cost">무료</div>
+    <div class="desc">회원 전용 · 마케팅·일반 알림<br>(앱 미설치자 발송 불가)</div>
+  </div>
+  <div class="ch-card sms">
+    <div class="ic">📩</div>
+    <div class="name">SMS / LMS</div>
+    <div class="cost">유료 (건당 20~80원)</div>
+    <div class="desc">카카오 알림톡 실패 fallback<br>비회원 긴급 안내</div>
+  </div>
+</div>
+
+<div class="note">
+  💰 <strong>비용 정책</strong>: 카카오 알림톡은 건당 유료이므로 <strong>법정 안내 + 페이백</strong> 등 가입자 영업 알림에만 사용. 마케팅·일반 알림은 <strong>앱 푸시(무료)</strong>로 처리. 앱 미설치 비회원에게는 카카오 알림톡 또는 SMS fallback.
+</div>
+
+<!-- ============ 2. 알림 분류 종합 ============ -->
+<div class="section"><span class="num">2</span>알림 분류 (개통·마케팅·운영)</div>
+<table>
+  <thead>
+    <tr><th style="width:60px">#</th><th style="width:180px">알림명</th><th style="width:110px">카테고리</th><th style="width:110px">채널</th><th style="width:150px">트리거</th><th>설명</th></tr>
+  </thead>
+  <tbody>
+    <!-- 개통/법정 안내 (6) -->
+    <tr><td>1</td><td><strong>무선개통신규</strong></td><td><span class="badge b-red">개통/법정</span></td><td><span class="badge b-orange">카카오 알림톡</span></td><td class="mono">incentive_sales</td><td>휴대폰 단말+회선 개통 즉시. 요금제 변경가능일 + 부가서비스 해지가능일 안내</td></tr>
+    <tr><td>2</td><td><strong>유선개통신규</strong></td><td><span class="badge b-red">개통/법정</span></td><td><span class="badge b-orange">카카오 알림톡</span></td><td class="mono">incentive_internet_tickets</td><td>인터넷+TV 설치 완료 즉시. 요금제 변경 가능일 + 해지 가능일 안내</td></tr>
+    <tr><td>3</td><td><strong>유심개통신규 (MNO)</strong></td><td><span class="badge b-red">개통/법정</span></td><td><span class="badge b-orange">카카오 알림톡</span></td><td class="mono">incentive_sales · product_type='유심'</td><td>통신 3사 직접 유심 개통. 약정만료일 + 최소유지기한</td></tr>
+    <tr><td>4</td><td><strong>유심개통신규 (MVNO)</strong></td><td><span class="badge b-red">개통/법정</span></td><td><span class="badge b-orange">카카오 알림톡</span></td><td class="mono">bongi_mvno_subscriptions</td><td>봉이 알뜰폰 개통. 환수금/위약금 안내</td></tr>
+    <tr><td>5</td><td><strong>부가서비스 해지가능일 리마인드</strong></td><td><span class="badge b-red">개통/법정</span></td><td><span class="badge b-orange">카카오</span></td><td class="mono">cron D-3</td><td>해지 가능일 도래 3일 전 자동</td></tr>
+    <tr><td>6</td><td><strong>요금제 변경 가능일 리마인드</strong></td><td><span class="badge b-red">개통/법정</span></td><td><span class="badge b-orange">카카오</span></td><td class="mono">cron D-3</td><td>변경 가능일 도래 3일 전 자동</td></tr>
+    <!-- 마케팅 (2) -->
+    <tr><td>7</td><td>비회원 → 회원 전환 유도</td><td><span class="badge b-pink">마케팅</span></td><td><span class="badge b-orange">카카오</span></td><td class="mono">bongi_customers (비회원)</td><td>가입 안 한 고객에게 3단계 유도</td></tr>
+    <tr><td>8</td><td>현금 페이백 입금 알림</td><td><span class="badge b-pink">마케팅</span></td><td><span class="badge b-orange">카카오</span></td><td class="mono">bongi_withdrawals</td><td>승인 → 계좌 입금 시 즉시</td></tr>
+    <!-- 운영/앱 푸시 (~) -->
+    <tr><td>9~</td><td>회원 일반 알림</td><td><span class="badge b-blue">운영</span></td><td><span class="badge b-blue">앱 푸시</span></td><td class="mono">bongi_notifications</td><td>~156종 (포인트·이벤트·상품·계약 등)</td></tr>
+    <tr><td>—</td><td>SMS fallback</td><td><span class="badge b-gray">전체</span></td><td><span class="badge b-pink">SMS</span></td><td class="mono">알림톡 실패 자동</td><td>카카오 알림톡 발송 실패 시 SMS 대체</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ 3. 개통 알림톡 메시지 템플릿 (6종) ============ -->
+<div class="section"><span class="num">3</span>개통 알림톡 메시지 템플릿 (6종)</div>
+
+<!-- 1. 무선개통신규 -->
+<div class="msg-card">
+  <div class="header">① 무선개통신규 (휴대폰)</div>
+  <pre>{{고객명}} 고객님!
+{{개통일}} 정상적으로 개통 완료되었습니다🎉
+봉이모바일 {{매장명}}에서 구매해 주셔서 감사합니다🙏
+
+☑️가입정보 안내
+· 통신사 : {{통신사}}
+· 가입요금제 : {{요금제명}}
+· 요금제 변경가능일 : {{변경가능일}}
+· 부가서비스명 : {{부가서비스목록}}
+· 부가서비스 해지가능일 : {{해지가능일}}
+· 기기변경 가능일 : 개통일 기준 {{기변M}}개월 이후
+
+📢 [필독] 부가서비스 해지·요금제 변경 가능일 도래 시 알림톡 안내드립니다!</pre>
+  <div class="footer">변수: 고객명·개통일·매장명·통신사·요금제명·변경가능일·부가서비스목록·해지가능일·기변M (보통 18M)</div>
+</div>
+
+<!-- 2. 유선개통신규 -->
+<div class="msg-card">
+  <div class="header">② 유선개통신규 (인터넷+TV)</div>
+  <pre>{{고객명}} 고객님!
+{{설치일}} 정상적으로 설치 완료되었습니다🎉
+
+☑️가입정보 안내
+· 가입 상품명 : {{상품명}}
+· 요금제 변경 가능일 : {{변경가능일}}
+· 해지 가능일 : {{해지가능일}}
+
+📢 [필독] 요금제 변경·해지 가능일 도래 시 알림톡 안내드립니다!</pre>
+  <div class="footer">변수: 고객명·설치일·상품명 (예: '안심보상500M VOD+4K')·변경가능일 (+12M)·해지가능일 (+36M)</div>
+</div>
+
+<!-- 3. 유심개통신규 (MNO+MVNO 공통) -->
+<div class="msg-card">
+  <div class="header">③ 유심개통신규 (MNO) / ④ 유심개통신규 (MVNO)</div>
+  <pre>WELCOME
+개통 완료 안내🔔
+
+안녕하세요 {{고객명}} 고객님!
+{{개통일}} 유심이 정상적으로 개통 완료되었습니다🎉
+봉이모바일 {{매장명_or_봉이알뜰폰}}을 이용해 주셔서 감사합니다🙏
+
+☑️가입정보 안내
+· 통신사 : {{통신사}}
+· 가입요금제 : {{요금제명}}
+· 약정만료일 : {{약정만료일_or_무약정}}
+· 최소 유지기간 종료일 : {{최소유지기한}}
+
+📢 [필독] 환수금/위약금 발생 조건 안내
+1. 최소유지기간 이전 해지/번호이동 시 지원금 환수금 발생 가능
+2. 최소유지기간 이후라도 약정만료일 이전 해지 시 위약금 발생 가능
+3. 환수금/위약금 회피 → 최소유지기간 + 약정만료일까지 유지
+
+채널 추가하고 이 채널의 마케팅 메시지 받기
+[채널 추가]</pre>
+  <div class="footer">변수: 고객명·개통일·매장명·통신사·요금제명·약정만료일·최소유지기한 (MVNO는 약정만료일="무약정" 고정)</div>
+</div>
+
+<!-- 5. 부가서비스 해지 리마인드 -->
+<div class="msg-card">
+  <div class="header">⑤ 부가서비스 해지가능일 리마인드 (cron D-3)</div>
+  <pre>REMINDER
+🔔부가서비스 해지 가능일 안내
+
+안녕하세요 {{고객명}} 고객님!
+봉이모바일에서 {{개통일}} 개통 시 가입하신 일부 부가서비스의 해지 가능일 안내드립니다.
+
+· 해지 가능일 : {{해지가능일}}
+
+📌 유의사항
+· 114 고객센터 또는 통신사 앱/홈페이지에서 해지 가능
+· 요금제·프로모션에 따라 해지 가능일이 달라질 수 있음
+· 부가서비스마다 해지 가능일이 다를 수 있으니 가입 시 받은 원본 서류 확인
+
+[채널 추가] [봉이모바일 홈페이지]</pre>
+  <div class="footer">조회: 무선 + MNO 유심 가입자 / 트리거: 해지가능일 - 3일 cron</div>
+</div>
+
+<!-- 6. 요금제 변경 리마인드 -->
+<div class="msg-card">
+  <div class="header">⑥ 요금제 변경 가능일 리마인드 (cron D-3)</div>
+  <pre>REMINDER
+🔔요금제 변경 가능일 안내
+
+안녕하세요 {{고객명}} 고객님!
+봉이모바일에서 개통 후 요청하셨던 필수사용 요금제의 변경 가능일이 도래하여 안내드립니다.
+
+· 가입 통신사 : {{통신사}}
+· 현재 요금제 : {{현재요금제}}
+· 요금제 변경 가능일 : {{변경가능일}}
+
+📌 유의사항
+· 114 고객센터 또는 통신사 앱/홈페이지에서 변경 가능
+· 통신사·프로모션·지원 조건에 따라 변경 가능한 최저 요금제 기준 상이
+· 요금제 변경 시 지원금 환수(위약금) 발생 가능 → 가입 시 받은 원본 서류 확인
+
+[채널 추가] [봉이모바일 홈페이지]</pre>
+  <div class="footer">조회: 무선 + MNO 유심 가입자 (필수사용 요금제 가입자만) / 트리거: 변경가능일 - 3일 cron</div>
+</div>
+
+<!-- ============ 4. 통신사별 D-day 계산 룰 ============ -->
+<div class="section"><span class="num">4</span>통신사별 D-day 계산 룰</div>
+<table>
+  <thead><tr><th>구분</th><th>SKT</th><th>KT</th><th>LG U+</th><th>비고</th></tr></thead>
+  <tbody>
+    <tr><td><strong>요금제 변경가능일 (무선)</strong></td><td colspan="3" style="text-align:center">개통일 <b>+185일</b> 공통</td><td>휴대폰</td></tr>
+    <tr><td><strong>부가서비스 해지가능일</strong></td><td class="mono">EOMONTH(M, 2) + 2일</td><td class="mono">EOMONTH(M, 3) + 2일</td><td class="mono">M + 100일</td><td>SKT: 개통월말+2개월+2일</td></tr>
+    <tr><td><strong>최소유지기한 (유심 MNO·MVNO)</strong></td><td class="mono">EOMONTH(M, 6) + 2일</td><td class="mono">M + 185일</td><td class="mono">M + 185일</td><td>유심</td></tr>
+    <tr><td><strong>약정만료일</strong></td><td colspan="3" style="text-align:center"><span class="mono">EDATE(개통일, 약정개월)</span></td><td>12/24M 약정 / MVNO는 무약정</td></tr>
+    <tr><td><strong>기기변경 가능일</strong></td><td colspan="3" style="text-align:center">개통일 <b>+18개월</b> 공통</td><td>휴대폰</td></tr>
+    <tr><td><strong>요금제 변경가능일 (유선)</strong></td><td colspan="3" style="text-align:center">개통일 <b>+12개월</b> 공통</td><td>인터넷+TV</td></tr>
+    <tr><td><strong>해지가능일 (유선)</strong></td><td colspan="3" style="text-align:center">개통일 <b>+36개월</b> 공통</td><td>인터넷+TV</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  📌 <b>Postgres 수식 예시</b> (서버에서 계산):
+  <pre class="mono" style="background:#fff;padding:10px;border-radius:6px;margin-top:6px;color:#1a1a1a">
+-- 부가서비스 해지가능일 (통신사별)
+CASE
+  WHEN carrier LIKE '%SK%' THEN (date_trunc('month', activation_date) + interval '3 month' - interval '1 day')::date + 2
+  WHEN carrier LIKE '%KT%' THEN (date_trunc('month', activation_date) + interval '4 month' - interval '1 day')::date + 2
+  WHEN carrier LIKE '%LG%' THEN activation_date + 100
+END AS addon_cancellable_date</pre>
+</div>
+
+<!-- ============ 5. 트리거 시스템 (3가지) ============ -->
+<div class="section"><span class="num">5</span>트리거 시스템 (3가지 모드)</div>
+
+<div style="font-size:14px;font-weight:800;margin-bottom:6px">🟢 즉시 발송 (개통 완료 시)</div>
+<div class="flow-trigger">
+  <div class="flow-step db"><div class="lbl">STEP 1</div><div class="ic">📋</div><div class="name">개통 DB<br><span class="mono" style="font-size:9px">status='activated'</span></div></div>
+  <div class="flow-arr">▶</div>
+  <div class="flow-step engine"><div class="lbl">STEP 2</div><div class="ic">⚡</div><div class="name">Postgres Trigger<br>(NOTIFY)</div></div>
+  <div class="flow-arr">▶</div>
+  <div class="flow-step api"><div class="lbl">STEP 3</div><div class="ic">🔧</div><div class="name">Edge Function<br>(템플릿 + 변수 매핑)</div></div>
+  <div class="flow-arr">▶</div>
+  <div class="flow-step send"><div class="lbl">STEP 4</div><div class="ic">📤</div><div class="name">카카오 알림톡 API<br>발송 + 로그</div></div>
+</div>
+
+<div style="font-size:14px;font-weight:800;margin:14px 0 6px">🟡 cron 리마인드 (D-day 도래)</div>
+<div class="flow-trigger">
+  <div class="flow-step db"><div class="lbl">STEP 1</div><div class="ic">⏰</div><div class="name">pg_cron 일배치<br><span class="mono" style="font-size:9px">매일 09:00</span></div></div>
+  <div class="flow-arr">▶</div>
+  <div class="flow-step engine"><div class="lbl">STEP 2</div><div class="ic">🔍</div><div class="name">개통 DB 조회<br>(D-3 + 미발송)</div></div>
+  <div class="flow-arr">▶</div>
+  <div class="flow-step api"><div class="lbl">STEP 3</div><div class="ic">🔧</div><div class="name">템플릿 + 변수 매핑</div></div>
+  <div class="flow-arr">▶</div>
+  <div class="flow-step send"><div class="lbl">STEP 4</div><div class="ic">📤</div><div class="name">카카오 알림톡 발송</div></div>
+</div>
+
+<div style="font-size:14px;font-weight:800;margin:14px 0 6px">🔴 SMS fallback (알림톡 실패)</div>
+<div class="flow-trigger">
+  <div class="flow-step send"><div class="lbl">STEP 1</div><div class="ic">📤</div><div class="name">알림톡 발송 시도</div></div>
+  <div class="flow-arr">▶</div>
+  <div class="flow-step api"><div class="lbl">STEP 2</div><div class="ic">⚠️</div><div class="name">실패 응답<br>(채널 미추가 등)</div></div>
+  <div class="flow-arr">▶</div>
+  <div class="flow-step engine"><div class="lbl">STEP 3</div><div class="ic">🔄</div><div class="name">로그 + SMS 대기열</div></div>
+  <div class="flow-arr">▶</div>
+  <div class="flow-step send"><div class="lbl">STEP 4</div><div class="ic">📩</div><div class="name">SMS/LMS 발송<br>(Naver Cloud)</div></div>
+</div>
+
+<!-- ============ 6. DB 스키마 (3 신규 테이블) ============ -->
+<div class="section"><span class="num">6</span>DB 스키마 (3 신규 테이블)</div>
+<div class="schema">
+<span class="kw">CREATE TABLE</span> <span class="tbl">bongi_notification_templates</span> (
+  id                <span class="typ">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  code              <span class="typ">TEXT UNIQUE NOT NULL</span>,         <span class="cmt">-- 'WIRELESS_NEW' · 'USIM_MNO_NEW' · 'USIM_MVNO_NEW' · 'WIRED_NEW' · 'ADDON_REMIND' · 'PLAN_REMIND'</span>
+  category          <span class="typ">TEXT NOT NULL</span>,                <span class="cmt">-- '개통/법정' · '마케팅' · '운영'</span>
+  channel           <span class="typ">TEXT NOT NULL</span>,                <span class="cmt">-- 'kakao' · 'push' · 'sms'</span>
+  title             <span class="typ">TEXT NOT NULL</span>,
+  body              <span class="typ">TEXT NOT NULL</span>,                <span class="cmt">-- 변수 {{고객명}} 등 포함</span>
+  variables         <span class="typ">JSONB</span>,                       <span class="cmt">-- [{key:'고객명', from:'name', type:'string'}, ...]</span>
+  buttons           <span class="typ">JSONB</span>,                       <span class="cmt">-- [{label:'채널 추가', url:'...'}]</span>
+  is_active         <span class="typ">BOOLEAN DEFAULT</span> true,
+  carrier_rules     <span class="typ">JSONB</span>,                       <span class="cmt">-- {SKT:'EOMONTH(M,2)+2', KT:'...', LG:'M+100'}</span>
+  created_at        <span class="typ">TIMESTAMPTZ DEFAULT</span> now(),
+  updated_at        <span class="typ">TIMESTAMPTZ DEFAULT</span> now()
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tbl">bongi_notification_logs</span> (
+  id                <span class="typ">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  template_code     <span class="typ">TEXT REFERENCES</span> bongi_notification_templates(code),
+  customer_id       <span class="typ">UUID REFERENCES</span> bongi_customers(id),
+  source_table      <span class="typ">TEXT</span>,                        <span class="cmt">-- 'incentive_sales' · 'bongi_mvno_subscriptions' 등</span>
+  source_id         <span class="typ">UUID</span>,                        <span class="cmt">-- 트리거 row id</span>
+  channel           <span class="typ">TEXT NOT NULL</span>,                <span class="cmt">-- 실제 발송 채널</span>
+  recipient_phone   <span class="typ">TEXT NOT NULL</span>,
+  rendered_body     <span class="typ">TEXT</span>,                       <span class="cmt">-- 변수 치환 후 최종 본문</span>
+  status            <span class="typ">TEXT NOT NULL</span>,                <span class="cmt">-- 'queued' · 'sent' · 'delivered' · 'failed' · 'fallback_sms'</span>
+  provider_response <span class="typ">JSONB</span>,                       <span class="cmt">-- 채널톡/카카오 API 응답</span>
+  failed_reason     <span class="typ">TEXT</span>,
+  scheduled_at      <span class="typ">TIMESTAMPTZ</span>,                  <span class="cmt">-- D-3 cron의 경우 예약 시각</span>
+  sent_at           <span class="typ">TIMESTAMPTZ</span>,
+  delivered_at      <span class="typ">TIMESTAMPTZ</span>,
+  cost_krw          <span class="typ">INTEGER</span>,                     <span class="cmt">-- 발송 비용 (정산용)</span>
+  created_at        <span class="typ">TIMESTAMPTZ DEFAULT</span> now()
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tbl">bongi_notification_settings</span> (
+  id                <span class="typ">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  template_code     <span class="typ">TEXT REFERENCES</span> bongi_notification_templates(code),
+  trigger_type      <span class="typ">TEXT NOT NULL</span>,                <span class="cmt">-- 'instant' · 'cron'</span>
+  cron_expression   <span class="typ">TEXT</span>,                        <span class="cmt">-- '0 9 * * *' (매일 9시)</span>
+  days_before       <span class="typ">INTEGER</span>,                     <span class="cmt">-- D-3 · D-7 · D-1</span>
+  fallback_enabled  <span class="typ">BOOLEAN DEFAULT</span> true,         <span class="cmt">-- SMS fallback on/off</span>
+  enabled           <span class="typ">BOOLEAN DEFAULT</span> true,
+  updated_at        <span class="typ">TIMESTAMPTZ DEFAULT</span> now()
+);
+
+<span class="cmt">-- 트리거 함수 (개통 즉시 발송)</span>
+<span class="kw">CREATE FUNCTION</span> <span class="tbl">notify_on_activation</span>() <span class="kw">RETURNS</span> trigger <span class="kw">AS</span> $$
+<span class="kw">BEGIN</span>
+  <span class="kw">IF</span> NEW.status = 'activated' <span class="kw">AND</span> (OLD.status <span class="kw">IS</span> NULL <span class="kw">OR</span> OLD.status != 'activated') <span class="kw">THEN</span>
+    <span class="kw">INSERT INTO</span> <span class="tbl">bongi_notification_logs</span> (template_code, source_table, source_id, customer_id, recipient_phone, status, scheduled_at)
+    <span class="kw">VALUES</span> ('WIRELESS_NEW', TG_TABLE_NAME, NEW.id, NEW.customer_id, NEW.phone, 'queued', now());
+    <span class="kw">PERFORM</span> pg_notify('notification_queue', NEW.id::text);
+  <span class="kw">END IF</span>;
+  <span class="kw">RETURN</span> NEW;
+<span class="kw">END</span>; $$ <span class="kw">LANGUAGE</span> plpgsql;
+</div>
+
+<!-- ============ 7. 카카오 알림톡 API 연동 ============ -->
+<div class="section"><span class="num">7</span>카카오 알림톡 API 연동 spec</div>
+<table>
+  <thead><tr><th style="width:140px">항목</th><th>값</th></tr></thead>
+  <tbody>
+    <tr><td><b>제공사</b></td><td>카카오 비즈메시지 (Bizmessage) 또는 발송 대행사 (Aligo·Solapi·NHN Toast 등)</td></tr>
+    <tr><td><b>API 문서</b></td><td>대행사별 상이 (Solapi 추천: developers.solapi.com)</td></tr>
+    <tr><td><b>인증</b></td><td>API Key + Secret (env)</td></tr>
+    <tr><td><b>발송 endpoint</b></td><td class="mono">POST https://api.solapi.com/messages/v4/send</td></tr>
+    <tr><td><b>템플릿 등록</b></td><td>카카오 비즈센터에 사전 승인된 템플릿 코드 사용 (검수 1~3일)</td></tr>
+    <tr><td><b>발송 단위</b></td><td>고객 1명당 1 message · 변수 치환 후 발송</td></tr>
+    <tr><td><b>실패 사유</b></td><td>비활성 사용자·전화번호 오류·발송 제한 (광고성)</td></tr>
+    <tr><td><b>응답 처리</b></td><td>provider_response JSONB 저장 · 실패 시 SMS fallback queue 자동</td></tr>
+    <tr><td><b>비용</b></td><td>알림톡 건당 <b>8~12원</b> · SMS fallback 건당 20~80원</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ 8. 어드민 API ============ -->
+<div class="section"><span class="num">8</span>어드민 API endpoints</div>
+<table>
+  <thead><tr><th style="width:280px">Endpoint</th><th>설명</th><th style="width:80px">권한</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">GET /api/notifications/logs</td><td>발송 이력 조회 (필터: 채널·status·기간·고객·템플릿)</td><td>admin·manager</td></tr>
+    <tr><td class="mono">POST /api/notifications/send</td><td>수동 발송 (template_code + customer_id + 변수)</td><td>admin·manager</td></tr>
+    <tr><td class="mono">POST /api/notifications/retry</td><td>실패 건 재발송</td><td>admin·manager</td></tr>
+    <tr><td class="mono">GET /api/notifications/templates</td><td>템플릿 목록 (6 개통 + 2 마케팅 + ...)</td><td>admin</td></tr>
+    <tr><td class="mono">POST /api/notifications/templates</td><td>템플릿 신규/편집 (메시지·변수·버튼)</td><td>admin</td></tr>
+    <tr><td class="mono">GET /api/notifications/settings</td><td>트리거 정책 (cron·D-day·on/off)</td><td>admin</td></tr>
+    <tr><td class="mono">PATCH /api/notifications/settings/{code}</td><td>트리거 정책 편집</td><td>admin</td></tr>
+    <tr><td class="mono">GET /api/notifications/stats</td><td>월별 발송 통계 (건수·비용·실패율)</td><td>admin·manager</td></tr>
+    <tr><td class="mono">POST /api/notifications/test</td><td>테스트 발송 (특정 번호로 즉시)</td><td>admin</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ 9. 어드민 메뉴 구성 ============ -->
+<div class="section"><span class="num">9</span>어드민 메뉴 — 🔔 알림 관리</div>
+<table>
+  <thead><tr><th style="width:30px">#</th><th style="width:180px">메뉴</th><th>기능</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><b>발송 이력</b></td><td>채널·기간·status·고객 필터, 상세 보기, 재발송 버튼</td></tr>
+    <tr><td>2</td><td><b>템플릿 관리</b></td><td>알림톡 6 + 마케팅 2 + 운영 N 종 편집 (메시지·변수·버튼·통신사 룰)</td></tr>
+    <tr><td>3</td><td><b>트리거 정책</b></td><td>즉시/cron 분리, D-3·D-7 변경, on/off 토글, SMS fallback on/off</td></tr>
+    <tr><td>4</td><td><b>통계</b></td><td>월별 발송 건수·비용·실패율·채널별 분포·통신사별 KPI</td></tr>
+    <tr><td>5</td><td><b>테스트 발송</b></td><td>특정 번호로 즉시 테스트 (운영 검증)</td></tr>
+    <tr><td>6</td><td><b>실패 큐 + SMS fallback</b></td><td>실패 건 자동 SMS 전환 + 수동 재발송</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ 10. 작업 Phase ============ -->
+<div class="section"><span class="num">10</span>작업 Phase (총 13일)</div>
+<div class="phase-grid">
+  <div class="phase"><div class="p">Phase 1</div><div class="num-big">1d</div><div class="name">DB 마이그레이션</div><div class="days">3 테이블 + RLS</div></div>
+  <div class="phase"><div class="p">Phase 2</div><div class="num-big">3d</div><div class="name">트리거 시스템</div><div class="days">Postgres + Edge Function</div></div>
+  <div class="phase"><div class="p">Phase 3</div><div class="num-big">2d</div><div class="name">채널톡 API 연동</div><div class="days">SDK + 인증 + 발송</div></div>
+  <div class="phase"><div class="p">Phase 4</div><div class="num-big">3d</div><div class="name">어드민 UI</div><div class="days">발송 이력·템플릿·정책</div></div>
+  <div class="phase"><div class="p">Phase 5</div><div class="num-big">2d</div><div class="name">cron 리마인드</div><div class="days">pg_cron + D-3</div></div>
+  <div class="phase"><div class="p">Phase 6</div><div class="num-big">2d</div><div class="name">SMS fallback + 테스트</div><div class="days">Naver Cloud + E2E</div></div>
+</div>
+
+<!-- ============ 11. 핸드오프 패키지 ============ -->
+<div class="section"><span class="num">11</span>핸드오프 패키지 (개발 산출물)</div>
+<table>
+  <thead><tr><th style="width:280px">파일</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">docs/handoff/notification-2026-06-08/README.md</td><td>개요·환경·작업 순서</td></tr>
+    <tr><td class="mono">.../db-schema.sql</td><td>3 테이블 + 트리거 함수 + RLS</td></tr>
+    <tr><td class="mono">.../templates.md</td><td>알림톡 6종 메시지 + 변수 자세히</td></tr>
+    <tr><td class="mono">.../data-rules.md</td><td>통신사별 D-day Postgres 수식</td></tr>
+    <tr><td class="mono">.../kakao-alimtalk-integration.md</td><td>카카오 알림톡 API (Solapi 등) 인증·템플릿·발송 구현</td></tr>
+    <tr><td class="mono">.../api-endpoints.md</td><td>9개 어드민 API 사양</td></tr>
+    <tr><td class="mono">.../wf-admin-logs.html</td><td>발송 이력 화면 mockup</td></tr>
+    <tr><td class="mono">.../wf-admin-templates.html</td><td>템플릿 편집 화면 mockup</td></tr>
+    <tr><td class="mono">.../wf-admin-settings.html</td><td>트리거 정책 화면 mockup</td></tr>
+  </tbody>
+</table>
+
+<div class="note" style="margin-top:18px">
+  💡 <b>현재 단계</b>: 본 flow-notifications.html이 메인 설계 문서. 다음 단계로 위 핸드오프 패키지 9개 파일 작성 + 어드민 wireframe 3개 mockup 진행.
+</div>
+
+</body></html>
