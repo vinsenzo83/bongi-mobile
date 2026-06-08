@@ -2230,15 +2230,15 @@ td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top
   </div>
 
   <!-- 워치 5대 핵심 룰 -->
-  <div style="font-size:13px;font-weight:900;color:#065f46;margin-bottom:8px">📌 워치 판매 5대 룰 (TM·매장 운영 필수)</div>
+  <div style="font-size:13px;font-weight:900;color:#065f46;margin-bottom:8px">📌 워치 판매 5대 룰 (매장 운영 필수)</div>
   <table style="margin-bottom:14px">
     <thead><tr><th style="width:50px">#</th><th style="width:220px">룰</th><th>상세</th></tr></thead>
     <tbody>
-      <tr><td>1</td><td><b>휴대폰 기종별 워치 가격 변동</b></td><td>메인 휴대폰 기종(갤럭시 S26·Z Flip7·Apple 15 등)에 따라 <b>워치 판매 단가가 달라짐</b>. 갤럭시 시리즈 + Galaxy Watch 묶음이 가장 유리</td></tr>
-      <tr><td>2</td><td><b>휴대폰 가격에 영향</b></td><td>워치를 함께 가입하면 <b>메인 휴대폰의 매장지원금·현금 사은품에도 영향</b>. 일반적으로 워치 추가 시 메인 휴대폰 단가가 일부 상승 (조정 협의)</td></tr>
-      <tr><td>3</td><td><b>동시판매 불가 케이스</b></td><td>일부 휴대폰 기종은 <b>워치 동시판매 불가</b> (통신사 정책 · 프로모션 한정 · 특가 모델 등). 매장 시세 입력 시 "동시판매 불가" 플래그 필수</td></tr>
-      <tr><td>4</td><td><b>워치 판매가 노출 필수</b></td><td>TM·고객에게 <b>워치 판매 가격을 별도 노출</b>. 묶음 가격 X · 워치 단독 단가 명시 (메인 휴대폰과 분리 표기)</td></tr>
-      <tr><td>5</td><td><b>요금제별 워치 무료 조건</b></td><td>메인 요금제가 일정 금액 이상일 때 <b>워치 요금제 무료</b>:<br>· <b>SKT</b>: 89,000원 이상 → 워치 요금 무료<br>· <b>LG U+</b>: 95,000원 이상 → 워치 요금 무료<br>· <b>KT</b>: 100,000원 이상 → 워치 요금 무료</td></tr>
+      <tr><td>1</td><td><b>휴대폰 기종 ↔ 워치 가격 매핑</b></td><td>메인 휴대폰 기종마다 <b>워치 동시판매 시 적용 단가가 다름</b>. 어드민에서 <span class="mono">phone_discount_map</span> JSONB로 (기종 → 할인/상승/불가) 매핑 입력. 갤럭시 + Galaxy Watch 조합이 보통 유리</td></tr>
+      <tr><td>2</td><td><b>휴대폰 단가 조정 (할인/상승)</b></td><td>워치 동시판매 시 메인 휴대폰 단가에 <b>음수(추가 할인)</b> 또는 <b>양수(단가 상승)</b> 자동 반영. 어드민 <span class="mono">phone_extra_discount</span> 컬럼에 매장·기종·통신사별 자유 입력</td></tr>
+      <tr><td>3</td><td><b>동시판매 불가 플래그</b></td><td>특정 휴대폰 기종은 워치 동시판매 ❌ (통신사 정책·특가 모델·한정 프로모). 어드민에서 <b>"동시판매 불가" 플래그</b> 설정 시 휴대폰 신청 form의 워치 토글 자동 비활성화</td></tr>
+      <tr><td>4</td><td><b>워치 판가 별도 노출 (분리 표기)</b></td><td>고객에게 <b>워치 단독 단가를 별도로 노출</b>. 휴대폰 + 워치 묶음 합산 가격으로만 표시 ❌ · 휴대폰 X원 + 워치 Y원 = 합계 Z원 분리 표기. 영수증·계약서·신청 form 모두 동일</td></tr>
+      <tr><td>5</td><td><b>요금제별 워치 무료 조건</b></td><td>메인 요금제가 일정 금액 이상이면 <b>워치 요금제 자동 무료</b>:<br>· <b>SKT</b>: 89,000원 이상 → 워치 요금 무료<br>· <b>LG U+</b>: 95,000원 이상 → 워치 요금 무료<br>· <b>KT</b>: 100,000원 이상 → 워치 요금 무료<br>(조건 미충족 시 워치 요금제 별도 청구)</td></tr>
     </tbody>
   </table>
 
