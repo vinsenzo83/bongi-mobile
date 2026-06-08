@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>봉이모바일 — 💰 유선 + 유심(MNO) 현금지급 LP</title>
+<title>봉이모바일 — 💰 TM 유선·유심 신청 페이지</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Pretendard:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f8f7f4;--bg2:#fff;--border:#e2ddd6;--navy:#1a2744;--blue:#2563eb;--orange:#d97706;--green:#059669;--pink:#ec4899;--purple:#7c3aed;--red:#dc2626;--text:#1a1a1a;--text2:#4a4a4a;--text3:#8a8a8a}
@@ -19,417 +19,184 @@ table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:t
 .b-red{background:#fee2e2;color:#dc2626}.b-orange{background:#fef3c7;color:#92400e}.b-gray{background:#f3f4f6;color:#6a6a6a}.b-green{background:#dcfce7;color:#16a34a}.b-blue{background:#dbeafe;color:#1e3a8a}
 .mono{font-family:'JetBrains Mono',monospace;font-size:11px}
 .note{background:#eff6ff;border-left:3px solid var(--blue);border-radius:6px;padding:10px 14px;font-size:11.5px;color:var(--navy);line-height:1.7;margin-top:10px}
-.warn{background:#fef2f2;border-left:3px solid var(--red);border-radius:6px;padding:10px 14px;font-size:11.5px;color:var(--red);line-height:1.7;margin-top:10px}
 
-/* LP mockup 컨테이너 */
-.lp-box{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px}
-.lp-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed var(--border)}
-.lp-head .lp-ic{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0}
-.lp-head .lp-ttl{font-size:15px;font-weight:900;color:var(--navy)}
-.lp-head .lp-sub{font-size:11.5px;color:var(--text3);margin-top:2px}
+/* TM 상담사 폼 mockup */
+.tm-box{background:#0f172a;border-radius:12px;padding:16px;color:#e2e8f0;font-family:'Pretendard',sans-serif;font-size:11.5px}
+.tm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.tm-head .ttl{font-size:14px;font-weight:900;color:#fbbf24}
+.tm-grid{display:grid;grid-template-columns:300px 1fr;gap:14px}
+.tm-call-card{background:#1e293b;border:1px solid #334155;border-radius:9px;padding:13px}
+.tm-call-card .ic{font-size:28px;text-align:center;margin-bottom:6px}
+.tm-call-card .name{font-size:13px;font-weight:900;text-align:center;margin-bottom:3px}
+.tm-call-card .phone{font-size:11px;color:#94a3b8;text-align:center;margin-bottom:10px;font-family:monospace}
+.tm-call-card .row{display:flex;justify-content:space-between;padding:4px 0;font-size:10.5px;color:#cbd5e1;border-top:1px solid #334155}
+.tm-call-card .row b{color:#fff}
+.tm-call-card .actions{display:flex;gap:5px;margin-top:8px}
+.tm-call-card .actions button{flex:1;padding:6px;border-radius:5px;border:none;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-call{background:#16a34a;color:#fff}.btn-end{background:#ef4444;color:#fff}.btn-note{background:#334155;color:#fbbf24}
 
-/* LP mockup: hero */
-.lp-hero{background:linear-gradient(135deg,#1e3a8a,#3b82f6);border-radius:12px;padding:28px 24px;color:#fff;text-align:center;margin-bottom:14px;font-family:'Pretendard',sans-serif}
-.lp-hero.usim{background:linear-gradient(135deg,#7c2d12,#ea580c)}
-.lp-hero .badge-top{display:inline-block;background:#fbbf24;color:#7c2d12;font-size:11px;font-weight:800;padding:4px 11px;border-radius:99px;margin-bottom:10px}
-.lp-hero h2{font-size:26px;font-weight:900;margin-bottom:6px;letter-spacing:-0.5px}
-.lp-hero h2 .cash{color:#fbbf24}
-.lp-hero p{font-size:13px;opacity:.9;margin-bottom:14px}
-.lp-hero .cta-big{display:inline-block;background:#fbbf24;color:#7c2d12;padding:13px 28px;border-radius:99px;font-size:14px;font-weight:900;cursor:pointer}
+.tm-form{background:#1e293b;border:1px solid #334155;border-radius:9px;padding:14px}
+.tm-tab-row{display:flex;gap:6px;margin-bottom:12px}
+.tm-tab{padding:7px 14px;background:#0c1424;border:1px solid #334155;color:#94a3b8;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer}
+.tm-tab.act{background:#fbbf24;color:#0f172a;border-color:#fbbf24;font-weight:800}
+.tm-row{display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin-bottom:7px;font-size:11px}
+.tm-row .lbl{font-weight:700;color:#94a3b8}
+.tm-row .req{color:#ef4444}
+.tm-input{background:#0c1424;border:1px solid #334155;color:#e2e8f0;padding:7px 10px;border-radius:6px;font-size:11px;width:100%;font-family:inherit}
+.tm-input.filled{color:#fff;font-weight:600}
+.tm-chip-row{display:flex;gap:4px;flex-wrap:wrap}
+.tm-chip{padding:5px 11px;background:#0c1424;border:1px solid #334155;color:#94a3b8;border-radius:5px;font-size:10.5px;font-weight:700;cursor:pointer}
+.tm-chip.act{background:#fbbf24;color:#0f172a;border-color:#fbbf24}
+.tm-row.row2{grid-template-columns:90px 1fr 1fr;gap:6px}
+.tm-cta{background:#fbbf24;color:#0f172a;border:none;padding:11px;border-radius:8px;font-size:12.5px;font-weight:900;cursor:pointer;font-family:inherit;width:100%;margin-top:8px}
 
-/* LP mockup: 요금제 카드 */
-.lp-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-.lp-plan{background:#fff;border:1.5px solid #e8e6f0;border-radius:10px;padding:14px;font-family:'Pretendard',sans-serif}
-.lp-plan.best{border-color:#ec4899;border-width:2.5px;position:relative}
-.lp-plan.best::before{content:'⭐ BEST';position:absolute;top:-9px;left:12px;background:#ec4899;color:#fff;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:800}
-.lp-plan .net{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800;color:#fff;margin-bottom:6px}
-.lp-plan .net.skt{background:#dc2626}.lp-plan .net.kt{background:#2563eb}.lp-plan .net.lgu{background:#ec4899}
-.lp-plan .nm{font-size:13px;font-weight:900;margin-bottom:3px}
-.lp-plan .data{font-size:11px;color:#6a6a6a;margin-bottom:8px}
-.lp-plan .price{font-size:18px;font-weight:900;color:#dc2626;margin-bottom:3px}
-.lp-plan .cash{background:#fef3c7;color:#92400e;font-size:11.5px;font-weight:800;padding:4px 8px;border-radius:5px;display:inline-block;margin-top:6px}
-
-/* LP mockup: form */
-.lp-form{background:#f8f7f0;border-radius:10px;padding:16px;font-family:'Pretendard',sans-serif}
-.lp-form .ttl{font-size:14px;font-weight:900;margin-bottom:10px}
-.lp-row{display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin-bottom:8px;font-size:11.5px}
-.lp-row .lbl{font-weight:800;color:#4a4a4a}
-.lp-row .chip-row{display:flex;gap:5px;flex-wrap:wrap}
-.lp-chip{padding:5px 11px;background:#fff;border:1.5px solid #e8e6f0;border-radius:7px;font-size:11px;font-weight:700;color:#4a4a4a}
-.lp-chip.act{background:#fbbf24;color:#7c2d12;border-color:#fbbf24}
-.lp-row input{background:#fff;border:1.5px solid #e8e6f0;padding:8px 12px;border-radius:7px;font-size:11.5px;width:100%;font-family:inherit}
-.lp-cta{background:#dc2626;color:#fff;border:none;padding:13px;border-radius:10px;font-size:13.5px;font-weight:900;cursor:pointer;font-family:inherit;width:100%;margin-top:10px}
-
-/* DB 스키마 */
-.schema{background:#0f172a;border-radius:12px;padding:18px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.6;overflow-x:auto}
-.schema .kw{color:#ec4899}.schema .typ{color:#fbbf24}.schema .cmt{color:#64748b}.schema .tbl{color:#6ee7b7;font-weight:800}
-
-/* Phase grid */
-.phase-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
-.phase{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px;text-align:center}
-.phase .p{font-size:10.5px;color:var(--text3);font-weight:800;text-transform:uppercase}
-.phase .num-big{font-size:24px;font-weight:900;color:var(--orange)}
-.phase .name{font-size:11.5px;font-weight:800;color:var(--navy);margin-top:3px}
-.phase .days{font-size:10px;color:var(--text3);margin-top:2px}
-
-/* 트리거 흐름 */
-.flow-trigger{display:grid;grid-template-columns:1fr 30px 1fr 30px 1fr 30px 1fr;gap:8px;align-items:center;margin:14px 0}
-.flow-step{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px;text-align:center}
-.flow-step .lbl{font-size:9.5px;color:var(--text3);font-weight:800;text-transform:uppercase;margin-bottom:4px}
-.flow-step .ic{font-size:18px;margin-bottom:4px}
-.flow-step .name{font-size:11.5px;font-weight:800;color:var(--navy)}
-.flow-step.user{background:#fef3c7;border-color:#fbbf24}.flow-step.db{background:#eff6ff;border-color:var(--blue)}
-.flow-step.admin{background:#f3e8ff;border-color:var(--purple)}.flow-step.cash{background:#dcfce7;border-color:var(--green)}
-.flow-arr{text-align:center;color:var(--text3);font-size:16px;font-weight:900}
-
-.warn-cash{background:#fef3c7;border:2px solid #fbbf24;border-radius:10px;padding:14px;font-size:12px;color:#78350f;line-height:1.6;margin-bottom:14px}
-.warn-cash strong{color:#92400e}
+/* CRM 연결 표시 */
+.crm-link{background:#dcfce7;border:1.5px solid #86efac;border-radius:8px;padding:11px 13px;font-size:11px;color:#15803d;line-height:1.5;margin-top:8px}
+.crm-link b{color:#065f46}
 </style></head><body>
 
-<h1>💰 봉이모바일 유선 + 유심(MNO) 현금지급 LP</h1>
-<div class="subtitle">flow-landing.html · 2026-06-08 · 인터넷+TV + 통신 3사 유심 판매 LP · 현금 즉시 지급</div>
+<h1>💰 봉이 TM 유선·유심 신청 페이지</h1>
+<div class="subtitle">flow-landing.html · 2026-06-08 · TM 상담사용 · 인터넷+TV·유심(MNO) 통화 중 입력 · CRM 기존 테이블 활용</div>
 
 <div class="hero">
-  📡 <strong>봉이모바일 유선·유심 신규 가입 LP</strong> — 인터넷+TV(유선) + 통신 3사 직접 유심(MNO) 판매. 사은품 X · <strong>현금 즉시 지급</strong> 단일 정책. 알뜰폰(MVNO)은 별도 <a href="flow-mvno.html">flow-mvno.html</a> 운영.
+  📞 <strong>TM 상담사 통화 중 신청 입력 화면</strong> — 콜DB 통화 진행 중 상담사가 화면에서 직접 입력. 별도 LP·광고·UTM 없음. 기존 CRM 테이블 활용 (incentive_sales · incentive_internet_tickets) · 현금 지급 + 알림톡 연동.
 </div>
 
-<!-- ============ 0. 핵심 정책 ============ -->
-<div class="section"><span class="num">0</span>핵심 정책</div>
-<div class="warn-cash">
-  💰 <strong>현금 지급 정책</strong> (메모리: project_bongi_gift_policy 기반)<br>
-  · <strong>사은품 X · 현금 단일 지급</strong> (고객이 가장 선호)<br>
-  · <strong>지급 시점</strong>: 개통 익일 즉시 (어드민 일괄 입금) — 봉이 신뢰도 핵심<br>
-  · <strong>지급 방식</strong>: 봉이 운영 계좌 → 고객 신청 계좌 자동이체<br>
-  · <strong>현금 금액</strong>: 상품별 차등 (인터넷 ~15만 · TV +5만 · 유심 ~10만)<br>
-  · <strong>법적 위약금 안내 필수</strong>: 현금 지급 받은 고객이 약정 기간 내 해지 시 환수 (가입 시 약관 동의)
-</div>
-
-<!-- ============ 1. LP 2개 구조 ============ -->
-<div class="section"><span class="num">1</span>LP 2개 구조</div>
+<!-- ============ 1. 핵심 정책 ============ -->
+<div class="section"><span class="num">1</span>핵심 정책</div>
 <table>
-  <thead><tr><th style="width:180px">LP</th><th>상품</th><th style="width:120px">URL</th><th style="width:120px">광고 키워드 (예시)</th></tr></thead>
+  <thead><tr><th style="width:160px">항목</th><th>내용</th></tr></thead>
   <tbody>
-    <tr><td><strong>유선 LP</strong></td><td>인터넷 + TV (KT/SKB/LGU+ 3사 통합 가입 대행)</td><td class="mono">/landing-wired</td><td>인터넷, IPTV, 인터넷+TV 결합</td></tr>
-    <tr><td><strong>유심 LP (MNO)</strong></td><td>통신 3사 직접 유심 (SKT/KT/LGU+ 본사 유심)</td><td class="mono">/landing-usim-mno</td><td>유심, 통신사 유심, 번호이동 유심</td></tr>
-    <tr><td><span style="color:#8a8a8a">알뜰폰 LP (MVNO)</span></td><td><span style="color:#8a8a8a">봉이 알뜰폰 자체 brand 15 SKU (별도 운영)</span></td><td class="mono"><a href="flow-mvno.html" style="color:#8a8a8a">flow-mvno.html</a></td><td><span style="color:#8a8a8a">별도</span></td></tr>
+    <tr><td><b>사용자</b></td><td>TM 상담사 (광주 콜센터 · 매장 상담사) — <b>고객 직접 신청 X</b></td></tr>
+    <tr><td><b>입력 방식</b></td><td>콜DB 통화 진행 중 화면 옆에 띄워두고 상담사가 듣고 입력</td></tr>
+    <tr><td><b>DB 저장</b></td><td>기존 CRM 테이블 활용 — 신규 테이블 ❌<br>· 유선 → <span class="mono">incentive_internet_tickets</span><br>· 유심(MNO) → <span class="mono">incentive_sales</span> (product_type='유심')</td></tr>
+    <tr><td><b>혜택 정책</b></td><td>사은품 X · <b>현금 즉시 지급</b> (개통 익일)</td></tr>
+    <tr><td><b>알림톡 연동</b></td><td><a href="flow-notifications.html">flow-notifications.html</a> — 신청 즉시 + 개통 완료 시 자동 발송</td></tr>
+    <tr><td><b>기능 범위</b></td><td><b>최소 기능</b> — 광고·UTM·A/B·랭킹·통계 모두 ❌ · 신청 폼 + 저장 + 알림톡만</td></tr>
   </tbody>
 </table>
 
-<!-- ============ 2. 유선 LP mockup ============ -->
-<div class="section"><span class="num">2</span>유선 LP (인터넷+TV) 디자인 mockup</div>
-<div class="lp-box">
-  <div class="lp-head">
-    <div class="lp-ic" style="background:#2563eb">🌐</div>
-    <div><div class="lp-ttl">인터넷 + TV 신청 LP</div><div class="lp-sub">현금 최대 30만원 즉시 지급 · 3사 통합</div></div>
+<!-- ============ 2. TM 상담사 화면 구조 ============ -->
+<div class="section"><span class="num">2</span>TM 상담사 화면 (통화 중 신청 입력)</div>
+<div class="tm-box">
+  <div class="tm-head">
+    <div class="ttl">📞 통화 중 신청 입력</div>
+    <div style="font-size:11px;color:#94a3b8">상담사: <b style="color:#fbbf24">김상담</b> · 광주센터 · 14:32 통화 중</div>
   </div>
 
-  <div class="lp-hero">
-    <div class="badge-top">🔥 인터넷 + TV 결합 가입</div>
-    <h2>지금 가입하고<br><span class="cash">현금 30만원</span> 받으세요</h2>
-    <p>KT · SKB · LG U+ 3사 통합 · 사은품 X · 현금 즉시 지급</p>
-    <div class="cta-big">📞 1분 상담 신청 →</div>
-  </div>
+  <div class="tm-grid">
+    <!-- 좌측: 통화 중 고객 정보 (콜DB) -->
+    <div>
+      <div class="tm-call-card">
+        <div class="ic">📞</div>
+        <div class="name">홍길동</div>
+        <div class="phone">010-1234-5678</div>
+        <div class="row"><span>등급</span><b>S급</b></div>
+        <div class="row"><span>유입</span><b>네이버 광고</b></div>
+        <div class="row"><span>관심</span><b>인터넷+TV</b></div>
+        <div class="row"><span>지역</span><b>광주광역시</b></div>
+        <div class="row"><span>분배</span><b>2026-06-08 14:15</b></div>
+        <div class="actions">
+          <button class="btn-call">📞 통화중</button>
+          <button class="btn-end">⏹️ 종료</button>
+          <button class="btn-note">📝 메모</button>
+        </div>
+      </div>
 
-  <div style="font-size:14px;font-weight:900;color:var(--navy);margin-bottom:8px">📋 가입 상품 선택</div>
-  <div class="lp-plans">
-    <div class="lp-plan">
-      <div class="net" style="background:#2563eb">KT</div>
-      <div class="nm">기가 인터넷 500M</div>
-      <div class="data">+TV 안심플랜</div>
-      <div class="price">월 27,500원</div>
-      <div class="cash">💰 현금 20만원</div>
+      <div class="crm-link">
+        💾 <b>CRM 연결</b>: 콜DB <span class="mono" style="background:rgba(255,255,255,0.5);padding:1px 4px;border-radius:3px">incentive_customer_db</span> 통화 중 → 신청 저장 시 자동으로 <span class="mono" style="background:rgba(255,255,255,0.5);padding:1px 4px;border-radius:3px">incentive_internet_tickets</span> 또는 <span class="mono" style="background:rgba(255,255,255,0.5);padding:1px 4px;border-radius:3px">incentive_sales</span>에 row insert.
+      </div>
     </div>
-    <div class="lp-plan best">
-      <div class="net" style="background:#dc2626">SKB</div>
-      <div class="nm">B인터넷 기가 + Btv</div>
-      <div class="data">기가 1G + 채널 240</div>
-      <div class="price">월 32,000원</div>
-      <div class="cash">💰 현금 30만원 (BEST)</div>
-    </div>
-    <div class="lp-plan">
-      <div class="net" style="background:#ec4899">LGU+</div>
-      <div class="nm">U+인터넷 + U+tv</div>
-      <div class="data">기가 1G + 프리미엄</div>
-      <div class="price">월 29,500원</div>
-      <div class="cash">💰 현금 25만원</div>
-    </div>
-  </div>
 
-  <div class="lp-form">
-    <div class="ttl">📝 1분 상담 신청 (즉시 연락)</div>
-    <div class="lp-row"><div class="lbl">이름 *</div><input value="홍길동"></div>
-    <div class="lp-row"><div class="lbl">연락처 *</div><input value="010-1234-5678"></div>
-    <div class="lp-row"><div class="lbl">희망 상품</div><div class="chip-row"><div class="lp-chip">KT</div><div class="lp-chip act">SKB</div><div class="lp-chip">LG U+</div><div class="lp-chip">3사 비교</div></div></div>
-    <div class="lp-row"><div class="lbl">결합 여부</div><div class="chip-row"><div class="lp-chip act">인터넷+TV</div><div class="lp-chip">인터넷만</div></div></div>
-    <div class="lp-row"><div class="lbl">현재 통신사</div><div class="chip-row"><div class="lp-chip">KT</div><div class="lp-chip">SKB</div><div class="lp-chip act">LG U+</div><div class="lp-chip">기타</div></div></div>
-    <div class="lp-row"><div class="lbl">희망 지역 *</div><input value="광주광역시 동구 충장로"></div>
-    <div class="lp-row"><div class="lbl">현금 입금 계좌</div><input value="국민은행 ****-****-****-1234"></div>
-    <button class="lp-cta">🔥 상담 신청 (15분 내 연락)</button>
-    <div style="font-size:9.5px;color:#8a8a8a;margin-top:8px;line-height:1.5">※ 신청 즉시 카카오 알림톡 발송 · 개통 시 현금 익일 입금 · 약정 36개월 내 해지 시 위약금 발생</div>
+    <!-- 우측: 신청 폼 -->
+    <div class="tm-form">
+      <div class="tm-tab-row">
+        <div class="tm-tab act">🌐 유선 (인터넷+TV)</div>
+        <div class="tm-tab">📱 유심 (MNO)</div>
+      </div>
+
+      <!-- 유선 폼 -->
+      <div class="tm-row"><div class="lbl">상품 <span class="req">*</span></div><div class="tm-chip-row"><div class="tm-chip">KT 인터넷</div><div class="tm-chip act">SKB 인터넷+TV</div><div class="tm-chip">LGU+ 인터넷+TV</div></div></div>
+      <div class="tm-row"><div class="lbl">속도</div><div class="tm-chip-row"><div class="tm-chip">100M</div><div class="tm-chip">500M</div><div class="tm-chip act">기가 1G</div><div class="tm-chip">기가 2.5G</div></div></div>
+      <div class="tm-row"><div class="lbl">결합</div><div class="tm-chip-row"><div class="tm-chip act">인터넷+TV</div><div class="tm-chip">인터넷만</div><div class="tm-chip">+ 전화</div></div></div>
+      <div class="tm-row"><div class="lbl">약정</div><div class="tm-chip-row"><div class="tm-chip">12M</div><div class="tm-chip">24M</div><div class="tm-chip act">36M</div></div></div>
+      <div class="tm-row"><div class="lbl">현재 통신사</div><div class="tm-chip-row"><div class="tm-chip">KT</div><div class="tm-chip">SKB</div><div class="tm-chip act">LGU+</div><div class="tm-chip">없음</div></div></div>
+      <div class="tm-row"><div class="lbl">설치 주소 <span class="req">*</span></div><input class="tm-input filled" value="광주광역시 동구 충장로 1 (111호)"></div>
+      <div class="tm-row row2"><div class="lbl">희망 설치일</div><input class="tm-input filled" value="2026-06-12"><input class="tm-input filled" value="오전 10시"></div>
+      <div class="tm-row"><div class="lbl">현금 지급</div><input class="tm-input filled" value="30만원 (SKB 인터넷+TV 결합)" style="color:#fbbf24"></div>
+      <div class="tm-row row2"><div class="lbl">입금 계좌 <span class="req">*</span></div><input class="tm-input filled" value="국민은행"><input class="tm-input filled" value="****-****-****-1234"></div>
+      <div class="tm-row"><div class="lbl">메모</div><input class="tm-input" placeholder="기타 안내 사항 (선택)"></div>
+
+      <div style="background:#0c1424;border:1px dashed #475569;border-radius:7px;padding:9px;margin-top:10px;font-size:10.5px;color:#cbd5e1;line-height:1.5">
+        ☑ 본인 명의 회선만 가입 가능<br>
+        ☑ 약정 36M 내 해지 시 현금 환수 + 위약금 발생<br>
+        ☑ 카카오 알림톡 발송 동의
+      </div>
+
+      <button class="tm-cta">💾 신청 저장 + 알림톡 자동 발송 →</button>
+    </div>
   </div>
 </div>
 
-<!-- ============ 3. 유심(MNO) LP mockup ============ -->
-<div class="section"><span class="num">3</span>유심 LP (MNO 3사) 디자인 mockup</div>
-<div class="lp-box">
-  <div class="lp-head">
-    <div class="lp-ic" style="background:#ea580c">📱</div>
-    <div><div class="lp-ttl">통신 3사 직접 유심 신청 LP</div><div class="lp-sub">현금 최대 10만원 즉시 지급 · 알뜰폰 X · 통신사 본사 유심</div></div>
-  </div>
-
-  <div class="lp-hero usim">
-    <div class="badge-top">📞 통신 3사 직접 유심 가입</div>
-    <h2>유심 가입하고<br><span class="cash">현금 10만원</span> 받으세요</h2>
-    <p>SKT · KT · LG U+ 본사 직접 유심 · 봉이 단독 채널 혜택 · 익일 입금</p>
-    <div class="cta-big">📞 1분 상담 신청 →</div>
-  </div>
-
-  <div style="font-size:14px;font-weight:900;color:var(--navy);margin-bottom:8px">📋 통신사 선택</div>
-  <div class="lp-plans">
-    <div class="lp-plan">
-      <div class="net skt">SKT</div>
-      <div class="nm">5G 슬림 + 보너스</div>
-      <div class="data">11GB + 매일 2GB</div>
-      <div class="price">월 33,000원</div>
-      <div class="cash">💰 현금 8만원</div>
-    </div>
-    <div class="lp-plan best">
-      <div class="net kt">KT</div>
-      <div class="nm">5G 베이직 (BEST)</div>
-      <div class="data">10GB + 매일 3GB</div>
-      <div class="price">월 35,000원</div>
-      <div class="cash">💰 현금 10만원 (BEST)</div>
-    </div>
-    <div class="lp-plan">
-      <div class="net lgu">LGU+</div>
-      <div class="nm">5G 라이트 플러스</div>
-      <div class="data">12GB + 매일 2GB</div>
-      <div class="price">월 32,500원</div>
-      <div class="cash">💰 현금 9만원</div>
-    </div>
-  </div>
-
-  <div class="lp-form">
-    <div class="ttl">📝 1분 상담 신청 (즉시 연락)</div>
-    <div class="lp-row"><div class="lbl">이름 *</div><input value="홍길동"></div>
-    <div class="lp-row"><div class="lbl">연락처 *</div><input value="010-1234-5678"></div>
-    <div class="lp-row"><div class="lbl">희망 통신사 *</div><div class="chip-row"><div class="lp-chip">SKT</div><div class="lp-chip act">KT</div><div class="lp-chip">LG U+</div></div></div>
-    <div class="lp-row"><div class="lbl">가입 유형 *</div><div class="chip-row"><div class="lp-chip">신규</div><div class="lp-chip act">번호이동 (MNP)</div></div></div>
-    <div class="lp-row"><div class="lbl">현재 통신사</div><div class="chip-row"><div class="lp-chip">SKT</div><div class="lp-chip">KT</div><div class="lp-chip act">LG U+</div><div class="lp-chip">알뜰폰</div></div></div>
-    <div class="lp-row"><div class="lbl">유심 종류</div><div class="chip-row"><div class="lp-chip act">일반 유심 (택배)</div><div class="lp-chip">eSIM</div></div></div>
-    <div class="lp-row"><div class="lbl">현금 입금 계좌</div><input value="국민은행 ****-****-****-1234"></div>
-    <button class="lp-cta">🔥 상담 신청 (15분 내 연락)</button>
-    <div style="font-size:9.5px;color:#8a8a8a;margin-top:8px;line-height:1.5">※ 신청 즉시 카카오 알림톡 발송 · 개통 시 현금 익일 입금 · 약정 24개월 내 해지 시 위약금 발생</div>
-  </div>
-</div>
-
-<!-- ============ 4. 신청 form 필수 필드 ============ -->
-<div class="section"><span class="num">4</span>신청 form 필수 필드 비교</div>
+<!-- ============ 3. CRM 테이블 매핑 ============ -->
+<div class="section"><span class="num">3</span>CRM 테이블 매핑 (기존 활용)</div>
 <table>
-  <thead><tr><th style="width:30px">#</th><th style="width:180px">필드</th><th>유선 LP</th><th>유심 LP</th><th style="width:90px">검증</th></tr></thead>
+  <thead><tr><th style="width:120px">상품</th><th style="width:240px">기존 테이블</th><th>저장 컬럼 (예시)</th></tr></thead>
   <tbody>
-    <tr><td>1</td><td><b>이름</b></td><td><span class="badge b-red">필수</span></td><td><span class="badge b-red">필수</span></td><td>2~10자</td></tr>
-    <tr><td>2</td><td><b>연락처</b> (휴대폰)</td><td><span class="badge b-red">필수</span></td><td><span class="badge b-red">필수</span></td><td>010-XXXX-XXXX</td></tr>
-    <tr><td>3</td><td><b>희망 상품 / 통신사</b></td><td><span class="badge b-red">KT·SKB·LGU+ 또는 3사 비교</span></td><td><span class="badge b-red">SKT·KT·LGU+</span></td><td>chip 4종 / 3종</td></tr>
-    <tr><td>4</td><td><b>가입 유형</b></td><td>—</td><td><span class="badge b-red">신규 / MNP</span></td><td>chip 2종</td></tr>
-    <tr><td>5</td><td><b>결합 여부</b></td><td><span class="badge b-orange">인터넷+TV / 인터넷만</span></td><td>—</td><td>chip 2종</td></tr>
-    <tr><td>6</td><td><b>유심 종류</b></td><td>—</td><td><span class="badge b-orange">일반 / eSIM</span></td><td>chip 2종</td></tr>
-    <tr><td>7</td><td><b>현재 통신사</b></td><td><span class="badge b-orange">선택</span></td><td><span class="badge b-orange">MNP 시 필수</span></td><td>chip</td></tr>
-    <tr><td>8</td><td><b>희망 지역 / 주소</b></td><td><span class="badge b-red">필수</span> (설치 가능 여부)</td><td>—</td><td>주소 검색</td></tr>
-    <tr><td>9</td><td><b>현금 입금 계좌</b></td><td><span class="badge b-red">필수</span></td><td><span class="badge b-red">필수</span></td><td>은행 + 계좌번호</td></tr>
-    <tr><td>10</td><td><b>약관 동의</b></td><td><span class="badge b-red">필수</span></td><td><span class="badge b-red">필수</span></td><td>이용·개인정보·위약금</td></tr>
-    <tr><td>11</td><td><b>마케팅 동의</b></td><td><span class="badge b-gray">선택</span></td><td><span class="badge b-gray">선택</span></td><td>마케팅 SMS</td></tr>
-    <tr><td>12</td><td><b>UTM 추적</b> (자동)</td><td>자동</td><td>자동</td><td>utm_source·medium·campaign</td></tr>
+    <tr>
+      <td><b>유선<br>(인터넷+TV)</b></td>
+      <td class="mono">incentive_internet_tickets</td>
+      <td><span class="mono">customer_id · carrier(SKB) · product_name(B인터넷 기가+Btv) · combine('인터넷+TV') · contract_months(36) · install_address · install_date · cash_amount(300000) · cash_bank · cash_account · status('received') · created_by(상담사ID)</span></td>
+    </tr>
+    <tr>
+      <td><b>유심<br>(MNO 3사)</b></td>
+      <td class="mono">incentive_sales (product_type='유심')</td>
+      <td><span class="mono">customer_id · carrier(KT) · product_type('유심') · plan_name(5G 베이직) · join_type('MNP') · prev_carrier · usim_type('일반') · cash_amount(100000) · cash_bank · cash_account · status('received') · created_by</span></td>
+    </tr>
+  </tbody>
+</table>
+<div class="note">
+  📌 <b>신규 테이블 ❌</b>: 기존 CRM 테이블에 <b>cash_amount · cash_bank · cash_account</b> 컬럼만 추가하면 충분. 광고 추적·신청서 별도 관리·UTM 등 모두 불필요.
+</div>
+
+<!-- ============ 4. 알림톡 연동 ============ -->
+<div class="section"><span class="num">4</span>알림톡 연동 (<a href="flow-notifications.html" style="color:var(--blue)">flow-notifications.html</a>)</div>
+<table>
+  <thead><tr><th style="width:120px">트리거</th><th style="width:160px">알림톡</th><th>메시지 요약</th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge b-blue">신청 저장</span></td><td>신청 접수 안내</td><td>"{{이름}}님 봉이모바일 신청이 접수되었습니다. 개통 일정 안내드립니다. — 현금 {{금액}}원 익일 입금 예정"</td></tr>
+    <tr><td><span class="badge b-blue">개통 완료</span></td><td>유선개통신규 / 유심개통신규</td><td>flow-notifications ②·③ 자동 (요금제·해지가능일·약정만료일 안내)</td></tr>
+    <tr><td><span class="badge b-green">현금 입금</span></td><td>현금 입금 완료</td><td>"{{이름}}님 현금 {{금액}}원 {{은행}} {{계좌끝4}} 입금 완료 — 봉이모바일"</td></tr>
   </tbody>
 </table>
 
-<!-- ============ 5. DB 스키마 ============ -->
-<div class="section"><span class="num">5</span>DB 스키마 (1 통합 테이블)</div>
-<div class="schema">
-<span class="kw">CREATE TABLE</span> <span class="tbl">bongi_landing_applications</span> (
-  id                  <span class="typ">UUID PRIMARY KEY DEFAULT</span> gen_random_uuid(),
-  application_no      <span class="typ">TEXT UNIQUE</span>,                <span class="cmt">-- 'L-2026-0001' (자동 생성)</span>
-
-  <span class="cmt">-- 채널 분류</span>
-  product_type        <span class="typ">TEXT NOT NULL</span>,               <span class="cmt">-- 'wired' (유선·인터넷+TV) · 'usim_mno' (유심 3사)</span>
-  landing_url         <span class="typ">TEXT</span>,                       <span class="cmt">-- '/landing-wired' · '/landing-usim-mno'</span>
-
-  <span class="cmt">-- 신청자</span>
-  customer_name       <span class="typ">TEXT NOT NULL</span>,
-  customer_phone      <span class="typ">TEXT NOT NULL</span>,
-  region              <span class="typ">TEXT</span>,                       <span class="cmt">-- 주소 (유선만)</span>
-
-  <span class="cmt">-- 상품 옵션</span>
-  carrier             <span class="typ">TEXT</span>,                       <span class="cmt">-- KT·SKB·LGU+ / SKT·KT·LGU+</span>
-  product_option      <span class="typ">JSONB</span>,                      <span class="cmt">-- {결합:'인터넷+TV', 유심:'일반', 가입유형:'MNP', 기존통신사:'LGU+'}</span>
-  expected_cash       <span class="typ">INTEGER</span>,                    <span class="cmt">-- 예상 현금 (15만~30만)</span>
-
-  <span class="cmt">-- 현금 지급 계좌</span>
-  cash_bank           <span class="typ">TEXT</span>,
-  cash_account        <span class="typ">TEXT</span>,
-  cash_holder         <span class="typ">TEXT</span>,                       <span class="cmt">-- 예금주 (이름 자동 매칭)</span>
-
-  <span class="cmt">-- 상태</span>
-  status              <span class="typ">TEXT NOT NULL DEFAULT</span> 'received',
-                                                <span class="cmt">-- 'received' · 'contacted' · 'verified' · 'submitted' · 'installed' · 'paid' · 'rejected'</span>
-  assigned_agent_id   <span class="typ">UUID REFERENCES</span> incentive_agents(id),
-
-  <span class="cmt">-- 처리 시각</span>
-  contacted_at        <span class="typ">TIMESTAMPTZ</span>,                 <span class="cmt">-- 상담사 연락 시각</span>
-  submitted_at        <span class="typ">TIMESTAMPTZ</span>,                 <span class="cmt">-- 통신사 전달 시각</span>
-  installed_at        <span class="typ">TIMESTAMPTZ</span>,                 <span class="cmt">-- 개통 완료 시각</span>
-  paid_at             <span class="typ">TIMESTAMPTZ</span>,                 <span class="cmt">-- 현금 입금 시각</span>
-
-  <span class="cmt">-- 광고 추적</span>
-  utm_source          <span class="typ">TEXT</span>,                       <span class="cmt">-- google·naver·meta·kakao</span>
-  utm_medium          <span class="typ">TEXT</span>,                       <span class="cmt">-- cpc·display·sns</span>
-  utm_campaign        <span class="typ">TEXT</span>,                       <span class="cmt">-- 캠페인명</span>
-  referrer            <span class="typ">TEXT</span>,                       <span class="cmt">-- 유입 URL</span>
-  ip_address          <span class="typ">TEXT</span>,
-
-  <span class="cmt">-- 약관</span>
-  terms_accepted      <span class="typ">BOOLEAN DEFAULT</span> false,
-  marketing_consent   <span class="typ">BOOLEAN DEFAULT</span> false,
-
-  notes               <span class="typ">TEXT</span>,                       <span class="cmt">-- 상담사 메모</span>
-  reject_reason       <span class="typ">TEXT</span>,                       <span class="cmt">-- 반려 사유</span>
-
-  created_at          <span class="typ">TIMESTAMPTZ DEFAULT</span> now(),
-  updated_at          <span class="typ">TIMESTAMPTZ DEFAULT</span> now()
-);
-
-<span class="cmt">-- 인덱스</span>
-<span class="kw">CREATE INDEX</span> idx_landing_status <span class="kw">ON</span> bongi_landing_applications(status);
-<span class="kw">CREATE INDEX</span> idx_landing_type <span class="kw">ON</span> bongi_landing_applications(product_type);
-<span class="kw">CREATE INDEX</span> idx_landing_phone <span class="kw">ON</span> bongi_landing_applications(customer_phone);
-<span class="kw">CREATE INDEX</span> idx_landing_created <span class="kw">ON</span> bongi_landing_applications(created_at <span class="kw">DESC</span>);
-
-<span class="cmt">-- RLS: 본인 신청만 조회 + admin·manager 전체</span>
-<span class="kw">ALTER TABLE</span> bongi_landing_applications <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
-</div>
-
-<!-- ============ 6. 처리 흐름 ============ -->
-<div class="section"><span class="num">6</span>처리 흐름 (7-step)</div>
-<div class="flow-trigger" style="grid-template-columns:repeat(7,1fr) repeat(6,30px);grid-template-areas:none">
-  <div class="flow-step user" style="grid-column:1"><div class="lbl">STEP 1</div><div class="ic">📱</div><div class="name">LP 신청</div></div>
-  <div class="flow-arr" style="grid-column:2">▶</div>
-  <div class="flow-step db" style="grid-column:3"><div class="lbl">STEP 2</div><div class="ic">📋</div><div class="name">DB insert<br>status='received'</div></div>
-  <div class="flow-arr" style="grid-column:4">▶</div>
-  <div class="flow-step admin" style="grid-column:5"><div class="lbl">STEP 3</div><div class="ic">📞</div><div class="name">상담사 연락<br>15분 내</div></div>
-  <div class="flow-arr" style="grid-column:6">▶</div>
-  <div class="flow-step db" style="grid-column:7"><div class="lbl">STEP 4</div><div class="ic">✅</div><div class="name">정보 검증<br>verified</div></div>
-</div>
-<div class="flow-trigger" style="grid-template-columns:repeat(7,1fr) repeat(6,30px)">
-  <div class="flow-step admin" style="grid-column:1"><div class="lbl">STEP 5</div><div class="ic">📤</div><div class="name">통신사 전달<br>submitted</div></div>
-  <div class="flow-arr" style="grid-column:2">▶</div>
-  <div class="flow-step db" style="grid-column:3"><div class="lbl">STEP 6</div><div class="ic">🔌</div><div class="name">개통 완료<br>installed</div></div>
-  <div class="flow-arr" style="grid-column:4">▶</div>
-  <div class="flow-step cash" style="grid-column:5"><div class="lbl">STEP 7</div><div class="ic">💰</div><div class="name">현금 입금<br>익일 (paid)</div></div>
-  <div class="flow-arr" style="grid-column:6">▶</div>
-  <div class="flow-step user" style="grid-column:7"><div class="lbl">완료</div><div class="ic">📨</div><div class="name">알림톡 4단계<br>발송</div></div>
-</div>
-
-<!-- ============ 7. 알림 시스템 연동 ============ -->
-<div class="section"><span class="num">7</span>알림 시스템 연동 (<a href="flow-notifications.html" style="color:var(--blue)">flow-notifications.html</a>)</div>
+<!-- ============ 5. 작업 Phase ============ -->
+<div class="section"><span class="num">5</span>작업 Phase (총 6일 · 최소 기능)</div>
 <table>
-  <thead><tr><th style="width:60px">트리거</th><th>알림</th><th style="width:90px">채널</th><th>메시지 요약</th></tr></thead>
+  <thead><tr><th style="width:80px">Phase</th><th style="width:80px">기간</th><th>작업</th></tr></thead>
   <tbody>
-    <tr><td><span class="badge b-blue">STEP 1</span></td><td>신청 접수 안내</td><td><span class="badge b-orange">카카오</span></td><td>"{{이름}}님 신청이 접수되었습니다. 15분 내 상담사 연락 드립니다."</td></tr>
-    <tr><td><span class="badge b-blue">STEP 5</span></td><td>통신사 전달 완료</td><td><span class="badge b-orange">카카오</span></td><td>"{{이름}}님 {{통신사}} 본사 전달 완료. 개통 일정 안내 예정."</td></tr>
-    <tr><td><span class="badge b-blue">STEP 6</span></td><td>개통 완료 안내 (유선·유심 신규 알림톡)</td><td><span class="badge b-orange">카카오</span></td><td>flow-notifications 알림 ②·③·④ 자동 발송</td></tr>
-    <tr><td><span class="badge b-blue">STEP 7</span></td><td>현금 입금 완료</td><td><span class="badge b-orange">카카오</span></td><td>"{{이름}}님 현금 {{금액}}원 {{은행}} {{계좌끝4}} 입금 완료."</td></tr>
-    <tr><td><span class="badge b-red">반려</span></td><td>반려 안내</td><td><span class="badge b-pink">SMS</span></td><td>"신청 반려: {{사유}}. 재신청 또는 문의 1599-0000"</td></tr>
+    <tr><td><b>Phase 1</b></td><td>1d</td><td>DB 마이그레이션 — <span class="mono">incentive_internet_tickets·incentive_sales</span>에 현금 지급 컬럼 추가 (cash_amount·cash_bank·cash_account)</td></tr>
+    <tr><td><b>Phase 2</b></td><td>2d</td><td>TM 상담사 화면 — 통화 중 신청 폼 (유선·유심 탭, 화면 단순 입력)</td></tr>
+    <tr><td><b>Phase 3</b></td><td>1d</td><td>신청 저장 API — POST 시 알림톡 자동 발송 (flow-notifications와 연동)</td></tr>
+    <tr><td><b>Phase 4</b></td><td>1d</td><td>현금 지급 처리 — 어드민에서 일괄 입금 체크 + 입금 완료 알림톡 발송</td></tr>
+    <tr><td><b>Phase 5</b></td><td>1d</td><td>테스트 + 운영 배포</td></tr>
   </tbody>
 </table>
 
-<!-- ============ 8. 어드민 처리 화면 mockup ============ -->
-<div class="section"><span class="num">8</span>어드민 신청서 처리 mockup</div>
-<div style="background:#0f172a;border-radius:12px;padding:16px;color:#e2e8f0;font-family:'Pretendard',sans-serif;font-size:11.5px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <div style="font-size:14px;font-weight:900;color:#fbbf24">💰 LP 신청서 처리 — 유선 + 유심(MNO)</div>
-    <div style="display:flex;gap:5px">
-      <button style="background:linear-gradient(135deg,#06b6d4,#7c3aed);color:#fff;border:none;padding:5px 11px;border-radius:5px;font-weight:700">📥 엑셀 export</button>
-      <button style="background:#a855f7;color:#fff;border:none;padding:5px 11px;border-radius:5px;font-weight:700">📤 통신사 일괄 전달</button>
-    </div>
-  </div>
-
-  <!-- 통계 -->
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:10px">
-    <div style="background:#1e293b;border:1px solid #334155;border-radius:7px;padding:8px"><div style="font-size:16px;font-weight:900;color:#fbbf24">23</div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase">접수</div></div>
-    <div style="background:#1e293b;border:1px solid #334155;border-radius:7px;padding:8px"><div style="font-size:16px;font-weight:900;color:#3b82f6">15</div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase">연락 완료</div></div>
-    <div style="background:#1e293b;border:1px solid #334155;border-radius:7px;padding:8px"><div style="font-size:16px;font-weight:900;color:#a855f7">8</div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase">통신사 전달</div></div>
-    <div style="background:#1e293b;border:1px solid #334155;border-radius:7px;padding:8px"><div style="font-size:16px;font-weight:900;color:#06b6d4">42</div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase">개통 완료</div></div>
-    <div style="background:#1e293b;border:1px solid #334155;border-radius:7px;padding:8px"><div style="font-size:16px;font-weight:900;color:#6ee7b7">38</div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase">현금 지급</div></div>
-    <div style="background:#1e293b;border:1px solid #334155;border-radius:7px;padding:8px"><div style="font-size:16px;font-weight:900;color:#ef4444">2</div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase">반려</div></div>
-    <div style="background:#1e293b;border:1px solid #334155;border-radius:7px;padding:8px"><div style="font-size:16px;font-weight:900;color:#fbbf24">8.4M</div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase">월 현금 지급(원)</div></div>
-  </div>
-
-  <!-- 신청 list -->
-  <div style="background:#1e293b;border:1px solid #334155;border-radius:7px;overflow:hidden">
-    <div style="display:grid;grid-template-columns:90px 65px 1fr 60px 70px 90px 70px 70px;padding:8px 10px;gap:6px;background:#0c1424;border-bottom:1px solid #334155;font-size:9.5px;color:#94a3b8;font-weight:700;text-transform:uppercase">
-      <div>접수번호</div><div>유형</div><div>고객·연락처</div><div>통신사</div><div>현금</div><div>상태</div><div>시각</div><div></div>
-    </div>
-    <div style="display:grid;grid-template-columns:90px 65px 1fr 60px 70px 90px 70px 70px;padding:8px 10px;gap:6px;border-bottom:1px solid #334155;align-items:center;font-size:10.5px">
-      <div style="color:#fbbf24;font-family:monospace;font-size:9.5px">L-2026-0023</div>
-      <div><span style="background:#1e3a8a;color:#93c5fd;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800">유선</span></div>
-      <div style="color:#fff"><b>홍길동</b> · 010-****-5678</div>
-      <div style="color:#cbd5e1"><span style="background:#dc2626;color:#fff;padding:2px 5px;border-radius:3px;font-size:9px;font-weight:800">SKB</span></div>
-      <div style="color:#fbbf24;font-weight:800;text-align:right">30만</div>
-      <div><span style="background:#7c2d12;color:#fbbf24;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800">⏳ 접수</span></div>
-      <div style="color:#94a3b8">14:32</div>
-      <div><button style="background:#fbbf24;color:#0f172a;border:none;padding:3px 9px;border-radius:4px;font-size:9.5px;font-weight:800">📞 연락</button></div>
-    </div>
-    <div style="display:grid;grid-template-columns:90px 65px 1fr 60px 70px 90px 70px 70px;padding:8px 10px;gap:6px;border-bottom:1px solid #334155;align-items:center;font-size:10.5px;background:#0c1424">
-      <div style="color:#fbbf24;font-family:monospace;font-size:9.5px">L-2026-0022</div>
-      <div><span style="background:#7c2d12;color:#fbbf24;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800">유심</span></div>
-      <div style="color:#fff"><b>박영희</b> · 010-****-1234</div>
-      <div style="color:#cbd5e1"><span style="background:#2563eb;color:#fff;padding:2px 5px;border-radius:3px;font-size:9px;font-weight:800">KT</span></div>
-      <div style="color:#fbbf24;font-weight:800;text-align:right">10만</div>
-      <div><span style="background:#1e3a8a;color:#93c5fd;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800">🔍 검토중</span></div>
-      <div style="color:#94a3b8">14:18</div>
-      <div><button style="background:#a855f7;color:#fff;border:none;padding:3px 9px;border-radius:4px;font-size:9.5px;font-weight:800">📤 전달</button></div>
-    </div>
-    <div style="display:grid;grid-template-columns:90px 65px 1fr 60px 70px 90px 70px 70px;padding:8px 10px;gap:6px;border-bottom:1px solid #334155;align-items:center;font-size:10.5px">
-      <div style="color:#fbbf24;font-family:monospace;font-size:9.5px">L-2026-0021</div>
-      <div><span style="background:#1e3a8a;color:#93c5fd;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800">유선</span></div>
-      <div style="color:#fff"><b>이준호</b> · 010-****-9012</div>
-      <div style="color:#cbd5e1"><span style="background:#2563eb;color:#fff;padding:2px 5px;border-radius:3px;font-size:9px;font-weight:800">KT</span></div>
-      <div style="color:#fbbf24;font-weight:800;text-align:right">20만</div>
-      <div><span style="background:#064e3b;color:#6ee7b7;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800">✅ 입금완료</span></div>
-      <div style="color:#94a3b8">11:05</div>
-      <div><button style="background:#334155;color:#94a3b8;border:none;padding:3px 9px;border-radius:4px;font-size:9.5px;font-weight:700">상세</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- ============ 9. 핸드오프 패키지 ============ -->
-<div class="section"><span class="num">9</span>핸드오프 패키지 (개발 산출물)</div>
+<!-- ============ 6. 핸드오프 (최소) ============ -->
+<div class="section"><span class="num">6</span>핸드오프 (최소 산출물)</div>
 <table>
   <thead><tr><th style="width:300px">파일</th><th>설명</th></tr></thead>
   <tbody>
-    <tr><td class="mono">docs/landing-wired.html</td><td>유선 LP (인터넷+TV) 실제 페이지</td></tr>
-    <tr><td class="mono">docs/landing-usim-mno.html</td><td>유심 LP (MNO 3사) 실제 페이지</td></tr>
-    <tr><td class="mono">server/public/admin/landing-applications.html</td><td>어드민 신청서 처리 화면</td></tr>
+    <tr><td class="mono">server/db/2026-06-08-landing-cash.sql</td><td>기존 테이블에 현금 컬럼 추가 (ALTER TABLE)</td></tr>
+    <tr><td class="mono">server/public/admin/tm-application.html</td><td>TM 상담사 화면 (통화 중 신청 폼)</td></tr>
+    <tr><td class="mono">server/routes/landing.js</td><td>POST /api/landing/apply · 알림톡 트리거</td></tr>
     <tr><td class="mono">docs/handoff/landing-2026-06-08/README.md</td><td>개요·환경·작업 순서</td></tr>
-    <tr><td class="mono">.../db-schema.sql</td><td>bongi_landing_applications 테이블 + 인덱스 + RLS</td></tr>
-    <tr><td class="mono">.../api-endpoints.md</td><td>POST /api/landing/apply · GET /api/admin/landing/list 등</td></tr>
-    <tr><td class="mono">.../campaign-spec.md</td><td>광고 캠페인 설계 + UTM 추적 + A/B 테스트</td></tr>
-    <tr><td class="mono">.../cash-payment-spec.md</td><td>현금 지급 정책·시점·금액·약관·환수 룰</td></tr>
   </tbody>
 </table>
 
-<!-- ============ 10. 작업 Phase ============ -->
-<div class="section"><span class="num">10</span>작업 Phase (총 10일)</div>
-<div class="phase-grid">
-  <div class="phase"><div class="p">Phase 1</div><div class="num-big">1d</div><div class="name">DB 마이그레이션</div><div class="days">테이블 + RLS</div></div>
-  <div class="phase"><div class="p">Phase 2</div><div class="num-big">3d</div><div class="name">LP 2개 작성</div><div class="days">유선 + 유심 디자인</div></div>
-  <div class="phase"><div class="p">Phase 3</div><div class="num-big">2d</div><div class="name">신청 API</div><div class="days">POST + 알림톡 연동</div></div>
-  <div class="phase"><div class="p">Phase 4</div><div class="num-big">2d</div><div class="name">어드민 처리</div><div class="days">list + 상세 + 일괄</div></div>
-  <div class="phase"><div class="p">Phase 5</div><div class="num-big">2d</div><div class="name">광고 캠페인 + 추적</div><div class="days">UTM + A/B</div></div>
-</div>
-
 <div class="note" style="margin-top:18px">
-  💡 <b>현재 단계</b>: 본 flow-landing.html이 마스터 설계 문서. 사용자 컨펌 후 <b>실제 LP 2개 + 어드민 페이지 + 핸드오프 패키지 6개 파일</b> 작성 진행.
+  💡 <b>다음 단계</b>: 컨펌 후 위 4개 파일 작성. 신규 LP 디자인·광고 추적 등 추가 기능은 본 phase 외.
 </div>
 
 </body></html>
