@@ -53,15 +53,13 @@ function classifyCode(raw) {
   return { type: 'unknown', value: code };
 }
 
-// 일련번호 7자리 정규화 — 끝 7자리 숫자 (전체 일련번호 SMS936AX0024511 든, 7자리 스티커 0024511 이든 동일)
+// 일련번호 = 정확히 7자리 숫자. 숫자만 추출 후 길이 검증 (자동 자르기 X — 7자리 아니면 거부)
 function normalizeSerial(raw) {
   if (raw == null) return null;
-  const s = String(raw).trim().toUpperCase();
-  if (!s) return null;
-  const d = s.replace(/\D/g, '');
-  if (d) return d.length > 7 ? d.slice(-7) : d;
-  return s;
+  const d = String(raw).replace(/\D/g, '');
+  return d || null;
 }
+const SERIAL_RE = /^\d{7}$/;
 
 // ════════════════════ 매장 목록 ════════════════════
 router.get('/stores', authenticateJWT, async (req, res) => {
@@ -200,6 +198,7 @@ router.post('/inventory', authenticateJWT, async (req, res) => {
 
     const serial = normalizeSerial(b.serial_number);
     if (!serial) return res.status(400).json({ error: '일련번호는 필수입니다' });
+    if (!SERIAL_RE.test(serial)) return res.status(400).json({ error: `일련번호는 7자리 숫자여야 합니다 (입력: ${serial}, ${serial.length}자리)` });
     const carrier = b.carrier ? String(b.carrier).trim() : null;
     if (!carrier) return res.status(400).json({ error: '통신사를 선택하세요' });
 
@@ -249,6 +248,7 @@ router.post('/inventory/bulk', authenticateJWT, async (req, res) => {
         const serial = normalizeSerial(b.serial_number);
         const carrier = b.carrier ? String(b.carrier).trim() : null;
         if (!b.model_id || !store_id || !serial || !carrier) { results.failed.push({ item: b, error: '필수값 누락(모델·매장·통신사·일련번호)' }); continue; }
+        if (!SERIAL_RE.test(serial)) { results.failed.push({ item: b, error: '일련번호 7자리 아님' }); continue; }
         const { data: dup } = await supabase.from('device_inventory').select('id').eq('serial_number', serial).eq('carrier', carrier).limit(1).maybeSingle();
         if (dup) { results.failed.push({ item: b, error: '중복' }); continue; }
         const { data, error } = await supabase.from('device_inventory').insert({
