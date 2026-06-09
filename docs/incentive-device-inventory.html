@@ -279,7 +279,9 @@ function routeScan(r){
       else openNewModel(r); break;
     case 'serial':
       if(r.existing) showDup(r.existing,'일련번호');
-      cur.serial=r.value; break;
+      cur.serial=r.value;
+      if(!cur.model){ document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 모델 미선택 — 일련번호 <b>${r.value}</b> 대기중. 상단에서 모델을 선택하거나 이 단말의 <b>SKU 바코드</b>를 스캔하세요. (모델 선택 즉시 자동저장)</div>`; }
+      break;
     case 'imei': case 'eid':
       toast('IMEI/EID는 재고에 불필요 — 일련번호를 스캔하세요','warn'); scanLog('· '+r.type.toUpperCase()+' 무시: '+r.value); return;
     default: toast('인식 못한 코드: '+r.value,'warn'); scanLog('⚠️ 미인식: '+r.value);
@@ -291,7 +293,7 @@ function showDup(ex,label){
   document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 이미 등록된 ${label} — ${name} (상태:${ex.status}). 중복 입고는 저장되지 않습니다.</div>`;
 }
 
-function setModel(m){ cur.model=m; document.getElementById('newModel').style.display='none'; const ss=document.getElementById('scanModelSel'); if(ss && m) ss.value=m.id; renderCur(); }
+function setModel(m){ cur.model=m; document.getElementById('newModel').style.display='none'; const ss=document.getElementById('scanModelSel'); if(ss && m) ss.value=m.id; document.getElementById('dupWarn').innerHTML=''; renderCur(); maybeAutoSave(); }
 function openNewModel(r){
   const f=document.getElementById('newModel'); f.style.display='block';
   document.getElementById('nm-sku').value = r.type==='sku'?r.value:'';
