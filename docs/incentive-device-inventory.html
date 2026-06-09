@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://dugaqvvnhsgenhmhuyju.supabase.co" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>휴대폰 재고 — 입고 (admin)</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Pretendard Variable',sans-serif; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
+.wrap { max-width:1400px; margin:0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid #334155; }
+h1 { font-size:22px; color:#f8fafc; letter-spacing:-0.02em; }
+.subtitle { font-size:12px; color:#94a3b8; margin-top:4px; }
+.auth-box { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:16px; margin-bottom:18px; }
+.auth-box input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; width:200px; margin-right:8px; }
+.auth-box button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px; }
+.auth-msg { font-size:11px; margin-top:6px; min-height:14px; color:#f87171; }
+.section { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid #475569; border-radius:12px; padding:18px 22px; margin-bottom:18px; }
+.section h2 { font-size:14px; color:#fbbf24; font-weight:800; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #334155; }
+label.fld { display:block; font-size:10px; color:#94a3b8; font-weight:700; letter-spacing:0.03em; margin-bottom:4px; }
+select, input.txt { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; }
+.bar { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; }
+.tabs { display:flex; gap:8px; margin-bottom:16px; }
+.tab { background:#1e293b; border:1px solid #475569; color:#94a3b8; padding:9px 20px; border-radius:8px; font-weight:800; font-size:13px; cursor:pointer; }
+.tab.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+.tabpane { display:none; } .tabpane.active { display:block; }
+/* 스캔 입력 */
+#scanInput { width:100%; font-size:20px; font-weight:800; letter-spacing:0.04em; padding:16px 18px; background:#0b1220; border:2px solid #3b82f6; border-radius:10px; color:#7dd3fc; text-align:center; }
+#scanInput:focus { outline:none; border-color:#22d3ee; box-shadow:0 0 0 4px rgba(34,211,238,0.15); }
+.scan-hint { font-size:11px; color:#64748b; text-align:center; margin-top:8px; }
+.btn { border:none; border-radius:7px; font-weight:800; cursor:pointer; }
+.btn-primary { background:#16a34a; color:#fff; padding:10px 22px; font-size:14px; }
+.btn-secondary { background:#475569; color:#fff; padding:9px 16px; font-size:12px; }
+.btn-blue { background:#3b82f6; color:#fff; padding:9px 16px; font-size:12px; }
+.btn-sm { padding:5px 12px; font-size:11px; }
+/* 현재 단말 카드 */
+.unit-card { background:#0b1220; border:1px solid #334155; border-radius:10px; padding:16px; margin-top:16px; }
+.field-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.fbox { background:#1e293b; border:1px solid #334155; border-radius:8px; padding:10px 12px; }
+.fbox .k { font-size:10px; color:#94a3b8; font-weight:700; }
+.fbox .v { font-size:15px; color:#f8fafc; font-weight:800; margin-top:3px; min-height:20px; word-break:break-all; }
+.fbox.filled { border-color:#16a34a; background:#0f2417; }
+.fbox.model { grid-column:1 / -1; }
+.model-tag { display:inline-block; background:#1e3a8a; color:#bfdbfe; padding:3px 10px; border-radius:5px; font-size:13px; font-weight:800; }
+.warn { background:#7f1d1d; color:#fecaca; padding:8px 12px; border-radius:6px; font-size:12px; margin-top:10px; }
+/* 새 모델 폼 */
+#newModel { display:none; background:#1e293b; border:1px dashed #f59e0b; border-radius:8px; padding:14px; margin-top:14px; }
+#newModel .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+#newModel input, #newModel select { width:100%; }
+/* 목록 */
+table { width:100%; border-collapse:collapse; background:#1e293b; border-radius:10px; overflow:hidden; margin-top:8px; }
+th { background:#334155; color:#f1f5f9; font-size:11px; padding:9px 8px; text-align:left; }
+td { font-size:11.5px; color:#e2e8f0; padding:8px; border-bottom:1px solid #334155; }
+tr:hover { background:#293548; }
+.pill { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:800; }
+.pill-stock { background:#16a34a; color:#fff; }
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); padding:12px 22px; border-radius:8px; font-size:13px; font-weight:800; box-shadow:0 6px 24px rgba(0,0,0,0.5); z-index:99999; opacity:0; transition:opacity 0.2s; pointer-events:none; }
+#toast.show { opacity:1; } #toast.ok { background:#16a34a; color:#fff; } #toast.err { background:#dc2626; color:#fff; } #toast.warn { background:#d97706; color:#fff; }
+#scanLog { font-size:10.5px; color:#64748b; margin-top:10px; max-height:90px; overflow:auto; font-family:monospace; }
+#camWrap { display:none; margin-top:14px; }
+#reader { width:100%; max-width:420px; margin:0 auto; border-radius:10px; overflow:hidden; }
+@media (max-width:768px){ .field-grid{grid-template-columns:1fr;} #newModel .grid{grid-template-columns:1fr;} }
+</style>
+<script>
+const TOKEN_KEY='incentive-auth-token-v1', REFRESH_KEY='incentive-refresh-token-v1';
+function getToken(){ return localStorage.getItem(TOKEN_KEY); }
+function setToken(t){ localStorage.setItem(TOKEN_KEY,t); }
+async function login(email,password){
+  const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const d=await res.json().catch(()=>({})); if(!res.ok) throw new Error(d.error||'로그인 실패');
+  if(d.token) setToken(d.token); if(d.refresh_token) localStorage.setItem(REFRESH_KEY,d.refresh_token); return d;
+}
+async function api(method,path,body){
+  const tk=getToken(); const opts={method,headers:{Authorization:'Bearer '+tk}};
+  if(body){ opts.headers['Content-Type']='application/json'; opts.body=JSON.stringify(body); }
+  const res=await fetch('/api/devices'+path,opts);
+  const d=await res.json().catch(()=>({}));
+  if(!res.ok){ const e=new Error(d.error||('HTTP '+res.status)); e.status=res.status; e.payload=d; throw e; }
+  return d;
+}
+// iframe embed: 자체 로그인/헤더 숨김
+(function(){ if(window!==window.parent){ document.documentElement.classList.add('embedded'); var s=document.createElement('style'); s.textContent='.embedded #auth-box,.embedded header{display:none!important;}.embedded .wrap{padding:0!important;max-width:none!important;}'; document.head.appendChild(s);} })();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📱 휴대폰 재고 — 입고</h1>
+      <div class="subtitle">바코드 스캔(텔킷 방식) 또는 수기 등록 — 모델·색상·일련번호·IMEI 자동 인식</div>
+    </div>
+  </header>
+
+  <div class="auth-box" id="auth-box">
+    <input type="email" id="email" placeholder="이메일" autocomplete="username">
+    <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password">
+    <button onclick="doLogin()">로그인</button>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+
+  <div id="app" style="display:none">
+    <!-- 입고 설정 -->
+    <div class="section">
+      <div class="bar">
+        <div><label class="fld">입고 매장</label><select id="storeSel"></select></div>
+        <div><label class="fld">등록 방식</label>
+          <div class="tabs" style="margin:0">
+            <div class="tab active" data-tab="scan" onclick="switchTab('scan')">📷 스캔</div>
+            <div class="tab" data-tab="manual" onclick="switchTab('manual')">⌨️ 수기</div>
+          </div>
+        </div>
+        <div><label class="fld"><input type="checkbox" id="autoSave" checked> 스캔 자동저장(모델+일련+IMEI)</label></div>
+      </div>
+    </div>
+
+    <!-- 스캔 탭 -->
+    <div class="tabpane active" id="pane-scan">
+      <div class="section">
+        <h2>바코드 스캔</h2>
+        <input type="text" id="scanInput" placeholder="여기에 커서를 두고 바코드를 찍으세요" autocomplete="off">
+        <div class="scan-hint">스캐너(키보드형)는 자동 인식 · 모델(SKU)/일련번호/IMEI/EID 어떤 라벨이든 OK ·
+          <a href="#" onclick="toggleCam();return false;" style="color:#60a5fa">📸 카메라로 스캔</a>
+        </div>
+        <div id="camWrap"><div id="reader"></div></div>
+        <div id="scanLog"></div>
+
+        <!-- 현재 입고 중 단말 -->
+        <div class="unit-card">
+          <div class="field-grid">
+            <div class="fbox model" id="fb-model"><div class="k">모델</div><div class="v" id="v-model">— 모델 바코드(SKU)를 먼저 스캔 —</div></div>
+            <div class="fbox" id="fb-serial"><div class="k">일련번호</div><div class="v" id="v-serial"></div></div>
+            <div class="fbox" id="fb-imei1"><div class="k">IMEI1</div><div class="v" id="v-imei1"></div></div>
+            <div class="fbox" id="fb-imei2"><div class="k">IMEI2</div><div class="v" id="v-imei2"></div></div>
+            <div class="fbox" id="fb-eid"><div class="k">EID</div><div class="v" id="v-eid"></div></div>
+          </div>
+          <div id="dupWarn"></div>
+          <div style="display:flex; gap:10px; margin-top:14px; align-items:center">
+            <input type="text" class="txt" id="ymScan" placeholder="제조연월(예:202412)" style="width:160px">
+            <button class="btn btn-primary" onclick="saveScanUnit()">입고 저장 (Enter)</button>
+            <button class="btn btn-secondary" onclick="resetCur(false)">전체 초기화</button>
+            <span style="font-size:11px;color:#64748b" id="lockHint"></span>
+          </div>
+        </div>
+
+        <!-- 새 모델 등록(처음 보는 SKU) -->
+        <div id="newModel">
+          <div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:10px">⚠️ 처음 보는 모델입니다 — 1회만 등록하면 다음부터 자동입력됩니다</div>
+          <div class="grid">
+            <div><label class="fld">SKU</label><input class="txt" id="nm-sku" readonly></div>
+            <div><label class="fld">모델코드</label><input class="txt" id="nm-code"></div>
+            <div><label class="fld">모델명 *</label><input class="txt" id="nm-name" placeholder="갤럭시 S25+"></div>
+            <div><label class="fld">색상</label><input class="txt" id="nm-color" placeholder="네이비"></div>
+            <div><label class="fld">용량</label><input class="txt" id="nm-cap" placeholder="256GB"></div>
+            <div><label class="fld">통신사</label><select id="nm-carrier"><option>공용</option><option>SK</option><option>KT</option><option>LG</option><option>자급제</option></select></div>
+          </div>
+          <button class="btn btn-blue btn-sm" style="margin-top:10px" onclick="saveNewModel()">모델 등록</button>
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="document.getElementById('newModel').style.display='none'">취소</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 수기 탭 -->
+    <div class="tabpane" id="pane-manual">
+      <div class="section">
+        <h2>수기 등록</h2>
+        <div class="field-grid">
+          <div class="fbox model">
+            <label class="fld">모델 선택</label>
+            <select id="m-model" style="width:100%"></select>
+            <div style="font-size:10px;color:#64748b;margin-top:6px">목록에 없으면 ‘+ 새 모델 직접 입력’ 선택</div>
+            <div id="m-newModel" style="display:none;margin-top:10px">
+              <div class="field-grid">
+                <input class="txt" id="mm-name" placeholder="모델명 * (갤럭시 S25+)">
+                <input class="txt" id="mm-color" placeholder="색상 (네이비)">
+                <input class="txt" id="mm-cap" placeholder="용량 (256GB)">
+                <input class="txt" id="mm-code" placeholder="모델코드 (SM-...)">
+              </div>
+            </div>
+          </div>
+          <div><label class="fld">일련번호</label><input class="txt" id="m-serial" style="width:100%"></div>
+          <div><label class="fld">IMEI1</label><input class="txt" id="m-imei1" style="width:100%"></div>
+          <div><label class="fld">IMEI2</label><input class="txt" id="m-imei2" style="width:100%"></div>
+          <div><label class="fld">EID</label><input class="txt" id="m-eid" style="width:100%"></div>
+          <div><label class="fld">제조연월</label><input class="txt" id="m-ym" placeholder="202412" style="width:100%"></div>
+          <div><label class="fld">매입가(선택)</label><input class="txt" id="m-cost" type="number" style="width:100%"></div>
+        </div>
+        <div style="margin-top:14px"><button class="btn btn-primary" onclick="saveManual()">입고 저장</button></div>
+      </div>
+    </div>
+
+    <!-- 입고 목록 -->
+    <div class="section">
+      <h2>최근 입고 <button class="btn btn-secondary btn-sm" style="float:right" onclick="loadRecent()">새로고침</button></h2>
+      <div id="statBar" style="font-size:12px;color:#94a3b8;margin-bottom:8px"></div>
+      <table>
+        <thead><tr><th>입고시각</th><th>모델</th><th>색상</th><th>일련번호</th><th>IMEI1</th><th>매장</th><th>상태</th><th>방식</th></tr></thead>
+        <tbody id="recentBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+let STORES=[], MODELS=[], curModelLock=true;
+let cur={ model:null, serial:null, imei1:null, imei2:null, eid:null };
+
+function toast(msg,type='ok'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+type; setTimeout(()=>t.className='',2200); }
+function scanLog(line){ const el=document.getElementById('scanLog'); const ts=new Date().toTimeString().slice(0,8); el.innerHTML='<div>['+ts+'] '+line+'</div>'+el.innerHTML; }
+
+async function doLogin(){
+  const m=document.getElementById('authMsg'); m.textContent='';
+  try{ await login(document.getElementById('email').value.trim(), document.getElementById('password').value); await boot(); }
+  catch(e){ m.textContent=e.message; }
+}
+
+async function boot(){
+  // 토큰 확인
+  if(!getToken()){ return; }
+  try{
+    const { stores }=await api('GET','/stores');
+    STORES=stores;
+    document.getElementById('storeSel').innerHTML=stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+    // 임베드 시 부모가 준 storeId 있으면 선택 (없으면 1번)
+    document.getElementById('auth-box').style.display='none';
+    document.getElementById('app').style.display='block';
+    await loadModels();
+    await loadRecent();
+    focusScan();
+  }catch(e){ document.getElementById('authMsg').textContent='권한 확인 실패: '+e.message; document.getElementById('auth-box').style.display='block'; }
+}
+
+async function loadModels(){
+  try{ const { models }=await api('GET','/models'); MODELS=models||[]; renderModelSelect(); }catch(e){}
+}
+function renderModelSelect(){
+  const sel=document.getElementById('m-model');
+  sel.innerHTML='<option value="">— 모델 선택 —</option>'+MODELS.map(m=>`<option value="${m.id}">${m.model_name}${m.color?' / '+m.color:''}${m.capacity?' '+m.capacity:''}</option>`).join('')+'<option value="__new">+ 새 모델 직접 입력</option>';
+  sel.onchange=()=>{ document.getElementById('m-newModel').style.display = sel.value==='__new'?'block':'none'; };
+}
+
+// ───────── 탭 ─────────
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===t));
+  document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('active'));
+  document.getElementById('pane-'+t).classList.add('active');
+  if(t==='scan') focusScan();
+}
+function focusScan(){ setTimeout(()=>{ const el=document.getElementById('scanInput'); if(el && document.getElementById('pane-scan').classList.contains('active')) el.focus(); },50); }
+
+// ───────── 스캔 처리 ─────────
+const scanEl=()=>document.getElementById('scanInput');
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && document.activeElement===scanEl()){
+    e.preventDefault();
+    const v=scanEl().value.trim(); scanEl().value='';
+    if(v) processCode(v);
+  }
+});
+
+async function processCode(code){
+  scanLog('스캔: '+code);
+  try{
+    const r=await api('POST','/scan',{code});
+    routeScan(r);
+  }catch(e){ toast('스캔 처리 오류: '+e.message,'err'); }
+}
+
+function routeScan(r){
+  document.getElementById('dupWarn').innerHTML='';
+  switch(r.type){
+    case 'sku': case 'model_code':
+      if(r.model){ setModel(r.model); toast('모델 인식: '+r.model.model_name,'ok'); }
+      else openNewModel(r); break;
+    case 'imei':
+      if(r.existing) showDup(r.existing,'IMEI');
+      if(!cur.imei1) cur.imei1=r.value; else if(!cur.imei2) cur.imei2=r.value;
+      break;
+    case 'serial':
+      if(r.existing) showDup(r.existing,'일련번호');
+      cur.serial=r.value; break;
+    case 'eid': cur.eid=r.value; break;
+    default: toast('인식 못한 코드: '+r.value,'warn'); scanLog('⚠️ 미인식: '+r.value);
+  }
+  renderCur(); maybeAutoSave();
+}
+function showDup(ex,label){
+  const name=ex.model?ex.model.model_name:'';
+  document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 이미 등록된 ${label} — ${name} (상태:${ex.status}). 중복 입고는 저장되지 않습니다.</div>`;
+}
+
+function setModel(m){ cur.model=m; document.getElementById('newModel').style.display='none'; renderCur(); }
+function openNewModel(r){
+  const f=document.getElementById('newModel'); f.style.display='block';
+  document.getElementById('nm-sku').value = r.type==='sku'?r.value:'';
+  document.getElementById('nm-code').value = r.type==='model_code'?r.value:'';
+  document.getElementById('nm-name').focus();
+}
+async function saveNewModel(){
+  const name=document.getElementById('nm-name').value.trim();
+  if(!name) return toast('모델명을 입력하세요','err');
+  try{
+    const { model }=await api('POST','/models',{
+      sku:document.getElementById('nm-sku').value.trim()||null,
+      model_code:document.getElementById('nm-code').value.trim()||null,
+      model_name:name, color:document.getElementById('nm-color').value.trim()||null,
+      capacity:document.getElementById('nm-cap').value.trim()||null, carrier:document.getElementById('nm-carrier').value
+    });
+    MODELS.unshift(model); renderModelSelect(); setModel(model); toast('모델 등록 완료: '+model.model_name,'ok'); focusScan();
+  }catch(e){ toast('모델 등록 실패: '+e.message,'err'); }
+}
+
+function renderCur(){
+  const set=(id,val)=>{ const box=document.getElementById('fb-'+id); document.getElementById('v-'+id).textContent=val||''; box.classList.toggle('filled',!!val); };
+  document.getElementById('v-model').innerHTML = cur.model?`<span class="model-tag">${cur.model.model_name}${cur.model.color?' / '+cur.model.color:''}${cur.model.capacity?' '+cur.model.capacity:''}</span>`:'— 모델 바코드(SKU)를 먼저 스캔 —';
+  document.getElementById('fb-model').classList.toggle('filled',!!cur.model);
+  set('serial',cur.serial); set('imei1',cur.imei1); set('imei2',cur.imei2); set('eid',cur.eid);
+  document.getElementById('lockHint').textContent = cur.model?'모델 고정됨 — 같은 모델 연속 입고 가능':'';
+}
+
+function maybeAutoSave(){
+  if(!document.getElementById('autoSave').checked) return;
+  if(cur.model && cur.serial && cur.imei1){ saveScanUnit(); }
+}
+
+async function saveScanUnit(){
+  if(!cur.model) return toast('모델을 먼저 인식/등록하세요','err');
+  if(!cur.serial && !cur.imei1) return toast('일련번호 또는 IMEI 필요','err');
+  const store_id=parseInt(document.getElementById('storeSel').value);
+  try{
+    const { unit }=await api('POST','/inventory',{
+      model_id:cur.model.id, serial_number:cur.serial, imei1:cur.imei1, imei2:cur.imei2, eid:cur.eid,
+      store_id, manufacture_ym:document.getElementById('ymScan').value.trim()||null, entry_method:'scan'
+    });
+    toast('✅ 입고: '+(unit.model?unit.model.model_name:'')+' '+(unit.serial_number||unit.imei1),'ok');
+    prependRecent(unit); resetCur(true); focusScan();
+  }catch(e){
+    if(e.status===409) toast('중복 단말 — 이미 입고됨','warn');
+    else toast('입고 실패: '+e.message,'err');
+  }
+}
+function resetCur(keepModel){
+  cur={ model:keepModel?cur.model:null, serial:null, imei1:null, imei2:null, eid:null };
+  document.getElementById('dupWarn').innerHTML=''; renderCur();
+}
+
+// ───────── 수기 등록 ─────────
+async function saveManual(){
+  const store_id=parseInt(document.getElementById('storeSel').value);
+  const sel=document.getElementById('m-model').value;
+  let body={ store_id, serial_number:document.getElementById('m-serial').value.trim(), imei1:document.getElementById('m-imei1').value.trim(),
+    imei2:document.getElementById('m-imei2').value.trim(), eid:document.getElementById('m-eid').value.trim(),
+    manufacture_ym:document.getElementById('m-ym').value.trim()||null, cost_price:document.getElementById('m-cost').value||null, entry_method:'manual' };
+  if(sel==='__new'){
+    const nm=document.getElementById('mm-name').value.trim();
+    if(!nm) return toast('새 모델명을 입력하세요','err');
+    body.model={ model_name:nm, color:document.getElementById('mm-color').value.trim()||null, capacity:document.getElementById('mm-cap').value.trim()||null, model_code:document.getElementById('mm-code').value.trim()||null };
+  } else if(sel){ body.model_id=parseInt(sel); }
+  else return toast('모델을 선택하세요','err');
+  if(!body.serial_number && !body.imei1) return toast('일련번호 또는 IMEI 필요','err');
+  try{
+    const { unit }=await api('POST','/inventory',body);
+    toast('✅ 입고 완료','ok'); prependRecent(unit);
+    if(!MODELS.find(m=>m.id===unit.model_id)){ await loadModels(); }
+    ['m-serial','m-imei1','m-imei2','m-eid','m-ym','m-cost'].forEach(id=>document.getElementById(id).value='');
+  }catch(e){ if(e.status===409) toast('중복 단말','warn'); else toast('입고 실패: '+e.message,'err'); }
+}
+
+// ───────── 목록 ─────────
+function prependRecent(u){
+  const m=u.model||{}; const store=(STORES.find(s=>s.id===u.store_id)||{}).name||u.store_id;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${m.model_name||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${u.imei1||''}</td><td>${store}</td><td><span class="pill pill-stock">입고</span></td><td>${u.entry_method||''}</td>`;
+  const body=document.getElementById('recentBody'); body.insertBefore(tr,body.firstChild);
+}
+async function loadRecent(){
+  try{
+    const { units }=await api('GET','/inventory?limit=50');
+    document.getElementById('recentBody').innerHTML=units.map(u=>{ const m=u.model||{};
+      return `<tr><td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${m.model_name||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${u.imei1||''}</td><td>${u.store_name||''}</td><td><span class="pill pill-stock">${u.status}</span></td><td>${u.entry_method||''}</td></tr>`;
+    }).join('');
+    const st=await api('GET','/inventory/stats');
+    document.getElementById('statBar').textContent=`총 재고 ${st.total}대 · 재고중 ${st.byStatus.in_stock||0} · 판매 ${st.byStatus.sold||0}`;
+  }catch(e){}
+}
+
+// ───────── 카메라 스캔 (html5-qrcode, 지연 로드) ─────────
+let camOn=false, html5Qr=null;
+function toggleCam(){
+  const w=document.getElementById('camWrap');
+  if(camOn){ stopCam(); return; }
+  w.style.display='block'; camOn=true;
+  const start=()=>{
+    html5Qr=new Html5Qrcode('reader');
+    html5Qr.start({facingMode:'environment'},{fps:10,qrbox:{width:300,height:120}},
+      txt=>{ processCode(txt); },()=>{}).catch(e=>{ toast('카메라 시작 실패: '+e,'err'); });
+  };
+  if(window.Html5Qrcode){ start(); }
+  else{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js'; s.onload=start; s.onerror=()=>toast('스캔 라이브러리 로드 실패','err'); document.head.appendChild(s); }
+}
+function stopCam(){ camOn=false; document.getElementById('camWrap').style.display='none'; if(html5Qr){ html5Qr.stop().catch(()=>{}); html5Qr=null; } }
+
+// init
+document.addEventListener('DOMContentLoaded',()=>{ if(getToken()) boot(); document.getElementById('scanInput')?.addEventListener('blur',()=>{ /* keep focus on scan tab */ }); });
+</script>
+</body>
+</html>
