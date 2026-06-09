@@ -24,7 +24,6 @@ async function getAgent(userId) {
   _agentCache.set(userId, { data: result, exp: Date.now() + (result ? 60_000 : 5_000) });
   return result;
 }
-const isManagerOrAdmin = (a) => a && (a.role === 'manager' || a.role === 'admin');
 
 // ─── 바코드 분류 (텔킷 핵심) ───
 // 스캐너는 키보드처럼 문자열을 입력 → 정규식으로 어떤 바코드인지 판별
@@ -181,15 +180,12 @@ router.post('/inventory', authenticateJWT, async (req, res) => {
 
     const serial = b.serial_number ? String(b.serial_number).trim().toUpperCase() : null;
     const imei1 = b.imei1 ? String(b.imei1).trim() : null;
-    if (!serial && !imei1) return res.status(400).json({ error: '일련번호 또는 IMEI 중 하나는 필수' });
+    if (!serial) return res.status(400).json({ error: '일련번호는 필수입니다' });
 
-    // 중복 확인 (serial / imei1 unique)
-    if (serial || imei1) {
-      const conds = [];
-      if (serial) conds.push(`serial_number.eq.${serial}`);
-      if (imei1) conds.push(`imei1.eq.${imei1}`);
-      const { data: dup } = await supabase.from('device_inventory').select('id,serial_number,imei1,status').or(conds.join(',')).limit(1).maybeSingle();
-      if (dup) return res.status(409).json({ error: '이미 등록된 단말입니다', duplicate: dup });
+    // 중복 확인 (일련번호 unique)
+    {
+      const { data: dup } = await supabase.from('device_inventory').select('id,serial_number,status').eq('serial_number', serial).limit(1).maybeSingle();
+      if (dup) return res.status(409).json({ error: '이미 등록된 일련번호입니다', duplicate: dup });
     }
 
     const row = {
@@ -226,18 +222,14 @@ router.post('/inventory/bulk', authenticateJWT, async (req, res) => {
       try {
         const store_id = parseInt(b.store_id);
         const serial = b.serial_number ? String(b.serial_number).trim().toUpperCase() : null;
-        const imei1 = b.imei1 ? String(b.imei1).trim() : null;
-        if (!b.model_id || !store_id || (!serial && !imei1)) { results.failed.push({ item: b, error: '필수값 누락' }); continue; }
-        const conds = [];
-        if (serial) conds.push(`serial_number.eq.${serial}`);
-        if (imei1) conds.push(`imei1.eq.${imei1}`);
-        const { data: dup } = await supabase.from('device_inventory').select('id').or(conds.join(',')).limit(1).maybeSingle();
+        if (!b.model_id || !store_id || !serial) { results.failed.push({ item: b, error: '필수값 누락(모델·매장·일련번호)' }); continue; }
+        const { data: dup } = await supabase.from('device_inventory').select('id').eq('serial_number', serial).limit(1).maybeSingle();
         if (dup) { results.failed.push({ item: b, error: '중복' }); continue; }
         const { data, error } = await supabase.from('device_inventory').insert({
-          model_id: b.model_id, serial_number: serial, imei1, imei2: b.imei2 || null, eid: b.eid || null,
+          model_id: b.model_id, serial_number: serial,
           store_id, status: 'in_stock', manufacture_ym: b.manufacture_ym || null,
           entry_method: 'bulk', received_by: req.user.id, received_by_name: me.name || null,
-        }).select('id,serial_number,imei1').single();
+        }).select('id,serial_number').single();
         if (error) { results.failed.push({ item: b, error: error.message }); continue; }
         logInventory({ inventory_id: data.id, action: 'receive', to_store_id: store_id, to_status: 'in_stock', actor_user_id: req.user.id, actor_name: me.name });
         results.ok.push(data);

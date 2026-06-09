@@ -120,6 +120,8 @@ async function api(method,path,body){
     <div class="tabpane active" id="pane-scan">
       <div class="section">
         <h2>바코드 스캔</h2>
+        <div style="margin-bottom:12px"><label class="fld">모델 미리선택 (선택 시 SKU 스캔 생략 — 일련번호만 연속 스캔)</label>
+          <select id="scanModelSel" style="width:100%;max-width:480px"></select></div>
         <input type="text" id="scanInput" placeholder="여기에 커서를 두고 바코드를 찍으세요" autocomplete="off">
         <div class="scan-hint">스캐너(키보드형)는 자동 인식 · 모델(SKU)/일련번호/IMEI/EID 어떤 라벨이든 OK ·
           <a href="#" onclick="toggleCam();return false;" style="color:#60a5fa">📸 카메라로 스캔</a>
@@ -127,14 +129,11 @@ async function api(method,path,body){
         <div id="camWrap"><div id="reader"></div></div>
         <div id="scanLog"></div>
 
-        <!-- 현재 입고 중 단말 -->
+        <!-- 현재 입고 중 단말 — 재고는 단말기·용량·색상·일련번호만 -->
         <div class="unit-card">
           <div class="field-grid">
-            <div class="fbox model" id="fb-model"><div class="k">모델</div><div class="v" id="v-model">— 모델 바코드(SKU)를 먼저 스캔 —</div></div>
-            <div class="fbox" id="fb-serial"><div class="k">일련번호</div><div class="v" id="v-serial"></div></div>
-            <div class="fbox" id="fb-imei1"><div class="k">IMEI1</div><div class="v" id="v-imei1"></div></div>
-            <div class="fbox" id="fb-imei2"><div class="k">IMEI2</div><div class="v" id="v-imei2"></div></div>
-            <div class="fbox" id="fb-eid"><div class="k">EID</div><div class="v" id="v-eid"></div></div>
+            <div class="fbox model" id="fb-model"><div class="k">단말기 · 용량 · 색상</div><div class="v" id="v-model">— 모델 바코드(SKU)를 먼저 스캔 —</div></div>
+            <div class="fbox" id="fb-serial"><div class="k">일련번호 *</div><div class="v" id="v-serial"></div></div>
           </div>
           <div id="dupWarn"></div>
           <div style="display:flex; gap:10px; margin-top:14px; align-items:center">
@@ -180,10 +179,7 @@ async function api(method,path,body){
               </div>
             </div>
           </div>
-          <div><label class="fld">일련번호</label><input class="txt" id="m-serial" style="width:100%"></div>
-          <div><label class="fld">IMEI1</label><input class="txt" id="m-imei1" style="width:100%"></div>
-          <div><label class="fld">IMEI2</label><input class="txt" id="m-imei2" style="width:100%"></div>
-          <div><label class="fld">EID</label><input class="txt" id="m-eid" style="width:100%"></div>
+          <div><label class="fld">일련번호 *</label><input class="txt" id="m-serial" style="width:100%"></div>
           <div><label class="fld">제조연월</label><input class="txt" id="m-ym" placeholder="202412" style="width:100%"></div>
           <div><label class="fld">매입가(선택)</label><input class="txt" id="m-cost" type="number" style="width:100%"></div>
         </div>
@@ -196,7 +192,7 @@ async function api(method,path,body){
       <h2>최근 입고 <button class="btn btn-secondary btn-sm" style="float:right" onclick="loadRecent()">새로고침</button></h2>
       <div id="statBar" style="font-size:12px;color:#94a3b8;margin-bottom:8px"></div>
       <table>
-        <thead><tr><th>입고시각</th><th>모델</th><th>색상</th><th>일련번호</th><th>IMEI1</th><th>매장</th><th>상태</th><th>방식</th></tr></thead>
+        <thead><tr><th>입고시각</th><th>단말기</th><th>용량</th><th>색상</th><th>일련번호</th><th>매장</th><th>상태</th><th>방식</th></tr></thead>
         <tbody id="recentBody"></tbody>
       </table>
     </div>
@@ -205,8 +201,8 @@ async function api(method,path,body){
 <div id="toast"></div>
 
 <script>
-let STORES=[], MODELS=[], curModelLock=true;
-let cur={ model:null, serial:null, imei1:null, imei2:null, eid:null };
+let STORES=[], MODELS=[];
+let cur={ model:null, serial:null };
 
 function toast(msg,type='ok'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+type; setTimeout(()=>t.className='',2200); }
 function scanLog(line){ const el=document.getElementById('scanLog'); const ts=new Date().toTimeString().slice(0,8); el.innerHTML='<div>['+ts+'] '+line+'</div>'+el.innerHTML; }
@@ -236,10 +232,15 @@ async function boot(){
 async function loadModels(){
   try{ const { models }=await api('GET','/models'); MODELS=models||[]; renderModelSelect(); }catch(e){}
 }
+function modelLabel(m){ return `${m.model_name}${m.color?' / '+m.color:''}${m.capacity?' '+m.capacity:''}`; }
 function renderModelSelect(){
   const sel=document.getElementById('m-model');
-  sel.innerHTML='<option value="">— 모델 선택 —</option>'+MODELS.map(m=>`<option value="${m.id}">${m.model_name}${m.color?' / '+m.color:''}${m.capacity?' '+m.capacity:''}</option>`).join('')+'<option value="__new">+ 새 모델 직접 입력</option>';
+  sel.innerHTML='<option value="">— 모델 선택 —</option>'+MODELS.map(m=>`<option value="${m.id}">${modelLabel(m)}</option>`).join('')+'<option value="__new">+ 새 모델 직접 입력</option>';
   sel.onchange=()=>{ document.getElementById('m-newModel').style.display = sel.value==='__new'?'block':'none'; };
+  // 스캔 탭 모델 미리선택 (SKU 스캔 생략 → 일련번호만 연속 스캔)
+  const ssel=document.getElementById('scanModelSel');
+  if(ssel){ ssel.innerHTML='<option value="">— 미선택(SKU 스캔으로 인식) —</option>'+MODELS.map(m=>`<option value="${m.id}">${modelLabel(m)}</option>`).join('');
+    ssel.onchange=()=>{ const m=MODELS.find(x=>x.id===parseInt(ssel.value)); if(m) setModel(m); else { cur.model=null; renderCur(); } focusScan(); }; }
 }
 
 // ───────── 탭 ─────────
@@ -275,14 +276,11 @@ function routeScan(r){
     case 'sku': case 'model_code':
       if(r.model){ setModel(r.model); toast('모델 인식: '+r.model.model_name,'ok'); }
       else openNewModel(r); break;
-    case 'imei':
-      if(r.existing) showDup(r.existing,'IMEI');
-      if(!cur.imei1) cur.imei1=r.value; else if(!cur.imei2) cur.imei2=r.value;
-      break;
     case 'serial':
       if(r.existing) showDup(r.existing,'일련번호');
       cur.serial=r.value; break;
-    case 'eid': cur.eid=r.value; break;
+    case 'imei': case 'eid':
+      toast('IMEI/EID는 재고에 불필요 — 일련번호를 스캔하세요','warn'); scanLog('· '+r.type.toUpperCase()+' 무시: '+r.value); return;
     default: toast('인식 못한 코드: '+r.value,'warn'); scanLog('⚠️ 미인식: '+r.value);
   }
   renderCur(); maybeAutoSave();
@@ -314,36 +312,35 @@ async function saveNewModel(){
 }
 
 function renderCur(){
-  const set=(id,val)=>{ const box=document.getElementById('fb-'+id); document.getElementById('v-'+id).textContent=val||''; box.classList.toggle('filled',!!val); };
-  document.getElementById('v-model').innerHTML = cur.model?`<span class="model-tag">${cur.model.model_name}${cur.model.color?' / '+cur.model.color:''}${cur.model.capacity?' '+cur.model.capacity:''}</span>`:'— 모델 바코드(SKU)를 먼저 스캔 —';
+  const box=document.getElementById('fb-serial'); document.getElementById('v-serial').textContent=cur.serial||''; box.classList.toggle('filled',!!cur.serial);
+  document.getElementById('v-model').innerHTML = cur.model?`<span class="model-tag">${modelLabel(cur.model)}</span>`:'— 모델(SKU) 스캔 또는 위에서 선택 —';
   document.getElementById('fb-model').classList.toggle('filled',!!cur.model);
-  set('serial',cur.serial); set('imei1',cur.imei1); set('imei2',cur.imei2); set('eid',cur.eid);
-  document.getElementById('lockHint').textContent = cur.model?'모델 고정됨 — 같은 모델 연속 입고 가능':'';
+  document.getElementById('lockHint').textContent = cur.model?'모델 고정됨 — 일련번호만 연속 스캔하세요':'';
 }
 
 function maybeAutoSave(){
   if(!document.getElementById('autoSave').checked) return;
-  if(cur.model && cur.serial && cur.imei1){ saveScanUnit(); }
+  if(cur.model && cur.serial){ saveScanUnit(); }
 }
 
 async function saveScanUnit(){
-  if(!cur.model) return toast('모델을 먼저 인식/등록하세요','err');
-  if(!cur.serial && !cur.imei1) return toast('일련번호 또는 IMEI 필요','err');
+  if(!cur.model) return toast('모델을 먼저 인식/선택하세요','err');
+  if(!cur.serial) return toast('일련번호를 스캔하세요','err');
   const store_id=parseInt(document.getElementById('storeSel').value);
   try{
     const { unit }=await api('POST','/inventory',{
-      model_id:cur.model.id, serial_number:cur.serial, imei1:cur.imei1, imei2:cur.imei2, eid:cur.eid,
+      model_id:cur.model.id, serial_number:cur.serial,
       store_id, manufacture_ym:document.getElementById('ymScan').value.trim()||null, entry_method:'scan'
     });
-    toast('✅ 입고: '+(unit.model?unit.model.model_name:'')+' '+(unit.serial_number||unit.imei1),'ok');
+    toast('✅ 입고: '+(unit.model?unit.model.model_name:'')+' '+(unit.serial_number||''),'ok');
     prependRecent(unit); resetCur(true); focusScan();
   }catch(e){
-    if(e.status===409) toast('중복 단말 — 이미 입고됨','warn');
+    if(e.status===409) toast('중복 일련번호 — 이미 입고됨','warn');
     else toast('입고 실패: '+e.message,'err');
   }
 }
 function resetCur(keepModel){
-  cur={ model:keepModel?cur.model:null, serial:null, imei1:null, imei2:null, eid:null };
+  cur={ model:keepModel?cur.model:null, serial:null };
   document.getElementById('dupWarn').innerHTML=''; renderCur();
 }
 
@@ -351,8 +348,7 @@ function resetCur(keepModel){
 async function saveManual(){
   const store_id=parseInt(document.getElementById('storeSel').value);
   const sel=document.getElementById('m-model').value;
-  let body={ store_id, serial_number:document.getElementById('m-serial').value.trim(), imei1:document.getElementById('m-imei1').value.trim(),
-    imei2:document.getElementById('m-imei2').value.trim(), eid:document.getElementById('m-eid').value.trim(),
+  let body={ store_id, serial_number:document.getElementById('m-serial').value.trim(),
     manufacture_ym:document.getElementById('m-ym').value.trim()||null, cost_price:document.getElementById('m-cost').value||null, entry_method:'manual' };
   if(sel==='__new'){
     const nm=document.getElementById('mm-name').value.trim();
@@ -360,12 +356,12 @@ async function saveManual(){
     body.model={ model_name:nm, color:document.getElementById('mm-color').value.trim()||null, capacity:document.getElementById('mm-cap').value.trim()||null, model_code:document.getElementById('mm-code').value.trim()||null };
   } else if(sel){ body.model_id=parseInt(sel); }
   else return toast('모델을 선택하세요','err');
-  if(!body.serial_number && !body.imei1) return toast('일련번호 또는 IMEI 필요','err');
+  if(!body.serial_number) return toast('일련번호를 입력하세요','err');
   try{
     const { unit }=await api('POST','/inventory',body);
     toast('✅ 입고 완료','ok'); prependRecent(unit);
     if(!MODELS.find(m=>m.id===unit.model_id)){ await loadModels(); }
-    ['m-serial','m-imei1','m-imei2','m-eid','m-ym','m-cost'].forEach(id=>document.getElementById(id).value='');
+    ['m-serial','m-ym','m-cost'].forEach(id=>document.getElementById(id).value='');
   }catch(e){ if(e.status===409) toast('중복 단말','warn'); else toast('입고 실패: '+e.message,'err'); }
 }
 
@@ -373,14 +369,14 @@ async function saveManual(){
 function prependRecent(u){
   const m=u.model||{}; const store=(STORES.find(s=>s.id===u.store_id)||{}).name||u.store_id;
   const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${m.model_name||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${u.imei1||''}</td><td>${store}</td><td><span class="pill pill-stock">입고</span></td><td>${u.entry_method||''}</td>`;
+  tr.innerHTML=`<td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${m.model_name||''}</td><td>${m.capacity||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${store}</td><td><span class="pill pill-stock">입고</span></td><td>${u.entry_method||''}</td>`;
   const body=document.getElementById('recentBody'); body.insertBefore(tr,body.firstChild);
 }
 async function loadRecent(){
   try{
     const { units }=await api('GET','/inventory?limit=50');
     document.getElementById('recentBody').innerHTML=units.map(u=>{ const m=u.model||{};
-      return `<tr><td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${m.model_name||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${u.imei1||''}</td><td>${u.store_name||''}</td><td><span class="pill pill-stock">${u.status}</span></td><td>${u.entry_method||''}</td></tr>`;
+      return `<tr><td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${m.model_name||''}</td><td>${m.capacity||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${u.store_name||''}</td><td><span class="pill pill-stock">${u.status}</span></td><td>${u.entry_method||''}</td></tr>`;
     }).join('');
     const st=await api('GET','/inventory/stats');
     document.getElementById('statBar').textContent=`총 재고 ${st.total}대 · 재고중 ${st.byStatus.in_stock||0} · 판매 ${st.byStatus.sold||0}`;
