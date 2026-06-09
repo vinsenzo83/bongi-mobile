@@ -112,23 +112,17 @@ async function api(method,path,body){
         <div><label class="fld">거래처(입고처)</label><input class="txt" id="supplySel" list="supplyList" placeholder="거래처명" style="width:150px"><datalist id="supplyList"></datalist></div>
         <div style="flex:1;min-width:260px"><label class="fld">모델 (색상·용량 포함) *</label>
           <select id="scanModelSel" style="width:100%"></select></div>
-        <div><label class="fld">등록 방식</label>
-          <div class="tabs" style="margin:0">
-            <div class="tab active" data-tab="scan" onclick="switchTab('scan')">📷 스캔</div>
-            <div class="tab" data-tab="manual" onclick="switchTab('manual')">⌨️ 수기</div>
-          </div>
-        </div>
         <div><label class="fld"><input type="checkbox" id="autoSave" checked> 스캔 즉시 자동저장</label></div>
       </div>
-      <div style="font-size:11px;color:#64748b;margin-top:8px">모델 목록에 없으면 「+ 새 모델 등록」 선택 또는 박스 SKU 바코드를 스캔하면 등록창이 뜹니다.</div>
+      <div style="font-size:11px;color:#64748b;margin-top:8px">목록에 없는 새 모델은 박스 <b>SKU 바코드를 스캔</b>하면 1회 등록창이 뜹니다.</div>
     </div>
 
-    <!-- 스캔 탭 -->
-    <div class="tabpane active" id="pane-scan">
+    <!-- 스캔 등록 -->
+    <div id="pane-scan">
       <div class="section">
-        <h2>② 일련번호 바코드 스캔</h2>
-        <input type="text" id="scanInput" placeholder="일련번호 바코드를 찍으세요 (모델 선택 후)" autocomplete="off">
-        <div class="scan-hint">선택한 모델로 일련번호만 연속 입고 · IMEI/EID는 자동 무시 · SKU 바코드 찍으면 모델 자동전환 ·
+        <h2>② 일련번호 스캔 (또는 직접 입력)</h2>
+        <input type="text" id="scanInput" placeholder="일련번호 바코드를 찍거나, 직접 입력 후 Enter" autocomplete="off">
+        <div class="scan-hint">모델 선택 후 일련번호만 연속 입고 · 바코드 안 읽히면 일련번호 직접 입력 후 Enter · IMEI/EID 자동 무시 · SKU 스캔 시 모델 자동전환 ·
           <a href="#" onclick="toggleCam();return false;" style="color:#60a5fa">📸 카메라로 스캔</a>
         </div>
         <div id="camWrap"><div id="reader"></div></div>
@@ -153,8 +147,8 @@ async function api(method,path,body){
         <div id="newModel">
           <div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:10px">⚠️ 처음 보는 모델입니다 — 1회만 등록하면 다음부터 자동입력됩니다</div>
           <div class="grid">
-            <div><label class="fld">SKU(바코드/EAN) — 직접입력 가능</label><input class="txt" id="nm-sku" placeholder="8806095849478 (스캔 또는 수기)"></div>
-            <div><label class="fld">모델코드</label><input class="txt" id="nm-code" placeholder="SM-S936NDBAKOC"></div>
+            <div><label class="fld">SKU(스캔 자동)</label><input class="txt" id="nm-sku" readonly></div>
+            <div><label class="fld">모델코드(스캔 자동)</label><input class="txt" id="nm-code"></div>
             <div><label class="fld">모델명 *</label><input class="txt" id="nm-name" placeholder="갤럭시 S25+"></div>
             <div><label class="fld">색상</label><input class="txt" id="nm-color" placeholder="네이비"></div>
             <div><label class="fld">용량</label><input class="txt" id="nm-cap" placeholder="256GB"></div>
@@ -162,20 +156,6 @@ async function api(method,path,body){
           <button class="btn btn-blue btn-sm" style="margin-top:10px" onclick="saveNewModel()">모델 등록</button>
           <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="document.getElementById('newModel').style.display='none'">취소</button>
         </div>
-      </div>
-    </div>
-
-    <!-- 수기 탭 -->
-    <div class="tabpane" id="pane-manual">
-      <div class="section">
-        <h2>수기 등록</h2>
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:12px">상단에서 선택한 <b>매장·통신사·거래처·모델</b>로 등록됩니다. 일련번호만 입력하세요.</div>
-        <div class="field-grid">
-          <div><label class="fld">일련번호 *</label><input class="txt" id="m-serial" style="width:100%"></div>
-          <div><label class="fld">제조연월</label><input class="txt" id="m-ym" placeholder="202412" style="width:100%"></div>
-          <div><label class="fld">매입가(선택)</label><input class="txt" id="m-cost" type="number" style="width:100%"></div>
-        </div>
-        <div style="margin-top:14px"><button class="btn btn-primary" onclick="saveManual()">입고 저장</button></div>
       </div>
     </div>
 
@@ -234,9 +214,8 @@ function renderModelSelect(){
   const ssel=document.getElementById('scanModelSel');
   if(!ssel) return;
   const keep=ssel.value;
-  ssel.innerHTML='<option value="">— 모델 선택 —</option>'+MODELS.map(m=>`<option value="${m.id}">${modelLabel(m)}</option>`).join('')+'<option value="__new">+ 새 모델 등록</option>';
+  ssel.innerHTML='<option value="">— 모델 선택 —</option>'+MODELS.map(m=>`<option value="${m.id}">${modelLabel(m)}</option>`).join('');
   ssel.onchange=()=>{
-    if(ssel.value==='__new'){ openNewModel({type:'manual',value:''}); ssel.value=cur.model?cur.model.id:''; return; }
     const m=MODELS.find(x=>x.id===parseInt(ssel.value));
     if(m) setModel(m); else { cur.model=null; renderCur(); }
     focusScan();
@@ -244,14 +223,7 @@ function renderModelSelect(){
   if(keep) ssel.value=keep;
 }
 
-// ───────── 탭 ─────────
-function switchTab(t){
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===t));
-  document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('active'));
-  document.getElementById('pane-'+t).classList.add('active');
-  if(t==='scan') focusScan();
-}
-function focusScan(){ setTimeout(()=>{ const el=document.getElementById('scanInput'); if(el && document.getElementById('pane-scan').classList.contains('active')) el.focus(); },50); }
+function focusScan(){ setTimeout(()=>{ const el=document.getElementById('scanInput'); if(el) el.focus(); },50); }
 
 // ───────── 스캔 처리 ─────────
 const scanEl=()=>document.getElementById('scanInput');
@@ -346,23 +318,6 @@ async function saveScanUnit(){
 function resetCur(keepModel){
   cur={ model:keepModel?cur.model:null, serial:null };
   document.getElementById('dupWarn').innerHTML=''; renderCur();
-}
-
-// ───────── 수기 등록 (상단에서 선택한 모델 사용) ─────────
-async function saveManual(){
-  if(!cur.model) return toast('상단에서 모델을 먼저 선택하세요','err');
-  const store_id=parseInt(document.getElementById('storeSel').value);
-  const serial=document.getElementById('m-serial').value.trim();
-  if(!serial) return toast('일련번호를 입력하세요','err');
-  const body={ store_id, model_id:cur.model.id, serial_number:serial,
-    carrier:document.getElementById('carrierSel').value, supply_source:document.getElementById('supplySel').value.trim()||null,
-    manufacture_ym:document.getElementById('m-ym').value.trim()||null, cost_price:document.getElementById('m-cost').value||null, entry_method:'manual' };
-  try{
-    const { unit }=await api('POST','/inventory',body);
-    toast('✅ 입고 완료','ok'); prependRecent(unit);
-    ['m-serial','m-ym','m-cost'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('m-serial').focus();
-  }catch(e){ if(e.status===409) toast('중복 단말','warn'); else toast('입고 실패: '+e.message,'err'); }
 }
 
 // ───────── 목록 ─────────
