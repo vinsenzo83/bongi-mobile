@@ -137,6 +137,24 @@ router.post('/models', authenticateJWT, async (req, res) => {
   } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
 });
 
+// TAC 학습 — IMEI 앞 8자리 → 모델 매핑 (1회 학습 후 IMEI 스캔으로 모델 자동인식)
+router.post('/tac', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+    const tac = String((req.body || {}).tac || '').replace(/\D/g, '');
+    const model_id = (req.body || {}).model_id;
+    if (!/^\d{8}$/.test(tac)) return res.status(400).json({ error: 'TAC는 8자리 숫자여야 합니다' });
+    if (!model_id) return res.status(400).json({ error: 'model_id 필수' });
+    const { data, error } = await supabase.from('device_tac_map')
+      .upsert({ tac, model_id, learned_at: new Date().toISOString(), learned_by: req.user.id, learned_by_name: me.name || null }, { onConflict: 'tac' })
+      .select('*, model:device_models(*)').single();
+    if (error) throw error;
+    res.json({ tac: data });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
 // ════════════════════ 스캔 분류 ════════════════════
 // 스캔된 코드 1개 → 타입 판별 + (sku/code면) 모델 매칭 + (imei/serial이면) 기존 재고 중복 확인
 router.post('/scan', authenticateJWT, async (req, res) => {
@@ -155,6 +173,13 @@ router.post('/scan', authenticateJWT, async (req, res) => {
         .eq('serial_number', cls.value).limit(5);
       out.existing = (data && data.length) ? data[0] : null;
       out.existingAll = data || [];
+    } else if (cls.type === 'imei') {
+      // TAC(앞 8자리)로 학습된 모델 조회
+      const tac = cls.value.slice(0, 8);
+      out.tac = tac;
+      const { data } = await supabase.from('device_tac_map')
+        .select('model_id, model:device_models(*)').eq('tac', tac).maybeSingle();
+      out.model = data ? data.model : null;
     }
     res.json(out);
   } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
