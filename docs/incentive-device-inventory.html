@@ -113,6 +113,7 @@ async function api(method,path,body){
         <div><label class="fld">거래처(입고처)</label><input class="txt" id="supplySel" list="supplyList" placeholder="거래처명" style="width:150px"><datalist id="supplyList"></datalist></div>
         <div style="flex:1;min-width:260px"><label class="fld">모델 (색상·용량 포함) *</label>
           <select id="scanModelSel" style="width:100%"></select></div>
+        <div><label class="fld">&nbsp;</label><button class="btn btn-blue btn-sm" onclick="openNewModelManual()">+ 새 모델 등록</button></div>
         <div><label class="fld"><input type="checkbox" id="autoSave" checked> 스캔 즉시 자동저장</label></div>
       </div>
       <div style="font-size:11px;color:#64748b;margin-top:8px">목록에 없는 새 모델은 박스 <b>SKU 바코드를 스캔</b>하면 1회 등록창이 뜹니다.</div>
@@ -145,10 +146,10 @@ async function api(method,path,body){
 
         <!-- 새 모델 등록(처음 보는 SKU) -->
         <div id="newModel">
-          <div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:10px">⚠️ 처음 보는 모델입니다 — 1회만 등록하면 다음부터 자동입력됩니다</div>
+          <div style="font-size:12px;color:#fbbf24;font-weight:800;margin-bottom:10px">📦 SKU(모델) 등록 — 1회만 등록하면 다음부터 자동입력됩니다</div>
           <div class="grid">
-            <div><label class="fld">SKU(스캔 자동)</label><input class="txt" id="nm-sku" readonly></div>
-            <div><label class="fld">모델코드(스캔 자동)</label><input class="txt" id="nm-code"></div>
+            <div><label class="fld">SKU(EAN 바코드, 숫자) — 스캔 또는 직접입력</label><input class="txt" id="nm-sku" placeholder="8806095849478"></div>
+            <div><label class="fld">모델코드 — 스캔 또는 직접입력</label><input class="txt" id="nm-code" placeholder="SM-S936NDBAKOC"></div>
             <div><label class="fld">모델명 *</label><input class="txt" id="nm-name" placeholder="갤럭시 S25+"></div>
             <div><label class="fld">색상</label><input class="txt" id="nm-color" placeholder="네이비"></div>
             <div><label class="fld">용량</label><input class="txt" id="nm-cap" placeholder="256GB"></div>
@@ -275,6 +276,13 @@ function openNewModel(r){
   document.getElementById('nm-sku').value = r.type==='sku'?r.value:'';
   document.getElementById('nm-code').value = r.type==='model_code'?r.value:'';
   document.getElementById('nm-name').focus();
+}
+// 수동 SKU(모델) 등록 — 스캔 없이 직접 입력
+function openNewModelManual(){
+  const f=document.getElementById('newModel'); f.style.display='block';
+  ['nm-sku','nm-code','nm-name','nm-color','nm-cap'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nm-sku').focus();
+  f.scrollIntoView({behavior:'smooth',block:'center'});
 }
 async function saveNewModel(){
   const name=document.getElementById('nm-name').value.trim();
