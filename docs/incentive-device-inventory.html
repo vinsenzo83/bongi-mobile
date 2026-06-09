@@ -106,6 +106,10 @@ async function api(method,path,body){
     <div class="section">
       <div class="bar">
         <div><label class="fld">입고 매장</label><select id="storeSel"></select></div>
+        <div><label class="fld">통신사 *</label><select id="carrierSel">
+          <option value="SK">SK</option><option value="KT">KT</option><option value="LG">LG</option>
+          <option value="알뜰">알뜰(MVNO)</option><option value="자급제">자급제</option></select></div>
+        <div><label class="fld">입고처</label><input class="txt" id="supplySel" list="supplyList" placeholder="공급처/매입처" style="width:160px"><datalist id="supplyList"></datalist></div>
         <div><label class="fld">등록 방식</label>
           <div class="tabs" style="margin:0">
             <div class="tab active" data-tab="scan" onclick="switchTab('scan')">📷 스캔</div>
@@ -153,7 +157,6 @@ async function api(method,path,body){
             <div><label class="fld">모델명 *</label><input class="txt" id="nm-name" placeholder="갤럭시 S25+"></div>
             <div><label class="fld">색상</label><input class="txt" id="nm-color" placeholder="네이비"></div>
             <div><label class="fld">용량</label><input class="txt" id="nm-cap" placeholder="256GB"></div>
-            <div><label class="fld">통신사</label><select id="nm-carrier"><option>공용</option><option>SK</option><option>KT</option><option>LG</option><option>자급제</option></select></div>
           </div>
           <button class="btn btn-blue btn-sm" style="margin-top:10px" onclick="saveNewModel()">모델 등록</button>
           <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="document.getElementById('newModel').style.display='none'">취소</button>
@@ -192,7 +195,7 @@ async function api(method,path,body){
       <h2>최근 입고 <button class="btn btn-secondary btn-sm" style="float:right" onclick="loadRecent()">새로고침</button></h2>
       <div id="statBar" style="font-size:12px;color:#94a3b8;margin-bottom:8px"></div>
       <table>
-        <thead><tr><th>입고시각</th><th>단말기</th><th>용량</th><th>색상</th><th>일련번호</th><th>매장</th><th>상태</th><th>방식</th></tr></thead>
+        <thead><tr><th>입고시각</th><th>단말기</th><th>용량</th><th>색상</th><th>통신사</th><th>일련번호</th><th>입고처</th><th>매장</th><th>상태</th><th>방식</th></tr></thead>
         <tbody id="recentBody"></tbody>
       </table>
     </div>
@@ -224,6 +227,7 @@ async function boot(){
     document.getElementById('auth-box').style.display='none';
     document.getElementById('app').style.display='block';
     await loadModels();
+    await loadSupplySources();
     await loadRecent();
     focusScan();
   }catch(e){ document.getElementById('authMsg').textContent='권한 확인 실패: '+e.message; document.getElementById('auth-box').style.display='block'; }
@@ -231,6 +235,9 @@ async function boot(){
 
 async function loadModels(){
   try{ const { models }=await api('GET','/models'); MODELS=models||[]; renderModelSelect(); }catch(e){}
+}
+async function loadSupplySources(){
+  try{ const { sources }=await api('GET','/supply-sources'); document.getElementById('supplyList').innerHTML=(sources||[]).map(s=>`<option value="${s}">`).join(''); }catch(e){}
 }
 function modelLabel(m){ return `${m.model_name}${m.color?' / '+m.color:''}${m.capacity?' '+m.capacity:''}`; }
 function renderModelSelect(){
@@ -305,7 +312,7 @@ async function saveNewModel(){
       sku:document.getElementById('nm-sku').value.trim()||null,
       model_code:document.getElementById('nm-code').value.trim()||null,
       model_name:name, color:document.getElementById('nm-color').value.trim()||null,
-      capacity:document.getElementById('nm-cap').value.trim()||null, carrier:document.getElementById('nm-carrier').value
+      capacity:document.getElementById('nm-cap').value.trim()||null
     });
     MODELS.unshift(model); renderModelSelect(); setModel(model); toast('모델 등록 완료: '+model.model_name,'ok'); focusScan();
   }catch(e){ toast('모델 등록 실패: '+e.message,'err'); }
@@ -330,6 +337,7 @@ async function saveScanUnit(){
   try{
     const { unit }=await api('POST','/inventory',{
       model_id:cur.model.id, serial_number:cur.serial,
+      carrier:document.getElementById('carrierSel').value, supply_source:document.getElementById('supplySel').value.trim()||null,
       store_id, manufacture_ym:document.getElementById('ymScan').value.trim()||null, entry_method:'scan'
     });
     toast('✅ 입고: '+(unit.model?unit.model.model_name:'')+' '+(unit.serial_number||''),'ok');
@@ -349,6 +357,7 @@ async function saveManual(){
   const store_id=parseInt(document.getElementById('storeSel').value);
   const sel=document.getElementById('m-model').value;
   let body={ store_id, serial_number:document.getElementById('m-serial').value.trim(),
+    carrier:document.getElementById('carrierSel').value, supply_source:document.getElementById('supplySel').value.trim()||null,
     manufacture_ym:document.getElementById('m-ym').value.trim()||null, cost_price:document.getElementById('m-cost').value||null, entry_method:'manual' };
   if(sel==='__new'){
     const nm=document.getElementById('mm-name').value.trim();
@@ -369,14 +378,14 @@ async function saveManual(){
 function prependRecent(u){
   const m=u.model||{}; const store=(STORES.find(s=>s.id===u.store_id)||{}).name||u.store_id;
   const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${m.model_name||''}</td><td>${m.capacity||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${store}</td><td><span class="pill pill-stock">입고</span></td><td>${u.entry_method||''}</td>`;
+  tr.innerHTML=`<td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${m.model_name||''}</td><td>${m.capacity||''}</td><td>${m.color||''}</td><td>${u.carrier||''}</td><td>${u.serial_number||''}</td><td>${u.supply_source||''}</td><td>${store}</td><td><span class="pill pill-stock">입고</span></td><td>${u.entry_method||''}</td>`;
   const body=document.getElementById('recentBody'); body.insertBefore(tr,body.firstChild);
 }
 async function loadRecent(){
   try{
     const { units }=await api('GET','/inventory?limit=50');
     document.getElementById('recentBody').innerHTML=units.map(u=>{ const m=u.model||{};
-      return `<tr><td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${m.model_name||''}</td><td>${m.capacity||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${u.store_name||''}</td><td><span class="pill pill-stock">${u.status}</span></td><td>${u.entry_method||''}</td></tr>`;
+      return `<tr><td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${m.model_name||''}</td><td>${m.capacity||''}</td><td>${m.color||''}</td><td>${u.carrier||''}</td><td>${u.serial_number||''}</td><td>${u.supply_source||''}</td><td>${u.store_name||''}</td><td><span class="pill pill-stock">${u.status}</span></td><td>${u.entry_method||''}</td></tr>`;
     }).join('');
     const st=await api('GET','/inventory/stats');
     document.getElementById('statBar').textContent=`총 재고 ${st.total}대 · 재고중 ${st.byStatus.in_stock||0} · 판매 ${st.byStatus.sold||0}`;
