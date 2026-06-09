@@ -133,7 +133,7 @@ async function api(method,path,body){
         <div class="unit-card">
           <div class="field-grid">
             <div class="fbox model" id="fb-model"><div class="k">단말기 · 용량 · 색상</div><div class="v" id="v-model">— 모델 바코드(SKU)를 먼저 스캔 —</div></div>
-            <div class="fbox" id="fb-serial"><div class="k">일련번호 * (스캔 또는 직접 입력)</div><input class="txt" id="serialField" style="width:100%;margin-top:4px;font-size:15px;font-weight:800" placeholder="스캔하거나 여기에 직접 입력" autocomplete="off"></div>
+            <div class="fbox" id="fb-serial"><div class="k">일련번호 (찍히거나 입력된 값)</div><div class="v" id="v-serial"></div></div>
           </div>
           <div id="dupWarn"></div>
           <div style="display:flex; gap:10px; margin-top:14px; align-items:center">
@@ -164,7 +164,7 @@ async function api(method,path,body){
       <h2>최근 입고 <button class="btn btn-secondary btn-sm" style="float:right" onclick="loadRecent()">새로고침</button></h2>
       <div id="statBar" style="font-size:12px;color:#94a3b8;margin-bottom:8px"></div>
       <table>
-        <thead><tr><th>입고시각</th><th>통신사</th><th>입고처</th><th>모델</th><th>용량</th><th>색상</th><th>일련번호</th><th>매장</th><th>상태</th><th>방식</th></tr></thead>
+        <thead><tr><th>입고시각</th><th>통신사</th><th>입고처</th><th>모델</th><th>용량</th><th>색상</th><th>일련번호</th><th>매장</th><th>상태</th></tr></thead>
         <tbody id="recentBody"></tbody>
       </table>
     </div>
@@ -209,8 +209,9 @@ async function loadSupplySources(){
   try{ const { sources }=await api('GET','/supply-sources'); document.getElementById('supplyList').innerHTML=(sources||[]).map(s=>`<option value="${s}">`).join(''); }catch(e){}
 }
 function modelLabel(m){ return `${m.model_name}${m.color?' / '+m.color:''}${m.capacity?' '+m.capacity:''}`; }
-// 일련번호 7자리 정규화 — 끝 7자리 숫자 (전체 일련번호든 7자리 스티커든 동일)
-function normSerial(raw){ const d=String(raw||'').replace(/\D/g,''); return d ? (d.length>7 ? d.slice(-7) : d) : String(raw||'').trim().toUpperCase(); }
+// 일련번호 = 정확히 7자리 숫자. 숫자만 추출(자동 자르기 X — 길이는 검증으로)
+function serialDigits(raw){ return String(raw||'').replace(/\D/g,''); }
+function isValidSerial(s){ return /^\d{7}$/.test(s); }
 function renderModelSelect(){
   // 단일 모델 드롭다운 (상단 입고설정) — 스캔·수기 공용
   const ssel=document.getElementById('scanModelSel');
@@ -253,7 +254,8 @@ function routeScan(r){
       else openNewModel(r); break;
     case 'serial':
       if(r.existing) showDup(r.existing,'일련번호');
-      cur.serial=normSerial(r.value);
+      cur.serial=serialDigits(r.value);
+      if(!isValidSerial(cur.serial)){ document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 일련번호는 <b>7자리 숫자</b>여야 합니다 (현재 ${cur.serial.length}자리: ${cur.serial||r.value}). 7자리 스티커를 스캔하거나 직접 입력하세요.</div>`; }
       if(!cur.model){ document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 모델 미선택 — 일련번호 <b>${r.value}</b> 대기중. 상단에서 모델을 선택하거나 이 단말의 <b>SKU 바코드</b>를 스캔하세요. (모델 선택 즉시 자동저장)</div>`; }
       break;
     case 'imei': case 'eid':
@@ -289,8 +291,7 @@ async function saveNewModel(){
 }
 
 function renderCur(){
-  const box=document.getElementById('fb-serial'); const sf=document.getElementById('serialField');
-  if(sf && sf.value!==(cur.serial||'')) sf.value=cur.serial||'';
+  const box=document.getElementById('fb-serial'); document.getElementById('v-serial').textContent=cur.serial||'';
   box.classList.toggle('filled',!!cur.serial);
   document.getElementById('v-model').innerHTML = cur.model?`<span class="model-tag">${modelLabel(cur.model)}</span>`:'— 모델(SKU) 스캔 또는 위에서 선택 —';
   document.getElementById('fb-model').classList.toggle('filled',!!cur.model);
@@ -299,16 +300,17 @@ function renderCur(){
 
 function maybeAutoSave(){
   if(!document.getElementById('autoSave').checked) return;
-  if(cur.model && cur.serial){ saveScanUnit(); }
+  if(cur.model && isValidSerial(cur.serial)){ saveScanUnit(); }
 }
 
 async function saveScanUnit(){
   if(!cur.model) return toast('모델을 먼저 인식/선택하세요','err');
-  if(!cur.serial) return toast('일련번호를 스캔하세요','err');
+  const serial=serialDigits(cur.serial);
+  if(!isValidSerial(serial)){ toast(`일련번호는 7자리 숫자여야 합니다 (현재 ${serial.length}자리) — 다시 정확히 입력하세요`,'err'); return; }
   const store_id=parseInt(document.getElementById('storeSel').value);
   try{
     const { unit }=await api('POST','/inventory',{
-      model_id:cur.model.id, serial_number:normSerial(cur.serial),
+      model_id:cur.model.id, serial_number:serial,
       carrier:document.getElementById('carrierSel').value, supply_source:document.getElementById('supplySel').value.trim()||null,
       store_id, entry_method:'scan'
     });
@@ -328,14 +330,14 @@ function resetCur(keepModel){
 function prependRecent(u){
   const m=u.model||{}; const store=(STORES.find(s=>s.id===u.store_id)||{}).name||u.store_id;
   const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${u.carrier||''}</td><td>${u.supply_source||''}</td><td>${m.model_name||''}</td><td>${m.capacity||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${store}</td><td><span class="pill pill-stock">입고</span></td><td>${u.entry_method||''}</td>`;
+  tr.innerHTML=`<td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${u.carrier||''}</td><td>${u.supply_source||''}</td><td>${m.model_name||''}</td><td>${m.capacity||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${store}</td><td><span class="pill pill-stock">입고</span></td>`;
   const body=document.getElementById('recentBody'); body.insertBefore(tr,body.firstChild);
 }
 async function loadRecent(){
   try{
     const { units }=await api('GET','/inventory?limit=50');
     document.getElementById('recentBody').innerHTML=units.map(u=>{ const m=u.model||{};
-      return `<tr><td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${u.carrier||''}</td><td>${u.supply_source||''}</td><td>${m.model_name||''}</td><td>${m.capacity||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${u.store_name||''}</td><td><span class="pill pill-stock">${u.status}</span></td><td>${u.entry_method||''}</td></tr>`;
+      return `<tr><td>${new Date(u.received_at).toLocaleString('ko-KR',{hour12:false}).slice(5)}</td><td>${u.carrier||''}</td><td>${u.supply_source||''}</td><td>${m.model_name||''}</td><td>${m.capacity||''}</td><td>${m.color||''}</td><td>${u.serial_number||''}</td><td>${u.store_name||''}</td><td><span class="pill pill-stock">${u.status}</span></td></tr>`;
     }).join('');
     const st=await api('GET','/inventory/stats');
     document.getElementById('statBar').textContent=`총 재고 ${st.total}대 · 재고중 ${st.byStatus.in_stock||0} · 판매 ${st.byStatus.sold||0}`;
@@ -361,12 +363,6 @@ function stopCam(){ camOn=false; document.getElementById('camWrap').style.displa
 // init
 document.addEventListener('DOMContentLoaded',()=>{
   if(getToken()) boot();
-  // 일련번호 직접 입력 칸 — 타이핑 동기화 + Enter 저장
-  const sf=document.getElementById('serialField');
-  if(sf){
-    sf.addEventListener('input',()=>{ cur.serial=sf.value.trim().toUpperCase(); document.getElementById('fb-serial').classList.toggle('filled',!!cur.serial); document.getElementById('dupWarn').innerHTML=''; });
-    sf.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveScanUnit(); } });
-  }
 });
 </script>
 </body>
