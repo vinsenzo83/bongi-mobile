@@ -133,11 +133,10 @@ async function api(method,path,body){
         <div class="unit-card">
           <div class="field-grid">
             <div class="fbox model" id="fb-model"><div class="k">단말기 · 용량 · 색상</div><div class="v" id="v-model">— 모델 바코드(SKU)를 먼저 스캔 —</div></div>
-            <div class="fbox" id="fb-serial"><div class="k">일련번호 *</div><div class="v" id="v-serial"></div></div>
+            <div class="fbox" id="fb-serial"><div class="k">일련번호 * (스캔 또는 직접 입력)</div><input class="txt" id="serialField" style="width:100%;margin-top:4px;font-size:15px;font-weight:800" placeholder="스캔하거나 여기에 직접 입력" autocomplete="off"></div>
           </div>
           <div id="dupWarn"></div>
           <div style="display:flex; gap:10px; margin-top:14px; align-items:center">
-            <input type="text" class="txt" id="ymScan" placeholder="제조연월(예:202412)" style="width:160px">
             <button class="btn btn-primary" onclick="saveScanUnit()">입고 저장 (Enter)</button>
             <button class="btn btn-secondary" onclick="resetCur(true)">일련번호 초기화</button>
             <span style="font-size:11px;color:#64748b" id="lockHint"></span>
@@ -210,6 +209,8 @@ async function loadSupplySources(){
   try{ const { sources }=await api('GET','/supply-sources'); document.getElementById('supplyList').innerHTML=(sources||[]).map(s=>`<option value="${s}">`).join(''); }catch(e){}
 }
 function modelLabel(m){ return `${m.model_name}${m.color?' / '+m.color:''}${m.capacity?' '+m.capacity:''}`; }
+// 일련번호 7자리 정규화 — 끝 7자리 숫자 (전체 일련번호든 7자리 스티커든 동일)
+function normSerial(raw){ const d=String(raw||'').replace(/\D/g,''); return d ? (d.length>7 ? d.slice(-7) : d) : String(raw||'').trim().toUpperCase(); }
 function renderModelSelect(){
   // 단일 모델 드롭다운 (상단 입고설정) — 스캔·수기 공용
   const ssel=document.getElementById('scanModelSel');
@@ -252,7 +253,7 @@ function routeScan(r){
       else openNewModel(r); break;
     case 'serial':
       if(r.existing) showDup(r.existing,'일련번호');
-      cur.serial=r.value;
+      cur.serial=normSerial(r.value);
       if(!cur.model){ document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 모델 미선택 — 일련번호 <b>${r.value}</b> 대기중. 상단에서 모델을 선택하거나 이 단말의 <b>SKU 바코드</b>를 스캔하세요. (모델 선택 즉시 자동저장)</div>`; }
       break;
     case 'imei': case 'eid':
@@ -288,7 +289,9 @@ async function saveNewModel(){
 }
 
 function renderCur(){
-  const box=document.getElementById('fb-serial'); document.getElementById('v-serial').textContent=cur.serial||''; box.classList.toggle('filled',!!cur.serial);
+  const box=document.getElementById('fb-serial'); const sf=document.getElementById('serialField');
+  if(sf && sf.value!==(cur.serial||'')) sf.value=cur.serial||'';
+  box.classList.toggle('filled',!!cur.serial);
   document.getElementById('v-model').innerHTML = cur.model?`<span class="model-tag">${modelLabel(cur.model)}</span>`:'— 모델(SKU) 스캔 또는 위에서 선택 —';
   document.getElementById('fb-model').classList.toggle('filled',!!cur.model);
   document.getElementById('lockHint').textContent = cur.model?'모델 고정됨 — 일련번호만 연속 스캔하세요':'';
@@ -305,9 +308,9 @@ async function saveScanUnit(){
   const store_id=parseInt(document.getElementById('storeSel').value);
   try{
     const { unit }=await api('POST','/inventory',{
-      model_id:cur.model.id, serial_number:cur.serial,
+      model_id:cur.model.id, serial_number:normSerial(cur.serial),
       carrier:document.getElementById('carrierSel').value, supply_source:document.getElementById('supplySel').value.trim()||null,
-      store_id, manufacture_ym:document.getElementById('ymScan').value.trim()||null, entry_method:'scan'
+      store_id, entry_method:'scan'
     });
     toast('✅ 입고: '+(unit.model?unit.model.model_name:'')+' '+(unit.serial_number||''),'ok');
     prependRecent(unit); resetCur(true); focusScan();
@@ -356,7 +359,15 @@ function toggleCam(){
 function stopCam(){ camOn=false; document.getElementById('camWrap').style.display='none'; if(html5Qr){ html5Qr.stop().catch(()=>{}); html5Qr=null; } }
 
 // init
-document.addEventListener('DOMContentLoaded',()=>{ if(getToken()) boot(); document.getElementById('scanInput')?.addEventListener('blur',()=>{ /* keep focus on scan tab */ }); });
+document.addEventListener('DOMContentLoaded',()=>{
+  if(getToken()) boot();
+  // 일련번호 직접 입력 칸 — 타이핑 동기화 + Enter 저장
+  const sf=document.getElementById('serialField');
+  if(sf){
+    sf.addEventListener('input',()=>{ cur.serial=sf.value.trim().toUpperCase(); document.getElementById('fb-serial').classList.toggle('filled',!!cur.serial); document.getElementById('dupWarn').innerHTML=''; });
+    sf.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveScanUnit(); } });
+  }
+});
 </script>
 </body>
 </html>
