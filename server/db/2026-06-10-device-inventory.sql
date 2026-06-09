@@ -6,15 +6,15 @@
 -- 계약(incentive_sales) 연동은 STEP 4에서 추가 (지금은 독립 모듈)
 -- ═══════════════════════════════════════════════════════════════
 
--- 1. 단말 모델 마스터 (SKU = 모델+색상+용량 1행)
+-- 1. 단말 모델 마스터 (SKU = 단말기+색상+용량 1행, 통신사 무관 = 하드웨어 정체성)
 --    바코드 스캔 시 EAN-13(예: 8806095849478) 또는 모델코드(SM-S936NDBAKOC)로 lookup
+--    통신사는 모델이 아니라 개별 단말(입고) 속성 (같은 하드웨어를 SK/KT/LG로 유통)
 CREATE TABLE IF NOT EXISTS device_models (
   id            bigserial PRIMARY KEY,
   sku           text UNIQUE,                         -- EAN-13 박스 바코드 (스캔 lookup 키)
   model_code    text,                                -- 'SM-S936NDBAKOC' (제조사 모델코드)
   model_name    text NOT NULL,                       -- '갤럭시 S25+' (사람이 읽는 이름)
   manufacturer  text DEFAULT '삼성',                 -- 삼성 / 애플 / 기타
-  carrier       text CHECK (carrier IN ('SK','KT','LG','자급제','공용')) DEFAULT '공용',
   color         text,                                -- '네이비'
   capacity      text,                                -- '256GB'
   release_price int,                                 -- 출고가(참고)
@@ -28,14 +28,18 @@ CREATE INDEX IF NOT EXISTS idx_device_models_sku ON device_models(sku);
 CREATE INDEX IF NOT EXISTS idx_device_models_code ON device_models(model_code);
 CREATE INDEX IF NOT EXISTS idx_device_models_name ON device_models(model_name);
 
--- 2. 개별 단말 재고 (단말 1대 = 1행, IMEI/일련번호로 고유 식별)
+-- 2. 개별 단말 재고 (단말 1대 = 1행)
+--    중복키: (일련번호, 통신사) — 일련번호는 통신사 다르면 중복 가능 (도메인 규칙)
+--    IMEI는 전역 유일하나 추가 스캔 부담 → 보조값으로만 (선택)
 CREATE TABLE IF NOT EXISTS device_inventory (
   id              bigserial PRIMARY KEY,
   model_id        bigint NOT NULL REFERENCES device_models(id) ON DELETE RESTRICT,
-  serial_number   text UNIQUE,                       -- 'SMS936AX0024511' (일련번호)
-  imei1           text UNIQUE,                        -- '350044470335229' (15자리, 개통용)
-  imei2           text,                               -- '350671230335220' (eSIM/듀얼)
-  eid             text,                               -- 'eSIM 식별자' (32자리)
+  serial_number   text NOT NULL,                      -- 'SMS936AX0024511' (일련번호)
+  carrier         text NOT NULL,                      -- 통신사 (입고 시 선택): SK/KT/LG/알뜰/자급제
+  supply_source   text,                               -- 입고처 (공급처/매입처, 입고 시 선택)
+  imei1           text,                               -- '350044470335229' (선택, 전역 유일)
+  imei2           text,                               -- (선택)
+  eid             text,                               -- (선택)
   store_id        int NOT NULL,                       -- 보유 매장 (server/data/stores.js 1~8)
   status          text NOT NULL DEFAULT 'in_stock'    -- 재고 상태
                     CHECK (status IN ('in_stock','reserved','sold','transferred','defective','returned')),
@@ -55,11 +59,13 @@ CREATE TABLE IF NOT EXISTS device_inventory (
   created_at      timestamptz DEFAULT now(),
   updated_at      timestamptz DEFAULT now()
 );
+-- 일련번호+통신사 복합 유일 (통신사 다르면 같은 일련번호 허용)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_device_inventory_serial_carrier ON device_inventory(serial_number, carrier);
 CREATE INDEX IF NOT EXISTS idx_device_inventory_model ON device_inventory(model_id);
 CREATE INDEX IF NOT EXISTS idx_device_inventory_store ON device_inventory(store_id);
 CREATE INDEX IF NOT EXISTS idx_device_inventory_status ON device_inventory(status);
 CREATE INDEX IF NOT EXISTS idx_device_inventory_serial ON device_inventory(serial_number);
-CREATE INDEX IF NOT EXISTS idx_device_inventory_imei1 ON device_inventory(imei1);
+CREATE INDEX IF NOT EXISTS idx_device_inventory_carrier ON device_inventory(carrier);
 
 -- 3. 입출고/이동/상태변경 로그 (감사 추적)
 CREATE TABLE IF NOT EXISTS device_inventory_log (

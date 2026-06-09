@@ -58,6 +58,16 @@ router.get('/stores', authenticateJWT, async (req, res) => {
   res.json({ stores: stores.map(s => ({ id: s.id, name: s.name })) });
 });
 
+// 입고처 자동완성 (기존 입력값 distinct)
+router.get('/supply-sources', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.json({ sources: [] });
+    const { data } = await supabase.from('device_inventory').select('supply_source').not('supply_source', 'is', null).limit(1000);
+    const set = [...new Set((data || []).map(r => r.supply_source).filter(Boolean))].sort();
+    res.json({ sources: set });
+  } catch (e) { res.json({ sources: [] }); }
+});
+
 // ════════════════════ 모델 마스터 ════════════════════
 // 목록 / 검색
 router.get('/models', authenticateJWT, async (req, res) => {
@@ -93,14 +103,13 @@ router.post('/models', authenticateJWT, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
-    const { id, sku, model_code, model_name, manufacturer, carrier, color, capacity, release_price, image_url } = req.body || {};
+    const { id, sku, model_code, model_name, manufacturer, color, capacity, release_price, image_url } = req.body || {};
     if (!model_name) return res.status(400).json({ error: 'model_name 필수' });
     const row = {
       sku: sku ? String(sku).trim() : null,
       model_code: model_code ? String(model_code).trim().toUpperCase() : null,
       model_name: String(model_name).trim(),
       manufacturer: manufacturer || '삼성',
-      carrier: carrier || '공용',
       color: color || null,
       capacity: capacity || null,
       release_price: release_price ? parseInt(release_price) : null,
@@ -131,12 +140,13 @@ router.post('/scan', authenticateJWT, async (req, res) => {
       const col = cls.type === 'sku' ? 'sku' : 'model_code';
       const { data } = await supabase.from('device_models').select('*').eq(col, cls.value).limit(1).maybeSingle();
       out.model = data || null;
-    } else if (cls.type === 'imei' || cls.type === 'serial') {
-      const col = cls.type === 'imei' ? 'imei1' : 'serial_number';
+    } else if (cls.type === 'serial') {
+      // 일련번호는 통신사 다르면 중복 가능 → 여러 건일 수 있어 limit으로
       const { data } = await supabase.from('device_inventory')
-        .select('id,status,store_id,model:device_models(model_name,color,capacity)')
-        .eq(col, cls.value).limit(1).maybeSingle();
-      out.existing = data || null; // 이미 등록된 단말이면 중복 경고
+        .select('id,status,carrier,store_id,model:device_models(model_name,color,capacity)')
+        .eq('serial_number', cls.value).limit(5);
+      out.existing = (data && data.length) ? data[0] : null;
+      out.existingAll = data || [];
     }
     res.json(out);
   } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
@@ -164,7 +174,7 @@ router.post('/inventory', authenticateJWT, async (req, res) => {
         sku: m.sku ? String(m.sku).trim() : null,
         model_code: m.model_code ? String(m.model_code).trim().toUpperCase() : null,
         model_name: String(m.model_name).trim(),
-        manufacturer: m.manufacturer || '삼성', carrier: m.carrier || '공용',
+        manufacturer: m.manufacturer || '삼성',
         color: m.color || null, capacity: m.capacity || null,
       };
       const { data: mdata, error: merr } = mrow.sku
@@ -179,19 +189,24 @@ router.post('/inventory', authenticateJWT, async (req, res) => {
     if (!store_id || !stores.find(s => s.id === store_id)) return res.status(400).json({ error: '유효한 store_id 필요' });
 
     const serial = b.serial_number ? String(b.serial_number).trim().toUpperCase() : null;
-    const imei1 = b.imei1 ? String(b.imei1).trim() : null;
     if (!serial) return res.status(400).json({ error: '일련번호는 필수입니다' });
+    const carrier = b.carrier ? String(b.carrier).trim() : null;
+    if (!carrier) return res.status(400).json({ error: '통신사를 선택하세요' });
 
-    // 중복 확인 (일련번호 unique)
+    // 중복 확인 (일련번호+통신사 복합 — 통신사 다르면 같은 일련번호 허용)
     {
-      const { data: dup } = await supabase.from('device_inventory').select('id,serial_number,status').eq('serial_number', serial).limit(1).maybeSingle();
-      if (dup) return res.status(409).json({ error: '이미 등록된 일련번호입니다', duplicate: dup });
+      const { data: dup } = await supabase.from('device_inventory')
+        .select('id,serial_number,carrier,status').eq('serial_number', serial).eq('carrier', carrier).limit(1).maybeSingle();
+      if (dup) return res.status(409).json({ error: `이미 등록된 단말입니다 (${carrier} ${serial})`, duplicate: dup });
     }
 
     const row = {
       model_id: modelId,
       serial_number: serial,
-      imei1, imei2: b.imei2 ? String(b.imei2).trim() : null,
+      carrier,
+      supply_source: b.supply_source ? String(b.supply_source).trim() : null,
+      imei1: b.imei1 ? String(b.imei1).trim() : null,
+      imei2: b.imei2 ? String(b.imei2).trim() : null,
       eid: b.eid ? String(b.eid).trim() : null,
       store_id,
       status: 'in_stock',
@@ -222,11 +237,12 @@ router.post('/inventory/bulk', authenticateJWT, async (req, res) => {
       try {
         const store_id = parseInt(b.store_id);
         const serial = b.serial_number ? String(b.serial_number).trim().toUpperCase() : null;
-        if (!b.model_id || !store_id || !serial) { results.failed.push({ item: b, error: '필수값 누락(모델·매장·일련번호)' }); continue; }
-        const { data: dup } = await supabase.from('device_inventory').select('id').eq('serial_number', serial).limit(1).maybeSingle();
+        const carrier = b.carrier ? String(b.carrier).trim() : null;
+        if (!b.model_id || !store_id || !serial || !carrier) { results.failed.push({ item: b, error: '필수값 누락(모델·매장·통신사·일련번호)' }); continue; }
+        const { data: dup } = await supabase.from('device_inventory').select('id').eq('serial_number', serial).eq('carrier', carrier).limit(1).maybeSingle();
         if (dup) { results.failed.push({ item: b, error: '중복' }); continue; }
         const { data, error } = await supabase.from('device_inventory').insert({
-          model_id: b.model_id, serial_number: serial,
+          model_id: b.model_id, serial_number: serial, carrier, supply_source: b.supply_source || null,
           store_id, status: 'in_stock', manufacture_ym: b.manufacture_ym || null,
           entry_method: 'bulk', received_by: req.user.id, received_by_name: me.name || null,
         }).select('id,serial_number').single();
