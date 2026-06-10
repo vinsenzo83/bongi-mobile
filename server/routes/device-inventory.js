@@ -40,16 +40,12 @@ function luhnValid(s) {
 function classifyCode(raw) {
   const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
   if (!code) return { type: 'unknown', value: code };
-  // 제조사 모델코드 (SM-S936NDBAKOC)
+  // 제조사 모델코드 (SM-S936NDBAKOC) → 카탈로그로 모델·색상·용량
   if (/^SM-[A-Z0-9]{3,}$/.test(code)) return { type: 'model_code', value: code };
-  // EID (eSIM 식별자, 32자리 숫자)
+  // EID (eSIM 식별자, 32자리 숫자) — 무시
   if (/^\d{32}$/.test(code)) return { type: 'eid', value: code };
-  // IMEI (15자리 숫자, Luhn) — 재고엔 불필요하므로 무시 대상
-  if (/^\d{15}$/.test(code)) return { type: 'imei', value: code, luhn: luhnValid(code) };
-  // EAN/SKU 박스 바코드 (12~14자리 숫자)
-  if (/^\d{12,14}$/.test(code)) return { type: 'sku', value: code };
-  // 일련번호 — 위 패턴(SKU·IMEI·EID) 제외한 영숫자 (순수 숫자 일련번호도 허용)
-  if (/^[A-Z0-9][A-Z0-9-]{2,}$/.test(code)) return { type: 'serial', value: code };
+  // 그 외 전부 일련번호 (전체 문자열 그대로 — 형식 다양: CT73M0293809I·SMS942EB01273136·SC4C2N9NXG6·70392601239263 등)
+  if (code.length >= 4) return { type: 'serial', value: code };
   return { type: 'unknown', value: code };
 }
 
@@ -192,29 +188,11 @@ router.post('/scan', authenticateJWT, async (req, res) => {
         out.catalog = cat || null;  // 카탈로그에 있으면 클라가 자동 생성
       }
     } else if (cls.type === 'serial') {
-      // 전체 일련번호 바코드(SMS936AX0024511): 끝7자리=일련번호, 앞=모델 prefix
-      // 7자리 숫자만(0024511): 일련번호 그대로
-      const raw = cls.value;
-      let serial, prefix = null;
-      if (/[A-Z]/.test(raw)) { serial = raw.replace(/\D/g, '').slice(-7); prefix = raw.slice(0, -7) || null; }
-      else { serial = raw; }
-      out.parsedSerial = serial;
-      out.serialPrefix = prefix;
-      if (prefix) {
-        const { data: pm } = await supabase.from('device_serial_prefix_map')
-          .select('model_id, model:device_models(*)').eq('prefix', prefix).maybeSingle();
-        out.prefixModel = pm ? pm.model : null;  // 학습된 prefix면 모델 자동
-      }
+      // 일련번호 = 스캔한 전체 문자열 그대로 (자르기·파싱 없음)
+      out.parsedSerial = cls.value;
       const { data } = await supabase.from('device_inventory')
-        .select('id,status,carrier,model:device_models(model_name,color)').eq('serial_number', serial).limit(3);
+        .select('id,status,carrier,model:device_models(model_name,color)').eq('serial_number', cls.value).limit(3);
       out.existing = (data && data.length) ? data[0] : null;
-    } else if (cls.type === 'imei') {
-      // TAC(앞 8자리)로 학습된 모델 조회
-      const tac = cls.value.slice(0, 8);
-      out.tac = tac;
-      const { data } = await supabase.from('device_tac_map')
-        .select('model_id, model:device_models(*)').eq('tac', tac).maybeSingle();
-      out.model = data ? data.model : null;
     }
     res.json(out);
   } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
@@ -256,9 +234,8 @@ router.post('/inventory', authenticateJWT, async (req, res) => {
     const store_id = parseInt(b.store_id);
     if (!store_id || !stores.find(s => s.id === store_id)) return res.status(400).json({ error: '유효한 store_id 필요' });
 
-    const serial = normalizeSerial(b.serial_number);
+    const serial = b.serial_number ? String(b.serial_number).trim().toUpperCase() : null;
     if (!serial) return res.status(400).json({ error: '일련번호는 필수입니다' });
-    if (!SERIAL_RE.test(serial)) return res.status(400).json({ error: `일련번호는 7자리 숫자여야 합니다 (입력: ${serial}, ${serial.length}자리)` });
     const carrier = b.carrier ? String(b.carrier).trim() : null;
     if (!carrier) return res.status(400).json({ error: '통신사를 선택하세요' });
 
@@ -305,10 +282,9 @@ router.post('/inventory/bulk', authenticateJWT, async (req, res) => {
     for (const b of items) {
       try {
         const store_id = parseInt(b.store_id);
-        const serial = normalizeSerial(b.serial_number);
+        const serial = b.serial_number ? String(b.serial_number).trim().toUpperCase() : null;
         const carrier = b.carrier ? String(b.carrier).trim() : null;
         if (!b.model_id || !store_id || !serial || !carrier) { results.failed.push({ item: b, error: '필수값 누락(모델·매장·통신사·일련번호)' }); continue; }
-        if (!SERIAL_RE.test(serial)) { results.failed.push({ item: b, error: '일련번호 7자리 아님' }); continue; }
         const { data: dup } = await supabase.from('device_inventory').select('id').eq('serial_number', serial).eq('carrier', carrier).limit(1).maybeSingle();
         if (dup) { results.failed.push({ item: b, error: '중복' }); continue; }
         const { data, error } = await supabase.from('device_inventory').insert({
