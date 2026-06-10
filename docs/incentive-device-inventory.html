@@ -115,7 +115,6 @@ async function api(method,path,body){
           <select id="scanModelSel" style="width:100%"></select></div>
         <div><label class="fld">&nbsp;</label><button class="btn btn-blue btn-sm" onclick="openNewModelManual()">+ 새 모델 등록</button></div>
         <div><label class="fld"><input type="checkbox" id="autoSave" checked> 스캔 즉시 자동저장</label></div>
-        <div><label class="fld"><input type="checkbox" id="tacMode"> IMEI로 모델 자동인식(TAC 학습)</label></div>
       </div>
       <div style="font-size:11px;color:#64748b;margin-top:8px">목록에 없는 새 모델은 박스 <b>SKU 바코드를 스캔</b>하면 1회 등록창이 뜹니다.</div>
     </div>
@@ -177,7 +176,6 @@ async function api(method,path,body){
 <script>
 let STORES=[], MODELS=[];
 let cur={ model:null, serial:null };
-let pendingTac=null;  // IMEI 스캔으로 잡힌 미학습 TAC (모델 선택 시 학습)
 
 function toast(msg,type='ok'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+type; setTimeout(()=>t.className='',2200); }
 function scanLog(line){ const el=document.getElementById('scanLog'); const ts=new Date().toTimeString().slice(0,8); el.innerHTML='<div>['+ts+'] '+line+'</div>'+el.innerHTML; }
@@ -262,14 +260,8 @@ function routeScan(r){
       if(!isValidSerial(cur.serial)){ document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 일련번호는 <b>7자리 숫자</b>여야 합니다 (현재 ${cur.serial.length}자리: ${cur.serial||r.value}). 7자리 스티커를 스캔하거나 직접 입력하세요.</div>`; }
       if(!cur.model){ document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 모델 미선택 — 일련번호 <b>${r.value}</b> 대기중. 상단에서 모델을 선택하거나 이 단말의 <b>SKU 바코드</b>를 스캔하세요. (모델 선택 즉시 자동저장)</div>`; }
       break;
-    case 'imei':
-      if(!document.getElementById('tacMode').checked){ toast('IMEI는 재고에 불필요 — 일련번호를 스캔하세요 (TAC 학습 켜면 모델인식)','warn'); scanLog('· IMEI 무시: '+r.value); return; }
-      // TAC 모드: 앞 8자리로 모델 인식/학습
-      if(r.model){ setModel(r.model); toast('TAC 인식: '+r.model.model_name,'ok'); scanLog('· TAC '+(r.tac||'')+' → '+r.model.model_name); }
-      else { pendingTac=r.tac||r.value.slice(0,8); document.getElementById('dupWarn').innerHTML=`<div class="warn">📡 처음 보는 TAC <b>${pendingTac}</b> — 상단에서 모델을 선택/등록하면 이 TAC가 그 모델로 <b>학습</b>됩니다.</div>`; scanLog('· 새 TAC '+pendingTac+' 학습 대기'); }
-      return;
-    case 'eid':
-      toast('EID는 재고에 불필요 — 일련번호를 스캔하세요','warn'); scanLog('· EID 무시: '+r.value); return;
+    case 'imei': case 'eid':
+      toast(r.type.toUpperCase()+'는 재고에 불필요 — 모델코드/일련번호를 스캔하세요','warn'); scanLog('· '+r.type.toUpperCase()+' 무시: '+r.value); return;
     default: toast('인식 못한 코드: '+r.value,'warn'); scanLog('⚠️ 미인식: '+r.value);
   }
   renderCur(); maybeAutoSave();
@@ -282,8 +274,6 @@ function showDup(ex,label){
 function setModel(m){
   cur.model=m; document.getElementById('newModel').style.display='none';
   const ss=document.getElementById('scanModelSel'); if(ss && m) ss.value=m.id;
-  // 대기 중 TAC 학습 (IMEI로 잡힌 새 TAC → 이 모델로 매핑 저장)
-  if(pendingTac && m){ const t=pendingTac; pendingTac=null; api('POST','/tac',{tac:t,model_id:m.id}).then(()=>toast('📡 TAC 학습됨: '+t+' → '+m.model_name,'ok')).catch(e=>toast('TAC 학습 실패: '+e.message,'err')); }
   document.getElementById('dupWarn').innerHTML=''; renderCur(); maybeAutoSave();
 }
 function openNewModel(r){
