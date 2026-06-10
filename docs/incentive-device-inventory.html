@@ -254,6 +254,7 @@ function routeScan(r){
   switch(r.type){
     case 'sku': case 'model_code':
       if(r.model){ setModel(r.model); toast('모델 인식: '+r.model.model_name,'ok'); }
+      else if(r.catalog){ createModelFromCatalog(r.codeKey, r.catalog); }
       else openNewModel(r); break;
     case 'serial':
       if(r.existing) showDup(r.existing,'일련번호');
@@ -290,6 +291,16 @@ function openNewModel(r){
   document.getElementById('nm-sku').value = r.type==='sku'?r.value:'';
   document.getElementById('nm-code').value = r.type==='model_code'?r.value:'';
   document.getElementById('nm-name').focus();
+}
+// 삼성 카탈로그 매칭 → 모델 자동 생성·선택 (텔킷 방식: 모델코드만 찍으면 자동)
+async function createModelFromCatalog(codeKey, c){
+  try{
+    const { model }=await api('POST','/models',{ model_code:codeKey, model_name:c.product_name, color:c.color||null, capacity:c.capacity||null });
+    if(!MODELS.find(m=>m.id===model.id)) MODELS.unshift(model);
+    renderModelSelect(); setModel(model);
+    toast('📦 카탈로그 자동인식: '+model.model_name+(c.color?' / '+c.color:'')+(c.capacity?' '+c.capacity:''),'ok');
+    scanLog('· 카탈로그 '+codeKey+' → '+model.model_name+' '+(c.color||''));
+  }catch(e){ toast('카탈로그 모델 생성 실패: '+e.message,'err'); }
 }
 // 수동 SKU(모델) 등록 — 스캔 없이 직접 입력
 function openNewModelManual(){

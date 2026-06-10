@@ -162,10 +162,19 @@ router.post('/scan', authenticateJWT, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const cls = classifyCode((req.body || {}).code);
     const out = { ...cls };
-    if (cls.type === 'sku' || cls.type === 'model_code') {
-      const col = cls.type === 'sku' ? 'sku' : 'model_code';
-      const { data } = await supabase.from('device_models').select('*').eq(col, cls.value).limit(1).maybeSingle();
+    if (cls.type === 'sku') {
+      const { data } = await supabase.from('device_models').select('*').eq('sku', cls.value).limit(1).maybeSingle();
       out.model = data || null;
+    } else if (cls.type === 'model_code') {
+      // 삼성 모델코드: 채널 끝 3자리(KOD/KOO/KOC) 제거한 키로 매칭
+      const key = cls.value.length > 11 ? cls.value.slice(0, -3) : cls.value;
+      out.codeKey = key;
+      const { data: m } = await supabase.from('device_models').select('*').eq('model_code', key).limit(1).maybeSingle();
+      out.model = m || null;
+      if (!m) {
+        const { data: cat } = await supabase.from('device_model_catalog').select('*').eq('code_key', key).maybeSingle();
+        out.catalog = cat || null;  // 카탈로그에 있으면 클라가 자동 생성
+      }
     } else if (cls.type === 'serial') {
       // 일련번호는 통신사 다르면 중복 가능 → 여러 건일 수 있어 limit으로
       const { data } = await supabase.from('device_inventory')
