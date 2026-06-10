@@ -155,6 +155,22 @@ router.post('/tac', authenticateJWT, async (req, res) => {
   } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
 });
 
+// 일련번호 prefix 학습 — 일련번호 바코드 앞부분(SMS936AX) → 모델 (다음부터 일련번호 1스캔으로 모델 자동)
+router.post('/serial-prefix', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+    const prefix = String((req.body || {}).prefix || '').trim().toUpperCase();
+    const model_id = (req.body || {}).model_id;
+    if (!prefix || !model_id) return res.status(400).json({ error: 'prefix·model_id 필수' });
+    const { error } = await supabase.from('device_serial_prefix_map')
+      .upsert({ prefix, model_id, learned_at: new Date().toISOString(), learned_by: req.user.id, learned_by_name: me.name || null }, { onConflict: 'prefix' });
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: sanitizeErr(e) }); }
+});
+
 // ════════════════════ 스캔 분류 ════════════════════
 // 스캔된 코드 1개 → 타입 판별 + (sku/code면) 모델 매칭 + (imei/serial이면) 기존 재고 중복 확인
 router.post('/scan', authenticateJWT, async (req, res) => {
@@ -176,12 +192,22 @@ router.post('/scan', authenticateJWT, async (req, res) => {
         out.catalog = cat || null;  // 카탈로그에 있으면 클라가 자동 생성
       }
     } else if (cls.type === 'serial') {
-      // 일련번호는 통신사 다르면 중복 가능 → 여러 건일 수 있어 limit으로
+      // 전체 일련번호 바코드(SMS936AX0024511): 끝7자리=일련번호, 앞=모델 prefix
+      // 7자리 숫자만(0024511): 일련번호 그대로
+      const raw = cls.value;
+      let serial, prefix = null;
+      if (/[A-Z]/.test(raw)) { serial = raw.replace(/\D/g, '').slice(-7); prefix = raw.slice(0, -7) || null; }
+      else { serial = raw; }
+      out.parsedSerial = serial;
+      out.serialPrefix = prefix;
+      if (prefix) {
+        const { data: pm } = await supabase.from('device_serial_prefix_map')
+          .select('model_id, model:device_models(*)').eq('prefix', prefix).maybeSingle();
+        out.prefixModel = pm ? pm.model : null;  // 학습된 prefix면 모델 자동
+      }
       const { data } = await supabase.from('device_inventory')
-        .select('id,status,carrier,store_id,model:device_models(model_name,color,capacity)')
-        .eq('serial_number', cls.value).limit(5);
+        .select('id,status,carrier,model:device_models(model_name,color)').eq('serial_number', serial).limit(3);
       out.existing = (data && data.length) ? data[0] : null;
-      out.existingAll = data || [];
     } else if (cls.type === 'imei') {
       // TAC(앞 8자리)로 학습된 모델 조회
       const tac = cls.value.slice(0, 8);
