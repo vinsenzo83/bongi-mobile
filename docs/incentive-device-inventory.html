@@ -175,7 +175,7 @@ async function api(method,path,body){
 
 <script>
 let STORES=[], MODELS=[];
-let cur={ model:null, serial:null, serialPrefix:null };
+let cur={ model:null, serial:null };
 
 function toast(msg,type='ok'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+type; setTimeout(()=>t.className='',2200); }
 function scanLog(line){ const el=document.getElementById('scanLog'); const ts=new Date().toTimeString().slice(0,8); el.innerHTML='<div>['+ts+'] '+line+'</div>'+el.innerHTML; }
@@ -210,9 +210,7 @@ async function loadSupplySources(){
   try{ const { sources }=await api('GET','/supply-sources'); document.getElementById('supplyList').innerHTML=(sources||[]).map(s=>`<option value="${s}">`).join(''); }catch(e){}
 }
 function modelLabel(m){ return `${m.model_name}${m.color?' / '+m.color:''}${m.capacity?' '+m.capacity:''}`; }
-// 일련번호 = 정확히 7자리 숫자. 숫자만 추출(자동 자르기 X — 길이는 검증으로)
-function serialDigits(raw){ return String(raw||'').replace(/\D/g,''); }
-function isValidSerial(s){ return /^\d{7}$/.test(s); }
+// 일련번호 = 스캔한 전체 문자열 그대로 (형식 다양: CT73M0293809I·SMS942EB01273136·SC4C2N9NXG6 등)
 function renderModelSelect(){
   // 단일 모델 드롭다운 (상단 입고설정) — 스캔·수기 공용
   const ssel=document.getElementById('scanModelSel');
@@ -256,15 +254,11 @@ function routeScan(r){
       else openNewModel(r); break;
     case 'serial':
       if(r.existing) showDup(r.existing,'일련번호');
-      cur.serial = r.parsedSerial || serialDigits(r.value);   // 서버가 끝7자리 파싱
-      cur.serialPrefix = r.serialPrefix || null;
-      if(r.prefixModel && !cur.model){ setModel(r.prefixModel); toast('일련번호로 모델 자동인식: '+r.prefixModel.model_name,'ok'); scanLog('· prefix '+cur.serialPrefix+' → '+r.prefixModel.model_name); }
-      else if(!isValidSerial(cur.serial)){ document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 일련번호는 <b>7자리 숫자</b>여야 합니다 (현재 ${cur.serial.length}자리: ${cur.serial||r.value}).</div>`; }
-      else if(!cur.model){ document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 모델 미선택 — 일련번호 <b>${cur.serial}</b> 대기중. 모델코드를 스캔하거나 상단에서 모델을 선택하세요.</div>`; }
-      if(!cur.model){ document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 모델 미선택 — 일련번호 <b>${r.value}</b> 대기중. 상단에서 모델을 선택하거나 이 단말의 <b>SKU 바코드</b>를 스캔하세요. (모델 선택 즉시 자동저장)</div>`; }
+      cur.serial = r.parsedSerial || r.value;   // 일련번호 = 스캔 전체 문자열
+      if(!cur.model){ document.getElementById('dupWarn').innerHTML=`<div class="warn">⚠️ 모델 미선택 — 일련번호 <b>${cur.serial}</b> 대기중. 모델코드(SM-...)를 스캔하거나 상단에서 모델을 선택하세요.</div>`; }
       break;
-    case 'imei': case 'eid':
-      toast(r.type.toUpperCase()+'는 재고에 불필요 — 모델코드/일련번호를 스캔하세요','warn'); scanLog('· '+r.type.toUpperCase()+' 무시: '+r.value); return;
+    case 'eid':
+      toast('EID는 재고에 불필요 — 모델코드/일련번호를 스캔하세요','warn'); scanLog('· EID 무시: '+r.value); return;
     default: toast('인식 못한 코드: '+r.value,'warn'); scanLog('⚠️ 미인식: '+r.value);
   }
   renderCur(); maybeAutoSave();
@@ -326,13 +320,13 @@ function renderCur(){
 
 function maybeAutoSave(){
   if(!document.getElementById('autoSave').checked) return;
-  if(cur.model && isValidSerial(cur.serial)){ saveScanUnit(); }
+  if(cur.model && cur.serial){ saveScanUnit(); }
 }
 
 async function saveScanUnit(){
   if(!cur.model) return toast('모델을 먼저 인식/선택하세요','err');
-  const serial=serialDigits(cur.serial);
-  if(!isValidSerial(serial)){ toast(`일련번호는 7자리 숫자여야 합니다 (현재 ${serial.length}자리) — 다시 정확히 입력하세요`,'err'); return; }
+  const serial=(cur.serial||'').trim().toUpperCase();
+  if(!serial) return toast('일련번호를 스캔하세요','err');
   const store_id=parseInt(document.getElementById('storeSel').value);
   try{
     const { unit }=await api('POST','/inventory',{
@@ -341,8 +335,6 @@ async function saveScanUnit(){
       store_id, entry_method:'scan'
     });
     toast('✅ 입고: '+(unit.model?unit.model.model_name:'')+' '+(unit.serial_number||''),'ok');
-    // 일련번호 prefix 학습 — 다음부터 같은 prefix 일련번호 1스캔으로 모델 자동
-    if(cur.serialPrefix && cur.model) api('POST','/serial-prefix',{prefix:cur.serialPrefix,model_id:cur.model.id}).catch(()=>{});
     prependRecent(unit); resetCur(true); focusScan();
   }catch(e){
     if(e.status===409) toast('중복 일련번호 — 이미 입고됨','warn');
@@ -350,7 +342,7 @@ async function saveScanUnit(){
   }
 }
 function resetCur(keepModel){
-  cur={ model:keepModel?cur.model:null, serial:null, serialPrefix:null };
+  cur={ model:keepModel?cur.model:null, serial:null };
   document.getElementById('dupWarn').innerHTML=''; renderCur();
 }
 
