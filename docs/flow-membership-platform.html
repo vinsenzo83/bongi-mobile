@@ -168,6 +168,108 @@ a.back { font-size:12px; color:var(--blue); text-decoration:none; }
   <div class="l" style="margin-top:8px;font-size:11px;color:var(--text3)"><b>V2+ 테이블(보류):</b> bongi_member_tiers(등급) · bongi_ai_content_log(AI상담) · bongi_store_referral(판매점)</div>
 </div>
 
+<!-- ===== 3-A. API 명세 ===== -->
+<div class="step-label" style="background:#3617ce">3-A · API 명세 (MVP)</div>
+<div class="step-card" style="border-color:#3617ce">
+  <h3>회원 · 인증</h3>
+  <table>
+    <tr><th style="width:230px">Method · Endpoint</th><th>설명</th></tr>
+    <tr><td class="mono">POST /api/m/signup</td><td>가입 (추천코드 optional) → bongi_members, 추천 시 referrals 생성(보상은 PASS 인증 후)</td></tr>
+    <tr><td class="mono">POST /api/m/pass-verify</td><td>PASS 본인인증(ci·phone) → verified_at 세팅 · 가입 100P · 추천 보상 확정 지급</td></tr>
+    <tr><td class="mono">GET /api/m/me</td><td>내 정보(포인트 잔액·추천코드·이번달 응모수·추천왕 순위)</td></tr>
+  </table>
+  <h3>포인트 · 응모권</h3>
+  <table>
+    <tr><th style="width:230px">Method · Endpoint</th><th>설명</th></tr>
+    <tr><td class="mono">GET /api/m/points</td><td>잔액 + 원장(적립/사용) 내역</td></tr>
+    <tr><td class="mono">POST /api/m/points/spend</td><td>포인트 사용 {reason, amount} (응모권 구매 등) → ledger −delta</td></tr>
+    <tr><td class="mono">GET /api/m/tickets?period=</td><td>이번달 보유 응모권 (자동1 + 구매 + 추천)</td></tr>
+    <tr><td class="mono">POST /api/m/tickets/buy</td><td>{qty} → 1,000P/장 차감 후 tickets 발급 (source=buy)</td></tr>
+  </table>
+  <h3>경품 · 추천 · 추천왕</h3>
+  <table>
+    <tr><th style="width:230px">Method · Endpoint</th><th>설명</th></tr>
+    <tr><td class="mono">GET /api/m/referral</td><td>내 추천코드·공유링크·실적(가입 n명·보상 내역)</td></tr>
+    <tr><td class="mono">GET /api/m/prize/current</td><td>이번달 경품 이벤트·상품·내 응모수·추첨일</td></tr>
+    <tr><td class="mono">GET /api/m/prize/result?period=</td><td>추첨 결과·내 당첨 여부</td></tr>
+    <tr><td class="mono">GET /api/m/ambassador/ranking?period=</td><td>월간 추천왕 랭킹</td></tr>
+    <tr><td class="mono">GET /api/m/ambassador/me</td><td>내 점수·순위·breakdown</td></tr>
+  </table>
+  <h3>어드민 · 배치(CRON) · 연동</h3>
+  <table>
+    <tr><th style="width:230px">트리거</th><th>처리</th></tr>
+    <tr><td class="mono">POST /api/admin/prize/draw</td><td>월간 추첨 실행 (응모수 가중 랜덤) → prize_entries.won_rank · 제세공과금 산정</td></tr>
+    <tr><td class="mono">CRON 매월 1일 00:00</td><td>① 전월 응모권 추첨 마감 → 리셋 ② <b>전 회원 auto 1장</b> 발급 ③ 추천왕 월 집계 마감·랭킹 확정·상금</td></tr>
+    <tr><td class="mono">CRM webhook (상품이용)</td><td>개통·인터넷·중고폰·렌탈 완료 → 포인트 적립 + 추천왕 점수 + 추천인 보상 (기존 CRM 연동)</td></tr>
+  </table>
+  <div class="note">모든 적립 API는 <b>verified_at(PASS 인증) 검증</b> + device_fp·ip 기록 + point_rules.daily_cap 체크(어뷰징).</div>
+</div>
+
+<!-- ===== 3-B. 와이어프레임 ===== -->
+<div class="step-label" style="background:#3617ce">3-B · 화면 와이어프레임 (MVP · 모바일)</div>
+<div class="step-card" style="border-color:#3617ce">
+  <div class="grid2">
+    <div class="codeblk"><span class="y">[ 🏠 메인 / 홈 ]</span>
+┌─────────────────────────┐
+│ 봉이        🔔   👤 Gold │
+├─────────────────────────┤
+│  💎 내 포인트   12,400 P │
+│  🎟 이번달 응모권   8 장 │
+│  🏆 추천왕 내 순위  #23  │
+├─────────────────────────┤
+│ ┌─ 이번달 경품 ───────┐ │
+│ │ 🥇골드바 🥈순금 …   │ │
+│ │ 추첨 6/30 · 응모 8장 │ │
+│ └─────────────────────┘ │
+│ [ 👥 친구 초대하기 ]     │
+│ [ 🎟 응모권 더 받기 ]    │
+└─────────────────────────┘</div>
+    <div class="codeblk"><span class="y">[ 👥 친구 초대 ]</span>
+┌─────────────────────────┐
+│ ← 친구 초대              │
+├─────────────────────────┤
+│ 내 추천코드   BONGI-7X2K │
+│ [ 링크 복사 ] [ 공유 ]   │
+├─────────────────────────┤
+│ 초대 실적                │
+│  가입 완료(PASS)   12명  │
+│  받은 포인트     6,000 P │
+│  받은 응모권      240 장 │
+├─────────────────────────┤
+│ ⓘ 친구가 PASS 인증 가입 │
+│   해야 보상 지급         │
+└─────────────────────────┘</div>
+    <div class="codeblk"><span class="y">[ 🎟 응모권 / 경품 ]</span>
+┌─────────────────────────┐
+│ ← 이번달 경품 (6월)      │
+├─────────────────────────┤
+│ 🥇 골드바       1명      │
+│ 🥈 순금 1돈     9명      │
+│ 🥉 네이버페이   30명     │
+│ 🎁 상품권       60명     │
+├─────────────────────────┤
+│ 내 응모권  8장           │
+│  ·자동 1 ·구매 5 ·추천 2 │
+│ [ 1,000P로 응모권 구매 ] │
+│ 추첨 6/30 유튜브 LIVE    │
+└─────────────────────────┘</div>
+    <div class="codeblk"><span class="y">[ 🏆 추천왕 랭킹 ]</span>
+┌─────────────────────────┐
+│ ← 추천왕 (6월)           │
+├─────────────────────────┤
+│ 1  김** 1,240점 순금10돈 │
+│ 2  이** 980점   순금5돈  │
+│ 3  박** 720점   순금3돈  │
+│ …                        │
+│ ▶ 23 나     310점        │
+├─────────────────────────┤
+│ 내 점수 상세             │
+│  추천가입12·개통3·중고1  │
+└─────────────────────────┘</div>
+  </div>
+  <div class="note">화면 5: <b>포인트 내역</b>(잔액·적립/사용 리스트·응모권 구매·현금전환[추후]) · 화면 6: <b>가입/PASS 인증</b>. 메인=홈, 하단 탭(홈·초대·경품·랭킹·내정보) 권장.</div>
+</div>
+
 <!-- ===== 4. 포인트 정책 ===== -->
 <div class="step-label">4 · 봉이 포인트 정책</div>
 <div class="step-card">
