@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이 회원 100만 플랫폼 — 개발 기획서 V1.1 (보완판)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#f8f7f4; --bg2:#fff; --border:#e2ddd6; --navy:#1a2744; --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5; --orange:#d97706; --orange2:#fef3c7; --red:#dc2626; --red2:#fee2e2; --purple:#7c3aed; --purple2:#f3e8ff; --text:#1a1a1a; --text2:#4a4a4a; --text3:#8a8a8a; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; padding:40px; max-width:1200px; margin:0 auto; line-height:1.6; }
+h1 { font-size:28px; font-weight:900; color:var(--navy); margin-bottom:4px; }
+.subtitle { font-size:12px; color:var(--text3); margin-bottom:32px; font-family:'JetBrains Mono',monospace; }
+.step-label { background:var(--navy); color:#fff; padding:7px 18px; border-radius:8px; font-size:13px; font-weight:800; display:inline-block; margin:28px 0 12px; }
+.step-card { background:var(--bg2); border:1.5px solid var(--border); border-radius:14px; padding:20px; margin-bottom:8px; }
+table { width:100%; border-collapse:collapse; font-size:12px; margin:8px 0; background:#fff; border-radius:8px; overflow:hidden; }
+th { background:var(--navy); color:#fff; padding:8px 10px; text-align:left; font-size:11px; }
+td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+tr:last-child td { border-bottom:none; }
+.mono { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--purple); }
+.note { background:#eff6ff; border-left:4px solid var(--blue); border-radius:8px; padding:10px 14px; font-size:12px; color:var(--navy); margin:10px 0; }
+.warn { background:var(--red2); border-left:4px solid var(--red); border-radius:8px; padding:10px 14px; font-size:12px; color:#991b1b; margin:10px 0; }
+.ok { background:var(--green2); border-left:4px solid var(--green); border-radius:8px; padding:10px 14px; font-size:12px; color:#065f46; margin:10px 0; }
+.badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:10px; font-weight:800; }
+.b-red { background:var(--red2); color:var(--red); } .b-green { background:var(--green2); color:var(--green); } .b-orange { background:var(--orange2); color:var(--orange); } .b-blue { background:var(--blue2); color:var(--blue); } .b-purple { background:var(--purple2); color:var(--purple); }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; } .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; } .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.kpi { background:#fff; border:1.5px solid var(--border); border-radius:10px; padding:14px; text-align:center; }
+.kpi .v { font-size:24px; font-weight:900; color:var(--navy); } .kpi .l { font-size:11px; color:var(--text3); margin-top:2px; }
+.loop { display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:center; margin:10px 0; }
+.loop .n { background:var(--blue2); border:1.5px solid var(--blue); color:var(--blue); border-radius:20px; padding:6px 14px; font-size:11px; font-weight:700; }
+.loop .a { color:var(--text3); font-weight:900; }
+.codeblk { background:#0f172a; color:#e2e8f0; border-radius:10px; padding:14px; font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.6; overflow-x:auto; }
+.codeblk .c { color:#64748b; } .codeblk .k { color:#ec4899; } .codeblk .t { color:#6ee7b7; } .codeblk .y { color:#fbbf24; }
+h3 { font-size:14px; color:var(--navy); margin:14px 0 6px; font-weight:800; }
+a.back { font-size:12px; color:var(--blue); text-decoration:none; }
+</style>
+</head>
+<body>
+
+<a class="back" href="master-map.html">← 마스터맵</a>
+<h1 style="margin-top:8px">🎯 봉이 회원 100만 플랫폼 — 개발 기획서 V1.1 (보완판)</h1>
+<div class="subtitle">회원 기반 AI 생활 플랫폼 · 포인트·응모권·추천·경품 성장 엔진 · 비즈니스 기획서 → 개발 기획서 변환 · 보완 반영</div>
+
+<div class="ok" style="font-size:12px">
+  ✅ <b>V1.1 보완 반영:</b> ① <b>단통법 폐지</b> → 개통 포인트·경품 리스크 제거 ② <b>운세·사주·궁합 콘텐츠 제외</b>(우선순위 보류) ③ <b>응모권 매월 리셋 = 정상</b>(매월 자동 응모 후 리셋) ④ <b>PASS 본인인증 회원만 추천·적립 보상</b> → 친구초대 어뷰징 1차 차단.
+</div>
+<div class="warn" style="font-size:12px">
+  ⚠️ <b>남은 검토 항목(§15):</b> 경품규제 한도 · 전자금융거래법(포인트 현금성) · 어뷰징 방지 · 제세공과금. 데이터·정책 미확정은 <span class="badge b-red">확정 필요</span> 표기.
+</div>
+
+<!-- ===== 0. 개요 ===== -->
+<div class="step-label">0 · 개요 & 목표</div>
+<div class="step-card">
+  <div class="note"><b>최종 정의:</b> 봉이는 통신 플랫폼이 아니다. <b>회원 기반 AI 생활 플랫폼</b>이다. 통신·인터넷·중고폰·알뜰폰·렌탈은 <b>수익화 수단</b>이고, 핵심 자산은 <b>회원·데이터·추천 네트워크</b>. 회원 100만 달성이 최우선.</div>
+  <div class="grid4" style="margin-top:10px">
+    <div class="kpi"><div class="v">300,000</div><div class="l">현재 회원</div></div>
+    <div class="kpi"><div class="v">1,000,000</div><div class="l">목표 회원</div></div>
+    <div class="kpi"><div class="v">+700,000</div><div class="l">추가 확보</div></div>
+    <div class="kpi"><div class="v">12개월</div><div class="l">목표 기간</div></div>
+  </div>
+</div>
+
+<!-- ===== 1. 성장 루프 ===== -->
+<div class="step-label">1 · 핵심 성장 루프</div>
+<div class="step-card">
+  <div class="loop">
+    <span class="n">회원확보</span><span class="a">→</span><span class="n">포인트적립</span><span class="a">→</span><span class="n">친구추천</span><span class="a">→</span><span class="n">응모권획득</span><span class="a">→</span><span class="n">경품참여</span><span class="a">→</span><span class="n">재방문</span><span class="a">→</span><span class="n">상품이용</span><span class="a">→</span><span class="n">추가보상</span><span class="a">↺</span>
+  </div>
+  <div class="note">루프의 동력 = <b>포인트(적립 동기) + 응모권(경품 기대) + 추천(바이럴 계수)</b>. 상품이용(개통·렌탈 등)이 수익 + 추가보상으로 루프를 재점화.</div>
+</div>
+
+<!-- ===== 2. 시스템 구성 ===== -->
+<div class="step-label">2 · 시스템 모듈 구성</div>
+<div class="step-card">
+  <div class="grid3">
+    <div class="kpi" style="text-align:left"><b>① 포인트</b><div class="l">적립·차감 원장(ledger) · 영구 누적</div></div>
+    <div class="kpi" style="text-align:left"><b>② 응모권</b><div class="l">P→응모권 교환 · 월 초기화</div></div>
+    <div class="kpi" style="text-align:left"><b>③ 추천</b><div class="l">추천코드 · 가입/개통 보상</div></div>
+    <div class="kpi" style="text-align:left"><b>④ 앰배서더</b><div class="l">추천왕 점수·랭킹·상금</div></div>
+    <div class="kpi" style="text-align:left"><b>⑤ 등급</b><div class="l">Bronze~Diamond (누적 P)</div></div>
+    <div class="kpi" style="text-align:left"><b>⑥ 경품</b><div class="l">월간 추첨·당첨·지급</div></div>
+    <div class="kpi" style="text-align:left"><b>⑦ AI 콘텐츠</b><div class="l">AI 상담 (리텐션) · 운세 V1.1 제외</div></div>
+    <div class="kpi" style="text-align:left"><b>⑧ 판매점 연동</b><div class="l">추천코드·랭킹</div></div>
+    <div class="kpi" style="text-align:left"><b>⑨ 어뷰징 가드</b><div class="l">본인인증·중복차단·cap (필수)</div></div>
+  </div>
+  <div class="note">⑨ 어뷰징 가드는 원본 기획서에 없었으나 <b>전 모듈 공통 필수</b>로 추가 (§15 참조). 기존 <a href="flow-points-referral-guard.html">08 포인트+추천+돈지키미</a> 문서와 규칙 정합 필요.</div>
+</div>
+
+<!-- ===== 3. 데이터 모델 ===== -->
+<div class="step-label">3 · 데이터 모델 (DB 설계 초안)</div>
+<div class="step-card">
+  <div class="codeblk">
+<span class="c">-- 회원 (기존 회원 테이블 확장 또는 신규)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_members</span> ( id, phone <span class="y">UNIQUE</span>, verified_at, referrer_id, tier, point_balance, created_at );
+<span class="c">-- ① 포인트 원장 (잔액은 집계 — 단일 컬럼 부채 방지)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_point_ledger</span> ( id, member_id, delta <span class="c">/* +적립/−차감 */</span>, reason, ref_type, ref_id, created_at );
+<span class="c">-- ② 응모권 (월별, 소멸)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_tickets</span> ( id, member_id, qty, source, period <span class="c">/* YYYYMM */</span>, expires_at, created_at );
+<span class="c">-- ③ 추천</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_referrals</span> ( id, referrer_id, referee_id, status, reward_point, reward_ticket, milestone, created_at );
+<span class="c">-- ④ 앰배서더 점수 (월별 집계)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_ambassador_score</span> ( id, member_id, period, score, breakdown <span class="y">JSONB</span>, rank );
+<span class="c">-- ⑤ 등급 정의 (어드민 수정 — 하드코딩 X)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_member_tiers</span> ( tier, threshold_point, benefits <span class="y">JSONB</span>, active );
+<span class="c">-- ⑥ 경품 이벤트 / 응모 / 당첨</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_prize_events</span> ( id, period, budget, prizes <span class="y">JSONB</span>, draw_at, status );
+<span class="k">CREATE TABLE</span> <span class="t">bongi_prize_entries</span> ( id, event_id, member_id, ticket_qty, won_rank, payout_status, tax_withheld );
+<span class="c">-- ⑦ AI 콘텐츠 이용 로그 (적립·어뷰징 추적)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_ai_content_log</span> ( id, member_id, content_type, used_at, point_awarded, device_fp, ip );
+<span class="c">-- ⑧ 판매점 추천</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_store_referral</span> ( id, store_id, member_id, ref_type, points, created_at );
+<span class="c">-- 적립 정책 (어드민 관리 — 적립값 하드코딩 금지, NO_HARDCODE 룰)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_point_rules</span> ( reason <span class="y">PK</span>, point, daily_cap, active );
+  </div>
+  <div class="note"><b>설계 포인트:</b> 포인트 잔액은 <b>원장(ledger) 합계</b>로 산출(단일 balance 컬럼만 두면 정합성·감사 불가). 적립값은 <span class="mono">bongi_point_rules</span>에서 어드민 관리(하드코딩 X). 모든 적립에 <b>device_fp·ip</b> 기록(어뷰징 추적).</div>
+</div>
+
+<!-- ===== 4. 포인트 정책 ===== -->
+<div class="step-label">4 · 봉이 포인트 정책</div>
+<div class="step-card">
+  <div class="grid2">
+    <div>
+      <h3>활동 적립</h3>
+      <table><tr><th>활동</th><th style="text-align:right">P</th></tr>
+        <tr><td>회원가입</td><td style="text-align:right">100</td></tr>
+        <tr><td>출석체크</td><td style="text-align:right">10</td></tr>
+        <tr><td>AI 상담</td><td style="text-align:right">20</td></tr>
+        <tr><td>후기 작성</td><td style="text-align:right">100</td></tr>
+        <tr><td>친구 초대 (피추천인 가입)</td><td style="text-align:right">50 <span class="badge b-green">PASS</span></td></tr>
+      </table>
+      <div class="note" style="font-size:11px">※ 운세·사주·궁합 적립은 <b>V1.1에서 제외</b>(우선순위 보류).</div>
+    </div>
+    <div>
+      <h3>상품 이용 적립</h3>
+      <table><tr><th>상품</th><th style="text-align:right">P</th></tr>
+        <tr><td>휴대폰 개통</td><td style="text-align:right">5,000</td></tr>
+        <tr><td>인터넷/IPTV 가입</td><td style="text-align:right">5,000</td></tr>
+        <tr><td>알뜰폰 개통</td><td style="text-align:right">2,000</td></tr>
+        <tr><td>중고폰 판매</td><td style="text-align:right">2,000</td></tr>
+        <tr><td>렌탈 가입</td><td style="text-align:right">3,000</td></tr>
+      </table>
+      <div class="ok">✅ <b>친구초대 어뷰징 해소:</b> 보상은 <b>PASS 본인인증을 완료한 피추천인이 가입한 시점</b>에만 지급(단순 공유·미인증 가입엔 지급 X). PASS 인증 = 실명·실휴대폰 1인1계정 → 가짜계정·self-referral 파밍 차단.</div>
+    </div>
+  </div>
+  <div class="warn"><b>포인트 사용처 미정 <span class="badge b-red">확정 필요</span>:</b> 현재 정의된 사용처는 "응모권 교환(1,000P=1장)"뿐. 회원 자산이라면서 효용이 응모권뿐이면 매력↓ + 부채↑. → <b>사용처(상품 할인·페이백 전환·기프티콘 등)와 1P 가치, 소멸정책</b> 정의 필요.</div>
+</div>
+
+<!-- ===== 5. 응모권 ===== -->
+<div class="step-label">5 · 봉이 응모권</div>
+<div class="step-card">
+  <div class="grid3">
+    <div class="kpi"><div class="v">1,000P</div><div class="l">= 응모권 1장 교환</div></div>
+    <div class="kpi"><div class="v">매월 1일</div><div class="l">리셋 · 이월 불가</div></div>
+    <div class="kpi"><div class="v">월말</div><div class="l">자동 응모 → 리셋</div></div>
+  </div>
+  <div class="ok">✅ <b>응모권 매월 리셋 = 정상(설계 의도).</b> 보유 응모권은 <b>매월 말 그 달 경품 추첨에 자동 응모</b>된 뒤 리셋됨 → 소멸이 아니라 "그 달 추첨에 사용". 포인트(영구) ↔ 응모권(매월 추첨 소진)은 모순 아님. 1,000P 교환분·추천 응모권 모두 해당 월 추첨에 참여.</div>
+</div>
+
+<!-- ===== 6. 추천 ===== -->
+<div class="step-label">6 · 추천인 시스템 (성장 핵심 엔진)</div>
+<div class="step-card">
+  <table>
+    <tr><th>트리거</th><th>추천인</th><th>가입자</th></tr>
+    <tr><td>친구 가입</td><td>500P + 응모권 20장</td><td>100P + 응모권 5장</td></tr>
+    <tr><td>친구 5명 가입</td><td colspan="2">추가 응모권 100장 <span class="badge b-red">누적/구간 모호</span></td></tr>
+    <tr><td>친구 10명 가입</td><td colspan="2">추가 응모권 300장</td></tr>
+    <tr><td>친구 30명 가입</td><td colspan="2">추가 응모권 1,000장</td></tr>
+    <tr><td>친구 휴대폰 개통</td><td colspan="2">추천인 5,000P + 응모권 100장</td></tr>
+    <tr><td>친구 인터넷 가입</td><td colspan="2">추천인 5,000P + 응모권 100장</td></tr>
+    <tr><td>친구 중고폰 판매</td><td colspan="2">추천인 2,000P + 응모권 50장</td></tr>
+  </table>
+  <div class="ok">✅ <b>추천 카운트·보상은 PASS 본인인증 완료 회원만</b> (미인증·중복 휴대폰 제외) → 가짜계정·self-referral 차단.</div>
+  <div class="warn">⚠️ 마일스톤(5/10/30명)이 <b>누적 지급인지 구간 지급인지</b> 모호 (5명+추가5명=10명일 때 100+300 중복?). → 룰 명확화 필요.</div>
+</div>
+
+<!-- ===== 7. 앰배서더 ===== -->
+<div class="step-label">7 · 앰배서더 (추천왕)</div>
+<div class="step-card">
+  <div class="grid2">
+    <div><h3>점수 산정</h3>
+      <table><tr><th>활동</th><th style="text-align:right">점</th></tr>
+        <tr><td>추천 가입</td><td style="text-align:right">1</td></tr>
+        <tr><td>휴대폰 개통</td><td style="text-align:right">20</td></tr>
+        <tr><td>인터넷 가입</td><td style="text-align:right">20</td></tr>
+        <tr><td>중고폰 판매</td><td style="text-align:right">10</td></tr>
+        <tr><td>렌탈 가입</td><td style="text-align:right">10</td></tr>
+      </table></div>
+    <div><h3>상금</h3>
+      <table><tr><th>순위</th><th>상금</th></tr>
+        <tr><td>월 1등</td><td>순금 10돈</td></tr>
+        <tr><td>2등</td><td>순금 5돈</td></tr>
+        <tr><td>3등</td><td>순금 3돈</td></tr>
+        <tr><td>4~10등</td><td>네이버페이 10만원</td></tr>
+        <tr><td>11~30등</td><td>네이버페이 5만원</td></tr>
+        <tr><td>연간 추천왕</td><td>현금 500만원 또는 골드바</td></tr>
+      </table></div>
+  </div>
+  <div class="warn">⚠️ <b>응모권 트랙(§6)과 앰배서더 점수 트랙(§7)이 병존</b> — 같은 추천 행동에 응모권 + 점수 이중 부여. 관계·중복 명확화 필요. 상금은 <b>제세공과금(기타소득 22%)</b> 처리 명시(§15).</div>
+</div>
+
+<!-- ===== 8. 등급 ===== -->
+<div class="step-label">8 · 회원 등급</div>
+<div class="step-card">
+  <table>
+    <tr><th>등급</th><th>조건 (누적 P)</th><th>혜택</th></tr>
+    <tr><td>Bronze</td><td>기본</td><td class="badge b-red" style="display:block">미정</td></tr>
+    <tr><td>Silver</td><td>10,000P</td><td><span class="badge b-red">미정</span></td></tr>
+    <tr><td>Gold</td><td>50,000P</td><td><span class="badge b-red">미정</span></td></tr>
+    <tr><td>Platinum</td><td>100,000P</td><td><span class="badge b-red">미정</span></td></tr>
+    <tr><td>Diamond</td><td>500,000P</td><td><span class="badge b-red">미정</span></td></tr>
+  </table>
+  <div class="warn">⚠️ <b>등급별 혜택이 정의 안 됨.</b> 등급만 있고 차등 혜택(적립 배수·응모권 보너스·전용 경품 등)이 없으면 동기 부여 X. <span class="badge b-red">확정 필요</span></div>
+</div>
+
+<!-- ===== 9. 경품 ===== -->
+<div class="step-label">9 · 월간 경품 이벤트</div>
+<div class="step-card">
+  <div class="grid4">
+    <div class="kpi"><div class="v">1,000만원</div><div class="l">월 예산</div></div>
+    <div class="kpi"><div class="v">100명</div><div class="l">당첨자</div></div>
+    <div class="kpi"><div class="v">유튜브</div><div class="l">라이브 추첨 공개</div></div>
+    <div class="kpi"><div class="v">월 1회</div><div class="l">정기</div></div>
+  </div>
+  <table style="margin-top:8px">
+    <tr><th>등수</th><th>상품</th><th>인원</th></tr>
+    <tr><td>1등</td><td>순금 골드바</td><td>1</td></tr>
+    <tr><td>2등</td><td>순금 1돈</td><td>9</td></tr>
+    <tr><td>3등</td><td>네이버페이</td><td>30</td></tr>
+    <tr><td>4등</td><td>상품권</td><td>60</td></tr>
+  </table>
+  <div class="warn">⚠️ 경품 가액 합이 <b>월 예산 1,000만원 + 경품규제 한도</b> 내인지 산정 필요. 라이브 당첨자 인증 = 개인정보 노출 동의 필요(§15).</div>
+</div>
+
+<!-- ===== 10. 리텐션 콘텐츠 ===== -->
+<div class="step-label">10 · 리텐션 콘텐츠 (운세 제외 — V1.1)</div>
+<div class="step-card">
+  <div class="grid3">
+    <div class="kpi" style="text-align:left"><b>매일</b><div class="l">출석체크 · AI 상담 (고민·생활 문의)</div></div>
+    <div class="kpi" style="text-align:left"><b>매주</b><div class="l">주간 미션 · 추천 이벤트</div></div>
+    <div class="kpi" style="text-align:left"><b>매월</b><div class="l">경품 추첨 · 추천왕 발표 · 당첨자 발표</div></div>
+  </div>
+  <div class="note">※ <b>운세·사주·궁합은 V1.1에서 제외</b>(우선순위 보류). 추후 도입 시 생년월일(민감정보) PIPA 동의 별도 검토.</div>
+  <div class="warn">⚠️ AI 상담에 매일 P 지급 → <b>LLM 호출비 + 봇 파밍</b> 우려. 일일 cap·본인인증·캐싱 필요.</div>
+</div>
+
+<!-- ===== 11. 판매점 연동 + 12. 메인 ===== -->
+<div class="step-label">11 · 판매점 연동 & 메인 화면</div>
+<div class="step-card">
+  <div class="grid2">
+    <div><h3>판매점 연동</h3><div class="l">판매점 추천코드(회원·개통·중고폰 추천) · 전국/지역/월간 랭킹</div></div>
+    <div><h3>메인 화면 구성</h3><div class="l">내 포인트 · 내 응모권 · 내 순위 · 추천왕 랭킹 · 친구 초대 · 출석체크</div></div>
+  </div>
+</div>
+
+<!-- ===== 13. KPI ===== -->
+<div class="step-label">13 · KPI</div>
+<div class="step-card">
+  <div class="grid4">
+    <div class="kpi"><div class="v">100만</div><div class="l">회원수</div></div>
+    <div class="kpi"><div class="v">20만</div><div class="l">MAU</div></div>
+    <div class="kpi"><div class="v">5만</div><div class="l">DAU</div></div>
+    <div class="kpi"><div class="v">30%</div><div class="l">친구추천 비율</div></div>
+    <div class="kpi"><div class="v">10,000건</div><div class="l">월 개통</div></div>
+    <div class="kpi"><div class="v">3,000대</div><div class="l">월 중고폰 회수</div></div>
+    <div class="kpi"><div class="v">50%</div><div class="l">월 이벤트 참여율</div></div>
+    <div class="kpi"><div class="v">—</div><div class="l">회원 質 지표 <span class="badge b-red">추가</span></div></div>
+  </div>
+  <div class="note">⚠️ 허수 100만 방지를 위해 <b>회원 質 지표</b>(활성 회원당 개통 전환율, 추천→가입→상품이용 퍼널, CAC 회수기간) 추가 권장.</div>
+</div>
+
+<!-- ===== 14. 개발 Phase ===== -->
+<div class="step-label">14 · 개발 Phase (스프린트)</div>
+<div class="step-card">
+  <table>
+    <tr><th>Phase</th><th>범위</th><th>비고</th></tr>
+    <tr><td><span class="badge b-green">P1</span> 기반</td><td>회원·본인인증 · 포인트 원장 · 적립 룰 엔진 · <b>어뷰징 가드</b></td><td>가드 없이 적립 오픈 금지</td></tr>
+    <tr><td><span class="badge b-blue">P2</span> 추천</td><td>추천코드 · 가입/상품 추천 보상 · self-referral 차단</td><td>바이럴 핵심</td></tr>
+    <tr><td><span class="badge b-orange">P3</span> 응모권·경품</td><td>P→응모권 · 월간 경품 이벤트 · 추첨·당첨·지급·세금</td><td>경품규제 검토 선행</td></tr>
+    <tr><td><span class="badge b-purple">P4</span> 앰배서더·등급</td><td>추천왕 점수·랭킹·상금 · 등급 혜택</td><td>점수↔응모권 정합</td></tr>
+    <tr><td><span class="badge b-green">P5</span> AI 콘텐츠</td><td>AI 상담 · 일일 cap (운세 V1.1 제외)</td><td>LLM 비용</td></tr>
+    <tr><td><span class="badge b-blue">P6</span> 판매점·메인</td><td>판매점 추천·랭킹 · 메인 대시보드</td><td></td></tr>
+  </table>
+  <div class="warn">⚠️ <b>개발 범위 주의:</b> 이건 <b>고객용 앱/플랫폼</b>(현 개발범위는 CRM 어드민 위주). 별도 고객 앱 구축 = 큰 신규 범위 → 일정·인력 별도 산정 필요.</div>
+</div>
+
+<!-- ===== 15. 리스크 & 법률 ===== -->
+<div class="step-label" style="background:var(--red)">15 · ⚠️ 리스크 & 법률 검토 (출시 전 필수)</div>
+<div class="step-card" style="border-color:var(--red)">
+  <div class="ok" style="font-size:11px">✅ <b>V1.1 해소:</b> 단통법(폐지) · 응모권 매월리셋 모순(자동응모 후 리셋 = 정상) · 운세 PIPA(콘텐츠 제외).</div>
+  <h3>🔴 치명적</h3>
+  <table>
+    <tr><th>#</th><th>리스크</th><th>대응</th></tr>
+    <tr><td>1</td><td><b>어뷰징</b> — 가짜계정·공유파밍·봇 적립</td><td><b>PASS 본인인증 회원만 보상</b>(1차 방어 ✅) + self-referral 차단 · device/IP fp · 일일 cap (P1)</td></tr>
+    <tr><td>2</td><td><b>경품규제</b> (공정위 경품고시) — 경품가액·총액 한도</td><td>월 1,000만+추천왕 순금+연 500만 한도 산정·준수</td></tr>
+    <tr><td>3</td><td><b>전자금융거래법</b> — 포인트 현금성(네이버페이/현금 교환) 시 선불전자지급수단 규제</td><td>사용처 한정 또는 소멸정책. 현금성 교환 주의</td></tr>
+  </table>
+  <h3>🟡 중요</h3>
+  <table>
+    <tr><td>4</td><td>포인트 사용처 부재 (응모권뿐) → 효용↓·부채↑</td></tr>
+    <tr><td>5</td><td>추천 마일스톤 누적/구간 모호 (중복지급 위험)</td></tr>
+    <tr><td>6</td><td>등급별 혜택 미정 (동기부여 X)</td></tr>
+    <tr><td>7</td><td>응모권 트랙 ↔ 앰배서더 점수 트랙 관계·중복</td></tr>
+    <tr><td>8</td><td><b>제세공과금</b> — 경품·상금(순금·현금·페이) 5만원 초과 = 기타소득 22% 원천징수. 부담주체·인증 절차 명시</td></tr>
+    <tr><td>9</td><td>PIPA — AI 상담 데이터 수집 동의·보관 (운세 도입 시 생년월일 별도 검토)</td></tr>
+  </table>
+  <div class="note">법률 항목(2·3·8·9)은 <b>변호사·세무사 검토 권장</b> (본 문서는 개발 관점 정리이며 법률 자문 아님).</div>
+</div>
+
+<!-- ===== 16. 확정 필요 ===== -->
+<div class="step-label">16 · 확정 필요 항목 (Open Items)</div>
+<div class="step-card">
+  <table>
+    <tr><th>항목</th><th>현재</th><th>필요</th></tr>
+    <tr><td>포인트 사용처·1P 가치·소멸정책</td><td>응모권 교환만</td><td>사용처·가치·소멸 정의</td></tr>
+    <tr><td>친구 초대 50P 지급 시점</td><td><span class="badge b-green">해소</span> PASS 인증 가입 시</td><td>—</td></tr>
+    <tr><td>추천 마일스톤 누적/구간</td><td>모호</td><td>지급 룰 확정</td></tr>
+    <tr><td>등급별 혜택</td><td>공란</td><td>차등 혜택 정의</td></tr>
+    <tr><td>응모권↔앰배서더 점수 관계</td><td>병존</td><td>통합/분리 결정</td></tr>
+    <tr><td>경품 예산 내 상금 배분 검증</td><td>—</td><td>가액 산정</td></tr>
+    <tr><td>세금(제세공과금) 부담·절차</td><td>없음</td><td>명시</td></tr>
+    <tr><td>고객 앱 구축 범위·일정</td><td>—</td><td>별도 산정</td></tr>
+  </table>
+</div>
+
+<div style="height:40px"></div>
+<a class="back" href="master-map.html">← 마스터맵으로</a>
+</body>
+</html>
