@@ -48,8 +48,24 @@ a.back { font-size:12px; color:var(--blue); text-decoration:none; }
   ⚠️ <b>남은 검토 항목(§15):</b> 경품규제 한도 · 전자금융거래법(포인트 현금성) · 어뷰징 방지 · 제세공과금. 데이터·정책 미확정은 <span class="badge b-red">확정 필요</span> 표기.
 </div>
 
+<!-- ===== ★ V1 MVP ===== -->
+<div class="step-label" style="background:#3617ce">★ V1 MVP — 가장 심플한 최소 기능 (우선 개발)</div>
+<div class="step-card" style="border-color:#3617ce">
+  <div class="note">우선은 <b>3개 핵심 기능</b>만으로 출시 → 검증 후 확장. 나머지(앰배서더·등급·AI콘텐츠·판매점)는 <b>V2+로 보류</b>.</div>
+  <div class="grid3" style="margin-top:10px">
+    <div class="kpi" style="text-align:left;border-color:#3617ce"><b>① 친구초대</b><div class="l">PASS 인증 회원 추천코드 → 피추천인 PASS 가입 시 추천인·가입자에게 포인트+응모권 지급</div></div>
+    <div class="kpi" style="text-align:left;border-color:#3617ce"><b>② 경품응모</b><div class="l">포인트로 응모권 구매(1,000P=1장) → 월간 경품 추첨 응모 → 추첨·당첨·지급</div></div>
+    <div class="kpi" style="text-align:left;border-color:#3617ce"><b>③ 포인트 사용</b><div class="l">적립 + 사용처: 현금(페이) 전환 · 응모권 구매 · (추후 상품할인 등)</div></div>
+  </div>
+  <h3>MVP 데이터 (최소 7테이블)</h3>
+  <div class="mono">bongi_members · bongi_point_ledger · bongi_point_rules · bongi_tickets · bongi_referrals · bongi_prize_events · bongi_prize_entries</div>
+  <h3>V2+로 보류</h3>
+  <div class="l">앰배서더/추천왕(§7) · 회원 등급(§8) · AI 상담/운세(§10) · 판매점 연동(§11) · 추천 마일스톤 보너스(5/10/30명)</div>
+  <div class="warn">⚠️ ③ <b>"포인트 → 현금 전환"은 전자금융거래법(선불전자지급수단) 가장 민감</b>(§15-3). → 우선 <b>응모권 구매·상품 할인</b>부터 열고, <b>현금 전환은 법률 검토 후</b> 단계 오픈 권장.</div>
+</div>
+
 <!-- ===== 0. 개요 ===== -->
-<div class="step-label">0 · 개요 & 목표</div>
+<div class="step-label">0 · 개요 & 목표 <span style="font-size:11px;font-weight:400;color:var(--text3)">(이하 전체 그림 — V1은 위 MVP만)</span></div>
 <div class="step-card">
   <div class="note"><b>최종 정의:</b> 봉이는 통신 플랫폼이 아니다. <b>회원 기반 AI 생활 플랫폼</b>이다. 통신·인터넷·중고폰·알뜰폰·렌탈은 <b>수익화 수단</b>이고, 핵심 자산은 <b>회원·데이터·추천 네트워크</b>. 회원 100만 달성이 최우선.</div>
   <div class="grid4" style="margin-top:10px">
