@@ -105,32 +105,67 @@ a.back { font-size:12px; color:var(--blue); text-decoration:none; }
 </div>
 
 <!-- ===== 3. 데이터 모델 ===== -->
-<div class="step-label">3 · 데이터 모델 (DB 설계 초안)</div>
+<div class="step-label">3 · MVP DB 스키마 (확정안 · 8테이블)</div>
 <div class="step-card">
   <div class="codeblk">
-<span class="c">-- 회원 (기존 회원 테이블 확장 또는 신규)</span>
-<span class="k">CREATE TABLE</span> <span class="t">bongi_members</span> ( id, phone <span class="y">UNIQUE</span>, verified_at, referrer_id, tier, point_balance, created_at );
-<span class="c">-- ① 포인트 원장 (잔액은 집계 — 단일 컬럼 부채 방지)</span>
-<span class="k">CREATE TABLE</span> <span class="t">bongi_point_ledger</span> ( id, member_id, delta <span class="c">/* +적립/−차감 */</span>, reason, ref_type, ref_id, created_at );
-<span class="c">-- ② 응모권 (월별, 소멸)</span>
-<span class="k">CREATE TABLE</span> <span class="t">bongi_tickets</span> ( id, member_id, qty, source, period <span class="c">/* YYYYMM */</span>, expires_at, created_at );
-<span class="c">-- ③ 추천</span>
-<span class="k">CREATE TABLE</span> <span class="t">bongi_referrals</span> ( id, referrer_id, referee_id, status, reward_point, reward_ticket, milestone, created_at );
-<span class="c">-- ④ 앰배서더 점수 (월별 집계)</span>
-<span class="k">CREATE TABLE</span> <span class="t">bongi_ambassador_score</span> ( id, member_id, period, score, breakdown <span class="y">JSONB</span>, rank );
-<span class="c">-- ⑤ 등급 정의 (어드민 수정 — 하드코딩 X)</span>
-<span class="k">CREATE TABLE</span> <span class="t">bongi_member_tiers</span> ( tier, threshold_point, benefits <span class="y">JSONB</span>, active );
-<span class="c">-- ⑥ 경품 이벤트 / 응모 / 당첨</span>
-<span class="k">CREATE TABLE</span> <span class="t">bongi_prize_events</span> ( id, period, budget, prizes <span class="y">JSONB</span>, draw_at, status );
-<span class="k">CREATE TABLE</span> <span class="t">bongi_prize_entries</span> ( id, event_id, member_id, ticket_qty, won_rank, payout_status, tax_withheld );
-<span class="c">-- ⑦ AI 콘텐츠 이용 로그 (적립·어뷰징 추적)</span>
-<span class="k">CREATE TABLE</span> <span class="t">bongi_ai_content_log</span> ( id, member_id, content_type, used_at, point_awarded, device_fp, ip );
-<span class="c">-- ⑧ 판매점 추천</span>
-<span class="k">CREATE TABLE</span> <span class="t">bongi_store_referral</span> ( id, store_id, member_id, ref_type, points, created_at );
-<span class="c">-- 적립 정책 (어드민 관리 — 적립값 하드코딩 금지, NO_HARDCODE 룰)</span>
-<span class="k">CREATE TABLE</span> <span class="t">bongi_point_rules</span> ( reason <span class="y">PK</span>, point, daily_cap, active );
+<span class="c">-- ① 회원 (PASS 본인인증 기반 1인1계정)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_members</span> (
+  id <span class="y">bigserial PK</span>, phone <span class="y">text UNIQUE NOT NULL</span>, name text,
+  ci text <span class="y">UNIQUE</span>          <span class="c">-- PASS CI = 중복가입 차단 키</span>,
+  verified_at timestamptz   <span class="c">-- PASS 인증시각 (NULL=미인증 → 보상 제외)</span>,
+  referral_code text <span class="y">UNIQUE</span>  <span class="c">-- 내 추천코드</span>,
+  referrer_id bigint <span class="k">REFERENCES</span> bongi_members(id)  <span class="c">-- 나를 추천한 회원</span>,
+  point_balance int <span class="k">DEFAULT</span> 0  <span class="c">-- 표시용 캐시(원장 합계와 동기화)</span>,
+  created_at timestamptz <span class="k">DEFAULT</span> now() );
+
+<span class="c">-- ② 적립 정책 (어드민 관리 · 하드코딩 금지 NO_HARDCODE)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_point_rules</span> (
+  reason <span class="y">text PK</span>     <span class="c">-- signup·attendance·referral_signup·open_phone·internet·used_phone·rental·ticket_buy</span>,
+  point int <span class="k">NOT NULL</span>, daily_cap int, active boolean <span class="k">DEFAULT</span> true );
+
+<span class="c">-- ③ 포인트 원장 (단일 진실원천 · 잔액 = SUM(delta))</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_point_ledger</span> (
+  id <span class="y">bigserial PK</span>, member_id bigint <span class="k">NOT NULL REFERENCES</span> bongi_members(id),
+  delta int <span class="k">NOT NULL</span>   <span class="c">-- +적립 / −사용(응모권구매·현금전환)</span>,
+  reason text, ref_type text, ref_id bigint,
+  device_fp text, ip text   <span class="c">-- 어뷰징 추적</span>, created_at timestamptz <span class="k">DEFAULT</span> now() );
+
+<span class="c">-- ④ 응모권 (월별 · 보유 = SUM(qty) WHERE period)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_tickets</span> (
+  id <span class="y">bigserial PK</span>, member_id bigint <span class="k">NOT NULL REFERENCES</span> bongi_members(id),
+  period text <span class="k">NOT NULL</span> <span class="c">-- 'YYYYMM'</span>, qty int <span class="k">NOT NULL</span>,
+  source text <span class="k">NOT NULL</span> <span class="c">-- auto(기본1장)·buy(P구매)·referral</span>, created_at timestamptz <span class="k">DEFAULT</span> now() );
+
+<span class="c">-- ⑤ 추천 (1인 1추천인 · PASS 인증 회원만)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_referrals</span> (
+  id <span class="y">bigserial PK</span>, referrer_id bigint <span class="k">NOT NULL REFERENCES</span> bongi_members(id),
+  referee_id bigint <span class="k">NOT NULL UNIQUE REFERENCES</span> bongi_members(id),
+  status text <span class="k">DEFAULT</span> 'joined' <span class="c">-- joined·rewarded</span>, reward_point int, reward_ticket int,
+  created_at timestamptz <span class="k">DEFAULT</span> now() );
+
+<span class="c">-- ⑥ 앰배서더(추천왕) 월별 점수·랭킹</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_ambassador_score</span> (
+  id <span class="y">bigserial PK</span>, member_id bigint <span class="k">NOT NULL REFERENCES</span> bongi_members(id),
+  period text <span class="k">NOT NULL</span>, score int <span class="k">DEFAULT</span> 0,
+  breakdown <span class="y">jsonb</span> <span class="c">-- {referral_signup:n, open_phone:n,...}</span>, rank int,
+  <span class="k">UNIQUE</span>(member_id, period) );
+
+<span class="c">-- ⑦ 경품 이벤트 (월 1회)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_prize_events</span> (
+  id <span class="y">bigserial PK</span>, period text <span class="y">UNIQUE NOT NULL</span>, budget int,
+  prizes <span class="y">jsonb</span> <span class="c">-- [{rank:1,name:'골드바',count:1},...]</span>,
+  draw_at timestamptz, status text <span class="k">DEFAULT</span> 'open' <span class="c">-- open·drawn·paid</span> );
+
+<span class="c">-- ⑧ 응모/당첨 (회원 1행 · 응모수 = 자동1+구매+추천)</span>
+<span class="k">CREATE TABLE</span> <span class="t">bongi_prize_entries</span> (
+  id <span class="y">bigserial PK</span>, event_id bigint <span class="k">NOT NULL REFERENCES</span> bongi_prize_events(id),
+  member_id bigint <span class="k">NOT NULL REFERENCES</span> bongi_members(id),
+  ticket_qty int <span class="k">NOT NULL</span>, won_rank int <span class="c">-- NULL=미당첨</span>,
+  payout_status text <span class="c">-- pending·paid</span>, tax_withheld int <span class="c">-- 제세공과금</span>,
+  <span class="k">UNIQUE</span>(event_id, member_id) );
   </div>
-  <div class="note"><b>설계 포인트:</b> 포인트 잔액은 <b>원장(ledger) 합계</b>로 산출(단일 balance 컬럼만 두면 정합성·감사 불가). 적립값은 <span class="mono">bongi_point_rules</span>에서 어드민 관리(하드코딩 X). 모든 적립에 <b>device_fp·ip</b> 기록(어뷰징 추적).</div>
+  <div class="note"><b>핵심 설계:</b> ① 포인트 잔액 = <b>원장(ledger) SUM</b> (단일 balance만 두면 감사 불가) ② 적립값 = <span class="mono">point_rules</span> 어드민 관리(하드코딩 X) ③ <b>PASS CI UNIQUE</b> = 중복가입·self-referral 차단 ④ <b>referee_id UNIQUE</b> = 1인 1추천인 ⑤ 모든 적립에 device_fp·ip 기록.</div>
+  <div class="l" style="margin-top:8px;font-size:11px;color:var(--text3)"><b>V2+ 테이블(보류):</b> bongi_member_tiers(등급) · bongi_ai_content_log(AI상담) · bongi_store_referral(판매점)</div>
 </div>
 
 <!-- ===== 4. 포인트 정책 ===== -->
