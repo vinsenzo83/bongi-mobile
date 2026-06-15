@@ -53,14 +53,16 @@ a.back { font-size:12px; color:var(--blue); text-decoration:none; }
 <div class="step-card" style="border-color:#3617ce">
   <div class="note">우선은 <b>3개 핵심 기능</b>만으로 출시 → 검증 후 확장. 나머지(앰배서더·등급·AI콘텐츠·판매점)는 <b>V2+로 보류</b>.</div>
   <div class="grid3" style="margin-top:10px">
-    <div class="kpi" style="text-align:left;border-color:#3617ce"><b>① 친구초대</b><div class="l">PASS 인증 회원 추천코드 → 피추천인 PASS 가입 시 추천인·가입자에게 포인트+응모권 지급</div></div>
-    <div class="kpi" style="text-align:left;border-color:#3617ce"><b>② 경품응모</b><div class="l">포인트로 응모권 구매(1,000P=1장) → 월간 경품 추첨 응모 → 추첨·당첨·지급</div></div>
-    <div class="kpi" style="text-align:left;border-color:#3617ce"><b>③ 포인트 사용</b><div class="l">적립 + 사용처: 현금(페이) 전환 · 응모권 구매 · (추후 상품할인 등)</div></div>
+    <div class="kpi" style="text-align:left;border-color:#3617ce"><b>① 친구초대</b><div class="l">PASS 인증 회원 추천코드 → 피추천인 PASS 가입 시 추천인·가입자에게 포인트+<b>응모권</b> 지급</div></div>
+    <div class="kpi" style="text-align:left;border-color:#3617ce"><b>② 경품응모 (자동)</b><div class="l"><b>모든 회원 매월 자동 1장 응모(기본·무료)</b> + 보유 응모권만큼 응모 수↑ → 월간 추첨·당첨·지급</div></div>
+    <div class="kpi" style="text-align:left;border-color:#3617ce"><b>③ 포인트 사용 → 응모권 구매</b><div class="l">포인트로 <b>응모권 구매(1,000P=1장)</b> · (추후 현금/페이 전환·상품할인 — 전금법 검토 후)</div></div>
+    <div class="kpi" style="text-align:left;border-color:#3617ce"><b>④ 추천왕 (앰배서더)</b><div class="l">추천 실적 점수화 → <b>월간 랭킹 + 상금</b> (추천 가입·개통·중고폰 등 가중치). 추천 바이럴 핵심 동력</div></div>
   </div>
-  <h3>MVP 데이터 (최소 7테이블)</h3>
-  <div class="mono">bongi_members · bongi_point_ledger · bongi_point_rules · bongi_tickets · bongi_referrals · bongi_prize_events · bongi_prize_entries</div>
+  <div class="note" style="margin-top:8px">🔁 <b>MVP 루프:</b> 가입(자동 1장) → 친구초대(응모권+P 획득) / 포인트로 응모권 구매 → 응모권 많을수록 당첨확률↑ → 월간 추첨 → 재방문. <b>응모권 획득 경로 = ①자동 1장 ②친구초대 ③포인트 구매</b> (MVP 한정).</div>
+  <h3>MVP 데이터 (8테이블)</h3>
+  <div class="mono">bongi_members · bongi_point_ledger · bongi_point_rules · bongi_tickets · bongi_referrals · bongi_ambassador_score · bongi_prize_events · bongi_prize_entries</div>
   <h3>V2+로 보류</h3>
-  <div class="l">앰배서더/추천왕(§7) · 회원 등급(§8) · AI 상담/운세(§10) · 판매점 연동(§11) · 추천 마일스톤 보너스(5/10/30명)</div>
+  <div class="l">회원 등급(§8) · AI 상담/운세(§10) · 판매점 연동(§11) · 추천 마일스톤 보너스(5/10/30명)</div>
   <div class="warn">⚠️ ③ <b>"포인트 → 현금 전환"은 전자금융거래법(선불전자지급수단) 가장 민감</b>(§15-3). → 우선 <b>응모권 구매·상품 할인</b>부터 열고, <b>현금 전환은 법률 검토 후</b> 단계 오픈 권장.</div>
 </div>
 
@@ -164,12 +166,13 @@ a.back { font-size:12px; color:var(--blue); text-decoration:none; }
 <!-- ===== 5. 응모권 ===== -->
 <div class="step-label">5 · 봉이 응모권</div>
 <div class="step-card">
-  <div class="grid3">
-    <div class="kpi"><div class="v">1,000P</div><div class="l">= 응모권 1장 교환</div></div>
-    <div class="kpi"><div class="v">매월 1일</div><div class="l">리셋 · 이월 불가</div></div>
+  <div class="grid4">
+    <div class="kpi"><div class="v">기본 1장</div><div class="l">모든 회원 매월 <b>자동 응모</b>(무료)</div></div>
+    <div class="kpi"><div class="v">1,000P</div><div class="l">= 응모권 1장 구매</div></div>
+    <div class="kpi"><div class="v">친구초대</div><div class="l">추천 보상으로 응모권 획득</div></div>
     <div class="kpi"><div class="v">월말</div><div class="l">자동 응모 → 리셋</div></div>
   </div>
-  <div class="ok">✅ <b>응모권 매월 리셋 = 정상(설계 의도).</b> 보유 응모권은 <b>매월 말 그 달 경품 추첨에 자동 응모</b>된 뒤 리셋됨 → 소멸이 아니라 "그 달 추첨에 사용". 포인트(영구) ↔ 응모권(매월 추첨 소진)은 모순 아님. 1,000P 교환분·추천 응모권 모두 해당 월 추첨에 참여.</div>
+  <div class="ok">✅ <b>응모권 획득 = ① 기본 자동 1장(전 회원) ② 포인트 구매(1,000P=1장) ③ 친구초대 보상.</b> 보유 응모권은 <b>매월 말 그 달 추첨에 자동 응모</b> 후 리셋(소멸 아님, "그 달 추첨에 사용"). 응모권이 많을수록 당첨확률↑. 포인트(영구) ↔ 응모권(매월 추첨 소진) 모순 아님.</div>
 </div>
 
 <!-- ===== 6. 추천 ===== -->
