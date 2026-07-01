@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이 여행 eSIM — 개발 기획서 (CMI-DW 재판매)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f8f7f4;--bg2:#fff;--border:#e2ddd6;--navy:#1a2744;--blue:#2563eb;--blue2:#dbeafe;--green:#059669;--green2:#d1fae5;--orange:#d97706;--orange2:#fef3c7;--red:#dc2626;--red2:#fee2e2;--purple:#7c3aed;--purple2:#f3e8ff;--text:#1a1a1a;--text2:#4a4a4a;--text3:#8a8a8a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;padding:40px;max-width:1200px;margin:0 auto;line-height:1.6}
+h1{font-size:28px;font-weight:900;color:var(--navy);margin-bottom:4px}
+.subtitle{font-size:12px;color:var(--text3);margin-bottom:24px;font-family:'JetBrains Mono',monospace}
+.step-label{background:var(--navy);color:#fff;padding:7px 18px;border-radius:8px;font-size:13px;font-weight:800;display:inline-block;margin:28px 0 12px}
+.step-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0;background:#fff;border-radius:8px;overflow:hidden}
+th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-size:11px}
+td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--purple)}
+.note{background:#eff6ff;border-left:4px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--navy);margin:10px 0}
+.warn{background:var(--red2);border-left:4px solid var(--red);border-radius:8px;padding:10px 14px;font-size:12px;color:#991b1b;margin:10px 0}
+.ok{background:var(--green2);border-left:4px solid var(--green);border-radius:8px;padding:10px 14px;font-size:12px;color:#065f46;margin:10px 0}
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:800}
+.b-red{background:var(--red2);color:var(--red)}.b-green{background:var(--green2);color:var(--green)}.b-orange{background:var(--orange2);color:var(--orange)}.b-blue{background:var(--blue2);color:var(--blue)}.b-purple{background:var(--purple2);color:var(--purple)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.kpi .v{font-size:22px;font-weight:900;color:var(--navy)}.kpi .l{font-size:11px;color:var(--text3);margin-top:2px}
+.loop{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}
+.loop .n{background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:700}
+.loop .a{color:var(--text3);font-weight:900}
+.codeblk{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;overflow-x:auto}
+.codeblk .c{color:#64748b}.codeblk .k{color:#ec4899}.codeblk .t{color:#6ee7b7}.codeblk .y{color:#fbbf24}
+h3{font-size:14px;color:var(--navy);margin:14px 0 6px;font-weight:800}
+a.back{font-size:12px;color:var(--blue);text-decoration:none}
+.docbtn{display:inline-block;padding:8px 16px;background:var(--navy);color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;margin:4px 6px 4px 0}
+.docbtn.g{background:#16a34a}
+a{color:var(--blue)}
+</style>
+</head>
+<body>
+
+<a class="back" href="master-map.html">← 마스터맵</a>
+<h1 style="margin-top:8px">✈️ 봉이 여행 eSIM — 개발 기획서</h1>
+<div class="subtitle">글로벌 데이터 재판매 · CMI-DW(차이나모바일) 도매 · 유심사 벤치마크 · 무인센터 크로스셀 · 2026-07</div>
+
+<div class="ok">
+  ✅ <b>핵심:</b> 해외여행 고객에게 <b>여행 eSIM</b>을 봉이 안에서 판매. China Mobile Int'l(<b>CMLink/CMI-DW</b>) 도매 재판매(국내 유심사 84%가 이 구조). <b>기존 통신고객+로밍상담 트래픽으로 CAC≈0 크로스셀</b> → 신규 유심사보다 순마진 우위.
+</div>
+
+<!-- 통합 문서 링크 -->
+<div class="step-card" style="border-color:#16a34a;background:linear-gradient(135deg,#fff,#f0fdf4)">
+  <h3>📎 관련 문서 (모두 통합)</h3>
+  <a class="docbtn g" href="wireframes/travel-esim.html">🖼️ 와이어프레임 (고객·어드민·크로스셀 3탭)</a>
+  <a class="docbtn" href="specs/bongi-travel-esim-2026-07.md">📄 기획서 원문(.md)</a>
+  <span class="mono">메모리: project_bongi_travel_esim</span>
+</div>
+
+<!-- KPI -->
+<div class="grid4" style="margin:16px 0">
+  <div class="kpi"><div class="v">50~60%</div><div class="l">매출총이익률(추정)</div></div>
+  <div class="kpi"><div class="v">~90건</div><div class="l">월 손익분기</div></div>
+  <div class="kpi"><div class="v">84%</div><div class="l">CMI-DW 조달비중(유심사)</div></div>
+  <div class="kpi"><div class="v">≈0</div><div class="l">CAC(크로스셀)</div></div>
+</div>
+
+<!-- 1. 시장조사 -->
+<div class="step-label">1 · 시장조사 (실측 · 역설계)</div>
+<div class="step-card">
+  <h3>조달처 확인 — 유심사 API 역설계</h3>
+  <div class="note">유심사(usimsa) 공개 API에서 <b>공급사(supplier) 필드</b> 확보 → <b>CMI-DW = China Mobile International</b>이 68목적지 중 <b>57개(84%)</b> 공급. 인기 아시아국(일본·중국·베트남·태국·필리핀·말레이)만 로컬(BC-AZ·WEBBING·TSIM) 병행.</div>
+  <table>
+    <tr><th>목적지</th><th>공급사</th><th>현지 로밍망</th><th>판매가 범위</th></tr>
+    <tr><td>일본</td><td class="mono">CMI-DW</td><td>Softbank / KDDI</td><td>1,500~81,900원</td></tr>
+    <tr><td>유럽 42개국</td><td class="mono">CMI-DW</td><td>로밍</td><td>1,700~108,900원</td></tr>
+    <tr><td>미국/캐나다</td><td class="mono">CMI-DW</td><td>AT&amp;T / T-Mobile 외</td><td>1,900~118,800원</td></tr>
+    <tr><td>태국·베트남 등</td><td class="mono">CMI-DW + BC-AZ</td><td>로컬 병행</td><td>멀티소싱</td></tr>
+  </table>
+  <h3>일본 실측 단가 (210옵션 중 대표)</h3>
+  <table>
+    <tr><th>무제한(데일리)</th><th>소매가</th><th>정량</th><th>소매가</th></tr>
+    <tr><td>3일</td><td>9,900원</td><td>1일 1GB</td><td>2,000원</td></tr>
+    <tr><td>5일</td><td>16,100원</td><td>1일 2GB</td><td>2,600원</td></tr>
+    <tr><td>7일</td><td>21,800원</td><td>1일 4GB</td><td>3,300원</td></tr>
+  </table>
+  <div class="warn">도매원가(usdPrice)는 API에서 <b>마스킹</b> → 한계단가 역산: 데이터 원가 GB당 극소, 무제한 도매 일당 ~1,000~1,400원 추정 → <b>마진 50~60%</b>. 정확 원가는 <b>CMI 계약 필요</b>.</div>
+</div>
+
+<!-- 2. 타겟/공급 업체 -->
+<div class="step-label">2 · 타겟 업체 · API 공급 업체</div>
+<div class="step-card">
+  <h3>벤치마크 경쟁사 (B2C)</h3>
+  <table>
+    <tr><th>업체</th><th>특징</th><th>조달처</th></tr>
+    <tr><td>유심사 (usimsa.com)</td><td>800만·API공개</td><td class="mono">CMI-DW 84%</td></tr>
+    <tr><td>도시락 eSIM</td><td>와이파이+eSIM</td><td>미확인(API비공개)</td></tr>
+    <tr><td>로밍도깨비</td><td>앱 1위</td><td>미확인(SPA/앱)</td></tr>
+    <tr><td>Airalo / Holafly</td><td>글로벌 벤치</td><td>—</td></tr>
+  </table>
+  <h3>API 공급 업체 (도매 애그리게이터 · 계약 타겟) + 연락처</h3>
+  <table>
+    <tr><th>공급 업체</th><th>특징</th><th>연락처</th></tr>
+    <tr><td><b>CMLink (CMI)</b> ⭐</td><td>차이나모바일·190개국·유심사 주력</td><td class="mono">cs@cmlink.com · esim_hello@cmlinkesim.com</td></tr>
+    <tr><td>eSIM Access</td><td>RedteaGO 연합·3억유저·GSMA</td><td class="mono">team@esimaccess.com</td></tr>
+    <tr><td>eSIM Card</td><td>700+리셀러·200개국</td><td class="mono">sales@esimcard.com</td></tr>
+    <tr><td>Maya Mobile</td><td>글로벌 B2B</td><td class="mono">support@maya.net</td></tr>
+    <tr><td>eSIM Go</td><td>영국·도매+MVNE</td><td>폼 esimgo.com/contact</td></tr>
+    <tr><td>Gohub / MobiMatter / Airhub / Telnyx</td><td>화이트라벨 API</td><td>파트너 폼</td></tr>
+  </table>
+  <div class="note"><b>소싱 전략:</b> 1차 = <b>CMLink</b> 직접 계약(유심사와 동일 원가). 2차(리스크 분산) = eSIM Access·Maya 멀티소싱. 어댑터를 공급사 무관 인터페이스로 설계.</div>
+  <div class="warn">⚠️ 메일 발송·계약은 <b>사람 확인 후</b> 진행 — 봉이가 임의 발송하지 않음.</div>
+</div>
+
+<!-- 3. 봉이 개발구조 -->
+<div class="step-label">3 · 봉이 현재 구조 재사용</div>
+<div class="step-card">
+  <table>
+    <tr><th>레이어</th><th>패턴</th><th>eSIM 적용</th></tr>
+    <tr><td>서버</td><td class="mono">server/routes/{module}.js</td><td class="mono">routes/esim.js 신규</td></tr>
+    <tr><td>외부연동</td><td>어댑터 services/*(cti.js=Mock→env플래그)</td><td class="mono">services/cmlink.js</td></tr>
+    <tr><td>DB</td><td class="mono">supabase.from()</td><td class="mono">esim_* + rental_categories.travel-esim</td></tr>
+    <tr><td>카테고리</td><td>rental_categories 메타·SQL 1줄</td><td>product_group 여행/글로벌 ✅신설</td></tr>
+    <tr><td>주문/정산</td><td>신청→계약→페이백/포인트</td><td>eSIM 주문 동일 흐름</td></tr>
+  </table>
+  <div class="ok">✅ 카테고리 <span class="mono">rental_categories.travel-esim</span>(여행/글로벌·ticket_prefix E·6필드) <b>dev+live 반영</b>(준비중, is_active=false).</div>
+</div>
+
+<!-- 4. 백엔드 -->
+<div class="step-label">4 · 백엔드 설계 (유심사 3단 드릴다운 = 표준)</div>
+<div class="step-card">
+  <div class="loop"><span class="n">GET /destinations</span><span class="a">→</span><span class="n">GET /products/:dest</span><span class="a">→</span><span class="n">GET /plans/:id/options</span><span class="a">→</span><span class="n">POST /orders</span><span class="a">→</span><span class="n">QR 발급</span></div>
+  <div class="codeblk"><span class="c">// services/cmlink.js — CMI 도매 어댑터 (env ESIM_PROVIDER=mock|cmlink)</span>
+export const cmlink = {
+  <span class="t">listCountries</span>(),                <span class="c">// 목적지</span>
+  <span class="t">listPackages</span>(countryCode),     <span class="c">// 상품(플랜)</span>
+  <span class="t">listOptions</span>(packageId),        <span class="c">// 옵션(일수×데이터)+도매가</span>
+  <span class="t">order</span>(optionId, customer),     <span class="c">// 주문→프로파일/QR</span>
+  <span class="t">status</span>(orderId),               <span class="c">// 발급/사용 상태</span>
+};</div>
+  <div class="note">가격정책: 도매(USD)×환율 + <b>마진율(정책 fetch, 하드코딩 금지)</b> = 소매가. <span class="badge b-orange">feedback_no_hardcode</span></div>
+</div>
+
+<!-- 5. 프론트 + DB -->
+<div class="grid2">
+  <div>
+    <div class="step-label">5 · 프론트</div>
+    <div class="step-card">
+      <div class="loop" style="font-size:10px"><span class="n">목적지</span><span class="a">→</span><span class="n">상품</span><span class="a">→</span><span class="n">결제</span><span class="a">→</span><span class="n">eSIM QR</span></div>
+      <p style="font-size:12px;margin-top:8px">고객 <span class="mono">client/src/pages/esim/</span> + 어드민 상품관리(카테고리 재사용). 무인센터(cs) 로밍 상담 → "로밍 vs eSIM 비교" → <b>딥링크 크로스셀</b>.</p>
+      <a class="docbtn g" href="wireframes/travel-esim.html" style="margin-top:8px">🖼️ 와이어프레임 보기</a>
+    </div>
+  </div>
+  <div>
+    <div class="step-label">6 · DB 스키마</div>
+    <div class="step-card">
+      <div class="codeblk" style="font-size:10px"><span class="k">esim_products</span>(destination,supplier,carrier,network,...)
+<span class="k">esim_options</span>(product_id,days,quota,is_unlimited,
+  wholesale_usd,fx_rate,margin_rate,retail_krw)
+<span class="k">esim_orders</span>(customer_id,option_id,status,
+  provider_order_id,qr_url,activated_at)</div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. 로드맵 -->
+<div class="step-label">7 · 개발 로드맵 (2주 모듈)</div>
+<div class="step-card">
+  <table>
+    <tr><th>주차</th><th>작업</th></tr>
+    <tr><td>1주</td><td>services/cmlink.js Mock 어댑터 + routes/esim.js + DB 스키마 + 유심사 벤치 시드</td></tr>
+    <tr><td>2주</td><td>고객 프론트(목적지→결제 Mock) + 어드민 상품관리 + cs 챗봇 크로스셀 딥링크</td></tr>
+    <tr><td>계약 후</td><td>CMLink 실계약 → env 플래그로 어댑터 교체 → 실주문·QR·정산</td></tr>
+  </table>
+  <div class="note">외부 API(CMI)는 계약 전까지 <b>Mock으로 전 기능 개발</b> → 계약 후 플래그 교체(봉이 표준: Tredit·PASS 동일).</div>
+</div>
+
+<!-- 8. 리스크 -->
+<div class="step-label">8 · 리스크 · 사람 필요 블로커</div>
+<div class="step-card">
+  <div class="warn">🔴 <b>CMLink/CMI 파트너 계약</b>(도매가·최소물량·정산) — 사람 협상 필요<br>🟠 소매 가격경쟁(유심사·도시락) → "상담+판매 원스톱" 편의로 차별화<br>🟠 결제·전자상거래 고지(청약철회·환불) 법무 검토<br>🟠 eSIM QR 발급실패 재발급 CS 플로우</div>
+  <div class="ok">✅ <b>완료:</b> 시장조사·기획서·와이어프레임·카테고리 dev+live·master-map 편입·라이브 배포</div>
+</div>
+
+</body>
+</html>
