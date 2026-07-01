@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이 여행 eSIM — 와이어프레임</title>
+<style>
+:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--line:#334155;--txt:#e2e8f0;--txt2:#94a3b8;--gold:#fbbf24;--blue:#3b82f6;--green:#22c55e;--red:#ef4444}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:'Pretendard','Noto Sans KR',sans-serif;padding:24px;max-width:1200px;margin:0 auto}
+h1{font-size:22px;font-weight:800}h1 .em{color:var(--gold)}
+.sub{color:var(--txt2);font-size:12px;margin:4px 0 20px;font-family:monospace}
+.tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.tab{padding:10px 18px;font-size:13px;font-weight:700;color:var(--txt2);cursor:pointer;border-bottom:2px solid transparent}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.pane{display:none}.pane.on{display:block}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.card h3{font-size:14px;margin-bottom:12px;color:var(--gold)}
+.grid{display:grid;gap:10px}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:1fr 1fr}
+.dest{background:var(--bg3);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:.15s}
+.dest:hover{border-color:var(--gold);transform:translateY(-2px)}
+.dest .flag{font-size:28px}.dest .nm{font-size:13px;font-weight:700;margin-top:6px}.dest .from{font-size:10px;color:var(--txt2);margin-top:2px}
+.opt{display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+.opt:hover{border-color:var(--blue)}
+.opt .d{font-size:13px;font-weight:700}.opt .m{font-size:11px;color:var(--txt2)}
+.opt .p{font-size:15px;font-weight:800;color:var(--gold)}
+.step{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--gold);color:#000;border-radius:50%;font-size:11px;font-weight:800;margin-right:6px}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--txt2);margin-bottom:16px}
+.flow b{background:var(--bg3);padding:4px 10px;border-radius:8px;color:var(--txt)}
+.btn{background:var(--gold);color:#000;border:none;border-radius:10px;padding:12px;width:100%;font-size:14px;font-weight:800;cursor:pointer;margin-top:8px}
+.qr{width:120px;height:120px;background:#fff;border-radius:12px;margin:12px auto;display:flex;align-items:center;justify-content:center;color:#000;font-size:10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--bg3);padding:8px 10px;text-align:left;font-size:11px;color:var(--txt2)}
+td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.bdg{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700}
+.b-g{background:rgba(34,197,94,.15);color:var(--green)}.b-y{background:rgba(251,191,36,.15);color:var(--gold)}.b-b{background:rgba(59,130,246,.15);color:var(--blue)}
+.mut{color:var(--txt2);font-size:11px}
+.note{background:rgba(59,130,246,.1);border:1px solid var(--blue);border-radius:10px;padding:10px 14px;font-size:11px;color:#bfdbfe;margin-top:10px}
+input,select{background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--txt);font-size:12px;width:100%}
+</style>
+</head>
+<body>
+<h1>✈️ 봉이 <span class="em">여행 eSIM</span> <span class="mut" style="font-size:12px">와이어프레임</span></h1>
+<div class="sub">product_group=여행/글로벌 · CMI-DW 도매 재판매 · 유심사 구조 벤치마크 · MOCKUP(비동작)</div>
+
+<div class="tabs">
+  <div class="tab on" onclick="tab(0)">🛒 고객 스토어</div>
+  <div class="tab" onclick="tab(1)">⚙️ 어드민 상품관리</div>
+  <div class="tab" onclick="tab(2)">📞 무인센터 연동</div>
+</div>
+
+<!-- ================= 고객 스토어 ================= -->
+<div class="pane on" id="p0">
+  <div class="flow"><span class="step">1</span><b>목적지</b> → <span class="step">2</span><b>상품(일수·데이터)</b> → <span class="step">3</span><b>결제</b> → <span class="step">4</span><b>eSIM QR·설치</b></div>
+
+  <div class="card">
+    <h3>STEP 1 · 목적지 선택</h3>
+    <div class="grid g4">
+      <div class="dest"><div class="flag">🇯🇵</div><div class="nm">일본</div><div class="from">1,500원~</div></div>
+      <div class="dest"><div class="flag">🇪🇺</div><div class="nm">유럽 42개국</div><div class="from">1,700원~</div></div>
+      <div class="dest"><div class="flag">🇺🇸</div><div class="nm">미국/캐나다</div><div class="from">1,900원~</div></div>
+      <div class="dest"><div class="flag">🇨🇳</div><div class="nm">중국</div><div class="from">1,600원~</div></div>
+      <div class="dest"><div class="flag">🇻🇳</div><div class="nm">베트남</div><div class="from">1,500원~</div></div>
+      <div class="dest"><div class="flag">🇹🇭</div><div class="nm">태국</div><div class="from">1,600원~</div></div>
+      <div class="dest"><div class="flag">🇹🇼</div><div class="nm">대만</div><div class="from">1,500원~</div></div>
+      <div class="dest"><div class="flag">🌏</div><div class="nm">전체 68개국</div><div class="from">검색 →</div></div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>STEP 2 · 일본 상품 선택 (실측 단가)</h3>
+      <div class="mut" style="margin-bottom:8px">데이터 유형: <span class="bdg b-y">무제한(데일리)</span> <span class="bdg b-b">정량</span></div>
+      <div class="opt"><div><div class="d">무제한 3일</div><div class="m">매일 고속 후 저속 · CMI-DW</div></div><div class="p">9,900원</div></div>
+      <div class="opt"><div><div class="d">무제한 5일</div><div class="m">일당 3,220원</div></div><div class="p">16,100원</div></div>
+      <div class="opt"><div><div class="d">무제한 7일</div><div class="m">일당 3,114원 · 인기</div></div><div class="p">21,800원</div></div>
+      <div class="opt"><div><div class="d">정량 1일 2GB</div><div class="m">단기 최저가</div></div><div class="p">2,600원</div></div>
+      <div class="note">공급사·현지망(Softbank/KDDI)·QoS는 상세에서 표기. 로밍 대비 최대 70% 절약 배지.</div>
+    </div>
+    <div class="card">
+      <h3>STEP 3 · 결제 · STEP 4 · 발급</h3>
+      <div class="mut">선택: 일본 · 무제한 7일 · 21,800원</div>
+      <div style="margin:10px 0"><input placeholder="이메일 (eSIM 발급용)"></div>
+      <div style="margin:10px 0"><select><option>PASS 본인인증</option></select></div>
+      <button class="btn">21,800원 결제하기</button>
+      <div class="qr">QR 코드<br>(발급 후)</div>
+      <div class="mut" style="text-align:center">스캔 → 설치가이드(iOS/Android) → 현지 도착 시 활성화</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 어드민 ================= -->
+<div class="pane" id="p1">
+  <div class="card">
+    <h3>상품 관리 (rental_categories: 여행 eSIM · ticket_prefix=E)</h3>
+    <div class="mut" style="margin-bottom:10px">CMI 도매 API 동기화 → 도매가(USD) × 환율 + 마진율 = 소매가. <span class="bdg b-y">마진율 정책 fetch(하드코딩 금지)</span></div>
+    <table>
+      <tr><th>목적지</th><th>상품</th><th>공급사</th><th>현지망</th><th>도매(USD)</th><th>마진</th><th>소매(KRW)</th><th>상태</th></tr>
+      <tr><td>일본</td><td>무제한 7일</td><td>CMI-DW</td><td>Softbank/KDDI</td><td class="mut">$?? (계약)</td><td>50%</td><td>21,800</td><td><span class="bdg b-g">판매중</span></td></tr>
+      <tr><td>일본</td><td>정량 1일 2GB</td><td>CMI-DW</td><td>Softbank/KDDI</td><td class="mut">$??</td><td>55%</td><td>2,600</td><td><span class="bdg b-g">판매중</span></td></tr>
+      <tr><td>유럽42</td><td>무제한 5일</td><td>CMI-DW</td><td>로밍</td><td class="mut">$??</td><td>50%</td><td>19,900</td><td><span class="bdg b-y">준비중</span></td></tr>
+      <tr><td>태국</td><td>무제한 5일</td><td>BC-AZ</td><td>로컬</td><td class="mut">$??</td><td>48%</td><td>—</td><td><span class="bdg b-b">멀티소싱</span></td></tr>
+    </table>
+    <button class="btn" style="width:auto;padding:10px 18px">＋ CMI API 상품 동기화</button>
+  </div>
+  <div class="card">
+    <h3>주문 · 발급 현황</h3>
+    <table>
+      <tr><th>주문ID</th><th>고객</th><th>상품</th><th>소매가</th><th>공급사 주문</th><th>발급(QR)</th><th>상태</th></tr>
+      <tr><td>E-00001</td><td>홍*동</td><td>일본 무제한7일</td><td>21,800</td><td>CMI#8841</td><td>✅ 발급</td><td><span class="bdg b-g">활성</span></td></tr>
+      <tr><td>E-00002</td><td>김*수</td><td>유럽 무제한5일</td><td>19,900</td><td>대기</td><td>—</td><td><span class="bdg b-y">결제완료</span></td></tr>
+    </table>
+    <div class="note">주문 → CMI order API → 프로파일/QR 저장 → 고객 마이페이지. 실패 시 재발급 CS 플로우. 정산·페이백·포인트는 기존 계약 흐름 재사용.</div>
+  </div>
+</div>
+
+<!-- ================= 무인센터 연동 ================= -->
+<div class="pane" id="p2">
+  <div class="card">
+    <h3>cs 무인 고객센터 → eSIM 크로스셀 (CAC≈0)</h3>
+    <div class="flow"><b>해외여행 상담</b> → <b>로밍 vs eSIM 비교</b> → <b>eSIM 상품 딥링크</b> → <b>스토어 STEP2</b></div>
+    <div style="background:var(--bg3);border-radius:10px;padding:14px;font-size:12px;line-height:1.7">
+      <div class="mut">고객</div>「일본 5일 가는데 데이터 어떻게 해요?」<br>
+      <div class="mut" style="margin-top:8px">봉이 무인센터 🤖</div>
+      통신사 로밍은 baro 8GB 39,000원(30일)입니다. <b style="color:var(--gold)">5일 여행이면 여행 eSIM이 더 저렴</b>해요 — 일본 무제한 5일 <b style="color:var(--gold)">16,100원</b> (로밍 대비 약 59%↓).
+      <div style="margin-top:8px"><button class="btn" style="width:auto;padding:8px 16px">👉 일본 eSIM 바로 구매</button></div>
+    </div>
+    <div class="note">cs.plans 로밍 데이터(baro·제로프리미엄) + esim_options 소매가를 실시간 비교 → 전환. 앞서 구축한 무인센터(cs 스키마)와 자연 연결.</div>
+  </div>
+</div>
+
+<script>
+function tab(i){document.querySelectorAll('.tab').forEach((t,x)=>t.classList.toggle('on',x===i));document.querySelectorAll('.pane').forEach((p,x)=>p.classList.toggle('on',x===i));}
+</script>
+</body>
+</html>
