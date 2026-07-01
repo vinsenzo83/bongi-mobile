@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이 채팅형 무인 고객센터 — 통신3사 (개발 기획서)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f8f7f4;--bg2:#fff;--border:#e2ddd6;--navy:#1a2744;--blue:#2563eb;--blue2:#dbeafe;--green:#059669;--green2:#d1fae5;--orange:#d97706;--orange2:#fef3c7;--red:#dc2626;--red2:#fee2e2;--purple:#7c3aed;--purple2:#f3e8ff;--text:#1a1a1a;--text2:#4a4a4a;--text3:#8a8a8a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;padding:40px;max-width:1200px;margin:0 auto;line-height:1.6}
+h1{font-size:28px;font-weight:900;color:var(--navy);margin-bottom:4px}
+.subtitle{font-size:12px;color:var(--text3);margin-bottom:24px;font-family:'JetBrains Mono',monospace}
+.step-label{background:var(--navy);color:#fff;padding:7px 18px;border-radius:8px;font-size:13px;font-weight:800;display:inline-block;margin:28px 0 12px}
+.step-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0;background:#fff;border-radius:8px;overflow:hidden}
+th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-size:11px}
+td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--purple)}
+.note{background:#eff6ff;border-left:4px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--navy);margin:10px 0}
+.warn{background:var(--red2);border-left:4px solid var(--red);border-radius:8px;padding:10px 14px;font-size:12px;color:#991b1b;margin:10px 0}
+.ok{background:var(--green2);border-left:4px solid var(--green);border-radius:8px;padding:10px 14px;font-size:12px;color:#065f46;margin:10px 0}
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:800}
+.b-red{background:var(--red2);color:var(--red)}.b-green{background:var(--green2);color:var(--green)}.b-orange{background:var(--orange2);color:var(--orange)}.b-blue{background:var(--blue2);color:var(--blue)}.b-purple{background:var(--purple2);color:var(--purple)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.kpi .v{font-size:22px;font-weight:900;color:var(--navy)}.kpi .l{font-size:11px;color:var(--text3);margin-top:2px}
+.loop{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}
+.loop .n{background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:700}
+.loop .a{color:var(--text3);font-weight:900}
+.codeblk{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;overflow-x:auto}
+.codeblk .c{color:#64748b}.codeblk .k{color:#ec4899}.codeblk .t{color:#6ee7b7}.codeblk .y{color:#fbbf24}
+h3{font-size:14px;color:var(--navy);margin:14px 0 6px;font-weight:800}
+a.back{font-size:12px;color:var(--blue);text-decoration:none}
+.docbtn{display:inline-block;padding:8px 16px;background:var(--navy);color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;margin:4px 6px 4px 0}
+.docbtn.g{background:#16a34a}
+.chat{background:#0f172a;border-radius:12px;padding:14px;font-size:12px}
+.msg{margin:8px 0;padding:8px 12px;border-radius:10px;max-width:80%}
+.msg.u{background:#334155;color:#e2e8f0;margin-left:auto}
+.msg.b{background:#1e40af;color:#fff}
+a{color:var(--blue)}
+</style>
+</head>
+<body>
+
+<a class="back" href="master-map.html">← 마스터맵</a>
+<h1 style="margin-top:8px">💬 봉이 채팅형 무인 고객센터 — 통신3사</h1>
+<div class="subtitle">SKT·KT·LG U+ 공식 데이터 · 상담사 개입 없이 채팅 완결 · RAG 기반 · 2026-06~07</div>
+
+<div class="ok">
+  ✅ <b>목적:</b> 전화 문의를 <b>채팅 안에서 상담사 개입 없이 모두 해결</b>. 통신3사 공식 데이터로 요금제·결합·부가서비스·FAQ를 무인 응대. 로밍 상담은 <a href="flow-travel-esim.html">여행 eSIM(14번)</a>으로 크로스셀.
+</div>
+
+<!-- 0. 왜 구축 -->
+<div class="step-label" style="background:#7c3aed">0 · 왜 채팅형 고객센터인가 (배경·목적)</div>
+<div class="step-card" style="border-color:#7c3aed">
+  <h3>배경 — 통신 상담이 봉이 최다 문의</h3>
+  <p style="font-size:13px">봉이의 본질은 <b>N채널 유입(웹·앱·전화·매장)을 전화번호 기준으로 통합</b>하는 것. 그중 <b>통신 상담(요금제·결합·부가서비스·로밍)</b>이 가장 빈도 높은 문의다. 현재는 상담사가 전화로 일일이 응대 → <b>인건비·대기시간·업무시간(야간 불가)</b>의 구조적 한계.</p>
+  <h3>목적 — 전화 문의를 채팅에서 무인 완결</h3>
+  <table>
+    <tr><th>문제(As-Is)</th><th>해결(To-Be)</th></tr>
+    <tr><td>전화 대기·업무시간 한정</td><td><b>24시간·즉시·대기0</b> 채팅 응대</td></tr>
+    <tr><td>반복 문의가 상담사 시간 소모</td><td>요금비교·할인·조건은 <b>무인</b> → 상담사는 <b>계약·판매(고부가)</b>에 집중</td></tr>
+    <tr><td>상담사별 안내 편차·오안내 리스크</td><td>통신3사 <b>공식 데이터(환각0)</b>로 일관·정확</td></tr>
+    <tr><td>로밍 문의가 매출로 안 이어짐</td><td>로밍 상담 → <b>여행 eSIM 크로스셀</b>(14번) 수익 연결</td></tr>
+  </table>
+  <div class="note">봉이 개발범위는 원래 CRM(어드민)만이지만(<span class="badge b-orange">feedback_crm_only</span>), <b>이 채널은 고객 대면 무인센터</b>라 예외로 구축 — N채널 통합(<span class="mono">project_bongi_unified_customer</span>)을 보완한다.</div>
+</div>
+
+<!-- 데이터 현황 -->
+<div class="grid4" style="margin:16px 0">
+  <div class="kpi"><div class="v">322</div><div class="l">공식 데이터(건)</div></div>
+  <div class="kpi"><div class="v">0</div><div class="l">환각·노이즈</div></div>
+  <div class="kpi"><div class="v">3사</div><div class="l">SKT·KT·LG U+</div></div>
+  <div class="kpi"><div class="v">거미</div><div class="l">검증 완료(🔴0)</div></div>
+</div>
+
+<!-- 1. 데이터 -->
+<div class="step-label">1 · 구축된 데이터 (cs 스키마 · dev)</div>
+<div class="step-card">
+  <div class="ok">✅ <b>통신3사 데이터 구축 완료</b> — 공식 페이지 직접 크롤 + 스파이더 거미 검증(사실왜곡 금지, 🔴 0).</div>
+  <table>
+    <tr><th>테이블</th><th>건수</th><th>내용</th><th>출처</th></tr>
+    <tr><td class="mono">cs.plans</td><td>72</td><td>요금제(KT38·SKT16·LGU18)·약정가·데이터</td><td>3사 공식(product.kt·tworld·lguplus)</td></tr>
+    <tr><td class="mono">cs.bundles</td><td>24</td><td>결합상품·할인tier·종료일</td><td>3사 공식</td></tr>
+    <tr><td class="mono">cs.faqs</td><td>69</td><td>17토픽 FAQ·answer_type</td><td>3사 공식 FAQ</td></tr>
+    <tr><td class="mono">cs.vas_products</td><td>157</td><td>부가서비스(로밍9·데이터·안심·통화·구독)</td><td>공식 BFF API(LGU 136 전수)</td></tr>
+    <tr><td class="mono">cs.carrier_links</td><td>—</td><td>연락처·딥링크·멤버십·부가서비스 redirect</td><td>3사 공식</td></tr>
+  </table>
+  <div class="note"><b>품질:</b> carrier 일관·중복0·노이즈0·약정가 정합·환각0. WebSearch 적재 금지, <b>공식 소스만</b>(<span class="badge b-orange">feedback_official_source_only</span>). 부가서비스 WebSearch 7건 오류를 공식 BFF로 적발·교체한 이력.</div>
+
+  <h3>테이블별 컬럼 구성 (파싱 대상 = 무인 응대 필드)</h3>
+  <table>
+    <tr><th>테이블</th><th>핵심 컬럼</th><th>응대 역할</th></tr>
+    <tr><td class="mono">plans</td><td>carrier · plan_name · network(5G/LTE) · <b>monthly_fee</b> · <b>discount_fee</b>(약정가=×0.75) · data_amount · data_daily · call_amount · message · age_target · commit_type · ott_benefits · conditions · benefits · embedding</td><td>요금제 비교·안내</td></tr>
+    <tr><td class="mono">bundles</td><td>carrier · bundle_name · bundle_type · components · discount_rule · <b>discount_tiers</b>(jsonb {amount,unit:won/percent}) · conditions · guide_script · <b>sales_status</b> · <b>sales_end_date</b></td><td>결합 할인·종료 안내</td></tr>
+    <tr><td class="mono">faqs</td><td>topic_code(17토픽) · question · <b>question_variants</b> · answer · answer_detail · <b>answer_type</b>(info/redirect) · guide_script · policy · confidence · embedding · last_verified</td><td>상담 문의 응대</td></tr>
+    <tr><td class="mono">vas_products</td><td>carrier · <b>category</b>(roaming·data·safety·call·content·pack·membership) · name · fee_type · fee · data_amount · region</td><td>부가서비스 안내</td></tr>
+    <tr><td class="mono">carrier_links</td><td>carrier · kind · label · <b>url</b> · <b>phone</b> · note</td><td>redirect 딥링크·대표번호</td></tr>
+    <tr><td class="mono">crawl_raw</td><td>batch_id · carrier · source_url · kind · <b>raw</b></td><td>크롤 원본(파싱 전 보존)</td></tr>
+    <tr><td class="mono">topics</td><td>code · name · parent_code · sort</td><td>17 상담 토픽 분류</td></tr>
+  </table>
+  <div class="note"><b>공통 메타:</b> 전 테이블에 <span class="mono">source_url</span>(공식 출처)·<span class="mono">crawled_at</span>·<span class="mono">published_at</span>·<span class="mono">is_active</span>. <b>staging→publish 게이트</b>로 미검증 데이터는 노출 안 됨. plans·faqs엔 <span class="mono">embedding vector(384)</span> — RAG 검색용.</div>
+</div>
+
+<!-- 데이터 파싱 -->
+<div class="step-label" style="background:#0891b2">🕷️ 데이터 파싱·검증 파이프라인 (cs-crawler)</div>
+<div class="step-card">
+  <div class="loop"><span class="n">공식 페이지</span><span class="a">→</span><span class="n">Playwright 크롤</span><span class="a">→</span><span class="n">crawl_raw 원본</span><span class="a">→</span><span class="n">파싱</span><span class="a">→</span><span class="n">staging</span><span class="a">→</span><span class="n">🕷️거미 검증</span><span class="a">→</span><span class="n">publish</span></div>
+  <h3>크롤 파싱 함정 · 대응 (실전 학습 corpus)</h3>
+  <table>
+    <tr><th>함정</th><th>증상</th><th>대응 (cs-crawler/lib)</th></tr>
+    <tr><td>SPA 가격(LG U+)</td><td>가격 JS 렌더, 빈 추출 → "크롤 불가" 오결론</td><td>removePopups 후 본문 <span class="mono">"월정액 X원 | 약정 할인 시 Y원"</span>(대기 3.5s+)</td></tr>
+    <tr><td>SKT 봇 throttle</td><td>bodyLen 0 간헐 발생</td><td><span class="mono">gotoRetry</span>(minLen 검사+재시도 대기 증가)</td></tr>
+    <tr><td>LG U+ 팝업</td><td>"오늘하루그만보기"만 10자 추출</td><td><span class="mono">[class*=popup/layer/dim]</span> 제거</td></tr>
+    <tr><td>KT OTT 선택형</td><td>table.pduct-tbl-plan 0행</td><td>표 없으면 본문 정규식 fallback(초이스 90,000 복구)</td></tr>
+    <tr><td>부가서비스 전수</td><td>SPA 목록 상품링크 크롤 불가</td><td><b>BFF API 직접호출</b> — <span class="mono">page.on('response')</span> 탐지 → node fetch(LG U+ addon 198건 전수)</td></tr>
+    <tr><td>이름 prefix</td><td>"유플러스 데이터플랜MAX"</td><td><span class="mono">stripCarrierPrefix</span></td></tr>
+    <tr><td>종료 상품</td><td>구상품 혼입</td><td><span class="mono">detectSalesStatus</span> + <b>5년 isStale</b>(신규가입 종료 5년내=보존, 이전=제거)</td></tr>
+    <tr><td>%↔원 혼재</td><td>discount_tiers 단위 불일치</td><td><span class="mono">{amount, unit:"won"|"percent"}</span> 명시</td></tr>
+  </table>
+  <h3>answer_type 파싱 규칙</h3>
+  <div class="note"><b>info</b>(DB에 답 있는 정적 문의: 요금·할인·조건) → 즉시 직접 답변. vs <b>redirect</b>(실시간·개인정보: 요금조회·명의·해지) → 공식 딥링크 + 대표번호(carrier_links). 파싱 시 질문 유형으로 분류·저장.</div>
+  <h3>검증 — 스파이더 거미 (사실왜곡 금지)</h3>
+  <div class="ok">🕷️ <b>제1법칙:</b> 라이브 공식 페이지 대조로만 판정. WebSearch 비교블로그 적재 금지. 요금·할인·조건·종료일 불일치·환각 = 🔴 즉시 수정 → <b>🔴 0 될 때까지 재직조 루프</b>. 잡은 버그는 corpus에 증류(다음 라운드 0라운드에 탐지).</div>
+</div>
+
+<!-- 2. RAG 아키텍처 -->
+<div class="step-label">2 · RAG 아키텍처 (무인 응대)</div>
+<div class="step-card">
+  <div class="loop"><span class="n">고객 질문</span><span class="a">→</span><span class="n">e5 임베딩(384d)</span><span class="a">→</span><span class="n">하이브리드 검색(topic+의미)</span><span class="a">→</span><span class="n">answer_type 분기</span><span class="a">→</span><span class="n">답변</span></div>
+  <div class="grid2" style="margin-top:10px">
+    <div class="step-card" style="margin:0"><h3 style="margin-top:0">answer_type = info</h3><p style="font-size:12px">DB에 답이 있는 정적 문의(요금·데이터·할인·조건) → <b>즉시 직접 답변</b>.</p></div>
+    <div class="step-card" style="margin:0"><h3 style="margin-top:0">answer_type = redirect</h3><p style="font-size:12px">실시간·개인정보(요금조회·명의·해지) → <b>공식 딥링크 + 대표번호</b> 안내(carrier_links).</p></div>
+  </div>
+  <div class="warn">⚠️ 현재 <span class="mono">faqs.embedding = 0건</span>(데이터 재적재로 초기화) → RAG 구동 전 <b>임베딩 재생성 필요</b>(scripts/embed-faqs.mjs, Xenova multilingual-e5-small, 로컬·무키).</div>
+</div>
+
+<!-- 3. 백엔드/프론트 -->
+<div class="grid2">
+  <div>
+    <div class="step-label">3 · 백엔드</div>
+    <div class="step-card">
+      <div class="codeblk"><span class="c">// routes/cs-chat.js</span>
+POST <span class="y">/api/cs/chat</span>  <span class="c">// 질문→검색→답변</span>
+  <span class="k">1)</span> embed(query)         <span class="c">// e5 query:</span>
+  <span class="k">2)</span> hybrid(topic+vector)  <span class="c">// pgvector</span>
+  <span class="k">3)</span> answer_type 분기
+  <span class="k">4)</span> Claude 요약답변 + 출처</div>
+      <p style="font-size:11px;margin-top:8px" class="mono">pgvector 0.8 · embedding vector(384) · cs 스키마(dev sesgd…)</p>
+    </div>
+  </div>
+  <div>
+    <div class="step-label">4 · 프론트 (챗봇 위젯)</div>
+    <div class="step-card">
+      <div class="chat">
+        <div class="msg u">5만원대 5G 요금제 비교해줘</div>
+        <div class="msg b">KT 5G슬림·SKT 슬림·LGU 데이터플랜 모두 55,000원(약정 41,250원). <b>SKT 슬림이 데이터 1GB 많아요(15GB)</b>.</div>
+        <div class="msg u">일본 로밍 얼마야?</div>
+        <div class="msg b">baro 8GB 39,000원(30일). 근데 5일 여행이면 <b>여행 eSIM 16,100원</b>이 더 저렴 👉</div>
+      </div>
+      <a class="docbtn g" href="wireframes/cs-telecom-lookup.html" style="margin-top:8px">🖼️ 와이어프레임</a>
+    </div>
+  </div>
+</div>
+
+<!-- 5. 관련 문서 -->
+<div class="step-label">5 · 관련 문서</div>
+<div class="step-card" style="border-color:#2563eb;background:linear-gradient(135deg,#fff,#eff6ff)">
+  <a class="docbtn" href="wireframes/cs-telecom-lookup.html">🖼️ 와이어프레임(chat·plans·compare·bundle·crawl)</a>
+  <a class="docbtn" href="specs/telecom3-cs-data-2026-06-29.md">📄 PRD 원문(.md)</a>
+  <a class="docbtn g" href="flow-travel-esim.html">✈️ 여행 eSIM(크로스셀)</a>
+  <span class="mono">메모리: project_bongi_cs_center</span>
+</div>
+
+<!-- 6. 로드맵 -->
+<div class="step-label">6 · 남은 개발 (데이터는 완료)</div>
+<div class="step-card">
+  <table>
+    <tr><th>단계</th><th>작업</th><th>상태</th></tr>
+    <tr><td>데이터</td><td>통신3사 322건 공식 크롤·거미검증</td><td><span class="badge b-green">완료</span></td></tr>
+    <tr><td>임베딩</td><td>faqs·plans e5 임베딩 재생성</td><td><span class="badge b-orange">필요</span></td></tr>
+    <tr><td>백엔드</td><td>routes/cs-chat.js + 하이브리드 검색 RPC</td><td><span class="badge b-red">개발</span></td></tr>
+    <tr><td>프론트</td><td>챗봇 위젯(서비스 임베드)</td><td><span class="badge b-red">개발</span></td></tr>
+    <tr><td>연동</td><td>cs 스키마 dev→live 이전 + 로밍→eSIM 크로스셀</td><td><span class="badge b-red">개발</span></td></tr>
+  </table>
+  <div class="ok">✅ <b>핵심 자산(공식 데이터 322건)은 확보 완료</b> — 임베딩+챗봇 개발만 남음.</div>
+</div>
+
+</body>
+</html>
