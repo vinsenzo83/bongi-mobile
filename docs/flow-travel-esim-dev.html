@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이 여행 eSIM — 개발 명세(프론트·어드민 샘플)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f8f7f4;--bg2:#fff;--border:#e2ddd6;--navy:#1a2744;--blue:#2563eb;--green:#059669;--orange:#d97706;--red:#dc2626;--purple:#7c3aed;--text:#1a1a1a;--text3:#8a8a8a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;padding:40px;max-width:1080px;margin:0 auto;line-height:1.6}
+h1{font-size:26px;font-weight:900;color:var(--navy)}
+.subtitle{font-size:12px;color:var(--text3);margin-bottom:24px;font-family:'JetBrains Mono',monospace}
+.step-label{background:var(--navy);color:#fff;padding:7px 18px;border-radius:8px;font-size:13px;font-weight:800;display:inline-block;margin:26px 0 12px}
+.card{background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0;background:#fff;border-radius:8px;overflow:hidden}
+th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-size:11px}
+td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--purple)}
+.note{background:#eff6ff;border-left:4px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--navy);margin:10px 0}
+.codeblk{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.65;overflow-x:auto;margin:8px 0}
+.codeblk .c{color:#64748b}.codeblk .k{color:#ec4899}.codeblk .t{color:#6ee7b7}.codeblk .y{color:#fbbf24}.codeblk .s{color:#93c5fd}
+h3{font-size:14px;color:var(--navy);margin:14px 0 6px;font-weight:800}
+a.back{font-size:12px;color:var(--blue);text-decoration:none}
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:800;background:#dbeafe;color:var(--blue)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style>
+</head>
+<body>
+<a class="back" href="flow-travel-esim.html">← 여행 eSIM 기획서</a>
+<h1 style="margin-top:8px">🛠️ 봉이 여행 eSIM — 개발 명세 (프론트·어드민 샘플)</h1>
+<div class="subtitle">개발자가 이 문서만으로 착수 가능 · 유심사 API 구조 벤치마크 · Mock→플래그 교체 · 2026-07</div>
+
+<div class="note">유심사 3단 API(<b>products→plans→options</b>) 구조를 표준으로 채택. 공급사(CMLink/eSIM Access)는 <span class="mono">services/esimProvider.js</span> 어댑터로 추상화 → env <span class="mono">ESIM_PROVIDER=mock|cmlink|esimaccess</span>로 교체.</div>
+
+<!-- 1. 아키텍처 -->
+<div class="step-label">1 · 아키텍처</div>
+<div class="card">
+<div class="codeblk"><span class="c">// 데이터 흐름</span>
+[고객 프론트 client/src/pages/esim/]
+   │  fetch /api/esim/*
+   ▼
+[Express routes/esim.js] ──▶ [services/esimProvider.js <span class="c">// 어댑터(Mock→실API)</span>]
+   │                              │  ESIM_PROVIDER 플래그로 mock|cmlink|esimaccess 선택
+   ▼                              ▼
+[Supabase cs.esim_*]        [공급사 API (CMLink/eSIM Access)]
+   product·option·order          products/plans/options/order
+   │
+   ▼
+[어드민 docs/esim-admin.html] <span class="c">// 상품 동기화·마진·주문/발급 현황</span></div>
+</div>
+
+<!-- 2. DB 스키마 -->
+<div class="step-label">2 · DB 스키마 (Supabase cs 스키마)</div>
+<div class="card">
+<div class="codeblk"><span class="k">create table</span> cs.esim_products (
+  id           <span class="t">bigserial</span> <span class="k">primary key</span>,
+  provider     <span class="t">text</span>,              <span class="c">-- 'cmlink'|'esimaccess'|'mock'</span>
+  provider_pid <span class="t">text</span>,              <span class="c">-- 공급사 상품ID</span>
+  destination  <span class="t">text</span>,              <span class="c">-- '일본','유럽 42개국'</span>
+  dest_type    <span class="t">text</span>,              <span class="c">-- 'single'|'multiple'</span>
+  supplier     <span class="t">text</span>, carrier <span class="t">text</span>,  <span class="c">-- 'CMI-DW', 'Softbank/KDDI'</span>
+  keyword      <span class="t">text</span>,              <span class="c">-- 검색용(도쿄;오사카…)</span>
+  is_active    <span class="t">boolean</span> <span class="k">default</span> <span class="s">true</span>, synced_at <span class="t">timestamptz</span>
+);
+<span class="k">create table</span> cs.esim_options (
+  id            <span class="t">bigserial</span> <span class="k">primary key</span>,
+  product_id    <span class="t">bigint</span> <span class="k">references</span> cs.esim_products,
+  provider_oid  <span class="t">text</span>,             <span class="c">-- 공급사 옵션ID(주문 시 사용)</span>
+  name          <span class="t">text</span>,             <span class="c">-- '5일 / 완전 무제한'</span>
+  days          <span class="t">int</span>, data_type <span class="t">text</span>,  <span class="c">-- 'unlimited'|'fixed'</span>
+  quota_text    <span class="t">text</span>, is_unlimited <span class="t">boolean</span>,
+  wholesale_usd <span class="t">numeric</span>,          <span class="c">-- 도매(계약 후 채움, 없으면 null)</span>
+  fx_rate       <span class="t">numeric</span>, margin_rate <span class="t">numeric</span>,  <span class="c">-- 정책 fetch</span>
+  retail_krw    <span class="t">int</span>,             <span class="c">-- 소매가(계산 or 수동)</span>
+  is_hotspot    <span class="t">boolean</span>, free_googlemap <span class="t">boolean</span>, care_amount <span class="t">int</span>  <span class="c">-- 유심사 벤치</span>
+);
+<span class="k">create table</span> cs.esim_orders (
+  id            <span class="t">bigserial</span> <span class="k">primary key</span>,
+  customer_id   <span class="t">bigint</span>, option_id <span class="t">bigint</span> <span class="k">references</span> cs.esim_options,
+  retail_krw    <span class="t">int</span>, status <span class="t">text</span>,  <span class="c">-- 'paid'|'provisioning'|'active'|'failed'</span>
+  provider_oid  <span class="t">text</span>, provider_order_id <span class="t">text</span>,
+  qr_url        <span class="t">text</span>, install_code <span class="t">text</span>,  <span class="c">-- LPA:1$... eSIM 프로파일</span>
+  ordered_at    <span class="t">timestamptz</span>, activated_at <span class="t">timestamptz</span>
+);</div>
+</div>
+
+<!-- 3. API 명세 -->
+<div class="step-label">3 · API 명세 (routes/esim.js) — 요청/응답 샘플</div>
+<div class="card">
+<h3>GET /api/esim/destinations <span class="badge">목적지 목록</span></h3>
+<div class="codeblk"><span class="c">// res 200</span>
+{ <span class="s">"data"</span>: [
+  { <span class="s">"id"</span>:1, <span class="s">"destination"</span>:<span class="y">"일본"</span>, <span class="s">"dest_type"</span>:<span class="y">"single"</span>, <span class="s">"from_krw"</span>:1500, <span class="s">"keyword"</span>:<span class="y">"도쿄;오사카"</span> },
+  { <span class="s">"id"</span>:2, <span class="s">"destination"</span>:<span class="y">"유럽 42개국"</span>, <span class="s">"dest_type"</span>:<span class="y">"multiple"</span>, <span class="s">"from_krw"</span>:1700 }
+] }</div>
+<h3>GET /api/esim/products/:destId/options <span class="badge">옵션(일수·데이터·가격)</span></h3>
+<div class="codeblk"><span class="c">// res 200</span>
+{ <span class="s">"data"</span>: [
+  { <span class="s">"id"</span>:11, <span class="s">"name"</span>:<span class="y">"5일 / 완전 무제한"</span>, <span class="s">"days"</span>:5, <span class="s">"data_type"</span>:<span class="y">"unlimited"</span>,
+    <span class="s">"retail_krw"</span>:16100, <span class="s">"is_hotspot"</span>:true, <span class="s">"free_googlemap"</span>:true, <span class="s">"care_amount"</span>:300000 },
+  { <span class="s">"id"</span>:12, <span class="s">"name"</span>:<span class="y">"1일 / 2GB"</span>, <span class="s">"days"</span>:1, <span class="s">"data_type"</span>:<span class="y">"fixed"</span>, <span class="s">"retail_krw"</span>:2600 }
+] }</div>
+<h3>POST /api/esim/orders <span class="badge">주문·결제 후 발급</span></h3>
+<div class="codeblk"><span class="c">// req</span>  { <span class="s">"option_id"</span>:11, <span class="s">"email"</span>:<span class="y">"user@x.com"</span>, <span class="s">"payment_token"</span>:<span class="y">"..."</span> }
+<span class="c">// res 200</span> { <span class="s">"order_id"</span>:1001, <span class="s">"status"</span>:<span class="y">"active"</span>,
+         <span class="s">"qr_url"</span>:<span class="y">"https://.../qr/1001.png"</span>, <span class="s">"install_code"</span>:<span class="y">"LPA:1$smdp..."</span> }</div>
+<div class="note">플로우: <b>결제 성공 → provider.order() → QR/프로파일 저장 → 고객 마이페이지</b>. 실패 시 status=failed + 재발급 큐.</div>
+</div>
+
+<!-- 4. 어댑터 -->
+<div class="step-label">4 · 공급사 어댑터 (services/esimProvider.js) — Mock 샘플</div>
+<div class="card">
+<div class="codeblk"><span class="c">// env ESIM_PROVIDER=mock|cmlink|esimaccess</span>
+<span class="k">const</span> providers = { mock, cmlink, esimaccess };
+<span class="k">export const</span> esim = providers[process.env.<span class="s">ESIM_PROVIDER</span> || <span class="y">'mock'</span>];
+
+<span class="c">// --- mock 어댑터 (계약 전 전 기능 개발용) ---</span>
+<span class="k">const</span> mock = {
+  <span class="k">async</span> <span class="t">listDestinations</span>() { <span class="k">return</span> [{id:1,destination:<span class="y">'일본'</span>,from_krw:1500}]; },
+  <span class="k">async</span> <span class="t">listOptions</span>(destId) { <span class="k">return</span> [{id:11,name:<span class="y">'5일/무제한'</span>,retail_krw:16100}]; },
+  <span class="k">async</span> <span class="t">order</span>(optionId, customer) {
+    <span class="k">return</span> { order_id: <span class="t">Date</span>.now(), status:<span class="y">'active'</span>,
+             qr_url:<span class="y">'https://mock/qr.png'</span>, install_code:<span class="y">'LPA:1$mock'</span> };
+  },
+  <span class="k">async</span> <span class="t">status</span>(orderId) { <span class="k">return</span> { status:<span class="y">'active'</span> }; }
+};
+<span class="c">// --- cmlink 어댑터 (계약 후: 실 API 호출로 동일 인터페이스 구현) ---</span>
+<span class="k">const</span> cmlink = {
+  <span class="k">async</span> <span class="t">listOptions</span>(destId){ <span class="k">const</span> r=<span class="k">await</span> fetch(<span class="s">CMLINK_API</span>+..., {headers:{Authorization:key}}); ... }
+  <span class="c">// order/status 동일 시그니처</span>
+};</div>
+<div class="note">✅ <b>인터페이스 고정</b>(listDestinations·listOptions·order·status) → Mock으로 프론트·어드민 완성 후, 계약되면 cmlink/esimaccess 구현만 채우고 <b>플래그 전환</b>. cti.js와 동일 패턴.</div>
+</div>
+
+<!-- 5. 프론트 -->
+<div class="step-label">5 · 프론트 (client/src/pages/esim/) — 컴포넌트·샘플</div>
+<div class="card">
+<h3>화면 구성 (라우트)</h3>
+<table>
+<tr><th>경로</th><th>컴포넌트</th><th>API</th><th>역할</th></tr>
+<tr><td class="mono">/esim</td><td>DestinationGrid</td><td>GET /destinations</td><td>목적지 선택(검색·인기)</td></tr>
+<tr><td class="mono">/esim/:destId</td><td>OptionList</td><td>GET /products/:id/options</td><td>일수·데이터 선택</td></tr>
+<tr><td class="mono">/esim/checkout</td><td>Checkout</td><td>POST /orders</td><td>PASS·결제</td></tr>
+<tr><td class="mono">/esim/complete/:orderId</td><td>QrInstall</td><td>GET /orders/:id</td><td>QR·설치가이드(iOS/Android)</td></tr>
+<tr><td class="mono">/mypage/esim</td><td>MyEsimList</td><td>GET /orders?mine</td><td>사용현황</td></tr>
+</table>
+<h3>샘플 — OptionList.jsx</h3>
+<div class="codeblk"><span class="k">function</span> <span class="t">OptionList</span>({ destId }) {
+  <span class="k">const</span> [opts, setOpts] = <span class="t">useState</span>([]);
+  <span class="t">useEffect</span>(() => { <span class="t">api</span>.get(<span class="y">`/esim/products/${destId}/options`</span>).then(r=>setOpts(r.data)); }, [destId]);
+  <span class="k">return</span> opts.map(o => (
+    &lt;<span class="t">OptionCard</span> key={o.id}
+       title={o.name} price={o.retail_krw}
+       badges={[o.free_googlemap&&<span class="y">'구글맵무료'</span>, o.care_amount&&<span class="y">'안심케어'</span>].filter(<span class="t">Boolean</span>)}
+       onSelect={() => <span class="t">nav</span>(<span class="y">`/esim/checkout?option=${o.id}`</span>)} /&gt;
+  ));
+}</div>
+<div class="note">유심사 벤치 반영: 옵션 카드에 <b>구글맵무료·안심케어(care_amount)·핫스팟</b> 배지, "로밍 대비 최대 70%↓" 라벨, cs 로밍상담 딥링크(<span class="mono">?from=cs</span>).</div>
+</div>
+
+<!-- 6. 어드민 -->
+<div class="step-label">6 · 어드민 (docs/esim-admin.html) — 구성·샘플</div>
+<div class="card">
+<div class="grid2">
+<div><h3>① 상품 관리</h3>
+<div class="codeblk"><span class="c">// 공급사 상품 동기화</span>
+[동기화] → provider.<span class="t">listProducts</span>()
+  → upsert cs.esim_products/options
+[마진 설정] retail = round(
+  wholesale_usd × fx × (1+margin_rate))
+  <span class="c">// margin_rate=정책 fetch(하드코딩X)</span></div></div>
+<div><h3>② 주문·발급 현황</h3>
+<div class="codeblk">order_id│고객│상품│소매│발급│상태
+1001│홍*동│일본5일│16,100│✅QR│active
+1002│김*수│유럽5일│19,900│—│paid
+<span class="c">// 실패 시 [재발급] → provider.order 재시도</span></div></div>
+</div>
+<h3>어드민 기능 체크리스트</h3>
+<table>
+<tr><th>기능</th><th>설명</th></tr>
+<tr><td>상품 동기화</td><td>공급사 API pull → esim_products/options upsert (수동/cron)</td></tr>
+<tr><td>마진율 정책</td><td>목적지·데이터타입별 margin_rate 설정(<span class="badge">하드코딩 금지</span>)</td></tr>
+<tr><td>주문/발급 모니터</td><td>status별 필터·재발급·환불(refund)</td></tr>
+<tr><td>정산 연동</td><td>기존 페이백/포인트 트리거 재사용, 티켓 prefix <span class="mono">E</span></td></tr>
+</table>
+</div>
+
+<!-- 7. 유심사 벤치 -->
+<div class="step-label">7 · 유심사 벤치마크 (반영 포인트)</div>
+<div class="card">
+<table>
+<tr><th>유심사 요소</th><th>봉이 반영</th></tr>
+<tr><td>API 3단(products→plans→options)</td><td>동일 채택(routes/esim.js)</td></tr>
+<tr><td>목적지 68(multiple 19 지역묶음·single 49)</td><td>dest_type 컬럼으로 구분·검색</td></tr>
+<tr><td><b>usimsaCare</b>(30만원 보상)</td><td>care_amount 컬럼 → 안심케어 배지·부가상품화</td></tr>
+<tr><td><b>구글맵 데이터 무료</b>(isFreeGoogleMap)</td><td>free_googlemap 배지 노출</td></tr>
+<tr><td>무제한(데일리)+정량 210옵션</td><td>data_type(unlimited/fixed)·일수×데이터 매트릭스</td></tr>
+<tr><td>핫스팟·음성·QoS 필드</td><td>is_hotspot 등 옵션 속성 노출</td></tr>
+</table>
+<div class="note">봉이 차별화(유심사 대비): <b>통신 상담 고객 크로스셀</b>(cs 무인센터 로밍상담 → eSIM 딥링크) + 기존 <b>페이백/포인트</b> 결합.</div>
+</div>
+
+</body>
+</html>
