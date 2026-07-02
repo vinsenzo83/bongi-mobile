@@ -29,7 +29,8 @@ body{background:var(--bg);color:var(--txt);font-family:'Noto Sans KR',sans-serif
 .kpi .l{font-size:11px;color:var(--txt2);margin-top:3px}
 /* categories */
 .sec-t{text-align:center;font-size:13px;font-weight:800;color:var(--gold);letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin:8px 0 20px}
-.cats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding-bottom:36px}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding-bottom:36px}
+@media(max-width:640px){.cats{grid-template-columns:repeat(2,1fr)}}
 .cat{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:24px;transition:.15s}
 .cat:hover{border-color:var(--gold)}
 .cat .ic{font-size:30px}
@@ -44,6 +45,20 @@ body{background:var(--bg);color:var(--txt);font-family:'Noto Sans KR',sans-serif
 .contact .nm{font-size:17px;font-weight:800}
 .contact .info{font-size:14px;color:var(--txt2);margin-top:8px;line-height:1.9}
 .contact a{color:var(--gold);text-decoration:none}
+/* 올인원 허브 */
+.hub-wrap{padding:10px 0 30px;text-align:center}
+.hub{position:relative;width:380px;height:380px;margin:0 auto}
+@media(max-width:640px){.hub{width:300px;height:300px}}
+.hub .c{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:140px;height:140px;background:radial-gradient(circle,#fbbf24,#d97706);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#0f172a;font-weight:900;font-size:24px;z-index:2;box-shadow:0 0 50px rgba(251,191,36,.45)}
+.hub .c span{font-size:10px;font-weight:800;letter-spacing:2px;margin-top:3px}
+.hub .s{position:absolute;width:86px;height:86px;background:var(--bg2);border:1.5px solid var(--gold);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:700;gap:1px}
+.hub .s .i{font-size:22px}
+.hub .s1{top:0;left:50%;transform:translateX(-50%)}
+.hub .s2{top:24%;right:0}
+.hub .s3{bottom:24%;right:0}
+.hub .s4{bottom:0;left:50%;transform:translateX(-50%)}
+.hub .s5{bottom:24%;left:0}
+.hub .s6{top:24%;left:0}
 </style>
 </head>
 <body>
@@ -51,14 +66,14 @@ body{background:var(--bg);color:var(--txt);font-family:'Noto Sans KR',sans-serif
 <!-- HERO -->
 <div class="hero"><div class="wrap">
   <div class="logo">▩ BONGEE LABS Inc.</div>
-  <h1>봉이랩스 <span class="super">AI 통신 슈퍼앱</span></h1>
-  <div class="def">AI가 통신의 모든 것을 비교·최적화 — 가입·AI 상담·글로벌 데이터·리워드까지 하나의 앱에서</div>
+  <h1>봉이랩스 <span class="super">통신 슈퍼앱</span></h1>
+  <div class="def">휴대폰 · 인터넷 · 중고폰 · 알뜰폰 · 해외유심 · 렌탈 — 통신의 모든 것을 하나의 앱에서</div>
   <div class="slogan">COMPARE · OPTIMIZE · REWARD</div>
 </div></div>
 
 <!-- ONE-LINE PITCH -->
 <div class="pitch"><div class="wrap">
-  <p>흩어진 통신 서비스를 <b>하나의 슈퍼앱</b>으로 —<br>휴대폰·인터넷·알뜰폰·여행 eSIM을 <b>비교하고, 최적화하고, 보상</b>합니다.</p>
+  <p><b>봉이에 오면 모든 걸 할 수 있습니다.</b><br>휴대폰·인터넷·중고폰·알뜰폰·해외유심·렌탈 — <b>더 이상 다른 곳을 갈 필요가 없습니다.</b></p>
 </div></div>
 
 <div class="wrap">
@@ -72,29 +87,29 @@ body{background:var(--bg);color:var(--txt);font-family:'Noto Sans KR',sans-serif
     <div class="kpi"><div class="v">온·오프</div><div class="l">옴니채널</div></div>
   </div>
 
+  <!-- 올인원 허브 -->
+  <div class="sec-t" style="margin-top:20px">ONE-STOP · 봉이에 오면 한 번에</div>
+  <div class="hub-wrap">
+    <div class="hub">
+      <div class="c">봉이<span>ALL-IN-ONE</span></div>
+      <div class="s s1"><span class="i">📱</span>휴대폰</div>
+      <div class="s s2"><span class="i">🌐</span>인터넷·TV</div>
+      <div class="s s3"><span class="i">🔄</span>중고폰</div>
+      <div class="s s4"><span class="i">📶</span>알뜰폰</div>
+      <div class="s s5"><span class="i">✈️</span>해외유심</div>
+      <div class="s s6"><span class="i">🧊</span>렌탈</div>
+    </div>
+  </div>
+
   <!-- 대표 카테고리 -->
-  <div class="sec-t">SUPER APP · 대표 서비스</div>
+  <div class="sec-t">ALL-IN-ONE · 봉이의 모든 서비스</div>
   <div class="cats">
-    <div class="cat">
-      <div class="ic">📱</div>
-      <h3>통신 가입 · 비교</h3>
-      <p>SKT·KT·LG U+·알뜰폰 요금제, 인터넷·TV를 한눈에 비교·가입. 20개 매장 + 온라인 옴니채널.</p>
-    </div>
-    <div class="cat">
-      <div class="ic">✈️</div>
-      <h3>여행 eSIM · 글로벌 데이터</h3>
-      <p>해외여행 데이터를 앱에서 즉시 구매·발급(QR). 통신 고객 크로스셀.<span class="badge">NEW</span></p>
-    </div>
-    <div class="cat">
-      <div class="ic">🌐</div>
-      <h3>인터넷 · TV · 가전</h3>
-      <p>인터넷·IPTV 결합, 가전 렌탈까지 — 생활 통신을 한 곳에서 최적화.</p>
-    </div>
-    <div class="cat">
-      <div class="ic">🎁</div>
-      <h3>포인트 · 리워드</h3>
-      <p>가입·추천·구매를 포인트·페이백으로 보상. 회원 기반 성장 플랫폼.</p>
-    </div>
+    <div class="cat"><div class="ic">📱</div><h3>휴대폰</h3><p>SKT·KT·LG U+ 가입·기기변경·번호이동, 요금제 비교.</p></div>
+    <div class="cat"><div class="ic">🌐</div><h3>인터넷 · TV</h3><p>3사 인터넷·IPTV 결합, 요금 최적화.</p></div>
+    <div class="cat"><div class="ic">🔄</div><h3>중고폰</h3><p>중고폰 매입·판매, 등급·시세 산정.</p></div>
+    <div class="cat"><div class="ic">📶</div><h3>알뜰폰</h3><p>합리적인 MVNO 요금제·셀프 개통.</p></div>
+    <div class="cat"><div class="ic">✈️</div><h3>해외유심 · eSIM</h3><p>여행 데이터를 앱에서 즉시 구매·발급.<span class="badge">NEW</span></p></div>
+    <div class="cat"><div class="ic">🧊</div><h3>렌탈</h3><p>정수기·가전 렌탈 유통.</p></div>
   </div>
 
   <!-- VISION -->
