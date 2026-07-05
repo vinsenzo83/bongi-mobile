@@ -78,19 +78,21 @@ DB(신설, `cs` 스키마):
 `changed` 감지 시 probe 가 준 목록 항목(이름·요금·**상품코드/href**)으로 상세 페이지를 재크롤해 staging 전량 컬럼을 채운다.
 - **KT**(plans/bundles): ItemCode 상세페이지 navigate → 요금표(plans, 다중행) / 본문(bundles) 파싱. `detail` jsonb 에 원자료(group·cells·item_code).
 - **LGU**(plans/bundles): 상세 URL navigate → 본문 파싱(요금·약정할인·OTT·연령·data). `detail` jsonb(body_excerpt·code).
-- **SKT**(plans/bundles): 목록 카드에 href/prod_id 없어 **목록레벨로 우아하게 강등**(name·fee + `detail._note`). ledger BFF prod_id 매핑은 TODO.
+- **SKT plans**: 목록 카드 `data-prodid` → `callplan?prod_id=` 상세페이지 → **ledger BFF(`summaries`/`contents`) 가로채 파싱**(요금 list/agmt·데이터·음성·문자·미디어혜택·가입조건 → `detail` jsonb). SKT bundles 는 코드 없어 목록레벨 강등.
+- **faqs**(KT/SKT/LGU): `sites/*.faqs`(질문+답변) 재사용 → `faqs_staging`. **wired**(SKB bworld): `.price_listbox` 요금표(name·fee·speed·channels) → `wired_staging`. 둘 다 목록 collect 가 상세를 실어와 무크롤 매핑.
 - sink `replaceStaging`: 이전 `[auto-detect]` 스냅샷 delete → 상세 rows UPSERT(`carrier,plan_name`/`carrier,bundle_name`; faqs 는 unique 없어 delete+insert). **published 는 절대 미접촉.**
 - 마커: 감지 텍스트 앞 `[auto-detect] ` prefix(실제 상세 보존 + 식별). `plans_staging.detail` jsonb 컬럼 신설(migration).
 
 ## probe 매트릭스 (6영역 × 3사)
 | 영역 | KT | SKT | LG U+ |
 |---|---|---|---|
-| plans(요금제) | ✅ 6002 ItemCode | ✅ 5탭 카드 | ✅ plan-all 앵커 |
+| plans(요금제) | ✅ 6002 ItemCode | ✅ 5탭 카드 (data-prodid) | ✅ plan-all 앵커 |
 | bundles(결합) | ✅ 6027 | ✅ combinedList | ✅ combined-discount |
 | vas(부가) | ✅ 6003 (주1) | ✅ mobileplan-add BFF (주1) | ✅ spps-exhi BFF 직결 (주1) |
-| wired(인터넷/TV) | ⬜ 스텁 | ⬜ 스텁 | ⬜ 스텁 |
-| faqs(FAQ) | ⬜ 스텁 | ⬜ 스텁 | ⬜ 스텁 |
-- ✅ = 구현·기본 활성 / ⬜ = `enabled:false` 스텁(상세수집 연결 TODO). `freq:weekly`(부가/FAQ)는 `--weekly` 또는 월요일 자동.
+| wired(인터넷/TV) | ⬜ 스텁 | ✅ SKB bworld (주1) | ⬜ 스텁 |
+| faqs(FAQ) | ✅ help.kt idx (주1) | ✅ faq_Id (주1) | ✅ 아코디언 (주1) |
+- ✅ = 구현·기본 활성 / ⬜ = `enabled:false` 스텁. `freq:weekly`(부가/FAQ/유선)는 `--weekly` 또는 월요일 자동.
+- 상세수집(`changed` 시): SKT plans 는 `data-prodid`→ledger BFF(`summaries`/`contents`)로 실제 상세(요금·데이터·음성·detail jsonb). faqs/wired 는 목록 collect 가 이미 상세 보유 → 무크롤 매핑. KT/LGU plans·bundles 는 상세 URL navigate.
 
 ## 사용
 ```bash
@@ -128,9 +130,10 @@ node scripts/cs-crawler/cron.mjs --only lgu:vas --emit-sql out.sql --meta-in met
 - 경보 경로: `empty`(0건)·`suspicious`(260→2 급감)·`error`(크롤실패/스텁) 모두 `alert=true` + exit 2.
 
 ## 미구현 (TODO)
-- **SKT 상세**: 목록 카드에 prod_id 없어 목록레벨 강등. ledger BFF(`ledger/{prodid}/summaries`) prod_id 매핑 필요(skt-detail-crawl 파서 재사용 가능).
-- **wired/faqs probe**: `enabled:false` 스텁(list collector 미구현). sites/*.faqs·skb 크롤러 연결 시 활성화.
+- **KT·LGU 유선(wired)**: 공식 목록 엔드포인트 미확정(KT 지니TV·인터넷 CateCode, LGU sngl-hm-prod-list BFF 파라미터). `enabled:false` 스텁. SKT(SKB bworld)는 활성.
+- **SKT 결합(bundles) 상세**: combinedList 목록에 코드 없어 목록레벨 강등 유지(plans 는 data-prodid 로 해소).
 - **실제 알림 채널**: `notify.mjs` 의 Slack/email 은 후크만. 발송 로직 미구현.
-- **collector 이름 품질(목록레벨)**: KT 목록 앵커 표시명이 "상세보기"라 fingerprint 는 상품코드 식별(로그 `상세보기 [ItemCode]`). 단, **상세수집 rows 는 실제 상품명** 사용(해소).
+- **collector 이름 품질**: KT 목록 앵커 표시명 "상세보기"→코드 식별(상세 rows 는 실제명). SKB 유선 name 은 제목+부제 합쳐짐(제목만 트리밍 여지).
 - **RLS**: `cs.*` 테이블 RLS 비활성(anon 노출). 정책 설계 필요(별도 라운드). 그래서 cron 은 API 대신 pg 직결.
 - **부가 전량**: SKT vas 는 대표 카테고리(F01231)만. 전체 필터 순회는 추후.
+- **FAQ 런타임**: KT faqs(idx 순회)·SKT faqs 는 다중 페이지 로드로 느림(weekly 라 허용). 필요 시 목록 API 로 경량화.

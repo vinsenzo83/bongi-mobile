@@ -9,8 +9,8 @@ const jb = a => "'" + JSON.stringify(a || []).replace(/'/g, "''") + "'::jsonb";
 const bo = b => b ? 'true' : 'false';
 const nn = n => (n == null || n === '') ? 'NULL' : Number(n);
 
-const STAGE_TABLE = { plans: 'plans_staging', bundles: 'bundles_staging', faqs: 'faqs_staging' };
-const NAME_COL   = { plans: 'plan_name', bundles: 'bundle_name', faqs: 'question' };
+const STAGE_TABLE = { plans: 'plans_staging', bundles: 'bundles_staging', faqs: 'faqs_staging', wired: 'wired_staging' };
+const NAME_COL   = { plans: 'plan_name', bundles: 'bundle_name', faqs: 'question', wired: 'name' };
 // sample/added 리스트 상한 — fingerprint 해시는 전체 항목 대상이라 변경감지엔 영향 없음.
 // 이 상한은 '사람이 읽는 delta 목록'에만 적용(meta row 슬림 유지).
 const SAMPLE_CAP = 60;
@@ -37,20 +37,22 @@ const STAGE_COLS = {
   plans_staging: ['carrier', 'plan_name', 'network', 'monthly_fee', 'discount_fee', 'data_amount', 'data_daily', 'call_amount', 'message', 'age_target', 'commit_type', 'ott_benefits', 'conditions', 'benefits', 'source_url', 'detail'],
   bundles_staging: ['carrier', 'bundle_name', 'bundle_type', 'components', 'discount_rule', 'discount_tiers', 'conditions', 'guide_script', 'source_url'],
   faqs_staging: ['carrier', 'topic_code', 'question', 'question_variants', 'answer', 'answer_detail', 'guide_script', 'policy', 'source_url'],
+  wired_staging: ['carrier', 'category', 'name', 'monthly_fee', 'speed', 'channels', 'conditions', 'source_url'],
 };
 const JSONB_COLS = new Set(['ott_benefits', 'detail', 'components', 'discount_tiers', 'question_variants', 'policy']);
 const INT_COLS = new Set(['monthly_fee', 'discount_fee']);
-const MARKER_COL = { plans: 'conditions', bundles: 'discount_rule', faqs: 'answer' };
+const MARKER_COL = { plans: 'conditions', bundles: 'discount_rule', faqs: 'answer', wired: 'conditions' };
 // staging unique key (있으면 UPSERT, 없으면 delete 후 plain insert)
-const CONFLICT = { plans: ['carrier', 'plan_name'], bundles: ['carrier', 'bundle_name'], faqs: null };
+const CONFLICT = { plans: ['carrier', 'plan_name'], bundles: ['carrier', 'bundle_name'], faqs: null, wired: ['carrier', 'category', 'name'] };
 
 function detailReplaceSql(p, r, rows) {
   const table = STAGE_TABLE[p.area];
   const cols = STAGE_COLS[table];
   const markerCol = MARKER_COL[p.area];
   const conflict = CONFLICT[p.area];
+  const nameCol = NAME_COL[p.area];
   if (!table || !cols) return { sql: null, n: 0 };
-  const capped = (rows || []).slice(0, 200).filter(x => x && (x.plan_name || x.bundle_name || x.question));
+  const capped = (rows || []).slice(0, 300).filter(x => x && x[nameCol]);
   if (!capped.length) return { sql: null, n: 0 };
   const cell = (row, col) => {
     let v = row[col];

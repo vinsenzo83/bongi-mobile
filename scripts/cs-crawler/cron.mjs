@@ -36,6 +36,7 @@ const metaIn = val('--meta-in');
 const pgUrl = process.env.CS_DATABASE_URL;
 const only = val('--only') ? new Set(val('--only').split(',').map(s => s.trim())) : null;
 const detailOnNew = has('--detail-on-new'); // 첫 기준선(new)에서도 상세수집(기본: changed 만)
+const detailCap = val('--detail-cap') ? +val('--detail-cap') : undefined; // 상세수집 항목 상한(테스트/런타임 보호)
 
 // probe 선택
 const selected = PROBES.filter(p => {
@@ -77,7 +78,7 @@ for (const probe of selected) {
   // 변경 감지 → 상세수집 재크롤 → staging 전량(요금·조건·혜택·detail jsonb) 적재(승인 대기).
   // published(cs.plans/bundles/faqs)에는 절대 반영 안 함. 'new'는 기본 미적재(--detail-on-new 로 활성).
   if (probe.staging && (res.outcome === 'changed' || (res.outcome === 'new' && detailOnNew))) {
-    const d = await collectDetail(probe.area, probe.carrier, browser, c.items);
+    const d = await collectDetail(probe.area, probe.carrier, browser, c.items, detailCap ? { cap: detailCap } : {});
     if (d.rows && d.rows.length) {
       res.staged = await sink.replaceStaging(probe, res, d.rows);   // 상세 전량 스냅샷 교체
     } else {

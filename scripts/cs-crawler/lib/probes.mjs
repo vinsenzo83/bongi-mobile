@@ -8,6 +8,9 @@
 import { newPage, gotoRetry, removePopups } from './browser.mjs';
 import { won, clean } from './util.mjs';
 import { UA } from './browser.mjs';
+import { KT as KTsite } from '../sites/kt.mjs';
+import { SKT as SKTsite } from '../sites/skt.mjs';
+import { LGU as LGUsite } from '../sites/lgu.mjs';
 
 // ── 공통 수집 헬퍼 ────────────────────────────────────────────────
 // 카테고리 페이지에서 코드-앵커(상품코드 = 안정 키) + 이름 텍스트 목록 수집
@@ -81,17 +84,75 @@ export const PROBES = [
   { carrier: 'LG U+', area: 'vas', freq: 'weekly', staging: null, enabled: true,
     collect: lguVas },
 
-  // ===== 미구현(스텁) — 상세수집 연결 TODO. 기본 실행 제외(enabled:false) =====
-  { carrier: 'KT',    area: 'faqs',  freq: 'weekly', staging: 'faqs', enabled: false, collect: stub('KT FAQ idx 순회 감지') },
-  { carrier: 'SKT',   area: 'faqs',  freq: 'weekly', staging: 'faqs', enabled: false, collect: stub('SKT faq_Id 감지') },
-  { carrier: 'LG U+', area: 'faqs',  freq: 'weekly', staging: 'faqs', enabled: false, collect: stub('LGU 아코디언 감지') },
-  { carrier: 'SKT',   area: 'wired', freq: 'weekly', staging: null,   enabled: false, collect: stub('SKB bworld 인터넷/TV 감지') },
-  { carrier: 'KT',    area: 'wired', freq: 'weekly', staging: null,   enabled: false, collect: stub('KT 인터넷/TV 감지') },
-  { carrier: 'LG U+', area: 'wired', freq: 'weekly', staging: null,   enabled: false, collect: stub('LGU 인터넷/TV 감지') },
+  // ===== FAQ (list=질문목록, 상세수집=답변 → faqs_staging). sites/*.faqs 재사용 =====
+  { carrier: 'KT',    area: 'faqs', freq: 'weekly', staging: 'faqs', enabled: true, collect: b => faqsCollect(KTsite, b) },
+  { carrier: 'SKT',   area: 'faqs', freq: 'weekly', staging: 'faqs', enabled: true, collect: b => faqsCollect(SKTsite, b) },
+  { carrier: 'LG U+', area: 'faqs', freq: 'weekly', staging: 'faqs', enabled: true, collect: b => faqsCollect(LGUsite, b) },
+
+  // ===== 유선(인터넷/TV) — wired_staging =====
+  // SKT: SKB bworld 공식 요금표(.price_listbox) — 확정 셀렉터, 상세까지 목록에서 확보
+  { carrier: 'SKT', area: 'wired', freq: 'weekly', staging: 'wired', enabled: true, collect: sktWired },
+  // KT·LGU 유선: 공식 BFF/목록 엔드포인트 미확정 → 다음 라운드(스텁, 기본 제외)
+  { carrier: 'KT',    area: 'wired', freq: 'weekly', staging: 'wired', enabled: false, collect: stub('KT 지니TV·인터넷 목록 엔드포인트 미확정') },
+  { carrier: 'LG U+', area: 'wired', freq: 'weekly', staging: 'wired', enabled: false, collect: stub('LGU sngl-hm-prod-list BFF 파라미터 미확정') },
 ];
 
 function stub(desc) {
-  return async () => ({ items: [], ok: false, note: `미구현 스텁: ${desc} (상세수집 연결 TODO)` });
+  return async () => ({ items: [], ok: false, note: `미구현 스텁: ${desc}` });
+}
+
+// ── FAQ 목록 수집: sites/*.faqs(질문+답변) 재사용. fingerprint=질문, 상세=답변 ──
+async function faqsCollect(site, browser) {
+  try {
+    const rows = await site.faqs(browser);
+    const items = (rows || []).filter(x => x && x.question && x.answer).map(x => ({
+      name: clean(x.question), fee: null, answer: x.answer,
+      topic_code: x.prefix ? clean(x.prefix).slice(0, 40) : 'etc',
+      source_url: x.source_url || null,
+    }));
+    return { items, ok: items.length > 0, note: items.length ? '' : 'FAQ 0건(구조변화 의심)' };
+  } catch (e) { return { items: [], ok: false, note: 'FAQ 크롤 오류: ' + e.message }; }
+}
+
+// ── SKT 유선(SKB bworld) 인터넷+B tv 요금표 ──
+async function sktWired(browser) {
+  const page = await newPage(browser);
+  try {
+    const out = [];
+    const TARGETS = [
+      ['internet', 'https://www.bworld.co.kr/product/internet/charge.do?menu_id=P02010000'],
+      ['tv', 'https://www.bworld.co.kr/product/btv/charge.do?menu_id=P03010000'],
+    ];
+    let anyOk = false;
+    for (const [cat, url] of TARGETS) {
+      const r = await gotoRetry(page, url, { waitMs: 4000, retries: 2 });
+      if (!r.ok) continue;
+      anyOk = true;
+      const cards = await page.evaluate(({ cat }) => {
+        const cl = s => (s || '').replace(/\s+/g, ' ').trim();
+        const res = [];
+        document.querySelectorAll('.price_listbox').forEach(card => {
+          let name = '';
+          for (const ch of card.childNodes) {
+            if (ch.classList && ch.classList.contains('price_listbox_right')) break;
+            const t = cl(ch.innerText || ch.textContent || '');
+            if (t.length > 2 && t.length < 80 && /[가-힣A-Za-z]/.test(t)) { name = t; break; }
+          }
+          const feeEl = card.querySelector('.fare_price_num');
+          const fee = feeEl ? (parseInt(cl(feeEl.innerText).replace(/[^0-9]/g, ''), 10) || null) : null;
+          const full = cl(card.innerText);
+          const speed = (full.match(/([\d.]+)\s*(Gbps|Mbps)/i) || [])[0] || (/기가/.test(full) ? '1Gbps' : null);
+          const channels = (full.match(/([\d,]+)\s*(ch|채널)/i) || [])[0] || null;
+          if (name) res.push({ name, fee, speed, channels, category: cat });
+        });
+        return res;
+      }, { cat });
+      for (const c of cards) out.push({ name: c.name, fee: c.fee, category: c.category, speed: c.speed, channels: c.channels, source_url: url });
+    }
+    if (!anyOk) return { items: [], ok: false, note: 'bworld 로드 실패' };
+    return { items: out, ok: out.length > 0, note: out.length ? '' : '유선 0건(구조변화 의심)' };
+  } catch (e) { return { items: [], ok: false, note: e.message }; }
+  finally { await page.close(); }
 }
 
 // ── SKT 요금제: 5개 탭 카드 수집 ──────────────────────────────────
@@ -108,14 +169,25 @@ async function sktPlans(browser) {
       await page.waitForTimeout(1500);
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await page.waitForTimeout(1000);
-      const cards = await page.evaluate(() => [...document.querySelectorAll('li.comp-list')].map(li => (li.innerText || '').replace(/\s+/g, ' ').trim()).filter(t => t.length > 6));
+      // data-prodid 카드 우선(상세수집 ledger BFF 키). 없으면 li.comp-list 텍스트 폴백.
+      const cards = await page.evaluate(() => {
+        const cl = s => (s || '').replace(/\s+/g, ' ').trim();
+        const withId = [...document.querySelectorAll('[data-prodid]')].map(d => ({
+          prodid: d.getAttribute('data-prodid'),
+          name: cl(d.querySelector('.info-name')?.innerText) || cl(d.innerText).split(/선택약정|월\s*\d|무제한/)[0].trim(),
+          text: cl(d.innerText),
+        })).filter(x => x.prodid && x.name);
+        if (withId.length) return withId;
+        return [...document.querySelectorAll('li.comp-list')].map(li => ({ prodid: null, name: '', text: cl(li.innerText) })).filter(x => x.text.length > 6);
+      });
       for (const c of cards) {
-        const masked = c.replace(/\([^)]*\)/g, m => ' '.repeat(m.length));
-        const m = masked.match(/선택약정 반영 시|무제한|\d[\d.]*\s*GB|\d[\d.]*\s*MB|월\s*\d/);
-        let name = (m ? c.slice(0, m.index) : c).replace(/\s+/g, ' ').trim();
+        let name = c.name;
+        if (!name) { const masked = c.text.replace(/\([^)]*\)/g, m => ' '.repeat(m.length)); const m = masked.match(/선택약정 반영 시|무제한|\d[\d.]*\s*GB|\d[\d.]*\s*MB|월\s*\d/); name = (m ? c.text.slice(0, m.index) : c.text).replace(/\s+/g, ' ').trim(); }
         if (!name || name.length > 45) continue;
-        const fees = [...c.matchAll(/([\d,]{4,})\s*원/g)].map(x => +x[1].replace(/,/g, '')).filter(n => n >= 5000 && n <= 200000);
-        if (!all.has(name)) all.set(name, { name, fee: fees.length ? Math.max(...fees) : null });
+        const key = c.prodid || name;
+        if (all.has(key)) continue;
+        const fees = [...c.text.matchAll(/([\d,]{4,})\s*원/g)].map(x => +x[1].replace(/,/g, '')).filter(n => n >= 5000 && n <= 200000);
+        all.set(key, { name, fee: fees.length ? Math.max(...fees) : null, code: c.prodid || undefined, prodid: c.prodid || undefined });
       }
     }
     if (!anyOk) return { items: [], ok: false, note: 'SKT 전 탭 로드 실패(throttle)' };
