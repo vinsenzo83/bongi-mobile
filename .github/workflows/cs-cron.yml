@@ -35,14 +35,16 @@ jobs:
         env:
           # dev(sesgd…) 또는 live 의 직접 Postgres URL. cs 스키마는 API 미노출이라 pg 직결.
           CS_DATABASE_URL: ${{ secrets.CS_SUPABASE_DB_URL }}
-          # 알림 채널(선택) — 설정 시 후크 활성. 미설정이면 콘솔+crawl_log 만.
-          CS_SLACK_WEBHOOK: ${{ secrets.CS_SLACK_WEBHOOK }}
+          # 이메일 알림(Resend). CS_ALERT_EMAIL 등록됨. RESEND_API_KEY 있으면 상세 이메일 발송.
           CS_ALERT_EMAIL: ${{ secrets.CS_ALERT_EMAIL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CS_ALERT_FROM: ${{ secrets.CS_ALERT_FROM }}
+          CS_SLACK_WEBHOOK: ${{ secrets.CS_SLACK_WEBHOOK }}
         run: |
           FLAGS="${{ github.event.inputs.flags }}"
           # 월요일이면 주간(부가/FAQ) 포함
           if [ "$(date -u +%u)" = "1" ] && [ -z "$FLAGS" ]; then FLAGS="--weekly"; fi
           echo "▶ cron.mjs $FLAGS"
           node scripts/cs-crawler/cron.mjs $FLAGS
-        # exit 2 = 경보(변경/개편 감지) — 실패로 표시해 가시성 확보. 변경 자체는 정상 운영.
-        continue-on-error: true
+        # continue-on-error 없음 → 경보(exit 2)/오류 시 job 실패 표시.
+        # RESEND_API_KEY 미설정이어도 job 실패 시 GitHub 이 CS_ALERT_EMAIL(레포 알림)로 기본 알림 발송.

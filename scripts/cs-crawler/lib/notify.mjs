@@ -38,18 +38,46 @@ export function summarize(results) {
   return { summary, alertCount: alerts.length, changedCount: changed.length, staged };
 }
 
-// ── 외부 채널 후크 (TODO) ──────────────────────────────────────────────
-// 실제 발송은 미구현. 환경변수 설정 시에만 payload 를 만들어 전달할 자리.
+// ── 외부 채널 (이메일=Resend / Slack) ──────────────────────────────────
+// 조용한 날(변경·경보 0)은 발송 안 함. 자격(RESEND_API_KEY) 없으면 조용히 skip.
 export async function notifyExternal(digest, results) {
   const alerts = results.filter(r => r.alert);
   const changed = results.filter(r => ['changed', 'suspicious', 'new'].includes(r.outcome));
   if (!alerts.length && !changed.length) return; // 조용한 날은 발송 안 함
 
-  const text = [digest.summary, ...alerts.map(line), ...changed.map(line)].join('\n');
+  const text = [digest.summary, '', ...alerts.map(line), ...changed.map(line),
+    '', '※ 변경분은 staging에 적재됨(승인 대기). 반영은 운영자 검수 후 수동.'].join('\n');
+  const subject = `[봉이 CS크론] 변경 ${digest.changedCount} · 경보 ${digest.alertCount} — ${new Date().toISOString().slice(0,10)}`;
 
-  // TODO(slack): if (process.env.CS_SLACK_WEBHOOK) await fetch(webhook, {method:'POST', body: JSON.stringify({text})})
-  // TODO(email): if (process.env.CS_ALERT_EMAIL) await sendEmail(process.env.CS_ALERT_EMAIL, 'CS 크롤 변경 감지', text)
-  if (process.env.CS_SLACK_WEBHOOK || process.env.CS_ALERT_EMAIL) {
-    console.error('[notify] 외부 채널 후크 준비됨 — 발송 로직 미구현(TODO). payload 길이:', text.length);
+  // 이메일 (Resend HTTP API)
+  const email = process.env.CS_ALERT_EMAIL;
+  const key = process.env.RESEND_API_KEY;
+  if (email && key) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: process.env.CS_ALERT_FROM || 'CS크론 <onboarding@resend.dev>',
+          to: email.split(',').map(s => s.trim()),
+          subject,
+          text,
+        }),
+      });
+      if (res.ok) console.error(`[notify] 이메일 발송 완료 → ${email}`);
+      else console.error(`[notify] 이메일 발송 실패 ${res.status}:`, (await res.text()).slice(0, 200));
+    } catch (e) { console.error('[notify] 이메일 예외:', e.message); }
+  } else if (email && !key) {
+    console.error('[notify] CS_ALERT_EMAIL 설정됨 but RESEND_API_KEY 없음 → 이메일 skip (GHA job 실패 시 GitHub 기본 알림으로 대체)');
+  }
+
+  // Slack (옵션)
+  if (process.env.CS_SLACK_WEBHOOK) {
+    try {
+      await fetch(process.env.CS_SLACK_WEBHOOK, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: `*${subject}*\n\`\`\`${text}\`\`\`` }),
+      });
+    } catch (e) { console.error('[notify] Slack 예외:', e.message); }
   }
 }
