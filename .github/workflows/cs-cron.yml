@@ -1,0 +1,48 @@
+name: cs-cron
+# 무인 CS 데이터 변경 감지 (통신3사 요금제·결합·부가) — 감지+알림+staging 승인게이트
+# 자동 published 반영 없음. 변경분은 cs.*_staging + cs.crawl_log 에만 기록(사람 승인).
+# 트리거: 매일 KST 03:00 (UTC 18:00) + 수동 workflow_dispatch
+#   · 매일  → enabled·daily probe (요금제·결합)
+#   · 월요일 → --weekly 자동 추가 (부가·FAQ 주1회)
+
+on:
+  schedule:
+    - cron: '0 18 * * *'   # KST 03:00
+  workflow_dispatch:
+    inputs:
+      flags:
+        description: '추가 플래그 (예: --weekly, --all, --only skt:plans)'
+        required: false
+        default: ''
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps + Playwright Chromium
+        run: |
+          npm ci || npm install
+          npx playwright install --with-deps chromium
+
+      - name: Run CS change-detection
+        env:
+          # dev(sesgd…) 또는 live 의 직접 Postgres URL. cs 스키마는 API 미노출이라 pg 직결.
+          CS_DATABASE_URL: ${{ secrets.CS_SUPABASE_DB_URL }}
+          # 알림 채널(선택) — 설정 시 후크 활성. 미설정이면 콘솔+crawl_log 만.
+          CS_SLACK_WEBHOOK: ${{ secrets.CS_SLACK_WEBHOOK }}
+          CS_ALERT_EMAIL: ${{ secrets.CS_ALERT_EMAIL }}
+        run: |
+          FLAGS="${{ github.event.inputs.flags }}"
+          # 월요일이면 주간(부가/FAQ) 포함
+          if [ "$(date -u +%u)" = "1" ] && [ -z "$FLAGS" ]; then FLAGS="--weekly"; fi
+          echo "▶ cron.mjs $FLAGS"
+          node scripts/cs-crawler/cron.mjs $FLAGS
+        # exit 2 = 경보(변경/개편 감지) — 실패로 표시해 가시성 확보. 변경 자체는 정상 운영.
+        continue-on-error: true

@@ -1,0 +1,13 @@
+import { launch, newPage, gotoRetry } from './lib/browser.mjs';
+import { writeFileSync } from 'fs';
+const SC = '/private/tmp/claude-501/-Users-vinsenzo/22c2de51-dc9a-44c2-bacf-7836be4787e0/scratchpad/';
+const b = await launch();
+const p = await newPage(b);
+await gotoRetry(p, 'https://m.tworld.co.kr/product/renewal/mobileplan/list?filters=F02100&istabmove=Y&view=all', { waitMs: 10000, retries: 3 });
+await p.waitForTimeout(3000);
+await p.evaluate(()=>window.scrollTo(0,document.body.scrollHeight)); await p.waitForTimeout(2000);
+const cards = await p.evaluate(()=>{const cl=s=>(s||'').replace(/\s+/g,' ').trim(); return [...document.querySelectorAll('li.comp-list')].map(li=>cl(li.innerText)).filter(t=>t.length>8);});
+console.error('전용(view=all) li.comp-list:', cards.length);
+cards.forEach(x=>console.error('  ·',x.slice(0,120)));
+writeFileSync(SC+'skt-jeonyong-all.json', JSON.stringify(cards,null,2));
+await b.close();
