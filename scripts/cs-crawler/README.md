@@ -71,8 +71,16 @@ DB(신설, `cs` 스키마):
 2. `fingerprint` = 상품코드(없으면 이름)+요금 정렬 해시. `crawl_meta` 이전 해시와 비교.
 3. 판정(`outcome`): `new`(첫 기준선) · `unchanged`(무변경) · `changed`(delta) · `empty`(0건=구조변화/차단 **경보**) · `suspicious`(개수 급감 **경보**) · `error`(크롤실패 **경보**).
    - **크롤 성공 ≠ 데이터 정상**: 0건·급감(기본 50%↓)은 성공 응답이어도 경보.
-4. `changed` 만 delta(추가분)를 `cs.*_staging` 에 `[auto-detect]` 마커로 적재(승인 대기). `new`/무변경/경보는 적재 안 함(첫 실행 폭주 방지).
+4. `changed` 시 → **상세수집 재크롤**(`lib/detail.mjs`) → `cs.*_staging` **전량**(요금·조건·혜택·`detail` jsonb) 적재. `[auto-detect]` 마커 유지, `ON CONFLICT` UPSERT. `new`/무변경/경보는 적재 안 함(첫 실행 폭주 방지, `--detail-on-new` 로 new 도 상세수집).
 5. 알림: 콘솔 + `crawl_log`. 일일 요약("N 무변경 · M 변경 · K 경보"). Slack/email 은 `notify.mjs` 후크만(TODO).
+
+### 상세수집 연결 (`lib/detail.mjs`) — 신규
+`changed` 감지 시 probe 가 준 목록 항목(이름·요금·**상품코드/href**)으로 상세 페이지를 재크롤해 staging 전량 컬럼을 채운다.
+- **KT**(plans/bundles): ItemCode 상세페이지 navigate → 요금표(plans, 다중행) / 본문(bundles) 파싱. `detail` jsonb 에 원자료(group·cells·item_code).
+- **LGU**(plans/bundles): 상세 URL navigate → 본문 파싱(요금·약정할인·OTT·연령·data). `detail` jsonb(body_excerpt·code).
+- **SKT**(plans/bundles): 목록 카드에 href/prod_id 없어 **목록레벨로 우아하게 강등**(name·fee + `detail._note`). ledger BFF prod_id 매핑은 TODO.
+- sink `replaceStaging`: 이전 `[auto-detect]` 스냅샷 delete → 상세 rows UPSERT(`carrier,plan_name`/`carrier,bundle_name`; faqs 는 unique 없어 delete+insert). **published 는 절대 미접촉.**
+- 마커: 감지 텍스트 앞 `[auto-detect] ` prefix(실제 상세 보존 + 식별). `plans_staging.detail` jsonb 컬럼 신설(migration).
 
 ## probe 매트릭스 (6영역 × 3사)
 | 영역 | KT | SKT | LG U+ |
@@ -113,14 +121,16 @@ node scripts/cs-crawler/cron.mjs --only lgu:vas --emit-sql out.sql --meta-in met
 - 코드에 `cs.plans/bundles/faqs`(published) **INSERT/UPDATE 경로 없음**. 오직 `*_staging` + `crawl_log` + `crawl_meta` 만 기록.
 - 운영자는 `crawl_log`(outcome=changed/경보)를 확인 → `*_staging` 검수 → 수동 publish.
 
-## dev 1회 실행 검증 결과 (sesgd…)
-- `lgu:vas` 1회차 → `new` 198건, 기준선 생성(crawl_meta 1행) · 2회차(실데이터 재수집) → **`unchanged`(hash 동일)**.
-- `kt:bundles` 기준선 강제 불일치 → **`changed` +9**, `bundles_staging` 9행 `[auto-detect]` 적재 + `crawl_log(changed)` 1행. **published `cs.bundles` 자동행 0(승인게이트 유지)**. (검증 후 강제-테스트 아티팩트 정리)
+## dev 실행 검증 결과 (sesgd…)
+- `lgu:vas` 1회차 → `new` 198건, 기준선 생성 · 2회차(실데이터 재수집) → **`unchanged`(hash 동일)**.
+- `kt:bundles` 기준선 강제 불일치 → **`changed` +9 → 상세수집 재크롤 → `bundles_staging` 9행 전량 적재**: 실제 상품명(따로 살아도 가족결합·프리미엄 가족결합…)·`discount_rule` 상세(>60자)·`conditions`·source_url(실 ItemCode) 채움. **published `cs.bundles` 자동행 0(승인게이트 유지, 28행 무변경)**. (검증 후 아티팩트 정리)
+- plans 상세경로 `detail` jsonb 컬럼 적재 확인(단위검증: ott_benefits/detail jsonb·monthly_fee int·UPSERT).
 - 경보 경로: `empty`(0건)·`suspicious`(260→2 급감)·`error`(크롤실패/스텁) 모두 `alert=true` + exit 2.
 
 ## 미구현 (TODO)
-- **상세수집 연결**: 현재 목록(list) fingerprint 까지만. 변경 감지 후 상세(요금·조건·혜택) 재크롤 → staging 전체 채우기는 스텁. wired/faqs probe 도 스텁(`enabled:false`).
+- **SKT 상세**: 목록 카드에 prod_id 없어 목록레벨 강등. ledger BFF(`ledger/{prodid}/summaries`) prod_id 매핑 필요(skt-detail-crawl 파서 재사용 가능).
+- **wired/faqs probe**: `enabled:false` 스텁(list collector 미구현). sites/*.faqs·skb 크롤러 연결 시 활성화.
 - **실제 알림 채널**: `notify.mjs` 의 Slack/email 은 후크만. 발송 로직 미구현.
-- **collector 이름 품질**: KT 앵커는 표시명이 "상세보기"라 상품코드를 식별자로 사용(로그엔 `상세보기 [ItemCode]`). 상세수집 시 실제 상품명으로 교체 필요.
-- **RLS**: `cs.*` 12개 테이블 RLS 비활성(anon 노출). crawl_meta/crawl_log 포함 정책 설계 필요(별도 라운드). 그래서 cron 은 API 대신 pg 직결.
+- **collector 이름 품질(목록레벨)**: KT 목록 앵커 표시명이 "상세보기"라 fingerprint 는 상품코드 식별(로그 `상세보기 [ItemCode]`). 단, **상세수집 rows 는 실제 상품명** 사용(해소).
+- **RLS**: `cs.*` 테이블 RLS 비활성(anon 노출). 정책 설계 필요(별도 라운드). 그래서 cron 은 API 대신 pg 직결.
 - **부가 전량**: SKT vas 는 대표 카테고리(F01231)만. 전체 필터 순회는 추후.

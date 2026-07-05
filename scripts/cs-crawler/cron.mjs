@@ -23,6 +23,7 @@ import { PROBES } from './lib/probes.mjs';
 import { detect } from './lib/fingerprint.mjs';
 import { logResult, summarize, notifyExternal } from './lib/notify.mjs';
 import { makeSink } from './lib/sink.mjs';
+import { collectDetail } from './lib/detail.mjs';
 
 const args = process.argv.slice(2);
 const has = f => args.includes(f);
@@ -34,6 +35,7 @@ const emitFile = val('--emit-sql');
 const metaIn = val('--meta-in');
 const pgUrl = process.env.CS_DATABASE_URL;
 const only = val('--only') ? new Set(val('--only').split(',').map(s => s.trim())) : null;
+const detailOnNew = has('--detail-on-new'); // 첫 기준선(new)에서도 상세수집(기본: changed 만)
 
 // probe 선택
 const selected = PROBES.filter(p => {
@@ -72,9 +74,17 @@ for (const probe of selected) {
   res.carrier = probe.carrier; res.area = probe.area; res.batch_id = batch_id;
   // names_full(표시 라벨)은 detect()가 fingerprint 라벨로 채움
 
-  // 변경(기존 기준선 대비 delta)만 staging 적재 (승인 대기).
-  // 'new'(첫 기준선)·무변경·경보는 적재 안 함 — 첫 실행 staging 폭주 방지.
-  if (res.outcome === 'changed') res.staged = await sink.stageDelta(probe, res);
+  // 변경 감지 → 상세수집 재크롤 → staging 전량(요금·조건·혜택·detail jsonb) 적재(승인 대기).
+  // published(cs.plans/bundles/faqs)에는 절대 반영 안 함. 'new'는 기본 미적재(--detail-on-new 로 활성).
+  if (probe.staging && (res.outcome === 'changed' || (res.outcome === 'new' && detailOnNew))) {
+    const d = await collectDetail(probe.area, probe.carrier, browser, c.items);
+    if (d.rows && d.rows.length) {
+      res.staged = await sink.replaceStaging(probe, res, d.rows);   // 상세 전량 스냅샷 교체
+    } else {
+      res.staged = await sink.stageDelta(probe, res);               // 상세 미지원/실패 → delta 마커 폴백
+    }
+    res.note = [res.note, d.note].filter(Boolean).join(' | ');
+  }
 
   await sink.writeLog(probe, res);
   await sink.upsertMeta(probe, res);

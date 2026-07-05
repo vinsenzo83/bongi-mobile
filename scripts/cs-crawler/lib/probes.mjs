@@ -27,17 +27,18 @@ async function anchorList(browser, url, sel, codeRe, { popup = false, more = fal
       const re = new RegExp(codeRe);
       const map = new Map();
       document.querySelectorAll(sel).forEach(a => {
-        const href = a.getAttribute('href') || '';
-        const m = href.match(re);
+        const raw = a.getAttribute('href') || '';
+        const m = raw.match(re);
         if (!m) return;
         const code = m[1];
+        const href = a.href || raw; // 절대 URL (상세수집 navigate 용)
         const txt = c(a.innerText) || c(a.getAttribute('title'));
-        if (!map.has(code)) map.set(code, txt || code);
+        if (!map.has(code)) map.set(code, { name: txt || code, href });
       });
-      return [...map.entries()].map(([code, name]) => ({ code, name }));
+      return [...map.entries()].map(([code, v]) => ({ code, name: v.name, href: v.href }));
     }, { sel, codeRe: codeRe.source });
     // 이름 속 요금 추출
-    return { items: items.map(x => ({ name: x.name || x.code, fee: won(x.name), code: x.code })), ok: true, note: '' };
+    return { items: items.map(x => ({ name: x.name || x.code, fee: won(x.name), code: x.code, href: x.href })), ok: true, note: '' };
   } catch (e) {
     return { items: [], ok: false, note: e.message };
   } finally { await page.close(); }

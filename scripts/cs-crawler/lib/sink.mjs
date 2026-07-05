@@ -31,6 +31,50 @@ function metaSql(p, r) {
     + `${sq(p.carrier)},${sq(p.area)},NULL,${nn(r.item_count)},false,now()) `
     + `on conflict (carrier,area) do update set last_ok=false,updated_at=now();`;
 }
+// ── 상세수집 전량 적재(replace) SQL ────────────────────────────────
+// changed 시 상세 rows 를 staging 전량 컬럼으로 적재. 이전 [auto-detect] 스냅샷은 교체.
+const STAGE_COLS = {
+  plans_staging: ['carrier', 'plan_name', 'network', 'monthly_fee', 'discount_fee', 'data_amount', 'data_daily', 'call_amount', 'message', 'age_target', 'commit_type', 'ott_benefits', 'conditions', 'benefits', 'source_url', 'detail'],
+  bundles_staging: ['carrier', 'bundle_name', 'bundle_type', 'components', 'discount_rule', 'discount_tiers', 'conditions', 'guide_script', 'source_url'],
+  faqs_staging: ['carrier', 'topic_code', 'question', 'question_variants', 'answer', 'answer_detail', 'guide_script', 'policy', 'source_url'],
+};
+const JSONB_COLS = new Set(['ott_benefits', 'detail', 'components', 'discount_tiers', 'question_variants', 'policy']);
+const INT_COLS = new Set(['monthly_fee', 'discount_fee']);
+const MARKER_COL = { plans: 'conditions', bundles: 'discount_rule', faqs: 'answer' };
+// staging unique key (있으면 UPSERT, 없으면 delete 후 plain insert)
+const CONFLICT = { plans: ['carrier', 'plan_name'], bundles: ['carrier', 'bundle_name'], faqs: null };
+
+function detailReplaceSql(p, r, rows) {
+  const table = STAGE_TABLE[p.area];
+  const cols = STAGE_COLS[table];
+  const markerCol = MARKER_COL[p.area];
+  const conflict = CONFLICT[p.area];
+  if (!table || !cols) return { sql: null, n: 0 };
+  const capped = (rows || []).slice(0, 200).filter(x => x && (x.plan_name || x.bundle_name || x.question));
+  if (!capped.length) return { sql: null, n: 0 };
+  const cell = (row, col) => {
+    let v = row[col];
+    if (col === 'carrier') v = v || p.carrier;
+    if (col === markerCol) return sq('[auto-detect] ' + (v == null ? '' : String(v))); // 마커 유지 + 실제 상세
+    if (JSONB_COLS.has(col)) return jb(v || (col === 'detail' ? {} : []));
+    if (INT_COLS.has(col)) return nn(v);
+    return sq(v == null ? null : String(v));
+  };
+  const allCols = [...cols, 'batch_id', 'crawled_at'];
+  const valuesList = capped.map(row =>
+    `(${cols.map(c => cell(row, c)).join(',')},${sq(r.batch_id)},now())`).join(',\n  ');
+  // 이전 auto-detect 스냅샷 제거(사라진 상품 정리). published 는 절대 미접촉.
+  const del = `delete from cs.${table} where carrier=${sq(p.carrier)} and ${markerCol} like '[auto-detect]%';`;
+  let ins = `insert into cs.${table} (${allCols.join(',')}) values\n  ${valuesList}`;
+  if (conflict) {
+    // 이름 충돌(기존 staging 행) → 최신 감지값+마커로 갱신(UPSERT)
+    const setCols = allCols.filter(c => !conflict.includes(c));
+    ins += `\n  on conflict (${conflict.join(',')}) do update set ${setCols.map(c => `${c}=excluded.${c}`).join(', ')}`;
+  }
+  ins += ';';
+  return { sql: `${del}\n${ins}`, n: capped.length };
+}
+
 function stageSql(p, r) {
   const table = STAGE_TABLE[p.area], col = NAME_COL[p.area];
   if (!table || !col) return { sql: null, n: 0 };
@@ -60,6 +104,7 @@ async function pgSink(url) {
       return new Map(rows.map(r => [`${r.carrier}|${r.area}`, r]));
     },
     async stageDelta(p, r) { const { sql, n } = stageSql(p, r); if (sql) await q(sql); return n; },
+    async replaceStaging(p, r, rows) { const { sql, n } = detailReplaceSql(p, r, rows); if (sql) await q(sql); return n; },
     async writeLog(p, r) { await q(logSql(p, r)); },
     async upsertMeta(p, r) { await q(metaSql(p, r)); },
     async finalize() { await pool.end(); },
@@ -78,6 +123,7 @@ function sqlSink(emitFile, metaIn) {
       return new Map((arr || []).map(r => [`${r.carrier}|${r.area}`, r]));
     },
     async stageDelta(p, r) { const { sql, n } = stageSql(p, r); if (sql) buf.push(sql); return n; },
+    async replaceStaging(p, r, rows) { const { sql, n } = detailReplaceSql(p, r, rows); if (sql) buf.push(sql); return n; },
     async writeLog(p, r) { buf.push(logSql(p, r)); },
     async upsertMeta(p, r) { buf.push(metaSql(p, r)); },
     async finalize() { writeFileSync(emitFile, buf.join('\n') + '\n'); console.error(`\n📄 SQL emit → ${emitFile} (${buf.length - 1} stmt) · MCP execute_sql 로 적용`); },
@@ -86,7 +132,7 @@ function sqlSink(emitFile, metaIn) {
 
 // noop (dry)
 function noopSink() {
-  return { async loadMeta() { return new Map(); }, async stageDelta() { return 0; }, async writeLog() {}, async upsertMeta() {}, async finalize() {} };
+  return { async loadMeta() { return new Map(); }, async stageDelta() { return 0; }, async replaceStaging() { return 0; }, async writeLog() {}, async upsertMeta() {}, async finalize() {} };
 }
 
 export async function makeSink({ dry, emitFile, metaIn, pgUrl }) {
