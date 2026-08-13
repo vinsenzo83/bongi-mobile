@@ -1342,26 +1342,18 @@ function generateTickets() {
         carrier: key, speed: sp, tvIdx: tvIdx, wifi: wifi
       });
     }
-    // 인터넷 단독
+    // 발번 순서 = 속도(100M→500M→1G) → 상품(TV없음→TV상품 순) → WiFi(무→유)
+    // 상품 진열 순서와 티켓번호를 일치시킴. WiFi 무료 구간은 유/무 통합 1티켓.
     speeds.forEach(function(sp) {
-      if (wifiIsOptional(d, sp, false)) {
-        pushTicket(sp, 0, false);
-        pushTicket(sp, 0, true);
-      } else {
-        pushTicket(sp, 0, true);
-      }
-    });
-    // 인터넷+TV
-    for (var i = 1; i < d.tv.length; i++) {
-      speeds.forEach(function(sp) {
-        if (wifiIsOptional(d, sp, true)) {
+      for (var i = 0; i < d.tv.length; i++) {
+        if (wifiIsOptional(d, sp, i > 0)) {
           pushTicket(sp, i, false);
           pushTicket(sp, i, true);
         } else {
           pushTicket(sp, i, true);
         }
-      });
-    }
+      }
+    });
   });
   return tickets;
 }
