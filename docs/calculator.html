@@ -2650,13 +2650,21 @@ function openAddModal(config) {
     }
     msg.style.display = 'none';
     document.getElementById('c-carrier').value = t.carrier;
+    // 통신사 변경 시 c-carrier change 핸들러와 동일한 재구성을 수행해야 한다.
+    // (누락 시 SK→KT 조회에서 결합종류·구간 드롭다운이 이전 통신사 것으로 남음)
     buildTV();
+    updateBundleUI();
+    updateRangeUI();
     document.getElementById('c-speed').value = t.speed;
     document.getElementById('c-tv').value = t.tvIdx;
+    buildAdditionalTvDropdowns();
+    updateTvCountUI();
     updateWifiUI();
     var wf = document.getElementById('c-wifi');
     if (!wf.disabled) wf.checked = t.wifi;
     updateSetTopInfo();
+    updateLguPremiumBonus();
+    updateYouthOption();
     calc();
   }
 
