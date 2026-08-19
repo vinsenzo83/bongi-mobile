@@ -2782,7 +2782,7 @@ function updateBundleUI() {
   var rangeSel = document.getElementById('c-range');
   var opts = '';
   if (c === 'skt') {
-    opts = '<option value="family">휴대폰 결합 (요즘가족결합) ⭐</option><option value="sk-onfamily">온가족할인 (가입년수 기반)</option><option value="home">TV만 결합 (휴대폰 없을 때)</option>';
+    opts = '<option value="family">휴대폰 결합 (요즘가족결합) ⭐</option><option value="sk-onfamily">온가족할인 (가입년수 기반) ⛔ 신규가입 불가</option><option value="home">TV만 결합 (휴대폰 없을 때)</option>';
     rangeSel.innerHTML = '';
   } else if (c === 'kt') {
     opts = '<option value="kt-total">휴대폰 결합 (총액) ⭐</option><option value="kt-fixed">휴대폰 결합 (정액)</option><option value="kt-premium">💎 프리미엄 가족결합 (77K↑ · 2회선+)</option><option value="kt-premium-single">💎 프리미엄 싱글결합 (77K↑ · 1회선 · 500M↑)</option><option value="home">TV만 결합 (휴대폰 없을 때)</option>';
@@ -3349,6 +3349,9 @@ function calc() {
 
     html += '<div style="margin-top:6px;padding:7px 9px;background:rgba(168,85,247,0.12);border:1.5px solid #a855f7;border-radius:8px">' +
       '<div style="font-size:12px;color:#d8b4fe;font-weight:800;margin-bottom:4px">👨‍👩‍👧‍👦 섹터 2 — SKT 온가족할인 (' + ofData.netYrLabels[netYrIdx] + ' × ' + ofData.famYrLabels[famYrIdx] + ' → <b>' + pct + '%</b> 할인)</div>';
+    // ⛔ 2026-08-19 신규가입 종료 — 기존 가입자 유지분 계산용. 신규 상담 안내 금지.
+    html += '<div style="background:rgba(239,68,68,0.2);border:2px solid #ef4444;border-radius:6px;padding:9px 11px;margin-bottom:10px;font-size:11.5px;color:#fecaca;font-weight:700">' +
+      '⛔ 온가족할인은 <b>신규가입 불가</b>입니다 (기존 가입자 유지분만 해당). 신규 고객에게 안내하지 마세요.</div>';
     if (pct === 0) {
       html += '<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:#fca5a5">⚠️ 이 조건은 온가족할인 적용 불가</div>';
     }
