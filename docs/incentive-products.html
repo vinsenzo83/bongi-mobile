@@ -478,6 +478,7 @@ async function fetchAgent() {
           <thead>
             <tr>
               <th style="width:42px">ID</th>
+              <th style="width:72px" title="대응 인터넷+TV 티켓번호. 상품 105건 ↔ 티켓 105건 1:1">🎫 티켓</th>
               <th style="width:60px">통신사</th>
               <th style="width:60px">종류</th>
               <th>상품명</th>
@@ -1893,6 +1894,8 @@ function renderTable() {
     const premBadge = effPremium ? '<span class="prem-badge" title="마진 ≥ 우수 임계값 → 자동 우수">⭐ 자동</span>' : '';
     return `<tr data-id="${p.id}" class="${p.active ? '' : 'inactive'}">
       <td style="color:#64748b">#${p.id}</td>
+      <td style="font-family:ui-monospace,monospace;font-size:11px;color:${p.ticket_number ? '#60a5fa' : '#ef4444'};font-weight:700"
+          title="${p.ticket_number ? '티켓 관리에서 조회 가능한 번호' : '대응 티켓 없음 — 시드 동기화 필요'}">${p.ticket_number || '—'}</td>
       <td><b>${p.carrier}</b></td>
       <td>${p.type}</td>
       <td><input class="cell-edit field-name" value="${(p.name||'').replace(/"/g,'&quot;')}" data-id="${p.id}" data-field="name" data-orig="${(p.name||'').replace(/"/g,'&quot;')}"></td>
