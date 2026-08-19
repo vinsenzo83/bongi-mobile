@@ -322,17 +322,28 @@ function extractTicketsFromCalc() {
         try {
           const win = iframe.contentWindow;
           if (win && win.TICKETS && win.D && win.calcTicketPrice && win.getGiftAmount && win.TICKETS.length > 0) {
-            const out = win.TICKETS.map(t => {
-              const d = win.D[t.carrier];
-              return {
-                ticket_number: t.number, carrier: t.carrier, speed: t.speed, tv_idx: t.tvIdx,
-                tv_label: t.tvIdx === 0 ? '인터넷 단독' : (d.tv[t.tvIdx]?.n || `TV ${t.tvIdx}`),
-                has_wifi: !!t.wifi,
-                monthly_fee: win.calcTicketPrice(d, t.speed, t.tvIdx, t.wifi) | 0,
-                gift_amount: win.getGiftAmount(d, t.speed, t.tvIdx) | 0,
-              };
-            });
-            clearInterval(timer); iframe.remove(); resolve(out);
+            clearInterval(timer);
+            // ★ 2026-08-19: 사은품(payback) 동기화를 끝낸 뒤 추출한다.
+            //   applyIncentivePaybackSync() 가 /api/incentive/products 의 payback 으로 D.gift 를 덮어쓰는데,
+            //   이 async 완료 전에 추출하면 파일에 하드코딩된 옛 사은품이 DB 티켓에 박힌다.
+            //   (실제로 SK0003·SK0004 가 200,000원 대신 170,000원으로 저장되어 상담 견적과 어긋났음)
+            const build = () => {
+              const out = win.TICKETS.map(t => {
+                const d = win.D[t.carrier];
+                return {
+                  ticket_number: t.number, carrier: t.carrier, speed: t.speed, tv_idx: t.tvIdx,
+                  tv_label: t.tvIdx === 0 ? '인터넷 단독' : (d.tv[t.tvIdx]?.n || `TV ${t.tvIdx}`),
+                  has_wifi: !!t.wifi,
+                  monthly_fee: win.calcTicketPrice(d, t.speed, t.tvIdx, t.wifi) | 0,
+                  gift_amount: win.getGiftAmount(d, t.speed, t.tvIdx) | 0,
+                };
+              });
+              iframe.remove(); resolve(out);
+            };
+            if (typeof win.applyIncentivePaybackSync === 'function') {
+              Promise.resolve(win.applyIncentivePaybackSync()).then(build).catch(build);
+            } else { build(); }
+            return;
           }
           if (++tries > 40) { clearInterval(timer); iframe.remove(); reject(new Error('타임아웃')); }
         } catch { clearInterval(timer); iframe.remove(); reject(new Error('iframe 접근 실패')); }
