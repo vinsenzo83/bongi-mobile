@@ -1342,18 +1342,21 @@ function generateTickets() {
         carrier: key, speed: sp, tvIdx: tvIdx, wifi: wifi
       });
     }
-    // 발번 순서 = 속도(100M→500M→1G) → 상품(TV없음→TV상품 순) → WiFi(무→유)
-    // 상품 진열 순서와 티켓번호를 일치시킴. WiFi 무료 구간은 유/무 통합 1티켓.
-    speeds.forEach(function(sp) {
-      for (var i = 0; i < d.tv.length; i++) {
+    // 발번 순서 = 상품(TV없음→TV상품 순) → 속도(100M→500M→1G) → WiFi(무→유)
+    // ★ 이 순서는 이미 발급된 티켓번호(incentive_internet_tickets 105건)의 순서다.
+    //   티켓번호는 영구 발급이라 회수 불가 → 코드가 DB 순서를 따라야 한다. 바꾸지 말 것.
+    //   (2026-08-19 수정: 속도 바깥/TV 안쪽 순서였던 탓에 105건 중 95건이 DB와 다른 조합을 가리켰음)
+    // WiFi 무료 구간은 유/무 통합 1티켓.
+    for (var i = 0; i < d.tv.length; i++) {
+      speeds.forEach(function(sp) {
         if (wifiIsOptional(d, sp, i > 0)) {
           pushTicket(sp, i, false);
           pushTicket(sp, i, true);
         } else {
           pushTicket(sp, i, true);
         }
-      }
-    });
+      });
+    }
   });
   return tickets;
 }
