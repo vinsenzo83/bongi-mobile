@@ -3428,29 +3428,68 @@ function updateInstallCheckBtn() {
   }
 }
 
-// 섹터 1·섹터 2 동시 표시 시 섹터 1을 접기/펴기 토글 (기존 UI 그대로 살림).
-// 섹터 1 헤더 div를 클릭 가능하게 만들고 본문은 hide. 섹터 2 없을 땐 미동작.
+// 섹터 1·섹터 2 통합 렌더 (2026-08-19).
+// 종전: 섹터 1을 접기/펴기 토글로 숨김 → 상담사가 두 블록을 따로 읽어야 했음.
+// 현재: 두 블록을 한 덩어리로 병합해 기본요금 → 결합할인 → 최종합계가 한 흐름으로 이어짐.
+//   · calc() 의 계산 분기는 건드리지 않는다 (렌더 후 DOM 병합만 수행).
+//   · 섹터 1 의 '월 합계' 는 '소계 (결합 전)' 로 강등하고, 최종 합계는 섹터 2 것만 남긴다.
+//   · 섹터 2 가 없으면(결합 미선택) 아무 것도 하지 않는다.
 function wrapSec1IfBothSectorsPresent() {
   const root = document.getElementById('c-result');
   if (!root) return;
-  if (root.querySelector('.tm-sec1-body')) return; // 이미 처리됨
-  const children = Array.from(root.children);
-  const sec1Idx = children.findIndex(el => /섹터\s*1/.test(el.textContent || ''));
-  const sec2Idx = children.findIndex(el => /섹터\s*2/.test(el.textContent || ''));
-  if (sec2Idx === -1 || sec1Idx === -1 || sec2Idx <= sec1Idx) return;
+  if (root.querySelector('[data-tm-merged="1"]')) return; // 이번 렌더에서 이미 병합됨
 
-  const header = children[sec1Idx];
-  header.style.cursor = 'pointer';
-  header.title = '클릭해서 펼치기/접기';
-  // 본문 div 만들기 (sec1 헤더 다음 ~ sec2 헤더 직전)
-  const body = document.createElement('div');
-  body.className = 'tm-sec1-body';
-  body.style.display = 'none'; // 기본 접힘
-  for (let i = sec1Idx + 1; i < sec2Idx; i++) body.appendChild(children[i]);
-  header.parentNode.insertBefore(body, header.nextSibling);
-  header.addEventListener('click', () => {
-    body.style.display = (body.style.display === 'none') ? '' : 'none';
+  const kids = Array.from(root.children);
+  const isSec = (el, n) => new RegExp('섹터\\s*' + n).test(el.textContent || '');
+  const i2 = kids.findIndex(el => isSec(el, 2));
+  if (i2 === -1) return;                       // 결합 미선택 → 병합 대상 없음
+  const i1 = kids.findIndex(el => isSec(el, 1));
+
+  const demoteTotal = (box) => {
+    box.querySelectorAll('.calc-line.total .l').forEach(el => {
+      if (/월\s*합계/.test(el.textContent) && !/✨/.test(el.textContent)) el.textContent = '소계 (결합 전)';
+    });
+  };
+
+  let host;
+  if (i1 !== -1 && i1 < i2) {
+    host = kids[i1];                            // TV 결합 → 섹터 1 박스가 이미 존재
+    const h = host.firstElementChild;
+    if (h && isSec(h, 1)) h.textContent = (h.textContent || '').replace(/섹터\s*1\s*—\s*/, '');
+  } else {
+    host = document.createElement('div');       // TV 미가입 → 플랫 라인들을 박스로 감쌈
+    host.style.cssText = kids[i2].style.cssText;
+    root.insertBefore(host, kids[i2]);
+    for (let i = 0; i < i2; i++) {
+      const el = kids[i];
+      if (el.classList && el.classList.contains('calc-line')) host.appendChild(el);
+    }
+  }
+  demoteTotal(host);
+
+  // 소계 금액 — 섹터 2 가 같은 금액을 되풀이하면 중복이므로 지운다.
+  const subEl = Array.from(host.querySelectorAll('.calc-line.total')).find(
+    el => /소계/.test(el.textContent || ''));
+  const subAmt = subEl ? (subEl.querySelector('.v') || {}).textContent : null;
+
+  // 섹터 2 블록(들)을 host 안으로 이동. 첫 줄(타이틀)은 점선 구분선을 단 소제목으로.
+  kids.slice(i2).filter(el => isSec(el, 2) && el.parentNode === root).forEach(box => {
+    Array.from(box.children).forEach((el, idx) => {
+      if (idx === 0) {
+        el.textContent = (el.textContent || '').replace(/섹터\s*2\s*—\s*/, '');
+        el.style.marginTop = '8px';
+        el.style.paddingTop = '6px';
+        el.style.borderTop = '1px dashed rgba(255,255,255,0.18)';
+      } else if (subAmt && el.classList && el.classList.contains('calc-line')
+                 && !el.classList.contains('discount')
+                 && ((el.querySelector('.v') || {}).textContent === subAmt)) {
+        return;   // 소계와 같은 금액을 다시 적는 줄 → 통합했으므로 생략
+      }
+      host.appendChild(el);
+    });
+    box.remove();
   });
+  host.dataset.tmMerged = '1';
 }
 
 // ╔════════════════════════════════════════════════════╗
