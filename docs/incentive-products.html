@@ -482,6 +482,7 @@ async function fetchAgent() {
               <th style="width:60px">종류</th>
               <th>상품명</th>
               <th style="width:60px">속도</th>
+              <th style="width:64px" title="WiFi 공유기 포함 여부. 티켓(105건)과 1:1 대응하도록 2026-08-19 분리">WiFi</th>
               <th style="width:110px">TV 등급</th>
               <th style="width:110px">리베이트</th>
               <th style="width:110px">페이백</th>
@@ -1896,6 +1897,9 @@ function renderTable() {
       <td>${p.type}</td>
       <td><input class="cell-edit field-name" value="${(p.name||'').replace(/"/g,'&quot;')}" data-id="${p.id}" data-field="name" data-orig="${(p.name||'').replace(/"/g,'&quot;')}"></td>
       <td>${p.speed || '-'}</td>
+      <td style="text-align:center">${p.has_wifi
+        ? '<span style="color:#4ade80;font-weight:700" title="WiFi 공유기 포함">✓ 포함</span>'
+        : '<span style="color:#64748b" title="WiFi 공유기 미포함">미포함</span>'}</td>
       <td style="font-size:10px;color:#94a3b8">${p.tv_tier || '-'}</td>
       <td><input class="cell-edit field-rebate" type="number" value="${p.rebate || 0}" min="0" step="1000" data-id="${p.id}" data-field="rebate" data-orig="${p.rebate || 0}" style="text-align:right;color:#86efac;font-weight:700"></td>
       <td><input class="cell-edit field-payback" type="number" value="${p.payback || 0}" min="0" step="1000" data-id="${p.id}" data-field="payback" data-orig="${p.payback || 0}" style="text-align:right;color:#fca5a5;font-weight:700"></td>
