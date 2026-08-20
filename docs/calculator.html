@@ -1959,7 +1959,14 @@ function calc() {
     }
 
     var netSingleWithWifi = netBase + (wf ? wifiForSp : 0);
-    var inetAfter = netSingleWithWifi - lguInetDc;
+    // ★ 2026-08-20 수정: LG U+ 는 「참쉬운/투게더 결합할인」과 「TV 결합 시 할인」이 중복 적용된다.
+    //   대리점 전산 실측 — 500M + U+tv 실속형 · 참쉬운:
+    //     인터넷 33,000 − 참쉬운 9,900 − TV결합 5,500 = 17,600  (+TV 13,200 +셋톱 4,400 = 35,200)
+    //   종전에는 단독가 기준으로만 계산해 TV결합 할인 5,500원이 누락 → 월 5,500원 과대 계산이었음.
+    //   (500M·1G 만 해당. 100M 은 단독가=TV결합가라 차액 0)
+    var lguNetCombo = hasTv ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]) : netSingleWithWifi;
+    var lguTvBundleDc = netSingleWithWifi - lguNetCombo;
+    var inetAfter = lguNetCombo - lguInetDc;
     var tvBaseVal = hasTv ? d.tv[ti].p : 0;
     var tvBaseDc = hasTv ? (d.tv[ti].dc || 0) : 0;
     var tvAfter = tvBaseVal - tvBaseDc;
@@ -1974,7 +1981,8 @@ function calc() {
       html += '<div class="calc-line sub" style="color:#fca5a5">· 이 속도는 해당 결합 인터넷 할인 없음 (투게더 100M 결합 불가)</div>';
     }
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi) + '</span></div>' +
-      '<div class="calc-line discount"><span class="l">' + (isChweyswun ? '참쉬운' : '투게더') + ' 인터넷 할인 (기본 TV결합 할인 대체)</span><span class="v">-' + fmt(lguInetDc) + '</span></div>' +
+      '<div class="calc-line discount"><span class="l">' + (isChweyswun ? '참쉬운 가족결합' : '투게더 결합') + ' 인터넷 할인</span><span class="v">-' + fmt(lguInetDc) + '</span></div>' +
+      (lguTvBundleDc > 0 ? '<div class="calc-line discount"><span class="l">TV 결합 시 (중복 적용)</span><span class="v">-' + fmt(lguTvBundleDc) + '</span></div>' : '') +
       '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfter) + '</span></div>';
     if (hasTv) {
       html += '<div class="calc-line" style="margin-top:6px"><span class="l">' + d.tv[ti].n.split('(')[0].trim() + '</span><span class="v">' + fmt(tvBaseVal) + '</span></div>' +
