@@ -3051,7 +3051,13 @@ function calc() {
     var inetSoloDcSec1 = (c === 'kt' && bundleTypeNow === 'kt-premium-single'
                          && psSpeedOk1
                          && psPlanForInetDc >= psMinPlan1) ? psInetSolo1 : 0;
-    var totalAfterInetDc = subTotal - inetSoloDcSec1;
+    // ★ 2026-08-24: 프리미엄 싱글결합도 「휴대폰(무선) 결합」이므로 기본 무선결합할인이 붙는다.
+    //   싱글은 섹터2 블록이 없어 여기(섹터1)에서 함께 차감한다. 500M·1G 만 차액이 생긴다.
+    var psBaseComboDc = 0;
+    if (c === 'kt' && bundleTypeNow === 'kt-premium-single' && inetSoloDcSec1 > 0) {
+      psBaseComboDc = Math.max(0, subTotal - (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]));
+    }
+    var totalAfterInetDc = subTotal - psBaseComboDc - inetSoloDcSec1;
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')</span><span class="v">' + fmt(netBase) + '</span></div>';
     if (wf) html += '<div class="calc-line"><span class="l">WiFi' + (d.wifiName ? ' (' + d.wifiName + ')' : '') + '</span><span class="v">+' + fmt(wifiForSp) + (wifiForSp === 0 ? ' (무료)' : '') + '</span></div>';
     // LG U+ 500M/1G 프리미엄 안심 (단독)
@@ -3062,6 +3068,7 @@ function calc() {
     }
     if (inetSoloDcSec1 > 0) {
       html += '<div class="calc-line sub"><span class="l">└ 소계</span><span class="v">' + fmt(subTotal) + '</span></div>';
+      if (psBaseComboDc > 0) html += '<div class="calc-line discount"><span class="l">기본 무선결합할인</span><span class="v">-' + fmt(psBaseComboDc) + '</span></div>';
       html += '<div class="calc-line discount"><span class="l">💎 KT 프리미엄 싱글결합 추가 할인</span><span class="v">-' + fmt(inetSoloDcSec1) + '</span></div>';
     }
     html += '<div class="calc-line total"><span class="l">월 합계</span><span class="v">' + fmt(totalAfterInetDc) + '</span></div>';
@@ -3156,7 +3163,17 @@ function calc() {
     var fixedDc = premData.internet;
     var totalGrandDc = fixedDc + totalMobDc + premTotalDc;
     var netSingleWithWifi2 = netBase + (wf ? wifiForSp : 0);
-    var ktNetCombo2 = hasTv ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]) : netSingleWithWifi2;
+    // ★ 2026-08-24: 프리미엄 결합에도 「기본 무선결합할인」이 붙는다.
+    //   근거(KT 공식) — 프리미엄 5,500 은 인터넷 요금할인이 아니라 휴대폰 할인의 배분이다:
+    //     "할인액 중 5,500원은 모바일 베이스 회선이 아닌 함께 결합된 인터넷에 나눠 제공받을 수 있습니다"
+    //     "모바일 베이스 회선에 11,000원 할인 / 모바일과 인터넷에 각각 5,500원 할인 중 선택"
+    //   → 성격이 다른 별개 항목이므로 기본 결합할인과 중복된다. 총액·정액과 동일하게 처리.
+    var ktTierDiffP = netSingleWithWifi2 - (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]);
+    var ktNetCombo2 = hasTv
+      ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp])
+      : (netSingleWithWifi2 - Math.max(0, ktTierDiffP));
+    var ktBaseInetDcP = netSingleWithWifi2 - ktNetCombo2;
+    totalGrandDc += ktBaseInetDcP;  // 기본 무선결합할인 포함
     var inetAfterPrem = ktNetCombo2 - fixedDc;
     var tvBaseValP = hasTv ? d.tv[ti].p : 0;
     var tvBaseDcP = hasTv ? (d.tv[ti].dc || 0) : 0;
@@ -3179,8 +3196,8 @@ function calc() {
     });
     html += '</div>';
     html += '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi2) + '</span></div>';
-    if (hasTv && ktNetCombo2 < netSingleWithWifi2) html += '<div class="calc-line discount"><span class="l">KT 기본 TV결합 인터넷 할인</span><span class="v">-' + fmt(netSingleWithWifi2 - ktNetCombo2) + '</span></div>';
-    html += '<div class="calc-line discount"><span class="l">프리미엄 인터넷 할인 (고정, 대표자 휴대폰 이전 가능)</span><span class="v">-' + fmt(fixedDc) + '</span></div>' +
+    if (ktBaseInetDcP > 0) html += '<div class="calc-line discount"><span class="l">기본 무선결합할인' + (hasTv ? ' <span style="font-size:9.5px;opacity:.75">(TV 결합에도 동일 적용)</span>' : '') + '</span><span class="v">-' + fmt(ktBaseInetDcP) + '</span></div>';
+    html += '<div class="calc-line discount"><span class="l">프리미엄 인터넷 할인 <span style="font-size:9.5px;opacity:.75">(휴대폰 할인 배분 — 대표자 휴대폰에 11,000 몰아주기 선택 가능)</span></span><span class="v">-' + fmt(fixedDc) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfterPrem) + '</span></div>';
     if (hasTv) {
       html += '<div class="calc-line" style="margin-top:6px"><span class="l">' + d.tv[ti].n.split('(')[0].trim() + '</span><span class="v">' + fmt(tvBaseValP) + '</span></div>' +
@@ -3193,7 +3210,7 @@ function calc() {
       '<div class="calc-line discount"><span class="l">· 총액결합 (' + totalMembers.length + '명 · 합산 ' + fmt(totalSum) + ' · ' + totalRanges[rngIdx] + ')</span><span class="v">-' + fmt(totalMobDc) + '</span></div>' +
       '<div class="calc-line discount"><span class="l">· 프리미엄 ' + premCount + '명 합산 할인</span><span class="v">-' + fmt(premTotalDc) + '</span></div>' +
       '<div class="calc-line total" style="margin-top:6px;padding-top:6px"><span class="l">휴대폰 할인 합계</span><span class="v" style="color:#fbbf24">-' + fmt(totalMobDc + premTotalDc) + '</span></div>' +
-      '<div style="background:rgba(251,191,36,0.15);border-radius:6px;padding:8px 10px;margin-top:10px;font-size:11px;color:#fde68a">💰 총 월 절감액: ' + fmt(totalGrandDc) + ' (인터넷 5,500 + 총액 ' + fmt(totalMobDc) + ' + 프리미엄 ' + fmt(premTotalDc) + ')</div>' +
+      '<div style="background:rgba(251,191,36,0.15);border-radius:6px;padding:8px 10px;margin-top:10px;font-size:11px;color:#fde68a">💰 총 월 절감액: ' + fmt(totalGrandDc) + ' (기본 무선결합 ' + fmt(ktBaseInetDcP) + ' + 프리미엄 인터넷 ' + fmt(fixedDc) + ' + 총액 ' + fmt(totalMobDc) + ' + 프리미엄 휴대폰 ' + fmt(premTotalDc) + ')</div>' +
       '</div>';
   }
 
