@@ -3077,13 +3077,13 @@ function calc() {
     //   대리점 전산 실측 — 500M+WiFi · TV 없음 · 총액결합:
     //     34,100 − 총액결합 5,500 − 무선 결합 시 5,500 = 23,100  (종전 우리 계산 28,600)
     //   KT 공식: 100M 은 결합할인 5,500만, 500M·1G 는 결합할인 5,500 + 총액결합 5,500 = 11,000
-    //   단, 총액결합 「22,000원 이하」 구간은 총액결합할인 2,200원만 적용되고 이 할인은 붙지 않음.
+    //   기본 결합할인 5,500 은 요금 구간과 무관하게 항상 적용된다.
+    //   (「22,000원 이하」 구간은 '총액결합할인' 쪽이 2,200원으로 줄어드는 것일 뿐)
     //   (100M 은 단독가 = TV결합가라 차액 0 → 자동으로 미적용)
     var ktTierDiff = netSingleWithWifi - (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]);
-    var ktLowRange = (isTotal && rangeIdx === 0);
     var ktNetCombo = hasTv
       ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp])
-      : (ktLowRange ? netSingleWithWifi : netSingleWithWifi - Math.max(0, ktTierDiff));
+      : (netSingleWithWifi - Math.max(0, ktTierDiff));
     var ktBaseInetDc = netSingleWithWifi - ktNetCombo;
     var inetAfterAll = ktNetCombo - inetDc;
     var tvBaseVal = hasTv ? d.tv[ti].p : 0;
