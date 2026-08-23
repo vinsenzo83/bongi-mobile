@@ -1808,8 +1808,18 @@ function calc() {
 
     // 상세 계산
     var netSingleWithWifi = netBase + (wf ? wifiForSp : 0);
-    var ktNetCombo = hasTv ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]) : netSingleWithWifi;
-    var ktBaseInetDc = hasTv ? (netSingleWithWifi - ktNetCombo) : 0;  // KT 기본 TV결합 인터넷 할인
+    // ★ 2026-08-23 수정: KT 기본 결합할인(500M·1G 5,500원)은 TV 결합뿐 아니라
+    //   「인터넷 + 휴대폰」 무선결합만으로도 적용된다. 종전에는 TV 없으면 0이라 5,500원이 누락됐음.
+    //   대리점 전산 실측 — 500M+WiFi · TV 없음 · 총액결합:
+    //     34,100 − 총액결합 5,500 − 무선 결합 시 5,500 = 23,100  (종전 우리 계산 28,600)
+    //   KT 공식: 100M 은 결합할인 5,500만, 500M·1G 는 결합할인 5,500 + 총액결합 5,500 = 11,000
+    //   단, 총액결합 「22,000원 이하」 구간은 총액결합할인 2,200원만 적용되고 이 할인은 붙지 않음.
+    var ktTierDiff = netSingleWithWifi - (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]);
+    var ktLowRange = (isTotal && rangeIdx === 0);
+    var ktNetCombo = hasTv
+      ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp])
+      : (ktLowRange ? netSingleWithWifi : netSingleWithWifi - Math.max(0, ktTierDiff));
+    var ktBaseInetDc = netSingleWithWifi - ktNetCombo;  // TV 결합 시 / 무선 결합 시 기본 할인
     var inetAfterAll = ktNetCombo - inetDc;
     var tvBaseVal = hasTv ? d.tv[ti].p : 0;
     var tvBaseDc = hasTv ? (d.tv[ti].dc || 0) : 0;
@@ -1824,7 +1834,7 @@ function calc() {
       // 인터넷
       '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi) + '</span></div>';
     if (ktBaseInetDc > 0) {
-      html += '<div class="calc-line discount"><span class="l">KT 기본 TV결합 인터넷 할인</span><span class="v">-' + fmt(ktBaseInetDc) + '</span></div>';
+      html += '<div class="calc-line discount"><span class="l">' + (hasTv ? 'TV 결합 시' : '무선 결합 시') + ' (KT 기본 결합할인)</span><span class="v">-' + fmt(ktBaseInetDc) + '</span></div>';
     }
     html += '<div class="calc-line discount"><span class="l">' + (isTotal ? '총액' : '정액') + ' 결합 인터넷 추가 할인 (중복)</span><span class="v">-' + fmt(inetDc) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfterAll) + '</span></div>';
