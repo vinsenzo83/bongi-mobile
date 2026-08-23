@@ -1834,7 +1834,7 @@ function calc() {
       // 인터넷
       '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi) + '</span></div>';
     if (ktBaseInetDc > 0) {
-      html += '<div class="calc-line discount"><span class="l">' + (hasTv ? 'TV 결합 시' : '무선 결합 시') + ' (KT 기본 결합할인)</span><span class="v">-' + fmt(ktBaseInetDc) + '</span></div>';
+      html += '<div class="calc-line discount"><span class="l">기본 무선결합할인' + (hasTv ? ' <span style="font-size:9.5px;opacity:.75">(TV 결합에도 동일 적용)</span>' : '') + '</span><span class="v">-' + fmt(ktBaseInetDc) + '</span></div>';
     }
     html += '<div class="calc-line discount"><span class="l">' + (isTotal ? '총액' : '정액') + ' 결합 인터넷 추가 할인 (중복)</span><span class="v">-' + fmt(inetDc) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfterAll) + '</span></div>';
@@ -2112,7 +2112,7 @@ function calc() {
     }
   }
   // 설치비 — 본 설치비 + 추가 TV 설치비 (50% 할인)
-  html += '<div class="calc-line" style="margin-top:6px"><span class="l">🔧 설치비 (1회 · 본 인터넷+TV)</span><span class="v">' + fmt(installPrice) + '</span></div>';
+  html += '<div class="calc-line" style="margin-top:6px"><span class="l">🔧 설치비 (1회 · 본 인터넷+TV · 평일 주간)</span><span class="v">' + fmt(installPrice) + '</span></div>';
   var tvCntForInstall = (function(){var el=document.getElementById('c-tv-count'); return el?(parseInt(el.value)||1):1;})();
   if (tvCntForInstall >= 2 && d.additionalTvPolicy && d.additionalTvPolicy.enabled) {
     var addBaseFee = d.additionalTvPolicy.additionalTvInstallFee || 17600;
@@ -2925,20 +2925,30 @@ function resetCatalog() {
 var INSTALL_FEES_KEY = 'bongi-install-fees';
 
 var DEFAULT_INSTALL_FEES = {
+  // ★ 2026-08-24 대리점 전산 실측 반영 (SK·KT 캡처 대조).
+  //   · 「주말」이 아니라 「평일 야간」 = 19시~09시. 주말·공휴일이 야간에 포함된다.
+  //   · 인터넷 / IPTV 가 별도 청구되고 그 합이 인터넷+TV 총액이다.
+  //       SK  34,100 + 22,000 = 56,100  (야간 42,620 + 27,500 = 70,120)
+  //       KT  32,000 + 24,200 = 56,200  (야간 41,000 + 30,250 = 71,250)
+  //   · 「인터넷 단독」(TV 없이 인터넷만)은 전산 캡처가 아직 없어 종전값 유지 = 미검증.
+  //       LGU 34,100 + 22,000 = 56,100  (야간 42,620 + 27,500 = 70,120)  ← SK와 동일
   skt: {
-    columns: ['인터넷 단독', 'TV 단독', '인터넷+TV', 'TV 추가', '인터넷전화', '일반전화'],
-    weekday: [36300, 34100, 56100, 17600, 13200, 6600],
-    weekend: [45375, 42625, 70125, 22000, 13200, 6600]
-  },
-  lgu: {
-    columns: ['인터넷 단독', 'TV 단독', '인터넷+TV', 'TV 추가', '인터넷전화', '일반전화'],
-    weekday: [36300, 34100, 56100, 22000, 11000, 11000],
-    weekend: [45375, 42625, 70125, 27500, 11000, 11000]
+    columns: ['인터넷 단독', '인터넷 (TV 동시)', 'IPTV', '인터넷+TV 합계', 'TV 추가', '인터넷전화', '일반전화'],
+    weekday: [36300, 34100, 22000, 56100, 17600, 13200, 6600],
+    weekend: [45375, 42620, 27500, 70120, 22000, 13200, 6600],
+    verified: [false, true, true, true, false, false, false]
   },
   kt: {
-    columns: ['인터넷 단독', 'TV 단독', '인터넷+TV', 'TV 추가', '인터넷전화', '일반전화 신규', '일반전화 번호이동'],
-    weekday: [36000, 34100, 56200, 15400, 24000, 32000, 36000],
-    weekend: [45000, 42625, 71250, 19250, 33000, 41000, 45000]
+    columns: ['인터넷 단독', '인터넷 (TV 동시)', 'IPTV', '인터넷+TV 합계', 'TV 추가', '인터넷전화', '일반전화 신규', '일반전화 번호이동'],
+    weekday: [36000, 32000, 24200, 56200, 15400, 24000, 32000, 36000],
+    weekend: [45000, 41000, 30250, 71250, 19250, 33000, 41000, 45000],
+    verified: [false, true, true, true, false, false, false, false]
+  },
+  lgu: {
+    columns: ['인터넷 단독', '인터넷 (TV 동시)', 'IPTV', '인터넷+TV 합계', 'TV 추가', '인터넷전화', '일반전화'],
+    weekday: [36300, 34100, 22000, 56100, 22000, 11000, 11000],
+    weekend: [45375, 42620, 27500, 70120, 27500, 11000, 11000],
+    verified: [false, true, true, true, false, false, false]
   }
 };
 
@@ -2958,7 +2968,7 @@ var INSTALL_FEES = loadInstallFees();
 function updateInstallFee(carrierKey, day, colIdx, value) {
   var n = parseInt(String(value).replace(/[^0-9]/g, '')) || 0;
   var labels = { skt:'SKT', kt:'KT', lgu:'LGU+' };
-  var dayLabel = day === 'weekday' ? '평일' : '주말';
+  var dayLabel = day === 'weekday' ? '평일 주간' : '평일 야간';
   var col = INSTALL_FEES[carrierKey].columns[colIdx];
   var old = INSTALL_FEES[carrierKey][day][colIdx];
   INSTALL_FEES[carrierKey][day][colIdx] = n;
@@ -3021,7 +3031,7 @@ function renderInstallControls() {
       html += '<th style="min-width:120px"><div style="display:flex;align-items:center;gap:4px"><input type="text" value="' + col + '" onchange="updateInstallColumn(\'' + c.key + '\', ' + i + ', this.value)" style="flex:1;padding:3px 5px;border:1px solid #cbd5e1;border-radius:3px;font-size:10px;font-weight:700;color:#fff;background:transparent;color-scheme:light"><button type="button" onclick="deleteInstallColumn(\'' + c.key + '\', ' + i + ')" style="padding:2px 5px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:3px;font-size:9px;cursor:pointer">🗑</button></div></th>';
     });
     html += '</tr></thead><tbody>';
-    [['weekday','평일'], ['weekend','주말']].forEach(function(pair) {
+    [['weekday','평일 주간 (09~19시)'], ['weekend','평일 야간 (19~09시 · 주말·공휴일 포함)']].forEach(function(pair) {
       html += '<tr><td><b>' + pair[1] + '</b></td>';
       d[pair[0]].forEach(function(v, i) {
         html += '<td><input type="text" inputmode="numeric" value="' + v.toLocaleString() + '" onchange="updateInstallFee(\'' + c.key + '\', \'' + pair[0] + '\', ' + i + ', this.value); this.value=(parseInt(String(this.value).replace(/[^0-9]/g,\'\')||0).toLocaleString())" style="width:100%;padding:4px 6px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:right"></td>';
@@ -3601,6 +3611,41 @@ function updLguChweyLabel(idx, val) { var old = D.lgu.bundle.chweyswun.planLabel
 function updLguTogetherInet(sp, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; var old = D.lgu.bundle.together.internet[sp]; D.lgu.bundle.together.internet[sp] = n; logEdit('결합할인', 'LGU+ 투게더 인터넷 ' + sp, old, n); persistBundle('lgu'); }
 function updLguTogetherMobile(idx, val) { var n = parseInt(String(val).replace(/[^0-9]/g,''))||0; var old = D.lgu.bundle.together.mobile[idx]; D.lgu.bundle.together.mobile[idx] = n; var lines = (idx+2) + '회선'; logEdit('결합할인', 'LGU+ 투게더 휴대폰 ' + lines, old, n); persistBundle('lgu'); }
 
+// ★ 기본 무선결합할인 (KT) / 기본 TV결합할인 (LGU+) = 인터넷 단독가 − TV결합가 (파생값)
+// 실제 편집은 「섹션 1 인터넷·WiFi → TV 결합 시 인터넷 결합가」 표에서 한다.
+// KT: 휴대폰 결합(무선)만 있어도 적용 · LGU+: TV 결합 시 적용 (참쉬운/투게더 할인과 중복)
+function renderBaseComboDiscount(ck) {
+  var d = D[ck];
+  var isKt = (ck === 'kt');
+  var title = isKt
+    ? '★ <b>기본 무선결합할인</b> — 휴대폰(무선) 결합만 있어도 적용. TV 결합 시에도 동일액. 총액·정액 결합할인과 <b>중복</b>.'
+    : '★ <b>기본 TV결합할인</b> — TV 결합 시 적용. 참쉬운·투게더 인터넷 할인과 <b>중복</b>.';
+  var badge = isKt ? '<span class="badge b-kt">KT</span>' : '<span class="badge b-lgu">LGU+</span>';
+  var h = '<div class="st2" style="margin-top:14px">' + badge + ' ' + (isKt ? '기본 무선결합할인' : '기본 TV결합할인') + ' <span style="font-size:10px;font-weight:700;color:#fbbf24">파생값 · 읽기전용</span></div>';
+  h += '<div class="note" style="margin:4px 0 6px">' + title + '<br>'
+     + '계산식 = <b>인터넷 단독가 − TV 결합가</b>. 값을 바꾸려면 <b>섹션 1 인터넷·WiFi</b>의 「TV 결합 시 인터넷 결합가」를 수정한다.'
+     + (isKt ? '<br>요금 구간(22,000원 이하 등)과 <b>무관하게 항상</b> 적용된다. 구간에 따라 달라지는 것은 총액 결합할인 쪽이다.' : '')
+     + '</div>';
+  h += '<table style="margin:0"><thead><tr><th style="width:70px">속도</th><th>인터넷 단독가</th><th>TV 결합가 (WiFi 무)</th><th>TV 결합가 (WiFi 유)</th><th style="width:110px">' + (isKt ? '기본 무선결합할인' : '기본 TV결합할인') + '</th></tr></thead><tbody>';
+  ['100M','500M','1G'].forEach(function(sp){
+    var wfee = (d.wifiPrice && d.wifiPrice[sp] != null) ? d.wifiPrice[sp] : (d.wifiCost || 0);
+    var dcNo = d.internet[sp] - d.tvInternetNoWifi[sp];
+    var dcYes = (d.internet[sp] + wfee) - d.tvInternetWithWifi[sp];
+    var same = (dcNo === dcYes);
+    var val = same ? dcNo : Math.max(dcNo, dcYes);
+    h += '<tr><td><b>' + sp + '</b></td>'
+       + '<td style="text-align:right">' + fmt(d.internet[sp]) + '</td>'
+       + '<td style="text-align:right">' + fmt(d.tvInternetNoWifi[sp]) + '</td>'
+       + '<td style="text-align:right">' + fmt(d.tvInternetWithWifi[sp]) + '</td>'
+       + '<td style="text-align:right;font-weight:800;color:' + (val > 0 ? '#f87171' : '#94a3b8') + '">'
+       + (val > 0 ? '-' + fmt(val) : '없음')
+       + (same ? '' : ' <span style="font-size:9px;color:#fbbf24">*WiFi별 상이</span>')
+       + '</td></tr>';
+  });
+  h += '</tbody></table>';
+  return h;
+}
+
 function renderBundleControls() {
   var container = document.getElementById('bundle-controls');
   if (!container) return;
@@ -3685,6 +3730,9 @@ function renderBundleControls() {
   });
   html += '</tr></tbody></table>';
 
+  // ━━━━━━━━ ★ 기본 결합할인 (파생값 · 읽기전용) ━━━━━━━━
+  html += renderBaseComboDiscount('lgu');
+
   // ━━━━━━━━ KT 총액 결합 ━━━━━━━━
   html += '<div class="st2" style="margin-top:18px"><span class="badge b-kt">KT</span> 총액 결합할인';
   html += '<button type="button" onclick="addKtTotalRange()" style="margin-left:8px;padding:3px 8px;border:1.5px dashed #6366f1;background:#fff;color:#6366f1;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer">+ 구간 추가</button></div>';
@@ -3707,6 +3755,9 @@ function renderBundleControls() {
     });
   });
   html += '</tbody></table></div>';
+
+  // ━━━━━━━━ ★ 기본 결합할인 (파생값 · 읽기전용) ━━━━━━━━
+  html += renderBaseComboDiscount('kt');
 
   // ━━━━━━━━ KT 정액 결합 ━━━━━━━━
   html += '<div class="st2" style="margin-top:14px"><span class="badge b-kt">KT</span> 정액 결합할인';

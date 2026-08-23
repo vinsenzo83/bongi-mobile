@@ -2272,7 +2272,7 @@ var D = {
       enabled: true
     },
     install: { solo: 36300, combo: 56100 },
-    installWeekend: { solo: 45375, combo: 70125 },
+    installWeekend: { solo: 45375, combo: 70120 },  // ★ 전산 실측 70,120 (56,100×1.25=70,125 아님)
     gift: {
       solo: { '100M': 110000, '500M': 170000, '1G': 170000 },
       combo: { '100M': 400000, '500M': 430000, '1G': 490000 }
@@ -2443,7 +2443,7 @@ var D = {
       enabled: true
     },
     install: { solo: 36300, combo: 56100 },
-    installWeekend: { solo: 45375, combo: 70125 },
+    installWeekend: { solo: 45375, combo: 70120 },
     gift: {
       solo: { '100M': 200000, '500M': 230000, '1G': 230000 },
       combo: { '100M': 400000, '500M': 470000, '1G': 470000 }
@@ -3097,7 +3097,7 @@ function calc() {
     html += '<div style="margin-top:6px;padding:7px 9px;background:rgba(59,130,246,0.12);border:1.5px solid #60a5fa;border-radius:8px">' +
       '<div style="font-size:12px;color:#93c5fd;font-weight:800;margin-bottom:4px">📊 섹터 2 — KT ' + (isTotal ? '총액' : '정액') + ' 결합할인 (월 요금 ' + rangeLabels[rangeIdx] + ' 구간) · 기본 할인과 중복</div>' +
       '<div class="calc-line"><span class="l">인터넷 (' + sp + ')' + (wf ? ' + WiFi' : '') + '</span><span class="v">' + fmt(netSingleWithWifi) + '</span></div>';
-    if (ktBaseInetDc > 0) html += '<div class="calc-line discount"><span class="l">' + (hasTv ? 'TV 결합 시' : '무선 결합 시') + ' (KT 기본 결합할인)</span><span class="v">-' + fmt(ktBaseInetDc) + '</span></div>';
+    if (ktBaseInetDc > 0) html += '<div class="calc-line discount"><span class="l">기본 무선결합할인' + (hasTv ? ' <span style="font-size:9.5px;opacity:.75">(TV 결합에도 동일 적용)</span>' : '') + '</span><span class="v">-' + fmt(ktBaseInetDc) + '</span></div>';
     html += '<div class="calc-line discount"><span class="l">' + (isTotal ? '총액' : '정액') + ' 결합 인터넷 추가 할인 (중복)</span><span class="v">-' + fmt(inetDc) + '</span></div>' +
       '<div class="calc-line sub"><span class="l">→ 인터넷 실질</span><span class="v">' + fmt(inetAfterAll) + '</span></div>';
     if (hasTv) {
@@ -3418,8 +3418,8 @@ function calc() {
   }
   html += '<div style="margin-top:5px;padding:5px 8px;background:rgba(255,255,255,0.04);border-radius:5px;border:1px solid rgba(255,255,255,0.08)">' +
     '<div style="font-size:9.5px;color:rgba(255,255,255,0.55);font-weight:700;margin-bottom:2px;letter-spacing:0.04em">🔧 설치비 (1회)</div>' +
-    '<div class="calc-line" style="padding:1px 0;font-size:11px"><span class="l">평일 (본 인터넷+TV)</span><span class="v">' + fmt(installWeekday) + '</span></div>' +
-    '<div class="calc-line" style="padding:1px 0;font-size:11px"><span class="l">주말 <span style="font-size:9.5px;color:rgba(248,113,113,0.7)">(+25%)</span></span><span class="v" style="color:#fca5a5">' + fmt(installWeekend) + '</span></div>' +
+    '<div class="calc-line" style="padding:1px 0;font-size:11px"><span class="l">평일 주간 (본 인터넷+TV)</span><span class="v">' + fmt(installWeekday) + '</span></div>' +
+    '<div class="calc-line" style="padding:1px 0;font-size:11px"><span class="l">평일 야간 <span style="font-size:9.5px;color:rgba(248,113,113,0.7)">(19~09시 · 주말·공휴일 포함)</span></span><span class="v" style="color:#fca5a5">' + fmt(installWeekend) + '</span></div>' +
     addInstallHtml +
     (addTotal > 0 ? '<div class="calc-line total" style="border-top:1px dashed rgba(255,255,255,0.2);margin-top:3px;padding-top:3px;font-size:11px"><span class="l">평일 합계</span><span class="v">' + fmt(installWeekday + addTotal) + '</span></div>' : '') +
     '</div>';

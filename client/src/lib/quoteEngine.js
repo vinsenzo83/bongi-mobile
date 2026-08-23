@@ -602,8 +602,14 @@ export function calc(opts) {
     if (isTotal) { inetDc = tbl.internet[sp][rangeIdx] || 0; mobDc = tbl.mobile[sp][rangeIdx] || 0; }
     else { inetDc = tbl.internet[rangeIdx] || 0; mobDc = tbl.mobile[rangeIdx] || 0; }
     const netSingleWithWifi = netBase + (wf ? wifiForSp : 0);
-    const ktNetCombo = hasTv ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]) : netSingleWithWifi;
-    const ktBaseInetDc = hasTv ? (netSingleWithWifi - ktNetCombo) : 0;
+    // ★ 2026-08-23: KT 기본 결합할인(500M·1G 5,500원)은 TV 결합뿐 아니라
+    //   휴대폰(무선) 결합만 있어도 적용된다. 요금 구간과 무관하게 항상 적용.
+    //   (docs/calculator.html · docs/tm-counselor.html 과 동일 로직)
+    const ktTierDiff = netSingleWithWifi - (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]);
+    const ktNetCombo = hasTv
+      ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp])
+      : (netSingleWithWifi - Math.max(0, ktTierDiff));
+    const ktBaseInetDc = netSingleWithWifi - ktNetCombo;  // TV 결합 시 / 무선 결합 시
     const inetAfterAll = ktNetCombo - inetDc;
     const tvBaseVal = hasTv ? d.tv[ti].p : 0;
     const tvBaseDc = hasTv ? (d.tv[ti].dc || 0) : 0;
@@ -741,7 +747,10 @@ export function calc(opts) {
       planLabel = '85,000원 이상 고가요금제';
     }
     const netSingleWithWifi3 = netBase + (wf ? wifiForSp : 0);
-    const inetAfter = netSingleWithWifi3 - lguInetDc;
+    // ★ 2026-08-23: 참쉬운·투게더 인터넷 할인은 TV 결합 기본할인을 '대체'하지 않고 '중복' 적용된다.
+    const lguNetCombo = hasTv ? (wf ? d.tvInternetWithWifi[sp] : d.tvInternetNoWifi[sp]) : netSingleWithWifi3;
+    const lguTvBundleDc = netSingleWithWifi3 - lguNetCombo;
+    const inetAfter = lguNetCombo - lguInetDc;
     const tvBaseVal2 = hasTv ? d.tv[ti].p : 0;
     const tvBaseDc2 = hasTv ? (d.tv[ti].dc || 0) : 0;
     const tvAfter2 = tvBaseVal2 - tvBaseDc2;
@@ -757,7 +766,7 @@ export function calc(opts) {
       title: 'LGU+ ' + (isChweyswun ? '참쉬운 가족결합' : '투게더 결합'),
       lines, planLabel,
       netSingleWithWifi: netSingleWithWifi3,
-      lguInetDc, inetAfter,
+      lguInetDc, lguTvBundleDc, inetAfter,
       tvBase: tvBaseVal2, tvDc: tvBaseDc2, tvAfter: tvAfter2, setTopFee: setTopFee2,
       multiTv: multi.items, multiTvTotal: multi.totalAdd,
       finalInet: finalInet2,
