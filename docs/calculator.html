@@ -928,7 +928,7 @@ var D = {
       tv1KeepsRegularDiscount: true,       // TV1은 기본 결합할인 그대로
       enabled: true
     },
-    install: { solo: 36300, combo: 56100 },
+    install: { solo: 34100, combo: 56100 },
     gift: {
       solo: { '100M': 110000, '500M': 170000, '1G': 170000 },
       combo: { '100M': 400000, '500M': 430000, '1G': 490000 }
@@ -1003,7 +1003,7 @@ var D = {
       tv3PriceConstraint: 'leq',             // TV3도 동일 (TV1 기준)
       enabled: true
     },
-    install: { solo: 36000, combo: 56200 },
+    install: { solo: 32000, combo: 56200 },
     gift: {
       solo: { '100M': 90000, '500M': 140000, '1G': 140000 },
       combo: { '100M': 370000, '500M': 450000, '1G': 450000 }
@@ -1133,7 +1133,7 @@ var D = {
         { id: 'wifi-speaker', label: '와이파이 1대 + 🔊 스마트홈 스피커',  price: 0, active: true }
       ]
     },
-    install: { solo: 36300, combo: 56100 },
+    install: { solo: 34100, combo: 56100 },
     gift: {
       solo: { '100M': 200000, '500M': 230000, '1G': 230000 },
       combo: { '100M': 400000, '500M': 470000, '1G': 470000 }
@@ -2925,30 +2925,30 @@ function resetCatalog() {
 var INSTALL_FEES_KEY = 'bongi-install-fees';
 
 var DEFAULT_INSTALL_FEES = {
-  // ★ 2026-08-24 대리점 전산 실측 반영 (SK·KT 캡처 대조).
-  //   · 「주말」이 아니라 「평일 야간」 = 19시~09시. 주말·공휴일이 야간에 포함된다.
-  //   · 인터넷 / IPTV 가 별도 청구되고 그 합이 인터넷+TV 총액이다.
-  //       SK  34,100 + 22,000 = 56,100  (야간 42,620 + 27,500 = 70,120)
-  //       KT  32,000 + 24,200 = 56,200  (야간 41,000 + 30,250 = 71,250)
-  //   · 「인터넷 단독」(TV 없이 인터넷만)은 전산 캡처가 아직 없어 종전값 유지 = 미검증.
-  //       LGU 34,100 + 22,000 = 56,100  (야간 42,620 + 27,500 = 70,120)  ← SK와 동일
+  // ★ 2026-08-24 대리점 전산 3사 캡처 대조 — 전 항목 확정.
+  //   · 인터넷 설치비는 TV 동시 가입 여부와 무관하게 동일하다 (단독도 같은 값).
+  //   · 인터넷과 IPTV 가 각각 청구되고 그 합이 인터넷+TV 총액이다. 1회 청구.
+  //   · 「주말」이 아니라 「평일 야간」 = 19시~09시 (주말·공휴일 포함). ×1.25 아님, 전산 고시액.
+  //       SK   34,100 + 22,000 = 56,100   (야간 42,620 + 27,500 = 70,120)
+  //       KT   32,000 + 24,200 = 56,200   (야간 41,000 + 30,250 = 71,250)
+  //       LGU  34,100 + 22,000 = 56,100   (야간 42,620 + 27,500 = 70,120)
   skt: {
-    columns: ['인터넷 단독', '인터넷 (TV 동시)', 'IPTV', '인터넷+TV 합계', 'TV 추가', '인터넷전화', '일반전화'],
-    weekday: [36300, 34100, 22000, 56100, 17600, 13200, 6600],
-    weekend: [45375, 42620, 27500, 70120, 22000, 13200, 6600],
-    verified: [false, true, true, true, false, false, false]
+    columns: ['인터넷', 'IPTV', '인터넷+TV 합계', 'TV 추가', '인터넷전화', '일반전화'],
+    weekday: [34100, 22000, 56100, 17600, 13200, 6600],
+    weekend: [42620, 27500, 70120, 22000, 13200, 6600],
+    verified: [true, true, true, false, false, false]
   },
   kt: {
-    columns: ['인터넷 단독', '인터넷 (TV 동시)', 'IPTV', '인터넷+TV 합계', 'TV 추가', '인터넷전화', '일반전화 신규', '일반전화 번호이동'],
-    weekday: [36000, 32000, 24200, 56200, 15400, 24000, 32000, 36000],
-    weekend: [45000, 41000, 30250, 71250, 19250, 33000, 41000, 45000],
-    verified: [false, true, true, true, false, false, false, false]
+    columns: ['인터넷', 'IPTV', '인터넷+TV 합계', 'TV 추가', '인터넷전화', '일반전화 신규', '일반전화 번호이동'],
+    weekday: [32000, 24200, 56200, 15400, 24000, 32000, 36000],
+    weekend: [41000, 30250, 71250, 19250, 33000, 41000, 45000],
+    verified: [true, true, true, false, false, false, false]
   },
   lgu: {
-    columns: ['인터넷 단독', '인터넷 (TV 동시)', 'IPTV', '인터넷+TV 합계', 'TV 추가', '인터넷전화', '일반전화'],
-    weekday: [36300, 34100, 22000, 56100, 22000, 11000, 11000],
-    weekend: [45375, 42620, 27500, 70120, 27500, 11000, 11000],
-    verified: [false, true, true, true, false, false, false]
+    columns: ['인터넷', 'IPTV', '인터넷+TV 합계', 'TV 추가', '인터넷전화', '일반전화'],
+    weekday: [34100, 22000, 56100, 22000, 11000, 11000],
+    weekend: [42620, 27500, 70120, 27500, 11000, 11000],
+    verified: [true, true, true, false, false, false]
   }
 };
 
@@ -3040,8 +3040,42 @@ function renderInstallControls() {
     });
     html += '</tbody></table></div>';
   });
-  html += '<div class="note" style="margin-top:8px">주말 설치비는 평일 대비 약 25% 할증 (인터넷·TV 계열). 컬럼 이름 직접 편집 가능.</div>';
+  html += renderInstallDetail();
   container.innerHTML = html;
+}
+
+// ★ 설치비 상세 — 대리점 전산 대조 내역 (2026-08-24 SK·KT·LGU 3사 캡처)
+function renderInstallDetail() {
+  var SRC = {
+    skt:  { label: 'SKT',   badge: 'b-skt', term: '설치비', inet: [34100, 42620], iptv: [22000, 27500], sum: [56100, 70120] },
+    lgu:  { label: 'LGU+',  badge: 'b-lgu', term: '출동비', inet: [34100, 42620], iptv: [22000, 27500], sum: [56100, 70120] },
+    kt:   { label: 'KT',    badge: 'b-kt',  term: '출동비', inet: [32000, 41000], iptv: [24200, 30250], sum: [56200, 71250] }
+  };
+  var h = '<div class="st2" style="margin-top:20px">🧾 설치비 상세 — 대리점 전산 대조 <span style="font-size:10px;font-weight:700;color:#4ade80">2026-08-24 3사 캡처 검증</span></div>';
+  h += '<div class="note" style="margin:4px 0 8px">'
+     + '<b>시간대</b> — 평일 주간 = 오전 9시~오후 7시 / <b>평일 야간 = 오후 7시~오전 9시 (주말·공휴일 포함)</b>.<br>'
+     + '「주말 할증」이 아니다. <b>평일 밤에 접수해도 야간 요금</b>이 붙는다. 야간 접수는 지사마다 설치 가능 여부가 달라 별도 확인이 필요하다.<br>'
+     + '<b>청구 구조</b> — 인터넷과 IPTV 가 <b>각각</b> 청구되고 그 합이 인터넷+TV 총액이다. 1회 청구.<br>'
+     + '<b>야간은 ×1.25 가 아니다</b> — SK·LGU+ 총액은 70,120원 (56,100 × 1.25 = 70,125 아님). 전산값을 그대로 쓴다.'
+     + '</div>';
+  ['skt','kt','lgu'].forEach(function(k) {
+    var d = SRC[k];
+    h += '<div style="margin-top:10px"><span class="badge ' + d.badge + '">' + d.label + '</span> <span style="font-size:11px;color:#94a3b8">전산 표기 = 「' + d.term + '」</span></div>';
+    h += '<table style="margin:4px 0 0"><thead><tr><th style="width:170px">항목</th><th style="width:130px">평일 주간</th><th style="width:130px">평일 야간</th><th>비고</th></tr></thead><tbody>';
+    h += '<tr><td><b>인터넷 ' + d.term + '</b></td><td style="text-align:right">' + fmt(d.inet[0]) + '</td><td style="text-align:right;color:#fca5a5">' + fmt(d.inet[1]) + '</td><td style="font-size:11px;color:#94a3b8">TV 유무 무관 동일</td></tr>';
+    h += '<tr><td><b>IPTV ' + d.term + '</b></td><td style="text-align:right">' + fmt(d.iptv[0]) + '</td><td style="text-align:right;color:#fca5a5">' + fmt(d.iptv[1]) + '</td><td style="font-size:11px;color:#94a3b8">TV 1대 기준</td></tr>';
+    var okD = (d.inet[0] + d.iptv[0] === d.sum[0]), okN = (d.inet[1] + d.iptv[1] === d.sum[1]);
+    h += '<tr style="background:rgba(74,222,128,0.10)"><td><b>총 ' + d.term + '</b></td>'
+       + '<td style="text-align:right;font-weight:800">' + fmt(d.sum[0]) + ' ' + (okD ? '✅' : '❌') + '</td>'
+       + '<td style="text-align:right;font-weight:800;color:#fca5a5">' + fmt(d.sum[1]) + ' ' + (okN ? '✅' : '❌') + '</td>'
+       + '<td style="font-size:11px;color:#94a3b8">' + fmt(d.inet[0]) + ' + ' + fmt(d.iptv[0]) + ' = ' + fmt(d.sum[0]) + '</td></tr>';
+    h += '</tbody></table>';
+  });
+  h += '<div class="note" style="margin-top:8px">'
+     + '✅ <b>인터넷 설치비는 TV 동시 가입 여부와 무관하게 동일하다.</b> 종전에 「인터넷 단독」으로 들고 있던 36,300 / 36,000 은 낡은 값이라 전산값으로 교체했다.<br>'
+     + '※ 추가 TV 설치비는 「TV 추가」 × 대수이며 3사 모두 50% 할인 적용된다. 제휴카드 할인은 카드사 청구서에서 확인된다.'
+     + '</div>';
+  return h;
 }
 
 var PARTNER_CARDS_KEY = 'bongi-partner-cards';

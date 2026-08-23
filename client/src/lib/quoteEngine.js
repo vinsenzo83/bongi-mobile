@@ -97,8 +97,9 @@ export const D = {
       tv1KeepsRegularDiscount: true,
       enabled: true
     },
-    install: { solo: 36300, combo: 56100 },
-    installWeekend: { solo: 45375, combo: 70125 },
+    install: { solo: 34100, combo: 56100 },
+    installWeekend: { solo: 42620, combo: 70120 },  // ★ 전산 실측
+    installDetail: { term: '설치비', internet: [34100, 42620], iptv: [22000, 27500], sum: [56100, 70120] },
     gift: {
       solo: { '100M': 110000, '500M': 170000, '1G': 170000 },
       combo: { '100M': 400000, '500M': 430000, '1G': 490000 }
@@ -166,8 +167,9 @@ export const D = {
       tv3PriceConstraint: 'leq',
       enabled: true
     },
-    install: { solo: 36000, combo: 56200 },
-    installWeekend: { solo: 45000, combo: 71250 },
+    install: { solo: 32000, combo: 56200 },
+    installWeekend: { solo: 41000, combo: 71250 },
+    installDetail: { term: '출동비', internet: [32000, 41000], iptv: [24200, 30250], sum: [56200, 71250] },
     gift: {
       solo: { '100M': 90000, '500M': 140000, '1G': 140000 },
       combo: { '100M': 370000, '500M': 450000, '1G': 450000 }
@@ -268,8 +270,9 @@ export const D = {
       tv3PriceConstraint: 'leq',
       enabled: true
     },
-    install: { solo: 36300, combo: 56100 },
-    installWeekend: { solo: 45375, combo: 70125 },
+    install: { solo: 34100, combo: 56100 },
+    installWeekend: { solo: 42620, combo: 70120 },  // ★ 전산 실측
+    installDetail: { term: '출동비', internet: [34100, 42620], iptv: [22000, 27500], sum: [56100, 70120] },
     gift: {
       solo: { '100M': 200000, '500M': 230000, '1G': 230000 },
       combo: { '100M': 400000, '500M': 470000, '1G': 470000 }
