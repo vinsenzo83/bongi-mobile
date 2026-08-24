@@ -581,7 +581,9 @@ async function loadChannels() {
 }
 
 function toggleChannels(pid) {
-  const tr = document.querySelector(`tr[data-id="${pid}"]`);
+  // 유심 표도 tr[data-id] 를 쓴다 — 문서 전체에서 찾으면 숨어 있는 유심 행이 먼저 잡혀
+  // 채널 패널이 안 보이는 표에 붙는다. 반드시 상품 tbody 안에서만 찾는다.
+  const tr = document.querySelector(`#products-tbody tr[data-id="${pid}"]`);
   if (!tr) return;
   const open = tr.nextElementSibling && tr.nextElementSibling.classList.contains('ch-row');
   document.querySelectorAll('tr.ch-row').forEach(x => x.remove());
@@ -731,8 +733,8 @@ function renderTable() {
       <td>
         <button class="btn-row btn-save" onclick="saveRow(${p.id})">💾 저장</button>
         <button class="btn-row btn-toggle" onclick="toggleActive(${p.id}, ${!p.active})">${p.active ? '단종' : '활성'}</button>
-        <button class="btn-row" onclick="toggleChannels(${p.id})" style="background:#0284c7;color:#fff" title="접수 채널별 리베이트·가이드 편집">📡</button>
-        <button class="btn-row" onclick="showHistory(${p.id})" style="background:#7c3aed;color:#fff">📜</button>
+        <button class="btn-row" onclick="toggleChannels(${p.id})" style="background:#0284c7;color:#fff;white-space:nowrap" title="접수 채널(SKT·SKB·KT·LG U+)별 금액 편집">📡 채널</button>
+        <button class="btn-row" onclick="showHistory(${p.id})" style="background:#7c3aed;color:#fff;white-space:nowrap" title="변경 이력">📜 이력</button>
       </td>
     </tr>`;
   }).join('');
@@ -763,7 +765,9 @@ function renderTable() {
 }
 
 async function saveRow(id) {
-  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  // toggleChannels 와 같은 이유로 상품 tbody 안에서만 찾는다 —
+  // 유심 행을 잡으면 편집 필드를 못 찾아 빈 저장이 조용히 나간다.
+  const tr = document.querySelector(`#products-tbody tr[data-id="${id}"]`);
   if (!tr) return;
   const body = {};
   // 가이드 총액은 사용자가 직접 넣지 않는다 — 현금 + 상품권 으로 서버에 함께 보낸다
