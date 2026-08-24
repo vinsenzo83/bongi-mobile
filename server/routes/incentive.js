@@ -3660,4 +3660,93 @@ router.get('/customers/:phone/nba', authenticateJWT, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// 유심 이동 (SIM-only 개통) — incentive_usim_plans
+//   유심 개통 = 단말 없이 유심만 해당 통신사로 옮기는 신규개통(번호이동).
+//   기기 판매가 없으므로 할부원금·공시지원금 개념이 없고,
+//   견적에 잡히는 것은 「요금제 + 선택약정 25% + 페이백」 뿐이다.
+// ═══════════════════════════════════════════════════════════════
+router.get('/usim-plans', optionalAuth, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const { carrier, all } = req.query;
+    let q = supabase.from('incentive_usim_plans').select('*');
+    if (all !== 'true') q = q.eq('is_active', true);
+    if (carrier) q = q.eq('carrier', carrier);
+    const { data, error } = await q.order('carrier').order('sort_order');
+    if (error) throw error;
+    res.json({ plans: data, count: data.length });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+const USIM_FIELDS = ['carrier','plan_name','monthly_fee','select_discount','payback','data_amount',
+  'network','activation_type','commission','contract_months','device_policy',
+  'bundle_eligible','bundle_lines','bundle_fee_basis','is_special','sort_order','is_active','memo'];
+
+router.post('/usim-plans', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const row = {};
+    USIM_FIELDS.forEach(k => { if (req.body[k] !== undefined) row[k] = req.body[k]; });
+    if (!row.carrier || !row.plan_name || row.monthly_fee == null) {
+      return res.status(400).json({ error: 'carrier · plan_name · monthly_fee 는 필수입니다' });
+    }
+    // 유심 개통은 번호이동만 가능하다 — 신규가입은 존재하지 않는 상품이다
+    if (row.activation_type && row.activation_type !== 'MNP') {
+      return res.status(400).json({ error: '유심은 번호이동(MNP)만 가능합니다 — 신규가입 불가' });
+    }
+    row.activation_type = 'MNP';
+    const { data, error } = await supabase.from('incentive_usim_plans').insert(row).select().single();
+    if (error) throw error;
+    res.json({ plan: data });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+router.patch('/usim-plans/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const update = {};
+    USIM_FIELDS.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    if (update.activation_type && update.activation_type !== 'MNP') {
+      return res.status(400).json({ error: '유심은 번호이동(MNP)만 가능합니다 — 신규가입 불가' });
+    }
+    if (!Object.keys(update).length) {
+      return res.status(400).json({ error: '변경할 필드가 없습니다 (allowed: ' + USIM_FIELDS.join(', ') + ')' });
+    }
+    const { data, error } = await supabase
+      .from('incentive_usim_plans').update(update).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json({ plan: data });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+router.delete('/usim-plans/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    // 실삭제 대신 비활성 (과거 견적·계약 추적성 보존)
+    const { data, error } = await supabase
+      .from('incentive_usim_plans').update({ is_active: false }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json({ plan: data, note: '비활성 처리됨 (행은 보존)' });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
 export default router;
