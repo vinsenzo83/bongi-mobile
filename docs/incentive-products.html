@@ -201,7 +201,7 @@ async function fetchAgent() {
       <!-- ③ 부가 가감 -->
       <div id="us-sec-addon" style="display:none">
         <div style="background:#1e293b;border:1px solid #475569;border-radius:6px;padding:10px 13px;margin-bottom:12px;font-size:11.5px;color:#cbd5e1">
-          부가서비스별 리베이트 가감(원, VAT 포함). <b style="color:#fca5a5">음수는 차감</b>이다.
+          부가서비스별 사은품 가감(원, VAT 포함). <b style="color:#fca5a5">음수는 차감</b>이다.
         </div>
         <div id="us-addon-wrap"></div>
       </div>
@@ -541,28 +541,14 @@ function renderKpi() {
   document.getElementById('kpi-gap').textContent   = avg ? fmt(avg) + '원' : '-';
 }
 
-// 인터넷+TV 정책 cache (Tier/P 자동 계산용) — 동적 fetch + BroadcastChannel
-let _itPolicy = { tier_s_min_margin: 250000, tier_a_min_margin: 180000, tier_b_min_margin: 120000 };
-async function fetchItPolicy() {
-  try {
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    const r = await fetch('/api/incentive/rules', { headers: tk ? { Authorization: 'Bearer ' + tk } : {} }).then(r => r.json());
-    if (r.rules) _itPolicy = { ..._itPolicy, ...r.rules };
-    return _itPolicy;
-  } catch (e) { return _itPolicy; }
-}
-// 정책 변경 BroadcastChannel 수신 → 재 fetch + renderTable
+// Tier·포인트 체계는 폐기됐다 — 상품은 가이드·MAX 만 갖는다.
+// 다른 탭에서 값이 바뀌면 표만 다시 그린다.
 try {
   const _pCh = new BroadcastChannel('incentive-policy');
-  _pCh.addEventListener('message', async (e) => {
-    if (e.data?.type === 'policy-changed') {
-      await fetchItPolicy();
-      if (typeof renderTable === 'function') renderTable();
-    }
+  _pCh.addEventListener('message', (e) => {
+    if (e.data?.type === 'policy-changed' && typeof renderTable === 'function') renderTable();
   });
 } catch(e) {}
-// 페이지 로드 시 1회 fetch
-fetchItPolicy();
 
 
 // ═══════════════════════════════════════════════════════════
@@ -1022,9 +1008,6 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
     '페이백': p.payback || 0,
     '상품권 (만원)': p.gift_amount != null ? Number(p.gift_amount) : 0,
     '가이드': p.guide_payout ?? '', 'MAX': p.max_payout ?? '',
-    '마진 (자동)': p.margin || 0,
-    'Tier (자동)': p.tier || '',
-    '우수상품 (자동)': p.is_premium ? 'Y' : 'N',
     '활성': p.active ? 'Y' : 'N',
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
@@ -1147,7 +1130,7 @@ async function showHistory(productId) {
     const PROD_FIELD_LABELS = {
       carrier: '통신사', name: '상품명', speed: '속도', tv_tier: 'TV 단계', type: '종류',
       guide_cash: '가이드 현금', guide_voucher: '가이드 상품권', guide_payout: '가이드 총액', max_payout: 'MAX',
-      is_premium: '우수상품', tier: '등급', active: '활성 상태', margin: '마진',
+      active: '활성 상태',
     };
     const labelP = (f) => PROD_FIELD_LABELS[f] || f;
     history.forEach(h => {

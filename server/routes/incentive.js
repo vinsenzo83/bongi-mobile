@@ -859,7 +859,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
     // product price snapshot — 등록 시점의 단가를 박제 (이후 product 가격 변경되어도 영향 없음)
     const { data: prodSnap, error: prodSnapErr } = await supabase
       .from('incentive_products')
-      .select('payback, rebate, guide_payout, max_payout')
+      .select('payback, guide_payout, max_payout')
       .eq('id', product_id)
       .single();
     if (prodSnapErr || !prodSnap) {
@@ -1053,7 +1053,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       // 새 상품 정보 조회 + 옛 상품 정보 (자동 메모 텍스트용)
       const [{ data: newProd, error: newProdErr }, { data: _oldProd }] = await Promise.all([
         supabase.from('incentive_products')
-          .select('id, carrier, speed, tv_tier, payback, rebate, guide_payout, max_payout')
+          .select('id, carrier, speed, tv_tier, payback, guide_payout, max_payout')
           .eq('id', product_id).single(),
         supabase.from('incentive_products')
           .select('carrier, speed, tv_tier').eq('id', existing.product_id).maybeSingle(),
@@ -3584,7 +3584,8 @@ router.get('/product-channels', optionalAuth, async (req, res) => {
   }
 });
 
-const CH_FIELDS = ['channel','label','rebate','guide_cash','guide_voucher','guide_payout',
+// rebate 는 더 이상 관리하지 않는다 — 가이드·MAX 가 회사 마진을 뺀 값이다.
+const CH_FIELDS = ['channel','label','guide_cash','guide_voucher','guide_payout',
                    'max_payout','install_fee','is_default','is_active','memo'];
 
 router.patch('/product-channels/:id', authenticateJWT, async (req, res) => {
