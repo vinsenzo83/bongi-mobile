@@ -1609,12 +1609,13 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
         },
         total_count: r.total_count,
         total_residual_margin: r.total_residual_margin,
+        // 화면은 applied_rate 를 읽는다 — 빠져 있어 배분율이 0% 로 찍혔다
+        applied_rate: r.applied_rate,
         incentive_rate_applied: r.incentive_rate_applied,
-        is_penalty: r.is_penalty,
-        total_revenue: r.total_revenue, total_payback: r.total_payback,
+        total_payback: r.total_payback,
         total_company_payback_burden: r.total_company_payback_burden,
         total_agent_payback_deduct: r.total_agent_payback_deduct,
-        base_salary: r.base_salary, incentive: r.incentive, bonus: r.bonus,
+        base_salary: r.base_salary, incentive: r.incentive,
         agent_total: r.agent_total, company_profit: r.company_profit,
         profit_rate: r.profit_rate, finalized_at: r.finalized_at,
       };
