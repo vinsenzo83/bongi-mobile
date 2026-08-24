@@ -156,32 +156,70 @@ async function fetchAgent() {
         ⛔ <b style="color:#fca5a5">번호이동만 가능 · 신규가입 불가</b> — 이미 해당 통신사를 쓰는 고객은 대상이 아니다.<br>
         인터넷 동시 가입 시 <b>같은 통신사</b> 유심만 결합이 인정된다 (SKT·SKB→SKT / KT→KT / LG U+→LG U+).
       </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-        <label style="font-size:12px;color:#94a3b8">통신사</label>
-        <select id="us-f-carrier" style="padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px">
-          <option value="">전체</option><option>SKT</option><option>KT</option><option>LG U+</option>
+      <!-- 서브탭 -->
+      <div style="display:flex;gap:5px;border-bottom:2px solid #0ea5e9;margin-bottom:14px">
+        <div class="us-sub active" data-sub="plans" style="padding:8px 18px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:7px 7px 0 0;cursor:pointer;font-size:12.5px;font-weight:700;color:#cbd5e1;position:relative;bottom:-2px">요금제 · 사은품</div>
+        <div class="us-sub" data-sub="comm" style="padding:8px 18px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:7px 7px 0 0;cursor:pointer;font-size:12.5px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">수수료 정책표</div>
+        <div class="us-sub" data-sub="addon" style="padding:8px 18px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:7px 7px 0 0;cursor:pointer;font-size:12.5px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">부가 가감</div>
+        <select id="us-f-carrier" style="margin-left:auto;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px">
+          <option value="">전체 통신사</option><option>SKT</option><option>KT</option><option>LG U+</option>
         </select>
-        <button id="us-reload" style="padding:7px 13px;background:#334155;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:11.5px;font-weight:700;cursor:pointer">↻ 새로고침</button>
-        <button id="us-add" style="padding:7px 13px;background:#0284c7;border:none;border-radius:5px;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer">+ 요금제 추가</button>
-        <span id="us-count" style="margin-left:auto;font-size:12px;color:#94a3b8"></span>
       </div>
-      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px" id="us-table">
-        <thead><tr style="background:#1e293b;color:#94a3b8;font-size:11px">
-          <th style="padding:9px 10px;text-align:left">통신사</th>
-          <th style="padding:9px 10px;text-align:left">요금제명</th>
-          <th style="padding:9px 10px;text-align:right">월정액</th>
-          <th style="padding:9px 10px;text-align:right">선택약정 25%</th>
-          <th style="padding:9px 10px;text-align:right">페이백</th>
-          <th style="padding:9px 10px;text-align:left">데이터</th>
-          <th style="padding:9px 10px;text-align:center">순서</th>
-          <th style="padding:9px 10px;text-align:center">활성</th>
-          <th style="padding:9px 10px;text-align:center">작업</th>
-        </tr></thead><tbody id="us-body"></tbody>
-      </table></div>
-      <div style="margin-top:10px;font-size:11px;color:#64748b;line-height:1.7">
-        · 선택약정은 월정액 × 75% 다. 값을 비워두면 자동 계산된다.<br>
-        · 삭제는 실제로 지우지 않고 <b>비활성</b> 처리한다 — 과거 견적·계약 추적성을 남기기 위함이다.<br>
-        · 여기서 고친 값은 <b>TM 상담 인터넷+TV 업셀 카드</b>와 <b>유심 단독 탭</b> 양쪽에 동시에 반영된다.
+
+      <!-- ① 요금제 · 사은품 -->
+      <div id="us-sec-plans">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+          <div style="display:flex;gap:4px">
+            <div class="us-st active" data-st="bundle" style="padding:6px 14px;background:#0284c7;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:700;color:#fff">인터넷 결합</div>
+            <div class="us-st" data-st="solo" style="padding:6px 14px;background:#334155;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:700;color:#94a3b8">유심 단독</div>
+          </div>
+          <button id="us-reload" style="padding:7px 13px;background:#334155;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:11.5px;font-weight:700;cursor:pointer">↻ 새로고침</button>
+          <button id="us-add" style="padding:7px 13px;background:#0284c7;border:none;border-radius:5px;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer">+ 요금제 추가</button>
+          <span id="us-count" style="margin-left:auto;font-size:12px;color:#94a3b8"></span>
+        </div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#1e293b;color:#94a3b8;font-size:11px">
+            <th style="padding:9px 10px;text-align:left">통신사</th>
+            <th style="padding:9px 10px;text-align:left">요금제명</th>
+            <th style="padding:9px 10px;text-align:right">월정액</th>
+            <th style="padding:9px 10px;text-align:right">선택약정 25%</th>
+            <th style="padding:9px 10px;text-align:right;background:#134e4a">가이드<div style="font-size:9px;font-weight:400;color:#5eead4">공식·전원 동일</div></th>
+            <th style="padding:9px 10px;text-align:right;background:#4c1d95">MAX<div style="font-size:9px;font-weight:400;color:#c4b5fd">재량·비공개</div></th>
+            <th style="padding:9px 10px;text-align:right">수수료</th>
+            <th style="padding:9px 10px;text-align:right">마진<div style="font-size:9px;font-weight:400;color:#64748b">수수료−MAX</div></th>
+            <th style="padding:9px 10px;text-align:left">데이터</th>
+            <th style="padding:9px 10px;text-align:center">순서</th>
+            <th style="padding:9px 10px;text-align:center">활성</th>
+            <th style="padding:9px 10px;text-align:center">작업</th>
+          </tr></thead><tbody id="us-body"></tbody>
+        </table></div>
+        <div style="margin-top:10px;font-size:11px;color:#64748b;line-height:1.75">
+          · <b>인터넷 결합</b>과 <b>유심 단독</b>은 수수료 체계가 달라 사은품을 따로 관리한다. 같은 요금제라도 값이 다를 수 있다.<br>
+          · <b>가이드</b>=공식 페이백(전원 동일·고객 노출 가능) / <b>MAX</b>=상담사 재량 상한(<b style="color:#fca5a5">고객 노출 금지</b>).<br>· <b>마진 = 수수료 − MAX</b>. MAX까지 다 줘도 남아야 한다. 인터넷+TV 사은품과는 <b>별개 계산</b>이다.<br>
+          · 선택약정을 비우면 월정액 × 75% 로 자동 계산된다. 삭제는 비활성 처리다(행 보존).
+        </div>
+      </div>
+
+      <!-- ② 수수료 정책표 -->
+      <div id="us-sec-comm" style="display:none">
+        <div style="background:#1e293b;border:1px solid #475569;border-radius:6px;padding:10px 13px;margin-bottom:12px;font-size:11.5px;color:#cbd5e1;line-height:1.75">
+          <b>(인터넷+TV 상품) × (유심 요금제 구간) → 리베이트</b><br>
+          빈칸은 <b style="color:#fbbf24">정책표 미수령</b>이다. 0원과 다르다. 비어 있으면 <b>상품무관 기본행</b>으로 폴백해 계산한다.<br>
+          통신사 정책표를 받으면 해당 칸만 채우면 된다 — 표 구조는 바꾸지 않아도 된다.
+        </div>
+        <div id="us-comm-wrap"></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button id="us-comm-save" style="padding:8px 18px;background:#059669;border:none;border-radius:5px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">💾 변경분 저장</button>
+          <span id="us-comm-msg" style="font-size:11.5px;color:#94a3b8;align-self:center"></span>
+        </div>
+      </div>
+
+      <!-- ③ 부가 가감 -->
+      <div id="us-sec-addon" style="display:none">
+        <div style="background:#1e293b;border:1px solid #475569;border-radius:6px;padding:10px 13px;margin-bottom:12px;font-size:11.5px;color:#cbd5e1">
+          부가서비스별 리베이트 가감(원, VAT 포함). <b style="color:#fca5a5">음수는 차감</b>이다.
+        </div>
+        <div id="us-addon-wrap"></div>
       </div>
     </div>
 
@@ -576,102 +614,200 @@ async function fetchAgent() {
 // ═══════════════════════════════════════════════════════════
 // 📲 유심 관리 — incentive_usim_plans
 // ═══════════════════════════════════════════════════════════
-let _usimRows = [], _usimInited = false;
+let _usimRows = [], _usimComm = [], _usimAddons = [], _usimInited = false;
+let _usimSub = 'plans', _usimST = 'bundle';
 const US_API = '/api/incentive/usim-plans';
+const UC_API = '/api/incentive/usim-commissions';
+const UA_API = '/api/incentive/usim-addons';
 function authHeaders() { const tk = getToken(); return tk ? { Authorization: 'Bearer ' + tk } : {}; }
-
+const nOrNull = v => { const n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10); return isNaN(n) ? null : n; };
+const won = v => (v == null ? '—' : Number(v).toLocaleString());
 function usimNet(r) { return (r.select_discount != null) ? r.select_discount : Math.round(r.monthly_fee * 0.75); }
 
 async function initUsimAdmin() {
   if (!_usimInited) {
     _usimInited = true;
-    F('us-f-carrier').addEventListener('change', renderUsimRows);
-    F('us-reload').addEventListener('click', loadUsimRows);
+    F('us-f-carrier').addEventListener('change', renderUsimAll);
+    F('us-reload').addEventListener('click', loadUsimAll);
     F('us-add').addEventListener('click', addUsimRow);
+    F('us-comm-save').addEventListener('click', saveUsimComm);
+    document.querySelectorAll('.us-sub').forEach(t => t.addEventListener('click', () => {
+      document.querySelectorAll('.us-sub').forEach(x => { x.classList.remove('active'); x.style.color = '#94a3b8'; });
+      t.classList.add('active'); t.style.color = '#cbd5e1';
+      _usimSub = t.dataset.sub;
+      F('us-sec-plans').style.display = _usimSub === 'plans' ? '' : 'none';
+      F('us-sec-comm').style.display  = _usimSub === 'comm'  ? '' : 'none';
+      F('us-sec-addon').style.display = _usimSub === 'addon' ? '' : 'none';
+      renderUsimAll();
+    }));
+    document.querySelectorAll('.us-st').forEach(t => t.addEventListener('click', () => {
+      document.querySelectorAll('.us-st').forEach(x => { x.classList.remove('active'); x.style.background = '#334155'; x.style.color = '#94a3b8'; });
+      t.classList.add('active'); t.style.background = '#0284c7'; t.style.color = '#fff';
+      _usimST = t.dataset.st; renderUsimPlans();
+    }));
   }
-  await loadUsimRows();
+  await loadUsimAll();
 }
 
-async function loadUsimRows() {
-  try {
-    const r = await fetch(US_API + '?all=true', { headers: authHeaders() });
-    const j = await r.json();
-    _usimRows = j.plans || [];
-  } catch (e) { _usimRows = []; }
-  renderUsimRows();
+async function loadUsimAll() {
+  const g = async (u) => { try { const r = await fetch(u, { headers: authHeaders() }); return r.ok ? await r.json() : {}; } catch (e) { return {}; } };
+  const [a, b, c] = await Promise.all([g(US_API + '?all=true'), g(UC_API), g(UA_API)]);
+  _usimRows = a.plans || []; _usimComm = b.rows || []; _usimAddons = c.rows || [];
+  renderUsimAll();
+}
+function renderUsimAll() {
+  if (_usimSub === 'plans') renderUsimPlans();
+  else if (_usimSub === 'comm') renderUsimComm();
+  else renderUsimAddons();
 }
 
-function renderUsimRows() {
+// 유심 요금제 구간에 맞는 수수료를 찾는다 (상품별 → 상품무관 폴백)
+function commFor(carrier, category, fee) {
+  const cand = _usimComm.filter(r => r.carrier === carrier && r.category === category
+    && r.product_key == null && r.amount != null && r.fee_tier_min <= fee);
+  if (!cand.length) return null;
+  return cand.sort((x, y) => y.fee_tier_min - x.fee_tier_min)[0];
+}
+
+function renderUsimPlans() {
   const car = F('us-f-carrier').value;
-  const rows = _usimRows.filter(r => !car || r.carrier === car);
-  F('us-count').textContent = rows.length + '개' + (car ? ' / 전체 ' + _usimRows.length + '개' : '');
-  const inp = (v, cls, w) => '<input class="' + cls + '" value="' + (v == null ? '' : v) +
-    '" style="width:' + w + ';padding:5px 7px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px;text-align:right">';
+  const rows = _usimRows.filter(r => (!car || r.carrier === car) && (r.sale_type || 'bundle') === _usimST);
+  F('us-count').textContent = rows.length + '개';
+  const cat = _usimST === 'solo' ? '유심단독MNP(미결합)' : '가족추가유심·유심단독MNP(결합)';
+  const inp = (v, cls, w, bg) => '<input class="' + cls + '" value="' + (v == null ? '' : v) +
+    '" style="width:' + w + ';padding:5px 7px;background:' + (bg || '#0f172a') + ';border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px;text-align:right">';
   F('us-body').innerHTML = rows.map(r => {
-    const dim = r.is_active === false ? 'opacity:.45;' : '';
-    return '<tr data-id="' + r.id + '" style="border-bottom:1px solid #334155;' + dim + '">' +
+    const c = commFor(r.carrier, cat, r.monthly_fee);
+    const fee = c ? c.amount : null;
+    const mx = r.max_payout;
+    const margin = (fee != null && mx != null) ? fee - mx : null;
+    const mc = margin == null ? '#64748b' : (margin < 0 ? '#f87171' : '#4ade80');
+    return '<tr data-id="' + r.id + '" style="border-bottom:1px solid #334155;' + (r.is_active === false ? 'opacity:.45;' : '') + '">' +
       '<td style="padding:7px 10px"><b>' + r.carrier + '</b></td>' +
-      '<td style="padding:7px 10px"><input class="u-name" value="' + (r.plan_name || '') + '" style="width:170px;padding:5px 7px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px"></td>' +
-      '<td style="padding:7px 10px;text-align:right">' + inp(r.monthly_fee, 'u-fee', '92px') + '</td>' +
-      '<td style="padding:7px 10px;text-align:right">' + inp(r.select_discount, 'u-sel', '92px') +
-        '<div style="font-size:9.5px;color:#64748b;margin-top:2px">자동 ' + Math.round(r.monthly_fee * 0.75).toLocaleString() + '</div></td>' +
-      '<td style="padding:7px 10px;text-align:right">' + inp(r.payback, 'u-pay', '98px') + '</td>' +
-      '<td style="padding:7px 10px"><input class="u-data" value="' + (r.data_amount || '') + '" style="width:78px;padding:5px 7px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px"></td>' +
-      '<td style="padding:7px 10px;text-align:center">' + inp(r.sort_order, 'u-sort', '46px') + '</td>' +
+      '<td style="padding:7px 10px"><input class="u-name" value="' + (r.plan_name || '') + '" style="width:160px;padding:5px 7px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px"></td>' +
+      '<td style="padding:7px 10px;text-align:right">' + inp(r.monthly_fee, 'u-fee', '86px') + '</td>' +
+      '<td style="padding:7px 10px;text-align:right">' + inp(r.select_discount, 'u-sel', '86px') +
+        '<div style="font-size:9px;color:#64748b;margin-top:2px">자동 ' + won(Math.round(r.monthly_fee * 0.75)) + '</div></td>' +
+      '<td style="padding:7px 10px;text-align:right;background:rgba(19,78,74,.35)">' + inp(r.guide_payout, 'u-guide', '92px', '#042f2e') + '</td>' +
+      '<td style="padding:7px 10px;text-align:right;background:rgba(76,29,149,.3)">' + inp(r.max_payout, 'u-max', '92px', '#2e1065') + '</td>' +
+      '<td style="padding:7px 10px;text-align:right;color:#cbd5e1">' + (fee == null ? '<span style="color:#fbbf24">미입력</span>' : won(fee)) +
+        (c ? '<div style="font-size:9px;color:#64748b">' + c.tier_label + '</div>' : '') + '</td>' +
+      '<td style="padding:7px 10px;text-align:right;font-weight:800;color:' + mc + '">' + (margin == null ? '—' : won(margin)) + '</td>' +
+      '<td style="padding:7px 10px"><input class="u-data" value="' + (r.data_amount || '') + '" style="width:72px;padding:5px 7px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px"></td>' +
+      '<td style="padding:7px 10px;text-align:center">' + inp(r.sort_order, 'u-sort', '44px') + '</td>' +
       '<td style="padding:7px 10px;text-align:center"><input type="checkbox" class="u-act"' + (r.is_active !== false ? ' checked' : '') + '></td>' +
       '<td style="padding:7px 10px;text-align:center;white-space:nowrap">' +
         '<button class="u-save" style="padding:4px 9px;background:#059669;border:none;border-radius:4px;color:#fff;font-size:10.5px;font-weight:700;cursor:pointer">저장</button> ' +
         '<button class="u-del" style="padding:4px 9px;background:#7f1d1d;border:none;border-radius:4px;color:#fecaca;font-size:10.5px;font-weight:700;cursor:pointer">비활성</button>' +
       '</td></tr>';
-  }).join('') || '<tr><td colspan="9" style="padding:20px;text-align:center;color:#64748b">등록된 요금제가 없습니다.</td></tr>';
-
+  }).join('') || '<tr><td colspan="11" style="padding:20px;text-align:center;color:#64748b">등록된 요금제가 없습니다.</td></tr>';
   F('us-body').querySelectorAll('tr[data-id]').forEach(tr => {
-    const id = tr.dataset.id;
-    tr.querySelector('.u-save')?.addEventListener('click', () => saveUsimRow(id, tr));
-    tr.querySelector('.u-del')?.addEventListener('click', () => delUsimRow(id));
+    tr.querySelector('.u-save')?.addEventListener('click', () => saveUsimRow(tr.dataset.id, tr));
+    tr.querySelector('.u-del')?.addEventListener('click', () => delUsimRow(tr.dataset.id));
   });
 }
-
-const numOrNull = v => { const n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10); return isNaN(n) ? null : n; };
 
 async function saveUsimRow(id, tr) {
   const body = {
     plan_name:       tr.querySelector('.u-name').value.trim(),
-    monthly_fee:     numOrNull(tr.querySelector('.u-fee').value),
-    select_discount: numOrNull(tr.querySelector('.u-sel').value),
-    payback:         numOrNull(tr.querySelector('.u-pay').value) || 0,
+    monthly_fee:     nOrNull(tr.querySelector('.u-fee').value),
+    select_discount: nOrNull(tr.querySelector('.u-sel').value),
+    guide_payout:    nOrNull(tr.querySelector('.u-guide').value),
+    max_payout:      nOrNull(tr.querySelector('.u-max').value),
     data_amount:     tr.querySelector('.u-data').value.trim() || null,
-    sort_order:      numOrNull(tr.querySelector('.u-sort').value) || 0,
+    sort_order:      nOrNull(tr.querySelector('.u-sort').value) || 0,
     is_active:       tr.querySelector('.u-act').checked,
   };
   if (!body.plan_name || body.monthly_fee == null) { alert('요금제명과 월정액은 필수입니다.'); return; }
+  if (body.guide_payout != null && body.max_payout != null && body.max_payout < body.guide_payout) {
+    alert('MAX 는 가이드보다 작을 수 없습니다.'); return;
+  }
+  body.payback = body.guide_payout ?? 0;   // 상담 화면 하위호환 — 가이드를 기본 표시값으로
   const r = await fetch(US_API + '/' + id, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(body),
-  });
+    method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) });
   if (!r.ok) { alert('저장 실패: ' + (await r.text()).slice(0, 200)); return; }
-  await loadUsimRows();
+  await loadUsimAll();
 }
-
 async function delUsimRow(id) {
   if (!confirm('비활성 처리합니다. (행은 지우지 않습니다)')) return;
   const r = await fetch(US_API + '/' + id, { method: 'DELETE', headers: authHeaders() });
   if (!r.ok) { alert('실패: ' + (await r.text()).slice(0, 200)); return; }
-  await loadUsimRows();
+  await loadUsimAll();
 }
-
 async function addUsimRow() {
   const carrier = F('us-f-carrier').value || prompt('통신사 (SKT / KT / LG U+)', 'SKT');
   if (!carrier) return;
-  const plan_name = prompt('요금제명');
-  if (!plan_name) return;
-  const monthly_fee = numOrNull(prompt('월정액 (원)'));
-  if (monthly_fee == null) return;
-  const r = await fetch(US_API, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ carrier, plan_name, monthly_fee, payback: 0, sort_order: 99 }),
-  });
+  const plan_name = prompt('요금제명'); if (!plan_name) return;
+  const monthly_fee = nOrNull(prompt('월정액 (원)')); if (monthly_fee == null) return;
+  const r = await fetch(US_API, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ carrier, plan_name, monthly_fee, payback: 0, sale_type: _usimST, sort_order: 99 }) });
   if (!r.ok) { alert('추가 실패: ' + (await r.text()).slice(0, 200)); return; }
-  await loadUsimRows();
+  await loadUsimAll();
+}
+
+// ── ② 수수료 정책표 — 통신사 × 구분별 (상품 행 × 구간 열) 격자
+function renderUsimComm() {
+  const car = F('us-f-carrier').value;
+  const rows = _usimComm.filter(r => !car || r.carrier === car);
+  const carriers = [...new Set(rows.map(r => r.carrier))].sort();
+  let html = '';
+  carriers.forEach(cn => {
+    const cats = [...new Set(rows.filter(r => r.carrier === cn).map(r => r.category))];
+    cats.forEach(cat => {
+      const sub = rows.filter(r => r.carrier === cn && r.category === cat);
+      const tiers = [...new Map(sub.map(r => [r.fee_tier_min, r.tier_label])).entries()].sort((a, b) => a[0] - b[0]);
+      const pks = [...new Set(sub.map(r => r.product_key))].sort((a, b) => (a == null ? -1 : b == null ? 1 : String(a).localeCompare(String(b))));
+      html += '<div style="margin-bottom:16px"><div style="font-size:12.5px;font-weight:800;color:#e2e8f0;margin-bottom:6px">' +
+        '<span style="color:#0ea5e9">' + cn + '</span> · ' + cat + '</div>' +
+        '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:11.5px;min-width:520px"><thead><tr style="background:#1e293b;color:#94a3b8">' +
+        '<th style="padding:7px 10px;text-align:left;min-width:190px">인터넷+TV 상품</th>' +
+        tiers.map(t => '<th style="padding:7px 10px;text-align:right;min-width:96px">' + t[1] + '</th>').join('') +
+        '</tr></thead><tbody>';
+      pks.forEach(pk => {
+        html += '<tr style="border-bottom:1px solid #334155"><td style="padding:6px 10px;color:' + (pk == null ? '#fbbf24' : '#cbd5e1') + '">' +
+          (pk == null ? '전체 (상품무관 기본)' : pk) + '</td>';
+        tiers.forEach(t => {
+          const cell = sub.find(r => r.product_key == pk && r.fee_tier_min === t[0]);
+          html += '<td style="padding:4px 6px;text-align:right">' + (cell
+            ? '<input class="uc-v" data-id="' + cell.id + '" data-orig="' + (cell.amount == null ? '' : cell.amount) + '" value="' + (cell.amount == null ? '' : cell.amount) +
+              '" placeholder="미수령" style="width:92px;padding:4px 6px;background:' + (cell.amount == null ? '#292524' : '#0f172a') +
+              ';border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11px;text-align:right">'
+            : '<span style="color:#475569">·</span>') + '</td>';
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table></div></div>';
+    });
+  });
+  F('us-comm-wrap').innerHTML = html || '<div style="color:#64748b;font-size:12px">정책표가 없습니다.</div>';
+}
+
+async function saveUsimComm() {
+  const changed = [...document.querySelectorAll('.uc-v')]
+    .filter(el => String(el.value).trim() !== String(el.dataset.orig))
+    .map(el => ({ id: Number(el.dataset.id), amount: String(el.value).trim() === '' ? null : nOrNull(el.value) }));
+  if (!changed.length) { F('us-comm-msg').textContent = '변경된 칸이 없습니다.'; return; }
+  const r = await fetch(UC_API, { method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ rows: changed }) });
+  if (!r.ok) { F('us-comm-msg').textContent = '저장 실패: ' + (await r.text()).slice(0, 120); return; }
+  const j = await r.json();
+  F('us-comm-msg').textContent = j.updated + '칸 저장됨';
+  await loadUsimAll();
+}
+
+// ── ③ 부가 가감
+function renderUsimAddons() {
+  const car = F('us-f-carrier').value;
+  const rows = _usimAddons.filter(r => !car || r.carrier === car);
+  F('us-addon-wrap').innerHTML = '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12px;min-width:420px">' +
+    '<thead><tr style="background:#1e293b;color:#94a3b8;font-size:11px"><th style="padding:8px 12px;text-align:left">통신사</th>' +
+    '<th style="padding:8px 12px;text-align:left">부가서비스</th><th style="padding:8px 12px;text-align:right">가감</th></tr></thead><tbody>' +
+    (rows.map(r => '<tr style="border-bottom:1px solid #334155"><td style="padding:7px 12px"><b>' + r.carrier + '</b></td>' +
+      '<td style="padding:7px 12px;color:#cbd5e1">' + r.addon + '</td>' +
+      '<td style="padding:7px 12px;text-align:right;font-weight:700;color:' + (r.amount < 0 ? '#f87171' : '#4ade80') + '">' +
+      (r.amount > 0 ? '+' : '') + won(r.amount) + '</td></tr>').join('')
+      || '<tr><td colspan="3" style="padding:18px;text-align:center;color:#64748b">등록된 부가 가감이 없습니다.</td></tr>') +
+    '</tbody></table></div>';
 }
 
   let _rentalGroup = null, _rentalBaseInited = false;

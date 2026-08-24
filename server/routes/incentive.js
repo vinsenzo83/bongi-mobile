@@ -3749,4 +3749,69 @@ router.delete('/usim-plans/:id', authenticateJWT, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// 유심 수수료 행렬 — incentive_usim_commissions
+//   (인터넷+TV 상품) × (유심 요금제 구간) → 리베이트
+//   구분 3종: UIT결합유심 / 가족추가유심·유심단독MNP(결합) / 유심단독MNP(미결합)
+//   amount = null 은 「정책표 미수령」이다. 0원과 다르다.
+// ═══════════════════════════════════════════════════════════════
+router.get('/usim-commissions', optionalAuth, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const { carrier, category } = req.query;
+    let q = supabase.from('incentive_usim_commissions').select('*').eq('is_active', true);
+    if (carrier) q = q.eq('carrier', carrier);
+    if (category) q = q.eq('category', category);
+    const { data, error } = await q.order('carrier').order('category').order('product_key', { nullsFirst: true }).order('fee_tier_min');
+    if (error) throw error;
+    res.json({ rows: data, count: data.length });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// 행렬 일괄 저장 — 정책표를 통째로 갈아끼우는 용도
+router.put('/usim-commissions', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
+    if (!rows.length) return res.status(400).json({ error: 'rows 가 비었습니다' });
+    const bad = rows.find(r => !r.id);
+    if (bad) return res.status(400).json({ error: '각 행에 id 가 필요합니다' });
+    let n = 0;
+    for (const r of rows) {
+      const patch = {};
+      // amount 는 null 을 허용한다 (미입력 상태를 지울 수 있어야 함)
+      if ('amount' in r) patch.amount = (r.amount === '' || r.amount == null) ? null : r.amount;
+      ['maintain_months','settle_rule','notes','is_active'].forEach(k => { if (r[k] !== undefined) patch[k] = r[k]; });
+      if (!Object.keys(patch).length) continue;
+      const { error } = await supabase.from('incentive_usim_commissions').update(patch).eq('id', r.id);
+      if (error) throw error;
+      n++;
+    }
+    res.json({ updated: n });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// 부가서비스 가감 (추가TV·OSS·IOT·WIFI 미신청 등)
+router.get('/usim-addons', optionalAuth, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    let q = supabase.from('incentive_addon_commissions').select('*').eq('is_active', true);
+    if (req.query.carrier) q = q.eq('carrier', req.query.carrier);
+    const { data, error } = await q.order('carrier').order('addon');
+    if (error) throw error;
+    res.json({ rows: data, count: data.length });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
 export default router;
