@@ -125,6 +125,84 @@ router.get('/products', optionalAuth, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // 1.5. PATCH /api/incentive/products/:id — 상품 정보 수정 (admin)
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// POST /api/incentive/products — 상품 추가 (admin)
+//   티켓번호는 서버가 만든다. 통신사 2글자 + 4자리 연번 (SK0061 · KT0031 · LG0016).
+//   화면에서 직접 넣게 두면 중복·건너뜀이 생긴다.
+//   접수 채널도 같이 만든다 — 채널이 없으면 상담 견적에서 가이드·MAX 가 안 잡힌다.
+// ═══════════════════════════════════════════════════════════════
+const TICKET_PREFIX = { SK: 'SK', KT: 'KT', LG: 'LG' };
+const CARRIER_CHANNELS = { SK: ['SKB', 'SKT'], KT: ['KT'], LG: ['LG U+'] };
+
+router.post('/products', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const { carrier, type, name, speed, tv_tier,
+            guide_cash, guide_voucher, max_payout } = req.body || {};
+
+    if (!TICKET_PREFIX[carrier]) return res.status(400).json({ error: '통신사는 SK·KT·LG 중 하나여야 합니다' });
+    if (!name || !String(name).trim()) return res.status(400).json({ error: '상품명은 필수입니다' });
+    if (!speed) return res.status(400).json({ error: '속도는 필수입니다' });
+
+    const gc = guide_cash == null ? null : Number(guide_cash);
+    const gv = guide_voucher == null ? 0 : Number(guide_voucher);
+    const mx = max_payout == null ? null : Number(max_payout);
+    const gp = (gc == null) ? null : gc + gv;
+    if (gp != null && mx != null && mx < gp) {
+      return res.status(400).json({ error: 'MAX 는 가이드 총액보다 작을 수 없습니다' });
+    }
+
+    // 같은 통신사의 마지막 번호 다음을 쓴다
+    const { data: last, error: lastErr } = await supabase
+      .from('incentive_products')
+      .select('ticket_number')
+      .like('ticket_number', TICKET_PREFIX[carrier] + '%')
+      .order('ticket_number', { ascending: false })
+      .limit(1);
+    if (lastErr) throw lastErr;
+    const lastNo = (last && last[0]) ? parseInt(String(last[0].ticket_number).slice(2), 10) : 0;
+    const ticket = TICKET_PREFIX[carrier] + String(lastNo + 1).padStart(4, '0');
+
+    const row = {
+      ticket_number: ticket,
+      carrier,
+      type: type || (tv_tier ? '결합' : '단독'),
+      name: String(name).trim(),
+      speed,
+      tv_tier: tv_tier || null,
+      guide_cash: gc, guide_voucher: gv, guide_payout: gp,
+      max_payout: mx,
+      payback: gp,          // 상담 화면 하위호환 — 가이드를 기본 표시값으로
+      active: true,
+    };
+    const { data: product, error } = await supabase
+      .from('incentive_products').insert(row).select().single();
+    if (error) throw error;
+
+    // 접수 채널 생성 (SK 는 SKB·SKT 둘, 나머지는 하나). 첫 채널이 기본이다.
+    const chans = (CARRIER_CHANNELS[carrier] || []).map((ch, i) => ({
+      product_id: product.id, channel: ch,
+      guide_cash: gc, guide_voucher: gv, guide_payout: gp, max_payout: mx,
+      is_default: i === 0, is_active: true,
+    }));
+    let channels = [];
+    if (chans.length) {
+      const { data: cData, error: cErr } = await supabase
+        .from('incentive_product_channels').insert(chans).select();
+      if (cErr) throw cErr;
+      channels = cData || [];
+    }
+
+    res.status(201).json({ product, channels });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요', detail: err.message });
+  }
+});
+
 router.patch('/products/:id', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });

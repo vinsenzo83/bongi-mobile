@@ -301,12 +301,45 @@ async function fetchAgent() {
         <label style="font-size:11px;color:#94a3b8">종류</label>
         <select id="filter-type"><option value="">전체</option><option value="단독">단독</option><option value="결합">결합</option></select>
         <input type="text" id="filter-search" placeholder="🔍 상품명 검색" style="min-width:200px">
+        <button id="add-prod-btn" style="padding:7px 13px;background:#0284c7;border:none;border-radius:5px;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer">+ 상품 추가</button>
         <button id="reload-btn" class="btn-secondary">🔄 새로고침</button>
         <button id="history-btn" class="btn-secondary" style="background:#7c3aed">📜 변경 이력</button>
         <button id="export-xlsx-btn" class="btn-secondary" style="background:#16a34a">📥 엑셀 다운로드</button>
         <button id="import-xlsx-btn" class="btn-secondary" style="background:#0891b2">📤 엑셀 업로드</button>
         <input type="file" id="import-xlsx-file" accept=".xlsx,.xls,.csv" style="display:none">
         <span id="result-count" style="font-size:11px;color:#94a3b8;margin-left:auto">-</span>
+      </div>
+      <div id="add-prod-form" style="display:none;background:#0f172a;border:1.5px solid #0284c7;border-radius:8px;padding:13px 16px;margin-bottom:12px">
+        <div style="font-size:12.5px;font-weight:800;color:#7dd3fc;margin-bottom:9px">+ 상품 추가</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:9px">
+          <div><div style="font-size:10px;color:#94a3b8;margin-bottom:3px">통신사</div>
+            <select id="ap-carrier" style="width:100%"><option value="SK">SK</option><option value="KT">KT</option><option value="LG">LG</option></select></div>
+          <div><div style="font-size:10px;color:#94a3b8;margin-bottom:3px">속도</div>
+            <select id="ap-speed" style="width:100%"><option>100M</option><option>500M</option><option>1G</option></select></div>
+          <div style="grid-column:span 2"><div style="font-size:10px;color:#94a3b8;margin-bottom:3px">상품명</div>
+            <input id="ap-name" placeholder="예: 인터넷 500M + B tv 올" style="width:100%"></div>
+          <div style="grid-column:span 2"><div style="font-size:10px;color:#94a3b8;margin-bottom:3px">TV 등급 <span style="color:#64748b">(비우면 단독)</span></div>
+            <input id="ap-tv" placeholder="예: 올 넷플릭스" style="width:100%"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end">
+          <div><div style="font-size:10px;color:#5eead4;margin-bottom:3px">가이드 현금</div>
+            <input id="ap-cash" type="number" step="10000" style="width:100%"></div>
+          <div><div style="font-size:10px;color:#5eead4;margin-bottom:3px">가이드 상품권</div>
+            <input id="ap-vou" type="number" step="10000" value="0" style="width:100%"></div>
+          <div><div style="font-size:10px;color:#5eead4;margin-bottom:3px">가이드 총액</div>
+            <div id="ap-total" style="padding:6px 0;font-weight:800;color:#5eead4;font-size:13px">—</div></div>
+          <div><div style="font-size:10px;color:#c4b5fd;margin-bottom:3px">MAX</div>
+            <input id="ap-max" type="number" step="10000" style="width:100%"></div>
+          <div style="grid-column:span 2;display:flex;gap:7px">
+            <button id="ap-save" style="flex:1;padding:8px;background:#16a34a;border:none;border-radius:5px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">저장</button>
+            <button id="ap-cancel" style="flex:1;padding:8px;background:#334155;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;cursor:pointer">취소</button>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#64748b;margin-top:8px;line-height:1.6">
+          · <b>티켓번호는 서버가 만든다</b> — 통신사별 마지막 번호 다음 (SK0061 · KT0031 · LG0016). 직접 넣지 않는다.<br>
+          · 접수 채널도 같이 생긴다 — <b>SK 는 SKB·SKT 두 줄</b>, KT·LG 는 한 줄. 티켓번호는 상품에 하나이고 그 아래로 채널만 갈린다.<br>
+          · 채널별 금액은 저장 후 <b>📡 채널</b> 버튼에서 따로 조정한다.
+        </div>
       </div>
       <div style="overflow-x:auto">
         <table id="products-table">
@@ -987,6 +1020,55 @@ document.getElementById('auth-login-btn').addEventListener('click', async () => 
   } catch (e) { msg.textContent = e.message; }
 });
 document.getElementById('logout-btn').addEventListener('click', () => { clearToken(); location.reload(); });
+// ═══ 상품 추가 ═══
+// 티켓번호는 서버가 만든다. 채널(SK=SKB·SKT / KT·LG=한 줄)도 서버가 같이 만든다.
+(function () {
+  const $ = id => document.getElementById(id);
+  const form = $('add-prod-form');
+  const num = v => { const n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10); return isNaN(n) ? null : n; };
+  const syncTotal = () => {
+    const c = num($('ap-cash').value), v = num($('ap-vou').value) || 0;
+    $('ap-total').textContent = (c == null) ? '—' : (c + v).toLocaleString();
+  };
+  ['ap-cash', 'ap-vou'].forEach(id => $(id).addEventListener('input', syncTotal));
+
+  $('add-prod-btn').addEventListener('click', () => {
+    form.style.display = form.style.display === 'none' ? '' : 'none';
+    if (form.style.display !== 'none') $('ap-name').focus();
+  });
+  $('ap-cancel').addEventListener('click', () => { form.style.display = 'none'; });
+
+  $('ap-save').addEventListener('click', async () => {
+    const body = {
+      carrier: $('ap-carrier').value,
+      speed: $('ap-speed').value,
+      name: $('ap-name').value.trim(),
+      tv_tier: $('ap-tv').value.trim() || null,
+      guide_cash: num($('ap-cash').value),
+      guide_voucher: num($('ap-vou').value) || 0,
+      max_payout: num($('ap-max').value),
+    };
+    if (!body.name) { alert('상품명을 넣어주세요.'); return; }
+    const gp = (body.guide_cash == null) ? null : body.guide_cash + body.guide_voucher;
+    if (gp != null && body.max_payout != null && body.max_payout < gp) {
+      alert('MAX 는 가이드 총액(' + gp.toLocaleString() + ')보다 작을 수 없습니다.'); return;
+    }
+    const r = await fetch(API + '/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) { alert('등록 실패: ' + (await r.text()).slice(0, 200)); return; }
+    const j = await r.json();
+    form.style.display = 'none';
+    ['ap-name', 'ap-tv', 'ap-cash', 'ap-max'].forEach(id => { $(id).value = ''; });
+    $('ap-vou').value = 0; syncTotal();
+    await loadAll();
+    const chs = (j.channels || []).map(c => c.channel).join(' · ');
+    alert('등록되었습니다.\n티켓번호 ' + j.product.ticket_number + (chs ? '\n접수 채널 ' + chs : ''));
+  });
+})();
+
 document.getElementById('reload-btn').addEventListener('click', async () => { await loadAll(); if (typeof showToast === 'function') showToast('🔄 새로고침 완료'); });
 document.getElementById('history-btn').addEventListener('click', () => showHistory(null));
 
