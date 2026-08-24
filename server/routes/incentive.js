@@ -3553,4 +3553,49 @@ router.get('/usim-addons', optionalAuth, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// 상품별 접수 채널 — incentive_product_channels
+//   같은 유선 상품이라도 어느 주체로 접수하느냐로 리베이트·가이드·MAX 가 갈린다.
+//   SK 는 SKT / SKB 두 갈래이고, 유심 수수료도 이 채널을 따라간다.
+// ═══════════════════════════════════════════════════════════════
+router.get('/product-channels', optionalAuth, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    let q = supabase.from('incentive_product_channels').select('*').eq('is_active', true);
+    if (req.query.product_id) q = q.eq('product_id', req.query.product_id);
+    if (req.query.channel) q = q.eq('channel', req.query.channel);
+    const { data, error } = await q.order('product_id').order('channel');
+    if (error) throw error;
+    res.json({ channels: data, count: data.length });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+const CH_FIELDS = ['channel','label','rebate','guide_cash','guide_voucher','guide_payout',
+                   'max_payout','install_fee','is_default','is_active','memo'];
+
+router.patch('/product-channels/:id', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+    const update = {};
+    CH_FIELDS.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    if (!Object.keys(update).length) return res.status(400).json({ error: '변경할 필드가 없습니다' });
+    // 가이드 = 현금 + 상품권 이 깨지지 않게 서버에서도 확인한다
+    if (update.guide_cash != null && update.guide_voucher != null) {
+      update.guide_payout = Number(update.guide_cash) + Number(update.guide_voucher);
+    }
+    const { data, error } = await supabase
+      .from('incentive_product_channels').update(update).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json({ channel: data });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
 export default router;
