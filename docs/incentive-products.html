@@ -650,6 +650,127 @@ try {
 // 페이지 로드 시 1회 fetch
 fetchItPolicy();
 
+
+// ═══════════════════════════════════════════════════════════
+// 접수 채널 — 같은 상품도 SKT/SKB 어디로 넣느냐로 금액이 갈린다.
+//   리베이트는 채널에만 있다. 상품 단일값으로 두면 틀린 숫자를 보게 되므로 여기서만 편집한다.
+// ═══════════════════════════════════════════════════════════
+let _channels = [];
+const CH_API = `${API}/product-channels`;
+
+async function loadChannels() {
+  try {
+    const r = await fetch(CH_API, { headers: { Authorization: 'Bearer ' + getToken() } });
+    const j = r.ok ? await r.json() : {};
+    _channels = j.channels || [];
+  } catch (e) { _channels = []; }
+}
+
+function toggleChannels(pid) {
+  const tr = document.querySelector(`tr[data-id="${pid}"]`);
+  if (!tr) return;
+  const open = tr.nextElementSibling && tr.nextElementSibling.classList.contains('ch-row');
+  document.querySelectorAll('tr.ch-row').forEach(x => x.remove());
+  if (open) return;
+
+  const list = _channels.filter(c => String(c.product_id) === String(pid));
+  const cols = tr.children.length;
+  const det = document.createElement('tr');
+  det.className = 'ch-row';
+  if (!list.length) {
+    det.innerHTML = `<td colspan="${cols}" style="padding:12px;background:#0f172a;color:#64748b;font-size:11.5px">등록된 접수 채널이 없습니다.</td>`;
+  } else {
+    det.innerHTML = `<td colspan="${cols}" style="padding:0;background:#0f172a">
+      <div style="padding:11px 14px">
+        <div style="font-size:11.5px;font-weight:800;color:#7dd3fc;margin-bottom:7px">📡 접수 채널별 금액 — 채널을 바꾸면 상담 견적의 가이드·MAX·마진이 통째로 바뀝니다</div>
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px">
+          <thead><tr style="background:#1e293b;color:#94a3b8;font-size:10.5px">
+            <th style="padding:6px 9px;text-align:left;width:90px">채널</th>
+            <th style="padding:6px 9px;text-align:left">표기</th>
+            <th style="padding:6px 9px;text-align:right;width:105px">리베이트</th>
+            <th style="padding:6px 9px;text-align:right;width:100px">가이드 현금</th>
+            <th style="padding:6px 9px;text-align:right;width:100px">상품권</th>
+            <th style="padding:6px 9px;text-align:right;width:95px">가이드 총액</th>
+            <th style="padding:6px 9px;text-align:right;width:100px">MAX</th>
+            <th style="padding:6px 9px;text-align:right;width:100px">설치비</th>
+            <th style="padding:6px 9px;text-align:right;width:105px">마진</th>
+            <th style="padding:6px 9px;text-align:center;width:60px">기본</th>
+            <th style="padding:6px 9px;text-align:center;width:70px">작업</th>
+          </tr></thead>
+          <tbody>${list.map(c => chRowHtml(c)).join('')}</tbody>
+        </table>
+        <div style="font-size:10px;color:#64748b;margin-top:7px;line-height:1.6">
+          · <b>마진 = 리베이트 − MAX</b>. MAX 까지 다 줘도 남아야 판매 가능한 채널이다.<br>
+          · 가이드 총액은 현금 + 상품권으로 자동 계산된다. <b style="color:#c4b5fd">MAX 는 현금으로만 더 나간다</b>.<br>
+          · 유심 수수료도 이 채널을 따라간다 — SKT 와 SKB 는 구간 경계까지 다르다.
+        </div>
+      </div></td>`;
+  }
+  tr.after(det);
+  det.querySelectorAll('.ch-save').forEach(b => b.addEventListener('click', () => saveChannel(b.dataset.id)));
+  det.querySelectorAll('.ch-in').forEach(inp => inp.addEventListener('input', () => chPreview(inp.dataset.id)));
+}
+
+const chNum = v => { const n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10); return isNaN(n) ? null : n; };
+
+function chRowHtml(c) {
+  const margin = (c.rebate != null && c.max_payout != null) ? c.rebate - c.max_payout : null;
+  const i = (v, f, w) => `<input class="ch-in ch-${f}" data-id="${c.id}" data-f="${f}" value="${v ?? ''}" placeholder="—"
+      style="width:${w};padding:4px 6px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11px;text-align:right">`;
+  return `<tr data-ch="${c.id}" style="border-bottom:1px solid #334155">
+    <td style="padding:6px 9px"><b style="color:#7dd3fc">${c.channel}</b></td>
+    <td style="padding:6px 9px;color:#94a3b8;font-size:10.5px">${c.label || ''}</td>
+    <td style="padding:5px 7px;text-align:right">${i(c.rebate, 'rebate', '96px')}</td>
+    <td style="padding:5px 7px;text-align:right;background:rgba(19,78,74,.25)">${i(c.guide_cash, 'guide_cash', '92px')}</td>
+    <td style="padding:5px 7px;text-align:right;background:rgba(17,94,89,.25)">${i(c.guide_voucher, 'guide_voucher', '92px')}</td>
+    <td style="padding:6px 9px;text-align:right;font-weight:800;color:#5eead4" id="chg-${c.id}">${c.guide_payout == null ? '—' : fmt(c.guide_payout)}</td>
+    <td style="padding:5px 7px;text-align:right;background:rgba(76,29,149,.25)">${i(c.max_payout, 'max_payout', '92px')}</td>
+    <td style="padding:5px 7px;text-align:right">${i(c.install_fee, 'install_fee', '92px')}</td>
+    <td style="padding:6px 9px;text-align:right;font-weight:800;color:${margin == null ? '#64748b' : margin < 0 ? '#f87171' : '#4ade80'}" id="chm-${c.id}">${margin == null ? '—' : fmt(margin)}</td>
+    <td style="padding:6px 9px;text-align:center">${c.is_default ? '<span style="color:#fbbf24">★</span>' : ''}</td>
+    <td style="padding:6px 9px;text-align:center">
+      <button class="btn-row ch-save" data-id="${c.id}" style="background:#059669;color:#fff">저장</button>
+    </td></tr>`;
+}
+
+function chPreview(id) {
+  const tr = document.querySelector(`tr[data-ch="${id}"]`);
+  if (!tr) return;
+  const v = f => chNum(tr.querySelector(`.ch-${f}`)?.value);
+  const g = (v('guide_cash') || 0) + (v('guide_voucher') || 0);
+  const gc = document.getElementById(`chg-${id}`);
+  if (gc) gc.textContent = fmt(g);
+  const reb = v('rebate'), mx = v('max_payout');
+  const m = (reb != null && mx != null) ? reb - mx : null;
+  const mc = document.getElementById(`chm-${id}`);
+  if (mc) {
+    mc.textContent = (m == null) ? '—' : fmt(m);
+    mc.style.color = (m == null) ? '#64748b' : (m < 0 ? '#f87171' : '#4ade80');
+  }
+}
+
+async function saveChannel(id) {
+  const tr = document.querySelector(`tr[data-ch="${id}"]`);
+  if (!tr) return;
+  const v = f => chNum(tr.querySelector(`.ch-${f}`)?.value);
+  const body = { rebate: v('rebate'), guide_cash: v('guide_cash'), guide_voucher: v('guide_voucher') ?? 0,
+                 max_payout: v('max_payout'), install_fee: v('install_fee') };
+  if (body.guide_cash != null) body.guide_payout = body.guide_cash + (body.guide_voucher || 0);
+  if (body.guide_payout != null && body.max_payout != null && body.max_payout < body.guide_payout) {
+    alert('MAX 는 가이드 총액보다 작을 수 없습니다.\n가이드 총액 ' + fmt(body.guide_payout) + ' / MAX ' + fmt(body.max_payout));
+    return;
+  }
+  const r = await fetch(`${CH_API}/${id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) { alert('저장 실패: ' + (await r.text()).slice(0, 200)); return; }
+  const j = await r.json();
+  const idx = _channels.findIndex(x => String(x.id) === String(id));
+  if (idx >= 0) _channels[idx] = j.channel;
+  showToast('✅ 채널 저장됨');
+}
+
 function renderTable() {
   const carrier = document.getElementById('filter-carrier').value;
   const type = document.getElementById('filter-type').value;
@@ -696,6 +817,7 @@ function renderTable() {
       <td>
         <button class="btn-row btn-save" onclick="saveRow(${p.id})">💾 저장</button>
         <button class="btn-row btn-toggle" onclick="toggleActive(${p.id}, ${!p.active})">${p.active ? '단종' : '활성'}</button>
+        <button class="btn-row" onclick="toggleChannels(${p.id})" style="background:#0284c7;color:#fff" title="접수 채널별 리베이트·가이드 편집">📡</button>
         <button class="btn-row" onclick="showHistory(${p.id})" style="background:#7c3aed;color:#fff">📜</button>
       </td>
     </tr>`;
@@ -784,6 +906,7 @@ async function toggleActive(id, newVal) {
 async function loadAll() {
   try {
     _products = await fetchProducts();
+    await loadChannels();
     renderKpi();
     renderTable();
   } catch (e) { alert('로드 실패: ' + e.message); }
