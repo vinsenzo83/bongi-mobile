@@ -1637,14 +1637,23 @@ function bindShortcutKeys() {
         </div>
       </div>
       <div class="tm-card">
-        <div class="tm-card-title"><span class="num">2</span>인터넷 보유 여부 <span style="font-size:10.5px;font-weight:600;color:#0ea5e9;margin-left:6px">수수료가 갈립니다</span></div>
+        <div class="tm-card-title"><span class="num">2</span>결합 여부 <span style="font-size:10.5px;font-weight:600;color:#0ea5e9;margin-left:6px">수수료가 2배 이상 갈립니다</span></div>
         <div class="tm-options" id="us-bundled">
-          <div class="tm-option selected" data-value="no">인터넷 없음</div>
-          <div class="tm-option" data-value="yes">이미 인터넷 사용 중</div>
+          <div class="tm-option selected" data-value="no">미결합 — 유심만</div>
+          <div class="tm-option" data-value="yes">결합</div>
         </div>
-        <div style="font-size:10.5px;color:#94a3b8;margin-top:6px;line-height:1.6">
-          같은 통신사 인터넷을 이미 쓰고 있으면 <b style="color:#4ade80">결합 수수료</b>가 적용된다 — 미결합보다 크게 높다.<br>
-          인터넷을 지금 같이 가입한다면 <b>인터넷+TV 탭</b>에서 진행할 것 (UIT결합유심 · 수수료가 또 다르다).
+
+        <!-- 결합은 아무나 되는 게 아니다. 요건을 상담사가 직접 확인해야 한다. -->
+        <div id="us-bundle-check" style="display:none;margin-top:8px;padding:9px 11px;background:rgba(239,68,68,0.10);border:1.5px solid rgba(239,68,68,0.35);border-radius:6px">
+          <div style="font-size:10.5px;font-weight:800;color:#fca5a5;margin-bottom:6px">⛔ 결합 성립 요건 — 확인 없이 결합 수수료로 잡으면 환수된다</div>
+          <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;color:#e2e8f0;cursor:pointer;line-height:1.55">
+            <input type="checkbox" id="us-bundle-ok" style="margin-top:2px;flex-shrink:0">
+            <span>같은 통신사에 <b>가족이 휴대폰을 쓰고 있거나</b>, <b>인터넷을 사용 중</b>임을 고객에게 확인했다.</span>
+          </label>
+          <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;line-height:1.55">
+            둘 다 없으면 결합이 성립하지 않아 <b style="color:#fca5a5">미결합 수수료</b>다.<br>
+            인터넷+TV 를 봉이가 같이 파는 건이면 <b>인터넷+TV 탭</b>에서 진행할 것 (UIT결합유심 · 수수료가 또 다르다).
+          </div>
         </div>
       </div>
       <div class="tm-card">
@@ -1657,7 +1666,7 @@ function bindShortcutKeys() {
           · <b>번호이동만 가능하다.</b> 신규가입은 안 된다.<br>
           · 고객이 <b>이미 해당 통신사를 쓰고 있으면 대상이 아니다.</b> 현재 통신사를 먼저 물어볼 것.<br>
           · 쓰던 폰을 그대로 쓴다. <b>기기 판매가 아니므로 할부원금·공시지원금이 없다.</b><br>
-          · 인터넷을 같이 가입하면 <b>같은 통신사</b> 유심만 결합이 인정된다 (SKT·SKB→SKT / KT→KT / LG U+→LG U+).
+          · 결합은 <b>같은 통신사</b>만 인정된다 (SKT·SKB→SKT / KT→KT / LG U+→LG U+).
         </div>
       </div>
     </div>
@@ -2904,7 +2913,7 @@ function applyUsimToBundle() {
 //   인터넷+TV 탭의 업셀과 같은 데이터(incentive_usim_plans)를 쓴다.
 //   차이는 인터넷 요금·결합할인이 아예 없다는 것뿐이다.
 // ═══════════════════════════════════════════════════════════
-var USIM_SOLO = { carrier: 'SKT', planId: null, bundled: false };
+var USIM_SOLO = { carrier: 'SKT', planId: null, bundled: false, bundleOk: false };
 
 function usimSoloInit() {
   var wrap = document.getElementById('us-carrier');
@@ -2928,8 +2937,23 @@ function usimSoloInit() {
         bw.querySelectorAll('.tm-option').forEach(function (x) { x.classList.remove('selected'); });
         o.classList.add('selected');
         USIM_SOLO.bundled = (o.dataset.value === 'yes');
+        var chk = document.getElementById('us-bundle-check');
+        if (chk) chk.style.display = USIM_SOLO.bundled ? '' : 'none';
+        if (!USIM_SOLO.bundled) {
+          USIM_SOLO.bundleOk = false;
+          var cb0 = document.getElementById('us-bundle-ok');
+          if (cb0) cb0.checked = false;
+        }
         usimSoloRender();
       });
+    });
+  }
+  var cb = document.getElementById('us-bundle-ok');
+  if (cb && !cb._wired) {
+    cb._wired = true;
+    cb.addEventListener('change', function () {
+      USIM_SOLO.bundleOk = cb.checked;
+      usimSoloRender();
     });
   }
   if (!USIM_PLANS.length) { loadUsimPlans().then(usimSoloRender); return; }
@@ -2975,7 +2999,9 @@ function usimSoloQuote(p) {
   var mx    = (p.max_payout   != null) ? p.max_payout   : guide;
   var pay = guide;
   // 인터넷 보유 여부로 수수료 구분이 갈린다
-  var cat = USIM_SOLO.bundled ? '가족추가유심·유심단독MNP(결합)' : '유심단독MNP(미결합)';
+  // 요건을 확인하지 않았으면 결합으로 잡지 않는다 — 확인 없이 결합가로 안내하면 나중에 환수된다.
+  var bundleApplied = USIM_SOLO.bundled && USIM_SOLO.bundleOk;
+  var cat = bundleApplied ? '가족추가유심·유심단독MNP(결합)' : '유심단독MNP(미결합)';
   var ck  = USIM_KEY_OF[p.carrier] || 'skt';
   var cm  = usimCommission(ck, cat, null, p.monthly_fee);
   var fee = (cm && cm.status === 'ok') ? cm.row.amount : null;
@@ -2988,13 +3014,16 @@ function usimSoloQuote(p) {
     '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l">✨ 월 요금</span><span class="v" style="font-size:20px">' + fmt(net) + '</span></div>' +
     (pay > 0 ? '<div class="calc-line gift" style="background:rgba(251,191,36,0.14);border-radius:6px;padding:7px 10px;margin-top:8px"><span class="l" style="color:#fbbf24">🎁 개통 사은품 (가이드)</span><span class="v" style="color:#fbbf24;font-size:17px">' + fmt(pay) + '</span></div>' : '') +
     '<div style="margin-top:8px;padding:7px 10px;background:rgba(2,132,199,0.12);border:1px solid rgba(56,189,248,0.3);border-radius:6px;font-size:10.5px;line-height:1.6">' +
-      '<div style="color:#7dd3fc;font-weight:800;margin-bottom:3px">' + (USIM_SOLO.bundled ? '🔗 기존 인터넷 보유 — 결합 수수료' : '📲 인터넷 없음 — 미결합 수수료') + '</div>' +
+      '<div style="color:#7dd3fc;font-weight:800;margin-bottom:3px">' + (bundleApplied ? '🔗 결합 — 가족추가유심 · 유심 단독 MNP(결합시)' : '📲 미결합 — 유심 단독 MNP(미결합시)') + '</div>' +
       (fee == null
         ? '<span style="color:#fbbf24">해당 구간 수수료 미수령 — 마진 계산 불가</span>'
         : '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">수수료 (' + cm.row.tier_label + ')</span><span class="v">' + fmt(fee) + '</span></div>' +
           '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">MAX 지급</span><span class="v">-' + fmt(mx) + '</span></div>' +
           '<div class="calc-line" style="padding:2px 0 0;font-size:10.5px;border-top:1px dashed rgba(255,255,255,0.18);margin-top:3px"><span class="l" style="font-weight:800">→ 마진</span><span class="v" style="font-weight:800;color:' + (margin < 0 ? '#f87171' : '#4ade80') + '">' + fmt(margin) + '</span></div>') +
     '</div>' +
+    (USIM_SOLO.bundled && !USIM_SOLO.bundleOk
+      ? '<div style="margin-top:8px;padding:7px 10px;background:rgba(251,191,36,0.14);border:1px solid rgba(251,191,36,0.4);border-radius:6px;font-size:10.5px;color:#fde68a;line-height:1.6">⚠ <b>결합 요건 미확인</b> — 같은 통신사에 가족 휴대폰이나 인터넷이 있는지 확인 전이라 <b>미결합 수수료</b>로 계산했습니다. 확인 후 체크하면 결합가로 바뀝니다.</div>'
+      : '') +
     '<div style="margin-top:10px;padding:8px 10px;background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.30);border-radius:6px;font-size:10.5px;color:#fca5a5;line-height:1.6">' +
       '⛔ <b>번호이동 전용 · 신규가입 불가</b><br>이미 ' + p.carrier + ' 를 쓰는 고객은 대상이 아닙니다.<br>' +
       '<span style="color:rgba(255,255,255,0.5)">단말 판매가 아니므로 할부원금·공시지원금이 없습니다.</span>' +
