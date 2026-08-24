@@ -1793,15 +1793,16 @@ function bindShortcutKeys() {
         <div id="inc-my-status-body"></div>
       </div>
 
-      <div id="inc-input" style="display:none;background:rgba(255,255,255,0.6);border-radius:6px;padding:8px 10px;margin-bottom:8px">
-        <div style="font-size:9.5px;color:#78350f;margin-bottom:4px;font-weight:700">📊 이번 달 누적 (수동 입력)</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-          <label style="font-size:10px;color:#78350f">누적 P
-            <input type="number" id="inc-current-p" min="0" step="0.5" value="0" style="width:100%;padding:3px 5px;border:1px solid #d97706;border-radius:4px;font-size:11px"></label>
-          <label style="font-size:10px;color:#78350f">우수 건수
-            <input type="number" id="inc-current-prem" min="0" step="1" value="0" style="width:100%;padding:3px 5px;border:1px solid #d97706;border-radius:4px;font-size:11px"></label>
-          <label style="font-size:10px;color:#78350f">추가 페이백
-            <input type="number" id="inc-add-payback" min="0" max="50000" step="1000" value="0" style="width:100%;padding:3px 5px;border:1px solid #d97706;border-radius:4px;font-size:11px"></label>
+      <div id="inc-input" style="background:rgba(255,255,255,0.6);border-radius:6px;padding:9px 11px;margin-bottom:8px">
+        <div style="font-size:9.5px;color:#78350f;margin-bottom:6px;font-weight:800">💸 고객 지급액 결정</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;margin-bottom:7px">
+          <div><div style="font-size:9px;color:#78350f">가이드</div><div id="inc-guide" style="font-size:13px;font-weight:900;color:#0f766e">—</div></div>
+          <div><div style="font-size:9px;color:#78350f">현재 제안액</div><div id="inc-offer" style="font-size:15px;font-weight:900;color:#b45309">—</div></div>
+          <div><div style="font-size:9px;color:#78350f">MAX</div><div id="inc-max" style="font-size:13px;font-weight:900;color:#6d28d9">—</div></div>
+        </div>
+        <input type="range" id="inc-payout" min="0" max="0" step="10000" value="0" style="width:100%;accent-color:#d97706">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#92400e;margin-top:2px">
+          <span>가이드 이하 불가</span><span id="inc-room">추가 지급 가능 —</span><span>MAX 초과 불가</span>
         </div>
       </div>
       <div id="inc-result" style="font-size:11px;color:#78350f;line-height:1.6">
@@ -4235,6 +4236,9 @@ async function incFindProduct(carrier, speed, tvName) {
 function incFmt(n) { return (n||0).toLocaleString() + '원'; }
 
 async function incSimulate() {
+  // 인센티브 = (MAX 지급가능액 − 실제 고객 지급액) × 개인 배분율
+  //   가이드 = 공식 사은품(전원 동일) · MAX = 상담사 재량 상한(고객 노출 금지)
+  //   MAX 까지 다 줘도 회사 기본 영업이익은 이미 확보돼 있다.
   const c = document.getElementById('c-carrier').value;
   const sp = document.getElementById('c-speed').value;
   const ti = parseInt(document.getElementById('c-tv').value) || 0;
@@ -4246,190 +4250,79 @@ async function incSimulate() {
   const product = await incFindProduct(c, sp, tvName);
   _incLastMatchedProduct = product;
   if (!product) {
-    result.innerHTML = '<div style="color:#92400e;opacity:0.7">⚠️ 매칭 상품 없음 (carrier=' + c + ', speed=' + sp + ', tv=' + (tvName||'없음') + ')</div>';
+    result.innerHTML = '<div style="color:#92400e;opacity:0.7">⚠️ 매칭 상품 없음 (' + c + ' · ' + sp + ' · ' + (tvName || 'TV 없음') + ')</div>';
     return;
   }
 
-  const currentP = parseFloat(document.getElementById('inc-current-p').value) || 0;
-  const currentPrem = parseInt(document.getElementById('inc-current-prem').value) || 0;
-  const addPayback = parseInt(document.getElementById('inc-add-payback').value) || 0;
+  const guide = (product.guide_payout != null) ? Number(product.guide_payout) : null;
+  const mx    = (product.max_payout   != null) ? Number(product.max_payout)   : null;
+  const gEl = document.getElementById('inc-guide'), mEl = document.getElementById('inc-max');
+  const oEl = document.getElementById('inc-offer'), rEl = document.getElementById('inc-room');
+  const sl  = document.getElementById('inc-payout');
 
-  // throttle 200ms
-  const now = Date.now();
-  _incLastFetch = now;
-  await new Promise(r => setTimeout(r, 200));
-  if (_incLastFetch !== now) return;
-
-  try {
-    const res = await fetch(INC_API + '/simulate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        current_points: currentP,
-        current_premium: currentPrem,
-        add_product_id: product.id,
-        add_qty: 1,
-        add_payback: addPayback,
-      })
-    });
-    if (!res.ok) {
-      const txt = await res.text();
-      result.innerHTML = '<div style="color:#dc2626">시뮬 오류: ' + txt.slice(0, 200) + '</div>';
-      return;
-    }
-    const { simulation: s } = await res.json();
-    if (!s) { result.innerHTML = '<div style="color:#dc2626">시뮬 응답 비어있음</div>'; return; }
-
-    const tierEmoji = { 'S': '🌟', 'A': '⭐', 'B': '🔵', 'C': '⚪' }[product.tier] || '';
-    const premBadge = product.is_premium ? '<span style="background:#dc2626;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;margin-left:4px">우수</span>' : '';
-    const gradeUp = s.after_grade > s.current_grade;
-    const gradeColor = ['', '#6b7280', '#3b82f6', '#dc2626'][s.after_grade] || '#6b7280';
-
-    const myRole = (typeof authGetUser === 'function' && authGetUser()) ? authGetUser().role : null;
-    const isAdmin = myRole === 'admin' || myRole === 'manager';
-    const newP = currentP + (parseFloat(product.point_weight) || 0);
-    const newPrem = currentPrem + (product.is_premium ? 1 : 0);
-    const deltaColor = s.delta_total > 0 ? '#16a34a' : (s.delta_total < 0 ? '#dc2626' : '#6b7280');
-
-    // 가전 monthly-stats 미리 fetch (한 번만) — 3행 구조 표시용
-    if (!window._rentalStatsFetching && !window._rentalStatsCache) {
-      window._rentalStatsFetching = true;
-      const _tk = localStorage.getItem('incentive-auth-token-v1');
-      if (_tk) {
-        try {
-          const r = await fetch('/api/rental/agents/me/monthly-stats', { headers: { Authorization: 'Bearer ' + _tk } });
-          if (r.ok) window._rentalStatsCache = await r.json();
-        } catch(e) {}
-      }
-      window._rentalStatsFetching = false;
-    }
-    const _rs = window._rentalStatsCache || {};
-
-    let html = '';
-
-    // ─── 상담사용 뷰 (Grade + 월 수령액 실시간) ───
-    if (!isAdmin) {
-      // 현재 settlement (로그인 시) — _incMyState.settlement
-      const myS = (_incMyState && _incMyState.settlement) ? _incMyState.settlement : null;
-      const baseSalary = myS ? myS.base_salary : 2300000;
-      const currentTotal = myS ? myS.agent_total : 2300000;
-      // 추가 후 예상 (시뮬에서 받은 after_total은 base 230만 + after_inc + after_bonus)
-      // 페이백 차감 + 본인 base_salary 반영
-      const newIncentive = s.after_incentive;
-      const newBonus = s.after_bonus;
-      const newDeduct = (myS ? myS.total_agent_payback_deduct : 0) + (addPayback > 30000 ? addPayback - 30000 : 0);
-      const newAgentTotal = baseSalary + newIncentive + newBonus - newDeduct;
-      const totalDelta = newAgentTotal - currentTotal;
-      const deltaC = totalDelta > 0 ? '#16a34a' : (totalDelta < 0 ? '#dc2626' : '#6b7280');
-
-      // 매칭 상품
-      html += '<div style="background:rgba(255,255,255,0.7);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:11px">';
-      html += '🎯 <b>' + product.name + '</b> ' + tierEmoji + ' <b style="color:#92400e">' + product.tier + '</b>' + (product.is_premium ? '<span style="background:#dc2626;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;margin-left:6px;font-weight:700">⭐ 우수상품</span>' : '');
-      html += '</div>';
-
-      // ─── 현재 상태 (로그인 시) — 인터넷+TV / 가전렌탈 / 통합 합계 3행 ───
-      if (myS) {
-        const grade = s.current_grade;
-        const gradeStr = 'G' + grade;
-        const gColor = ['', '#6b7280', '#3b82f6', '#dc2626'][grade] || '#6b7280';
-        // 인터넷+TV (현재 상담사 settlement)
-        const itP = currentP;
-        const itPrem = currentPrem;
-        const itTotal = currentTotal;
-        // 가전렌탈 (monthly-stats cache)
-        const rtP = Number(_rs.p) || 0;
-        const rtPrem = Number(_rs.premium_count) || 0;
-        const rtIncentive = Number(_rs.rental_incentive) || 0;
-        const rtBonus = Number(_rs.rental_bonus) || 0;
-        const rtTotal = rtIncentive + rtBonus;
-        // 통합 (합산)
-        const sumP = itP + rtP;
-        const sumPrem = itPrem + rtPrem;
-        const sumTotal = itTotal + rtTotal;
-
-        html += '<div style="background:rgba(0,0,0,0.05);border-radius:6px;padding:10px 12px;margin-bottom:8px;font-size:10.5px">';
-        html += '<div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:8px;letter-spacing:0.04em">📍 현재 (이번 달) · Grade는 IT·가전 각자 독립</div>';
-        // 인터넷+TV 행 (4컬럼: Grade · 누적P · 우수 · 예상 수령)
-        html += '<div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px dashed rgba(120,53,15,0.25)">';
-        html += '<div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#1d4ed8;display:flex;align-items:center">📡 인터넷+TV</div>';
-        html += '<div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + gradeStr + '</div></div>';
-        html += '<div><div style="font-size:9px;color:#78350f">누적 P</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + itP + 'P</div></div>';
-        html += '<div><div style="font-size:9px;color:#78350f">우수</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + itPrem + '건</div></div>';
-        html += '<div><div style="font-size:9px;color:#78350f">예상 수령</div><div style="font-size:13px;font-weight:900;color:#1d4ed8">' + incFmt(itTotal) + '</div></div>';
-        html += '</div>';
-        // 가전렌탈 행
-        html += '<div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px solid rgba(120,53,15,0.4)">';
-        html += '<div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#d97706;display:flex;align-items:center">🏠 가전렌탈</div>';
-        html += '<div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + gradeStr + '</div></div>';
-        html += '<div><div style="font-size:9px;color:#78350f">누적 P</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + rtP.toFixed(2) + 'P</div></div>';
-        html += '<div><div style="font-size:9px;color:#78350f">우수</div><div style="font-size:13px;font-weight:900;color:#1e293b">' + rtPrem + '건</div></div>';
-        html += '<div><div style="font-size:9px;color:#78350f">예상 수령</div><div style="font-size:13px;font-weight:900;color:#d97706">' + incFmt(rtTotal) + '</div></div>';
-        html += '</div>';
-        // 통합 합계 행
-        html += '<div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:8px 0 2px;background:rgba(34,197,94,0.06);margin:4px -4px 0;border-radius:4px">';
-        html += '<div style="text-align:left;padding-left:4px;font-size:10.5px;font-weight:900;color:#15803d;display:flex;align-items:center">⚡ 통합 합계</div>';
-        html += '<div><div style="font-size:9px;color:#15803d">Grade</div><div style="font-size:14px;font-weight:900;color:#1e293b">' + gradeStr + '</div></div>';
-        html += '<div><div style="font-size:9px;color:#15803d">누적 P</div><div style="font-size:14px;font-weight:900;color:#1e293b">' + sumP.toFixed(2) + 'P</div></div>';
-        html += '<div><div style="font-size:9px;color:#15803d">우수</div><div style="font-size:14px;font-weight:900;color:#1e293b">' + sumPrem + '건</div></div>';
-        html += '<div><div style="font-size:9px;color:#15803d">예상 수령</div><div style="font-size:14px;font-weight:900;color:#16a34a">' + incFmt(sumTotal) + '</div></div>';
-        html += '</div>';
-        html += '</div>';
-      } else {
-        html += '<div style="background:rgba(254,243,199,0.5);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:10px;color:#92400e;text-align:center">🔐 로그인하면 본인 누적 + 월 수령액 자동 표시</div>';
-      }
-
-      // 변동 요약
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">';
-      html += '<div style="background:rgba(255,255,255,0.6);border-radius:6px;padding:8px 10px;text-align:center"><div style="font-size:9.5px;color:#78350f;font-weight:700;margin-bottom:3px">📊 포인트</div><div style="font-size:13px;font-weight:800;color:#78350f">' + currentP + ' → <span style="color:#15803d">' + newP + '</span>P</div><div style="font-size:9.5px;color:#16a34a;margin-top:2px">+' + (newP - currentP) + 'P</div></div>';
-      html += '<div style="background:rgba(255,255,255,0.6);border-radius:6px;padding:8px 10px;text-align:center"><div style="font-size:9.5px;color:#78350f;font-weight:700;margin-bottom:3px">⭐ 우수</div><div style="font-size:13px;font-weight:800;color:#78350f">' + currentPrem + ' → <span style="' + (product.is_premium ? 'color:#15803d' : 'color:#78350f') + '">' + newPrem + '</span>건</div><div style="font-size:9.5px;color:' + (product.is_premium ? '#16a34a' : '#9ca3af') + ';margin-top:2px">' + (product.is_premium ? '+1' : '변동 없음') + '</div></div>';
-      html += '</div>';
-
-      // ─── +1건 추가 후 예상 (Grade + 월 수령액) ───
-      if (myS) {
-        const newGrade = s.after_grade;
-        const ngColor = ['', '#6b7280', '#3b82f6', '#dc2626'][newGrade] || '#6b7280';
-        html += '<div style="margin-top:8px;background:' + (gradeUp ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.6)') + ';border-radius:6px;padding:8px 10px;font-size:10.5px' + (gradeUp ? ';border:1.5px solid #22c55e' : '') + '">';
-        html += '<div style="font-size:9.5px;color:' + (gradeUp ? '#15803d' : '#78350f') + ';font-weight:700;margin-bottom:4px;letter-spacing:0.04em">🚀 +1건 추가 시 (' + (gradeUp ? '⬆️ 승급!' : '예상') + ')</div>';
-        html += '<div style="display:grid;grid-template-columns:auto auto auto auto;gap:8px;align-items:center">';
-        html += '<div><span style="background:' + ngColor + ';color:#fff;padding:2px 8px;border-radius:4px;font-weight:800">G' + newGrade + '</span></div>';
-        html += '<div style="font-weight:700;color:#78350f">' + newP + 'P · 우수 ' + newPrem + '건</div>';
-        html += '<div style="color:#6b7280">→</div>';
-        html += '<div style="font-weight:900;color:' + (gradeUp ? '#15803d' : '#78350f') + ';font-size:13px">' + incFmt(newAgentTotal) + '</div>';
-        html += '</div>';
-        html += '</div>';
-      }
-
-      // ─── 델타 강조 ───
-      html += '<div style="margin-top:8px;background:linear-gradient(135deg,#fff,#fef9c3);border-radius:6px;padding:10px;border:1.5px dashed ' + deltaC + ';text-align:center">';
-      html += '<div style="font-size:10px;color:#78350f;font-weight:700;margin-bottom:3px">📈 이 한 건의 가치 (월 수령 변동)</div>';
-      html += '<div style="font-size:22px;font-weight:900;color:' + deltaC + ';letter-spacing:-0.02em">' + (totalDelta > 0 ? '+' : '') + incFmt(totalDelta) + '</div>';
-      if (gradeUp) html += '<div style="font-size:10px;color:#16a34a;font-weight:700;margin-top:3px">⚡ Grade 승급 → 누적 P 전체 단가 소급 적용!</div>';
-      if (addPayback > 30000) html += '<div style="font-size:9px;color:#dc2626;margin-top:3px">⚠️ 페이백 ' + incFmt(addPayback - 30000) + ' 본인 차감 반영</div>';
-      html += '</div>';
-    }
-    // ─── 관리자용 상세 뷰 ───
-    else {
-      html += '<div style="background:rgba(255,255,255,0.6);border-radius:6px;padding:6px 8px;margin-bottom:6px;font-size:10px">';
-      html += '🎯 매칭: <b>' + product.name + '</b> ' + tierEmoji + ' ' + product.tier + premBadge;
-      html += ' · 상담사 포인트 ' + product.point_weight + 'P';
-      html += '</div>';
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">';
-      html += '<div style="background:rgba(255,255,255,0.5);border-radius:6px;padding:6px 8px"><div style="font-size:9px;color:#78350f;font-weight:700;margin-bottom:2px">현재 (G' + s.current_grade + ')</div><div style="font-size:13px;font-weight:800;color:#78350f">' + incFmt(s.current_total) + '</div></div>';
-      html += '<div style="background:' + (gradeUp ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.5)') + ';border-radius:6px;padding:6px 8px' + (gradeUp ? ';border:1.5px solid #22c55e' : '') + '"><div style="font-size:9px;color:' + gradeColor + ';font-weight:700;margin-bottom:2px">+1건 후 (G' + s.after_grade + ')' + (gradeUp ? ' ⬆️ 승급!' : '') + '</div><div style="font-size:13px;font-weight:800;color:' + gradeColor + '">' + incFmt(s.after_total) + '</div></div>';
-      html += '</div>';
-      html += '<div style="margin-top:6px;background:linear-gradient(135deg,#fff,#fef9c3);border-radius:6px;padding:8px 10px;border:1.5px dashed ' + deltaColor + ';text-align:center">';
-      html += '<div style="font-size:9.5px;color:#78350f;font-weight:700;margin-bottom:2px">📈 이 한 건 추가 시 변화 (P: ' + currentP + '→' + newP + ', 우수: ' + currentPrem + '→' + newPrem + ')</div>';
-      html += '<div style="font-size:18px;font-weight:900;color:' + deltaColor + ';letter-spacing:-0.02em">' + (s.delta_total > 0 ? '+' : '') + incFmt(s.delta_total) + '</div>';
-      if (gradeUp) html += '<div style="font-size:9.5px;color:#16a34a;font-weight:700;margin-top:2px">⚡ Grade 승급으로 누적 P 전체 단가 소급</div>';
-      if (addPayback > 30000) html += '<div style="font-size:9px;color:#dc2626;margin-top:2px">⚠️ 페이백 ' + incFmt(addPayback) + ' 중 ' + incFmt(addPayback - 30000) + ' 본인 차감</div>';
-      html += '</div>';
-    }
-
-    result.innerHTML = html;
-  } catch(e) {
-    result.innerHTML = '<div style="color:#dc2626">네트워크 오류: ' + e.message + '</div>';
+  if (guide == null || mx == null) {
+    if (gEl) gEl.textContent = guide == null ? '미설정' : incFmt(guide);
+    if (mEl) mEl.textContent = mx == null ? '미설정' : incFmt(mx);
+    if (oEl) oEl.textContent = '—';
+    if (sl) { sl.min = 0; sl.max = 0; sl.disabled = true; }
+    result.innerHTML = '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:9px 11px;color:#b91c1c;font-size:10.5px;line-height:1.65">'
+      + '⚠️ <b>' + product.name + '</b> 은 가이드/MAX 가 설정돼 있지 않습니다.<br>인센티브를 계산할 수 없습니다 — 상품 관리에서 먼저 설정하세요.</div>';
+    return;
   }
+
+  // 슬라이더 범위 = 가이드 ~ MAX
+  if (sl) {
+    sl.disabled = false;
+    if (String(sl.dataset.pid) !== String(product.id)) {
+      sl.dataset.pid = product.id;
+      sl.min = guide; sl.max = mx; sl.value = guide;   // 기본은 가이드 (회사에 가장 유리)
+    }
+    sl.min = guide; sl.max = mx;
+    if (Number(sl.value) < guide) sl.value = guide;
+    if (Number(sl.value) > mx) sl.value = mx;
+  }
+  const offer = sl ? Number(sl.value) : guide;
+  const residual = mx - offer;                  // 잔존마진
+  const room = mx - offer;                      // 추가 지급 여력 (같은 값이지만 뜻이 다르다)
+
+  if (gEl) gEl.textContent = incFmt(guide);
+  if (mEl) mEl.textContent = incFmt(mx);
+  if (oEl) oEl.textContent = incFmt(offer);
+  if (rEl) rEl.textContent = '추가 지급 가능 ' + incFmt(room);
+
+  // 개인 배분율
+  let rate = Number(window._incAgentRate);
+  let rateSrc = '내 배분율';
+  if (!rate || isNaN(rate)) { rate = 20; rateSrc = '기본 G1 20% (내 등급 미확인)'; }
+  const incentive = Math.round(residual * rate / 100);
+  const companyExtra = residual - incentive;
+
+  const bar = Math.max(0, Math.min(100, mx > guide ? ((offer - guide) / (mx - guide)) * 100 : 0));
+  let html = '';
+  html += '<div style="background:rgba(255,255,255,0.7);border-radius:6px;padding:7px 9px;margin-bottom:7px;font-size:10.5px">'
+       +  '🎯 <b>' + product.name + '</b></div>';
+  html += '<div style="height:7px;background:#fde68a;border-radius:4px;overflow:hidden;margin-bottom:8px">'
+       +  '<div style="height:100%;width:' + bar.toFixed(1) + '%;background:linear-gradient(90deg,#0f766e,#d97706)"></div></div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;margin-bottom:7px">'
+       +  '<div style="background:rgba(255,255,255,0.6);border-radius:6px;padding:7px 9px"><div style="font-size:9px;color:#78350f">잔존마진 (MAX−지급)</div>'
+       +  '<div style="font-size:16px;font-weight:900;color:#0f766e">' + incFmt(residual) + '</div></div>'
+       +  '<div style="background:rgba(255,255,255,0.6);border-radius:6px;padding:7px 9px"><div style="font-size:9px;color:#78350f">회사 추가이익</div>'
+       +  '<div style="font-size:16px;font-weight:900;color:#6d28d9">' + incFmt(companyExtra) + '</div></div>'
+       +  '</div>';
+  html += '<div style="background:linear-gradient(135deg,#fff,#fef9c3);border-radius:6px;padding:10px;border:1.5px solid #f59e0b;text-align:center">'
+       +  '<div style="font-size:10px;color:#78350f;font-weight:800;margin-bottom:3px">💰 이 건의 내 인센티브</div>'
+       +  '<div style="font-size:24px;font-weight:900;color:#b45309;letter-spacing:-0.02em">' + incFmt(incentive) + '</div>'
+       +  '<div style="font-size:9.5px;color:#92400e;margin-top:3px">' + incFmt(residual) + ' × ' + rate + '% <span style="opacity:.75">(' + rateSrc + ')</span></div>'
+       +  '</div>';
+  if (offer > guide) {
+    html += '<div style="font-size:9.5px;color:#92400e;margin-top:6px;line-height:1.6">'
+         +  '가이드보다 <b>' + incFmt(offer - guide) + '</b> 더 드리는 조건입니다. 그만큼 내 인센티브가 줄어듭니다.</div>';
+  }
+  html += '<div style="font-size:9px;color:#a16207;margin-top:5px;line-height:1.55">'
+       +  '설치완료 건에만 확정됩니다. 취소·철회 시 차감됩니다.</div>';
+  result.innerHTML = html;
 }
+
 
 // 견적 변경 시 자동 트리거 (calc 끝나고 호출)
 const _origCalc = typeof calc === 'function' ? calc : null;
@@ -4456,6 +4349,7 @@ setTimeout(function() {
       el.addEventListener('input', function() {
         incSaveState();
         incSimulate();
+  (function(){ const sl=document.getElementById('inc-payout'); if (sl && !sl._wired) { sl._wired=true; sl.addEventListener('input', incSimulate); } })();
       });
     }
   });
@@ -4695,51 +4589,28 @@ async function incFetchMyState() {
     if (statusEl && bodyEl && s) {
       statusEl.style.display = '';
       const fmt = v => (v == null) ? '-' : Number(v).toLocaleString();
-      // 가전 monthly-stats fetch (rental_grade 별도)
-      const _tk = localStorage.getItem('incentive-auth-token-v1');
-      let rt = window._rentalStatsCache || {};
-      if (_tk && !window._rentalStatsCache) {
-        try {
-          const rRes = await fetch('/api/rental/agents/me/monthly-stats', { headers: { Authorization: 'Bearer ' + _tk } });
-          if (rRes.ok) { rt = await rRes.json(); window._rentalStatsCache = rt; }
-        } catch(e) {}
-      }
-      const itG = s.grade_applied || s.grade_target || 1;
-      const itGColor = ['', '#6b7280', '#3b82f6', '#dc2626'][itG] || '#6b7280';
-      const itP = Number(s.total_points || 0);
-      const itPrem = Number(s.premium_count || 0);
-      const itTotal = Number(s.agent_total || 0) - Number(s.base_salary || 0);  // 인센+보너스만
-      const rtG = Number(rt.rental_grade_applied) || 1;
-      const rtGColor = ['', '#6b7280', '#3b82f6', '#dc2626'][rtG] || '#6b7280';
-      const rtP = Number(rt.rental_points || rt.p) || 0;
-      const rtPrem = Number(rt.rental_premium_count || rt.premium_count) || 0;
-      const rtTotal = (Number(rt.rental_incentive) || 0) + (Number(rt.rental_bonus) || 0);
-      const sumTotal = itTotal + rtTotal;
-      const cell = (label, value, color) => `<div><div style="font-size:9px;color:#78350f">${label}</div><div style="font-size:13px;font-weight:900;color:${color||'#1e293b'}">${value}</div></div>`;
-      const gradeBadge = (g, c) => `<span style="background:${c};color:#fff;padding:2px 8px;border-radius:4px;font-weight:800;font-size:11px">G${g}</span>`;
+      
+      const rate = Number(s.incentive_rate) || Number(window._incAgentRate) || 20;
+      window._incAgentRate = rate;
+      const grade = s.grade || 'G1';
+      const resid = Number(s.total_residual_margin || 0);
+      const incent = Number(s.incentive || Math.round(resid * rate / 100));
+      const base = Number(s.base_salary || 0);
+      const cnt = Number(s.total_count || 0);
+      const cell = (label, value, color) => `<div><div style="font-size:9px;color:#78350f">${label}</div><div style="font-size:14px;font-weight:900;color:${color || '#1e293b'}">${value}</div></div>`;
       bodyEl.innerHTML = `
-        <div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:8px;letter-spacing:0.04em">📊 내 현재 상태 (이번 달) · Grade는 IT·가전 각자 독립</div>
-        <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px dashed rgba(120,53,15,0.25)">
-          <div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#1d4ed8;display:flex;align-items:center">📡 인터넷+TV</div>
-          ${cell('Grade', gradeBadge(itG, itGColor))}
-          ${cell('누적 P', itP + 'P')}
-          ${cell('우수', itPrem + '건')}
-          ${cell('예상 수령', fmt(itTotal) + '원', '#1d4ed8')}
+        <div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:8px;letter-spacing:0.04em">📊 내 현재 상태 (이번 달)</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px solid rgba(217,119,6,0.25)">
+          ${cell('배분율', `<span style="background:#0f766e;color:#fff;padding:2px 8px;border-radius:4px;font-weight:900">${grade} ${rate}%</span>`)}
+          ${cell('설치완료', cnt + '건')}
+          ${cell('총 잔존마진', fmt(resid) + '원', '#0f766e')}
+          ${cell('예상 인센티브', fmt(incent) + '원', '#b45309')}
         </div>
-        <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px solid rgba(120,53,15,0.4)">
-          <div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#d97706;display:flex;align-items:center">🏠 가전렌탈</div>
-          ${cell('Grade', gradeBadge(rtG, rtGColor))}
-          ${cell('누적 P', rtP.toFixed(2) + 'P')}
-          ${cell('우수', rtPrem + '건')}
-          ${cell('예상 수령', fmt(rtTotal) + '원', '#d97706')}
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;text-align:center;padding:8px 0 2px">
+          ${cell('기본급', fmt(base) + '원')}
+          ${cell('예상 월 급여', fmt(base + incent) + '원', '#16a34a')}
         </div>
-        <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:8px 0 2px;background:rgba(34,197,94,0.06);margin:4px -4px 0;border-radius:4px">
-          <div style="text-align:left;padding-left:4px;font-size:10.5px;font-weight:900;color:#15803d;display:flex;align-items:center">⚡ 통합 합계</div>
-          ${cell('Grade', 'IT/가전 별도', '#94a3b8')}
-          ${cell('누적 P', (itP + rtP).toFixed(2) + 'P')}
-          ${cell('우수', (itPrem + rtPrem) + '건')}
-          ${cell('예상 수령', fmt(sumTotal) + '원', '#16a34a')}
-        </div>`;
+        <div style="font-size:9px;color:#a16207;margin-top:6px;line-height:1.55">설치완료 건 기준. 취소·철회 건은 제외되거나 차월에 차감된다.</div>`;
     } else if (statusEl) {
       statusEl.style.display = 'none';
     }
@@ -5315,7 +5186,7 @@ setTimeout(() => {
 </script>
 
 <script>
-// ─── 카테고리 탭 토글 + 가전렌탈 API 연동 ───
+// ─── 카테고리 탭 토글 ───
 (function(){
   const tabs = document.querySelectorAll('.tm-cat-tabs .tab');
   if (!tabs.length) return;
@@ -5334,7 +5205,7 @@ setTimeout(() => {
     });
   });
 
-  // 가전렌탈 스크립트 렌더 (localStorage 별도 저장)
+  // 유심 스크립트 렌더 (localStorage 별도 저장)
   // 공용 — HTML 이스케이프
   function escapeHtml(s) {
     return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
