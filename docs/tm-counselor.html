@@ -2977,6 +2977,78 @@ function usimNetFee(p) {
   return (p.select_discount != null) ? p.select_discount : Math.round(p.monthly_fee * 0.75);
 }
 
+
+// 유심 요금제가 어느 결합 구간·회선에 해당하는지 계산한다.
+//   · 구간 라벨에서 숫자를 뽑아 임계값 이하 중 가장 큰 것을 고른다 (라벨을 고쳐도 안 깨지게).
+//   · bundle_fee_basis 로 정상가/25% 할인가 중 어느 값으로 판정할지 결정한다.
+function usimBundleFee(p) {
+  if (!p) return 0;
+  return (p.bundle_fee_basis === 'discounted') ? usimNetFee(p) : p.monthly_fee;
+}
+function pickRangeIdx(labels, fee) {
+  var best = 0;
+  for (var i = 0; i < labels.length; i++) {
+    var m = String(labels[i]).replace(/,/g, '').match(/(\d+)/);
+    if (!m) continue;
+    var th = parseInt(m[1], 10);
+    var isUnder = /미만|이하/.test(labels[i]);
+    if (isUnder ? (fee <= th) : (fee >= th)) best = i;
+  }
+  return best;
+}
+function usimBundleHint(usim, c, bundleType) {
+  var out = { applies: false, label: '', lines: 1, rangeIdx: null, linesVal: null, diff: 0, already: false };
+  if (!usim || usim.bundle_eligible === false) return out;
+  if (usim.carrier !== USIM_CN[c]) return out;          // 인터넷과 같은 통신사만 결합 인정
+  var fee = usimBundleFee(usim);
+  var d2 = D[c];
+  if (c === 'kt' && (bundleType === 'kt-total' || bundleType === 'kt-fixed')) {
+    var labels = (bundleType === 'kt-total') ? d2.bundle.ranges_total : d2.bundle.ranges_fixed;
+    out.rangeIdx = pickRangeIdx(labels, fee);
+    out.label = '「' + labels[out.rangeIdx] + '」 구간';
+    out.applies = true;
+  } else if (c === 'lgu' && bundleType === 'lgu-chweyswun') {
+    var pl = d2.bundle.chweyswun.planLabels || [];
+    out.rangeIdx = pickRangeIdx(pl, fee);
+    out.label = '휴대폰 월요금 「' + pl[out.rangeIdx] + '」 · 2회선';
+    out.linesVal = '2';
+    out.applies = true;
+  } else if (c === 'lgu' && bundleType === 'lgu-together') {
+    out.label = '2회선';
+    out.linesVal = '2';
+    out.applies = true;
+  } else if (c === 'skt' && bundleType === 'family') {
+    out.label = '1명 결합';
+    out.linesVal = '1';
+    out.applies = true;
+  }
+  if (!out.applies) return out;
+  var rgEl = document.getElementById('c-range'), lnEl = document.getElementById('c-lines');
+  var rgOk = (out.rangeIdx === null) || !rgEl || String(rgEl.value) === String(out.rangeIdx);
+  var lnOk = (out.linesVal === null) || !lnEl || String(lnEl.value) === String(out.linesVal);
+  out.already = rgOk && lnOk;
+  return out;
+}
+// 「결합에 반영」 — 결합 구간·회선 셀렉트를 유심 요금제 기준으로 맞춘다.
+// 자동으로 몰래 바꾸지 않는다. 상담사가 눌러야 적용된다 (기존 회선이 따로 있을 수 있으므로).
+function applyUsimToBundle() {
+  var usim = usimSelected();
+  if (!usim) return;
+  var c = document.getElementById('c-carrier').value;
+  var bt = document.getElementById('c-bundle').value;
+  var h = usimBundleHint(usim, c, bt);
+  if (!h.applies) return;
+  if (h.rangeIdx !== null) {
+    var rg = document.getElementById('c-range');
+    if (rg && rg.querySelector('option[value="' + h.rangeIdx + '"]')) rg.value = String(h.rangeIdx);
+  }
+  if (h.linesVal !== null) {
+    var ln = document.getElementById('c-lines');
+    if (ln && ln.querySelector('option[value="' + h.linesVal + '"]')) ln.value = h.linesVal;
+  }
+  try { calc(); } catch (e) {}
+}
+
 function renderUsimPicker() {
   var wrap = document.getElementById('card-usim-wrap');
   var sel = document.getElementById('c-usim-plan');
@@ -3499,13 +3571,21 @@ function calc() {
   if (usim) {
     var uFee = usimNetFee(usim);
     var uPay = usim.payback || 0;
-    var sameCarrier = (usim.carrier === (d.name || USIM_CN[c]));
+    var sameCarrier = (usim.carrier === USIM_CN[c]);   // ★ d.name 은 통신사명이 아니라 오판했었다
+    var uHint = usimBundleHint(usim, c, bundleType);
     html += '<div style="margin-top:8px;padding:8px 10px;background:rgba(56,189,248,0.10);border:1px solid rgba(56,189,248,0.35);border-radius:6px">' +
       '<div style="font-size:10px;color:#7dd3fc;font-weight:800;letter-spacing:.04em;margin-bottom:4px">📲 유심 이동 함께 개통 <span style="font-weight:600;opacity:.8">(' + usim.carrier + ' · 단말 없이 유심만)</span></div>' +
       '<div class="calc-line" style="padding:1px 0;font-size:11.5px"><span class="l">' + usim.plan_name + (usim.data_amount ? ' <span style="opacity:.6">' + usim.data_amount + '</span>' : '') + '</span><span class="v">' + fmt(usim.monthly_fee) + '</span></div>' +
       '<div class="calc-line discount" style="padding:1px 0;font-size:11.5px"><span class="l">선택약정 25% <span style="font-size:9.5px;opacity:.7">' + (usim.contract_months || 12) + '개월</span></span><span class="v">-' + fmt(usim.monthly_fee - uFee) + '</span></div>' +
       '<div class="calc-line sub" style="padding:1px 0;font-size:11.5px"><span class="l">→ 유심 월 요금</span><span class="v">' + fmt(uFee) + '</span></div>' +
       (uPay > 0 ? '<div class="calc-line gift" style="background:rgba(251,191,36,0.12);border-radius:5px;padding:5px 8px;margin-top:5px"><span class="l" style="color:#fbbf24">🎁 유심 개통 추가 페이백</span><span class="v" style="color:#fbbf24">' + fmt(uPay) + '</span></div>' : '') +
+      (uHint.applies
+        ? '<div style="margin-top:5px;padding:5px 8px;background:rgba(74,222,128,0.10);border:1px solid rgba(74,222,128,0.30);border-radius:5px;font-size:10.5px;color:#86efac;line-height:1.55">' +
+            '🔗 <b>결합 가능</b> — 이 회선을 결합에 넣으면 <b>' + uHint.label + '</b>' +
+            (uHint.diff > 0 ? ' · 인터넷 <b style="color:#4ade80">−' + fmt(uHint.diff) + '원</b>' : '') +
+            (uHint.already ? ' <span style="opacity:.75">(이미 반영된 상태)</span>' : ' <span onclick="applyUsimToBundle()" style="cursor:pointer;text-decoration:underline;font-weight:800">▶ 결합에 반영</span>') +
+          '</div>'
+        : '') +
       '<div style="font-size:9.5px;color:rgba(255,255,255,0.5);margin-top:4px;line-height:1.5">번호이동 전용 (신규가입 불가) · 쓰던 폰 그대로 유심만 교체 · 기기값 없음. <b style="color:rgba(255,255,255,0.7)">인터넷 요금은 변동 없습니다.</b>' +
         (sameCarrier ? '' : ' <span style="color:#fca5a5">⚠ 인터넷과 다른 통신사입니다</span>') + '</div>' +
       '</div>';
