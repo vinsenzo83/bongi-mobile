@@ -812,7 +812,7 @@ function renderTable(contracts) {
     const p = c.product || {};
     const a = c.agent || {};
     const tierBadge = p.tier ? `<span class="tier tier-${p.tier}">${p.tier}</span>` : '';
-    const premBadge = p.is_premium ? '<span class="prem-badge">우수</span>' : '';
+    const premBadge = '';
     const hasAddr = c.customer_address && c.customer_address.trim();
     const addrText = hasAddr ? c.customer_address : '<i style="color:#dc2626">주소 미입력</i>';
 
@@ -865,7 +865,7 @@ function renderTable(contracts) {
         const cb = carrierMap[carrier];
         const carrierBadge = cb ? `<span style="background:${cb.bg};color:#fff;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:800;margin-right:4px">${cb.label}</span>` : '';
         return carrierBadge;
-      })()}${p.name || '-'}${((c.wifi_option && c.wifi_option !== '미사용' && c.wifi_option !== 'X' && c.wifi_option !== 'N') || /wi-?fi/i.test(c.quote_summary || '')) && !/wi-?fi/i.test(p.name||'') ? '<span style="background:#0891b2;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">+ WiFi</span>' : ''} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.point_weight || '?'}P${p.speed ? ` · ${p.speed}` : ''}</div></td>
+      })()}${p.name || '-'}${((c.wifi_option && c.wifi_option !== '미사용' && c.wifi_option !== 'X' && c.wifi_option !== 'N') || /wi-?fi/i.test(c.quote_summary || '')) && !/wi-?fi/i.test(p.name||'') ? '<span style="background:#0891b2;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">+ WiFi</span>' : ''} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.speed || ''}</div></td>
       <td>${c.customer_name || '<i style="color:#94a3b8">-</i>'}</td>
       <td>${c.customer_phone || '<i style="color:#94a3b8">-</i>'}</td>
       <td style="max-width:240px;word-break:break-all;font-size:10.5px">${addrText}</td>
@@ -891,7 +891,6 @@ function renderTable(contracts) {
               <div><div style="font-size:9px;color:#94a3b8">속도</div><div style="color:#f8fafc;font-weight:700">${p.speed || '-'}</div></div>
               <div><div style="font-size:9px;color:#94a3b8">TV 등급</div><div style="color:#f8fafc;font-weight:700">${p.tv_tier || '-'}</div></div>
               <div style="grid-column:span 2"><div style="font-size:9px;color:#94a3b8">상품명</div><div style="color:#f8fafc;font-weight:700;font-size:11.5px">${p.name || '-'}</div></div>
-              <div><div style="font-size:9px;color:#94a3b8">상담사 포인트</div><div style="color:#f8fafc;font-weight:700">${(c.point_weight_snapshot ?? p.point_weight ?? '-')}${(c.point_weight_snapshot ?? p.point_weight) != null ? ' P' : ''}</div></div>
               <div><div style="font-size:9px;color:#94a3b8">Tier</div><div>${tierBadge}${premBadge}</div></div>
               <div style="grid-column:span 2"><div style="font-size:9px;color:#94a3b8">💰 페이백 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 6px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:4px" title="등록 시점에 박제된 단가 — 이후 상품가격 변경되어도 변하지 않음">SNAPSHOT</span></div><div style="color:#fca5a5;font-weight:700">${((c.payback_snapshot ?? p.payback) || 0).toLocaleString()}원<span style="font-size:9px;color:#64748b;font-weight:500;margin-left:6px">등록 시점 단가</span></div></div>
               <div><div style="font-size:9px;color:#94a3b8">계약일</div><div style="color:#f8fafc;font-weight:700">${c.contract_date}</div></div>
@@ -1419,7 +1418,7 @@ function openEditModal(id) {
   const p = c.product || {};
   const a = c.agent || {};
   const tierBadge = p.tier ? `<span class="tier tier-${p.tier}">${p.tier}</span>` : '';
-  const premBadge = p.is_premium ? '<span class="prem-badge">우수</span>' : '';
+  const premBadge = '';
   const hasAddr = c.customer_address && c.customer_address.trim();
 
   document.getElementById('modal-subtitle').textContent =
@@ -1449,7 +1448,6 @@ function openEditModal(id) {
               <div class="ph-name">${p.name || '-'}${(hasWifi && !/wi-?fi/i.test(p.name||'')) ? ' + WiFi' : ''}</div>`;
           })()}
           <div class="ph-tags">
-            <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 8px;border-radius:4px;font-weight:700">${(c.point_weight_snapshot ?? p.point_weight ?? '-')}P</span>
             ${tierBadge}${premBadge}
             <span style="color:#64748b">·</span>
             <span>📅 ${c.contract_date}</span>
@@ -2035,7 +2033,6 @@ async function injectHistorySection(c) {
     contract_pending_at: '계약대기 시각', contract_in_progress_at: '계약진행 시각',
     contract_completed_at: '계약완료 시각', contract_cancelled_at: '계약취소 시각',
     product_id: '상품', payback_snapshot: '페이백', rebate_snapshot: '리베이트',
-    point_weight_snapshot: '상담사 포인트', is_premium_snapshot: '우수상품',
     db_source_id: 'DB 출처', dealer_id: '대리점',
     customer_name: '고객명', customer_phone: '전화', customer_email: '이메일',
     customer_address: '주소', customer_address_detail: '상세주소',
@@ -2506,8 +2503,6 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
       '속도': p.speed || '',
       'TV 등급': p.tv_tier || '',
       'Tier': p.tier || '',
-      '우수상품': p.is_premium ? 'Y' : 'N',
-      '상담사 포인트(P)': c.point_weight_snapshot ?? p.point_weight ?? 0,
       '페이백 (등록시점)': c.payback_snapshot ?? p.payback ?? 0,
       '월 요금 (실질)': c.monthly_fee || 0,
       // ─── 견적 옵션 ───
@@ -2747,8 +2742,8 @@ init();
       const p = s.product || {}, opt = s.option || {}, a = s.agent || {};
       const curTier = opt.tier || p.tier;
       const tierBadge = curTier ? `<span class="tier tier-${curTier}">${curTier}</span>` : '<span style="color:#64748b;font-size:10px">-</span>';
-      const premBadge = (opt.is_premium ?? p.is_premium) ? '<span class="prem-badge" style="margin-left:3px">⭐</span>' : '';
-      const pBadge = (opt.point_weight || p.point_weight) ? `<span style="color:#a5b4fc;font-size:10.5px;margin-left:5px">${(opt.point_weight || p.point_weight)}P</span>` : '';
+      const premBadge = '';
+      const pBadge = '';
       const addrMissing = !s.customer_address;
       return `<tr class="rental-sale-row" data-id="${s.id}" style="cursor:pointer">
         <td style="text-align:center;color:#64748b">${start + i + 1}</td>
@@ -2868,8 +2863,6 @@ init();
           '약정(M)': s.months_snapshot || opt.months || '',
           '케어': s.care_service_snapshot || opt.care_service || '',
           'Tier': opt.tier || p.tier || '',
-          'P': opt.point_weight || p.point_weight || '',
-          '우수': (opt.is_premium ?? p.is_premium) ? 'Y' : 'N',
           '고객명': s.customer_name || '',
           '전화': s.customer_phone || '',
           '주소': s.customer_address || '',
@@ -2919,13 +2912,12 @@ init();
             <div class="ph-meta">[${p.brand || '-'}] ${p.name || '-'} · 모델 <code style="background:#0f172a;padding:1px 5px;border-radius:3px;color:#fbbf24">${p.model || '-'}</code>${p.product_url ? ` <a href="${p.product_url}" target="_blank" style="color:#60a5fa;text-decoration:none;font-size:10.5px;margin-left:4px">🔗 상품 페이지</a>` : ''}</div>
             <div class="ph-name">🎫 <span style="color:#a5b4fc">${opt.ticket_number || '-'}</span> · ${opt.months || '-'}개월 · ${opt.care_service || '-'}${p.promo_tag ? ` <span style="background:#7c3aed;color:#fff;font-size:9.5px;padding:1px 6px;border-radius:3px;margin-left:4px;font-weight:700">${p.promo_tag}</span>` : ''}</div>
             <div class="ph-tags">
-              <span style="background:rgba(99,102,241,0.15);color:#a5b4fc;padding:2px 8px;border-radius:4px;font-weight:700">${s.point_weight_snapshot ?? p.point_weight ?? '-'}P</span>
               ${(() => {
                 const curTier = opt.tier || p.tier;
                 if (!curTier) return '<span style="background:rgba(100,116,139,0.15);color:#94a3b8;padding:2px 8px;border-radius:4px;font-weight:700">Tier 미지정</span>';
                 return `<span class="tier tier-${curTier}" title="현재 옵션 등급 (운영자 수동 입력)">${curTier} 등급</span>`;
               })()}
-              ${p.is_premium ? '<span class="prem-badge">⭐ 우수</span>' : ''}
+              
               ${s.grade_at_snapshot ? `<span style="background:rgba(59,130,246,0.15);color:#93c5fd;padding:2px 8px;border-radius:4px;font-weight:700">DB ${s.grade_at_snapshot} 등급</span>` : ''}
               <span style="color:#64748b">·</span>
               <span>📅 ${s.contract_date || '-'}</span>

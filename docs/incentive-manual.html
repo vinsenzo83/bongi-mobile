@@ -322,7 +322,7 @@ const SECTIONS = [
 <div class="step"><span class="num">1</span>[🧮 계산기로 상품 변경 ↗] 클릭 → V2 계산기와 동일한 <b>팝업창</b>(1400×900) 열림</div>
 <div class="step"><span class="num">2</span>견적 옵션(왼) + 견적 결과(우측) 표시. 통신사·속도·TV·결합·WiFi·추가 TV·셋톱·인원 등 자유 변경</div>
 <div class="step"><span class="num">3</span>[💾 상품 변경 적용 (사유 입력)] 클릭 → 사유 prompt (<b>고객 요구·시공 불가·기타</b>)</div>
-<div class="step"><span class="num">4</span>저장 시 PATCH /sales/{id} 자동 호출 + snapshot 재계산 (가이드·MAX·실제 지급액·tier·is_premium·company_payback_burden·agent_payback_deduct — 2026-05-18 확장)</div>
+<div class="step"><span class="num">4</span>저장 시 PATCH /sales/{id} 자동 호출 + snapshot 재계산 (가이드·MAX·실제 지급액·company_payback_burden·agent_payback_deduct)</div>
 <div class="step"><span class="num">5</span>팝업 자동 close + 계약 list 새로고침 + 편집 모달 자동 close</div>
 
 <h3>상태 변경</h3>
@@ -380,7 +380,7 @@ const SECTIONS = [
 <ul>
 <li>📞 콜 시도 — <code>incentive_customer_call_log</code> 월간 카운트</li>
 <li>🎉 전환 — <code>incentive_sales</code> + <code>rental_sales</code> 월간 contract_date 카운트 (status 무관)</li>
-<li>🏆 P — RPC <code>incentive_finalize_monthly_settlement</code> 의 <code>combined_total_points</code> (인터넷+TV + 가전 합산)</li>
+<li>🪙 잔존마진 — RPC <code>incentive_calc_monthly_settlement</code> 의 <code>total_residual_margin</code></li>
 </ul>
 <h3>색상 단계</h3>
 <table>
@@ -892,9 +892,7 @@ const SECTIONS = [
 <h3>주요 지표 (응답 schema 확장 — 2026-05-18)</h3>
 <ul>
 <li>직접 집계: 인터넷+TV(<code>internet_count</code>) · 가전(<code>rental_count</code>) · 합계(<code>total_count</code>) · 월납·페이백 · 완료/취소</li>
-<li>settlements 기반 (finalize된 월): <code>total_points</code>·<code>premium_count</code>·<code>incentive</code>·<code>bonus</code>·<code>company_profit</code></li>
-<li>가전 separate: <code>rental_points</code>·<code>rental_premium_count</code>·<code>rental_incentive</code>·<code>rental_bonus</code>·<code>rental_company_profit</code></li>
-<li>⚡ 통합: <code>combined_total_count</code>·<code>combined_total_points</code>·<code>combined_agent_total</code>·<code>combined_company_profit</code></li>
+<li>settlements 기반 (finalize된 월): <code>total_count</code>·<code>total_residual_margin</code>·<code>incentive</code>·<code>agent_total</code>·<code>company_profit</code></li>
 <li>부서 미배정 agent → "— 미배정" 행으로 별도 표시</li>
 </ul>
 <h3>주요 액션</h3>
