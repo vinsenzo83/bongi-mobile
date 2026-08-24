@@ -397,6 +397,17 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 /* 모드별 가시성: 기본 = it 모드 */
 body:not(.cat-rental) .tm-rental-panel { display:none; }
 body.cat-rental main.tm-panel > *:not(.tm-cat-tabs):not(.tm-rental-panel):not(#call-mode-bar) { display:none !important; }
+body.cat-usim main.tm-panel > *:not(.tm-cat-tabs):not(.tm-usim-panel):not(#call-mode-bar) { display:none !important; }
+.tm-usim-panel { display:none; }
+body.cat-usim .tm-usim-panel { display:block; }
+.usim-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; }
+.usim-card { border:1.5px solid #d1d5db; border-radius:10px; padding:12px 14px; cursor:pointer; background:#fff; transition:all .13s; }
+.usim-card:hover { border-color:#0ea5e9; box-shadow:0 2px 10px rgba(14,165,233,.12); }
+.usim-card.sel { border-color:#0284c7; background:#f0f9ff; box-shadow:0 0 0 2px rgba(2,132,199,.18); }
+.usim-card .un { font-size:13.5px; font-weight:800; color:#0f172a; margin-bottom:5px; }
+.usim-card .uf { font-size:11.5px; color:#64748b; display:flex; justify-content:space-between; padding:1.5px 0; }
+.usim-card .uf b { color:#0f172a; font-weight:700; }
+.usim-card .up { margin-top:6px; padding-top:6px; border-top:1px dashed #e2e8f0; font-size:12px; font-weight:800; color:#b45309; display:flex; justify-content:space-between; }
 /* ★ 가전렌탈도 인터넷+TV와 동일한 3컬럼 구조 (좌 카드 + 가운데 폼 + 우 결과 사이드바) — 2026-05-19 */
 body:not(.cat-rental) #rental-result-block { display:none; }
 body.cat-rental #it-result-block { display:none; }
@@ -1776,10 +1787,35 @@ function bindShortcutKeys() {
 
   <!-- ═══ 중앙: 카드 UI ═══ -->
   <main class="tm-panel" style="background:transparent;box-shadow:none;padding:0">
-    <!-- ★ 카테고리 탭 (인터넷+TV / 가전렌탈) -->
+    <!-- ★ 카테고리 탭 (인터넷+TV / 유심 단독) — 가전렌탈은 탭에서 내림(코드는 보존) -->
     <div class="tm-cat-tabs">
       <div class="tab active" data-cat="it">📡 인터넷 + TV</div>
-      <div class="tab" data-cat="rental">🏠 가전렌탈(정수기) <span class="new">NEW</span></div>
+      <div class="tab" data-cat="usim">📲 유심 단독 <span class="new">NEW</span></div>
+    </div>
+
+    <!-- ★ 유심 단독 판매 패널 — 인터넷 없이 유심만 개통 -->
+    <div class="tm-usim-panel">
+      <div class="tm-card">
+        <div class="tm-card-title"><span class="num">1</span>통신사</div>
+        <div class="tm-options" id="us-carrier">
+          <div class="tm-option selected" data-value="SKT">SKT</div>
+          <div class="tm-option" data-value="KT">KT</div>
+          <div class="tm-option" data-value="LG U+">LG U+</div>
+        </div>
+      </div>
+      <div class="tm-card">
+        <div class="tm-card-title"><span class="num">2</span>요금제 <span style="font-size:10.5px;font-weight:600;color:#0ea5e9;margin-left:6px">번호이동 전용 · 단말 없이 유심만 개통</span></div>
+        <div class="usim-grid" id="us-plans"></div>
+      </div>
+      <div class="tm-card" style="background:#fff7ed;border:1.5px solid #fdba74">
+        <div class="tm-card-title"><span class="num">⚠</span>개통 전 반드시 확인</div>
+        <div style="font-size:12px;color:#7c2d12;line-height:1.75">
+          · <b>번호이동만 가능하다.</b> 신규가입은 안 된다.<br>
+          · 고객이 <b>이미 해당 통신사를 쓰고 있으면 대상이 아니다.</b> 현재 통신사를 먼저 물어볼 것.<br>
+          · 쓰던 폰을 그대로 쓴다. <b>기기 판매가 아니므로 할부원금·공시지원금이 없다.</b><br>
+          · 인터넷을 같이 가입하면 <b>같은 통신사</b> 유심만 결합이 인정된다 (SKT·SKB→SKT / KT→KT / LG U+→LG U+).
+        </div>
+      </div>
     </div>
 
     <!-- ★ 가전렌탈 패널 (기본 hidden, 탭 클릭 시 표시) -->
@@ -3047,6 +3083,80 @@ function applyUsimToBundle() {
     if (ln && ln.querySelector('option[value="' + h.linesVal + '"]')) ln.value = h.linesVal;
   }
   try { calc(); } catch (e) {}
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// 📲 유심 단독 판매 — 인터넷 없이 유심만 개통하는 견적
+//   인터넷+TV 탭의 업셀과 같은 데이터(incentive_usim_plans)를 쓴다.
+//   차이는 인터넷 요금·결합할인이 아예 없다는 것뿐이다.
+// ═══════════════════════════════════════════════════════════
+var USIM_SOLO = { carrier: 'SKT', planId: null };
+
+function usimSoloInit() {
+  var wrap = document.getElementById('us-carrier');
+  if (wrap && !wrap._wired) {
+    wrap._wired = true;
+    wrap.querySelectorAll('.tm-option').forEach(function(o) {
+      o.addEventListener('click', function() {
+        wrap.querySelectorAll('.tm-option').forEach(function(x) { x.classList.remove('selected'); });
+        o.classList.add('selected');
+        USIM_SOLO.carrier = o.dataset.value;
+        USIM_SOLO.planId = null;
+        usimSoloRender();
+      });
+    });
+  }
+  if (!USIM_PLANS.length) { loadUsimPlans().then(usimSoloRender); return; }
+  usimSoloRender();
+}
+
+function usimSoloRender() {
+  var box = document.getElementById('us-plans');
+  if (!box) return;
+  var list = USIM_PLANS.filter(function(p) { return p.carrier === USIM_SOLO.carrier && p.is_active !== false; });
+  if (!list.length) { box.innerHTML = '<div style="font-size:12px;color:#94a3b8">등록된 요금제가 없습니다.</div>'; usimSoloQuote(null); return; }
+  box.innerHTML = list.map(function(p) {
+    var net = usimNetFee(p);
+    return '<div class="usim-card' + (String(p.id) === String(USIM_SOLO.planId) ? ' sel' : '') + '" data-id="' + p.id + '">' +
+      '<div class="un">' + p.plan_name + '</div>' +
+      '<div class="uf"><span>월정액</span><b>' + p.monthly_fee.toLocaleString() + '원</b></div>' +
+      '<div class="uf"><span>선택약정 25%</span><b style="color:#0284c7">' + net.toLocaleString() + '원</b></div>' +
+      (p.data_amount ? '<div class="uf"><span>데이터</span><b>' + p.data_amount + (p.network ? ' · ' + p.network : '') + '</b></div>' : '') +
+      '<div class="up"><span>🎁 페이백</span><span>' + (p.payback || 0).toLocaleString() + '원</span></div>' +
+    '</div>';
+  }).join('');
+  box.querySelectorAll('.usim-card').forEach(function(cd) {
+    cd.addEventListener('click', function() {
+      USIM_SOLO.planId = cd.dataset.id;
+      usimSoloRender();
+    });
+  });
+  var sel = list.filter(function(p) { return String(p.id) === String(USIM_SOLO.planId); })[0] || null;
+  usimSoloQuote(sel);
+}
+
+function usimSoloQuote(p) {
+  var el = document.getElementById('c-result');
+  if (!el) return;
+  if (!p) {
+    el.innerHTML = '<div style="padding:16px;font-size:12.5px;color:rgba(255,255,255,0.55);line-height:1.7">' +
+      '📲 <b style="color:#7dd3fc">유심 단독 판매</b><br>통신사와 요금제를 고르면 견적이 나옵니다.<br><br>' +
+      '<span style="color:#fca5a5">번호이동만 가능</span> — 고객의 현재 통신사를 먼저 확인하세요.</div>';
+    return;
+  }
+  var net = usimNetFee(p), dc = p.monthly_fee - net, pay = p.payback || 0;
+  el.innerHTML =
+    '<div style="padding:4px 2px">' +
+    '<div style="font-size:10px;color:#7dd3fc;font-weight:800;letter-spacing:.05em;margin-bottom:6px">📲 유심 단독 · ' + p.carrier + ' · 번호이동</div>' +
+    '<div class="calc-line"><span class="l">' + p.plan_name + (p.data_amount ? ' <span style="opacity:.6">' + p.data_amount + '</span>' : '') + '</span><span class="v">' + fmt(p.monthly_fee) + '</span></div>' +
+    '<div class="calc-line discount"><span class="l">선택약정 25% <span style="font-size:9.5px;opacity:.7">' + (p.contract_months || 12) + '개월</span></span><span class="v">-' + fmt(dc) + '</span></div>' +
+    '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l">✨ 월 요금</span><span class="v" style="font-size:20px">' + fmt(net) + '</span></div>' +
+    (pay > 0 ? '<div class="calc-line gift" style="background:rgba(251,191,36,0.14);border-radius:6px;padding:7px 10px;margin-top:8px"><span class="l" style="color:#fbbf24">🎁 개통 페이백</span><span class="v" style="color:#fbbf24;font-size:17px">' + fmt(pay) + '</span></div>' : '') +
+    '<div style="margin-top:10px;padding:8px 10px;background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.30);border-radius:6px;font-size:10.5px;color:#fca5a5;line-height:1.6">' +
+      '⛔ <b>번호이동 전용 · 신규가입 불가</b><br>이미 ' + p.carrier + ' 를 쓰는 고객은 대상이 아닙니다.<br>' +
+      '<span style="color:rgba(255,255,255,0.5)">단말 판매가 아니므로 할부원금·공시지원금이 없습니다.</span>' +
+    '</div></div>';
 }
 
 function renderUsimPicker() {
@@ -5519,14 +5629,18 @@ setTimeout(() => {
       t.classList.add('active');
       const cat = t.dataset.cat;
       document.body.classList.toggle('cat-rental', cat === 'rental');
+      document.body.classList.toggle('cat-usim', cat === 'usim');
       document.body.classList.toggle('cat-it', cat === 'it');
       // 카테고리별 스크립트 라벨 + 데이터 전환
       const lbl = document.getElementById('tm-script-cat-label');
-      if (lbl) lbl.textContent = cat === 'rental' ? '· 🏠 가전렌탈(정수기)' : '· 📡 인터넷+TV';
+      if (lbl) lbl.textContent = cat === 'rental' ? '· 🏠 가전렌탈(정수기)'
+                              : cat === 'usim'   ? '· 📲 유심 단독'
+                              : '· 📡 인터넷+TV';
       if (cat === 'rental') {
         rentalInit();
         renderRentalScripts();
       }
+      if (cat === 'usim') usimSoloInit();
     });
   });
 
