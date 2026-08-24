@@ -3,756 +3,250 @@
 <head>
 <meta charset="UTF-8">
 <title>월별 정산</title>
-<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <script src="/docs/_security.js" defer></script>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:'Pretendard Variable',-apple-system,sans-serif; background:#0f172a; color:#e2e8f0; padding:18px; }
-h1 { font-size:18px; color:#f8fafc; margin-bottom:14px; letter-spacing:-0.02em; display:flex; align-items:center; gap:8px; }
+h1 { font-size:18px; color:#f8fafc; margin-bottom:6px; letter-spacing:-0.02em; display:flex; align-items:center; gap:8px; }
+.lead { font-size:11.5px; color:#94a3b8; margin-bottom:14px; }
 h2 { font-size:14px; color:#a5b4fc; font-weight:800; margin:18px 0 10px; letter-spacing:-0.01em; }
 .toolbar { display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
-.toolbar select, .toolbar button, .toolbar input { background:#1e293b; border:1px solid #475569; color:#e2e8f0; padding:7px 12px; border-radius:6px; font-size:12px; font-family:inherit; cursor:pointer; }
+.toolbar select, .toolbar button { background:#1e293b; border:1px solid #475569; color:#e2e8f0; padding:7px 12px; border-radius:6px; font-size:12px; cursor:pointer; }
 .toolbar button:hover { background:#334155; }
 .btn-primary { background:#3b82f6 !important; color:#fff !important; font-weight:700; border-color:#60a5fa !important; }
-.btn-success { background:#22c55e !important; color:#fff !important; font-weight:700; }
+.btn-success { background:#16a34a !important; color:#fff !important; font-weight:700; }
 
-/* ─── KPI 카드 (대시보드 스타일) ─── */
-.agent-kpi-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:10px; margin-bottom:16px; }
-.kpi-card { background:linear-gradient(135deg,#064e3b,#0f172a); border:1.5px solid #16a34a; border-radius:12px; padding:14px 16px; position:relative; overflow:hidden; }
-.kpi-card.primary { background:linear-gradient(135deg,#15803d,#064e3b); border-color:#22c55e; }
-.kpi-card.danger { background:linear-gradient(135deg,#7f1d1d,#0f172a); border-color:#dc2626; }
-.kpi-card.warn { background:linear-gradient(135deg,#854d0e,#0f172a); border-color:#fbbf24; }
-.kpi-card.info { background:linear-gradient(135deg,#1e40af,#0f172a); border-color:#3b82f6; }
-.kpi-card .label { font-size:10px; color:#86efac; font-weight:800; letter-spacing:0.04em; margin-bottom:6px; }
-.kpi-card.primary .label { color:#dcfce7; }
-.kpi-card.danger .label { color:#fca5a5; }
-.kpi-card.warn .label { color:#fcd34d; }
-.kpi-card.info .label { color:#bfdbfe; }
-.kpi-card .val { font-size:22px; color:#f8fafc; font-weight:900; letter-spacing:-0.02em; line-height:1.2; }
-.kpi-card.primary .val { font-size:28px; color:#bbf7d0; }
-.kpi-card.danger .val { color:#fca5a5; }
-.kpi-card .sub { font-size:10px; color:#94a3b8; margin-top:4px; line-height:1.4; }
-@media (max-width: 1100px) { .agent-kpi-grid { grid-template-columns:repeat(4, 1fr); } }
-@media (max-width: 700px) { .agent-kpi-grid { grid-template-columns:repeat(2, 1fr); } }
+.kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:16px; }
+.kpi { background:linear-gradient(135deg,#1e293b,#0f172a); border:1.5px solid #475569; border-radius:12px; padding:14px 16px; }
+.kpi.primary { background:linear-gradient(135deg,#15803d,#064e3b); border-color:#22c55e; }
+.kpi.info    { background:linear-gradient(135deg,#1e40af,#0f172a); border-color:#3b82f6; }
+.kpi.warn    { background:linear-gradient(135deg,#854d0e,#0f172a); border-color:#fbbf24; }
+.kpi .label { font-size:10px; color:#94a3b8; font-weight:800; letter-spacing:0.04em; margin-bottom:6px; }
+.kpi.primary .label { color:#dcfce7; }
+.kpi.info .label { color:#bfdbfe; }
+.kpi.warn .label { color:#fcd34d; }
+.kpi .val { font-size:22px; color:#f8fafc; font-weight:900; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; }
+.kpi.primary .val { font-size:26px; color:#bbf7d0; }
+.kpi .sub { font-size:10px; color:#94a3b8; margin-top:4px; line-height:1.4; }
+@media (max-width:1100px){ .kpi-grid { grid-template-columns:repeat(3,1fr); } }
+@media (max-width:700px){ .kpi-grid { grid-template-columns:repeat(2,1fr); } }
 
-/* ─── 등급 진행률 ─── */
-.progress-section { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:14px 16px; margin-bottom:18px; }
-.progress-bar { background:#0f172a; border:1px solid #334155; height:14px; border-radius:7px; overflow:hidden; position:relative; }
-.progress-fill { background:linear-gradient(90deg,#22c55e,#16a34a); height:100%; transition:width 0.4s; }
-.progress-info { display:flex; justify-content:space-between; font-size:10.5px; color:#cbd5e1; margin-top:6px; }
-.progress-info b { color:#f8fafc; font-weight:800; }
-
-/* ─── 본인 정산 표 (manager/admin) ─── */
-.team-table { width:100%; border-collapse:collapse; font-size:11.5px; background:#1e293b; border:1px solid #334155; border-radius:8px; overflow:hidden; }
-.team-table th { padding:8px; text-align:center; background:#0f172a; color:#94a3b8; font-weight:700; font-size:10.5px; white-space:nowrap; }
-.team-table th.l { text-align:left; }
-.team-table td { padding:8px; border-bottom:1px solid #334155; color:#cbd5e1; text-align:center; }
-.team-table td.r { text-align:right; font-family:monospace; }
-.team-table td.l { text-align:left; }
-.grade-1 { background:#475569; color:#fff; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:800; }
-.grade-2 { background:#3b82f6; color:#fff; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:800; }
-.grade-3 { background:#22c55e; color:#fff; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:800; }
-.penalty { color:#f87171; font-size:9px; margin-left:3px; }
-.role-badge { padding:1px 6px; border-radius:3px; font-size:9px; font-weight:800; }
-.r-admin { background:#dc2626; color:#fff; }
-.r-manager { background:#16a34a; color:#fff; }
-.r-agent { background:#3b82f6; color:#fff; }
-
-body.role-agent .admin-only { display:none !important; }
-body:not(.role-agent) .agent-self-only { display:none !important; }
-@media print {
-  body { background:#fff; color:#000; }
-  .toolbar, .no-print { display:none !important; }
-  .kpi-card { background:#fff !important; border:1px solid #ccc !important; }
-  .kpi-card .label, .kpi-card .sub { color:#444 !important; }
-  .kpi-card .val { color:#000 !important; }
-  .team-table { background:#fff; border:1px solid #ccc; }
-  .team-table th { background:#eee; color:#000; }
-  .team-table td { color:#000; }
-}
+table { width:100%; border-collapse:collapse; background:#1e293b; border-radius:10px; overflow:hidden; }
+th { background:#334155; color:#f1f5f9; font-size:11px; padding:10px 12px; text-align:left; font-weight:700; white-space:nowrap; }
+td { font-size:12px; color:#e2e8f0; padding:10px 12px; border-bottom:1px solid #334155; }
+td.r, th.r { text-align:right; font-variant-numeric:tabular-nums; }
+tr:last-child td { border-bottom:none; }
+tr.sum td { background:rgba(59,130,246,0.10); font-weight:800; }
+.badge { font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:4px; }
+.b-fin  { background:#16a34a; color:#fff; }
+.b-open { background:#475569; color:#cbd5e1; }
+.note { background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.35); border-radius:8px; padding:11px 14px; font-size:11.5px; color:#fde68a; line-height:1.75; margin-bottom:14px; }
+.empty { text-align:center; color:#64748b; padding:26px; font-size:12px; }
 </style>
 </head>
 <body>
+  <h1>💰 월별 정산</h1>
+  <div class="lead">잔존마진 배분제 · <b style="color:#cbd5e1">월 급여 = 기본급 + Σ(MAX − 실제 지급액) × 개인 배분율 − 페이백 차감</b></div>
 
-<h1>💰 월별 정산 <span style="font-size:11px;color:#94a3b8;font-weight:400">V5 인센티브</span></h1>
+  <div class="toolbar">
+    <select id="f-month"></select>
+    <button id="btn-reload">↻ 새로고침</button>
+    <button id="btn-finalize" class="btn-success" style="display:none">🔒 이번 달 확정</button>
+    <span id="scope" style="font-size:11px;color:#64748b;margin-left:auto"></span>
+  </div>
 
-<div class="toolbar">
-  <span style="font-size:11.5px;color:#94a3b8">정산 월:</span>
-  <input type="month" id="f-period" onchange="loadAll()">
-  <button onclick="(async()=>{await loadAll();if(typeof showToast==='function')showToast('🔄 새로고침 완료')})()">🔄 새로고침</button>
-  <button class="btn-success no-print" onclick="finalizeAll()" id="btn-finalize">🔒 전체 확정</button>
-  <button class="no-print" onclick="openCorrections()" id="btn-corrections" style="background:#475569;color:#fff;font-weight:700">📩 수정 요청</button>
-  <span style="margin-left:auto"></span>
-  <button class="no-print" onclick="exportCSV()">📥 CSV</button>
-  <button class="no-print" onclick="window.print()">🖨️ 인쇄</button>
-</div>
+  <div class="note">
+    <b>설치완료된 건만</b> 잡힙니다. 접수·진행 중인 건은 들어가지 않고, 취소·철회되면 빠집니다.<br>
+    실제 지급액을 넣지 않은 건은 <b>가이드를 지급한 것으로</b> 봅니다.
+  </div>
 
-<!-- ─── KPI: 본인(agent) 또는 합산(manager/admin) ─── -->
-<h2 id="kpi-title">📊 정산 요약</h2>
-<div class="agent-kpi-grid">
-  <div class="kpi-card primary">
-    <div class="label">💰 <span id="primary-label">총 정산</span></div>
-    <div class="val" id="kpi-primary">-</div>
-    <div class="sub" id="kpi-primary-sub">-</div>
+  <div class="kpi-grid">
+    <div class="kpi primary"><div class="label">지급 합계</div><div class="val" id="k-total">-</div><div class="sub" id="k-total-sub">기본급 + 인센티브</div></div>
+    <div class="kpi"><div class="label">설치완료</div><div class="val" id="k-count">-</div><div class="sub">정산 대상 건수</div></div>
+    <div class="kpi info"><div class="label">잔존마진</div><div class="val" id="k-residual">-</div><div class="sub">MAX − 실제 지급액</div></div>
+    <div class="kpi"><div class="label">총 인센티브</div><div class="val" id="k-incentive">-</div><div class="sub">상담사 몫</div></div>
+    <div class="kpi warn"><div class="label">MAX 소진율</div><div class="val" id="k-usage">-</div><div class="sub">실지급 ÷ (실지급+잔존)</div></div>
   </div>
-  <div class="kpi-card">
-    <div class="label">🏆 등급/계약</div>
-    <div class="val" id="kpi-grade">-</div>
-    <div class="sub" id="kpi-grade-sub">-</div>
-  </div>
-  <div class="kpi-card">
-    <div class="label">📊 누적 P</div>
-    <div class="val" id="kpi-points">-</div>
-    <div class="sub" id="kpi-points-sub">-</div>
-  </div>
-  <div class="kpi-card warn">
-    <div class="label">⭐ 우수</div>
-    <div class="val" id="kpi-premium">-</div>
-    <div class="sub" id="kpi-premium-sub">건</div>
-  </div>
-  <div class="kpi-card">
-    <div class="label">💵 인센티브</div>
-    <div class="val" id="kpi-incentive">-</div>
-    <div class="sub" id="kpi-incentive-sub">-</div>
-  </div>
-  <div class="kpi-card">
-    <div class="label">🎁 보너스</div>
-    <div class="val" id="kpi-bonus">-</div>
-    <div class="sub">우수 보너스</div>
-  </div>
-  <div class="kpi-card danger">
-    <div class="label">💸 페이백 차감</div>
-    <div class="val" id="kpi-deduct">-</div>
-    <div class="sub" id="kpi-deduct-sub">본인 부담</div>
-  </div>
-</div>
 
-<!-- 매니저 전용 — 팀 오버라이드 보너스 (V5.1) -->
-<div id="mgr-override-section" style="display:none;background:linear-gradient(135deg,#1e40af,#0f172a);border:1.5px solid #3b82f6;border-radius:12px;padding:16px;margin-bottom:18px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <h3 style="font-size:13px;color:#bfdbfe;font-weight:800">👨‍💼 팀 오버라이드 보너스 (V5.1)</h3>
-    <span style="font-size:10.5px;color:#94a3b8" id="mgr-ov-status">-</span>
+  <h2 id="tbl-title">상담사별 정산</h2>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>상담사</th><th>센터</th>
+        <th class="r">설치완료</th><th class="r">실제 지급액</th><th class="r">잔존마진</th>
+        <th class="r">배분율</th><th class="r">기본급</th><th class="r">인센티브</th>
+        <th class="r">페이백 차감</th><th class="r">지급 합계</th><th class="r">회사 몫</th><th>확정</th>
+      </tr></thead>
+      <tbody id="tbody"><tr><td colspan="12" class="empty">불러오는 중…</td></tr></tbody>
+    </table>
   </div>
-  <div class="agent-kpi-grid" style="grid-template-columns:repeat(5, 1fr)">
-    <div class="kpi-card info"><div class="label">👥 팀원</div><div class="val" id="mov-team">-</div><div class="sub" id="mov-team-sub">활성 인원</div></div>
-    <div class="kpi-card info"><div class="label">📋 팀 계약</div><div class="val" id="mov-count">-</div><div class="sub" id="mov-count-sub">본인 + 팀원</div></div>
-    <div class="kpi-card info"><div class="label">💰 팀 인센티브</div><div class="val" id="mov-team-inc">-</div><div class="sub">합계</div></div>
-    <div class="kpi-card info"><div class="label">📊 오버라이드율</div><div class="val" id="mov-rate">-</div><div class="sub" id="mov-rate-sub">기본 12%</div></div>
-    <div class="kpi-card primary"><div class="label">🎁 오버라이드 보너스</div><div class="val" id="mov-final">-</div><div class="sub" id="mov-final-sub">매니저 추가 지급</div></div>
-  </div>
-  <div id="mov-detail" style="margin-top:10px;font-size:11px;color:#cbd5e1;line-height:1.6"></div>
-</div>
 
-<!-- ─── 본인 등급 진행률 (agent self) ─── -->
-<div class="progress-section agent-self-only" id="progress-section">
-  <div style="font-size:12px;font-weight:700;color:#a5b4fc;margin-bottom:8px" id="progress-label">등급 진행률</div>
-  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-  <div class="progress-info">
-    <span id="progress-current">-</span>
-    <span id="progress-target">-</span>
-  </div>
-  <div style="font-size:11px;color:#fbbf24;margin-top:6px" id="progress-hint">-</div>
-</div>
-
-<!-- ─── 본인/팀 정산 상세 (agent도 본인 1행만) ─── -->
-<h2 id="team-title">📋 정산 상세</h2>
-<div style="overflow-x:auto">
-<table class="team-table">
-  <thead>
-    <tr style="background:#0f172a">
-      <th rowspan="2">#</th>
-      <th rowspan="2" class="l">상담사</th><th rowspan="2">역할</th><th rowspan="2">센터</th>
-      <th colspan="4" style="background:rgba(96,165,250,0.08);color:#60a5fa;border-bottom:1px solid #475569">📡 인터넷+TV (독립 Grade)</th>
-      <th colspan="4" style="background:rgba(245,158,11,0.08);color:#fbbf24;border-bottom:1px solid #475569">🏠 가전렌탈 (독립 Grade)</th>
-      <th colspan="2" style="background:rgba(167,139,250,0.08);color:#c4b5fd;border-bottom:1px solid #475569">⚡ 합산</th>
-      <th rowspan="2">기본급</th>
-      <th rowspan="2" class="admin-only">이익률 IT</th>
-      <th rowspan="2" class="no-print">상세</th>
-      <th rowspan="2" class="no-print">확정</th>
-    </tr>
-    <tr style="background:#0f172a;font-size:10.5px">
-      <th style="background:rgba(96,165,250,0.04)">계약</th>
-      <th style="background:rgba(96,165,250,0.04)">Grade · 단가</th>
-      <th style="background:rgba(96,165,250,0.04)">IT 인센+보너스</th>
-      <th style="background:rgba(96,165,250,0.04);" class="admin-only">IT 회사이익</th>
-      <th style="background:rgba(245,158,11,0.04)">계약</th>
-      <th style="background:rgba(245,158,11,0.04)">Grade · 단가</th>
-      <th style="background:rgba(245,158,11,0.04)">가전 인센+보너스</th>
-      <th style="background:rgba(245,158,11,0.04);" class="admin-only">가전 회사이익</th>
-      <th style="background:rgba(167,139,250,0.04)">총 수령</th>
-      <th style="background:rgba(167,139,250,0.04);" class="admin-only">총 회사이익</th>
-    </tr>
-  </thead>
-  <tbody id="tbody"><tr><td colspan="18" style="padding:30px;color:#64748b">로딩 중...</td></tr></tbody>
-</table>
-</div>
-
-<div id="empty" style="display:none;padding:40px;text-align:center;color:#64748b">해당 월 데이터 없음</div>
-
-<!-- 수정 요청 모달 -->
-<div id="cor-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99998;justify-content:center;align-items:center" onclick="if(event.target===this)closeCorrections()">
-  <div style="background:#1e293b;border:1.5px solid #475569;border-radius:14px;padding:22px 26px;width:760px;max-width:94vw;max-height:84vh;overflow-y:auto;color:#fff">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <h3 style="font-size:15px;color:#fbbf24;font-weight:800">📩 정산 수정 요청</h3>
-      <button onclick="closeCorrections()" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px">닫기</button>
-    </div>
-    <div id="cor-new-form" class="agent-self-only" style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;margin-bottom:14px">
-      <div style="font-size:11px;color:#cbd5e1;margin-bottom:8px">현재 월(<span id="cor-current-period">-</span>) 정산에 대한 수정 요청 — admin이 검토 후 sale 데이터 정정합니다</div>
-      <textarea id="cor-reason" placeholder="예: 5/15 신청한 김OO 계약이 누락되었습니다" rows="3" style="width:100%;background:#1e293b;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
-      <button onclick="submitCorrection()" style="background:#fbbf24;color:#1e293b;border:none;padding:8px 16px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:800;margin-top:6px">📨 제출</button>
-    </div>
-    <h4 style="font-size:12px;color:#a5b4fc;font-weight:800;margin-bottom:8px">📋 요청 이력</h4>
-    <div id="cor-list-body" style="font-size:11.5px"></div>
-  </div>
-</div>
-
-<!-- 🏠 가전 정산 상세 팝업 (가전 Grade·단가는 인터넷+TV와 별도) -->
-<div id="rental-settle-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99998;justify-content:center;align-items:flex-start;padding:40px 20px;overflow-y:auto" onclick="if(event.target===this)this.style.display='none'">
-  <div style="background:#1e293b;border:1.5px solid #f59e0b;border-radius:12px;width:640px;max-width:96vw;color:#e2e8f0">
-    <div id="rental-settle-body"></div>
-  </div>
-</div>
-
-<div id="toast" style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:10px 20px;border-radius:8px;font-weight:800;z-index:99999;opacity:0;transition:opacity 0.2s"></div>
+  <h2>✏️ 정정 요청</h2>
+  <div id="corr-wrap" style="font-size:12px;color:#94a3b8">불러오는 중…</div>
 
 <script>
 const TK = () => localStorage.getItem('incentive-auth-token-v1');
-const fetchAuth = (url, opts={}) => fetch(url, { ...opts, headers: { ...(opts.headers||{}), Authorization: 'Bearer ' + TK() }});
-const esc = (s) => String(s ?? '').replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt = (n) => (n||0).toLocaleString();
-function showToast(m, color='#16a34a') { const t=document.getElementById('toast'); t.textContent=m; t.style.background=color; t.style.opacity=1; setTimeout(()=>t.style.opacity=0, 2500); }
+const fetchAuth = (url, opts = {}) =>
+  fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + TK() } });
+const fmt = v => (v == null) ? '-' : Number(v).toLocaleString();
+const $ = id => document.getElementById(id);
 
-const now = new Date();
-document.getElementById('f-period').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+let _me = null, _rows = [];
 
-let _myRole = null, _myAgentId = null;
-let _settlements = [];
-let _itPolicy = null;     // /api/incentive/rules — base_salary·bonus_per_premium·grade_rates·grade_thresholds·payback_company_limit
-let _rtPolicy = null;     // /api/rental/policy
+// 최근 12개월 선택지
+(function buildMonths() {
+  const sel = $('f-month');
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const o = document.createElement('option');
+    o.value = ym; o.textContent = ym + (i === 0 ? ' (이번 달)' : '');
+    sel.appendChild(o);
+  }
+})();
 
-// 🔔 정책 변경 BroadcastChannel 수신 — 정책 관리에서 저장 시 즉시 재 fetch
-try {
-  const _bcIt = new BroadcastChannel('incentive-policy');
-  _bcIt.onmessage = (ev) => { console.log('[settlements] incentive-policy 변경 감지, 재로드'); loadAll(); };
-  const _bcRt = new BroadcastChannel('rental-policy');
-  _bcRt.onmessage = (ev) => { console.log('[settlements] rental-policy 변경 감지, 재로드'); loadAll(); };
-} catch (e) { /* BroadcastChannel 미지원 환경 */ }
-
-async function loadAll() {
-  if (!TK()) { document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#64748b">로그인 필요</div>'; return; }
-  if (!_myRole) {
+async function loadMe() {
+  try {
     const r = await fetchAuth('/api/incentive/agents/me');
-    if (r.ok) { const d = await r.json(); _myRole = d.agent?.role; _myAgentId = d.agent?.id; }
+    if (r.ok) _me = (await r.json()).agent;
+  } catch (e) { /* 비로그인은 아래에서 안내 */ }
+}
+
+async function load() {
+  const ym = $('f-month').value;
+  const isBoss = _me && (_me.role === 'admin' || _me.role === 'manager');
+  $('scope').textContent = _me ? (isBoss ? (_me.role === 'admin' ? '전체 센터' : _me.center + ' 센터') : '본인 정산') : '';
+  $('btn-finalize').style.display = (_me && _me.role === 'admin') ? '' : 'none';
+  $('tbl-title').textContent = isBoss ? '상담사별 정산' : '내 정산';
+
+  if (isBoss) {
+    const r = await fetchAuth('/api/incentive/manager/overview?month=' + ym);
+    if (!r.ok) { $('tbody').innerHTML = '<tr><td colspan="12" class="empty">조회 실패</td></tr>'; return; }
+    const j = await r.json();
+    _rows = j.settlements || [];
+    renderKpi(j.totals || {});
+  } else {
+    // 상담사는 본인 것만 본다
+    const r = await fetchAuth('/api/incentive/settlement?month=' + ym);
+    if (!r.ok) { $('tbody').innerHTML = '<tr><td colspan="12" class="empty">조회 실패</td></tr>'; return; }
+    const st = (await r.json()).settlement;
+    _rows = st ? [{ ...st, agent: { name: _me ? _me.name : '나', center: _me ? _me.center : '' } }] : [];
+    renderKpi({
+      total_sales_count: st ? st.total_count : 0,
+      total_residual_margin: st ? st.total_residual_margin : 0,
+      total_incentive: st ? st.incentive : 0,
+      total_payback: st ? st.total_payback : 0,
+      total_company_profit: st ? st.company_profit : 0,
+    }, st ? (st.agent_total || 0) : 0);
   }
-  if (_myRole === 'agent') document.body.classList.add('role-agent');
-  document.getElementById('btn-finalize').style.display = _myRole === 'admin' ? '' : 'none';
-
-  // 활성 정책 fetch (Progress/KPI 동적화) — 매번 fresh (정책 변경 즉시 반영)
-  const [pIt, pRt] = await Promise.all([
-    fetchAuth('/api/incentive/rules').then(r => r.json()).catch(() => ({})),
-    fetchAuth('/api/rental/policy').then(r => r.json()).catch(() => ({})),
-  ]);
-  _itPolicy = pIt.rule || pIt.rules || pIt || {};
-  _rtPolicy = pRt.policy || pRt.rules || pRt || {};
-
-  const period = document.getElementById('f-period').value;
-  const r = await fetchAuth('/api/incentive/manager/overview?month=' + period);
-  if (!r.ok) { showToast('조회 실패: ' + r.status, '#dc2626'); return; }
-  const d = await r.json();
-  _settlements = d.settlements || [];
-  renderKpi(d.totals || {});
   renderTable();
-  renderProgress();
-  await loadManagerOverride();
 }
 
-async function loadManagerOverride() {
-  // manager 본인일 때만 오버라이드 표시
-  document.getElementById('mgr-override-section').style.display = 'none';
-  if (_myRole !== 'manager') return;
-  const period = document.getElementById('f-period').value;
-  const r = await fetchAuth('/api/incentive/settlement?month=' + period);
-  if (!r.ok) return;
-  const d = await r.json();
-  const mov = d.manager_override;
-  if (!mov || !mov.enabled) {
-    document.getElementById('mgr-override-section').style.display = 'block';
-    document.getElementById('mgr-ov-status').textContent = mov?.exempted ? `면제 — ${mov.exempt_reason||''}` : '비활성 (조건 미충족)';
-    document.getElementById('mov-team').textContent = mov?.team_count || 0;
-    document.getElementById('mov-count').textContent = (mov?.my_completed_count || 0);
-    document.getElementById('mov-count-sub').textContent = '본인 완료';
-    document.getElementById('mov-team-inc').textContent = fmt(mov?.team_incentive_sum || 0);
-    document.getElementById('mov-rate').textContent = ((mov?.override_rate || 0)*100).toFixed(0) + '%';
-    document.getElementById('mov-rate-sub').textContent = `최소 ${(mov?.team_profit_rate_min||0).toFixed(0)}% 미달`;
-    document.getElementById('mov-final').textContent = '0원';
-    document.getElementById('mov-final-sub').textContent = mov?.penalty_reason || mov?.exempt_reason || '미지급';
-    document.getElementById('mov-detail').innerHTML = mov?.penalty_reason ? `<span style="color:#f87171">⚠️ ${esc(mov.penalty_reason)}</span>` : '';
-    return;
-  }
-  document.getElementById('mgr-override-section').style.display = 'block';
-  document.getElementById('mgr-ov-status').textContent = '✅ 활성 — 본인 정산에 자동 합산';
-  document.getElementById('mov-team').textContent = mov.team_count || 0;
-  document.getElementById('mov-team-sub').textContent = `의무 ${mov.obligation_count || 0}건`;
-  document.getElementById('mov-count').textContent = mov.my_completed_count || 0;
-  document.getElementById('mov-count-sub').textContent = '본인 완료';
-  document.getElementById('mov-team-inc').textContent = fmt(mov.team_incentive_sum || 0);
-  document.getElementById('mov-rate').textContent = ((mov.override_rate || 0)*100).toFixed(0) + '%';
-  document.getElementById('mov-rate-sub').textContent = `이익률 ${(mov.team_profit_rate||0).toFixed(1)}%`;
-  document.getElementById('mov-final').textContent = fmt(mov.override_final || 0) + '원';
-  document.getElementById('mov-final-sub').textContent = (mov.penalty_factor||1) < 1 ? `페널티 ×${(mov.penalty_factor||1).toFixed(2)}` : '정상 지급';
-  document.getElementById('mov-detail').innerHTML = `
-    <div>📊 raw: ${fmt(mov.override_raw||0)}원 × 페널티 ${(mov.penalty_factor||1).toFixed(2)} = <b style="color:#22c55e">${fmt(mov.override_final||0)}원</b></div>
-    ${mov.penalty_reason ? `<div style="color:#fbbf24;margin-top:4px">⚠️ ${esc(mov.penalty_reason)}</div>` : ''}
-  `;
-}
-
-function renderKpi(t) {
-  const isAgent = _myRole === 'agent';
-  const me = isAgent ? _settlements[0] : null;
-  document.getElementById('kpi-title').textContent = isAgent ? '🎯 내 이번 달 누적' : '📊 팀 정산 요약';
-  document.getElementById('team-title').textContent = isAgent ? '📋 본인 정산 상세' : (_myRole === 'manager' ? '👨‍💼 팀원 정산 상세' : '🏢 전사 정산 상세');
-  document.getElementById('primary-label').textContent = isAgent ? '총수령' : '총 정산액';
-
-  if (isAgent && me) {
-    document.getElementById('kpi-primary').textContent = fmt(me.agent_total) + '원';
-    document.getElementById('kpi-primary-sub').textContent = `기본 ${fmt(me.base_salary)} + 인센 ${fmt(me.incentive)} + 보너스 ${fmt(me.bonus)} − 페이백 ${fmt(me.total_agent_payback_deduct)}`;
-    document.getElementById('kpi-grade').innerHTML = `G${me.grade_applied||1} <span style="font-size:13px;color:#cbd5e1">${fmt(me.applied_rate)}원/P</span>`;
-    document.getElementById('kpi-grade-sub').textContent = `목표 G${me.grade_target||1} / 적용 G${me.grade_applied||1}` + (me.is_penalty ? ' ▼ 페널티' : '');
-    document.getElementById('kpi-points').textContent = (Number(me.total_points||0)).toFixed(1) + 'P';
-    document.getElementById('kpi-points-sub').textContent = `건수 ${fmt(me.total_count)}건`;
-    document.getElementById('kpi-premium').textContent = fmt(me.premium_count);
-    document.getElementById('kpi-premium-sub').textContent = '건';
-    document.getElementById('kpi-incentive').textContent = fmt(me.incentive) + '원';
-    document.getElementById('kpi-incentive-sub').textContent = `단가 ${fmt(me.applied_rate)}/P`;
-    document.getElementById('kpi-bonus').textContent = fmt(me.bonus) + '원';
-    document.getElementById('kpi-deduct').textContent = '−' + fmt(me.total_agent_payback_deduct);
-    document.getElementById('kpi-deduct-sub').textContent = `${me.total_count||0}건 중 페이백 ${fmt(_itPolicy?.payback_company_limit || 30000)}↑ 건수만`;
-  } else {
-    document.getElementById('kpi-primary').textContent = fmt((_settlements.reduce((a,s)=>a+(s.agent_total||0),0))) + '원';
-    document.getElementById('kpi-primary-sub').textContent = `${_settlements.length}명 합산 (지급 예정)`;
-    document.getElementById('kpi-grade').textContent = fmt(t.total_sales_count);
-    document.getElementById('kpi-grade-sub').textContent = '총 계약 건수';
-    const totalP = _settlements.reduce((a,s)=>a+(Number(s.total_points)||0),0);
-    document.getElementById('kpi-points').textContent = totalP.toFixed(1) + 'P';
-    document.getElementById('kpi-points-sub').textContent = '팀 누적 포인트';
-    document.getElementById('kpi-premium').textContent = fmt(_settlements.reduce((a,s)=>a+(s.premium_count||0),0));
-    document.getElementById('kpi-premium-sub').textContent = '팀 우수상품 건';
-    document.getElementById('kpi-incentive').textContent = fmt(t.total_incentive) + '원';
-    document.getElementById('kpi-incentive-sub').textContent = '인센티브 합';
-    document.getElementById('kpi-bonus').textContent = fmt(t.total_bonus) + '원';
-    document.getElementById('kpi-deduct').textContent = '−' + fmt(_settlements.reduce((a,s)=>a+(s.total_agent_payback_deduct||0),0));
-    document.getElementById('kpi-deduct-sub').textContent = '팀 합계';
-  }
-}
-
-function renderProgress() {
-  if (_myRole !== 'agent' || !_settlements[0]) return;
-  const me = _settlements[0];
-  const p = Number(me.total_points || 0);
-  const grade = me.grade_applied || 1;
-  // 활성 정책에서 임계·단가 동적 추출
-  const thrs = _itPolicy?.grade_thresholds || { '2':{points:16,premium:5}, '3':{points:31,premium:10} };
-  const rates = _itPolicy?.grade_rates || { '1':20000, '2':30000, '3':40000 };
-  const g2P = Number(thrs['2']?.points || 16);
-  const g3P = Number(thrs['3']?.points || 31);
-  const g2Prem = Number(thrs['2']?.premium || 5);
-  const g3Prem = Number(thrs['3']?.premium || 10);
-  const g3Rate = rates['3'] || 40000;
-  const g2Rate = rates['2'] || 30000;
-  let target, label, hint;
-  if (grade >= 3) {
-    target = Math.max(p, g3P + 19);
-    label = `G3 유지 — ${p.toFixed(1)}P`;
-    hint = `목표 G3 (${g3P}P+ & 우수 ${g3Prem}건+) 도달`;
-  } else if (grade === 2) {
-    target = g3P;
-    label = `G3까지 +${(g3P-p).toFixed(1)}P`;
-    hint = `G3 도달 시 단가 ${fmt(g3Rate)}원/P 적용 (현 ${fmt(me.applied_rate)})`;
-  } else {
-    target = g2P;
-    label = `G2까지 +${(g2P-p).toFixed(1)}P`;
-    hint = `G2 도달 시 단가 ${fmt(g2Rate)}원/P 적용 (현 ${fmt(me.applied_rate)})`;
-  }
-  const pct = Math.min(100, (p/target*100));
-  document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('progress-label').textContent = '📈 ' + label;
-  document.getElementById('progress-current').innerHTML = `<b>${p.toFixed(1)}P</b> / G${grade}`;
-  document.getElementById('progress-target').innerHTML = `G${Math.min(3, grade+1)} <b>${target}P</b>`;
-  document.getElementById('progress-hint').textContent = hint;
+function renderKpi(t, agentTotalOverride) {
+  const residual = t.total_residual_margin || 0;
+  const payout = t.total_payback || 0;
+  const pool = residual + payout;
+  const total = (agentTotalOverride != null)
+    ? agentTotalOverride
+    : _rows.reduce((a, s) => a + (s.agent_total || 0), 0);
+  $('k-total').textContent = fmt(total) + '원';
+  $('k-count').textContent = (t.total_sales_count || 0) + '건';
+  $('k-residual').textContent = fmt(residual) + '원';
+  $('k-incentive').textContent = fmt(t.total_incentive) + '원';
+  $('k-usage').textContent = pool > 0 ? (payout / pool * 100).toFixed(1) + '%' : '-';
 }
 
 function renderTable() {
-  const tbody = document.getElementById('tbody');
-  document.getElementById('empty').style.display = _settlements.length ? 'none' : '';
-  if (!_settlements.length) { tbody.innerHTML = ''; return; }
-  tbody.innerHTML = _settlements.map((s,i) => {
+  const tb = $('tbody');
+  if (!_rows.length) { tb.innerHTML = '<tr><td colspan="12" class="empty">이 달에 설치완료된 건이 없습니다.</td></tr>'; return; }
+  const sum = { count:0, payout:0, residual:0, base:0, inc:0, deduct:0, total:0, profit:0 };
+  const rows = _rows.map(s => {
     const a = s.agent || {};
-    const gradeBadge = `<span class="grade-${s.grade_applied||1}">G${s.grade_applied||1}</span>` + (s.is_penalty ? `<span class="penalty">▼${s.grade_target||''}</span>` : '');
-    const finalized = s.finalized_at ? `<span style="color:#22c55e;font-size:10px">✅ ${new Date(s.finalized_at).toLocaleDateString('ko-KR')}</span>` : (_myRole === 'admin' ? `<button onclick="finalizeOne('${a.id}')" style="background:#3b82f6;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer">확정</button>` : '<span style="color:#94a3b8;font-size:10px">미확정</span>');
-    const itIncBonus = (s.incentive||0) + (s.bonus||0) - (s.total_agent_payback_deduct||0);
-    const rtIncBonus = (s.rental_incentive||0) + (s.rental_bonus||0) - (s.rental_agent_payback_deduct||0);
-    const itGradeBadge = `<span class="grade-${s.grade_applied||1}">G${s.grade_applied||1}</span>` + (s.is_penalty?`<span class="penalty">▼${s.grade_target||''}</span>`:'') + ` <span style="color:#94a3b8;font-size:10px">${fmt(s.applied_rate)}원</span>`;
-    const rtGradeBadge = `<span class="grade-${s.rental_grade_applied||1}">G${s.rental_grade_applied||1}</span>` + (s.rental_is_penalty?`<span class="penalty">▼${s.rental_grade_target||''}</span>`:'') + ` <span style="color:#94a3b8;font-size:10px">${fmt(s.rental_applied_rate)}원</span>`;
-    return `<tr style="cursor:pointer" onclick="openCategoryBreakdown('${a.id}', '${esc(a.name)}')" title="클릭 — 카테고리별 상세 합산 보기">
-      <td>${i+1}</td>
-      <td class="l"><b style="color:#f8fafc">${esc(a.name)}</b></td>
-      <td><span class="role-badge r-${a.role}">${esc(a.role)}</span></td>
-      <td>${esc(a.center)||'-'}</td>
-      <td class="r" style="background:rgba(96,165,250,0.04)">${fmt(s.total_count)}<span style="color:#94a3b8;font-size:9.5px"> / ${(s.total_points||0).toFixed(1)}P</span></td>
-      <td style="background:rgba(96,165,250,0.04)">${itGradeBadge}</td>
-      <td class="r" style="background:rgba(96,165,250,0.04);color:#22c55e;font-weight:700">${fmt(itIncBonus)}<span style="color:#fbbf24;font-size:9px"> ⭐${fmt(s.premium_count)}</span></td>
-      <td class="r admin-only" style="background:rgba(96,165,250,0.04)">${fmt(s.company_profit)}</td>
-      <td class="r" style="background:rgba(245,158,11,0.04)">${fmt(s.rental_count)}<span style="color:#94a3b8;font-size:9.5px"> / ${(s.rental_points||0).toFixed(1)}P</span></td>
-      <td style="background:rgba(245,158,11,0.04)">${rtGradeBadge}</td>
-      <td class="r" style="background:rgba(245,158,11,0.04);color:#fbbf24;font-weight:700">${fmt(rtIncBonus)}<span style="color:#fbbf24;font-size:9px"> ⭐${fmt(s.rental_premium_count)}</span></td>
-      <td class="r admin-only" style="background:rgba(245,158,11,0.04)">${fmt(s.rental_company_profit)}</td>
-      <td class="r" style="background:rgba(167,139,250,0.06);color:#86efac;font-weight:900">${fmt(s.combined_agent_total)}원</td>
-      <td class="r admin-only" style="background:rgba(167,139,250,0.06);color:#c4b5fd;font-weight:800">${fmt(s.combined_company_profit)}</td>
-      <td class="r">${fmt(s.base_salary)}</td>
-      <td class="r admin-only" style="color:${(s.profit_rate||0)>=20?'#22c55e':(s.profit_rate||0)>=10?'#fbbf24':'#f87171'}">${(s.profit_rate||0).toFixed(1)}%</td>
-      <td class="no-print" style="text-align:center" onclick="event.stopPropagation()"><button onclick="openCategoryBreakdown('${a.id}', '${esc(a.name)}')" style="background:#7c3aed;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:10.5px;font-weight:700;cursor:pointer">📋 상세</button></td>
-      <td class="no-print" onclick="event.stopPropagation()">${finalized}</td>
+    sum.count    += s.total_count || 0;
+    sum.payout   += s.total_payback || 0;
+    sum.residual += s.total_residual_margin || 0;
+    sum.base     += s.base_salary || 0;
+    sum.inc      += s.incentive || 0;
+    sum.deduct   += s.total_agent_payback_deduct || 0;
+    sum.total    += s.agent_total || 0;
+    sum.profit   += s.company_profit || 0;
+    return `<tr>
+      <td><b>${a.name || '-'}</b></td>
+      <td style="color:#94a3b8">${a.center || '-'}</td>
+      <td class="r">${fmt(s.total_count)}건</td>
+      <td class="r">${fmt(s.total_payback)}</td>
+      <td class="r"><b style="color:#86efac">${fmt(s.total_residual_margin)}</b></td>
+      <td class="r">${(s.applied_rate || 0)}%</td>
+      <td class="r" style="color:#cbd5e1">${fmt(s.base_salary)}</td>
+      <td class="r" style="color:#22c55e">${fmt(s.incentive)}</td>
+      <td class="r" style="color:${(s.total_agent_payback_deduct || 0) > 0 ? '#fca5a5' : '#64748b'}">
+        ${(s.total_agent_payback_deduct || 0) > 0 ? '−' + fmt(s.total_agent_payback_deduct) : '-'}</td>
+      <td class="r"><b style="color:#bbf7d0">${fmt(s.agent_total)}</b></td>
+      <td class="r" style="color:#c4b5fd">${fmt(s.company_profit)}</td>
+      <td>${s.finalized_at
+        ? '<span class="badge b-fin">확정</span>'
+        : '<span class="badge b-open">미확정</span>'}</td>
     </tr>`;
   }).join('');
+  const sumRow = _rows.length > 1 ? `<tr class="sum">
+      <td>전체</td><td>${_rows.length}명</td>
+      <td class="r">${fmt(sum.count)}건</td>
+      <td class="r">${fmt(sum.payout)}</td>
+      <td class="r">${fmt(sum.residual)}</td>
+      <td class="r">-</td>
+      <td class="r">${fmt(sum.base)}</td>
+      <td class="r">${fmt(sum.inc)}</td>
+      <td class="r">${sum.deduct > 0 ? '−' + fmt(sum.deduct) : '-'}</td>
+      <td class="r">${fmt(sum.total)}</td>
+      <td class="r">${fmt(sum.profit)}</td>
+      <td>-</td>
+    </tr>` : '';
+  tb.innerHTML = rows + sumRow;
 }
 
-async function finalizeOne(agentId) {
-  const period = document.getElementById('f-period').value;
-  if (!confirm(`${period} 정산을 이 상담사에 대해 확정하시겠습니까?\n\n확정 후 수정 불가.`)) return;
+// ─── 확정 (admin) ───
+$('btn-finalize').addEventListener('click', async () => {
+  const ym = $('f-month').value;
+  if (!confirm(ym + ' 정산을 확정합니다.\n확정 후에는 그 달 수치가 잠깁니다. 진행할까요?')) return;
   const r = await fetchAuth('/api/incentive/finalize', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ month: period, agent_id: agentId })
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ month: ym }),
   });
-  if (!r.ok) { const d = await r.json(); showToast('실패: ' + (d.error||''), '#dc2626'); return; }
-  showToast('🔒 확정 완료'); loadAll();
-}
-async function finalizeAll() {
-  const period = document.getElementById('f-period').value;
-  if (!confirm(`${period} 정산 — 미확정 인원 전체를 확정하시겠습니까?`)) return;
-  const r = await fetchAuth('/api/incentive/finalize', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ month: period })
-  });
-  if (!r.ok) { const d = await r.json(); showToast('실패: ' + (d.error||''), '#dc2626'); return; }
-  showToast('🔒 전체 확정 완료'); loadAll();
-}
-// 📋 카테고리별 합산 상세 팝업 — 어떤 카테고리에서 얼마 벌었는지 한눈에
-window.openCategoryBreakdown = async function(agentId, agentName) {
-  const ym = document.getElementById('f-period').value;
-  const modal = document.getElementById('rental-settle-modal');
-  const body = document.getElementById('rental-settle-body');
-  modal.style.display = 'flex';
-  body.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8">불러오는 중...</div>';
-  try {
-    // 1) 가전 정산 (rental_calc RPC)
-    // 2) 인터넷+TV 정산 (settlement RPC)
-    // 3) 가전 sales agent별 → 카테고리별 분류
-    const [rR, iR, sR, cR] = await Promise.all([
-      fetchAuth(`/api/rental/settlement?agent_id=${encodeURIComponent(agentId)}&year_month=${encodeURIComponent(ym)}`).then(r => r.json()).catch(() => ({})),
-      fetchAuth(`/api/incentive/settlement?month=${encodeURIComponent(ym)}`).then(r => r.json()).catch(() => ({})),
-      fetchAuth(`/api/rental/sales?agent_id=${encodeURIComponent(agentId)}&limit=500`).then(r => r.json()).catch(() => ({})),
-      fetchAuth(`/api/rental/categories`).then(r => r.json()).catch(() => ({})),
-    ]);
-    const rental = rR.settlement || {};
-    const it = iR.settlement || {};
-    const allRentalSales = (sR.sales || sR.rows || []).filter(x => (x.contract_date || '').slice(0, 7) === ym);
-    const cats = (cR.categories || cR.rows || []);
-    const catMap = {};
-    cats.forEach(c => { catMap[c.id] = { id: c.id, slug: c.slug, name: c.name, icon: c.metadata?.icon || '📦', count: 0, monthly_fee: 0, payback: 0, premium: 0, points: 0 }; });
-    allRentalSales.forEach(s => {
-      const cid = s.product?.category_id;
-      if (!cid || !catMap[cid]) return;
-      const b = catMap[cid];
-      b.count++;
-      b.monthly_fee += s.monthly_fee_snapshot || 0;
-      b.payback += s.payback_snapshot || 0;
-      if (s.option?.is_premium || s.product?.is_premium) b.premium++;
-      b.points += Number(s.point_weight_snapshot || s.option?.point_weight || s.product?.point_weight || 0);
-    });
-    const catRows = Object.values(catMap).filter(c => c.count > 0).sort((a,b) => b.count - a.count);
-    const fmtKrw = n => (n == null ? '-' : Number(n).toLocaleString('ko-KR') + '원');
-    const itAgentTotal = Number(it.agent_total || 0);
-    const rtAgentTotal = Number(rental.agent_total || 0);
-    const grandTotal = itAgentTotal + (rental.incentive || 0) + (rental.bonus || 0) - (rental.total_agent_payback_deduct || 0);
-    body.innerHTML = `
-      <div style="padding:18px 22px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #475569">
-          <div>
-            <div style="font-size:11px;color:#94a3b8">📅 ${esc(ym)} · 👤 ${esc(agentName)}</div>
-            <div style="font-size:14px;font-weight:800;color:#c4b5fd;margin-top:2px">📋 카테고리별 수익 상세 + 합산</div>
-          </div>
-          <button onclick="document.getElementById('rental-settle-modal').style.display='none'" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px">✕ 닫기</button>
-        </div>
+  if (!r.ok) { alert('확정 실패: ' + (await r.text()).slice(0, 200)); return; }
+  alert('확정되었습니다.');
+  load();
+});
 
-        <!-- 카테고리별 표 -->
-        <div style="margin-bottom:16px">
-          <div style="font-size:12px;color:#fbbf24;font-weight:700;margin-bottom:6px">🗂️ 카테고리별 영업 (이번 달)</div>
-          <table style="width:100%;border-collapse:collapse;font-size:11.5px">
-            <thead><tr style="background:#0f172a;color:#94a3b8">
-              <th style="padding:6px;text-align:left">카테고리</th>
-              <th style="padding:6px;text-align:right">계약</th>
-              <th style="padding:6px;text-align:right">P 합</th>
-              <th style="padding:6px;text-align:right">우수(S)</th>
-              <th style="padding:6px;text-align:right">월납 합</th>
-              <th style="padding:6px;text-align:right">페이백 합</th>
-            </tr></thead>
-            <tbody>
-              <tr style="background:rgba(96,165,250,0.05);border-bottom:1px solid #334155">
-                <td style="padding:7px"><b style="color:#60a5fa">📡 인터넷+TV</b></td>
-                <td style="padding:7px;text-align:right;color:#e2e8f0;font-weight:700">${fmt(it.total_count)}</td>
-                <td style="padding:7px;text-align:right;color:#a5b4fc">${(it.total_points||0).toFixed(1)}P</td>
-                <td style="padding:7px;text-align:right;color:#fbbf24">${fmt(it.premium_count)}</td>
-                <td style="padding:7px;text-align:right;color:#cbd5e1">${fmt(it.total_revenue)}</td>
-                <td style="padding:7px;text-align:right;color:#f87171">${fmt(it.total_payback)}</td>
-              </tr>
-              ${catRows.length === 0 ? '<tr><td colspan="6" style="padding:14px;text-align:center;color:#94a3b8">가전 영업 없음</td></tr>' : catRows.map(c => `
-                <tr style="background:rgba(245,158,11,0.04);border-bottom:1px solid #334155">
-                  <td style="padding:7px"><b style="color:#fbbf24">${c.icon} 🏠 ${esc(c.name)}</b></td>
-                  <td style="padding:7px;text-align:right;color:#e2e8f0;font-weight:700">${fmt(c.count)}</td>
-                  <td style="padding:7px;text-align:right;color:#a5b4fc">${c.points.toFixed(1)}P</td>
-                  <td style="padding:7px;text-align:right;color:#fbbf24">${fmt(c.premium)}</td>
-                  <td style="padding:7px;text-align:right;color:#cbd5e1">${fmt(c.monthly_fee)}</td>
-                  <td style="padding:7px;text-align:right;color:#f87171">${fmt(c.payback)}</td>
-                </tr>`).join('')}
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Grade·인센티브 분리 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-          <div style="background:rgba(96,165,250,0.08);border:1.5px solid #60a5fa;border-radius:10px;padding:12px">
-            <div style="font-size:11px;color:#94a3b8;margin-bottom:6px">📡 인터넷+TV Grade · 단가</div>
-            <div style="font-size:18px;font-weight:900;color:#60a5fa">G${it.grade_applied||1} · ${fmt(it.applied_rate)}원/P</div>
-            ${it.is_penalty ? `<div style="font-size:10px;color:#f87171;margin-top:2px">▼ 페널티 (목표 G${it.grade_target})</div>` : ''}
-            <hr style="border:none;border-top:1px solid #475569;margin:8px 0">
-            <div style="font-size:11px;line-height:1.7;color:#cbd5e1">
-              <div>인센티브: <b style="color:#22c55e">${fmtKrw(it.incentive)}</b></div>
-              <div>우수 보너스: <b style="color:#fbbf24">${fmtKrw(it.bonus)}</b></div>
-              <div>페이백 차감: <b style="color:#f87171">-${fmtKrw(it.total_agent_payback_deduct)}</b></div>
-              <div style="border-top:1px solid #475569;margin-top:4px;padding-top:4px">📡 IT 합: <b style="color:#86efac">${fmtKrw(itAgentTotal - (it.base_salary||0))}</b></div>
-            </div>
-          </div>
-          <div style="background:rgba(245,158,11,0.08);border:1.5px solid #f59e0b;border-radius:10px;padding:12px">
-            <div style="font-size:11px;color:#94a3b8;margin-bottom:6px">🏠 가전렌탈 Grade · 단가</div>
-            <div style="font-size:18px;font-weight:900;color:#fbbf24">G${rental.grade_applied||1} · ${fmt(rental.applied_rate)}원/P</div>
-            ${rental.is_penalty ? `<div style="font-size:10px;color:#f87171;margin-top:2px">▼ 페널티 (목표 G${rental.grade_target})</div>` : ''}
-            <hr style="border:none;border-top:1px solid #475569;margin:8px 0">
-            <div style="font-size:11px;line-height:1.7;color:#cbd5e1">
-              <div>인센티브: <b style="color:#22c55e">${fmtKrw(rental.incentive)}</b></div>
-              <div>우수 보너스: <b style="color:#fbbf24">${fmtKrw(rental.bonus)}</b></div>
-              <div>페이백 차감: <b style="color:#f87171">-${fmtKrw(rental.total_agent_payback_deduct)}</b></div>
-              <div style="border-top:1px solid #475569;margin-top:4px;padding-top:4px">🏠 가전 합: <b style="color:#86efac">${fmtKrw((rental.incentive||0) + (rental.bonus||0) - (rental.total_agent_payback_deduct||0))}</b></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ⚡ 최종 합산 -->
-        <div style="background:linear-gradient(135deg,rgba(167,139,250,0.15),rgba(99,102,241,0.08));border:2px solid #a78bfa;border-radius:12px;padding:14px;text-align:center">
-          <div style="font-size:11px;color:#c4b5fd;margin-bottom:4px">⚡ 최종 합산 (기본급 + IT + 가전)</div>
-          <div style="font-size:26px;font-weight:900;color:#86efac">${fmtKrw(grandTotal)}</div>
-          <div style="font-size:10.5px;color:#94a3b8;margin-top:6px">기본급 ${fmt(it.base_salary)} + IT ${fmt((it.incentive||0)+(it.bonus||0)-(it.total_agent_payback_deduct||0))} + 가전 ${fmt((rental.incentive||0)+(rental.bonus||0)-(rental.total_agent_payback_deduct||0))}</div>
-        </div>
-
-        <div style="margin-top:10px;padding:8px 12px;background:rgba(167,139,250,0.06);border-left:3px solid #a78bfa;border-radius:4px;font-size:10.5px;color:#c4b5fd;line-height:1.6">
-          ⚠️ <b>Grade는 각자 독립</b> — IT P → IT Grade, 가전 P → 가전 Grade. 합산은 표시용만.
-        </div>
-      </div>`;
-  } catch (e) {
-    body.innerHTML = `<div style="padding:30px;text-align:center;color:#ef4444">오류: ${esc(e.message)}</div>`;
-  }
-};
-
-// 🏠 가전 정산 상세 팝업 — 가전은 인터넷+TV와 별도 Grade·단가 적용 (legacy — 호환 유지)
-window.openRentalSettlement = async function(agentId, agentName) {
-  const ym = document.getElementById('f-period').value;
-  const modal = document.getElementById('rental-settle-modal');
-  const body = document.getElementById('rental-settle-body');
-  modal.style.display = 'flex';
-  body.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8">불러오는 중...</div>';
-  try {
-    const r = await fetchAuth(`/api/rental/settlement?agent_id=${encodeURIComponent(agentId)}&year_month=${encodeURIComponent(ym)}`);
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || '조회 실패');
-    const s = d.settlement || {};
-    const fmtKrw = (n) => (n == null ? '-' : Number(n).toLocaleString('ko-KR') + '원');
-    const gradeColor = { 1:'#64748b', 2:'#3b82f6', 3:'#22c55e' }[s.grade_applied] || '#64748b';
-    body.innerHTML = `
-      <div style="padding:18px 22px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #475569">
-          <div>
-            <div style="font-size:11px;color:#94a3b8">📅 ${esc(ym)} · 👤 ${esc(agentName)}</div>
-            <div style="font-size:14px;font-weight:800;color:#fbbf24;margin-top:2px">🏠 가전 정산 상세 (별도 Grade·단가)</div>
-          </div>
-          <button onclick="document.getElementById('rental-settle-modal').style.display='none'" style="background:#475569;color:#fff;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:11px">✕ 닫기</button>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-bottom:14px">
-          <div style="background:rgba(34,197,94,0.08);border:1px solid #22c55e;border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:10px;color:#94a3b8">🏠 계약</div>
-            <div style="font-size:18px;font-weight:900;color:#86efac">${fmt(s.total_count)}건</div>
-          </div>
-          <div style="background:rgba(165,180,252,0.08);border:1px solid #a5b4fc;border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:10px;color:#94a3b8">P</div>
-            <div style="font-size:18px;font-weight:900;color:#a5b4fc">${(s.total_points||0).toFixed(1)}</div>
-          </div>
-          <div style="background:rgba(251,191,36,0.08);border:1px solid #f59e0b;border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:10px;color:#94a3b8">우수 (S Tier)</div>
-            <div style="font-size:18px;font-weight:900;color:#fbbf24">${fmt(s.premium_count)}건</div>
-          </div>
-          <div style="background:rgba(${gradeColor==='#22c55e'?'34,197,94':gradeColor==='#3b82f6'?'59,130,246':'100,116,139'},0.15);border:1.5px solid ${gradeColor};border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:10px;color:#94a3b8">🏆 가전 Grade · 단가</div>
-            <div style="font-size:18px;font-weight:900;color:${gradeColor}">G${s.grade_applied||1} · ${fmt(s.applied_rate)}원/P</div>
-            ${s.is_penalty ? `<div style="font-size:9px;color:#f87171;margin-top:2px">▼ 페널티 (목표 G${s.grade_target})</div>` : ''}
-          </div>
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <tr style="background:#0f172a"><td style="padding:7px;color:#94a3b8">💵 인센티브 (가전)</td><td style="padding:7px;text-align:right;color:#22c55e;font-weight:800">${fmtKrw(s.incentive)}</td></tr>
-          <tr><td style="padding:7px;color:#94a3b8">🎁 우수 보너스</td><td style="padding:7px;text-align:right;color:#fbbf24;font-weight:700">${fmtKrw(s.bonus)}</td></tr>
-          <tr style="background:#0f172a"><td style="padding:7px;color:#94a3b8">💰 가전 매출 (월납 합)</td><td style="padding:7px;text-align:right;color:#cbd5e1">${fmtKrw(s.total_revenue)}</td></tr>
-          <tr><td style="padding:7px;color:#94a3b8">💸 페이백 지급 합</td><td style="padding:7px;text-align:right;color:#f87171">${fmtKrw(s.total_payback)}</td></tr>
-          <tr style="background:#0f172a"><td style="padding:7px;color:#94a3b8">  ├ 회사 부담</td><td style="padding:7px;text-align:right;color:#fca5a5">${fmtKrw(s.total_company_payback_burden)}</td></tr>
-          <tr><td style="padding:7px;color:#94a3b8">  └ 상담사 차감</td><td style="padding:7px;text-align:right;color:#f87171">${fmtKrw(s.total_agent_payback_deduct)}</td></tr>
-          <tr style="background:rgba(34,197,94,0.08);border-top:2px solid #475569"><td style="padding:9px;color:#86efac;font-weight:800">🏆 가전 상담사 수령</td><td style="padding:9px;text-align:right;color:#86efac;font-size:14px;font-weight:900">${fmtKrw(s.agent_total)}</td></tr>
-          <tr style="background:rgba(167,139,250,0.08)"><td style="padding:9px;color:#c4b5fd;font-weight:800">🏢 가전 회사 이익</td><td style="padding:9px;text-align:right;color:#c4b5fd;font-size:14px;font-weight:900">${fmtKrw(s.company_profit)}</td></tr>
-        </table>
-        <div style="margin-top:12px;padding:10px;background:rgba(245,158,11,0.08);border:1px dashed #f59e0b;border-radius:6px;font-size:11px;color:#fbbf24;line-height:1.6">
-          ⚠️ <b>가전 정산은 인터넷+TV와 별도 운영</b> — 각자 별도 Grade·단가 적용. 위 표는 <code>rental_calc_monthly_settlement</code> RPC 단독 호출 결과 (가전 P만 기준 Grade 산정).
-        </div>
-      </div>`;
-  } catch (e) {
-    body.innerHTML = `<div style="padding:30px;text-align:center;color:#ef4444">오류: ${esc(e.message)}</div>`;
-  }
-};
-
-function exportCSV() {
-  if (!_settlements.length) { showToast('데이터 없음', '#dc2626'); return; }
-  const head = ['#','상담사','역할','센터',
-    '📡IT계약','📡IT P','📡IT우수','Grade','단가','인센티브','보너스','페이백차감','기본급',
-    '🏠가전계약','🏠가전P','🏠가전우수','🏠가전인센','🏠가전보너스','🏠가전회사이익',
-    '⚡합계약','⚡합P','⚡합상담사수령','⚡합회사이익',
-    '최종지급(IT)','회사이익(IT)','이익률(%)'];
-  const rows = [head];
-  _settlements.forEach((s,i) => {
-    const a = s.agent || {};
-    rows.push([i+1, a.name, a.role, a.center,
-      s.total_count, s.total_points, s.premium_count,
-      'G'+(s.grade_applied||1)+(s.is_penalty?'(페널티)':''), s.applied_rate,
-      s.incentive, s.bonus, s.total_agent_payback_deduct, s.base_salary,
-      s.rental_count||0, s.rental_points||0, s.rental_premium_count||0,
-      s.rental_incentive||0, s.rental_bonus||0, s.rental_company_profit||0,
-      s.combined_total_count||0, s.combined_total_points||0,
-      s.combined_agent_total||0, s.combined_company_profit||0,
-      s.agent_total, s.company_profit, s.profit_rate]);
-  });
-  const csv = '﻿' + rows.map(r => r.map(x => `"${String(x ?? '').replace(/"/g,'""')}"`).join(',')).join('\r\n');
-  const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `정산_${document.getElementById('f-period').value}.csv`;
-  a.click(); URL.revokeObjectURL(url);
-  showToast('📥 CSV 다운로드');
-}
-
-// ═══════════════════════════════════════════════════════════════
-// 정산 수정 요청
-// ═══════════════════════════════════════════════════════════════
-async function openCorrections() {
-  const modal = document.getElementById('cor-modal');
-  modal.style.display = 'flex';
-  document.getElementById('cor-current-period').textContent = document.getElementById('f-period').value;
-  document.getElementById('cor-reason').value = '';
-  await loadCorrections();
-}
-function closeCorrections() { document.getElementById('cor-modal').style.display = 'none'; }
-
+// ─── 정정 요청 ───
 async function loadCorrections() {
-  const r = await fetchAuth('/api/incentive/corrections?limit=50');
-  if (!r.ok) { document.getElementById('cor-list-body').innerHTML = '<div style="color:#f87171;padding:8px">조회 실패</div>'; return; }
-  const d = await r.json();
-  const body = document.getElementById('cor-list-body');
-  if (!d.corrections.length) { body.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b">요청 없음</div>'; return; }
-  const ST = { pending:{txt:'⏳ 대기',c:'#fbbf24'}, resolved:{txt:'✅ 해결',c:'#22c55e'}, rejected:{txt:'❌ 거부',c:'#f87171'} };
-  const isAdmin = _myRole === 'admin';
-  body.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:11px">
-    <thead><tr style="background:#0f172a;color:#94a3b8">
-      <th style="padding:6px;text-align:left">요청자</th><th style="padding:6px">월</th>
-      <th style="padding:6px;text-align:left">사유</th><th style="padding:6px">상태</th>
-      <th style="padding:6px;text-align:left">처리 메모</th><th style="padding:6px">시각</th>
-      ${isAdmin ? '<th style="padding:6px">처리</th>' : ''}
-    </tr></thead><tbody>` +
-    d.corrections.map(c => {
-      const st = ST[c.status] || { txt: c.status, c:'#94a3b8' };
-      const dt = new Date(c.created_at).toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-      const act = !isAdmin ? '' : (c.status !== 'pending' ? '<td style="padding:6px;text-align:center;color:#64748b">-</td>' :
-        `<td style="padding:6px;display:flex;gap:3px">
-           <button onclick="resolveCor(${c.id})" style="background:#22c55e;color:#fff;border:none;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer">해결</button>
-           <button onclick="rejectCor(${c.id})" style="background:#dc2626;color:#fff;border:none;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer">거부</button>
-         </td>`);
-      return `<tr style="border-bottom:1px solid #334155">
-        <td style="padding:6px"><b>${esc(c.agent?.name)||'-'}</b><div style="font-size:9.5px;color:#94a3b8">${esc(c.agent?.role)}</div></td>
-        <td style="padding:6px;text-align:center">${esc(c.period)}</td>
-        <td style="padding:6px;color:#cbd5e1;max-width:240px;white-space:pre-wrap">${esc(c.reason)}</td>
-        <td style="padding:6px;text-align:center;color:${st.c};font-weight:700">${st.txt}</td>
-        <td style="padding:6px;color:#94a3b8;max-width:200px;white-space:pre-wrap">${esc(c.resolved_note)||'-'}</td>
-        <td style="padding:6px;text-align:center;color:#94a3b8;font-size:10.5px">${dt}</td>
-        ${act}
-      </tr>`;
-    }).join('') + '</tbody></table>';
+  const wrap = $('corr-wrap');
+  try {
+    const r = await fetchAuth('/api/incentive/corrections?limit=50');
+    if (!r.ok) { wrap.textContent = '조회 실패'; return; }
+    const list = (await r.json()).corrections || [];
+    if (!list.length) { wrap.innerHTML = '<div class="empty">정정 요청이 없습니다.</div>'; return; }
+    wrap.innerHTML = '<div style="overflow-x:auto"><table><thead><tr>'
+      + '<th>요청일</th><th>상담사</th><th>내용</th><th>상태</th></tr></thead><tbody>'
+      + list.map(c => `<tr>
+          <td style="color:#94a3b8">${(c.created_at || '').slice(0, 10)}</td>
+          <td>${(c.agent && c.agent.name) || '-'}</td>
+          <td>${c.reason || c.note || '-'}</td>
+          <td>${c.status || '-'}</td>
+        </tr>`).join('')
+      + '</tbody></table></div>';
+  } catch (e) { wrap.textContent = '조회 실패'; }
 }
 
-async function submitCorrection() {
-  const period = document.getElementById('f-period').value;
-  const reason = document.getElementById('cor-reason').value.trim();
-  if (!reason) { showToast('사유 입력', '#dc2626'); return; }
-  const r = await fetchAuth('/api/incentive/corrections', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ period, reason })
-  });
-  if (!r.ok) { const d = await r.json(); showToast('실패: ' + d.error, '#dc2626'); return; }
-  showToast('📨 수정 요청 제출');
-  document.getElementById('cor-reason').value = '';
-  await loadCorrections();
-  checkPendingCorrections();
-}
+$('btn-reload').addEventListener('click', load);
+$('f-month').addEventListener('change', load);
 
-async function resolveCor(id) {
-  const note = prompt('해결 메모 (예: sale_id 123 추가됨)');
-  if (note === null) return;
-  const r = await fetchAuth('/api/incentive/corrections/' + id + '/resolve', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ note })
-  });
-  if (!r.ok) { const d = await r.json(); showToast('실패: ' + d.error, '#dc2626'); return; }
-  showToast('✅ 해결 처리'); loadCorrections(); checkPendingCorrections();
-}
-async function rejectCor(id) {
-  const note = prompt('거부 사유');
-  if (note === null) return;
-  const r = await fetchAuth('/api/incentive/corrections/' + id + '/reject', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ note })
-  });
-  if (!r.ok) { const d = await r.json(); showToast('실패: ' + d.error, '#dc2626'); return; }
-  showToast('❌ 거부 처리'); loadCorrections(); checkPendingCorrections();
-}
-
-async function checkPendingCorrections() {
-  if (_myRole !== 'admin') return;
-  const r = await fetchAuth('/api/incentive/corrections?status=pending&limit=50');
-  if (!r.ok) return;
-  const d = await r.json();
-  const btn = document.getElementById('btn-corrections');
-  if (d.corrections.length) {
-    btn.innerHTML = `📩 수정 요청 <span style="background:#dc2626;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px">${d.corrections.length}</span>`;
-    btn.style.background = '#dc2626';
-  } else {
-    btn.innerHTML = '📩 수정 요청';
-    btn.style.background = '#475569';
-  }
-}
-
-setTimeout(checkPendingCorrections, 1500);
-
-loadAll();
+(async function init() {
+  await loadMe();
+  await load();
+  loadCorrections();
+})();
 </script>
 </body>
 </html>
