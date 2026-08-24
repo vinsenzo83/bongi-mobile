@@ -126,7 +126,7 @@ async function fetchAgent() {
   <header>
     <div>
       <h1>📦 상품 관리 (V5)</h1>
-      <div class="subtitle">통신사별 상품 — 리베이트·페이백·상담사 포인트 편집 (마진/Tier 자동 재계산)</div>
+      <div class="subtitle">통신사별 상품 — 리베이트·가이드·MAX 편집 (마진 자동 계산)</div>
     </div>
     <div id="user-info" style="text-align:right;display:none">
       <div style="font-size:13px;font-weight:800;color:#f8fafc" id="user-name">-</div>
@@ -223,234 +223,14 @@ async function fetchAgent() {
       </div>
     </div>
 
-    <!-- ★ 가전렌탈 패널 (기본 hidden) -->
-    <div id="rental-panel" style="display:none">
-      <!-- KPI -->
-      <div class="kpi-grid" style="margin-bottom:14px">
-        <div class="kpi-card"><div class="kpi-label">총 모델</div><div class="kpi-val" id="rp-kpi-models">-</div><div class="kpi-sub" id="rp-kpi-active">활성 -</div></div>
-        <div class="kpi-card"><div class="kpi-label">총 옵션 조합</div><div class="kpi-val" id="rp-kpi-options">-</div><div class="kpi-sub" id="rp-kpi-brands">- 브랜드</div></div>
-        <div class="kpi-card"><div class="kpi-label">⭐ 우수상품</div><div class="kpi-val" id="rp-kpi-premium">-</div><div class="kpi-sub">+0.3P 보너스</div></div>
-        <div class="kpi-card"><div class="kpi-label">평균 리베이트</div><div class="kpi-val" id="rp-kpi-rebate">-</div><div class="kpi-sub">옵션 평균</div></div>
-      </div>
-
-      <!-- 가전 그룹 — 렌탈사별 수수료율 (정수기 그룹은 숨김) -->
-      <div id="rp-company-rates" style="display:none;margin-bottom:14px"></div>
-
-      <div class="section" style="background:linear-gradient(135deg,rgba(245,158,11,0.06),#0f172a);border:1.5px solid #f59e0b;border-radius:8px;padding:14px 16px;margin-bottom:14px">
-        <h2 style="color:#fbbf24;margin:0 0 10px;font-size:15px;display:flex;justify-content:space-between;align-items:center">
-          <span id="rp-group-title">💧 정수기 그룹 상품 관리</span>
-          <span style="display:flex;gap:6px">
-            <button type="button" id="rp-import-btn" style="background:linear-gradient(135deg,#06b6d4,#7c3aed);color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-weight:700">📤 빌리고 엑셀 import</button>
-            <button type="button" id="rp-batch-image-btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-weight:800">🖼️ 이미지 일괄 업로드</button>
-            <button type="button" id="rp-bulk-payback-btn" style="background:#7c3aed;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer">⚙️ 선택 모델 페이백 일괄 입력</button>
-            <button type="button" id="rp-reload-btn" style="background:#475569;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer">🔄 새로고침</button>
-          </span>
-        </h2>
-        <div id="rp-filters" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 0.7fr 1fr;gap:10px;margin-bottom:8px">
-          <div><label style="font-size:11px;color:#94a3b8">카테고리</label><select id="rp-filter-cat" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"></select></div>
-          <div><label style="font-size:11px;color:#94a3b8">브랜드(제조사)</label><select id="rp-filter-brand" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"><option value="">전체</option></select></div>
-          <div id="rp-filter-company-wrap" style="display:none"><label style="font-size:11px;color:#94a3b8">렌탈사(채널)</label><select id="rp-filter-company" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"><option value="">전체</option></select></div>
-          <div><label style="font-size:11px;color:#94a3b8">프로모션</label><select id="rp-filter-promo" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"><option value="">전체</option><option value="반값할인">반값할인</option><option value="타사보상">타사보상</option><option value="결합">결합</option><option value="할인">할인</option><option value="단종">단종</option></select></div>
-          <div><label style="font-size:11px;color:#94a3b8">Tier</label><select id="rp-filter-tier" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"><option value="">전체</option><option value="S">S</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
-          <div><label style="font-size:11px;color:#94a3b8">검색</label><input id="rp-filter-search" placeholder="모델·상품·메모" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px;margin-top:3px"></div>
-        </div>
-        <div style="font-size:10.5px;color:#94a3b8;line-height:1.6">📋 모델 마스터 — 행 클릭 시 같은 자리에 옵션 디테일 펼침 (한 번에 1개). 자주 쓰는 필드는 행 내 인라인 편집 (Tier·P·시장성·우수·활성). 🖼️ 클릭 → 이미지·URL 편집.</div>
-      </div>
-      <!-- 모델 마스터 (풀폭) + 행 확장 옵션 표 통합 -->
-      <div class="section" style="padding:10px 12px">
-        <h3 style="font-size:13px;color:#cbd5e1;margin:0 0 8px;display:flex;align-items:center;justify-content:space-between">
-          <span>📋 모델 마스터 <span style="font-size:10.5px;color:#94a3b8;font-weight:500" id="rp-model-count">로딩...</span></span>
-          <span style="font-size:10px;color:#64748b">💡 행 클릭 → 옵션 펼침/접힘</span>
-        </h3>
-        <div style="max-height:760px;overflow:auto">
-          <table style="font-size:11px;width:100%">
-            <thead style="position:sticky;top:0;background:#1e293b;z-index:2">
-              <tr>
-                <th style="width:54px" title="이미지·URL 편집">🖼️</th>
-                <th>브랜드</th><th>모델 / 상품명 / 태그</th>
-                <th style="width:90px" title="가능 약정 (개월)">약정</th>
-                <th style="width:55px" title="옵션 수">옵션</th>
-                <th style="width:60px" title="모델 기본 Tier (S/A/B/C 인라인 편집)">Tier</th>
-                <th style="width:60px" title="모델 기본 P (point_weight · 옵션 단위에서 override)">P</th>
-                <th style="width:42px" title="⭐ 우수상품 (S Tier 자동 분류와 별개로 운영자 수동 마킹)">⭐</th>
-                <th style="width:78px" title="시장성 (0~5)">시장성</th>
-                <th style="width:45px" title="활성">활성</th>
-              </tr>
-            </thead>
-            <tbody id="rp-models-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ★ 빌리고 엑셀 import — 숨김 파일 입력 + 모달 -->
-    <input type="file" id="rp-import-file" accept=".xlsx" style="display:none">
-    <div id="rp-import-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto">
-      <div style="background:#1e293b;border:1.5px solid #475569;border-radius:12px;width:100%;max-width:760px;padding:20px 22px">
-        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155;padding-bottom:12px;margin-bottom:14px">
-          <div style="font-size:15px;font-weight:800;color:#fbbf24">📤 빌리고 엑셀 import</div>
-          <button type="button" id="rp-import-close" style="background:#475569;color:#fff;border:none;width:26px;height:26px;border-radius:6px;font-size:14px;cursor:pointer">✕</button>
-        </div>
-        <!-- 파일 + 기준월 -->
-        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
-          <div style="flex:1;min-width:200px">
-            <label style="font-size:11px;color:#94a3b8">선택 파일</label>
-            <div id="rp-import-filename" style="margin-top:3px;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;font-size:12px;color:#e2e8f0;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">-</div>
-          </div>
-          <div>
-            <label style="font-size:11px;color:#94a3b8">기준월 (year_month)</label>
-            <input type="month" id="rp-import-ym" style="display:block;margin-top:3px;padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px">
-          </div>
-          <div>
-            <label style="font-size:11px;color:#94a3b8">파일 종류</label>
-            <select id="rp-import-filetype" style="display:block;margin-top:3px;padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px">
-              <option value="등록폼">봉이 표준 등록폼</option>
-              <option value="정수기">빌리고 정수기 원본</option>
-              <option value="가전">빌리고 가전 원본</option>
-            </select>
-          </div>
-          <button type="button" id="rp-import-preview-btn" style="background:#06b6d4;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:800;cursor:pointer">🔍 미리보기</button>
-        </div>
-        <!-- 미리보기 결과 -->
-        <div id="rp-import-result" style="display:none">
-          <!-- summary 카드 -->
-          <div id="rp-import-summary" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px"></div>
-          <!-- collisions / warnings -->
-          <div id="rp-import-warn" style="margin-bottom:10px"></div>
-          <!-- sample 테이블 -->
-          <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">샘플 (최대 20건)</div>
-          <div style="max-height:280px;overflow-y:auto;margin-bottom:14px">
-            <table style="font-size:10.5px">
-              <thead style="position:sticky;top:0;background:#1e293b;z-index:1">
-                <tr><th>모델</th><th>약정</th><th>care</th><th>variant_code</th><th style="text-align:right">렌탈료</th><th style="text-align:right">rebate</th></tr>
-              </thead>
-              <tbody id="rp-import-sample"></tbody>
-            </table>
-          </div>
-          <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #334155;padding-top:12px">
-            <button type="button" id="rp-import-cancel" style="background:#475569;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">취소</button>
-            <button type="button" id="rp-import-commit-btn" style="background:#16a34a;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:800;cursor:pointer">✅ 확정 반영</button>
-          </div>
-        </div>
-        <div id="rp-import-msg" style="font-size:11.5px;margin-top:10px;min-height:16px"></div>
-      </div>
-    </div>
-
-    <!-- ★ 옵션 디테일 모달 (대형 팝업) -->
-    <div id="rp-options-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:9998;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto">
-      <div style="background:#0f172a;border:1.5px solid #f59e0b;border-radius:12px;width:100%;max-width:1320px;padding:14px 16px;min-height:200px">
-        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155;padding-bottom:10px;margin-bottom:12px">
-          <h3 id="rp-option-title" style="font-size:14px;color:#fbbf24;margin:0">📦 옵션 디테일 로딩...</h3>
-          <button type="button" id="rp-options-modal-close" style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:4px 12px;border-radius:5px;cursor:pointer;font-size:11.5px">✕ 닫기 (Esc)</button>
-        </div>
-        <div id="rp-product-detail" style="display:none;background:rgba(245,158,11,0.05);border:1px solid #f59e0b;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:10.5px;color:#cbd5e1;line-height:1.7"></div>
-        <div id="rp-options-area" style="font-size:11.5px;color:#94a3b8;padding:14px;text-align:center">로딩...</div>
-      </div>
-    </div>
-
-    <!-- ★ 이미지·URL 편집 모달 (Phase 3) -->
-    <div id="rp-image-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:48px 16px;overflow-y:auto">
-      <div style="background:#1e293b;border:1.5px solid #0891b2;border-radius:12px;width:100%;max-width:520px;padding:20px 22px">
-        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155;padding-bottom:12px;margin-bottom:14px">
-          <div style="font-size:14px;color:#22d3ee;font-weight:800">🖼️ 이미지 · URL 편집 <span id="rp-img-modal-model" style="color:#94a3b8;font-weight:600;font-size:12px;margin-left:8px"></span></div>
-          <button type="button" id="rp-img-modal-close" style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px">✕ 닫기 (Esc)</button>
-        </div>
-        <!-- 미리보기 -->
-        <div style="display:flex;justify-content:center;align-items:center;background:#0f172a;border:1px dashed #475569;border-radius:8px;min-height:200px;margin-bottom:14px;padding:10px">
-          <img id="rp-img-preview" alt="미리보기" style="max-width:100%;max-height:280px;object-fit:contain;display:none">
-          <div id="rp-img-preview-empty" style="color:#64748b;font-size:12px">이미지 URL 입력 시 미리보기</div>
-        </div>
-        <!-- 입력 -->
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <!-- 🆕 파일 직접 업로드 (Supabase Storage product-images bucket) -->
-          <label style="font-size:11px;color:#fbbf24;font-weight:600">📤 파일 업로드 (가장 권장 · 5MB 이하 · jpeg/png/webp/gif)</label>
-          <div style="display:flex;gap:6px;align-items:center;background:rgba(251,191,36,0.06);border:1px dashed #fbbf24;border-radius:6px;padding:8px 10px">
-            <input type="file" id="rp-img-file" accept="image/jpeg,image/png,image/webp,image/gif" style="flex:1;font-size:11px;color:#e2e8f0">
-            <button type="button" id="rp-img-upload-btn" style="background:#fbbf24;color:#0f172a;border:none;padding:6px 14px;border-radius:5px;font-size:11.5px;font-weight:800;cursor:pointer;white-space:nowrap">⬆️ 업로드</button>
-          </div>
-          <div style="font-size:10px;color:#64748b;margin-top:-4px">→ 업로드 시 Supabase Storage(public)에 저장 + URL 자동 입력</div>
-
-          <label style="font-size:11px;color:#94a3b8;font-weight:600;margin-top:6px">🖼️ 이미지 URL <span style="color:#64748b;font-weight:400">(또는 외부 URL 직접 입력)</span></label>
-          <input type="url" id="rp-img-url-input" placeholder="https://..." style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:5px;font-size:12px;font-family:'SF Mono',Monaco,monospace">
-          <label style="font-size:11px;color:#94a3b8;font-weight:600;margin-top:4px">🔗 상품 페이지 URL (카탈로그)</label>
-          <input type="url" id="rp-product-url-input" placeholder="https://..." style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:5px;font-size:12px;font-family:'SF Mono',Monaco,monospace">
-        </div>
-        <!-- 액션 -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid #334155">
-          <span id="rp-img-modal-msg" style="font-size:11px;color:#94a3b8;min-height:14px"></span>
-          <div style="display:flex;gap:8px">
-            <button type="button" id="rp-img-clear" style="background:transparent;border:1px solid #ef4444;color:#fca5a5;padding:6px 12px;border-radius:5px;font-size:11.5px;cursor:pointer">🗑️ 비우기</button>
-            <button type="button" id="rp-img-save" style="background:#0891b2;color:#fff;border:none;padding:6px 16px;border-radius:5px;font-size:11.5px;font-weight:700;cursor:pointer">💾 저장</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 🆕 이미지 일괄 업로드 모달 -->
-    <div id="rp-batch-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto">
-      <div style="background:#1e293b;border:1.5px solid #f59e0b;border-radius:12px;width:100%;max-width:1100px;padding:20px 24px">
-        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155;padding-bottom:12px;margin-bottom:14px">
-          <div style="font-size:15px;color:#fbbf24;font-weight:800">🖼️ 이미지 일괄 업로드 <span style="color:#94a3b8;font-weight:600;font-size:12px;margin-left:8px">— 파일명 ↔ 모델 자동 매칭</span></div>
-          <button type="button" id="rp-batch-close" style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px">✕ 닫기 (Esc)</button>
-        </div>
-        <div style="font-size:11px;color:#cbd5e1;background:rgba(251,191,36,0.06);border:1px dashed #f59e0b;border-radius:6px;padding:10px 12px;margin-bottom:14px;line-height:1.6">
-          💡 <b>매칭 규칙</b>: 파일명에 <b>모델명</b>(예: <code>chp-590n</code>) 또는 <b>brand+model</b>(예: <code>coway-chp590</code>)이 포함되면 자동 매칭.<br>
-          • 미매칭 파일은 표 우측 select로 직접 매핑 (현재 필터된 상품만 노출)<br>
-          • 업로드 시 카테고리 필터에 노출된 상품만 매칭 대상 — 정수기 필터를 먼저 설정하세요
-        </div>
-        <!-- 드롭존 -->
-        <div id="rp-batch-drop" style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f172a;border:2px dashed #f59e0b;border-radius:8px;min-height:140px;padding:18px;margin-bottom:14px;cursor:pointer;transition:background 0.15s">
-          <div style="font-size:32px;margin-bottom:6px">📤</div>
-          <div style="color:#fbbf24;font-weight:700;font-size:13px">파일을 드래그하거나 클릭해 선택</div>
-          <div style="color:#64748b;font-size:11px;margin-top:4px">jpg / png / webp / gif — 한 번에 여러 파일 가능 · 각 5MB 이하</div>
-          <input type="file" id="rp-batch-file-input" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none">
-        </div>
-        <!-- 통계 + 액션 -->
-        <div id="rp-batch-stats" style="display:none;justify-content:space-between;align-items:center;background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px 14px;margin-bottom:10px">
-          <div style="font-size:12px;color:#e2e8f0;display:flex;gap:18px">
-            <span>📁 전체 <b id="rpb-total" style="color:#fbbf24">0</b>건</span>
-            <span>✅ 매칭 <b id="rpb-matched" style="color:#22c55e">0</b>건</span>
-            <span>⚠️ 미매칭 <b id="rpb-unmatched" style="color:#ef4444">0</b>건</span>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button type="button" id="rp-batch-clear" style="background:transparent;border:1px solid #ef4444;color:#fca5a5;padding:6px 14px;border-radius:5px;font-size:11px;cursor:pointer">🗑️ 비우기</button>
-            <button type="button" id="rp-batch-upload-matched" style="background:#22c55e;color:#fff;border:none;padding:6px 14px;border-radius:5px;font-size:11.5px;font-weight:800;cursor:pointer">⬆️ 매칭된 것만 업로드</button>
-          </div>
-        </div>
-        <!-- progress -->
-        <div id="rp-batch-progress-wrap" style="display:none;margin-bottom:10px">
-          <div style="background:#0f172a;border:1px solid #334155;border-radius:6px;height:18px;overflow:hidden;position:relative">
-            <div id="rp-batch-progress-bar" style="background:linear-gradient(90deg,#22c55e,#16a34a);height:100%;width:0%;transition:width 0.2s"></div>
-            <div id="rp-batch-progress-text" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#fff;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.6)">0 / 0</div>
-          </div>
-        </div>
-        <!-- 매칭 결과 표 -->
-        <div id="rp-batch-table-wrap" style="display:none;max-height:50vh;overflow-y:auto;border:1px solid #334155;border-radius:6px">
-          <table style="width:100%;border-collapse:collapse;font-size:11.5px;color:#e2e8f0">
-            <thead style="position:sticky;top:0;background:#0f172a;z-index:1">
-              <tr style="border-bottom:1px solid #334155">
-                <th style="text-align:left;padding:8px 10px;color:#94a3b8;font-weight:700">📁 파일명</th>
-                <th style="text-align:left;padding:8px 10px;color:#94a3b8;font-weight:700;width:40%">🎯 매칭 상품 (수동 변경 가능)</th>
-                <th style="text-align:center;padding:8px 10px;color:#94a3b8;font-weight:700;width:90px">상태</th>
-                <th style="text-align:center;padding:8px 10px;color:#94a3b8;font-weight:700;width:50px"></th>
-              </tr>
-            </thead>
-            <tbody id="rp-batch-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ★ 인터넷+TV 패널 (기존 영역 — 카테고리 탭 클릭 시 토글) -->
-    <div id="it-panel">
+        <div id="it-panel">
 
     <!-- KPI -->
     <div class="kpi-grid">
-      <div class="kpi-card"><div class="kpi-label">전체 상품</div><div class="kpi-val" id="kpi-total">-</div><div class="kpi-sub" id="kpi-active">-</div></div>
-      <div class="kpi-card"><div class="kpi-label">⭐ 우수상품 (S)</div><div class="kpi-val" id="kpi-s">-</div><div class="kpi-sub">마진 25만+</div></div>
-      <div class="kpi-card"><div class="kpi-label">A Tier</div><div class="kpi-val" id="kpi-a">-</div><div class="kpi-sub">마진 18만+</div></div>
-      <div class="kpi-card"><div class="kpi-label">B Tier</div><div class="kpi-val" id="kpi-b">-</div><div class="kpi-sub">마진 12만+</div></div>
-      <div class="kpi-card"><div class="kpi-label">⚠️ C Tier</div><div class="kpi-val" id="kpi-c">-</div><div class="kpi-sub">위험 상품</div></div>
+      <div class="kpi-card"><div class="kpi-label">전체 상품</div><div class="kpi-val" id="kpi-total">-</div><div class="kpi-sub" id="kpi-total-sub">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">가이드·MAX 설정</div><div class="kpi-val" id="kpi-set">-</div><div class="kpi-sub">잔존마진 계산 가능</div></div>
+      <div class="kpi-card"><div class="kpi-label">⚠️ 미설정</div><div class="kpi-val" id="kpi-unset">-</div><div class="kpi-sub">인센티브 산정 불가</div></div>
+      <div class="kpi-card"><div class="kpi-label">평균 재량폭</div><div class="kpi-val" id="kpi-gap">-</div><div class="kpi-sub">MAX − 가이드</div></div>
     </div>
 
     <!-- 🏪 대리점 관리 (admin 전용) -->
@@ -527,7 +307,7 @@ async function fetchAgent() {
     <div class="section">
       <h2>📋 상품 목록 — 인라인 편집</h2>
       <div style="font-size:11.5px;color:#fbbf24;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);padding:8px 12px;border-radius:6px;margin-bottom:14px;line-height:1.5">
-        ℹ️ 페이백·리베이트·상담사 포인트(매출/포인트) 변경은 <b>신규 영업부터 적용</b>됩니다.
+        ℹ️ 리베이트·가이드·MAX 변경은 <b>신규 영업부터 적용</b>됩니다.
         이미 등록된 영업은 <b>등록 시점 단가가 snapshot으로 박제</b>되어 보존되며, 상품 가격 변경의 영향을 받지 않습니다.
         (계약 진행 중 상품 변경은 pending 단계에서만 가능)
       </div>
@@ -536,8 +316,6 @@ async function fetchAgent() {
         <select id="filter-carrier"><option value="">전체</option><option value="SK">SKT</option><option value="KT">KT</option><option value="LG">LGU+</option></select>
         <label style="font-size:11px;color:#94a3b8">종류</label>
         <select id="filter-type"><option value="">전체</option><option value="단독">단독</option><option value="결합">결합</option></select>
-        <label style="font-size:11px;color:#94a3b8">Tier</label>
-        <select id="filter-tier"><option value="">전체</option><option value="S">S (우수)</option><option value="A">A</option><option value="B">B</option><option value="C">C (위험)</option></select>
         <input type="text" id="filter-search" placeholder="🔍 상품명 검색" style="min-width:200px">
         <button id="reload-btn" class="btn-secondary">🔄 새로고침</button>
         <button id="history-btn" class="btn-secondary" style="background:#7c3aed">📜 변경 이력</button>
@@ -559,11 +337,10 @@ async function fetchAgent() {
               <th style="width:64px" title="WiFi 공유기 포함 여부. 티켓(105건)과 1:1 대응하도록 2026-08-19 분리">WiFi</th>
               <th style="width:110px">TV 등급</th>
               <th style="width:110px">리베이트</th>
-              <th style="width:110px">페이백</th>
-              <th style="width:85px" title="상품권 (만원). 0이면 현금 페이백만, >0이면 페이백+상품권 합산 지급">🎁 상품권</th>
-              <th style="width:75px">상담사 포인트</th>
-              <th style="width:110px">마진 (자동)</th>
-              <th style="width:75px">Tier</th>
+              <th style="width:110px;background:#134e4a" title="가이드 지급액 — 공식 사은품. 전원 동일하게 제공하며 이 아래로는 지급 불가">가이드</th>
+              <th style="width:110px;background:#4c1d95" title="MAX 지급가능액 — 상담사 재량 상한. 고객 노출 금지">MAX</th>
+              <th style="width:85px" title="상품권 (만원). 가이드 안의 구성">🎁 상품권</th>
+              <th style="width:110px" title="리베이트×0.9 − MAX. MAX까지 다 줘도 남는 금액">마진</th>
               <th style="width:80px">활성</th>
               <th style="width:140px">작업</th>
             </tr>
@@ -572,8 +349,9 @@ async function fetchAgent() {
         </table>
       </div>
       <div style="font-size:10px;color:#64748b;margin-top:10px;line-height:1.5">
-        💡 리베이트·페이백·상담사 포인트 셀에 직접 입력 후 [💾 저장] 클릭. 변경 시 마진/Tier/우수상품 자동 재계산.<br>
-        ⚠️ Tier 임계값은 정책 관리(⚙️ 정책) 탭에서 변경 (현재: S=25만, A=18만, B=12만)
+        💡 <b>가이드</b> = 공식 사은품(전원 동일·고객 노출 가능) · <b>MAX</b> = 상담사 재량 상한(<b style="color:#fca5a5">고객 노출 금지</b>)<br>
+        💡 상담사 인센티브 = <b>(MAX − 실제 지급액) × 개인 배분율</b>. 가이드 미만·MAX 초과 지급은 차단된다.<br>
+        💡 <b>마진 = 리베이트×0.9 − MAX</b>. MAX까지 다 줘도 남아야 판매 가능한 상품이다.
       </div>
     </div>
 
@@ -581,14 +359,9 @@ async function fetchAgent() {
   </div>
 </div>
 
-<!-- ★ 가전렌탈 탭 JS -->
 <script>
 (function(){
-  const RP_API = '/api/rental';
-  let _cats = [], _products = [], _selectedProductId = null, _options = [], _policy = null, _brandPolicies = [], _companies = [];
   const F = (id) => document.getElementById(id);
-  const fmtKor = n => n == null ? '-' : Math.round(Number(n)).toLocaleString();
-  const fmtStar = n => n ? '★'.repeat(Number(n)) + '☆'.repeat(Math.max(0, 5 - Number(n))) : '-';
 
   // 탭 토글
   document.querySelectorAll('.prod-cat-tab').forEach(t => {
@@ -601,11 +374,8 @@ async function fetchAgent() {
       t.classList.add('active');
       t.style.color = '#cbd5e1';
       const cat = t.dataset.cat;
-      const isRental = cat === 'rental';
       F('it-panel').style.display = cat === 'it' ? '' : 'none';
-      F('rental-panel').style.display = isRental ? '' : 'none';
       const up = F('usim-panel'); if (up) up.style.display = cat === 'usim' ? '' : 'none';
-      if (isRental) initRental(t.dataset.group);
       if (cat === 'usim') initUsimAdmin();
     });
   });
@@ -810,1238 +580,8 @@ function renderUsimAddons() {
     '</tbody></table></div>';
 }
 
-  let _rentalGroup = null, _rentalBaseInited = false;
-  async function initRental(group) {
-    if (_rentalGroup === group && _rentalBaseInited) return;
-    _rentalGroup = group;
-    try {
-      // 정책·브랜드정책·이벤트 바인딩·import — 최초 1회만
-      if (!_rentalBaseInited) {
-        const [pol, bps] = await Promise.all([
-          fetch(RP_API + '/policy').then(r => r.json()),
-          fetch(RP_API + '/brand-policies').then(r => r.json()),
-        ]);
-        _policy = pol.policy;
-        _brandPolicies = bps.brand_policies || [];
-        // 정책 변경 BroadcastChannel 수신 → _policy 재 fetch + 옵션 표 즉시 재계산
-        try {
-          const rpCh = new BroadcastChannel('rental-policy');
-          rpCh.addEventListener('message', async (e) => {
-            if (e.data?.type === 'policy-changed') {
-              const r = await fetch(RP_API + '/policy').then(r => r.json()).catch(()=>null);
-              if (r?.policy) _policy = r.policy;
-              if (_selectedProductId) loadOptions(_selectedProductId);
-            }
-          });
-        } catch(e) {}
-        F('rp-filter-cat').addEventListener('change', loadProducts);
-        F('rp-filter-brand').addEventListener('change', renderModels);
-        F('rp-filter-company')?.addEventListener('change', renderModels);
-        F('rp-filter-tier').addEventListener('change', renderModels);
-        F('rp-filter-promo').addEventListener('change', renderModels);
-        F('rp-filter-search').addEventListener('input', renderModels);
-        F('rp-reload-btn')?.addEventListener('click', loadProducts);
-        F('rp-bulk-payback-btn')?.addEventListener('click', bulkPayback);
-        initImport();
-        _rentalBaseInited = true;
-      }
-      const gt = F('rp-group-title');
-      if (gt) gt.textContent = (group === '정수기' ? '💧 정수기 그룹' : '🏠 가전 그룹') + ' 상품 관리';
-      // 카테고리 — 선택 그룹(정수기/가전렌탈사)의 상품 있는 것만
-      // 카테고리 그룹(정수기/가전) ↔ 렌탈사 그룹(정수기/가전렌탈사) 매핑
-      const companyGroup = group === '정수기' ? '정수기' : '가전렌탈사';
-      const [cs, comp] = await Promise.all([
-        fetch(RP_API + `/categories?include_inactive=1&group=${encodeURIComponent(group)}`).then(r => r.json()),
-        fetch(RP_API + `/companies?group=${encodeURIComponent(companyGroup)}`).then(r => r.json()),
-      ]);
-      _cats = (cs.categories || []).filter(c => (c.product_count || 0) > 0);
-      if (!_cats.length) _cats = cs.categories || [];  // 데이터 0이면 전체 노출 (fallback)
-      _companies = comp.companies || [];
-      renderCompanyRates(group);
-      F('rp-filter-cat').innerHTML = _cats.map(c => `<option value="${c.slug}">${(c.metadata?.icon||'')} ${c.name}</option>`).join('');
-      await loadProducts();
-    } catch (e) {
-      F('rp-models-tbody').innerHTML = `<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:14px">API 오류: ${e.message}</td></tr>`;
-    }
-  }
-
-  // 렌탈사 수수료 표기 — rate(%)·multiple(배수)·flat(정액)
-  function fmtCommission(c) {
-    if (!c) return '-';
-    if (c.commission_method === 'rate' && c.commission_rate != null)
-      return Math.round(Number(c.commission_rate) * 100) + '%';
-    if (c.commission_method === 'multiple' && c.commission_multiple != null)
-      return '월렌탈료 ×' + c.commission_multiple;
-    if (c.commission_method === 'flat' && c.commission_flat != null)
-      return Number(c.commission_flat).toLocaleString() + '원';
-    return c.commission_method || '-';
-  }
-  // 가전 그룹 — 렌탈사별 수수료율 패널 (정수기 그룹은 direct 라 숨김)
-  function renderCompanyRates(group) {
-    const box = F('rp-company-rates');
-    if (!box) return;
-    if (group !== '가전') { box.style.display = 'none'; return; }
-    const list = (_companies || []).filter(c => (c.model_count || 0) > 0)
-      .sort((a, b) => (b.model_count || 0) - (a.model_count || 0));
-    if (!list.length) { box.style.display = 'none'; return; }
-    box.style.display = '';
-    box.innerHTML = `
-      <div class="section" style="padding:10px 12px">
-        <h3 style="font-size:13px;color:#cbd5e1;margin:0 0 8px">🏢 렌탈사별 수수료율 <span style="font-size:10.5px;color:#94a3b8;font-weight:500">· ${list.length}개사 · 봉이 영업 수수료</span></h3>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${list.map(c => `<div style="background:#0f172a;border:1px solid #475569;border-radius:6px;padding:5px 10px;font-size:11px">
-            <span style="color:#e2e8f0;font-weight:700">${c.name}</span>
-            <span style="color:#fbbf24;font-weight:800;margin-left:5px">${fmtCommission(c)}</span>
-            <span style="color:#64748b;margin-left:4px">${(c.model_count||0).toLocaleString()}모델</span>
-          </div>`).join('')}
-        </div>
-      </div>`;
-  }
-
-  async function loadProducts() {
-    const slug = F('rp-filter-cat').value;
-    const r = await fetch(`${RP_API}/products?category=${slug}&group=${encodeURIComponent(_rentalGroup||'')}&active_only=0`).then(r => r.json());
-    // 옵션 단가 등록된 모델만 (후보-only 제외)
-    _products = (r.products || []).filter(p => (p.option_count || 0) > 0);
-    // 브랜드(제조사) 필터 — 가전 그룹은 brand=제조사(삼성·LG 등)
-    const brands = [...new Set(_products.map(p => p.brand))].sort();
-    F('rp-filter-brand').innerHTML = '<option value="">전체</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
-    // 가전 그룹 한정 — 렌탈사 필터 (채널) 노출
-    const wrap = F('rp-filter-company-wrap');
-    if (_rentalGroup === '가전') {
-      wrap.style.display = '';
-      const coIdsInCat = [...new Set(_products.map(p => p.company_id).filter(x => x != null))];
-      const cosInCat = (_companies || []).filter(c => coIdsInCat.includes(c.id))
-        .sort((a, b) => (b.model_count||0) - (a.model_count||0));
-      F('rp-filter-company').innerHTML = '<option value="">전체</option>' +
-        cosInCat.map(c => `<option value="${c.id}">${c.name} (${fmtCommission(c)})</option>`).join('');
-    } else {
-      wrap.style.display = 'none';
-      F('rp-filter-company').value = '';
-    }
-    renderKpi();
-    renderModels();
-  }
-
-  async function renderKpi() {
-    F('rp-kpi-models').textContent = _products.length;
-    F('rp-kpi-active').textContent = '활성 ' + _products.filter(p => p.is_active).length;
-    F('rp-kpi-premium').textContent = _products.filter(p => p.is_premium).length;
-    F('rp-kpi-brands').textContent = new Set(_products.map(p => p.brand)).size + ' 브랜드';
-    // 총 옵션 수 — rental_products.option_count 컬럼 합산 (정확값)
-    const totalOptions = _products.reduce((s, p) => s + (p.option_count || 0), 0);
-    F('rp-kpi-options').textContent = totalOptions;
-    F('rp-kpi-rebate').textContent = '클릭→확인';
-  }
-
-  function renderModels() {
-    const brand = F('rp-filter-brand').value;
-    const company = F('rp-filter-company')?.value || '';
-    const tier = F('rp-filter-tier').value;
-    const promo = F('rp-filter-promo').value;
-    const search = F('rp-filter-search').value.toLowerCase();
-    const list = _products.filter(p => {
-      if (brand && p.brand !== brand) return false;
-      if (company && String(p.company_id) !== String(company)) return false;
-      if (tier && p.tier !== tier) return false;
-      if (promo && !(p.promo_tag || '').includes(promo) && p.registration_status !== promo) return false;
-      if (search) {
-        const hay = `${p.model} ${p.name} ${p.evaluation_memo||''} ${p.promo_tag||''}`.toLowerCase();
-        if (!hay.includes(search)) return false;
-      }
-      return true;
-    });
-    F('rp-model-count').textContent = `· ${list.length}개`;
-    F('rp-models-tbody').innerHTML = list.map(p => {
-      const statusBadge = p.registration_status ? `<span style="background:#dc2626;color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;margin-left:4px">${p.registration_status}</span>` : '';
-      const promoBadge = p.promo_tag ? `<span style="background:#7c3aed;color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;margin-left:4px">${p.promo_tag}</span>` : '';
-      const urlIcon = p.product_url ? `<a href="${p.product_url}" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-size:11px;margin-left:4px">🔗</a>` : '';
-      const monthsHTML = (p.months_available || []).map(m => `<span style="background:#334155;color:#cbd5e1;font-size:9.5px;padding:1px 4px;border-radius:3px;margin:1px">${m}M</span>`).join('') || '-';
-      const caresHTML = (p.care_services || []).map(c => c === '방문' ? '🏠' : '✋').join('');
-      // 가전 그룹 — 렌탈사(채널) 뱃지. 브랜드=제조사라 렌탈사가 따로 보여야 상담사가 어느 채널 계약인지 즉시 식별.
-      const co = (_rentalGroup === '가전' && p.company_id != null)
-        ? (_companies || []).find(c => c.id === p.company_id) : null;
-      const companyBadge = co
-        ? `<span style="background:#0891b2;color:#fff;font-size:8.5px;padding:1px 5px;border-radius:3px;margin-left:4px" title="렌탈사 수수료율 ${fmtCommission(co)}">🏢 ${co.name}</span>`
-        : '';
-      // 이미지 thumb (Phase 3 — 클릭 시 편집 모달)
-      const imgHTML = p.image_url
-        ? `<img src="${p.image_url}" alt="" style="width:42px;height:42px;object-fit:cover;border-radius:5px;border:1px solid #475569;cursor:pointer" loading="lazy" decoding="async" title="클릭 → 이미지·URL 편집" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerHTML:'❌',style:'width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:#334155;border-radius:5px;color:#ef4444;cursor:pointer',title:'이미지 로드 실패 · 클릭 → 편집'}))">`
-        : `<div style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:#1e293b;border:1px dashed #475569;border-radius:5px;color:#64748b;font-size:18px;cursor:pointer" title="클릭 → 이미지·URL 입력">🖼️</div>`;
-      // Tier 색상 매핑
-      const tierColors = { S:'#fbbf24', A:'#60a5fa', B:'#94a3b8', C:'#475569' };
-      const tierVal = p.tier || 'B';
-      const tierBg = tierColors[tierVal] || '#475569';
-      return `
-      <tr data-id="${p.id}" class="rp-model-row" style="cursor:pointer">
-        <td style="text-align:center;padding:3px"><span class="rp-img-edit" data-id="${p.id}">${imgHTML}</span></td>
-        <td>${p.brand}</td>
-        <td>
-          <div style="font-weight:700">${p.model}${urlIcon}${statusBadge}${promoBadge}${companyBadge}</div>
-          <div style="font-size:10px;color:#94a3b8">${p.name}</div>
-          ${p.evaluation_memo ? `<div style="font-size:9.5px;color:#fbbf24;margin-top:2px">📝 ${p.evaluation_memo}</div>` : ''}
-        </td>
-        <td style="font-size:9.5px;line-height:1.4">${monthsHTML}<div style="font-size:9px;color:#94a3b8;margin-top:2px">${caresHTML}</div></td>
-        <td style="text-align:center;color:#a78bfa;font-weight:700">${p.option_count || '-'}</td>
-        <td style="text-align:center;padding:3px">
-          <select class="rp-edit" data-field="tier" title="모델 기본 Tier (옵션 단위에서 override 가능)" style="background:${tierBg};color:#0f172a;font-size:10.5px;font-weight:800;padding:2px 4px;border:1px solid #475569;border-radius:3px;width:54px">
-            <option value="S" ${tierVal==='S'?'selected':''}>S</option>
-            <option value="A" ${tierVal==='A'?'selected':''}>A</option>
-            <option value="B" ${tierVal==='B'?'selected':''}>B</option>
-            <option value="C" ${tierVal==='C'?'selected':''}>C</option>
-          </select>
-        </td>
-        <td style="text-align:center;padding:3px">
-          <input class="rp-edit" data-field="point_weight" type="number" step="0.1" min="0" value="${p.point_weight ?? 1.5}" title="모델 기본 P (point_weight · 옵션 단위 P가 우선)" style="width:54px;background:#0f172a;border:1px solid #a78bfa;color:#a78bfa;padding:2px 4px;border-radius:3px;font-size:10.5px;text-align:right;font-weight:700">
-        </td>
-        <td style="text-align:center"><input class="rp-edit" data-field="is_premium" type="checkbox" ${p.is_premium?'checked':''} title="⭐ 우수상품 (수동 마킹)"></td>
-        <td style="text-align:center;padding:3px">
-          <select class="rp-edit" data-field="market_score" title="시장성 (0=미평가 · 1~5)" style="background:#0f172a;color:#fbbf24;font-size:10.5px;font-weight:700;padding:2px 4px;border:1px solid #475569;border-radius:3px;width:70px">
-            <option value="" ${!p.market_score?'selected':''}>—</option>
-            <option value="1" ${p.market_score===1?'selected':''}>★ 1</option>
-            <option value="2" ${p.market_score===2?'selected':''}>★★ 2</option>
-            <option value="3" ${p.market_score===3?'selected':''}>★★★ 3</option>
-            <option value="4" ${p.market_score===4?'selected':''}>★★★★ 4</option>
-            <option value="5" ${p.market_score===5?'selected':''}>★★★★★ 5</option>
-          </select>
-        </td>
-        <td style="text-align:center"><input class="rp-edit" data-field="is_active" type="checkbox" ${p.is_active?'checked':''}></td>
-      </tr>`;
-    }).join('');
-    F('rp-models-tbody').querySelectorAll('.rp-model-row').forEach(tr => {
-      tr.addEventListener('click', e => {
-        if (e.target.classList.contains('rp-edit') || e.target.tagName === 'A' || e.target.closest('.rp-img-edit')) return;
-        toggleOptionsRow(tr);
-      });
-      tr.querySelectorAll('.rp-edit').forEach(inp => {
-        inp.addEventListener('change', () => saveProduct(tr.dataset.id, inp));
-      });
-      // 🖼️ 이미지 셀 클릭 → 편집 모달 (Phase 3에서 정의)
-      const imgEl = tr.querySelector('.rp-img-edit');
-      if (imgEl) imgEl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (typeof openImageEditModal === 'function') openImageEditModal(tr.dataset.id);
-      });
-    });
-  }
-
-  // 모델 행 클릭 — 옵션 디테일 모달 팝업 (대형)
-  function toggleOptionsRow(modelRow) {
-    const productId = modelRow.dataset.id;
-    const modal = document.getElementById('rp-options-modal');
-    if (!modal) return;
-    // 모달 초기 상태
-    document.getElementById('rp-option-title').textContent = '📦 옵션 디테일 로딩...';
-    document.getElementById('rp-product-detail').style.display = 'none';
-    document.getElementById('rp-product-detail').innerHTML = '';
-    document.getElementById('rp-options-area').innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8">로딩...</div>';
-    document.querySelectorAll('.rp-model-row').forEach(x => x.style.background = '');
-    modelRow.style.background = 'rgba(245,158,11,0.15)';
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    loadOptions(productId);
-  }
-  function closeOptionsModal() {
-    const modal = document.getElementById('rp-options-modal');
-    if (modal) modal.style.display = 'none';
-    document.body.style.overflow = '';
-    document.querySelectorAll('.rp-model-row').forEach(x => x.style.background = '');
-  }
-  // 모달 이벤트 (1회 등록)
-  (function bindOptionsModal() {
-    const modal = document.getElementById('rp-options-modal');
-    if (!modal) return;
-    document.getElementById('rp-options-modal-close')?.addEventListener('click', closeOptionsModal);
-    modal.addEventListener('click', e => { if (e.target === modal) closeOptionsModal(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display === 'flex') closeOptionsModal(); });
-  })();
-
-  async function saveProduct(id, inp) {
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) return alert('로그인 필요');
-    const field = inp.dataset.field;
-    let value = inp.type === 'checkbox' ? inp.checked : inp.value;
-    // 숫자형 필드 — 빈값 → null
-    if (field === 'point_weight' || field === 'market_score' || field === 'display_rank') {
-      value = value === '' ? null : Number(value);
-    }
-    const body = { [field]: value };
-    const res = await fetch(`${RP_API}/products/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) { alert('저장 실패'); return; }
-    inp.style.borderColor = '#22c55e';
-    setTimeout(() => inp.style.borderColor = '#475569', 1500);
-    // Tier 색상 동적 변경
-    if (field === 'tier') {
-      const tierColors = { S:'#fbbf24', A:'#60a5fa', B:'#94a3b8', C:'#475569' };
-      inp.style.background = tierColors[value] || '#475569';
-    }
-    // KPI 즉시 갱신 — _products 배열 해당 item field만 업데이트 + renderKpi
-    const p = _products.find(x => String(x.id) === String(id));
-    if (p) { p[field] = value; renderKpi(); }
-  }
-
-  // 🖼️ 이미지·URL 편집 모달 (Phase 3)
-  let _imgModalProductId = null;
-  function openImageEditModal(productId) {
-    const p = _products.find(x => String(x.id) === String(productId));
-    if (!p) return alert('상품 데이터 없음');
-    _imgModalProductId = productId;
-    const modal = document.getElementById('rp-image-modal');
-    document.getElementById('rp-img-modal-model').textContent = `· ${p.brand} ${p.model}`;
-    const imgInp = document.getElementById('rp-img-url-input');
-    const urlInp = document.getElementById('rp-product-url-input');
-    imgInp.value = p.image_url || '';
-    urlInp.value = p.product_url || '';
-    document.getElementById('rp-img-modal-msg').textContent = '';
-    updateImgPreview(p.image_url || '');
-    modal.style.display = 'flex';
-    setTimeout(() => imgInp.focus(), 50);
-  }
-  function updateImgPreview(url) {
-    const img = document.getElementById('rp-img-preview');
-    const empty = document.getElementById('rp-img-preview-empty');
-    if (url && /^https?:\/\//.test(url.trim())) {
-      img.src = url.trim();
-      img.style.display = 'block';
-      empty.style.display = 'none';
-      img.onerror = () => { img.style.display = 'none'; empty.style.display = 'block'; empty.textContent = '❌ 이미지 로드 실패'; empty.style.color = '#ef4444'; };
-      img.onload = () => { empty.style.color = '#64748b'; };
-    } else {
-      img.style.display = 'none';
-      empty.style.display = 'block';
-      empty.textContent = '이미지 URL 입력 시 미리보기';
-      empty.style.color = '#64748b';
-    }
-  }
-  function closeImageEditModal() {
-    document.getElementById('rp-image-modal').style.display = 'none';
-    _imgModalProductId = null;
-  }
-  async function saveImageEdit() {
-    if (!_imgModalProductId) return;
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) return alert('로그인 필요');
-    const imgUrl = document.getElementById('rp-img-url-input').value.trim() || null;
-    const prodUrl = document.getElementById('rp-product-url-input').value.trim() || null;
-    const msg = document.getElementById('rp-img-modal-msg');
-    msg.textContent = '저장 중...';
-    msg.style.color = '#94a3b8';
-    const res = await fetch(`${RP_API}/products/${_imgModalProductId}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-      body: JSON.stringify({ image_url: imgUrl, product_url: prodUrl }),
-    });
-    if (!res.ok) { msg.textContent = '❌ 저장 실패'; msg.style.color = '#ef4444'; return; }
-    // 캐시 업데이트 + 표 재렌더
-    const p = _products.find(x => String(x.id) === String(_imgModalProductId));
-    if (p) { p.image_url = imgUrl; p.product_url = prodUrl; }
-    renderModels();
-    msg.textContent = '✓ 저장 완료';
-    msg.style.color = '#22c55e';
-    setTimeout(closeImageEditModal, 600);
-  }
-  // 🆕 파일 직접 업로드 (Supabase Storage)
-  async function uploadImageFile() {
-    if (!_imgModalProductId) return;
-    const file = document.getElementById('rp-img-file').files[0];
-    if (!file) return alert('파일을 먼저 선택하세요');
-    if (file.size > 5 * 1024 * 1024) return alert('5MB 이하 파일만 업로드 가능');
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) return alert('로그인 필요');
-    const msg = document.getElementById('rp-img-modal-msg');
-    msg.textContent = '⬆️ 업로드 중...';
-    msg.style.color = '#fbbf24';
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch(`${RP_API}/products/${_imgModalProductId}/image`, {
-        method: 'POST', headers: { Authorization: 'Bearer ' + tk }, body: fd,
-      });
-      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || `HTTP ${res.status}`); }
-      const j = await res.json();
-      document.getElementById('rp-img-url-input').value = j.image_url;
-      updateImgPreview(j.image_url);
-      const p = _products.find(x => String(x.id) === String(_imgModalProductId));
-      if (p) p.image_url = j.image_url;
-      renderModels();
-      msg.textContent = '✓ 업로드 완료 (URL 자동 입력됨)';
-      msg.style.color = '#22c55e';
-    } catch (e) {
-      msg.textContent = '❌ 업로드 실패: ' + e.message;
-      msg.style.color = '#ef4444';
-    }
-  }
-  // 모달 이벤트 (한 번만 등록)
-  (function bindImageModal() {
-    const modal = document.getElementById('rp-image-modal');
-    if (!modal) return;
-    document.getElementById('rp-img-modal-close')?.addEventListener('click', closeImageEditModal);
-    document.getElementById('rp-img-url-input')?.addEventListener('input', e => updateImgPreview(e.target.value));
-    document.getElementById('rp-img-save')?.addEventListener('click', saveImageEdit);
-    document.getElementById('rp-img-upload-btn')?.addEventListener('click', uploadImageFile);
-    document.getElementById('rp-img-clear')?.addEventListener('click', () => {
-      document.getElementById('rp-img-url-input').value = '';
-      document.getElementById('rp-product-url-input').value = '';
-      const f = document.getElementById('rp-img-file'); if (f) f.value = '';
-      updateImgPreview('');
-    });
-    modal.addEventListener('click', e => { if (e.target === modal) closeImageEditModal(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display === 'flex') closeImageEditModal(); });
-  })();
-
-  // ═══════════════════════════════════════════════════════════
-  // 🆕 이미지 일괄 업로드 (Phase 4) — 파일명 ↔ 모델 자동 매칭
-  // ═══════════════════════════════════════════════════════════
-  let _batchItems = []; // [{file, name, productId, status: 'pending'|'uploading'|'done'|'error'}]
-
-  const normalize = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-  function getBatchTargetProducts() {
-    // 현재 카테고리 필터된 상품만 매칭 대상
-    return (_filteredProducts || _products || []);
-  }
-
-  function autoMatchFile(filename, targets) {
-    const baseName = filename.replace(/\.[^.]+$/, '');
-    const norm = normalize(baseName);
-    if (!norm) return null;
-    let best = null;
-    let bestScore = 0;
-    for (const p of targets) {
-      const candidates = [
-        normalize(`${p.brand}${p.model}`),
-        normalize(p.model),
-        normalize(`${p.brand}_${p.model}`),
-      ].filter(Boolean);
-      for (const c of candidates) {
-        if (!c || c.length < 3) continue;
-        if (norm.includes(c) || c.includes(norm)) {
-          if (c.length > bestScore) { best = p; bestScore = c.length; }
-        }
-      }
-    }
-    return best;
-  }
-
-  function openBatchModal() {
-    document.getElementById('rp-batch-modal').style.display = 'flex';
-    _batchItems = [];
-    document.getElementById('rp-batch-stats').style.display = 'none';
-    document.getElementById('rp-batch-table-wrap').style.display = 'none';
-    document.getElementById('rp-batch-progress-wrap').style.display = 'none';
-  }
-  function closeBatchModal() {
-    document.getElementById('rp-batch-modal').style.display = 'none';
-  }
-  function addFilesToBatch(fileList) {
-    const targets = getBatchTargetProducts();
-    if (!targets.length) return alert('카테고리/필터된 상품이 없습니다. 정수기 필터를 먼저 설정하세요.');
-    for (const file of fileList) {
-      if (!/^image\//.test(file.type)) continue;
-      if (file.size > 5 * 1024 * 1024) {
-        _batchItems.push({ file, name: file.name, productId: null, status: 'error', msg: '5MB 초과' });
-        continue;
-      }
-      const matched = autoMatchFile(file.name, targets);
-      _batchItems.push({ file, name: file.name, productId: matched?.id || null, status: 'pending' });
-    }
-    renderBatchTable();
-  }
-  function renderBatchTable() {
-    const tbody = document.getElementById('rp-batch-table-body');
-    const targets = getBatchTargetProducts();
-    const optsHTML = targets.map(p => `<option value="${p.id}">${(p.brand||'')} ${(p.model||'')} ${p.image_url ? '🖼️(이미 있음)' : ''}</option>`).join('');
-    tbody.innerHTML = _batchItems.map((it, i) => {
-      const statusBadge = {
-        pending: '<span style="color:#94a3b8">대기</span>',
-        uploading: '<span style="color:#fbbf24">⬆️ 업로드 중</span>',
-        done: '<span style="color:#22c55e">✓ 완료</span>',
-        error: `<span style="color:#ef4444" title="${it.msg||''}">❌ ${it.msg||'실패'}</span>`,
-      }[it.status] || '';
-      return `<tr style="border-bottom:1px solid #1e293b">
-        <td style="padding:7px 10px;color:#cbd5e1;word-break:break-all">${esc(it.name)}</td>
-        <td style="padding:7px 10px">
-          <select data-idx="${i}" class="rpb-sel" style="width:100%;padding:5px 8px;background:#0f172a;border:1px solid #334155;color:#e2e8f0;font-size:11px;border-radius:4px">
-            <option value="">— 미매칭 —</option>
-            ${optsHTML}
-          </select>
-        </td>
-        <td style="padding:7px 10px;text-align:center">${statusBadge}</td>
-        <td style="padding:7px 10px;text-align:center"><button data-idx="${i}" class="rpb-del" style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer">✕</button></td>
-      </tr>`;
-    }).join('');
-    // select 기본값 적용
-    tbody.querySelectorAll('.rpb-sel').forEach(sel => {
-      const idx = parseInt(sel.dataset.idx, 10);
-      const it = _batchItems[idx];
-      if (it.productId) sel.value = String(it.productId);
-    });
-    document.getElementById('rp-batch-stats').style.display = 'flex';
-    document.getElementById('rp-batch-table-wrap').style.display = 'block';
-    updateBatchStats();
-  }
-  function updateBatchStats() {
-    const total = _batchItems.length;
-    const matched = _batchItems.filter(it => it.productId).length;
-    document.getElementById('rpb-total').textContent = total;
-    document.getElementById('rpb-matched').textContent = matched;
-    document.getElementById('rpb-unmatched').textContent = total - matched;
-  }
-  function esc(s) {
-    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  }
-  async function uploadMatchedBatch() {
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) return alert('로그인 필요');
-    const targets = _batchItems.filter(it => it.productId && it.status !== 'done');
-    if (!targets.length) return alert('업로드 대상이 없습니다 (매칭된 항목이 없거나 모두 완료)');
-    if (!confirm(`${targets.length}건을 업로드합니다. 진행하시겠습니까?`)) return;
-    const wrap = document.getElementById('rp-batch-progress-wrap');
-    const bar = document.getElementById('rp-batch-progress-bar');
-    const txt = document.getElementById('rp-batch-progress-text');
-    wrap.style.display = 'block';
-    let done = 0;
-    for (const it of targets) {
-      it.status = 'uploading';
-      renderBatchTable();
-      try {
-        const fd = new FormData();
-        fd.append('file', it.file);
-        const res = await fetch(`${RP_API}/products/${it.productId}/image`, {
-          method: 'POST', headers: { Authorization: 'Bearer ' + tk }, body: fd,
-        });
-        if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || `HTTP ${res.status}`); }
-        const j = await res.json();
-        const p = _products.find(x => String(x.id) === String(it.productId));
-        if (p) p.image_url = j.image_url;
-        it.status = 'done';
-      } catch (e) {
-        it.status = 'error';
-        it.msg = e.message;
-      }
-      done++;
-      bar.style.width = (done / targets.length * 100) + '%';
-      txt.textContent = `${done} / ${targets.length}`;
-      renderBatchTable();
-    }
-    renderModels();
-    const ok = _batchItems.filter(x => x.status === 'done').length;
-    const fail = _batchItems.filter(x => x.status === 'error').length;
-    setTimeout(() => alert(`완료 — 성공 ${ok}건, 실패 ${fail}건`), 100);
-  }
-  (function bindBatchModal() {
-    const btn = document.getElementById('rp-batch-image-btn');
-    const modal = document.getElementById('rp-batch-modal');
-    if (!btn || !modal) return;
-    btn.addEventListener('click', openBatchModal);
-    document.getElementById('rp-batch-close')?.addEventListener('click', closeBatchModal);
-    modal.addEventListener('click', e => { if (e.target === modal) closeBatchModal(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display === 'flex') closeBatchModal(); });
-
-    const drop = document.getElementById('rp-batch-drop');
-    const inp = document.getElementById('rp-batch-file-input');
-    drop.addEventListener('click', () => inp.click());
-    drop.addEventListener('dragover', e => { e.preventDefault(); drop.style.background = 'rgba(245,158,11,0.12)'; });
-    drop.addEventListener('dragleave', e => { e.preventDefault(); drop.style.background = '#0f172a'; });
-    drop.addEventListener('drop', e => {
-      e.preventDefault();
-      drop.style.background = '#0f172a';
-      addFilesToBatch(e.dataTransfer.files);
-    });
-    inp.addEventListener('change', e => addFilesToBatch(e.target.files));
-
-    document.getElementById('rp-batch-clear')?.addEventListener('click', () => {
-      _batchItems = [];
-      document.getElementById('rp-batch-stats').style.display = 'none';
-      document.getElementById('rp-batch-table-wrap').style.display = 'none';
-      document.getElementById('rp-batch-progress-wrap').style.display = 'none';
-      inp.value = '';
-    });
-    document.getElementById('rp-batch-upload-matched')?.addEventListener('click', uploadMatchedBatch);
-
-    // table 위임 (select 변경 + 삭제)
-    document.getElementById('rp-batch-table-body')?.addEventListener('change', e => {
-      if (e.target.classList.contains('rpb-sel')) {
-        const idx = parseInt(e.target.dataset.idx, 10);
-        _batchItems[idx].productId = e.target.value || null;
-        updateBatchStats();
-      }
-    });
-    document.getElementById('rp-batch-table-body')?.addEventListener('click', e => {
-      if (e.target.classList.contains('rpb-del')) {
-        const idx = parseInt(e.target.dataset.idx, 10);
-        _batchItems.splice(idx, 1);
-        renderBatchTable();
-      }
-    });
-  })();
-
-  async function loadOptions(productId) {
-    _selectedProductId = productId;
-    const product = _products.find(p => String(p.id) === String(productId));
-    F('rp-option-title').innerHTML = `📦 ${product.brand} <span style="color:#fbbf24">${product.model}</span> — 옵션 디테일`;
-    // 상품 정보 카드
-    const bp = _brandPolicies.find(b => b.brand === product.brand);
-    // 가전 그룹 — 렌탈사(채널) 정보. 같은 모델 N채널 중 어느 곳인지 식별.
-    const co = (_rentalGroup === '가전' && product.company_id != null)
-      ? (_companies || []).find(c => c.id === product.company_id) : null;
-    F('rp-product-detail').style.display = 'block';
-    const promoListHTML = (product.promo_tags_list || []).map(t => `<span style="display:inline-block;background:rgba(167,139,250,0.2);color:#a78bfa;font-size:9.5px;padding:1px 6px;border-radius:3px;margin:1px">${t}</span>`).join('');
-    const monthsAvail = (product.months_available || []).map(m => `<span style="background:#334155;color:#cbd5e1;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:2px">${m}M</span>`).join('');
-    const careAvail = (product.care_services || []).join('·');
-    F('rp-product-detail').innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-        ${co ? `<div style="grid-column:span 2;background:rgba(8,145,178,0.15);border:1px solid #0891b2;border-radius:4px;padding:5px 8px"><b style="color:#22d3ee">🏢 렌탈사 (채널)</b> <b style="color:#fff">${co.name}</b> · 수수료 ${fmtCommission(co)}${co.notes ? ` <span style="font-size:9.5px;color:#94a3b8">— ${co.notes}</span>` : ''}</div>` : ''}
-        ${co ? `<div id="rp-channels-box" style="grid-column:span 2"></div>` : ''}
-        <div><b style="color:#fbbf24">📦 상품명</b> ${product.name}</div>
-        <div><b style="color:#fbbf24">🏷️ 모델</b> ${product.model}</div>
-        <div><b style="color:#fbbf24">⭐ 시장성</b> ${fmtStar(product.market_score)} (${product.market_score||'-'})</div>
-        <div><b style="color:#fbbf24">🎯 Tier</b> ${product.tier} · 상담사 포인트 ${product.point_weight}P ${product.is_premium?' · ⭐우수':''}</div>
-        <div><b style="color:#fbbf24">📅 가능 약정</b> ${monthsAvail||'-'} <span style="color:#94a3b8;font-size:10px">${careAvail}</span></div>
-        <div><b style="color:#fbbf24">📊 옵션 수</b> ${product.option_count||'-'} · 월납 ${product.monthly_fee_min ? Math.round(product.monthly_fee_min/1000)+'~'+Math.round(product.monthly_fee_max/1000)+'천원' : '-'}</div>
-        <div><b style="color:#fbbf24">💰 최고 리베</b> ${product.rebate_max ? product.rebate_max.toLocaleString()+'원' : '-'}${product.rebate_half_max ? ` · 반값 ${product.rebate_half_max.toLocaleString()}` : ''}</div>
-        <div><b style="color:#fbbf24">🔄 타사보상</b> ${product.otherco_supported ? '<span style="color:#22c55e;font-weight:800">O 가능</span>' : '<span style="color:#94a3b8">X</span>'}${product.registration_decision ? ` · 등록 <b style="color:${product.registration_decision==='O'?'#22c55e':'#94a3b8'}">${product.registration_decision}</b>` : ''}</div>
-        ${product.half_periods_available ? `<div style="grid-column:span 2"><b style="color:#fbbf24">⏱️ 반값 적용기간</b> ${product.half_periods_available}${product.half_fee_min ? ` · 최저 ${product.half_fee_min.toLocaleString()}원` : ''}</div>` : ''}
-        ${promoListHTML ? `<div style="grid-column:span 2"><b style="color:#fbbf24">🏷️ 프로모션 조합 (${product.promo_type_count||0}종)</b><div style="margin-top:2px">${promoListHTML}</div></div>` : product.promo_tag ? `<div><b style="color:#fbbf24">🏷️ 프로모션</b> ${product.promo_tag}</div>` : ''}
-        ${product.registration_status ? `<div><b style="color:#fbbf24">📍 등록상태</b> ${product.registration_status}</div>` : ''}
-        ${product.product_url ? `<div style="grid-column:span 2"><b style="color:#fbbf24">🔗 URL</b> <a href="${product.product_url}" target="_blank" style="color:#60a5fa">${product.product_url.slice(0,80)}...</a></div>` : ''}
-        ${product.evaluation_memo ? `<div style="grid-column:span 2"><b style="color:#fbbf24">📝 평가메모</b> ${product.evaluation_memo}</div>` : ''}
-      </div>
-      <div style="border-top:1px dashed #f59e0b;padding-top:8px;margin-top:6px">
-        <label style="display:block;font-size:10.5px;color:#fbbf24;font-weight:700;margin-bottom:4px">📝 상품 설명 (계산기에 표시)</label>
-        <textarea id="rp-desc-${product.id}" rows="2" placeholder="예: 직수형 정수기 · 냉온정 · UV살균 · 빌트인 설치 권장" style="width:100%;background:#0f172a;border:1px solid #f59e0b;border-radius:4px;color:#e2e8f0;padding:6px 8px;font-size:11px;font-family:inherit;resize:vertical">${(product.description||'').replace(/</g,'&lt;')}</textarea>
-        <button type="button" id="rp-desc-save-${product.id}" style="margin-top:4px;background:#f59e0b;color:#0f172a;border:none;padding:5px 12px;border-radius:4px;font-size:10.5px;font-weight:700;cursor:pointer">💾 설명 저장</button>
-        <span id="rp-desc-msg-${product.id}" style="margin-left:8px;font-size:10px;color:#22c55e"></span>
-      </div>
-      ${bp ? `<div style="border-top:1px dashed #f59e0b;padding-top:6px;margin-top:6px;font-size:10px;color:#fde68a">
-        <b>📋 ${bp.brand} 정책:</b> 결합 — ${bp.bundle_condition||'-'} · 타사보상 — ${bp.otherco_comp||'-'} · 반값 — ${bp.half_discount_policy||'-'} · 환수 — ${bp.refund_policy||'-'}
-      </div>` : ''}
-      <div id="rp-chungho-rules-${product.id}" style="display:none;border-top:1px dashed #a78bfa;padding-top:6px;margin-top:6px;font-size:10px;color:#cbd5e1"></div>
-
-      <!-- 🎯 추천 메타 편집 카드 -->
-      <div style="border-top:2px solid #22c55e;padding-top:10px;margin-top:10px;background:rgba(34,197,94,0.04);border-radius:6px;padding:10px 12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <h4 style="margin:0;font-size:12px;color:#86efac;font-weight:800">🎯 TM 추천 메타
-            <span style="font-size:9px;color:#94a3b8;font-weight:500" id="rp-meta-src-${product.id}">${
-              product.meta_manual_override ? '🔒 어드민 확정' :
-              product.auto_filled_at ? `🤖 자동 (${new Date(product.auto_filled_at).toLocaleDateString()})` :
-              '📝 미입력'
-            }</span>
-          </h4>
-          <div style="display:flex;gap:5px">
-            <button type="button" id="rp-meta-save-${product.id}" style="background:#16a34a;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">💾 메타 저장</button>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:140px 1fr;gap:6px 10px;align-items:center;font-size:10.5px">
-          <!-- 🤖 AI 자동 채움 (자연어 · TM 견적 카드에 표시) — TM 추천 메타에 통합 (2026-06-03) -->
-          <label style="color:#86efac;font-weight:700">📝 한 줄 설명</label>
-          <input type="text" id="rp-ai-desc-${product.id}" value="${(product.description||'').replace(/"/g,'&quot;')}" placeholder="예: 코웨이 BEREX 스마트 매트리스 AI 수면 분석" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
-
-          <label style="color:#86efac;font-weight:700">👤 추천 용량/규격</label>
-          <input type="text" id="rp-ai-cap-${product.id}" value="${(product.recommended_capacity||'').replace(/"/g,'&quot;')}" placeholder="예: 2~4인 가족·중형 / 거실 65인치 / 퀸·2인용" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
-
-          <label style="color:#86efac;font-weight:700">🎯 추천 대상</label>
-          <input type="text" id="rp-ai-usage-${product.id}" value="${Array.isArray(product.recommended_usage) ? product.recommended_usage.join(', ') : ''}" placeholder="콤마 구분 — 예: 신혼, 어르신, 민감피부, 거실, 게임" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
-
-          <label style="color:#86efac;font-weight:700">✨ 강점 태그</label>
-          <input type="text" id="rp-ai-feat-${product.id}" value="${Array.isArray(product.feature_tags) ? product.feature_tags.join(', ') : ''}" placeholder="콤마 구분 — 예: 체압분산, 5존지지, 항균커버" style="padding:4px 7px;background:#0f172a;border:1px solid #16a34a;border-radius:4px;color:#e2e8f0;font-size:11px">
-
-          <label style="color:#86efac;font-weight:700">사이즈 (W×D×H mm)</label>
-          <input type="text" id="rp-meta-size-${product.id}" value="${product.specifications?.size_mm || ''}" placeholder="예: 400×590×1400" style="padding:4px 7px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px">
-
-          <label style="color:#86efac;font-weight:700">무게 (kg)</label>
-          <input type="number" step="0.1" id="rp-meta-weight-${product.id}" value="${product.specifications?.weight_kg || ''}" style="padding:4px 7px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px;width:90px">
-
-          <label style="color:#86efac;font-weight:700">케어주기 (개월)</label>
-          <input type="number" step="1" id="rp-meta-care-${product.id}" value="${product.specifications?.care_cycle_months || ''}" style="padding:4px 7px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px;width:90px">
-
-          ${(() => {
-            // 📋 카테고리 extra_fields schema 기반 동적 input (rental_categories.metadata.extra_fields)
-            const extra = (product.category?.metadata?.extra_fields) || [];
-            if (!extra.length) return '';
-            const esc2 = s => String(s ?? '').replace(/[<>&"']/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
-            const items = extra.map(f => {
-              const v = product.specifications?.[f.key];
-              const inputId = `rp-extra-${product.id}-${esc2(f.key)}`;
-              const labelHtml = `${esc2(f.label)}${f.unit?` <span style="color:#64748b;font-size:9.5px">(${esc2(f.unit)})</span>`:''}`;
-              if (f.type === 'select') {
-                const opts = (f.options||[]).map(o => `<option value="${esc2(o)}" ${String(v)===String(o)?'selected':''}>${esc2(o)}</option>`).join('');
-                return `<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;color:#a78bfa;font-weight:700">${labelHtml}</span><select id="${inputId}" data-extra-key="${esc2(f.key)}" data-extra-type="select" style="padding:4px 7px;background:#0f172a;border:1px solid #6d28d9;border-radius:4px;color:#e2e8f0;font-size:11px"><option value="">—</option>${opts}</select></div>`;
-              }
-              if (f.type === 'checkbox') {
-                return `<label style="cursor:pointer;font-size:10.5px;color:#a78bfa;display:inline-flex;align-items:center;gap:5px;padding:6px 0"><input type="checkbox" id="${inputId}" data-extra-key="${esc2(f.key)}" data-extra-type="checkbox" ${v?'checked':''}> ${labelHtml}</label>`;
-              }
-              // number / text
-              const t = f.type === 'number' ? 'number' : 'text';
-              return `<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;color:#a78bfa;font-weight:700">${labelHtml}</span><input type="${t}" id="${inputId}" data-extra-key="${esc2(f.key)}" data-extra-type="${t}" value="${esc2(v ?? '')}" placeholder="${esc2(f.placeholder||'')}" style="padding:4px 7px;background:#0f172a;border:1px solid #6d28d9;border-radius:4px;color:#e2e8f0;font-size:11px"></div>`;
-            }).join('');
-            return `
-              <div style="grid-column:1/-1;background:rgba(167,139,250,0.06);border:1px solid #6d28d9;border-radius:6px;padding:8px 10px;margin-top:4px" data-rp-extra-wrap="${product.id}">
-                <div style="font-size:10.5px;color:#c4b5fd;font-weight:800;margin-bottom:6px">📋 카테고리 추가 필드 — ${esc2(product.category?.name || '')}</div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:8px">${items}</div>
-              </div>`;
-          })()}
-
-          <label style="color:#86efac;font-weight:700">자유 메모</label>
-          <textarea id="rp-meta-notes-${product.id}" rows="2" placeholder="추천 시 강조할 포인트 / 특이사항" style="padding:5px 8px;background:#0f172a;border:1px solid #166534;border-radius:4px;color:#e2e8f0;font-size:11px;resize:vertical;font-family:inherit">${(product.spec_notes||'').replace(/</g,'&lt;')}</textarea>
-
-          <label style="color:#86efac;font-weight:700">확정 잠금</label>
-          <label style="cursor:pointer;font-size:11px"><input type="checkbox" id="rp-meta-lock-${product.id}" ${product.meta_manual_override?'checked':''}> 🔒 어드민 확정 (자동 채움 재실행 시 이 값 보존)</label>
-        </div>
-
-        <div id="rp-meta-msg-${product.id}" style="margin-top:6px;font-size:10px;min-height:14px"></div>
-      </div>`;
-    // 청호나이스 모델이면 규정코드 자동 표시
-    if (product.brand === '청호나이스') {
-      // 제품군 추정 (상품명에 '얼음' / '냉온' / '정수' 키워드)
-      let group = '냉온정수기';
-      const n = product.name || '';
-      if (n.includes('얼음')) group = '얼음정수기';
-      else if (n.includes('비데')) group = '비데군';
-      else if (n.includes('공기')) group = '공기청정기';
-      else if (n.includes('매트리스')) group = '(홈케어)매트리스';
-      try {
-        const cr = await fetch(`${RP_API}/chungho-rules?product_group=${encodeURIComponent(group)}`).then(r => r.json());
-        const rules = cr.rules || [];
-        if (rules.length > 0) {
-          const div = F(`rp-chungho-rules-${product.id}`);
-          div.style.display = 'block';
-          div.innerHTML = `<b style="color:#a78bfa">📋 청호 적용 가능 규정 (${group}) ${rules.length}개:</b><br>` +
-            rules.map(r => `<span style="display:inline-block;background:rgba(167,139,250,0.15);color:#a78bfa;font-size:9px;padding:1px 5px;border-radius:3px;margin:1px" title="${r.rule_name} · 의무 ${r.mandatory_months}M · 점검 ${r.inspection_cycle||'-'}M">${r.rule_code} (${r.rule_type.split(' ')[0]})</span>`).join('');
-        }
-      } catch(e) {}
-    }
-    // 설명 저장 핸들러
-    const saveBtn = F(`rp-desc-save-${product.id}`);
-    if (saveBtn) saveBtn.addEventListener('click', async () => {
-      const tk = localStorage.getItem('incentive-auth-token-v1');
-      if (!tk) return alert('로그인 필요');
-      const desc = F(`rp-desc-${product.id}`).value;
-      const res = await fetch(`${RP_API}/products/${product.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-        body: JSON.stringify({ description: desc }),
-      });
-      if (!res.ok) { alert('저장 실패'); return; }
-      // 캐시 갱신
-      product.description = desc;
-      const idx = _products.findIndex(p => p.id === product.id);
-      if (idx >= 0) _products[idx].description = desc;
-      F(`rp-desc-msg-${product.id}`).textContent = '✅ 저장됨 (' + new Date().toLocaleTimeString() + ')';
-      setTimeout(() => F(`rp-desc-msg-${product.id}`).textContent = '', 3000);
-    });
-
-    // 🎯 추천 메타 저장 핸들러
-    const metaSaveBtn = F(`rp-meta-save-${product.id}`);
-    if (metaSaveBtn) metaSaveBtn.addEventListener('click', async () => {
-      const tk = localStorage.getItem('incentive-auth-token-v1');
-      const msgEl = F(`rp-meta-msg-${product.id}`);
-      if (!tk) { msgEl.style.color = '#dc2626'; msgEl.textContent = '로그인 필요'; return; }
-      // 🤖 AI 자연어 input 수집 (정형 input 폐기 후 통합 — 2026-06-03)
-      const aiDesc = F(`rp-ai-desc-${product.id}`)?.value.trim() || null;
-      const finalCap = F(`rp-ai-cap-${product.id}`)?.value.trim() || null;
-      const finalUsage = (F(`rp-ai-usage-${product.id}`)?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
-      const finalFeatures = (F(`rp-ai-feat-${product.id}`)?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
-      const size = F(`rp-meta-size-${product.id}`).value.trim() || null;
-      const weight = parseFloat(F(`rp-meta-weight-${product.id}`).value) || null;
-      const care = parseInt(F(`rp-meta-care-${product.id}`).value, 10) || null;
-      const notes = F(`rp-meta-notes-${product.id}`).value.trim() || null;
-      const lock = F(`rp-meta-lock-${product.id}`).checked;
-      // 📋 카테고리 extra_fields 동적 input 수집
-      const extraValues = {};
-      document.querySelectorAll(`[data-rp-extra-wrap="${product.id}"] [data-extra-key]`).forEach(el => {
-        const k = el.dataset.extraKey;
-        const t = el.dataset.extraType;
-        if (t === 'checkbox') extraValues[k] = el.checked;
-        else if (t === 'number') extraValues[k] = el.value === '' ? null : Number(el.value);
-        else extraValues[k] = el.value === '' ? null : el.value;
-      });
-      // specifications jsonb 병합 (기존 값 + 사이즈/무게/케어 + 카테고리 동적 input)
-      const specs = Object.assign({}, product.specifications || {}, {
-        size_mm: size,
-        weight_kg: weight,
-        care_cycle_months: care,
-      }, extraValues);
-      msgEl.style.color = '#94a3b8'; msgEl.textContent = '저장 중...';
-      try {
-        const res = await fetch(`${RP_API}/products/${product.id}`, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-          body: JSON.stringify({
-            description: aiDesc !== null ? aiDesc : undefined,  // 🆕 AI 한 줄 설명
-            recommended_capacity: finalCap,
-            recommended_usage: finalUsage.length ? finalUsage : null,
-            feature_tags: finalFeatures.length ? finalFeatures : null,
-            specifications: specs,
-            spec_notes: notes,
-            meta_manual_override: lock,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || '저장 실패');
-        // 캐시 갱신
-        product.recommended_capacity = cap;
-        product.recommended_usage = usage;
-        product.feature_tags = features;
-        product.specifications = specs;
-        product.spec_notes = notes;
-        product.meta_manual_override = lock;
-        const idx = _products.findIndex(p => p.id === product.id);
-        if (idx >= 0) Object.assign(_products[idx], { recommended_capacity: cap, recommended_usage: usage, feature_tags: features, specifications: specs, spec_notes: notes, meta_manual_override: lock });
-        msgEl.style.color = '#22c55e';
-        msgEl.textContent = `✅ 저장됨 (${new Date().toLocaleTimeString()})${lock?' · 🔒 잠금':''}`;
-        // 출처 라벨 갱신
-        const srcEl = F(`rp-meta-src-${product.id}`);
-        if (srcEl) srcEl.textContent = lock ? '🔒 어드민 확정' : '📝 어드민 수정';
-        setTimeout(() => msgEl.textContent = '', 4000);
-      } catch (e) {
-        msgEl.style.color = '#dc2626';
-        msgEl.textContent = '❌ ' + (e.message || e);
-      }
-    });
-
-    // 가전 그룹 — 다채널 비교표 lazy load (병렬, 실패해도 옵션 표는 정상 표시)
-    if (co && F('rp-channels-box')) loadChannelComparison(productId);
-    F('rp-options-area').innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8">로딩...</div>';
-    const r = await fetch(`${RP_API}/products/${productId}/options`).then(r => r.json());
-    _options = r.options || [];
-    if (!_options.length) { F('rp-options-area').innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8">옵션 없음</div>'; return; }
-    // 🎯 그룹별 컬럼 분기 (정책: docs/specs/rental-option-column-policy.md)
-    const _grp = product?.category?.product_group || '';
-    const _isAppliance = _grp === '가전';
-    const _isMattress = product?.category?.name === '매트리스';
-    const _showWP = !_isAppliance && !_isMattress; // 정수기 전용 컬럼 (점검·소유·증감·반값·타사보상·반값리베·결합%)
-    const _showApp = _isAppliance;                  // 가전 전용 컬럼 (A/S·연령·설치비·수수료율·기준·총렌탈료)
-    const _grpLabel = _isMattress ? '🛏️ 매트리스' : (_isAppliance ? '🏠 가전 그룹' : '💧 정수기 그룹');
-    F('rp-options-area').innerHTML = `
-      <div style="font-size:10.5px;color:#94a3b8;margin-bottom:6px">${_grpLabel} · 총 ${_options.length}개 옵션 · <b>페이백</b> 빈칸 = 자동 산출(영업이익 ${_policy.target_profit_rate}% 적용) / 값 입력 = 수동 override · 인라인 편집 · <b>마진/Tier 운영자 수동 입력</b></div>
-      <div style="max-height:640px;overflow:auto"><table style="font-size:10.5px;width:100%">
-        <thead style="position:sticky;top:0;background:#1e293b;z-index:1">
-          <tr>
-            <th style="width:60px;color:#a5b4fc" title="R 티켓번호 (운영 식별자)">🎫 R번호</th>
-            <th style="width:70px;color:#67e8f9" title="색상/규격/할인 변별값 (variant_label)">🏷️ 변별</th>
-            <th style="width:40px">약정</th>
-            <th style="width:50px">케어</th>
-            ${_showWP ? `<th style="width:42px" title="점검주기 (개월)">점검M</th>
-            <th style="width:42px" title="소유권이전 (개월)">소유M</th>` : ''}
-            ${_showApp ? `<th style="width:48px;color:#f9a8d4" title="A/S 보증 기간 (년)">A/S</th>
-            <th style="width:48px;color:#f9a8d4" title="가입 가능 연령 (만 N세)">연령</th>
-            <th style="width:60px;color:#fdba74" title="기본 설치비 (원)">설치비</th>` : ''}
-            ${_isMattress ? '' : `<th style="width:80px">${_isAppliance ? '출고가' : '정상가'}</th>`}
-            <th style="width:80px">${_isAppliance ? '월렌탈료' : '월납'}</th>
-            ${_showApp ? `<th style="width:90px;color:#cbd5e1" title="총렌탈료 = months × monthly_fee">∑ 총렌탈료</th>` : ''}
-            ${_showWP ? `<th style="width:68px" title="월납 증감">증감</th>
-            <th style="width:75px" title="반값할인 렌탈료 / 적용기간">반값/M</th>` : ''}
-            <th style="width:85px" title="기본 리베이트">리베</th>
-            ${_showWP ? `<th style="width:85px;color:#a855f7" title="타사보상 리베이트 (프로모션)">타사보상</th>
-            <th style="width:85px;color:#22c55e" title="반값 리베이트">반값리베</th>
-            <th style="width:55px" title="결합지급률 %">결합%</th>` : ''}
-            ${_showApp ? `<th style="width:55px;color:#fdba74" title="수수료율 (%)">수수료%</th>
-            <th style="width:70px;color:#fdba74" title="수수료 기준 (구독료/월렌탈료/총렌탈료)">기준</th>` : ''}
-            <th style="width:85px;color:#fbbf24">페이백</th>
-            <th style="width:55px" title="옵션 단위 상담사 포인트 (NULL=상품 fallback)">P</th>
-            <th style="width:75px">마진</th>
-            <th style="width:40px">Tier</th>
-            <th style="width:35px">활성</th>
-            <th style="width:140px">비고</th>
-          </tr>
-        </thead>
-        <tbody>${_options.map(o => optRow(o, product, _showWP, _showApp, _isMattress)).join('')}</tbody>
-      </table></div>
-      <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;line-height:1.5">
-        💡 P/마진/Tier 자동 — <b>임시 P=1.5</b>로 임시 마진 계산 → 임시 Tier → <b>P 매핑</b> (S=2.0 / A=1.5 / B=1.2 / C=1.0) → 최종 margin = 리베×0.9 − 페이백 − P×${fmtKor(_policy.weight_cost_per_p||70000)} → 최종 Tier (S=${fmtKor(_policy.tier_s_min_margin||130000)} / A=${fmtKor(_policy.tier_a_min_margin||120000)} / B=${fmtKor(_policy.tier_b_min_margin||100000)}) <span style="color:#64748b">· 수동 override 가능</span>
-      </div>`;
-    F('rp-options-area').querySelectorAll('.rp-opt-edit').forEach(inp => {
-      inp.addEventListener('change', () => saveOption(inp));
-    });
-    // 페이백 자동 산출로 복귀 (NULL 설정)
-    F('rp-options-area').querySelectorAll('.rp-payback-reset').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const tk = localStorage.getItem('incentive-auth-token-v1');
-        if (!tk) return alert('로그인 필요');
-        const id = btn.dataset.id;
-        const res = await fetch(`${RP_API}/options/${id}`, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-          body: JSON.stringify({ payback: null }),
-        });
-        if (res.ok) loadOptions(_selectedProductId);
-        else alert('복귀 실패');
-      });
-    });
-  }
-
-  // 다채널 비교표 — `/products/:id/channels` 조회 후 #rp-channels-box 에 렌더
-  async function loadChannelComparison(productId) {
-    const box = F('rp-channels-box');
-    if (!box) return;
-    box.innerHTML = '<div style="font-size:10.5px;color:#94a3b8;padding:6px 0">⏳ 채널 비교 조회…</div>';
-    try {
-      const r = await fetch(`${RP_API}/products/${productId}/channels?profile=gift`).then(r => r.json());
-      if (r.error) throw new Error(r.error);
-      const list = r.channels || [];
-      if (list.length <= 1) {
-        box.innerHTML = `<div style="font-size:10px;color:#64748b;padding:4px 0">단일 채널 — 다채널 비교 N/A (그룹키: ${r.group_key})</div>`;
-        return;
-      }
-      // 2 프로파일 1위 (사은품 여력 = 마진 여력)
-      const top = { customer: null, gift: null };
-      for (const c of list) {
-        for (const p of ['customer','gift']) {
-          if (!top[p] || (c.scores?.by_profile?.[p] || 0) > (top[p].scores?.by_profile?.[p] || 0)) top[p] = c;
-        }
-      }
-      // 사은품(=마진) 점수로 정렬 — 큰 리베가 페이백·결합혜택·봉이 마진 모두에 여력
-      const sorted = list.slice().sort((a, b) => (b.scores?.by_profile?.gift || 0) - (a.scores?.by_profile?.gift || 0));
-      const rows = sorted.map((c, i) => {
-        const m = ['🥇','🥈','🥉'][i] || ' ';
-        const sc = c.scores?.by_profile || {};
-        const tags = (c.tags || []).map(t => `<span style="font-size:9px;background:rgba(34,197,94,0.18);color:#86efac;padding:1px 5px;border-radius:3px;font-weight:700">${t}</span>`).join(' ');
-        const fee = c.best_option?.monthly_fee || 0;
-        const reb = c.best_option?.rebate || 0;
-        const mg = c.best_option?.margin || 0;
-        const tierBadge = c.best_option?.tier ? `<span style="background:#fbbf24;color:#451a03;font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px">${c.best_option.tier}</span>` : '';
-        return `<tr>
-          <td style="text-align:center">${m}</td>
-          <td><b style="color:#67e8f9">${c.company?.name || '?'}</b> ${tierBadge}</td>
-          <td style="text-align:right">${fee.toLocaleString()}원</td>
-          <td style="text-align:right;color:#fbbf24">${reb.toLocaleString()}</td>
-          <td style="text-align:right;color:#22c55e;font-weight:700">${mg.toLocaleString()}</td>
-          <td style="text-align:center;color:#22c55e;font-weight:800">${(sc.customer||0).toFixed(2)}</td>
-          <td style="text-align:center;color:#a855f7;font-weight:800">${(sc.gift||0).toFixed(2)}</td>
-          <td>${tags}</td>
-        </tr>`;
-      }).join('');
-      box.innerHTML = `
-        <div style="background:rgba(8,145,178,0.08);border:1px solid #0891b2;border-radius:5px;padding:7px 9px;margin-top:4px">
-          <div style="font-size:10.5px;color:#22d3ee;font-weight:800;margin-bottom:5px">
-            🔀 다채널 비교 (${list.length}개 채널 · 그룹키 ${r.group_key})
-            <span style="font-size:9px;color:#94a3b8;font-weight:500;margin-left:6px">
-              · 💰 월납형 1위 <b style="color:#22c55e">${top.customer?.company?.name || '-'}</b>
-              · 🎁 사은품형 1위 <b style="color:#a855f7">${top.gift?.company?.name || '-'}</b>
-              <span style="margin-left:6px;color:#64748b">(사은품 여력 = 봉이 마진 여력)</span>
-            </span>
-          </div>
-          <table style="width:100%;font-size:10px;border-collapse:collapse">
-            <thead style="color:#94a3b8;font-weight:700">
-              <tr>
-                <th style="width:24px"></th>
-                <th style="text-align:left">렌탈사</th>
-                <th style="text-align:right">월납</th>
-                <th style="text-align:right">리베</th>
-                <th style="text-align:right">마진</th>
-                <th style="text-align:center" title="고객 월납형 점수">💰</th>
-                <th style="text-align:center" title="사은품형 점수 (=마진 여력)">🎁</th>
-                <th style="text-align:left">태그</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>`;
-    } catch (e) {
-      box.innerHTML = `<div style="font-size:10px;color:#ef4444;padding:4px 0">❌ 채널 비교 조회 실패: ${e.message}</div>`;
-    }
-  }
-
-  function optRow(o, product, showWP = true, showApp = false, isMattress = false) {
-    // 옵션 단위 자동 계산 (2-step: 임시 P=1.5 → 임시 Tier → 최종 P → 최종 마진)
-    const wcUnit = _policy?.weight_cost_per_p || 70000;
-    const sMin = _policy?.tier_s_min_margin || 130000;
-    const aMin = _policy?.tier_a_min_margin || 120000;
-    const bMin = _policy?.tier_b_min_margin || 100000;
-    // 1단계: 임시 P로 임시 마진 → 임시 Tier
-    const tempMargin = Math.round((o.rebate||0) * 0.9 - (o.payback||0) - 1.5 * wcUnit);
-    let tempTier = 'C';
-    if (tempMargin >= sMin) tempTier = 'S';
-    else if (tempMargin >= aMin) tempTier = 'A';
-    else if (tempMargin >= bMin) tempTier = 'B';
-    // 2단계: 임시 Tier → P 매핑 (정책의 tier_to_p JSONB 사용)
-    const pMap = (_policy?.tier_to_p) || { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
-    const pAuto = Number(pMap[tempTier]) || 1.0;
-    // 3단계: 최종 P — 자동 우선 (인터넷+TV와 동일, DB 옛값 폐기)
-    const P = pAuto;
-    const weightCost = Math.round(P * wcUnit);
-    const marginAuto = Math.round((o.rebate||0) * 0.9 - (o.payback||0) - weightCost);
-    const margin = (o.margin_manual_override && o.margin != null) ? Number(o.margin) : marginAuto;
-    let tierAuto = 'C';
-    if (margin >= sMin) tierAuto = 'S';
-    else if (margin >= aMin) tierAuto = 'A';
-    else if (margin >= bMin) tierAuto = 'B';
-    const tier = o.tier || tierAuto;  // 수동값 우선
-    const tierColor = { S:'#fbbf24', A:'#60a5fa', B:'#94a3b8', C:'#475569' }[tier] || '#475569';
-    const diffColor = (o.monthly_diff || 0) < 0 ? '#22c55e' : '#cbd5e1';
-    const note = o.metadata?.note || '';
-    const inp = (field, val, w, color) => `<input class="rp-opt-edit" data-field="${field}" type="number" step="1000" value="${val==null?'':val}" placeholder="${field==='payback'?'자동':'-'}" style="width:${w}px;background:#0f172a;border:1px solid ${val==null && field==='payback'?'#22c55e':'#475569'};color:${color||'#cbd5e1'};padding:2px 4px;border-radius:3px;font-size:10.5px;text-align:right">`;
-    const inpM = (field, val, w) => `<input class="rp-opt-edit" data-field="${field}" type="number" step="1" value="${val==null?'':val}" placeholder="-" style="width:${w}px;background:#0f172a;border:1px solid #475569;color:#cbd5e1;padding:2px 4px;border-radius:3px;font-size:10.5px;text-align:center">`;
-    // 🆕 R번호·변별값·메타 라인 (엑셀 양식 완전 매핑)
-    const fmtKR = n => n == null ? '' : Number(n).toLocaleString('ko-KR');
-    const ticketCell = o.ticket_number
-      ? `<span style="background:rgba(99,102,241,0.15);color:#a5b4fc;font-family:'SF Mono',Monaco,monospace;font-size:10px;font-weight:800;padding:1px 5px;border-radius:3px">${o.ticket_number}</span>${o.ticket_active===false?'<span style="color:#ef4444;font-size:9px;margin-left:2px" title="비활성 티켓">✕</span>':''}`
-      : '<span style="color:#64748b;font-size:9.5px">-</span>';
-    const variantCell = o.variant_label
-      ? `<span style="background:rgba(8,145,178,0.18);color:#67e8f9;font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px" title="variant_label">${o.variant_label}</span>`
-      : '<span style="color:#64748b;font-size:9.5px">-</span>';
-    // 메타 라인 chip 들 — 데이터 있을 때만
-    const md = o.metadata || {};
-    const chips = [];
-    if (md.area) chips.push(`<span style="background:rgba(132,204,22,0.15);color:#bef264;padding:1px 6px;border-radius:3px;font-weight:700">📐 면적 ${md.area}</span>`);
-    if (md.as_period) chips.push(`<span style="background:rgba(56,189,248,0.15);color:#7dd3fc;padding:1px 6px;border-radius:3px;font-weight:700">🛡️ AS ${md.as_period}</span>`);
-    if (md.age_limit) chips.push(`<span style="background:rgba(244,114,182,0.15);color:#f9a8d4;padding:1px 6px;border-radius:3px;font-weight:700">👤 가입 ${md.age_limit}</span>`);
-    if (md.install_fee) chips.push(`<span style="background:rgba(249,115,22,0.15);color:#fdba74;padding:1px 6px;border-radius:3px;font-weight:700">🔧 설치비 ${fmtKR(md.install_fee)}원</span>`);
-    if (md.total_fee) chips.push(`<span style="background:rgba(148,163,184,0.15);color:#cbd5e1;padding:1px 6px;border-radius:3px;font-weight:700">∑ 총렌탈료 ${fmtKR(md.total_fee)}원</span>`);
-    if (o.promo_type && o.promo_type !== '기본') chips.push(`<span style="background:rgba(168,85,247,0.18);color:#d8b4fe;padding:1px 6px;border-radius:3px;font-weight:700">🏷️ ${o.promo_type}</span>`);
-    if (o.net_profit != null) chips.push(`<span style="background:rgba(34,197,94,0.15);color:#86efac;padding:1px 6px;border-radius:3px;font-weight:700">💰 net ${fmtKR(o.net_profit)}원</span>`);
-    if (o.margin_manual_override) chips.push(`<span style="background:rgba(251,191,36,0.2);color:#fbbf24;padding:1px 6px;border-radius:3px;font-weight:700">📝 margin 수동</span>`);
-    if (md.care_raw && md.care_raw !== o.care_service) chips.push(`<span style="color:#64748b;font-size:9px">원본care: ${md.care_raw}</span>`);
-    if (md.model_code) chips.push(`<span style="color:#64748b;font-size:9px">model_code: ${md.model_code}</span>`);
-    const metaRow = chips.length
-      ? `<tr data-id="${o.id}" class="rp-opt-meta-row"><td colspan="20" style="background:rgba(15,23,42,0.5);border-bottom:1px solid #1e293b;padding:3px 8px 5px"><div style="display:flex;flex-wrap:wrap;gap:4px;font-size:9.5px;align-items:center"><span style="color:#475569;font-size:9px">📋 메타</span>${chips.join('')}</div></td></tr>`
-      : '';
-    const _basisOpts = ['구독료','월렌탈료','총렌탈료','총 렌탈료'].map(b => `<option value="${b}" ${o.commission_basis===b?'selected':''}>${b}</option>`).join('');
-    return `
-      <tr data-id="${o.id}">
-        <td style="text-align:center">${ticketCell}</td>
-        <td style="text-align:center">${variantCell}</td>
-        <td style="text-align:center;font-weight:700">${o.months}M</td>
-        <td style="text-align:center">${o.care_service}</td>
-        ${showWP ? `<td style="text-align:center">${inpM('inspection_cycle', o.inspection_cycle, 36)}</td>
-        <td style="text-align:center">${inpM('ownership_months', o.ownership_months, 36)}</td>` : ''}
-        ${showApp ? `<td style="text-align:center">${inpM('as_period_months', o.as_period_months, 42)}</td>
-        <td style="text-align:center">${inpM('signup_age_limit', o.signup_age_limit, 42)}</td>
-        <td>${inp('installation_fee', o.installation_fee, 56)}</td>` : ''}
-        ${isMattress ? '' : `<td>${inp('normal_price', o.normal_price, 72)}</td>`}
-        <td>${inp('monthly_fee', o.monthly_fee, 72)}</td>
-        ${showApp ? `<td style="text-align:right;color:#cbd5e1">${inp('total_rental_fee', o.total_rental_fee, 82)}</td>` : ''}
-        ${showWP ? `<td>${inp('monthly_diff', o.monthly_diff, 60, diffColor)}</td>
-        <td style="text-align:right;color:#22c55e">${inp('half_fee', o.half_fee, 60, '#22c55e')}<br>${inpM('half_period', o.half_period, 38)}</td>` : ''}
-        <td>${inp('rebate', o.rebate, 80)}</td>
-        ${showWP ? `<td>${inp('rebate_otherco', o.rebate_otherco, 80, '#a855f7')}</td>
-        <td>${inp('rebate_half', o.rebate_half, 80, '#22c55e')}</td>
-        <td style="text-align:center">${inpM('bundle_rate', o.bundle_rate, 45)}</td>` : ''}
-        ${showApp ? `<td style="text-align:center;color:#fdba74">${inp('commission_rate', o.commission_rate, 50, '#fdba74')}</td>
-        <td><select class="rp-opt-edit" data-field="commission_basis" style="width:64px;background:#0f172a;border:1px solid #475569;color:#fdba74;padding:2px 4px;border-radius:3px;font-size:10px"><option value="">-</option>${_basisOpts}</select></td>` : ''}
-        <td style="white-space:nowrap">${inp('payback', o.payback, 70, '#fbbf24')}${o.payback != null ? `<button type="button" class="rp-payback-reset" data-id="${o.id}" title="자동 산출로 복귀" style="margin-left:2px;background:#475569;color:#cbd5e1;border:none;padding:2px 4px;border-radius:3px;font-size:9px;cursor:pointer">↺</button>` : ''}</td>
-        <td><input class="rp-opt-edit" data-field="point_weight" type="number" step="0.1" value="${P}" title="자동 P=${P} (임시 마진 ${tempMargin.toLocaleString()}원 → ${tempTier} Tier 매핑). 수동 입력 시 override" style="width:62px;background:#0f172a;border:1px solid #a78bfa;color:#a78bfa;padding:2px 4px;border-radius:3px;font-size:10.5px;text-align:right;font-weight:700"></td>
-        <td>${inp('margin', margin, 70, tierColor)}</td>
-        <td style="text-align:center">
-          <select class="rp-opt-edit field-tier" data-field="tier" title="자동 ${tierAuto} (마진 ${margin.toLocaleString()}원 기준) · 수동 select로 override" style="background:${tierColor};color:#0f172a;font-size:10px;font-weight:800;padding:2px 4px;border:1px solid #475569;border-radius:3px">
-            <option value="">${tierAuto} (자동)</option>
-            <option value="S" ${o.tier==='S'?'selected':''}>S</option>
-            <option value="A" ${o.tier==='A'?'selected':''}>A</option>
-            <option value="B" ${o.tier==='B'?'selected':''}>B</option>
-            <option value="C" ${o.tier==='C'?'selected':''}>C</option>
-          </select>
-        </td>
-        <td style="text-align:center"><input class="rp-opt-edit" data-field="is_active" type="checkbox" ${o.is_active?'checked':''}></td>
-        <td><input class="rp-opt-edit" data-field="note" type="text" value="${note.replace(/"/g,'&quot;')}" placeholder="비고" style="width:130px;background:#0f172a;border:1px solid #475569;color:#cbd5e1;padding:2px 4px;border-radius:3px;font-size:10px"></td>
-      </tr>${metaRow}`;
-  }
-
-  async function bulkPayback() {
-    if (!_selectedProductId) { alert('먼저 모델을 선택하세요'); return; }
-    const val = prompt('선택 모델의 모든 옵션에 페이백 일괄 적용 (원):', '0');
-    if (val == null) return;
-    const v = Number(val);
-    if (isNaN(v)) { alert('숫자 입력'); return; }
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) { alert('로그인 필요'); return; }
-    let done = 0;
-    for (const o of _options) {
-      const res = await fetch(`${RP_API}/options/${o.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-        body: JSON.stringify({ payback: v }),
-      });
-      if (res.ok) done++;
-    }
-    alert(`${done}/${_options.length} 옵션 페이백 ${fmtKor(v)}원 적용`);
-    loadOptions(_selectedProductId);
-  }
-
-  async function saveOption(inp) {
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) return alert('로그인 필요');
-    const tr = inp.closest('tr');
-    const id = tr.dataset.id;
-    const field = inp.dataset.field;
-    let value = inp.type === 'checkbox' ? inp.checked : inp.value;
-    if (field === 'payback' || field === 'margin') value = (value === '' ? null : Number(value));
-    if (field === 'tier' && value === '') value = null;
-    const res = await fetch(`${RP_API}/options/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-      body: JSON.stringify({ [field]: value }),
-    });
-    if (!res.ok) { alert('저장 실패'); return; }
-    inp.style.borderColor = '#22c55e';
-    setTimeout(() => inp.style.borderColor = '#475569', 1500);
-    // P·Tier 자동 계산이 다른 값(rebate/payback/point_weight)에도 의존 → 항상 재로딩으로 즉시 시각 동기화
-    const autoTrigger = ['rebate','payback','point_weight','rebate_otherco','rebate_half'];
-    if (autoTrigger.includes(field) && _selectedProductId) loadOptions(_selectedProductId);
-  }
-
-  // ═══════════════════════════════════════
-  // 빌리고 엑셀 import
-  // ═══════════════════════════════════════
-  let _importFile = null, _importBatchId = null;
-
-  function thisMonthYM() {
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-  }
-
-  function importMsg(html, color) {
-    const el = F('rp-import-msg');
-    el.innerHTML = html || '';
-    el.style.color = color || '#94a3b8';
-  }
-
-  function closeImportModal() {
-    F('rp-import-modal').style.display = 'none';
-  }
-
-  function initImport() {
-    F('rp-import-btn')?.addEventListener('click', () => F('rp-import-file').click());
-    F('rp-import-file')?.addEventListener('change', (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      _importFile = file;
-      _importBatchId = null;
-      F('rp-import-filename').textContent = file.name;
-      F('rp-import-ym').value = thisMonthYM();
-      F('rp-import-result').style.display = 'none';
-      F('rp-import-commit-btn').disabled = false;
-      importMsg('');
-      F('rp-import-modal').style.display = 'flex';
-      e.target.value = '';  // 동일 파일 재선택 허용
-    });
-    F('rp-import-close')?.addEventListener('click', closeImportModal);
-    F('rp-import-cancel')?.addEventListener('click', closeImportModal);
-    F('rp-import-modal')?.addEventListener('click', (e) => {
-      if (e.target === F('rp-import-modal')) closeImportModal();
-    });
-    F('rp-import-preview-btn')?.addEventListener('click', importPreview);
-    F('rp-import-commit-btn')?.addEventListener('click', importCommit);
-  }
-
-  async function importPreview() {
-    if (!_importFile) { importMsg('⚠️ 파일을 먼저 선택하세요', '#f59e0b'); return; }
-    const ym = F('rp-import-ym').value;
-    if (!/^\d{4}-\d{2}$/.test(ym)) { importMsg('⚠️ 기준월(YYYY-MM)을 입력하세요', '#f59e0b'); return; }
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) { importMsg('⚠️ 로그인 필요', '#ef4444'); return; }
-    const btn = F('rp-import-preview-btn');
-    btn.disabled = true;
-    const oldLabel = btn.textContent;
-    btn.textContent = '미리보기 중...';
-    importMsg('⏳ 엑셀 분석 중...', '#94a3b8');
-    try {
-      const fd = new FormData();
-      fd.append('file', _importFile);
-      fd.append('year_month', ym);
-      fd.append('file_type', F('rp-import-filetype')?.value || '정수기');
-      // FormData 전송 시 Content-Type 은 브라우저가 boundary 포함해 자동 설정
-      const res = await fetch(`${RP_API}/import/preview`, {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + tk },
-        body: fd,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `미리보기 실패 (${res.status})`);
-      _importBatchId = data.batch_id;
-      renderImportPreview(data);
-      importMsg('✅ 미리보기 완료 — 내용 확인 후 [확정 반영]', '#22c55e');
-    } catch (e) {
-      F('rp-import-result').style.display = 'none';
-      importMsg('❌ ' + e.message, '#ef4444');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = oldLabel;
-    }
-  }
-
-  function renderImportPreview(data) {
-    const s = data.summary || {};
-    const cards = [
-      { label: '렌탈사', val: s.companies, color: '#60a5fa' },
-      { label: '신규상품', val: s.products_new, color: '#22c55e' },
-      { label: '변경', val: s.products_updated, color: '#fbbf24' },
-      { label: '단종', val: s.products_discontinued, color: '#ef4444' },
-      { label: '옵션 총', val: s.options_total, sub: `신규 ${s.options_new||0} / 변경 ${s.options_updated||0}`, color: '#a78bfa' },
-    ];
-    F('rp-import-summary').innerHTML = cards.map(c => `
-      <div style="background:#0f172a;border:1px solid #475569;border-radius:8px;padding:10px">
-        <div style="font-size:9.5px;color:#94a3b8;font-weight:700">${c.label}</div>
-        <div style="font-size:18px;font-weight:900;color:${c.color}">${c.val == null ? '-' : c.val}</div>
-        ${c.sub ? `<div style="font-size:9px;color:#64748b;margin-top:2px">${c.sub}</div>` : ''}
-      </div>`).join('');
-
-    // collisions / warnings
-    const collisions = data.key_collisions || [];
-    const warnings = data.warnings || [];
-    let warnHTML = '';
-    if (collisions.length) {
-      warnHTML += `<div style="background:rgba(239,68,68,0.12);border:1px solid #ef4444;border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:10.5px;color:#fca5a5">
-        🚨 키 충돌 ${collisions.length}건 — ${collisions.slice(0,8).map(c => typeof c === 'string' ? c : (c.variant_code || c.key || JSON.stringify(c))).join(', ')}${collisions.length>8?' …':''}</div>`;
-    }
-    if (warnings.length) {
-      warnHTML += `<div style="background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:6px;padding:8px 10px;font-size:10.5px;color:#fcd34d">
-        ⚠️ 경고 ${warnings.length}건 — ${warnings.slice(0,8).map(w => typeof w === 'string' ? w : (w.message || JSON.stringify(w))).join(' / ')}${warnings.length>8?' …':''}</div>`;
-    }
-    F('rp-import-warn').innerHTML = warnHTML;
-
-    // sample 20건
-    const sample = data.sample || [];
-    F('rp-import-sample').innerHTML = sample.length
-      ? sample.map(r => `<tr>
-          <td>${r.model ?? '-'}</td>
-          <td style="text-align:center">${r.contract_months ?? r.months ?? '-'}</td>
-          <td style="text-align:center">${r.care_service ?? r.care ?? '-'}</td>
-          <td style="font-family:monospace">${r.variant_code ?? '-'}</td>
-          <td style="text-align:right">${fmtKor(r.rental_fee ?? r.monthly_fee ?? r.rental ?? null)}</td>
-          <td style="text-align:right">${fmtKor(r.rebate ?? null)}</td>
-        </tr>`).join('')
-      : '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:12px">샘플 없음</td></tr>';
-
-    F('rp-import-commit-btn').disabled = false;
-    F('rp-import-result').style.display = '';
-  }
-
-  async function importCommit() {
-    if (!_importBatchId) { importMsg('⚠️ 먼저 미리보기를 실행하세요', '#f59e0b'); return; }
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) { importMsg('⚠️ 로그인 필요', '#ef4444'); return; }
-    const btn = F('rp-import-commit-btn');
-    btn.disabled = true;
-    const oldLabel = btn.textContent;
-    btn.textContent = '반영 중...';
-    F('rp-import-preview-btn').disabled = true;
-    F('rp-import-cancel').disabled = true;
-    importMsg('⏳ DB 반영 중... (옵션 수천 건은 수 초 소요)', '#94a3b8');
-    try {
-      const res = await fetch(`${RP_API}/import/commit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-        body: JSON.stringify({ batch_id: _importBatchId }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || `반영 실패 (${res.status})`);
-      const a = data.applied || {};
-      closeImportModal();
-      if (typeof showToast === 'function') {
-        showToast(`✅ 빌리고 import 완료 — 신규 ${a.new||0} · 변경 ${a.updated||0} · 단종 ${a.discontinued||0}`);
-      }
-      _importBatchId = null;
-      _importFile = null;
-      await loadProducts();
-    } catch (e) {
-      importMsg('❌ ' + e.message, '#ef4444');
-      btn.disabled = false;
-    } finally {
-      btn.textContent = oldLabel;
-      F('rp-import-preview-btn').disabled = false;
-      F('rp-import-cancel').disabled = false;
-    }
-  }
 })();
+
 </script>
 
 <div id="toast"></div>
@@ -2077,11 +617,13 @@ async function patchProduct(id, body) {
 
 function renderKpi() {
   document.getElementById('kpi-total').textContent = _products.length + '개';
-  document.getElementById('kpi-active').textContent = '활성 ' + _products.filter(p => p.active).length + '개';
-  document.getElementById('kpi-s').textContent = _products.filter(p => p.tier === 'S').length + '개';
-  document.getElementById('kpi-a').textContent = _products.filter(p => p.tier === 'A').length + '개';
-  document.getElementById('kpi-b').textContent = _products.filter(p => p.tier === 'B').length + '개';
-  document.getElementById('kpi-c').textContent = _products.filter(p => p.tier === 'C').length + '개';
+  const set = _products.filter(p => p.guide_payout != null && p.max_payout != null);
+  const gaps = set.map(p => p.max_payout - p.guide_payout);
+  const avg = gaps.length ? Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length) : 0;
+  document.getElementById('kpi-total-sub').textContent = '활성 ' + _products.filter(p => p.active).length + '개';
+  document.getElementById('kpi-set').textContent   = set.length + '개';
+  document.getElementById('kpi-unset').textContent = (_products.length - set.length) + '개';
+  document.getElementById('kpi-gap').textContent   = avg ? fmt(avg) + '원' : '-';
 }
 
 // 인터넷+TV 정책 cache (Tier/P 자동 계산용) — 동적 fetch + BroadcastChannel
@@ -2107,53 +649,23 @@ try {
 // 페이지 로드 시 1회 fetch
 fetchItPolicy();
 
-// Tier/P 자동 계산 (가전 동일 공식: 임시 P=1.5 → 임시 마진 → 임시 Tier → 최종 P → 최종 마진)
-function calcAutoTierP(p) {
-  const wcUnit = _itPolicy.weight_cost_per_p || 70000;
-  const sMin = _itPolicy.tier_s_min_margin || 250000;
-  const aMin = _itPolicy.tier_a_min_margin || 180000;
-  const bMin = _itPolicy.tier_b_min_margin || 120000;
+// 마진 = 리베이트×0.9 − MAX − 상품권. MAX 까지 다 줘도 남아야 한다.
+function calcMargin(p) {
   const rebate = Number(p.rebate) || 0;
-  const payback = Number(p.payback) || 0;
-  const giftWon = (Number(p.gift_amount) || 0) * 10000;  // 상품권 (만원 → 원, 0/null/NaN 안전 처리)
-  // 1단계: 임시 P=1.5로 임시 마진/Tier (상품권도 회사 부담 비용)
-  const tempMargin = Math.round(rebate * 0.9 - payback - giftWon - 1.5 * wcUnit);
-  let tempTier = 'C';
-  if (tempMargin >= sMin) tempTier = 'S';
-  else if (tempMargin >= aMin) tempTier = 'A';
-  else if (tempMargin >= bMin) tempTier = 'B';
-  // 2단계: 임시 Tier → P 매핑 (정책의 tier_to_p JSONB 사용)
-  const pMap = (_itPolicy?.tier_to_p) || { S: 2.0, A: 1.5, B: 1.2, C: 1.0 };
-  const pAuto = Number(pMap[tempTier]) || 1.0;
-  // 3단계: 최종 P (자동 우선, DB 옛값 무시) 기반 마진 자동 계산 (상품권 포함)
-  const finalP = pAuto;
-  const marginAuto = Math.round(rebate * 0.9 - payback - giftWon - finalP * wcUnit);
-  // effMargin = marginAuto (DB p.margin 옛값 무시 — 모두 자동)
-  const effMargin = marginAuto;
-  let tierAuto = 'C';
-  if (effMargin >= sMin) tierAuto = 'S';
-  else if (effMargin >= aMin) tierAuto = 'A';
-  else if (effMargin >= bMin) tierAuto = 'B';
-  // 우수 자동: S Tier만 (단순화)
-  const isPremiumAuto = (tierAuto === 'S');
-  return { tierAuto, pAuto, marginAuto, effMargin, isPremiumAuto };
+  const mx = (p.max_payout != null) ? Number(p.max_payout) : null;
+  const giftWon = (Number(p.gift_amount) || 0) * 10000;
+  if (mx == null) return null;
+  return Math.round(rebate * 0.9 - mx - giftWon);
 }
 
 function renderTable() {
   const carrier = document.getElementById('filter-carrier').value;
   const type = document.getElementById('filter-type').value;
-  const tier = document.getElementById('filter-tier').value;
   const search = document.getElementById('filter-search').value.toLowerCase().trim();
 
   let filtered = _products;
   if (carrier) filtered = filtered.filter(p => p.carrier === carrier);
   if (type) filtered = filtered.filter(p => p.type === type);
-  if (tier) {
-    filtered = filtered.filter(p => {
-      const eff = p.tier || calcAutoTierP(p).tierAuto;
-      return eff === tier;
-    });
-  }
   if (search) filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(search));
 
   // 티켓번호 순 정렬 (SK0001 → SK0060 → KT0001 → … → LG0015). 번호 없는 건 뒤로.
@@ -2172,13 +684,7 @@ function renderTable() {
 
   const tbody = document.getElementById('products-tbody');
   tbody.innerHTML = filtered.map(p => {
-    const { tierAuto, pAuto, marginAuto, effMargin, isPremiumAuto } = calcAutoTierP(p);
-    // Tier·P·우수 모두 자동 우선 (DB 옛값 무시)
-    const effTier = tierAuto;
-    const effP = pAuto;
-    const effPremium = isPremiumAuto;
-    const tierClass = `tier tier-${effTier}`;
-    const premBadge = effPremium ? '<span class="prem-badge" title="마진 ≥ 우수 임계값 → 자동 우수">⭐ 자동</span>' : '';
+    const margin = calcMargin(p);
     return `<tr data-id="${p.id}" class="${p.active ? '' : 'inactive'}">
       <td style="color:#64748b">#${p.id}</td>
       <td style="font-family:ui-monospace,monospace;font-size:11px;color:${p.ticket_number ? '#60a5fa' : '#ef4444'};font-weight:700"
@@ -2192,17 +698,10 @@ function renderTable() {
         : '<span style="color:#64748b" title="WiFi 공유기 미포함">미포함</span>'}</td>
       <td style="font-size:10px;color:#94a3b8">${p.tv_tier || '-'}</td>
       <td><input class="cell-edit field-rebate" type="number" value="${p.rebate || 0}" min="0" step="1000" data-id="${p.id}" data-field="rebate" data-orig="${p.rebate || 0}" style="text-align:right;color:#86efac;font-weight:700"></td>
-      <td><input class="cell-edit field-payback" type="number" value="${p.payback || 0}" min="0" step="1000" data-id="${p.id}" data-field="payback" data-orig="${p.payback || 0}" style="text-align:right;color:#fca5a5;font-weight:700"></td>
-      <td><input class="cell-edit field-gift" type="number" value="${p.gift_amount || 0}" min="0" max="999" step="0.5" data-id="${p.id}" data-field="gift_amount" data-orig="${p.gift_amount || 0}" style="text-align:right;color:#fbbf24;font-weight:700" title="상품권 (만원). 0이면 현금만, >0이면 페이백+상품권 합산"></td>
-      <td><select class="cell-edit field-weight" data-id="${p.id}" data-field="point_weight" data-orig="${effP}" title="자동 P=${pAuto} (${tierAuto} Tier 매핑: S=2.0 A=1.5 B=1.2 C=1.0). 수동 select 시 override" style="font-weight:700">
-        <option value="0.5" ${effP==0.5?'selected':''}>0.5</option>
-        <option value="1.0" ${effP==1.0?'selected':''}>1.0</option>
-        <option value="1.2" ${effP==1.2?'selected':''}>1.2</option>
-        <option value="1.5" ${effP==1.5?'selected':''}>1.5</option>
-        <option value="2.0" ${effP==2.0?'selected':''}>2.0</option>
-      </select></td>
-      <td style="text-align:right;font-weight:800;color:${effMargin >= (_itPolicy.tier_s_min_margin||250000) ? '#fbbf24' : effMargin >= (_itPolicy.tier_a_min_margin||180000) ? '#60a5fa' : effMargin >= (_itPolicy.tier_b_min_margin||120000) ? '#94a3b8' : '#fca5a5'}" id="margin-${p.id}" title="자동 ${marginAuto.toLocaleString()}원 (rebate×0.9 − payback − ${effP}P×${(_itPolicy.weight_cost_per_p||70000).toLocaleString()}). p.margin DB값 ${(p.margin||0).toLocaleString()}원">${fmt(effMargin)}</td>
-      <td><span class="${tierClass}" id="tier-${p.id}" title="자동 ${tierAuto} (margin ${(p.margin||0).toLocaleString()}원 기준). p.tier 수동 입력 시 override">${effTier}${p.tier ? '' : ' <span style=\"font-size:9px;color:#94a3b8\">(자동)</span>' }</span>${premBadge}</td>
+      <td style="background:rgba(19,78,74,.28)"><input class="cell-edit field-guide" type="number" value="${p.guide_payout ?? ''}" min="0" step="10000" data-id="${p.id}" data-field="guide_payout" data-orig="${p.guide_payout ?? ''}" placeholder="미설정"></td>
+      <td style="background:rgba(76,29,149,.25)"><input class="cell-edit field-max" type="number" value="${p.max_payout ?? ''}" min="0" step="10000" data-id="${p.id}" data-field="max_payout" data-orig="${p.max_payout ?? ''}" placeholder="미설정"></td>
+      <td><input class="cell-edit field-gift" type="number" value="${p.gift_amount || 0}" min="0" max="999" step="0.5" data-id="${p.id}" data-field="gift_amount" data-orig="${p.gift_amount || 0}"></td>
+      <td style="text-align:right;font-weight:800;color:${margin == null ? '#64748b' : margin < 0 ? '#f87171' : '#4ade80'}" id="margin-${p.id}">${margin == null ? '—' : fmt(margin)}</td>
       <td>${p.active ? '<span style="color:#86efac;font-weight:700">✅</span>' : '<span style="color:#94a3b8">❌</span>'}</td>
       <td>
         <button class="btn-row btn-save" onclick="saveRow(${p.id})">💾 저장</button>
@@ -2223,29 +722,19 @@ function renderTable() {
         const allSame = [...tr.querySelectorAll('.cell-edit')].every(i => String(i.dataset.orig) === String(i.value));
         if (allSame) tr.classList.remove('changed');
       }
-      // ✨ 동적 미리보기: rebate/payback/gift_amount/point_weight 변경 시 마진/Tier/P 즉시 update
+      // ✨ 동적 미리보기: 리베이트·가이드·MAX·상품권 변경 시 마진 즉시 갱신
       const field = inp.dataset.field;
-      if (['rebate','payback','gift_amount','point_weight'].includes(field)) {
+      if (['rebate','guide_payout','max_payout','gift_amount'].includes(field)) {
         const id = Number(tr.dataset.id);
         const idx = _products.findIndex(p => p.id === id);
         if (idx < 0) return;
         let val = inp.value;
-        if (field === 'rebate' || field === 'payback') val = parseInt(val) || 0;
-        if (field === 'point_weight' || field === 'gift_amount') { const n = parseFloat(val); val = isNaN(n) ? 0 : n; }
-        const tempP = { ..._products[idx], [field]: val };
-        const { tierAuto, pAuto, effMargin } = calcAutoTierP(tempP);
-        const marginCell = document.getElementById(`margin-${id}`);
-        if (marginCell) {
-          marginCell.textContent = fmt(effMargin);
-          const c = effMargin >= (_itPolicy.tier_s_min_margin||250000) ? '#fbbf24' : effMargin >= (_itPolicy.tier_a_min_margin||180000) ? '#60a5fa' : effMargin >= (_itPolicy.tier_b_min_margin||120000) ? '#94a3b8' : '#fca5a5';
-          marginCell.style.color = c;
-        }
-        const tierCell = document.getElementById(`tier-${id}`);
-        if (tierCell) { tierCell.className = `tier tier-${tierAuto}`; tierCell.textContent = tierAuto; }
-        // P select가 다른 input일 때만 update (자신은 사용자가 직접 입력 중)
-        if (field !== 'point_weight') {
-          const pSel = tr.querySelector('select[data-field="point_weight"]');
-          if (pSel) pSel.value = pAuto;
+        val = (val === '') ? null : (field === 'gift_amount' ? (parseFloat(val) || 0) : (parseInt(val) || 0));
+        const m = calcMargin({ ..._products[idx], [field]: val });
+        const cell = document.getElementById(`margin-${id}`);
+        if (cell) {
+          cell.textContent = (m == null) ? '—' : fmt(m);
+          cell.style.color = (m == null) ? '#64748b' : (m < 0 ? '#f87171' : '#4ade80');
         }
       }
     });
@@ -2259,8 +748,8 @@ async function saveRow(id) {
   tr.querySelectorAll('.cell-edit').forEach(inp => {
     const field = inp.dataset.field;
     let val = inp.value;
-    if (field === 'rebate' || field === 'payback' || field === 'monthly_fee_min' || field === 'monthly_fee_max' || field === 'guide_min' || field === 'guide_max' || field === 'install_fee') val = parseInt(val) || 0;
-    if (field === 'point_weight' || field === 'gift_amount') {
+    if (['rebate','payback','monthly_fee_min','monthly_fee_max','guide_payout','max_payout'].includes(field) || field === 'guide_min' || field === 'guide_max' || field === 'install_fee') val = parseInt(val) || 0;
+    if (field === 'gift_amount') {
       const n = parseFloat(val);
       val = isNaN(n) ? 0 : n;  // 0/빈값/NaN 모두 0으로 안전 처리
     }
@@ -2501,7 +990,7 @@ document.getElementById('export-xlsx-btn').addEventListener('click', () => {
     '리베이트': p.rebate || 0,
     '페이백': p.payback || 0,
     '상품권 (만원)': p.gift_amount != null ? Number(p.gift_amount) : 0,
-    '상담사 포인트': p.point_weight || 0,
+    '가이드': p.guide_payout ?? '', 'MAX': p.max_payout ?? '',
     '마진 (자동)': p.margin || 0,
     'Tier (자동)': p.tier || '',
     '우수상품 (자동)': p.is_premium ? 'Y' : 'N',
@@ -2533,7 +1022,7 @@ document.getElementById('import-xlsx-file').addEventListener('change', async (ev
 
     // 미리보기 — 변경될 항목 검사
     const editableFields = {
-      '리베이트': 'rebate', '페이백': 'payback', '상담사 포인트': 'point_weight', '활성': 'active',
+      '리베이트': 'rebate', '페이백': 'payback', '가이드': 'guide_payout', 'MAX': 'max_payout', '활성': 'active',
       '상품권 (만원)': 'gift_amount',
     };
     const changes = [];
@@ -2570,7 +1059,6 @@ document.getElementById('import-xlsx-file').addEventListener('change', async (ev
 });
 document.getElementById('filter-carrier').addEventListener('change', renderTable);
 document.getElementById('filter-type').addEventListener('change', renderTable);
-document.getElementById('filter-tier').addEventListener('change', renderTable);
 document.getElementById('filter-search').addEventListener('input', renderTable);
 
 // ═══ 변경 이력 모달 ═══
@@ -2627,7 +1115,7 @@ async function showHistory(productId) {
     // 상품 history 필드 한국어 라벨
     const PROD_FIELD_LABELS = {
       carrier: '통신사', name: '상품명', speed: '속도', tv_tier: 'TV 단계', type: '종류',
-      rebate: '리베이트', payback: '페이백', point_weight: '상담사 포인트',
+      rebate: '리베이트', payback: '페이백', guide_payout: '가이드', max_payout: 'MAX',
       is_premium: '우수상품', tier: '등급', active: '활성 상태', margin: '마진',
     };
     const labelP = (f) => PROD_FIELD_LABELS[f] || f;

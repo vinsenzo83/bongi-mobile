@@ -389,14 +389,12 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   opacity: 1;
 }
 
-/* ─── 카테고리 탭 (인터넷+TV / 가전렌탈) ─── */
+/* ─── 카테고리 탭 (인터넷+TV / 유심 단독) ─── */
 .tm-cat-tabs { display:flex; gap:5px; margin-bottom:10px; border-bottom:2px solid #3617ce; padding-bottom:0; }
 .tm-cat-tabs .tab { padding:9px 22px; background:#f3f4f6; border:1.5px solid #d1d5db; border-bottom:none; border-radius:8px 8px 0 0; cursor:pointer; font-size:13px; font-weight:700; color:#6b7280; position:relative; bottom:-2px; transition:all 0.15s; }
 .tm-cat-tabs .tab.active { background:#fff; border-color:#3617ce; color:#3617ce; border-bottom:2px solid #fff; z-index:1; }
 .tm-cat-tabs .tab .new { background:#f59e0b; color:#fff; font-size:9px; padding:1px 6px; border-radius:4px; margin-left:5px; font-weight:700; }
 /* 모드별 가시성: 기본 = it 모드 */
-body:not(.cat-rental) .tm-rental-panel { display:none; }
-body.cat-rental main.tm-panel > *:not(.tm-cat-tabs):not(.tm-rental-panel):not(#call-mode-bar) { display:none !important; }
 body.cat-usim main.tm-panel > *:not(.tm-cat-tabs):not(.tm-usim-panel):not(#call-mode-bar) { display:none !important; }
 .tm-usim-panel { display:none; }
 body.cat-usim .tm-usim-panel { display:block; }
@@ -408,106 +406,21 @@ body.cat-usim .tm-usim-panel { display:block; }
 .usim-card .uf { font-size:11.5px; color:#64748b; display:flex; justify-content:space-between; padding:1.5px 0; }
 .usim-card .uf b { color:#0f172a; font-weight:700; }
 .usim-card .up { margin-top:6px; padding-top:6px; border-top:1px dashed #e2e8f0; font-size:12px; font-weight:800; color:#b45309; display:flex; justify-content:space-between; }
-/* ★ 가전렌탈도 인터넷+TV와 동일한 3컬럼 구조 (좌 카드 + 가운데 폼 + 우 결과 사이드바) — 2026-05-19 */
-body:not(.cat-rental) #rental-result-block { display:none; }
-body.cat-rental #it-result-block { display:none; }
-/* 가전렌탈 패널 스타일 */
-.tm-rental-panel { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:14px 16px; }
-.tm-rental-panel .cat-bar { background:linear-gradient(135deg,#fef3c7,#fff); border:2px solid #f59e0b; border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; gap:12px; }
-.tm-rental-panel .cat-bar label { font-size:10px; color:#92400e; font-weight:800; margin-right:4px; }
-.tm-rental-panel .cat-bar select { padding:7px 10px; background:#fff; color:#451a03; font-weight:800; border:1.5px solid #fcd34d; border-radius:5px; font-size:13px; max-width:240px; flex:1; }
-.tm-rental-panel .cat-bar .note { font-size:10px; color:#92400e; line-height:1.55; padding:5px 8px; background:rgba(251,191,36,0.18); border:1px dashed #fcd34d; border-radius:4px; flex:1; }
-/* 가전 큐콜 — 원래 패턴 복원 (2섹터 단순, 짤림 fix 최소만 유지) */
-/* ★ rental-quote 가 우측 사이드바로 이동했으므로 가운데는 1컬럼 폼만 — 2026-05-19 */
-.tm-rental-panel .rental-grid { display:block; }
-.tm-rental-panel .rental-form-wrap { min-width:0; }
-.tm-rental-panel .rental-quote-result { word-break:break-word; min-width:0; overflow-wrap:break-word; }
-.tm-rental-panel .rental-form-wrap { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px; }
-.tm-rental-panel .rental-form-wrap .ttl { font-size:11px; font-weight:800; color:#3617ce; margin-bottom:8px; }
-.tm-rental-panel .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; margin-bottom:12px; }
-.tm-rental-panel .field label { display:block; font-size:10.5px; color:#6b7280; font-weight:700; margin-bottom:3px; }
-.tm-rental-panel .field select, .tm-rental-panel .field input { width:100%; padding:6px 9px; border:1.5px solid #d1d5db; border-radius:5px; font-size:12px; background:#fff; color:#1f2937; }
-.tm-rental-panel .field select:focus, .tm-rental-panel .field input:focus { outline:none; border-color:#3617ce; }
-.tm-rental-panel .guide-step { background:#fff; border:1px solid #e5e7eb; border-radius:5px; padding:6px 9px; margin-bottom:4px; font-size:10.5px; line-height:1.55; color:#1f2937; }
-.tm-rental-panel .guide-step .no { display:inline-block; width:17px;height:17px; background:#3617ce; color:#fff; font-size:9px; border-radius:50%; text-align:center; line-height:17px; margin-right:5px; font-weight:700; }
-/* ★ .rental-quote 는 우측 aside 안 #rental-result-block 으로 이동 — 부모 의존성 제거 (2026-05-19) */
-.rental-quote { background:linear-gradient(135deg,#312e81,#1e293b); color:#fff; border-radius:8px; padding:14px 16px; }
-.rental-quote .qt-ttl { font-size:11px; font-weight:800; color:#fbbf24; margin-bottom:8px; }
-.rental-quote .row { display:flex; justify-content:space-between; padding:4px 0; font-size:10.5px; border-bottom:1px dashed #475569; }
-.rental-quote .row .k { color:#94a3b8; }
-.rental-quote .row .v { font-weight:700; }
-.rental-quote .row .green { color:#22c55e; }
-.rental-quote .total { background:#0f172a; border-radius:6px; padding:8px 10px; margin-top:8px; text-align:center; }
-.rental-quote .total .big { font-size:22px; font-weight:900; color:#fbbf24; }
-.rental-quote .save { background:#16a34a; color:#fff; padding:9px 12px; border:none; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; margin-top:10px; width:100%; }
 
-/* ─── 가전렌탈 신청 모달 (빌리고 스타일) ─── */
-.rdm-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:99998; display:none; align-items:flex-start; justify-content:center; padding:32px 16px; overflow-y:auto; }
-.rdm-overlay.open { display:flex; }
-.rdm-box { width:min(880px,100%); background:#fff; border-radius:14px; box-shadow:0 30px 80px rgba(0,0,0,0.4); overflow:hidden; }
-.rdm-header { padding:18px 24px 14px; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center; background:#f9fafb; position:sticky; top:0; z-index:2; }
-.rdm-header h2 { margin:0; font-size:18px; font-weight:800; color:#111827; letter-spacing:-0.02em; }
-.rdm-header .req { color:#dc2626; font-size:11px; font-weight:700; margin-left:6px; }
-.rdm-header .close { background:none; border:none; font-size:22px; cursor:pointer; color:#6b7280; padding:0 4px; line-height:1; }
-.rdm-header .close:hover { color:#111827; }
-.rdm-body { padding:20px 24px; }
-.rdm-section { border:1px solid #e5e7eb; border-radius:10px; margin-bottom:18px; }
-.rdm-section-h { padding:12px 16px; background:#fafafa; border-bottom:1px solid #e5e7eb; font-weight:800; font-size:14px; color:#111827; display:flex; justify-content:space-between; align-items:center; }
-.rdm-section-body { padding:14px 16px; }
-.rdm-row { display:grid; grid-template-columns:120px 1fr; align-items:start; padding:9px 0; border-bottom:1px solid #f1f5f9; gap:12px; }
-.rdm-row:last-child { border-bottom:none; }
-.rdm-row .lbl { font-size:12px; font-weight:700; color:#374151; padding-top:6px; }
-.rdm-row .lbl .star { color:#dc2626; margin-right:3px; }
-.rdm-row .ctrl { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-.rdm-row .ctrl input[type="text"], .rdm-row .ctrl input[type="tel"], .rdm-row .ctrl input[type="number"], .rdm-row .ctrl input[type="date"], .rdm-row .ctrl input[type="time"], .rdm-row .ctrl select, .rdm-row .ctrl textarea {
-  padding:7px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:12.5px; background:#fff; color:#111827; box-sizing:border-box;
-}
-.rdm-row .ctrl input:focus, .rdm-row .ctrl select:focus, .rdm-row .ctrl textarea:focus { outline:none; border-color:#3617ce; box-shadow:0 0 0 2px rgba(54,23,206,0.1); }
-.rdm-row .ctrl textarea { width:100%; resize:vertical; min-height:60px; font-family:inherit; }
-.rdm-row .ctrl .full { width:100%; }
-.rdm-row .ctrl .half { flex:1; min-width:0; }
-.rdm-row .ctrl .small { width:90px; }
-.rdm-row .ctrl .mid { width:130px; }
-.rdm-row .ctrl .btn-search { padding:7px 14px; background:#475569; color:#fff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; }
-.rdm-row .ctrl .btn-search:hover { background:#334155; }
-.rdm-row .ctrl .hint { font-size:11px; color:#6b7280; flex-basis:100%; padding-top:2px; line-height:1.5; }
-.rdm-row .ctrl .hint.warn { color:#dc2626; }
-.rdm-radio-group { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
-.rdm-radio-group label { font-size:13px; color:#111827; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
-.rdm-radio-group input[type="radio"] { width:14px; height:14px; cursor:pointer; accent-color:#3617ce; }
-.rdm-quote-info { background:#f0f9ff; border:1px solid #93c5fd; border-radius:8px; padding:12px 14px; display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; font-size:12px; color:#1e3a8a; }
-.rdm-quote-info .k { font-weight:700; color:#1e40af; }
-.rdm-quote-info .v { font-weight:800; }
-.rdm-quote-info .row { display:flex; justify-content:space-between; }
-.rdm-quote-info .row.full { grid-column:1/-1; }
-.rdm-footer { padding:14px 24px; border-top:1px solid #e5e7eb; background:#f9fafb; display:flex; gap:10px; justify-content:flex-end; position:sticky; bottom:0; z-index:2; }
-.rdm-footer .btn-cancel { padding:10px 20px; background:#fff; border:1.5px solid #d1d5db; color:#374151; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
-.rdm-footer .btn-cancel:hover { background:#f3f4f6; }
-.rdm-footer .btn-submit { padding:10px 28px; background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; border:none; border-radius:8px; font-size:13.5px; font-weight:800; cursor:pointer; box-shadow:0 4px 12px rgba(249,115,22,0.3); display:inline-flex; align-items:center; gap:6px; }
-.rdm-footer .btn-submit:hover { background:linear-gradient(135deg,#ea580c,#c2410c); }
-.rdm-footer .btn-submit:disabled { background:#9ca3af; cursor:not-allowed; box-shadow:none; }
-.rdm-msg { font-size:12px; padding:8px 12px; border-radius:6px; margin-top:10px; display:none; }
-.rdm-msg.show { display:block; }
-.rdm-msg.error { background:#fef2f2; color:#dc2626; border:1px solid #fca5a5; }
-.rdm-msg.success { background:#f0fdf4; color:#16a34a; border:1px solid #86efac; }
-.rdm-notice { background:#fffbeb; border:1px solid #fcd34d; border-radius:6px; padding:10px 12px; font-size:11.5px; color:#92400e; line-height:1.7; }
-.rdm-notice summary { cursor:pointer; font-weight:800; padding:4px 0; }
-.rdm-notice ul { margin:6px 0 0 18px; padding:0; }
-.rdm-tag-input { display:flex; flex-wrap:wrap; gap:4px; padding:6px; border:1px solid #d1d5db; border-radius:6px; min-height:34px; flex:1; }
-.rdm-tag-input .tag { background:#3617ce; color:#fff; padding:2px 8px; border-radius:12px; font-size:11px; display:inline-flex; align-items:center; gap:4px; }
-.rdm-tag-input .tag .x { cursor:pointer; font-weight:800; }
-.rdm-tag-input input { border:none; outline:none; flex:1; min-width:80px; padding:2px 4px; font-size:12px; }
-/* 명의자 토글 — 유형별 표시 */
-.rdm-only-individual, .rdm-only-business, .rdm-only-corporation { display:none; }
-.rdm-type-individual .rdm-only-individual { display:grid; }
-.rdm-type-sole_prop .rdm-only-business { display:grid; }
-.rdm-type-corporation .rdm-only-business { display:grid; }
-.rdm-type-corporation .rdm-only-corporation { display:grid; }
-@media (max-width: 720px) {
-  .rdm-row { grid-template-columns:1fr; }
-  .rdm-row .lbl { padding-top:0; }
-  .rdm-quote-info { grid-template-columns:1fr; }
-}
+
+
+
+/* 가전 큐콜 — 원래 패턴 복원 (2섹터 단순, 짤림 fix 최소만 유지) */
+
+
+
+
+
+
+
+
+
+
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
@@ -659,7 +572,7 @@ body.queue-side-collapsed #call-queue-side .cq-header { padding:8px 12px; }
               <span id="cm-rec-1" style="margin-left:6px;color:#e2e8f0">-</span>
             </div>
             <div style="background:rgba(0,0,0,0.3);border-left:3px solid #a855f7;padding:8px 12px;border-radius:4px">
-              <span style="font-weight:800;color:#e9d5ff">[2차] 🏠 렌탈</span>
+              <span style="font-weight:800;color:#7dd3fc">[2차] 📲 유심</span>
               <span id="cm-rec-2" style="margin-left:6px;color:#e2e8f0">-</span>
             </div>
           </div>
@@ -917,7 +830,7 @@ async function loadCallCustomer(customerId) {
     if (tierEl) {
       const tags = [];
       // 등급 배지 (가장 강조)
-      // S·A·B·C = 인터넷 X (1순위 영업) / R = 인터넷 O (2순위·렌탈)
+      // S·A·B·C = 인터넷 X (1순위 영업) / R = 인터넷 O (2순위·유심 업셀)
       const gradeStyles = {
         S: 'background:linear-gradient(135deg,#dc2626,#f59e0b);color:#fff',
         A: 'background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff',
@@ -1036,14 +949,13 @@ async function loadCallCustomer(customerId) {
           if (c.category === '이동') rec1.push('🔥 <b>통신사 이동 고객</b> — 결합 깨기 좋음 · 성공률 高');
           else if (c.category === '신규') rec1.push('✨ <b>신규 가입자</b> — 인터넷도 신규로 자유');
           else if (c.category === '기변') rec1.push('⚠️ <b>기변</b> — 기존 결합 가능성, 신중 청취');
-          rec2.push('인터넷·TV 가입 후 <b>결합 렌탈 사은품 추가</b>');
-          rec2.push('<span style="color:#94a3b8">정수기·공기청정기·안마의자·세탁기·건조기 등</span>');
+          rec2.push('인터넷·TV 가입 후 <b>유심 개통 사은품 추가</b>');
+          rec2.push('<span style="color:#94a3b8">같은 통신사 유심으로 번호이동 시 사은품 별도 지급</span>');
         } else if (c.tier === 2) {
           rec1.push('❌ <b style="color:#fca5a5">해당 없음</b> — 이미 인터넷·TV 가입 중');
           if (c.notes) rec1.push(`<span style="color:#94a3b8;font-size:10px">${esc(c.notes).slice(0,100)}</span>`);
-          rec2.push('🏠 <b style="color:#e9d5ff">렌탈 권유 메인 타겟</b>');
-          rec2.push('정수기·공기청정기·안마의자·세탁기·건조기·비데 등');
-          rec2.push('<span style="color:#fbbf24">봉이 제로렌탈 — 1개월 후 소유권 이전 (사은품 즉시 지급)</span>');
+          rec2.push('📲 <b style="color:#7dd3fc">유심 업셀 메인 타겟</b>');
+          rec2.push('<span style="color:#fbbf24">기기 그대로 · 유심만 교체 · 개통 사은품 즉시 지급</span>');
         } else {
           rec1.push('-'); rec2.push('-');
         }
@@ -1465,7 +1377,7 @@ function renderCallQueueSide(list) {
         recLine = `🎯 <b style="color:#fbbf24">인터넷 청취</b> 후 권유`;
       }
     } else if (c.tier === 2) {
-      recLine = `🎯 <b style="color:#e9d5ff">렌탈</b> 권유`;
+      recLine = `🎯 <b style="color:#7dd3fc">유심</b> 권유`;
     }
 
     // 개통 + 단말
@@ -1625,155 +1537,76 @@ function bindShortcutKeys() {
     </div>
     <h2 id="tm-script-h2">💬 상담 스크립트 <span id="tm-script-cat-label" style="font-size:10px;color:#94a3b8;font-weight:500">· 📡 인터넷+TV</span></h2>
     <div id="tm-scripts"></div>
-    <div id="tm-scripts-rental" style="display:none"></div>
     <button type="button" class="tm-script-add-btn" id="tm-script-add">+ 단계 추가</button>
 
-    <!-- ★ 가전렌탈 탭일 때만 표시: 상품 추천 -->
-    <div id="tm-rental-recommend">
-      <h2 style="display:flex;justify-content:space-between;align-items:center">
-        🌟 상품 추천
-        <button type="button" id="rr-refresh" title="다시 불러오기" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px">↻</button>
-      </h2>
-      <!-- 🎯 추천 조건 (상담 입력 카드) -->
-      <div class="rr-criteria">
-        <div class="rr-crit-title">🎯 상담 입력 → 자동 추천</div>
-        <div class="rr-crit-row">
-          <span class="rr-crit-lbl">사용 환경</span>
-          <div class="rr-radio-line">
-            <label><input type="radio" name="rr-usage" value="" checked>상관없음</label>
-            <label><input type="radio" name="rr-usage" value="home">🏠 가정용</label>
-            <label><input type="radio" name="rr-usage" value="business">🏢 사업장</label>
-          </div>
-        </div>
-        <div class="rr-crit-row">
-          <span class="rr-crit-lbl">사용 인원</span>
-          <select id="rr-people">
-            <option value="">상관없음</option>
-            <option value="1-2">1~2인 (1인가구·신혼)</option>
-            <option value="3-4">3~4인 (일반 가정)</option>
-            <option value="5+">5인 이상 / 대가족 / 사업장</option>
-          </select>
-        </div>
-        <!-- 정수기 한정 -->
-        <div class="rr-crit-row" id="rr-feat-row" style="display:none">
-          <span class="rr-crit-lbl">정수기 기능</span>
-          <div class="rr-feat-line">
-            <label><input type="checkbox" class="rr-feat" value="ice">🧊 얼음</label>
-            <label><input type="checkbox" class="rr-feat" value="coffee">☕ 커피</label>
-            <label><input type="checkbox" class="rr-feat" value="hot">🔥 온수</label>
-            <label><input type="checkbox" class="rr-feat" value="cold">❄️ 냉수</label>
-          </div>
-        </div>
-        <button type="button" id="rr-crit-reset" style="background:none;border:none;color:#94a3b8;font-size:9.5px;cursor:pointer;padding:2px">↺ 조건 초기화</button>
-      </div>
-
-      <div class="rr-filter-bar">
-        <input type="search" id="rr-search" placeholder="🔎 모델·브랜드 검색">
-<!-- 우수상품 필터 제거: 옵션 단위 자동 분류라 product 단위 필터 무의미 -->
-      </div>
-      <!-- 다채널 추천 프로파일 토글 (가전 그룹 한정 · 고객 유형 2종) -->
-      <div class="rr-profile-bar" id="rr-profile-bar">
-        <span class="rr-profile-label">🎯 고객 유형</span>
-        <button type="button" class="rr-profile-chip" data-profile="customer" title="고객 월 부담 최저">💰 월납 최소</button>
-        <button type="button" class="rr-profile-chip" data-profile="gift" title="페이백·결합혜택 여력 최대">🎁 사은품 최대</button>
-      </div>
-      <div class="rr-cat-chips" id="rr-cat-chips"></div>
-      <div class="rr-brand-chips" id="rr-brand-chips"></div>
-      <div class="rr-stats" id="rr-stats"></div>
-      <div class="rr-list" id="rr-list"><div class="rr-empty">⏳ 불러오는 중...</div></div>
-    </div>
 
     <style>
-      body.cat-rental #tm-script-h2,
-      body.cat-rental #tm-scripts,
-      body.cat-rental #tm-scripts-rental,
-      body.cat-rental #tm-script-add { display:none; }
-      body:not(.cat-rental) #tm-rental-recommend { display:none; }
-      #tm-rental-recommend { display:block; }
-      #tm-rental-recommend h2 { font-size:13px; margin:6px 0 8px; color:#fbbf24; letter-spacing:0.02em; }
-      .rr-filter-bar { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
-      .rr-filter-bar #rr-search { flex:1; padding:5px 8px; background:#1e293b; border:1px solid #475569; color:#e2e8f0; border-radius:5px; font-size:11px; }
-      .rr-filter-bar #rr-search:focus { outline:none; border-color:#f59e0b; }
-      .rr-chk { font-size:10px; color:#cbd5e1; display:inline-flex; align-items:center; gap:3px; cursor:pointer; white-space:nowrap; }
-      .rr-chk input { accent-color:#f59e0b; }
-      .rr-cat-chips, .rr-brand-chips { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:6px; }
-      .rr-chip {
-        background:#1e293b; border:1px solid #334155; color:#94a3b8; padding:2px 7px;
-        border-radius:11px; font-size:10px; font-weight:700; cursor:pointer; transition:all .12s;
-      }
-      .rr-chip:hover { background:#334155; color:#e2e8f0; }
-      .rr-chip.active { background:#f59e0b; border-color:#fbbf24; color:#0f172a; }
-      .rr-brand-chips .rr-chip.active { background:#3617ce; border-color:#7c3aed; color:#fff; }
-      .rr-stats { font-size:9.5px; color:#64748b; margin-bottom:4px; }
-      .rr-list { max-height:calc(100vh - 360px); overflow-y:auto; display:flex; flex-direction:column; gap:5px; padding-right:3px; }
-      .rr-list::-webkit-scrollbar { width:5px; }
-      .rr-list::-webkit-scrollbar-thumb { background:#334155; border-radius:3px; }
-      .rr-card {
-        background:#1e293b; border:1px solid #334155; border-radius:6px; padding:7px 9px;
-        cursor:pointer; transition:all .12s; position:relative;
-      }
-      .rr-card:hover { background:#334155; border-color:#f59e0b; transform:translateX(2px); }
-      .rr-card.premium { border-left:3px solid #fbbf24; }
-      .rr-card .rr-row1 { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:2px; }
-      .rr-card .brand { font-size:10px; color:#a78bfa; font-weight:800; }
-      .rr-card .premium-badge { font-size:9px; background:#fbbf24; color:#451a03; padding:1px 5px; border-radius:8px; font-weight:800; }
-      .rr-card .model { font-size:11.5px; color:#f8fafc; font-weight:800; line-height:1.3; margin-bottom:3px; }
-      .rr-card .model-name { font-size:9.5px; color:#94a3b8; font-weight:500; }
-      .rr-card .rr-row3 { display:flex; gap:8px; font-size:9.5px; color:#cbd5e1; }
-      .rr-card .rr-row3 .tag { background:rgba(245,158,11,0.15); color:#fbbf24; padding:1px 5px; border-radius:3px; font-weight:700; }
-      .rr-card .rr-row3 .payback { color:#22c55e; font-weight:800; margin-left:auto; }
-      .rr-empty { text-align:center; color:#64748b; font-size:11px; padding:24px 8px; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       /* 추천 조건 카드 */
-      .rr-criteria { background:linear-gradient(135deg,#fef3c7,#fde68a); border:1.5px solid #f59e0b; border-radius:8px; padding:9px 10px; margin-bottom:8px; }
-      .rr-crit-title { font-size:10.5px; font-weight:900; color:#92400e; margin-bottom:6px; letter-spacing:0.02em; }
-      .rr-crit-row { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
-      .rr-crit-row .rr-crit-lbl { font-size:9.5px; color:#78350f; font-weight:700; min-width:54px; }
-      .rr-radio-line, .rr-feat-line { display:flex; flex-wrap:wrap; gap:7px; flex:1; }
-      .rr-radio-line label, .rr-feat-line label { font-size:10px; color:#451a03; cursor:pointer; display:inline-flex; align-items:center; gap:2px; }
-      .rr-radio-line input, .rr-feat-line input { accent-color:#dc2626; transform:scale(0.85); }
-      #rr-people { padding:5px 24px 5px 8px; font-size:10.5px; border:1px solid #d97706; border-radius:4px; background:#fff; color:#451a03; flex:1; min-width:0; width:100%; box-sizing:border-box; line-height:1.3; appearance:auto; -webkit-appearance:auto; }
       /* 별점 + 매칭 태그 */
-      .rr-card .stars { color:#fbbf24; font-size:10px; margin-right:3px; }
-      .rr-card .match-tags { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
-      .rr-card .match-tags .mt { background:rgba(34,197,94,0.18); color:#86efac; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:700; }
-      .rr-card.top-match { border:1.5px solid #fbbf24; box-shadow:0 0 0 2px rgba(251,191,36,0.15); }
-      .rr-card .meta-chips { display:flex; flex-wrap:wrap; gap:2px; margin-top:3px; }
-      .rr-card .meta-chip { font-size:9px; padding:1px 5px; border-radius:3px; background:#0f172a; color:#94a3b8; border:1px solid #1e293b; font-weight:600; }
-      .rr-card .meta-chip.cap  { background:rgba(245,158,11,0.18); color:#fbbf24; border-color:#92400e; }
-      .rr-card .meta-chip.inst { background:rgba(96,165,250,0.18); color:#93c5fd; border-color:#1e3a8a; }
-      .rr-card .meta-chip.filt { background:rgba(139,92,246,0.18); color:#c4b5fd; border-color:#5b21b6; }
-      .rr-card .meta-chip.feat { background:rgba(34,197,94,0.13); color:#86efac; border-color:#166534; }
-      .rr-card .data-src { font-size:9px; color:#cbd5e1; opacity:0.6; margin-left:2px; }
-      .rr-card .rr-tier-badge { display:inline-block; font-size:9px; font-weight:900; padding:1px 5px; border-radius:3px; margin-left:3px; letter-spacing:0.05em; }
-      .rr-card .rr-tier-S { background:#fbbf24; color:#451a03; }
-      .rr-card .rr-tier-A { background:#60a5fa; color:#0c1f3a; }
-      .rr-card .rr-tier-B { background:#94a3b8; color:#0f172a; }
-      .rr-card .rr-tier-C { background:#475569; color:#cbd5e1; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       /* 다채널 추천 프로파일 토글 */
-      .rr-profile-bar { display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin-bottom:6px; padding:5px 7px; background:rgba(245,158,11,0.08); border:1px solid #f59e0b; border-radius:5px; }
-      .rr-profile-label { font-size:10px; font-weight:800; color:#fbbf24; margin-right:3px; }
-      .rr-profile-chip { background:#1e293b; border:1px solid #475569; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:700; color:#94a3b8; cursor:pointer; transition:all 0.15s; }
-      .rr-profile-chip:hover { background:#334155; color:#e2e8f0; }
-      .rr-profile-chip.active[data-profile="margin"]   { background:#fbbf24; color:#451a03; border-color:#f59e0b; }
-      .rr-profile-chip.active[data-profile="customer"] { background:#22c55e; color:#052e16; border-color:#16a34a; }
-      .rr-profile-chip.active[data-profile="gift"]     { background:#a855f7; color:#2e1065; border-color:#7c3aed; }
+
+
+
+
+
+
       /* 다채널 펼침 카드 */
-      .rr-card .rr-channels { margin-top:5px; padding-top:5px; border-top:1px dashed #475569; }
-      .rr-card .rr-ch-toggle { font-size:9.5px; color:#60a5fa; cursor:pointer; user-select:none; }
-      .rr-card .rr-ch-toggle:hover { text-decoration:underline; }
-      .rr-card .rr-ch-list { display:none; margin-top:4px; padding:4px 6px; background:#0f172a; border:1px solid #1e293b; border-radius:4px; overflow:hidden; }
-      .rr-card .rr-ch-list.open { display:block; }
-      .rr-card .rr-ch-row { display:grid; grid-template-columns:14px minmax(0,1fr) auto; column-gap:4px; row-gap:1px; align-items:center; font-size:9px; color:#cbd5e1; padding:3px 0; border-bottom:1px dotted #1e293b; }
-      .rr-card .rr-ch-row:last-child { border-bottom:none; }
-      .rr-card .rr-ch-row .medal { font-size:11px; }
-      .rr-card .rr-ch-row .co { font-weight:700; color:#67e8f9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-      .rr-card .rr-ch-row .sc { color:#fbbf24; font-weight:700; font-size:9.5px; padding-left:4px; }
-      .rr-card .rr-ch-row .meta { grid-column:2 / 4; font-size:8.5px; color:#94a3b8; display:flex; gap:6px; align-items:center; flex-wrap:wrap; line-height:1.3; }
-      .rr-card .rr-ch-row .meta b { color:#fbbf24; font-weight:700; }
-      .rr-card .rr-ch-row .tg { font-size:8px; padding:0 4px; border-radius:3px; background:rgba(34,197,94,0.15); color:#86efac; font-weight:700; }
-      .rr-card .rr-best-co { display:inline-block; background:#0891b2; color:#fff; font-size:8.5px; padding:1px 4px; border-radius:3px; margin-left:3px; font-weight:700; }
-      .rr-card .rr-best-co.profile-customer { background:#16a34a; }
-      .rr-card .rr-best-co.profile-gift { background:#9333ea; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     </style>
 
     <h2>📝 메모</h2>
@@ -1787,7 +1620,7 @@ function bindShortcutKeys() {
 
   <!-- ═══ 중앙: 카드 UI ═══ -->
   <main class="tm-panel" style="background:transparent;box-shadow:none;padding:0">
-    <!-- ★ 카테고리 탭 (인터넷+TV / 유심 단독) — 가전렌탈은 탭에서 내림(코드는 보존) -->
+    <!-- ★ 카테고리 탭 (인터넷+TV / 유심 단독) -->
     <div class="tm-cat-tabs">
       <div class="tab active" data-cat="it">📡 인터넷 + TV</div>
       <div class="tab" data-cat="usim">📲 유심 단독 <span class="new">NEW</span></div>
@@ -1818,128 +1651,6 @@ function bindShortcutKeys() {
       </div>
     </div>
 
-    <!-- ★ 가전렌탈 패널 (기본 hidden, 탭 클릭 시 표시) -->
-    <div class="tm-rental-panel">
-      <div class="cat-bar">
-        <label>📂 렌탈 카테고리</label>
-        <select id="rental-category"></select>
-        <div class="note">⚡ 카테고리·브랜드·모델·옵션 모두 DB 동적 로드 · 약정/케어 조합별 리베이트 자동 적용</div>
-      </div>
-      <div class="rental-grid">
-        <div class="rental-form-wrap">
-          <div class="ttl">📝 렌탈 견적 입력</div>
-          <div class="form-grid">
-            <div class="field"><label>브랜드</label><select id="rental-brand"></select></div>
-            <div class="field" id="rental-company-wrap" style="display:none"><label>🏢 렌탈사 (채널)</label><select id="rental-company"><option value="">전체</option></select></div>
-            <div class="field"><label>모델</label><select id="rental-model"></select></div>
-            <div class="field"><label>약정</label><select id="rental-months"></select></div>
-            <div class="field"><label>케어서비스</label><select id="rental-care"></select></div>
-            <div class="field" style="grid-column:span 2">
-              <label>프로모션 (모델별 가능 조합)</label>
-              <select id="rental-promo">
-                <option value="basic">기본 (정상 리베이트)</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>반값할인 개월수 (지정)</label>
-              <select id="rental-half-months"><option value="">옵션 기본값 사용</option></select>
-            </div>
-            <div class="field">
-              <label>소유권 이전 개월수 (지정)</label>
-              <select id="rental-ownership-months"><option value="">옵션 기본값 사용</option></select>
-            </div>
-            <div class="field">
-              <label>점검주기 (개월·지정)</label>
-              <select id="rental-inspection-cycle"><option value="">옵션 기본값 사용</option></select>
-            </div>
-          </div>
-          <div id="rental-brand-policy" style="margin-top:6px;padding:7px 10px;background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:5px;font-size:10px;color:#fbbf24;line-height:1.55;display:none"></div>
-          <div id="rental-incentive-area"></div>
-        </div>
-        <!-- ★ .rental-quote 는 우측 aside.tm-result-panel 안 #rental-result-block 로 이동 (2026-05-19) -->
-        <!--    인터넷+TV 탭과 동일 구조: 가운데=폼, 우=결과 사이드바 -->
-
-        <script>
-        // ★ 가전렌탈 R 티켓 별도 조회 (인터넷+TV 영역과 완전 분리)
-        // .rental-quote 가 우측 aside 안 #rental-result-block 으로 이동했으므로
-        // DOM 파싱 완료 후에 input/btn 바인딩해야 함 (2026-05-19)
-        document.addEventListener('DOMContentLoaded', function setupRentalTicketLookup() {
-          var input = document.getElementById('r-ticket-lookup');
-          var btn = document.getElementById('r-ticket-lookup-btn');
-          var msg = document.getElementById('r-ticket-lookup-msg');
-          if (!input || !btn) return;
-
-          function showMsg(text, kind) {
-            msg.textContent = text;
-            msg.style.color = kind === 'success' ? '#22c55e' : '#ef4444';
-          }
-          function hideMsg() { msg.textContent = ''; }
-          var fmt = function(n){ return n == null ? '-' : Number(n).toLocaleString('ko-KR'); };
-
-          async function lookupRental() {
-            var num = (input.value || '').trim().toUpperCase();
-            if (!num) { hideMsg(); return; }
-            if (!/^R\d{3,}$/.test(num)) { showMsg('⚠️ R0001 형식이어야 합니다'); return; }
-            try {
-              var tk = localStorage.getItem('incentive-auth-token-v1');
-              var resp = await fetch('/api/incentive/tickets/rental/lookup?ticket=' + encodeURIComponent(num), {
-                headers: { Authorization: 'Bearer ' + tk }
-              });
-              if (!resp.ok) { showMsg('⚠️ 티켓 없음: ' + num); return; }
-              var data = await resp.json();
-              var r = data.ticket;
-              var p = r.product || {};
-              // ★ 가전 탭 자동 활성 — body.cat-rental 보장
-              var rentalTab = document.querySelector('.tm-cat-tabs .tab[data-cat="rental"]');
-              if (rentalTab && !document.body.classList.contains('cat-rental')) rentalTab.click();
-              // ★ 폼 select에 값 채우기 → change 이벤트로 loadProducts→filterModels→loadOptions→selectOpt→renderQuote chain 자동 트리거
-              //   (옛 인라인 표 대신 폼 자동 입력 → 풍부한 카드 UI 동일하게 표시)
-              var sleep = function(ms){ return new Promise(r => setTimeout(r, ms)); };
-              // 1) 카테고리: 옵션 list에서 product.category_id 매칭 시도 (data-id 없을 시 skip — 사용자 카테고리 유지)
-              var catSel = document.getElementById('rental-category');
-              if (p.category_id) {
-                var catOpt = Array.from(catSel.options).find(o => String(o.dataset.id || '') === String(p.category_id));
-                if (catOpt && catSel.value !== catOpt.value) {
-                  catSel.value = catOpt.value;
-                  catSel.dispatchEvent(new Event('change', { bubbles: true }));
-                  await sleep(450);
-                }
-              }
-              // 2) 브랜드
-              var brSel = document.getElementById('rental-brand');
-              if (p.brand && Array.from(brSel.options).some(o => o.value === p.brand)) {
-                brSel.value = p.brand;
-                brSel.dispatchEvent(new Event('change', { bubbles: true }));
-                await sleep(350);
-              }
-              // 3) 모델
-              var mdSel = document.getElementById('rental-model');
-              if (mdSel.querySelector(`option[value="${p.id}"]`)) {
-                mdSel.value = String(p.id);
-                mdSel.dispatchEvent(new Event('change', { bubbles: true }));
-                await sleep(350);
-              }
-              // 4) 약정 · 케어 (selectOpt → renderQuote 자동)
-              var mSel = document.getElementById('rental-months');
-              if (mSel.querySelector(`option[value="${r.months}"]`)) {
-                mSel.value = String(r.months);
-                mSel.dispatchEvent(new Event('change', { bubbles: true }));
-                await sleep(50);
-              }
-              var cSel = document.getElementById('rental-care');
-              if (cSel.querySelector(`option[value="${r.care_service}"]`)) {
-                cSel.value = r.care_service;
-                cSel.dispatchEvent(new Event('change', { bubbles: true }));
-              }
-              showMsg('✓ ' + (p.company?.name ? '🏢 '+p.company.name+' · ' : '') + (p.brand || '-') + ' · ' + r.months + 'M · 월 ' + fmt(r.monthly_fee) + '원', 'success');
-            } catch (e) { showMsg('⚠️ 조회 실패: ' + e.message); }
-          }
-          btn.addEventListener('click', lookupRental);
-          input.addEventListener('keypress', function(e) { if (e.key === 'Enter') lookupRental(); });
-        });
-        </script>
-      </div>
-    </div>
 
     <div class="tm-cards">
       <div class="tm-card">
@@ -2162,7 +1873,7 @@ function bindShortcutKeys() {
 
   <!-- ═══ 우측 ═══ -->
   <aside class="tm-panel tm-result-panel">
-    <!-- ═══ 인터넷+TV 견적 결과 (body:not(.cat-rental)) ═══ -->
+    <!-- ═══ 인터넷+TV 견적 결과 ═══ -->
     <div id="it-result-block">
       <h2 style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <span>💰 견적 결과</span>
@@ -2180,22 +1891,6 @@ function bindShortcutKeys() {
       <div class="tm-result"><div id="c-result"></div></div>
     </div>
 
-    <!-- ═══ 가전렌탈 견적 결과 (body.cat-rental) ═══ -->
-    <div id="rental-result-block" class="rental-quote">
-      <div class="qt-ttl" id="rental-quote-title">💧 정수기 견적 결과</div>
-      <div style="background:rgba(15,23,42,0.55);border:1px solid #475569;border-radius:8px;padding:10px 12px;margin-bottom:10px">
-        <div style="font-size:11px;color:#fbbf24;font-weight:700;margin-bottom:6px">🎫 가전렌탈 티켓번호 빠른 조회</div>
-        <div style="display:flex;gap:6px">
-          <input type="text" id="r-ticket-lookup" placeholder="예: R0683" autocomplete="off"
-            style="flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px;font-family:'SF Mono',Monaco,monospace;text-transform:uppercase">
-          <button id="r-ticket-lookup-btn" style="background:#3b82f6;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">조회</button>
-        </div>
-        <div id="r-ticket-lookup-msg" style="font-size:10.5px;margin-top:6px;min-height:14px"></div>
-      </div>
-      <div id="rental-quote-body">
-        <div style="text-align:center;padding:14px 8px;color:#94a3b8;font-size:11px">카테고리·브랜드·모델·옵션을 선택하거나 R 티켓번호로 조회하세요</div>
-      </div>
-    </div>
   </aside>
 
 </div>
@@ -4021,21 +3716,22 @@ document.addEventListener('click', function(e) {
 // ╚════════════════════════════════════════════════════╝
 
 var SCRIPT_KEY = 'tm-scripts-v1';
-var SCRIPT_KEY_RENTAL = 'tm-scripts-rental-v1';
+var SCRIPT_KEY_USIM = 'tm-scripts-usim-v1';
 var TM_AUTH_TOKEN_KEY = 'incentive-auth-token-v1';
 var SCRIPT_DEFAULTS = [
   { title: '인사 & 본인확인', text: '안녕하세요, 리턴AI 상담사 ___입니다. 인터넷·TV 상담 도와드리겠습니다. 본인이신가요?' },
   { title: '현재 상품 확인', text: '현재 어느 통신사 사용 중이신가요? 약정 만료일은 언제인가요? 가족 결합 여부도 확인.' },
   { title: '견적 안내', text: '오른쪽 견적표를 보고 안내드립니다. 사은품 · 설치비 함께 설명. 결합 할인 강조.' },
+  { title: '유심 업셀', text: '휴대폰도 같은 통신사로 옮기시면 유심 개통 사은품이 추가로 나갑니다. 기기는 그대로 쓰시고 유심만 바꾸는 겁니다.' },
   { title: '클로징', text: '신청 의사 확인 → 설치 일정 협의 → 필요 서류 안내 (신분증·계좌·주소).' }
 ];
-var SCRIPT_DEFAULTS_RENTAL = [
-  { title: '인사 & 본인확인', text: '안녕하세요, 봉이모바일 가전렌탈 상담입니다. 본인이신가요?' },
-  { title: '현재 정수기 확인', text: '현재 정수기 사용 여부·브랜드 확인 (코웨이/SK매직/LG 등) · 약정 만기일 청취 → 봉이 환수 가능 여부' },
-  { title: '니즈 파악', text: '가족 인원·식수량 → 모델 추천 (직수/냉온/정수). 인터넷·휴대폰 결합 가능 여부 (LG U+ 결합 시 무상 3개월).' },
-  { title: '견적 안내', text: '월 렌탈료 · 결합 혜택 · 봉이지원금(현금 사은품) 강조. 약정 기간 · 점검주기 · 소유권 이전 시점 안내.' },
-  { title: '결합 시너지', text: '인터넷·TV [1차] 직후 정수기 [2차] 권유 시 성공률 高. 결합 가족할인으로 봉이지원금 추가.' },
-  { title: '클로징', text: '설치 일정 협의 → 신청서 작성 → 마감. 필요 서류 안내.' }
+var SCRIPT_DEFAULTS_USIM = [
+  { title: '인사 & 본인확인', text: '안녕하세요, 봉이모바일입니다. 유심 이동 상담 도와드리겠습니다. 본인이신가요?' },
+  { title: '현재 통신사 확인', text: '★필수★ 지금 쓰시는 통신사가 어디신가요? — 옮기려는 통신사를 이미 쓰고 계시면 대상이 아닙니다. 번호이동만 가능합니다.' },
+  { title: '단말 확인', text: '지금 쓰시는 휴대폰 그대로 쓰시면 됩니다. 유심만 바꾸는 거라 기기값·할부금이 없습니다.' },
+  { title: '요금제 안내', text: '월정액에서 선택약정 25%를 빼고 안내. 개통 사은품(페이백) 금액 강조.' },
+  { title: '인터넷 결합 제안', text: '인터넷·TV를 같이 하시면 사은품이 따로 또 나갑니다. 두 사은품은 별개로 지급됩니다.' },
+  { title: '클로징', text: '개통 일정 협의 → 필요 서류 안내 (신분증·계좌). 유지 기간 안내 필수.' }
 ];
 
 function tmGetAuthToken() {
@@ -5628,1641 +5324,27 @@ setTimeout(() => {
       tabs.forEach(x => x.classList.remove('active'));
       t.classList.add('active');
       const cat = t.dataset.cat;
-      document.body.classList.toggle('cat-rental', cat === 'rental');
       document.body.classList.toggle('cat-usim', cat === 'usim');
       document.body.classList.toggle('cat-it', cat === 'it');
       // 카테고리별 스크립트 라벨 + 데이터 전환
       const lbl = document.getElementById('tm-script-cat-label');
-      if (lbl) lbl.textContent = cat === 'rental' ? '· 🏠 가전렌탈(정수기)'
-                              : cat === 'usim'   ? '· 📲 유심 단독'
+      if (lbl) lbl.textContent = cat === 'usim'   ? '· 📲 유심 단독'
                               : '· 📡 인터넷+TV';
-      if (cat === 'rental') {
-        rentalInit();
-        renderRentalScripts();
-      }
       if (cat === 'usim') usimSoloInit();
     });
   });
 
   // 가전렌탈 스크립트 렌더 (localStorage 별도 저장)
-  function renderRentalScripts() {
-    const wrap = document.getElementById('tm-scripts-rental');
-    if (!wrap || wrap._rendered) return;
-    let data;
-    try {
-      const raw = localStorage.getItem('tm-scripts-rental-v1');
-      data = raw ? JSON.parse(raw) : (window.SCRIPT_DEFAULTS_RENTAL || []);
-    } catch(e) { data = window.SCRIPT_DEFAULTS_RENTAL || []; }
-    wrap.innerHTML = data.map((s, i) => `
-      <div class="tm-script-step" data-idx="${i}" style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:8px 10px;margin-bottom:6px">
-        <div style="font-size:11px;font-weight:800;color:#3617ce;margin-bottom:4px">
-          <span style="display:inline-block;width:18px;height:18px;background:#3617ce;color:#fff;font-size:9.5px;border-radius:50%;text-align:center;line-height:18px;margin-right:5px">${i+1}</span>
-          <span contenteditable="true" class="rs-title" style="outline:none">${s.title}</span>
-        </div>
-        <div contenteditable="true" class="rs-text" style="font-size:10.5px;color:#475569;line-height:1.55;outline:none;padding-left:4px">${s.text}</div>
-      </div>`).join('');
-    // 편집 → localStorage 저장
-    let saveT;
-    wrap.addEventListener('input', () => {
-      clearTimeout(saveT);
-      saveT = setTimeout(() => {
-        const arr = [...wrap.querySelectorAll('.tm-script-step')].map(el => ({
-          title: el.querySelector('.rs-title').textContent.trim(),
-          text: el.querySelector('.rs-text').textContent.trim(),
-        }));
-        localStorage.setItem('tm-scripts-rental-v1', JSON.stringify(arr));
-      }, 400);
-    });
-    wrap._rendered = true;
-  }
-
-  // ─── 가전렌탈 API 연동 ───
-  const API = '/api/rental';
-  let _categories = [], _products = [], _options = [], _policy = null, _selectedOpt = null, _brandPolicies = [];
-  let _initOnce = false;
-  // 상품 추천 상태
-  let _allProducts = [];
-  let _rrFilter = { category: 'all', brand: 'all', premiumOnly: false, q: '' };
-  let _rrCriteria = { usage: '', people: '', features: [] }; // 추천 조건
-  // 다채널 추천 — 고객 유형 프로파일 (customer/gift). localStorage 박제. default=customer
-  let _rrProfile = (function(){
-    try { const v = localStorage.getItem('rental_recommend_profile'); return (v==='customer'||v==='gift') ? v : 'customer'; }
-    catch(e){ return 'customer'; }
-  })();
-  const _channelCache = new Map();   // product_id → channels payload (lazy load)
-
-  // ─── 키워드 패턴 (모델명/제품명 → 기능 추출) ───
-  const KW = {
-    ice:      /얼음|아이스/i,
-    coffee:   /커피|에스프레소/i,
-    hot:      /온수|냉온/i,
-    cold:     /냉수|냉정|냉온/i,
-    large:    /대용량|그랜드|대형|업소|상업|사업/i,
-    small:    /초소형|미니|슬림|소형|콤팩트/i,
-    business: /언더싱크|업소|사업|상업/i,
-  };
-  function detectFeat(p) {
-    // ① DB 메타 우선 (어드민/크롤러가 채운 값)
-    if (Array.isArray(p.feature_tags) && p.feature_tags.length > 0) {
-      const tags = p.feature_tags;
-      return {
-        ice:      tags.includes('ice'),
-        coffee:   tags.includes('coffee'),
-        hot:      tags.includes('hot'),
-        cold:     tags.includes('cold'),
-        large:    p.recommended_capacity === '5+',
-        small:    p.recommended_capacity === '1-2',
-        business: Array.isArray(p.recommended_usage) && p.recommended_usage.includes('business'),
-        _source:  'db',
-      };
-    }
-    // ② 키워드 fallback (이름·모델에서 추론)
-    const txt = (p.name || '') + ' ' + (p.model || '');
-    return {
-      ice:      KW.ice.test(txt),
-      coffee:   KW.coffee.test(txt),
-      hot:      KW.hot.test(txt),
-      cold:     KW.cold.test(txt),
-      large:    KW.large.test(txt),
-      small:    KW.small.test(txt),
-      business: KW.business.test(txt),
-      _source:  'keyword',
-    };
-  }
-  // 조건 충족 여부 — 하나라도 안 맞으면 false
-  function passCriteria(p, crit) {
-    const f = detectFeat(p);
-    // 사용 환경
-    if (crit.usage === 'home' && f.business) return false;
-    if (crit.usage === 'business' && !(f.business || f.large)) return false;
-    // 인원수
-    if (crit.people === '1-2' && f.large) return false;
-    if (crit.people === '5+' && !f.large) return false;
-    if (crit.people === '3-4' && (f.large || f.small)) return false;
-    // 정수기 특수 기능 — 모든 체크 항목 충족 필수
-    for (const w of (crit.features || [])) {
-      if (!f[w]) return false;
-    }
-    return true;
-  }
-  // 매칭 이유 태그 (시각화)
-  function rrReasons(p, crit) {
-    const f = detectFeat(p);
-    const tags = [];
-    (crit.features || []).forEach(w => {
-      if (w === 'ice' && f.ice) tags.push('🧊 얼음');
-      if (w === 'coffee' && f.coffee) tags.push('☕ 커피');
-      if (w === 'hot' && f.hot) tags.push('🔥 온수');
-      if (w === 'cold' && f.cold) tags.push('❄️ 냉수');
-    });
-    if (crit.people === '1-2' && f.small) tags.push('🧍 1~2인');
-    if (crit.people === '5+' && f.large) tags.push('👨‍👩‍👧‍👦 대가족');
-    if (crit.usage === 'business' && (f.business || f.large)) tags.push('🏢 사업장');
-    // 우수 태그 제거 (옵션별 자동 분류)
-    return tags;
-  }
-
-  async function rentalInit() {
-    if (_initOnce) return;
-    _initOnce = true;
-    try {
-      const [cats, pol, bps] = await Promise.all([
-        fetch(API + '/categories').then(r => r.json()),
-        fetch(API + '/policy').then(r => r.json()),
-        fetch(API + '/brand-policies').then(r => r.json()),
-      ]);
-      _categories = cats.categories || [];
-      _policy = pol.policy;
-      _brandPolicies = bps.brand_policies || [];
-      // 🔔 가전 정책 변경 즉시 수신 → _policy 재 fetch + 견적 재계산
-      try {
-        const _bcRt = new BroadcastChannel('rental-policy');
-        _bcRt.onmessage = async () => {
-          const fresh = await fetch(API + '/policy').then(r => r.json()).catch(() => null);
-          if (fresh) { _policy = fresh.policy; if (_selectedOpt) renderQuote(); console.log('[tm-counselor] rental-policy 갱신'); }
-        };
-        const _bcIt = new BroadcastChannel('incentive-policy');
-        _bcIt.onmessage = () => { console.log('[tm-counselor] incentive-policy 변경 — 견적 영향 시 새로고침'); };
-      } catch (e) {}
-      const catSel = document.getElementById('rental-category');
-      catSel.innerHTML = _categories.map(c => `<option value="${c.slug}" data-id="${c.id}">${(c.metadata?.icon || '')} ${c.name}</option>`).join('');
-      catSel.addEventListener('change', loadProducts);
-      document.getElementById('rental-brand').addEventListener('change', () => { showBrandPolicy(); filterModels(); });
-      document.getElementById('rental-company')?.addEventListener('change', filterModels);
-      document.getElementById('rental-model').addEventListener('change', loadOptions);
-      document.getElementById('rental-months').addEventListener('change', selectOpt);
-      document.getElementById('rental-care').addEventListener('change', selectOpt);
-      document.getElementById('rental-promo').addEventListener('change', () => { if (_selectedOpt) renderQuote(); });
-      document.getElementById('rental-half-months').addEventListener('change', () => { if (_selectedOpt) renderQuote(); });
-      document.getElementById('rental-ownership-months').addEventListener('change', () => { if (_selectedOpt) renderQuote(); });
-      document.getElementById('rental-inspection-cycle').addEventListener('change', () => { if (_selectedOpt) renderQuote(); });
-      await loadProducts();
-      // 상품 추천 카드 초기화 (비동기 — 견적 흐름 차단 X)
-      loadRecommendations();
-    } catch (e) {
-      console.error('rental init', e);
-      document.getElementById('rental-quote-body').innerHTML = `<div style="color:#ef4444;padding:10px">API 오류: ${e.message}</div>`;
-    }
-  }
-
-  // ─── 🌟 상품 추천 (좌측 사이드) ───
-  async function loadRecommendations() {
-    const listEl = document.getElementById('rr-list');
-    if (!listEl) return;
-    try {
-      // 추천 데이터 sessionStorage 캐시 (5분 TTL)
-      let r;
-      const cacheKey = 'rental-recommend-cache-v1';
-      const cached = (() => {
-        try {
-          const raw = sessionStorage.getItem(cacheKey);
-          if (!raw) return null;
-          const obj = JSON.parse(raw);
-          if (Date.now() - obj.t > 5 * 60 * 1000) return null;
-          return obj.r;
-        } catch { return null; }
-      })();
-      if (cached) {
-        r = cached;
-      } else {
-        try {
-          r = await fetch(API + '/products/for-recommend').then(r => r.json());
-          if (r.error) throw new Error(r.error);
-        } catch {
-          r = await fetch(API + '/products?active_only=1').then(r => r.json());
-        }
-        try { sessionStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), r })); } catch {}
-      }
-      _allProducts = (r.products || []).filter(p => (p.option_count || 0) > 0);
-      renderRecCategoryChips();
-      renderRecBrandChips();
-      renderRecList();
-      bindRecEvents();
-    } catch (e) {
-      listEl.innerHTML = `<div class="rr-empty">❌ ${e.message}</div>`;
-    }
-  }
-  function renderRecCategoryChips() {
-    const el = document.getElementById('rr-cat-chips');
-    const cats = _categories.filter(c => _allProducts.some(p => p.category?.slug === c.slug));
-    el.innerHTML = `<div class="rr-chip ${_rrFilter.category==='all'?'active':''}" data-cat="all">전체</div>`
-      + cats.map(c => `<div class="rr-chip ${_rrFilter.category===c.slug?'active':''}" data-cat="${c.slug}">${c.metadata?.icon||''} ${c.name}</div>`).join('');
-  }
-  function renderRecBrandChips() {
-    const el = document.getElementById('rr-brand-chips');
-    const filteredByCat = _rrFilter.category==='all' ? _allProducts : _allProducts.filter(p => p.category?.slug === _rrFilter.category);
-    const brands = [...new Set(filteredByCat.map(p => p.brand))].sort();
-    el.innerHTML = `<div class="rr-chip ${_rrFilter.brand==='all'?'active':''}" data-brand="all">전체</div>`
-      + brands.map(b => `<div class="rr-chip ${_rrFilter.brand===b?'active':''}" data-brand="${b}">${b}</div>`).join('');
-  }
-  // ─── 현재 후보 (criteria 적용 전) ───
-  function candidatePool() {
-    let arr = _allProducts.slice();
-    if (_rrFilter.category !== 'all') arr = arr.filter(p => p.category?.slug === _rrFilter.category);
-    if (_rrFilter.brand !== 'all') arr = arr.filter(p => p.brand === _rrFilter.brand);
-    // 우수 필터 비활성 (옵션별 자동) — premiumOnly 무시
-    // if (_rrFilter.premiumOnly) arr = arr.filter(p => p.is_premium);
-    if (_rrFilter.q) {
-      const q = _rrFilter.q.toLowerCase();
-      arr = arr.filter(p => (p.name||'').toLowerCase().includes(q) || (p.model||'').toLowerCase().includes(q) || (p.brand||'').toLowerCase().includes(q));
-    }
-    return arr;
-  }
-  // ─── 조건 옵션 동적 활성/비활성 + 카운트 ───
-  function refreshCriteriaUI() {
-    const pool = candidatePool();
-    // 각 조건별 (그 조건만 충족하면 몇 건인지) 카운트
-    function countWith(predicate) { return pool.filter(predicate).length; }
-    const f = (p) => detectFeat(p);
-    // 사용 환경
-    const homeCnt = countWith(p => !f(p).business);
-    const bizCnt = countWith(p => f(p).business || f(p).large);
-    // 인원수
-    const p12 = countWith(p => f(p).small);
-    const p34 = countWith(p => !f(p).small && !f(p).large);
-    const p5  = countWith(p => f(p).large);
-    // 정수기 기능 — 정수기 후보 한정
-    const wp = pool.filter(p => p.category?.slug === 'water-purifier');
-    const iceCnt = wp.filter(p => f(p).ice).length;
-    const coffeeCnt = wp.filter(p => f(p).coffee).length;
-    const hotCnt = wp.filter(p => f(p).hot).length;
-    const coldCnt = wp.filter(p => f(p).cold).length;
-
-    // 사용 환경 라디오 토글
-    function setRadio(val, cnt, lblBase) {
-      const inp = document.querySelector(`input[name="rr-usage"][value="${val}"]`);
-      if (!inp) return;
-      const lbl = inp.parentElement;
-      inp.disabled = cnt === 0;
-      lbl.style.opacity = cnt === 0 ? 0.35 : 1;
-      lbl.style.pointerEvents = cnt === 0 ? 'none' : '';
-      lbl.title = cnt === 0 ? '매칭 상품 없음' : `${cnt}건`;
-      // 텍스트 갱신
-      const base = lblBase;
-      lbl.innerHTML = `<input type="radio" name="rr-usage" value="${val}" ${inp.checked?'checked':''} ${inp.disabled?'disabled':''}>${base}${cnt>0?` (${cnt})`:''}`;
-    }
-    setRadio('', pool.length, '상관없음');
-    setRadio('home', homeCnt, '🏠 가정용');
-    setRadio('business', bizCnt, '🏢 사업장');
-    // 재바인딩
-    document.querySelectorAll('input[name="rr-usage"]').forEach(r => {
-      r.addEventListener('change', onCritChange);
-    });
-
-    // 인원수 select
-    const peopleSel = document.getElementById('rr-people');
-    if (peopleSel) {
-      const cur = peopleSel.value;
-      peopleSel.innerHTML = `
-        <option value="" ${cur===''?'selected':''}>상관없음 (${pool.length})</option>
-        <option value="1-2" ${cur==='1-2'?'selected':''} ${p12===0?'disabled':''}>1~2인 (${p12})</option>
-        <option value="3-4" ${cur==='3-4'?'selected':''} ${p34===0?'disabled':''}>3~4인 (${p34})</option>
-        <option value="5+"  ${cur==='5+' ?'selected':''} ${p5===0?'disabled':''}>5인 이상 / 대가족 / 사업장 (${p5})</option>
-      `;
-    }
-
-    // 정수기 기능 행 — 정수기 카테고리(또는 전체) + 정수기 후보 1+ 일 때만 표시
-    const featRow = document.getElementById('rr-feat-row');
-    if (featRow) {
-      const showFeat = wp.length > 0 && (_rrFilter.category === 'water-purifier' || _rrFilter.category === 'all');
-      featRow.style.display = showFeat ? 'flex' : 'none';
-      if (showFeat) {
-        const counts = { ice: iceCnt, coffee: coffeeCnt, hot: hotCnt, cold: coldCnt };
-        featRow.querySelectorAll('input.rr-feat').forEach(cb => {
-          const c = counts[cb.value] || 0;
-          cb.disabled = c === 0;
-          const lbl = cb.parentElement;
-          lbl.style.opacity = c === 0 ? 0.35 : 1;
-          lbl.title = c === 0 ? '매칭 상품 없음' : `${c}건`;
-          // 카운트 노출 — 텍스트만 갱신
-          const txtMap = { ice:'🧊 얼음', coffee:'☕ 커피', hot:'🔥 온수', cold:'❄️ 냉수' };
-          lbl.innerHTML = `<input type="checkbox" class="rr-feat" value="${cb.value}" ${cb.checked?'checked':''} ${cb.disabled?'disabled':''}>${txtMap[cb.value]} (${c})`;
-        });
-        featRow.querySelectorAll('input.rr-feat').forEach(cb => cb.addEventListener('change', onCritChange));
-      } else {
-        // 정수기 아닌 카테고리 → features 초기화
-        _rrCriteria.features = [];
-      }
-    }
-  }
-  function onCritChange() {
-    _rrCriteria.usage = (document.querySelector('input[name="rr-usage"]:checked')||{}).value || '';
-    _rrCriteria.people = document.getElementById('rr-people').value || '';
-    _rrCriteria.features = Array.from(document.querySelectorAll('input.rr-feat:checked')).map(c => c.value);
-    refreshCriteriaUI();
-    renderRecList();
-  }
-
-  function renderRecList() {
-    const listEl = document.getElementById('rr-list');
-    const statsEl = document.getElementById('rr-stats');
-    let arr = candidatePool();
-
-    // 2) 상담 조건 (가정/사업·인원·정수기 기능) — hard filter
-    const hasCriteria = _rrCriteria.usage || _rrCriteria.people || (_rrCriteria.features||[]).length;
-    if (hasCriteria) arr = arr.filter(p => passCriteria(p, _rrCriteria));
-
-    // 3) 정렬 — 고객 유형 프로파일 반영
-    //    💰 customer: 월납 최저 우선 (monthly_fee_min ASC)
-    //    🎁 gift: 사은품·마진 여력 (rebate_max DESC) — default 유사
-    //    S Tier 가능 product 항상 상단 우선 (rebate_max ≥ 261k)
-    const sThr = 261000;
-    arr.sort((a,b) => {
-      const aS = (Number(a.rebate_max) || 0) >= sThr ? 1 : 0;
-      const bS = (Number(b.rebate_max) || 0) >= sThr ? 1 : 0;
-      if (bS !== aS) return bS - aS;
-      if (_rrProfile === 'customer') {
-        const af = Number(a.monthly_fee_min || Infinity);
-        const bf = Number(b.monthly_fee_min || Infinity);
-        if (af !== bf) return af - bf;   // 월납 적은 순
-      } else {
-        const ma = Number(a.rebate_max || 0);
-        const mb = Number(b.rebate_max || 0);
-        if (mb !== ma) return mb - ma;   // 리베/마진 큰 순 (gift = 마진 여력)
-      }
-      return (a.display_rank || 999) - (b.display_rank || 999);
-    });
-
-    statsEl.textContent = `총 ${arr.length}건`
-      + (hasCriteria ? ' · 조건 매칭' : '')
-      + ' · S Tier(우수) 우선 · 마진순';
-
-    if (!arr.length) { listEl.innerHTML = `<div class="rr-empty">조건에 맞는 상품 없음<br><span style="font-size:10px">↺ 조건 초기화 시도</span></div>`; return; }
-
-    const capMap = { '1-2': '🧍 1~2인', '3-4': '👨‍👩‍👧 3~4인', '5+': '👨‍👩‍👧‍👦 5인+' };
-    const installMap = { undersink: '🧷 언더싱크', builtin: '🏗️ 빌트인', desktop: '🪑 탁상', standing: '🧊 스탠드' };
-    const filterMap = { RO: '💧 RO', nano: '🔬 나노', UF: '🧪 UF', direct: '🚰 직수' };
-    const featMap = { ice:'🧊 얼음', coffee:'☕ 커피', hot:'🔥 온수', cold:'❄️ 냉수', uv:'🛡️ UV', smart:'🤖 스마트', ro:'💧 RO', direct:'🚰 직수' };
-
-    listEl.innerHTML = arr.slice(0, 60).map((p, idx) => {
-      const months = Array.isArray(p.months_available) && p.months_available.length ? `${Math.min(...p.months_available)}~${Math.max(...p.months_available)}M` : '';
-      const care = Array.isArray(p.care_services) ? p.care_services.join('·') : '';
-      const fee = p.monthly_fee_min ? `${Math.round(p.monthly_fee_min/100)/100}만~${Math.round((p.monthly_fee_max||p.monthly_fee_min)/100)/100}만원/월` : '';
-      const reasons = hasCriteria ? rrReasons(p, _rrCriteria) : [];
-      const isTop = hasCriteria && idx === 0; // 마진 1위 강조
-      const reasonHtml = reasons.length ? `<div class="match-tags">${reasons.map(r => `<span class="mt">${r}</span>`).join('')}</div>` : '';
-      // DB 메타 칩 (권장 인원·설치·필터·기능) — 2026-06-03 신규 schema 매핑 우회: 자연어 그대로 chip
-      const metaChips = [];
-      if (p.recommended_capacity) metaChips.push(`<span class="meta-chip cap" title="추천 용량/규격">👤 ${escapeHtml(p.recommended_capacity)}</span>`);
-      (p.feature_tags || []).slice(0, 6).forEach(t => metaChips.push(`<span class="meta-chip feat" title="강점">✨ ${escapeHtml(t)}</span>`));
-      (p.recommended_usage || []).slice(0, 3).forEach(u => metaChips.push(`<span class="meta-chip usage" title="추천 사용자">🎯 ${escapeHtml(u)}</span>`));
-      const metaHtml = metaChips.length ? `<div class="meta-chips">${metaChips.join('')}</div>` : '';
-      const dataSrc = p.meta_manual_override ? '✓' : p.auto_filled_at ? '🤖' : '';
-      const tierBadge = p.tier ? `<span class="rr-tier-badge rr-tier-${p.tier}">${p.tier}</span>` : '';
-      // 가전 그룹 — 렌탈사(채널) 뱃지. 같은 모델 N채널 식별.
-      const isGajeon = p.category?.product_group === '가전';
-      const coBadge = (isGajeon && p.company?.name)
-        ? `<span style="background:#0891b2;color:#fff;font-size:8.5px;padding:1px 4px;border-radius:3px;margin-left:3px;font-weight:700" title="렌탈사 채널">🏢 ${escapeHtml(p.company.name)}</span>`
-        : '';
-      return `<div class="rr-card ${isTop?'top-match':''}" data-id="${p.id}" data-cat="${p.category?.slug||''}" data-brand="${p.brand||''}">
-        <div class="rr-row1">
-          <span class="brand">${isTop ? '🏆 ' : ''}${p.brand||''} ${tierBadge}${coBadge} ${dataSrc?`<span class="data-src" title="${p.meta_manual_override?'어드민 확정':'자동 추출'}">${dataSrc}</span>`:''}</span>
-<!-- 우수 배지 제거: 옵션별 자동 분류이므로 product 단위 표시 무의미 -->
-        </div>
-        <div class="model">${escapeHtml(p.name||'')}</div>
-        <div class="model-name">${escapeHtml(p.model||'')} · ${care}</div>
-        <div class="rr-row3">
-          ${months ? `<span class="tag">${months}</span>` : ''}
-          ${fee ? `<span>${fee}</span>` : ''}
-        </div>
-        ${metaHtml}
-        ${reasonHtml}
-        ${isGajeon ? `<div class="rr-channels" data-pid="${p.id}"><span class="rr-ch-toggle" data-pid="${p.id}">🔀 다채널 비교 ▾</span><div class="rr-ch-list" data-pid="${p.id}"></div></div>` : ''}
-      </div>`;
-    }).join('');
-
-    // 카드 클릭 — 견적 폼 자동 채움 (단 다채널 토글 클릭은 제외)
-    listEl.querySelectorAll('.rr-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.rr-channels')) return;
-        selectRecCard(card.dataset.id, card.dataset.cat, card.dataset.brand);
-      });
-    });
-    // 다채널 비교 토글 — lazy load
-    listEl.querySelectorAll('.rr-ch-toggle').forEach(t => {
-      t.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const pid = t.dataset.pid;
-        const list = listEl.querySelector(`.rr-ch-list[data-pid="${pid}"]`);
-        if (!list) return;
-        const open = list.classList.toggle('open');
-        t.textContent = open ? '🔀 다채널 비교 ▴' : '🔀 다채널 비교 ▾';
-        if (!open) return;
-        if (list.dataset.loaded === '1') { renderChannelList(list, pid); return; }
-        list.innerHTML = '<div style="font-size:9px;color:#94a3b8">⏳ 채널 조회…</div>';
-        try {
-          const r = await fetch(`${API}/products/${pid}/channels?profile=${_rrProfile}`).then(r => r.json());
-          if (r.error) throw new Error(r.error);
-          _channelCache.set(String(pid), r);
-          list.dataset.loaded = '1';
-          renderChannelList(list, pid);
-        } catch (err) {
-          list.innerHTML = `<div style="font-size:9px;color:#ef4444">❌ ${err.message}</div>`;
-        }
-      });
-    });
-  }
-  // 다채널 목록 렌더링 — 프로파일 점수로 정렬, 메달·태그 표시
-  function renderChannelList(listEl, pid) {
-    const r = _channelCache.get(String(pid));
-    if (!r || !r.channels) { listEl.innerHTML = '<div style="font-size:9px;color:#94a3b8">채널 없음</div>'; return; }
-    const profile = _rrProfile;
-    const sorted = r.channels.slice().sort((a, b) => (b.scores?.by_profile?.[profile] || 0) - (a.scores?.by_profile?.[profile] || 0));
-    if (sorted.length <= 1) { listEl.innerHTML = '<div style="font-size:9px;color:#94a3b8">단일 채널</div>'; return; }
-    const medals = ['🥇','🥈','🥉'];
-    listEl.innerHTML = sorted.map((c, i) => {
-      const m = medals[i] || ' ';
-      const sc = (c.scores?.by_profile?.[profile] || 0).toFixed(2);
-      const tags = (c.tags || []).map(t => `<span class="tg">${t}</span>`).join('');
-      const fee = c.best_option?.monthly_fee ? c.best_option.monthly_fee.toLocaleString() + '원' : '-';
-      const reb = c.best_option?.rebate ? Math.round(c.best_option.rebate/1000) + 'k' : '-';
-      // 채널 행 클릭 → 그 채널 product 로 견적 변경
-      const p = _allProducts.find(x => String(x.id) === String(c.product_id));
-      const catSlug = p?.category?.slug || '';
-      const brand = p?.brand || '';
-      return `<div class="rr-ch-row" data-pid="${c.product_id}" data-cat="${catSlug}" data-brand="${escapeHtml(brand)}" style="cursor:pointer" title="클릭 → 견적 폼에 이 채널 반영">
-        <span class="medal">${m}</span>
-        <span class="co">${escapeHtml(c.company?.name||'?')}</span>
-        <span class="sc">${sc}</span>
-        <span class="meta"><span>월 <b>${fee}</b></span><span>·</span><span>리베 <b>${reb}</b></span>${tags ? ' '+tags : ''}</span>
-      </div>`;
-    }).join('');
-    // 채널 행 클릭 → 견적 변경
-    listEl.querySelectorAll('.rr-ch-row').forEach(row => {
-      row.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const pid = row.dataset.pid;
-        const cat = row.dataset.cat;
-        const brand = row.dataset.brand;
-        if (pid) selectRecCard(pid, cat, brand);
-      });
-      row.addEventListener('mouseenter', () => row.style.background = 'rgba(8,145,178,0.15)');
-      row.addEventListener('mouseleave', () => row.style.background = '');
-    });
-  }
-  // 프로파일 토글 — 가전 그룹 카테고리에서만 활성, 변경 시 메인 추천 + 펼친 채널 모두 재정렬
-  function setRecProfile(profile) {
-    if (!['customer','gift'].includes(profile)) return;
-    _rrProfile = profile;
-    try { localStorage.setItem('rental_recommend_profile', profile); } catch(e) {}
-    document.querySelectorAll('.rr-profile-chip').forEach(c => c.classList.toggle('active', c.dataset.profile === profile));
-    // 메인 추천 카드 재정렬 (프로파일별 우선순위)
-    renderRecList();
-    // 펼친 채널 목록 재렌더 (재호출 X, by_profile 점수로 정렬)
-    document.querySelectorAll('.rr-ch-list.open').forEach(list => renderChannelList(list, list.dataset.pid));
-  }
-  function updateProfileBarVisibility() {
-    const bar = document.getElementById('rr-profile-bar');
-    if (!bar) return;
-    // 2026-06-04 fix: 모든 카테고리에서 고객유형 chip 노출
-    // (월납 최소·사은품 최대는 정수기·공청·비데·매트리스에도 의미 있음)
-    bar.style.display = '';
-  }
+  // 공용 — HTML 이스케이프
   function escapeHtml(s) {
     return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   }
-  function bindRecEvents() {
-    if (window._rrBound) return; window._rrBound = true;
-    // 프로파일 토글 (margin/customer/gift) — 저장값 초기 active 적용
-    document.querySelectorAll('.rr-profile-chip').forEach(c =>
-      c.classList.toggle('active', c.dataset.profile === _rrProfile));
-    document.getElementById('rr-profile-bar')?.addEventListener('click', (e) => {
-      const chip = e.target.closest('.rr-profile-chip'); if (!chip) return;
-      setRecProfile(chip.dataset.profile);
-    });
-    updateProfileBarVisibility();
-    document.getElementById('rr-cat-chips').addEventListener('click', (e) => {
-      const chip = e.target.closest('.rr-chip'); if (!chip) return;
-      _rrFilter.category = chip.dataset.cat;
-      _rrFilter.brand = 'all';
-      renderRecCategoryChips(); renderRecBrandChips(); renderRecList();
-      updateProfileBarVisibility();
-    });
-    document.getElementById('rr-brand-chips').addEventListener('click', (e) => {
-      const chip = e.target.closest('.rr-chip'); if (!chip) return;
-      _rrFilter.brand = chip.dataset.brand;
-      renderRecBrandChips(); renderRecList();
-    });
-    // rr-premium-only 체크박스 제거됨 (옵션별 자동 분류) — null 체크
-    document.getElementById('rr-premium-only')?.addEventListener('change', (e) => {
-      _rrFilter.premiumOnly = e.target.checked; renderRecList();
-    });
-    document.getElementById('rr-search').addEventListener('input', (e) => {
-      _rrFilter.q = e.target.value.trim(); renderRecList();
-    });
-    document.getElementById('rr-refresh').addEventListener('click', () => { _allProducts = []; loadRecommendations(); });
-  }
-  async function selectRecCard(productId, catSlug, brand) {
-    // 가전렌탈 탭 아니면 활성화
-    if (!document.body.classList.contains('cat-rental')) {
-      const tab = document.querySelector('.tm-cat-tabs .tab[data-cat="rental"]');
-      if (tab) tab.click();
-    }
-    // 카테고리 변경 → loadProducts() 트리거
-    const catSel = document.getElementById('rental-category');
-    if (catSel.value !== catSlug) {
-      catSel.value = catSlug;
-      await loadProducts();
-    }
-    // 가전 그룹 — 그 product 의 company_id 로 렌탈사 select 자동 지정
-    // (다채널 비교 행 클릭 시 KT가전구독·LG헬로비전 등 그 채널로 정확 매칭)
-    const targetProd = (_allProducts || []).find(p => String(p.id) === String(productId));
-    const coSel = document.getElementById('rental-company');
-    if (coSel && targetProd?.company_id != null) {
-      const v = String(targetProd.company_id);
-      if (coSel.querySelector(`option[value="${v}"]`) && coSel.value !== v) coSel.value = v;
-    } else if (coSel && coSel.value) {
-      coSel.value = '';   // 정수기 그룹 / 단일 채널이면 초기화
-    }
-    // 브랜드 변경 → filterModels() 트리거
-    const brandSel = document.getElementById('rental-brand');
-    if (brandSel.value !== brand) {
-      brandSel.value = brand;
-      showBrandPolicy();
-      await filterModels();
-    }
-    // 모델 선택
-    const modelSel = document.getElementById('rental-model');
-    if (modelSel.querySelector(`option[value="${productId}"]`)) {
-      modelSel.value = productId;
-      await loadOptions();
-    }
-    // 🏆 추천 카드 클릭 시 rebate 최대 옵션 자동 선택 (마진·페이백 모두 최대)
-    if (Array.isArray(_options) && _options.length > 0) {
-      // 1차: rebate 최대 (회사 매출 + 페이백 + 마진 모두 최대)
-      // 2차: months 최대
-      // 3차: payback 최대 (고객 혜택)
-      // 4차: care '방문' 우선
-      const top = _options.slice().sort((a, b) => {
-        const ra = Number(a.rebate || 0), rb = Number(b.rebate || 0);
-        if (rb !== ra) return rb - ra;
-        const ma = Number(a.months || 0), mb = Number(b.months || 0);
-        if (mb !== ma) return mb - ma;
-        const pa = Number(a.payback || 0), pb = Number(b.payback || 0);
-        if (pb !== pa) return pb - pa;
-        if ((a.care_service === '방문') !== (b.care_service === '방문')) {
-          return a.care_service === '방문' ? -1 : 1;
-        }
-        return 0;
-      })[0];
-      if (top) {
-        const mSel = document.getElementById('rental-months');
-        const cSel = document.getElementById('rental-care');
-        if (mSel && mSel.querySelector(`option[value="${top.months}"]`)) mSel.value = String(top.months);
-        if (cSel && cSel.querySelector(`option[value="${top.care_service}"]`)) cSel.value = top.care_service;
-        await selectOpt();
-      }
-    }
-    // 견적 영역 스크롤
-    const quoteEl = document.getElementById('rental-quote-body');
-    if (quoteEl) quoteEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
 
-  async function loadProducts() {
-    const slug = document.getElementById('rental-category').value;
-    const r = await fetch(`${API}/products?category=${slug}`).then(r => r.json());
-    // 옵션 단가 등록된 모델만 (option_count > 0)
-    _products = (r.products || []).filter(p => (p.option_count || 0) > 0);
-    // 브랜드 추출
-    const brands = [...new Set(_products.map(p => p.brand))].sort();
-    document.getElementById('rental-brand').innerHTML = brands.map(b => `<option value="${b}">${b}</option>`).join('') || '<option value="">상품 없음</option>';
-    document.getElementById('rental-quote-title').textContent = `${_categories.find(c=>c.slug===slug)?.metadata?.icon||''} ${_categories.find(c=>c.slug===slug)?.name||''} 견적 결과`;
-    // 🏢 렌탈사 select — 가전 그룹은 '채널' 선택, 정수기 그룹은 '메이커' 단순 표시(둘 다 노출)
-    const isGajeon = (_categories.find(c => c.slug === slug)?.product_group === '가전');
-    const coWrap = document.getElementById('rental-company-wrap');
-    const coSel = document.getElementById('rental-company');
-    const coLabel = coWrap?.querySelector('label');
-    if (coWrap) coWrap.style.display = '';   // 항상 노출
-    if (coLabel) coLabel.textContent = isGajeon ? '🏢 렌탈사 (채널)' : '🏢 메이커 (렌탈사)';
-    if (coSel) {
-      const cos = _products.map(p => p.company).filter(c => c && c.id);
-      const uniq = [...new Map(cos.map(c => [c.id, c])).values()]
-        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      coSel.innerHTML = '<option value="">전체</option>' +
-        uniq.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    }
-    await filterModels();
-  }
-
-  async function filterModels() {
-    const brand = document.getElementById('rental-brand').value;
-    const companyId = document.getElementById('rental-company')?.value || '';
-    let models = _products.filter(p => p.brand === brand);
-    if (companyId) models = models.filter(p => String(p.company_id) === String(companyId));
-    document.getElementById('rental-model').innerHTML = models.map(m => {
-      const coTag = m.company?.name ? ` [${m.company.name}]` : '';
-      return `<option value="${m.id}">${m.name} · ${m.model}${coTag}</option>`;
-    }).join('') || '<option value="">모델 없음</option>';
-    await loadOptions();
-  }
-
-  function showBrandPolicy() {
-    const brand = document.getElementById('rental-brand').value;
-    const bp = _brandPolicies.find(b => b.brand === brand);
-    const div = document.getElementById('rental-brand-policy');
-    if (!bp || !div) return;
-    div.style.display = 'block';
-    div.innerHTML = `
-      <strong style="color:#fbbf24">📋 ${bp.brand} 정책</strong><br>
-      · <b>결합:</b> ${bp.bundle_condition || '-'}<br>
-      · <b>타사보상:</b> ${bp.otherco_comp || '-'}<br>
-      · <b>반값할인:</b> ${bp.half_discount_policy || '-'}<br>
-      · <b>환수:</b> ${bp.refund_policy || '-'}${bp.notes && bp.notes !== '-' ? `<br>· <b>특이:</b> ${bp.notes}` : ''}`;
-  }
-
-  async function loadOptions() {
-    const pid = document.getElementById('rental-model').value;
-    if (!pid) { _options = []; return; }
-    const r = await fetch(`${API}/products/${pid}/options`).then(r => r.json());
-    _options = r.options || [];
-    // 모델별 가능한 반값/소유권/점검주기 드롭다운 채움
-    const halfPeriods = [...new Set(_options.map(o => o.half_period).filter(v => v != null))].sort((a,b)=>a-b);
-    const ownMonths = [...new Set(_options.map(o => o.ownership_months).filter(v => v != null))].sort((a,b)=>a-b);
-    const cycles = [...new Set(_options.map(o => o.inspection_cycle).filter(v => v != null))].sort((a,b)=>a-b);
-    document.getElementById('rental-half-months').innerHTML = '<option value="">옵션 기본값 사용</option>' + halfPeriods.map(m => `<option value="${m}">${m}개월</option>`).join('');
-    document.getElementById('rental-ownership-months').innerHTML = '<option value="">옵션 기본값 사용</option>' + ownMonths.map(m => `<option value="${m}">${m}개월</option>`).join('');
-    document.getElementById('rental-inspection-cycle').innerHTML = '<option value="">옵션 기본값 사용</option>' + cycles.map(m => `<option value="${m}">${m}개월</option>`).join('');
-    // 모델별 프로모션 동적 드롭다운 채우기
-    const prod = r.product;
-    const promoSel = document.getElementById('rental-promo');
-    const opts = ['<option value="basic">기본 (정상 리베이트)</option>'];
-    if (prod) {
-      // 옵션 리스트의 어떤 옵션이라도 half_fee가 있으면 반값 옵션 추가
-      const hasHalf = _options.some(o => o.half_fee);
-      const hasOtherco = _options.some(o => o.rebate_otherco) || prod.otherco_supported;
-      if (hasHalf) opts.push('<option value="half">반값할인 (rebate_half 적용)</option>');
-      if (hasOtherco) opts.push('<option value="otherco">타사보상 (rebate_otherco 적용)</option>');
-      // promo_tags_list — 모델별 프로모션 조합
-      (prod.promo_tags_list || []).forEach(tag => {
-        opts.push(`<option value="custom:${tag.replace(/"/g,'&quot;')}">${tag}</option>`);
-      });
-    }
-    promoSel.innerHTML = opts.join('');
-    // 약정·케어 추출
-    const months = [...new Set(_options.map(o => o.months))].sort((a,b)=>a-b);
-    const cares = [...new Set(_options.map(o => o.care_service))];
-    document.getElementById('rental-months').innerHTML = months.map(m => `<option value="${m}">${m}개월</option>`).join('');
-    document.getElementById('rental-care').innerHTML = cares.map(c => `<option value="${c}">${c}</option>`).join('');
-    await selectOpt();
-  }
-
-  async function selectOpt() {
-    const m = parseInt(document.getElementById('rental-months').value, 10);
-    const care = document.getElementById('rental-care').value;
-    const halfP = document.getElementById('rental-half-months').value;
-    const cycleP = document.getElementById('rental-inspection-cycle').value;
-    let matches = _options.filter(o => o.months === m && o.care_service === care);
-    if (matches.length === 0) {
-      document.getElementById('rental-quote-body').innerHTML = `<div style="color:#94a3b8;padding:10px;font-size:11px">해당 조합 옵션 없음 (다른 약정·케어 선택)</div>`;
-      _selectedOpt = null;
-      return;
-    }
-    // 점검주기·반값기간 추가 필터 (지정 시)
-    if (cycleP) {
-      const filtered = matches.filter(o => String(o.inspection_cycle) === cycleP);
-      if (filtered.length) matches = filtered;
-    }
-    if (halfP) {
-      const filtered = matches.filter(o => String(o.half_period) === halfP);
-      if (filtered.length) matches = filtered;
-    }
-    _selectedOpt = matches[0];
-    renderQuote();
-  }
-
-  // ── 견적 캐시 + 디바운스 (같은 조합 재호출 방지) ──
-  const _quoteCache = new Map();  // key: option_id|promo|half → response
-  let _renderQuoteTimer = null;
-  let _renderQuoteSeq = 0;
-  function renderQuote() {
-    if (!_selectedOpt) return;
-    clearTimeout(_renderQuoteTimer);
-    const mySeq = ++_renderQuoteSeq;
-    _renderQuoteTimer = setTimeout(() => _renderQuoteImpl(mySeq), 80);
-  }
-  async function _renderQuoteImpl(mySeq) {
-    if (!_selectedOpt) return;
-    const promo_type = document.getElementById('rental-promo').value;
-    const halfMonthsInput = document.getElementById('rental-half-months').value;
-    const body = { option_id: _selectedOpt.id, promo_type };
-    if (halfMonthsInput) body.half_period_override = Number(halfMonthsInput);
-    const cacheKey = `${body.option_id}|${promo_type}|${halfMonthsInput||''}`;
-    let r = _quoteCache.get(cacheKey);
-    if (!r) {
-      r = await fetch(API + '/quote', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      }).then(r => r.json());
-      if (!r.error) _quoteCache.set(cacheKey, r);
-    }
-    // 더 새로운 호출이 있었으면 폐기
-    if (mySeq !== _renderQuoteSeq) return;
-    if (r.error) {
-      document.getElementById('rental-quote-body').innerHTML = `<div style="color:#ef4444;padding:10px">계산 오류: ${r.error}</div>`;
-      return;
-    }
-    const c = r.computed, p = r.product, o = r.option;
-    const fmt = n => n == null ? '-' : Math.round(n).toLocaleString();
-    // Phase B 이후 — Tier는 옵션/상품의 수동 입력값 사용 (computed.tier 제거됨)
-    const rentalTier = (o && o.tier) || (p && p.tier) || null;
-    const tierColor = { S:'#fbbf24', A:'#60a5fa', B:'#94a3b8', C:'#475569' }[rentalTier] || '#475569';
-    // ─── 월별 납부 시뮬 카드 ───
-    const halfMonths = c.half_months || 0;
-    const normalMonths = c.normal_months || 0;
-    const halfTotal = c.half_total || 0;
-    const normalTotal = c.normal_total || 0;
-    const totalPayment = c.total_payment || 0;
-    const netBurden = c.net_customer_burden || 0;
-    const paymentSimHTML = `
-      <div style="background:rgba(34,197,94,0.06);border:1px solid #16a34a;border-radius:6px;padding:8px 10px;margin:6px 0">
-        <div style="font-size:10px;color:#22c55e;font-weight:800;margin-bottom:5px">📅 월별 납부 시뮬 (총 ${o.months}개월)</div>
-        ${halfMonths > 0 ? `<div class="row"><span class="k">반값기간 (${halfMonths}M)</span><span class="v green">${fmt(o.half_fee)} × ${halfMonths}M = ${fmt(halfTotal)}원</span></div>` : ''}
-        ${normalMonths > 0 ? `<div class="row"><span class="k">정상기간 (${normalMonths}M)</span><span class="v">${fmt(o.monthly_fee)} × ${normalMonths}M = ${fmt(normalTotal)}원</span></div>` : ''}
-        <div class="row" style="border-top:1px dashed #475569;padding-top:4px;margin-top:4px"><span class="k" style="font-weight:700">총 납부액</span><span class="v" style="font-weight:800">${fmt(totalPayment)}원</span></div>
-        <div class="row"><span class="k">− 페이백</span><span class="v" style="color:#fbbf24">−${fmt(c.payback)}원</span></div>
-        <div class="row" style="border-top:1px solid #22c55e;padding-top:4px;margin-top:4px"><span class="k" style="color:#22c55e;font-weight:800">👤 실 부담액</span><span class="v" style="color:#22c55e;font-weight:900">${fmt(netBurden)}원</span></div>
-      </div>`;
-
-    // ─── V5 인센티브 미리보기 (통합: 가전 + 인터넷+TV) ───
-    // 누적 데이터 — DB 자동 로드 시도 (1회만), 실패 시 localStorage
-    if (window._incRentalCurrentP == null) {
-      window._incRentalCurrentP = 0;
-      window._incRentalCurrentPrem = 0;
-      window._incRentalCurrentGrade = 'G1';
-      window._incRentalItP = 0;
-      window._incRentalItPrem = 0;
-      window._incRentalRates = { '1': 15000, '2': 22000, '3': 30000 };
-      window._incRentalItRates = { '1': 20000, '2': 30000, '3': 40000 };
-      try {
-        const saved = JSON.parse(localStorage.getItem('rental-incentive-state-v1') || '{}');
-        if (saved.grade) window._incRentalCurrentGrade = saved.grade;
-      } catch(e) {}
-      const _tk = localStorage.getItem('incentive-auth-token-v1');
-      if (_tk && !window._incRentalAutoLoading) {
-        window._incRentalAutoLoading = true;
-        fetch(API + '/agents/me/monthly-stats', { headers: { Authorization: 'Bearer ' + _tk } })
-          .then(r => r.json())
-          .then(d => {
-            if (d && typeof d.p === 'number') {
-              window._incRentalCurrentP = d.p;
-              window._incRentalCurrentPrem = d.premium_count || 0;
-              if (d.grade) window._incRentalCurrentGrade = d.grade;
-              window._incRentalCombinedP = d.combined_p;
-              window._incRentalCombinedPrem = d.combined_premium;
-              window._incRentalItP = d.it_p || 0;
-              window._incRentalItPrem = d.it_premium || 0;
-              window._incRentalRates = d.rental_rates || window._incRentalRates;
-              window._incRentalItRates = d.it_rates || window._incRentalItRates;
-              window._incRentalBonusPer = d.rental_bonus_per || 10000;
-              window._incRentalItBonusPer = d.it_bonus_per || 10000;
-              window._incRentalGradeAuto = true;
-              if (_selectedOpt) renderQuote();
-            }
-          }).catch(()=>{});
-      }
-    }
-    const grade = window._incRentalCurrentGrade || 'G1';
-    const _gradeKey = grade.replace('G', '');
-    // 양쪽 단가
-    const rtRates = window._incRentalRates || ((r.policy && r.policy.grade_rates) || { '1': 15000, '2': 22000, '3': 30000 });
-    const itRates = window._incRentalItRates || { '1': 20000, '2': 30000, '3': 40000 };
-    const rtUnit = Number(rtRates[_gradeKey]) || 15000;
-    const itUnit = Number(itRates[_gradeKey]) || 20000;
-    // 우수 1건당 보너스 (정책별)
-    const rtBonusPer = Number(window._incRentalBonusPer) || 10000;
-    const itBonusPer = Number(window._incRentalItBonusPer) || 10000;
-    // 가전 단독 (이번 견적 추가용)
-    const rtP = Number(window._incRentalCurrentP) || 0;
-    const rtPrem = Number(window._incRentalCurrentPrem) || 0;
-    // 인터넷+TV 누적
-    const itP = Number(window._incRentalItP) || 0;
-    const itPrem = Number(window._incRentalItPrem) || 0;
-    // 통합 인센티브 + 우수 보너스 = 가전 P × 단가 + 가전 우수 × 보너스 + 인터넷 동일
-    const rtIncentive = Math.round(rtP * rtUnit) + (rtPrem * rtBonusPer);
-    const itIncentive = Math.round(itP * itUnit) + (itPrem * itBonusPer);
-    const currentP = rtP + itP;
-    const currentPrem = rtPrem + itPrem;
-    const currentTotal = rtIncentive + itIncentive;
-    // +1건 후 (가전 영업 추가 시): 가전 P 증가 + 우수면 보너스도 추가
-    const newRtP = rtP + Number(c.point_weight);
-    const newRtPrem = rtPrem + (p.is_premium ? 1 : 0);
-    const newP = newRtP + itP;
-    const newPrem = newRtPrem + itPrem;
-    const newRtIncentive = Math.round(newRtP * rtUnit) + (newRtPrem * rtBonusPer);
-    const newTotal = newRtIncentive + itIncentive;
-    const delta = newTotal - currentTotal;
-    // 사용자 표시용 가독성
-    const gradeUnit = rtUnit; // 호환 (하단 표시 코드용)
-    // 🎯 IT/가전 Grade 각자 독립 표시용 (인터넷+TV 미리보기와 동일 패턴)
-    const itGradeNum = (window._incMyState?.settlement?.grade_applied) || (window._incMyState?.settlement?.grade_target) || 1;
-    const rtGradeNum = Number(_gradeKey) || 1;
-    const itGColor = ['', '#6b7280', '#3b82f6', '#dc2626'][itGradeNum] || '#6b7280';
-    const rtGColor = ['', '#6b7280', '#3b82f6', '#dc2626'][rtGradeNum] || '#6b7280';
-    const gradeBadge = (g, c) => `<span style="background:${c};color:#fff;padding:2px 8px;border-radius:4px;font-weight:800;font-size:11px">G${g}</span>`;
-    const incentiveHTML = `
-      <div style="margin-top:12px;background:linear-gradient(135deg,#fef3c7,#fde68a);border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;box-shadow:0 2px 8px rgba(245,158,11,0.15);color:#92400e">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:900;color:#92400e;letter-spacing:0.04em">💰 V5 인센티브 미리보기 (가전렌탈)</div>
-          <button type="button" id="rental-inc-toggle" style="font-size:9.5px;background:#fff;border:1px solid #f59e0b;color:#92400e;padding:2px 8px;border-radius:4px;cursor:pointer;font-weight:700">⚙️ 누적 설정</button>
-        </div>
-        <div id="rental-inc-input" style="display:none;background:rgba(255,255,255,0.6);border-radius:6px;padding:8px 10px;margin-bottom:8px">
-          <div style="font-size:9.5px;color:#78350f;margin-bottom:4px;font-weight:700">📊 이번 달 누적 (수동 입력)</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-            <label style="font-size:10px;color:#78350f">누적 P
-              <input type="number" id="rental-inc-p" min="0" step="0.5" value="${currentP}" style="width:100%;padding:3px 5px;border:1px solid #d97706;border-radius:4px;font-size:11px"></label>
-            <label style="font-size:10px;color:#78350f">우수 건수
-              <input type="number" id="rental-inc-prem" min="0" step="1" value="${currentPrem}" style="width:100%;padding:3px 5px;border:1px solid #d97706;border-radius:4px;font-size:11px"></label>
-            <label style="font-size:10px;color:#78350f">Grade
-              <select id="rental-inc-grade" style="width:100%;padding:3px 5px;border:1px solid #d97706;border-radius:4px;font-size:11px">
-                <option value="G1" ${grade==='G1'?'selected':''}>G1</option>
-                <option value="G2" ${grade==='G2'?'selected':''}>G2</option>
-                <option value="G3" ${grade==='G3'?'selected':''}>G3</option>
-              </select></label>
-          </div>
-          <button type="button" id="rental-inc-save" style="margin-top:6px;width:100%;padding:5px;background:#16a34a;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">✅ 적용</button>
-        </div>
-        <!-- 📊 내 현재 상태 (이번 달) — 인터넷+TV / 가전렌탈 분리 + 통합 -->
-        <div style="background:linear-gradient(135deg,rgba(255,255,255,0.7),rgba(255,255,255,0.5));border:1.5px solid #d97706;border-radius:8px;padding:10px 12px;margin-bottom:8px">
-          <div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:8px;letter-spacing:0.04em">📊 내 현재 상태 (이번 달) · Grade는 IT·가전 각자 독립</div>
-          <!-- 인터넷+TV 행 -->
-          <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px dashed rgba(120,53,15,0.25)">
-            <div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#1d4ed8;display:flex;align-items:center">📡 인터넷+TV</div>
-            <div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">${gradeBadge(itGradeNum, itGColor)}</div></div>
-            <div><div style="font-size:9px;color:#78350f">누적 P</div><div style="font-size:13px;font-weight:900;color:#1e293b">${itP.toFixed(2)}P</div></div>
-            <div><div style="font-size:9px;color:#78350f">우수</div><div style="font-size:13px;font-weight:900;color:#1e293b">${itPrem}건</div></div>
-            <div><div style="font-size:9px;color:#78350f">예상 수령</div><div style="font-size:13px;font-weight:900;color:#1d4ed8">${fmt(itIncentive)}원</div></div>
-          </div>
-          <!-- 가전렌탈 행 -->
-          <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:6px 0;border-bottom:1px solid rgba(120,53,15,0.4)">
-            <div style="text-align:left;padding-left:4px;font-size:10px;font-weight:800;color:#d97706;display:flex;align-items:center">🏠 가전렌탈</div>
-            <div><div style="font-size:9px;color:#78350f">Grade</div><div style="font-size:13px;font-weight:900;color:#1e293b">${gradeBadge(rtGradeNum, rtGColor)}</div></div>
-            <div><div style="font-size:9px;color:#78350f">누적 P</div><div style="font-size:13px;font-weight:900;color:#1e293b">${rtP.toFixed(2)}P</div></div>
-            <div><div style="font-size:9px;color:#78350f">우수</div><div style="font-size:13px;font-weight:900;color:#1e293b">${rtPrem}건</div></div>
-            <div><div style="font-size:9px;color:#78350f">예상 수령</div><div style="font-size:13px;font-weight:900;color:#d97706">${fmt(rtIncentive)}원</div></div>
-          </div>
-          <!-- 통합 합산 행 (Grade는 IT/가전 별도 — 합산 X) -->
-          <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:6px;text-align:center;padding:8px 0 2px;background:rgba(34,197,94,0.06);margin:4px -4px 0;border-radius:4px">
-            <div style="text-align:left;padding-left:4px;font-size:10.5px;font-weight:900;color:#15803d;display:flex;align-items:center">⚡ 통합 합계</div>
-            <div><div style="font-size:9px;color:#15803d">Grade</div><div style="font-size:11px;font-weight:700;color:#94a3b8">IT/가전 별도</div></div>
-            <div><div style="font-size:9px;color:#15803d">누적 P</div><div style="font-size:14px;font-weight:900;color:#1e293b">${currentP.toFixed(2)}P</div></div>
-            <div><div style="font-size:9px;color:#15803d">우수</div><div style="font-size:14px;font-weight:900;color:#1e293b">${currentPrem}건</div></div>
-            <div><div style="font-size:9px;color:#15803d">예상 수령</div><div style="font-size:14px;font-weight:900;color:#16a34a">${fmt(currentTotal)}원</div></div>
-          </div>
-          <div style="margin-top:4px;font-size:9.5px;color:#78350f;text-align:right">단가 — 인터넷+TV ${fmt(itUnit)}원/P · 가전 ${fmt(rtUnit)}원/P (${grade})</div>
-        </div>
-        <!-- ⚡ 매칭 정보 -->
-        <div style="background:rgba(255,255,255,0.55);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:10.5px;color:#78350f">
-          ⚡ <b>매칭:</b> ${p.company?.name ? '🏢 '+p.company.name+' · ' : ''}${p.brand} ${p.model} · ${o.months}M · ${o.care_service} · 상담사 포인트 ${Number(c.point_weight).toFixed(2)}P${(c?.is_premium ?? p.is_premium)?' · ⭐우수(S)':''}
-        </div>
-        <!-- 현재 vs +1건 후 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div style="background:#fff;border:1px solid #fbbf24;border-radius:6px;padding:6px 10px">
-            <div style="font-size:9px;color:#78350f">현재 (${grade})</div>
-            <div style="font-size:13px;font-weight:900;color:#92400e">${fmt(currentTotal)}원</div>
-          </div>
-          <div style="background:#fff;border:1px solid #f59e0b;border-radius:6px;padding:6px 10px">
-            <div style="font-size:9px;color:#78350f">+1건 후 (${grade})</div>
-            <div style="font-size:13px;font-weight:900;color:#15803d">${fmt(newTotal)}원</div>
-          </div>
-        </div>
-        <!-- 변화 박스 -->
-        <div style="background:linear-gradient(135deg,rgba(34,197,94,0.15),rgba(34,197,94,0.05));border:1px dashed #16a34a;border-radius:6px;padding:8px 10px;text-align:center">
-          <div style="font-size:9.5px;color:#15803d;font-weight:700;margin-bottom:2px">이 한 건 추가 시 변화 (P: ${currentP}→${newP.toFixed(2)}, 우수: ${currentPrem}→${newPrem})</div>
-          <div style="font-size:18px;font-weight:900;color:#15803d">+${fmt(delta)}원</div>
-        </div>
-      </div>`;
-
-    // ─── 상품 디테일 카드 ───
-    const starHTML = p.market_score ? '★'.repeat(p.market_score) + '☆'.repeat(Math.max(0, 5 - p.market_score)) : '-';
-    const note = o.metadata?.note || '';
-    // override 값 (사용자 입력 우선)
-    const inspV = document.getElementById('rental-inspection-cycle').value;
-    const ownV = document.getElementById('rental-ownership-months').value;
-    const effInsp = inspV ? Number(inspV) : o.inspection_cycle;
-    const effOwn = ownV ? Number(ownV) : o.ownership_months;
-    // 렌탈사 (가전 그룹 시 강조 — 같은 모델 N채널 식별 · % 표시 안 함)
-    const coHTML = p.company?.name
-      ? `<div class="row" style="background:rgba(8,145,178,0.12);border-radius:4px;padding:5px 6px;margin:3px -2px;border:1px solid #0891b2"><span class="k" style="color:#22d3ee;font-weight:700">🏢 렌탈사 (채널)</span><span class="v" style="color:#fff;font-weight:800">${p.company.name} <a href="/docs/incentive-partner-cards.html?brand=${encodeURIComponent(p.company.name)}" target="_blank" onclick="event.stopPropagation()" style="background:rgba(251,191,36,0.22);color:#fbbf24;font-size:9.5px;font-weight:800;padding:1px 6px;border-radius:3px;text-decoration:none;margin-left:5px;border:1px solid #fbbf24" title="🎴 ${p.company.name} 제휴카드 보기 (새 탭)">🎴 제휴카드</a></span></div>` : '';
-    const imgHTML = p.image_url ? `<div style="display:flex;justify-content:center;margin-bottom:6px"><img src="${p.image_url}" alt="${p.name||''}" loading="lazy" style="max-width:160px;max-height:120px;object-fit:contain;background:#fff;border:1px solid #f59e0b;border-radius:6px;padding:4px" onerror="this.style.display='none'"></div>` : '';
-    const productDetailHTML = `
-      <div style="background:rgba(245,158,11,0.07);border:1px solid #f59e0b;border-radius:6px;padding:8px 10px;margin:6px 0">
-        <div style="font-size:10px;color:#fbbf24;font-weight:800;margin-bottom:5px">📦 상품 디테일</div>
-        ${imgHTML}
-        ${coHTML}
-        <div class="row"><span class="k">상품명</span><span class="v" style="text-align:right;max-width:170px;word-break:break-word">${p.name}</span></div>
-        ${p.description ? `<div class="row"><span class="k">설명</span><span class="v" style="text-align:right;max-width:170px;color:#cbd5e1;font-size:10px;word-break:break-word">${p.description}</span></div>` : ''}
-        ${p.recommended_capacity ? `<div class="row"><span class="k">👤 추천 용량</span><span class="v" style="color:#22d3ee;font-weight:700">${escapeHtml(p.recommended_capacity)}</span></div>` : ''}
-        ${Array.isArray(p.recommended_usage) && p.recommended_usage.length ? `<div class="row"><span class="k">🎯 추천 대상</span><span class="v" style="text-align:right;max-width:170px"><div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:flex-end">${p.recommended_usage.slice(0,5).map(u=>`<span style="background:rgba(99,102,241,0.18);color:#a5b4fc;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700">${escapeHtml(u)}</span>`).join('')}</div></span></div>` : ''}
-        ${Array.isArray(p.feature_tags) && p.feature_tags.length ? `<div class="row"><span class="k">✨ 강점</span><span class="v" style="text-align:right;max-width:170px"><div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:flex-end">${p.feature_tags.slice(0,6).map(t=>`<span style="background:rgba(34,197,94,0.18);color:#86efac;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700">${escapeHtml(t)}</span>`).join('')}</div></span></div>` : ''}
-        ${(() => {
-          // 카테고리 schema 기반 specifications 자동 렌더 (정수기 6 / 매트리스 4 / TV 6 / 에어컨 6 등)
-          const specs = p.specifications || {};
-          const schema = p.category?.metadata?.extra_fields || [];
-          const rows = schema.filter(f => specs[f.key] != null && specs[f.key] !== '').map(f => {
-            const v = specs[f.key];
-            const label = `${f.label}${f.unit ? ' ('+f.unit+')' : ''}`;
-            return `<div class="row"><span class="k">${escapeHtml(label)}</span><span class="v">${escapeHtml(String(v))}</span></div>`;
-          });
-          return rows.length ? `<div style="border-top:1px dashed #475569;margin:6px -2px 4px;padding-top:5px"><div style="font-size:9px;color:#fbbf24;font-weight:800;margin-bottom:3px">📋 ${escapeHtml(p.category?.name||'')} 스펙</div>${rows.join('')}</div>` : '';
-        })()}
-        <div class="row"><span class="k">시장성</span><span class="v" style="color:#fbbf24">${starHTML}</span></div>
-        ${effInsp ? `<div class="row"><span class="k">점검주기</span><span class="v">${effInsp+'개월'}${inspV ? ' <span style="color:#a78bfa;font-size:9px">(지정)</span>' : ''}</span></div>` : ''}
-        ${effOwn ? `<div class="row"><span class="k">소유권 이전</span><span class="v">${effOwn+'개월 후'}${ownV ? ' <span style="color:#a78bfa;font-size:9px">(지정)</span>' : ''}</span></div>` : ''}
-        ${o.monthly_diff != null && o.monthly_diff !== 0 ? `<div class="row"><span class="k">월납 증감</span><span class="v" style="color:${o.monthly_diff < 0 ? '#22c55e' : '#f59e0b'}">${o.monthly_diff > 0 ? '+' : ''}${fmt(o.monthly_diff)}원</span></div>` : ''}
-        ${o.as_period_months ? `<div class="row"><span class="k">🛡️ A/S 기간</span><span class="v">${o.as_period_months}년</span></div>` : ''}
-        ${o.signup_age_limit ? `<div class="row"><span class="k">👤 가입 연령</span><span class="v">만 ${o.signup_age_limit}세+</span></div>` : ''}
-        ${o.installation_fee != null && o.installation_fee > 0 ? `<div class="row"><span class="k">🔧 설치비</span><span class="v">${fmt(o.installation_fee)}원</span></div>` : ''}
-        ${o.commission_rate ? `<div class="row"><span class="k">💼 수수료율</span><span class="v" style="color:#fdba74">${o.commission_rate}% (${o.commission_basis||'-'})</span></div>` : ''}
-        ${o.total_rental_fee ? `<div class="row"><span class="k">∑ 총렌탈료</span><span class="v">${fmt(o.total_rental_fee)}원</span></div>` : ''}
-        ${p.promo_tag ? `<div class="row"><span class="k">프로모션 태그</span><span class="v" style="color:#a78bfa">${p.promo_tag}</span></div>` : ''}
-        ${o.promo_type ? `<div class="row"><span class="k">🏷️ 옵션 프로모</span><span class="v" style="color:#d8b4fe">${escapeHtml(o.promo_type)}</span></div>` : ''}
-        ${p.is_premium ? `<div class="row"><span class="k">우수상품</span><span class="v" style="color:#fbbf24;font-weight:800">⭐ 우수 (1건당 보너스)</span></div>` : ''}
-        ${p.registration_status ? `<div class="row"><span class="k">등록상태</span><span class="v" style="color:#ef4444">${p.registration_status}</span></div>` : ''}
-        ${p.evaluation_memo ? `<div class="row"><span class="k">평가 메모</span><span class="v" style="color:#94a3b8;font-size:10px">${p.evaluation_memo}</span></div>` : ''}
-        ${p.spec_notes ? `<div class="row"><span class="k">스펙 메모</span><span class="v" style="color:#94a3b8;font-size:10px">${p.spec_notes}</span></div>` : ''}
-        ${note ? `<div class="row"><span class="k">비고 (옵션)</span><span class="v" style="color:#cbd5e1;font-size:10px">${note}</span></div>` : ''}
-        ${p.product_url ? `<div style="font-size:9.5px;margin-top:4px"><a href="${p.product_url}" target="_blank" style="color:#60a5fa">🔗 상품 카탈로그 열기</a></div>` : ''}
-      </div>`;
-
-    // 🎫 티켓번호 — 인터넷+TV 견적 결과와 동일한 시각 패턴
-    const ticketHTML = o.ticket_number ? `
-      <div style="display:flex;flex-direction:column;gap:3px;padding-bottom:10px;border-bottom:1px solid #334155;margin-bottom:10px">
-        <span style="font-size:9.5px;color:rgba(255,255,255,0.6);letter-spacing:0.04em">🎫 티켓번호</span>
-        <span style="font-size:18px;font-weight:900;color:#a5b4fc;font-family:'SF Mono',Monaco,monospace;letter-spacing:0.8px">${o.ticket_number}</span>
-      </div>` : '';
-    document.getElementById('rental-quote-body').innerHTML = `
-      ${ticketHTML}
-      <div class="row"><span class="k">브랜드 · 모델</span><span class="v">${p.brand} · ${p.model}</span></div>
-      <div class="row"><span class="k">약정 · 케어</span><span class="v">${o.months}개월 · ${o.care_service}</span></div>
-      ${productDetailHTML}
-      <div class="row"><span class="k">월 납부액</span><span class="v" id="rental-base-monthly">${fmt(c.effective_monthly_fee)}원${c.promo_type==='half' ? ` <span style="color:#22c55e">(반값 ${o.half_period||''}M)</span>` : ''}</span></div>
-      <div class="row"><span class="k">정상가</span><span class="v">${fmt(o.normal_price)}원/월</span></div>
-      ${paymentSimHTML}
-      ${c.bundle_apply && c.bundle_rate !== 100 ? `<div class="row"><span class="k">결합지급률</span><span class="v green">× ${c.bundle_rate}%</span></div>` : ''}
-      <!-- 🎴 제휴카드 할인 적용 (페이백 위 잘 보이는 위치) -->
-      <div id="rental-card-discount-wrap" style="background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(245,158,11,0.06));border:1.5px solid #fbbf24;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:11.5px">
-        <div style="font-size:11.5px;font-weight:800;color:#fbbf24;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
-          <span>🎴 제휴카드 할인 적용</span>
-          <span id="rental-card-loading" style="font-size:9.5px;color:#94a3b8;font-weight:500">로딩…</span>
-        </div>
-        <div id="rental-card-empty" style="display:none;font-size:10.5px;color:#94a3b8;padding:6px 0">${p.company?.name ? '○ ' + p.company.name + ' 제휴카드 등록 없음' : '○ 회사 매칭 없음'}</div>
-        <div id="rental-card-form" style="display:none">
-          <select id="rental-card-select" style="width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 8px;border-radius:4px;font-size:11.5px;font-family:inherit;margin-bottom:6px">
-            <option value="">— 카드 선택 —</option>
-          </select>
-          <select id="rental-card-tier" style="width:100%;background:#0f172a;border:1px solid #fbbf24;color:#fbbf24;padding:6px 8px;border-radius:4px;font-size:11.5px;font-family:inherit;font-weight:700;margin-bottom:6px;display:none">
-            <option value="">— 구간 선택 —</option>
-          </select>
-          <div id="rental-card-result" style="font-size:11px;line-height:1.6;color:#cbd5e1;padding:6px 0;border-top:1px dashed #475569;display:none"></div>
-        </div>
-      </div>
-      <div class="total"><div style="font-size:10px;color:#94a3b8">📌 봉이지원금 (페이백)</div><div class="big">+ ${fmt(c.payback)}원</div></div>
-      <button class="save" id="rental-save-btn">💾 ${p.category?.name||'렌탈'} 영업 접수</button>`;
-
-    // 🎴 제휴카드 fetch — brand + category 매칭 (해당 브랜드 카드만 노출)
-    // 정수기 그룹: company.name(=제조사) 우선 / 가전 그룹: p.brand(=제조사 LG/삼성)
-    {
-      const _isAppl = p.category?.product_group === '가전';
-      const _brandKey = _isAppl ? (p.brand || p.company?.name) : (p.company?.name || p.brand);
-      const _catParam = p.category?.name ? `&category=${encodeURIComponent(p.category.name)}` : '';
-      const _brandParam = _brandKey ? `&brand=${encodeURIComponent(_brandKey)}` : '';
-      const _tk = (typeof authGetToken === 'function') ? authGetToken() : localStorage.getItem('incentive-auth-token-v1');
-      fetch(`${API}/partner-cards?active=1${_brandParam}${_catParam}`, { headers: _tk ? { Authorization: 'Bearer ' + _tk } : {} })
-        .then(r => r.json())
-        .then(cardsR => {
-          // server alias 매핑 (LG전자 → LG전자구독 등) 결과 그대로 사용 — client 추가 filter X
-          const cards = cardsR.cards || [];
-          const loading = document.getElementById('rental-card-loading');
-          const empty = document.getElementById('rental-card-empty');
-          const form = document.getElementById('rental-card-form');
-          if (loading) loading.style.display = 'none';
-          if (!cards.length) { if (empty) empty.style.display = 'block'; return; }
-          if (form) form.style.display = 'block';
-          const sel = document.getElementById('rental-card-select');
-          const tierSel = document.getElementById('rental-card-tier');
-          const resultEl = document.getElementById('rental-card-result');
-          const baseMonthly = c.effective_monthly_fee;
-          // brand별 grouping (optgroup) — 카드사·카드명 한눈에
-          const byBrand = {};
-          cards.forEach(card => { (byBrand[card.brand] = byBrand[card.brand] || []).push(card); });
-          sel.innerHTML = '<option value="">— 카드 선택 (총 '+cards.length+'건 · 수동 선택) —</option>' +
-            Object.keys(byBrand).sort().map(brand => {
-              const opts = byBrand[brand].map(card => {
-                const max = card.max_discount ? Math.round(card.max_discount/1000)+'k' : '?';
-                const promo = card.has_promo ? ' 🏷️' : '';
-                return `<option value="${card.id}">[${card.card_issuer}] ${card.card_name} (최대 -${max}${promo})</option>`;
-              }).join('');
-              return `<optgroup label="🏢 ${brand} (${byBrand[brand].length}건)">${opts}</optgroup>`;
-            }).join('');
-          // 카드 변경 → 1·2·3 구간 select 옵션 채움 (자동 선택 X — 사용자가 구간 선택해야 할인 반영)
-          sel.addEventListener('change', () => {
-            tierSel.innerHTML = '<option value="">— 1·2·3 구간 중 선택 (할인 반영) —</option>';
-            const card = cards.find(x => String(x.id) === sel.value);
-            if (!card) { tierSel.style.display = 'none'; resultEl.style.display = 'none'; document.getElementById('rental-base-monthly').innerHTML = fmt(baseMonthly)+'원'; return; }
-            // 카드별 1·2·3 구간 모두 노출 (구간별 다른 할인율)
-            [1,2,3].forEach(t => {
-              const min = card['tier'+t+'_min'], base = card['tier'+t+'_base']||0, promo = card['tier'+t+'_promo']||0;
-              if (!min) return;
-              const total = base + promo;
-              const promoTxt = promo ? `+🏷️${fmt(promo)}` : '';
-              tierSel.innerHTML += `<option value="${t}">${t}구간 · 월 ${fmt(min)}원 이상 사용 → -${fmt(total)}원/월 (기본 ${fmt(base)}${promoTxt})</option>`;
-            });
-            tierSel.style.display = 'block';
-            // 구간 자동 선택 X — 상담사가 1·2·3 중 선택해야 할인 반영
-            resultEl.style.display = 'none';
-            document.getElementById('rental-base-monthly').innerHTML = fmt(baseMonthly)+'원';
-          });
-          // 구간 변경 → 즉시 할인 적용
-          tierSel.addEventListener('change', () => {
-            const card = cards.find(x => String(x.id) === sel.value);
-            const tier = Number(tierSel.value);
-            if (!card || !tier) { resultEl.style.display = 'none'; document.getElementById('rental-base-monthly').innerHTML = fmt(baseMonthly)+'원'; return; }
-            const min = card['tier'+tier+'_min'], base = card['tier'+tier+'_base']||0, promo = card['tier'+tier+'_promo']||0;
-            const total = base + promo;
-            const finalMonthly = Math.max(0, baseMonthly - total);
-            const tierColor = tier === 3 ? '#fbbf24' : tier === 2 ? '#60a5fa' : '#86efac';
-            resultEl.style.display = 'block';
-            resultEl.innerHTML = `
-              <div>📌 적용 구간: <b style="color:${tierColor}">${tier} 구간</b> (실적 ${fmt(min)}+ 사용 가정)</div>
-              <div>💳 기본 ${fmt(base)}원${promo ? ' + 🏷️ 프로모 '+fmt(promo)+'원' : ''} = <b style="color:#fbbf24">-${fmt(total)}원/월</b></div>
-              ${card.discount_months ? `<div style="font-size:9.5px;color:#94a3b8">할인 기간 ${card.discount_months}개월 · 총 절감 ${fmt(total*card.discount_months)}원</div>` : ''}
-              ${card.notes ? `<div style="font-size:9px;color:#fbbf24;margin-top:3px">📝 ${card.notes.slice(0,80)}</div>` : ''}`;
-            document.getElementById('rental-base-monthly').innerHTML =
-              `<s style="color:#94a3b8">${fmt(baseMonthly)}원</s> → <b style="color:#86efac">${fmt(finalMonthly)}원</b> <span style="color:#fbbf24;font-size:10px">(카드 -${fmt(total)})</span>`;
-          });
-        })
-        .catch(() => {
-          const loading = document.getElementById('rental-card-loading');
-          if (loading) loading.textContent = '· 로드 실패';
-        });
-    }
-    // V5 인센티브 미리보기 — 가운데(form-wrap) 영역으로 이동
-    const incArea = document.getElementById('rental-incentive-area');
-    if (incArea) incArea.innerHTML = incentiveHTML;
-    // 누적 설정 토글 + 저장
-    const toggleBtn = document.getElementById('rental-inc-toggle');
-    const incInput = document.getElementById('rental-inc-input');
-    if (toggleBtn && incInput) {
-      toggleBtn.addEventListener('click', () => {
-        incInput.style.display = incInput.style.display === 'none' ? 'block' : 'none';
-      });
-    }
-    const saveIncBtn = document.getElementById('rental-inc-save');
-    if (saveIncBtn) saveIncBtn.addEventListener('click', () => {
-      const p = Number(document.getElementById('rental-inc-p').value) || 0;
-      const prem = Number(document.getElementById('rental-inc-prem').value) || 0;
-      const g = document.getElementById('rental-inc-grade').value;
-      window._incRentalCurrentP = p;
-      window._incRentalCurrentPrem = prem;
-      window._incRentalCurrentGrade = g;
-      localStorage.setItem('rental-incentive-state-v1', JSON.stringify({ p, prem, grade: g }));
-      renderQuote();  // 재렌더
-    });
-    const btn = document.getElementById('rental-save-btn');
-    if (btn) btn.addEventListener('click', () => submitRentalSale(c, r));
-  }
-
-  function submitRentalSale(c, r) {
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) { alert('로그인 필요'); return; }
-    if (!_selectedOpt) return;
-    // 모달에 견적 + 옵션 정보 전달
-    const ctxC = Object.assign({}, c, { option_id: _selectedOpt.id, months: _selectedOpt.months, care_service: _selectedOpt.care_service, monthly_fee: _selectedOpt.monthly_fee });
-    const ctxR = Object.assign({}, r, { option: _selectedOpt });
-    if (typeof window.openRentalDealModal === 'function') {
-      window.openRentalDealModal(ctxC, ctxR);
-    } else {
-      alert('신청 모달 로드 실패 — 페이지 새로고침');
-    }
-  }
 })();
 </script>
 
-<!-- ═══════ 가전렌탈 신청 모달 ═══════ -->
-<div class="rdm-overlay" id="rdm-overlay" role="dialog" aria-modal="true" aria-labelledby="rdm-title">
-  <div class="rdm-box rdm-type-individual" id="rdm-box">
-    <div class="rdm-header">
-      <h2 id="rdm-title">🏠 가전렌탈(정수기) 신청 <span class="req">* 필수입력사항</span></h2>
-      <button type="button" class="close" id="rdm-close" aria-label="닫기">✕</button>
-    </div>
-    <div class="rdm-body">
-
-      <!-- 견적 정보 (자동) -->
-      <div class="rdm-section">
-        <div class="rdm-section-h">📋 신청 상품 (견적 기반 자동)</div>
-        <div class="rdm-section-body">
-          <div class="rdm-quote-info" id="rdm-quote-info">
-            <div class="row"><span class="k">렌탈사</span><span class="v" id="rdm-q-brand">-</span></div>
-            <div class="row"><span class="k">카테고리</span><span class="v" id="rdm-q-category">-</span></div>
-            <div class="row"><span class="k">모델</span><span class="v" id="rdm-q-model">-</span></div>
-            <div class="row"><span class="k">약정</span><span class="v" id="rdm-q-months">-</span></div>
-            <div class="row"><span class="k">월 렌탈료</span><span class="v" id="rdm-q-monthly">-</span></div>
-            <div class="row"><span class="k">케어</span><span class="v" id="rdm-q-care">-</span></div>
-            <div class="row full"><span class="k">📌 봉이지원금 (페이백)</span><span class="v" style="color:#dc2626" id="rdm-q-payback">-</span></div>
-            <!-- 🎴 제휴카드 정보 (적용 시 표시) -->
-            <div class="row full" id="rdm-q-card-row" style="display:none;background:rgba(251,191,36,0.10);border-radius:4px;padding:5px 8px;margin-top:4px">
-              <span class="k" style="color:#fbbf24;font-weight:700">🎴 제휴카드</span>
-              <span class="v" id="rdm-q-card">-</span>
-            </div>
-            <div class="row full" id="rdm-q-card-tier-row" style="display:none;background:rgba(251,191,36,0.08);border-radius:4px;padding:5px 8px">
-              <span class="k" style="color:#fbbf24;font-weight:700">💳 카드 할인</span>
-              <span class="v" id="rdm-q-card-tier" style="color:#dc2626;font-weight:800">-</span>
-            </div>
-            <div class="row full" id="rdm-q-final-row" style="display:none;background:rgba(34,197,94,0.10);border-radius:4px;padding:5px 8px">
-              <span class="k" style="color:#16a34a;font-weight:800">✅ 카드 할인 후 월납</span>
-              <span class="v" id="rdm-q-final" style="color:#16a34a;font-weight:900;font-size:14px">-</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 고객정보 -->
-      <div class="rdm-section">
-        <div class="rdm-section-h">👤 고객정보</div>
-        <div class="rdm-section-body">
-
-          <div class="rdm-row">
-            <div class="lbl">태그</div>
-            <div class="ctrl">
-              <div class="rdm-tag-input" id="rdm-tag-input">
-                <input type="text" id="rdm-tag-text" placeholder="태그 입력 후 Enter (예: VIP, 재계약)">
-              </div>
-            </div>
-          </div>
-
-          <div class="rdm-row">
-            <div class="lbl"><span class="star">*</span>명의자 구분</div>
-            <div class="ctrl">
-              <div class="rdm-radio-group">
-                <label><input type="radio" name="rdm-type" value="individual" checked> 개인</label>
-                <label><input type="radio" name="rdm-type" value="sole_prop"> 개인사업자</label>
-                <label><input type="radio" name="rdm-type" value="corporation"> 법인사업자</label>
-              </div>
-            </div>
-          </div>
-
-          <!-- 개인 전용 -->
-          <div class="rdm-row rdm-only-individual">
-            <div class="lbl"><span class="star">*</span>고객명</div>
-            <div class="ctrl">
-              <input type="text" id="rdm-name" class="full" placeholder="홍길동">
-            </div>
-          </div>
-          <div class="rdm-row rdm-only-individual">
-            <div class="lbl"><span class="star">*</span>생년월일</div>
-            <div class="ctrl">
-              <input type="text" id="rdm-resident" class="mid" maxlength="6" inputmode="numeric" placeholder="주민6자리"> -
-              <input type="text" id="rdm-resident-back" class="small" maxlength="1" inputmode="numeric" placeholder="뒤1">
-              <span style="font-size:11px;color:#6b7280">만 <b id="rdm-age">-</b> 세</span>
-            </div>
-          </div>
-
-          <!-- 사업자 공통 -->
-          <div class="rdm-row rdm-only-business">
-            <div class="lbl"><span class="star">*</span><span id="rdm-bn-lbl">상호명</span></div>
-            <div class="ctrl">
-              <input type="text" id="rdm-business-name" class="full" placeholder="상호 또는 법인명">
-            </div>
-          </div>
-          <div class="rdm-row rdm-only-business">
-            <div class="lbl"><span class="star">*</span>대표자명</div>
-            <div class="ctrl">
-              <input type="text" id="rdm-rep-name" class="full" placeholder="대표자 성함">
-            </div>
-          </div>
-          <div class="rdm-row rdm-only-business">
-            <div class="lbl"><span class="star">*</span>사업자번호</div>
-            <div class="ctrl">
-              <input type="text" id="rdm-business-no" class="mid" maxlength="12" inputmode="numeric" placeholder="000-00-00000">
-            </div>
-          </div>
-
-          <!-- 법인 전용 -->
-          <div class="rdm-row rdm-only-corporation">
-            <div class="lbl"><span class="star">*</span>법인등록번호</div>
-            <div class="ctrl">
-              <input type="text" id="rdm-corp-no" class="mid" maxlength="14" inputmode="numeric" placeholder="000000-0000000">
-            </div>
-          </div>
-
-          <div class="rdm-row">
-            <div class="lbl"><span class="star">*</span>휴대폰번호</div>
-            <div class="ctrl">
-              <input type="tel" id="rdm-phone" class="mid" maxlength="13" inputmode="numeric" placeholder="010-0000-0000">
-            </div>
-          </div>
-
-          <div class="rdm-row">
-            <div class="lbl">추가연락처</div>
-            <div class="ctrl">
-              <select id="rdm-phone2-type" class="small">
-                <option value="">선택</option>
-                <option value="집">집</option>
-                <option value="직장">직장</option>
-                <option value="가족">가족</option>
-                <option value="기타">기타</option>
-              </select>
-              <input type="tel" id="rdm-phone2" class="mid" maxlength="13" inputmode="numeric" placeholder="0000-0000">
-            </div>
-          </div>
-
-          <div class="rdm-row">
-            <div class="lbl"><span class="star">*</span>설치주소</div>
-            <div class="ctrl">
-              <input type="text" id="rdm-addr" class="full" placeholder="주소" readonly style="background:#f9fafb;cursor:pointer">
-              <button type="button" class="btn-search" id="rdm-addr-btn">주소검색</button>
-              <input type="text" id="rdm-addr-detail" class="full" placeholder="상세주소 (동·호수·층)">
-              <div class="hint warn">※ [스마트렌탈] 충남 천안·아산 지역 아파트 제외 건물은 설치주소 증빙 필요 (등본 또는 임대차계약서)</div>
-            </div>
-          </div>
-
-          <div class="rdm-row">
-            <div class="lbl"><span class="star">*</span>해피콜시간</div>
-            <div class="ctrl">
-              <select id="rdm-happy-call" class="mid">
-                <option value="">— 선택 —</option>
-                <option value="오전 9~10시">오전 9~10시</option>
-                <option value="오전 10~11시">오전 10~11시</option>
-                <option value="오전 11~12시">오전 11~12시</option>
-                <option value="오후 12~13시">오후 12~13시</option>
-                <option value="오후 13~14시">오후 13~14시</option>
-                <option value="오후 14~15시">오후 14~15시</option>
-                <option value="오후 15~16시">오후 15~16시</option>
-                <option value="오후 16~17시">오후 16~17시</option>
-                <option value="오후 17~18시">오후 17~18시</option>
-                <option value="협의">고객 협의</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="rdm-row">
-            <div class="lbl">📅 설치 희망일</div>
-            <div class="ctrl">
-              <input type="date" id="rdm-install-date" class="mid">
-            </div>
-          </div>
-
-          <div class="rdm-row">
-            <div class="lbl">렌탈사 전달사항</div>
-            <div class="ctrl">
-              <textarea id="rdm-rental-note" placeholder="렌탈사 및 고객 전달사항 (필요 시 안내사항 항목 기재)"></textarea>
-              <div class="hint">예: 결제정보, 프로모션, 패키지 적용, 자가관리 여부, 설치 위치 등</div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- 봉이 내부 -->
-      <div class="rdm-section">
-        <div class="rdm-section-h">🏢 봉이 내부 정보</div>
-        <div class="rdm-section-body">
-          <div class="rdm-row">
-            <div class="lbl"><span class="star">*</span>DB 출처</div>
-            <div class="ctrl">
-              <select id="rdm-db-source" class="full">
-                <option value="">— 선택 —</option>
-              </select>
-            </div>
-          </div>
-          <div class="rdm-row">
-            <div class="lbl">추가 페이백</div>
-            <div class="ctrl">
-              <input type="number" id="rdm-add-payback" class="mid" min="0" max="50000" step="1000" value="0">
-              <span style="font-size:11px;color:#6b7280">원 (0~50,000)</span>
-            </div>
-          </div>
-          <div class="rdm-row">
-            <div class="lbl">상담 메모</div>
-            <div class="ctrl">
-              <textarea id="rdm-notes" placeholder="상담 내용 / 특이사항 / 내부 메모"></textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 안내사항 -->
-      <details class="rdm-notice">
-        <summary>📌 렌탈사별 안내사항 (접수 전 확인)</summary>
-        <div style="margin-top:6px">
-          <p><b>★ 정수기</b></p>
-          <ul>
-            <li>렌탈사: 청호·코웨이·쿠쿠·SK매직·현대유버스·현대큐밍·교원웰스·바이온텍·세스코</li>
-            <li>결제정보, 프로모션 및 동시구매/패키지 여부, 관리형태(자가/방문) 확인</li>
-            <li>별도 프로모션 요청 없을 시 자동적용 불가 (수수료 상이 관련)</li>
-          </ul>
-          <p><b>★ 에어컨/냉난방기</b></p>
-          <ul><li>배관유형(일반/매립) 기재 필수</li></ul>
-          <p><b>★ 창문형 에어컨</b></p>
-          <ul><li>창문 높이 확인 후 기재 (예: 130cm)</li></ul>
-          <p><b>★ 세스코</b></p>
-          <ul><li>상품/옵션(주기)/렌탈료/색상/향기(에어제닉·에어퍼품) 필수</li></ul>
-          <p><b>★ KT렌탈</b></p>
-          <ul><li>KT TPS(방송·인터넷·모바일) 이용자 여부 확인 필수</li><li>KT 방송/인터넷/핸드폰 가입 직후 렌탈 실행 가능</li></ul>
-          <p><b>★ 유버스</b></p>
-          <ul><li>25세 미만 예외심사 — 건강보험자격득실확인서(정부24발급) / 전역증(남) 첨부</li></ul>
-        </div>
-      </details>
-
-      <div class="rdm-msg" id="rdm-msg"></div>
-    </div>
-    <div class="rdm-footer">
-      <button type="button" class="btn-cancel" id="rdm-cancel">취소</button>
-      <button type="button" class="btn-submit" id="rdm-submit">✅ 신청완료</button>
-    </div>
-  </div>
-</div>
 
 <script>
-// ═══════ 가전렌탈 신청 모달 핸들러 ═══════
-(function(){
-  'use strict';
-  const API_R = '/api/rental';
-  const API_INC = '/api/incentive';
-  const $ = (id) => document.getElementById(id);
-  const overlay = $('rdm-overlay');
-  const box = $('rdm-box');
-  let _ctx = null; // { c, r } — 견적 컨텍스트
-
-  function fmt(n) { return Number(n||0).toLocaleString(); }
-
-  // ─── 명의자 유형 토글 ───
-  function syncType() {
-    const t = (document.querySelector('input[name="rdm-type"]:checked') || {}).value || 'individual';
-    box.classList.remove('rdm-type-individual', 'rdm-type-sole_prop', 'rdm-type-corporation');
-    box.classList.add('rdm-type-' + t);
-    $('rdm-bn-lbl').textContent = t === 'corporation' ? '법인명' : '상호명';
-  }
-  document.querySelectorAll('input[name="rdm-type"]').forEach(r => r.addEventListener('change', syncType));
-
-  // ─── 전화 자동 포맷 ───
-  function fmtPhone(v) {
-    v = (v||'').replace(/\D/g,'').slice(0,11);
-    if (v.length < 4) return v;
-    if (v.length < 8) return v.slice(0,3) + '-' + v.slice(3);
-    return v.slice(0,3) + '-' + v.slice(3,7) + '-' + v.slice(7);
-  }
-  ['rdm-phone','rdm-phone2'].forEach(id => {
-    $(id).addEventListener('input', (e) => { e.target.value = fmtPhone(e.target.value); });
-  });
-
-  // ─── 사업자번호 포맷 ───
-  $('rdm-business-no').addEventListener('input', (e) => {
-    let v = (e.target.value||'').replace(/\D/g,'').slice(0,10);
-    if (v.length > 5) v = v.slice(0,3) + '-' + v.slice(3,5) + '-' + v.slice(5);
-    else if (v.length > 3) v = v.slice(0,3) + '-' + v.slice(3);
-    e.target.value = v;
-  });
-  $('rdm-corp-no').addEventListener('input', (e) => {
-    let v = (e.target.value||'').replace(/\D/g,'').slice(0,13);
-    if (v.length > 6) v = v.slice(0,6) + '-' + v.slice(6);
-    e.target.value = v;
-  });
-
-  // ─── 만나이 계산 ───
-  function updateAge() {
-    const r = ($('rdm-resident').value||'').replace(/\D/g,'');
-    const b = ($('rdm-resident-back').value||'').replace(/\D/g,'');
-    if (r.length !== 6 || !b) { $('rdm-age').textContent = '-'; return; }
-    const yy = parseInt(r.slice(0,2),10), mm = parseInt(r.slice(2,4),10)-1, dd = parseInt(r.slice(4,6),10);
-    const century = (b === '1' || b === '2') ? 1900 : (b === '3' || b === '4') ? 2000 : 1900;
-    const birth = new Date(century + yy, mm, dd);
-    const now = new Date();
-    let age = now.getFullYear() - birth.getFullYear();
-    if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
-    $('rdm-age').textContent = isNaN(age) ? '-' : age;
-  }
-  ['rdm-resident','rdm-resident-back'].forEach(id => $(id).addEventListener('input', updateAge));
-
-  // ─── 태그 입력 ───
-  const tagInput = $('rdm-tag-input');
-  const tagText = $('rdm-tag-text');
-  let _tags = [];
-  function renderTags() {
-    tagInput.querySelectorAll('.tag').forEach(t => t.remove());
-    _tags.forEach((tag, idx) => {
-      const el = document.createElement('span');
-      el.className = 'tag';
-      el.innerHTML = tag + ' <span class="x" data-i="' + idx + '">×</span>';
-      tagInput.insertBefore(el, tagText);
-    });
-    tagInput.querySelectorAll('.x').forEach(x => x.addEventListener('click', (e) => {
-      _tags.splice(parseInt(e.target.dataset.i,10), 1); renderTags();
-    }));
-  }
-  tagText.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const v = tagText.value.trim().replace(/,$/, '');
-      if (v && !_tags.includes(v)) { _tags.push(v); renderTags(); }
-      tagText.value = '';
-    }
-  });
-
-  // ─── 주소 검색 (Daum Postcode) ───
-  $('rdm-addr-btn').addEventListener('click', () => {
-    const proceed = () => {
-      let modal = document.getElementById('daum-postcode-modal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'daum-postcode-modal';
-        modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99999;align-items:center;justify-content:center';
-        modal.innerHTML = '<div style="position:relative;width:min(560px,95vw);height:min(640px,90vh);background:#fff;border-radius:10px;overflow:hidden"><button type="button" id="daum-postcode-close-r" style="position:absolute;top:8px;right:8px;z-index:1;width:30px;height:30px;border:none;background:rgba(0,0,0,0.6);color:#fff;border-radius:50%;font-size:16px;font-weight:700;cursor:pointer">✕</button><div id="daum-postcode-wrap-r" style="width:100%;height:100%"></div></div>';
-        document.body.appendChild(modal);
-        modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-        modal.querySelector('#daum-postcode-close-r').addEventListener('click', () => { modal.style.display = 'none'; });
-      }
-      const wrap = document.getElementById('daum-postcode-wrap-r');
-      wrap.innerHTML = '';
-      modal.style.display = 'flex';
-      new window.daum.Postcode({
-        oncomplete: function(data) {
-          const full = data.address + (data.buildingName ? ' (' + data.buildingName + ')' : '');
-          $('rdm-addr').value = full;
-          $('rdm-addr').style.background = '#f0fdf4';
-          $('rdm-addr-detail').focus();
-          modal.style.display = 'none';
-        },
-        width: '100%', height: '100%',
-      }).embed(wrap);
-    };
-    if (window.daum?.Postcode) proceed();
-    else alert('주소검색 API 로드 실패 — 새로고침');
-  });
-
-  // ─── DB 출처 로드 ───
-  async function loadDbSources() {
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) return;
-    try {
-      const res = await fetch(API_INC + '/db-sources', { headers: { Authorization: 'Bearer ' + tk } });
-      if (!res.ok) return;
-      const { db_sources } = await res.json();
-      const sel = $('rdm-db-source');
-      sel.innerHTML = '<option value="">— 선택 —</option>' + (db_sources||[]).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-    } catch(e) {}
-  }
-
-  // ─── 모달 open / close ───
-  window.openRentalDealModal = function(c, r) {
-    _ctx = { c, r };
-    // 견적 정보 자동 채움
-    $('rdm-q-brand').textContent = r.product.company?.name || r.product.brand || '-';
-    $('rdm-q-category').textContent = r.product.category?.name || '-';
-    $('rdm-q-model').textContent = (r.product.model || '') + (r.product.model_name ? ' · ' + r.product.model_name : '');
-    $('rdm-q-months').textContent = c.months + '개월';
-    $('rdm-q-monthly').textContent = fmt(c.monthly_fee) + '원';
-    $('rdm-q-care').textContent = c.care_service || '-';
-    $('rdm-q-payback').textContent = fmt(c.payback) + '원';
-
-    // 🎴 제휴카드 할인 정보 — 견적 화면에서 적용했으면 같이 표시
-    const cardSel = document.getElementById('rental-card-select');
-    const cardTier = document.getElementById('rental-card-tier');
-    const cardRow = $('rdm-q-card-row'), tierRow = $('rdm-q-card-tier-row'), finalRow = $('rdm-q-final-row');
-    if (cardSel && cardSel.value && cardTier && cardTier.value) {
-      const cardLabel = cardSel.options[cardSel.selectedIndex]?.text || '';
-      const tierLabel = cardTier.options[cardTier.selectedIndex]?.text || '';
-      // 할인액 추출 (tier value로 직접 fetch)
-      const baseM = Number(c.monthly_fee) || 0;
-      const tierVal = Number(cardTier.value);
-      let discount = 0;
-      // 할인액은 tier text에서 추출 (예: "-15,000원/월")
-      const m = tierLabel.match(/-\s*([\d,]+)원\/월/);
-      if (m) discount = parseInt(m[1].replace(/,/g,''), 10);
-      const finalM = Math.max(0, baseM - discount);
-      cardRow.style.display = 'flex'; $('rdm-q-card').textContent = cardLabel;
-      tierRow.style.display = 'flex'; $('rdm-q-card-tier').textContent = tierLabel;
-      finalRow.style.display = 'flex'; $('rdm-q-final').textContent = `${fmt(finalM)}원 (-${fmt(discount)})`;
-      // ctx에 카드 정보 보존 (submit 시 sales metadata로 전송 가능)
-      _ctx.card = { card_label: cardLabel, tier: tierVal, discount, final_monthly: finalM };
-    } else {
-      cardRow.style.display = 'none'; tierRow.style.display = 'none'; finalRow.style.display = 'none';
-    }
-
-    // 콜모드 prefill (고객명·전화) + 콜DB 다른 필드 prefill
-    if (window.CALL_MODE_CUSTOMER_NAME) $('rdm-name').value = window.CALL_MODE_CUSTOMER_NAME;
-    if (window.CALL_MODE_CUSTOMER_PHONE) $('rdm-phone').value = fmtPhone(window.CALL_MODE_CUSTOMER_PHONE);
-    syncType();
-    loadDbSources();
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  };
-  function closeModal() {
-    overlay.classList.remove('open');
-    document.body.style.overflow = '';
-    $('rdm-msg').classList.remove('show', 'error', 'success');
-    $('rdm-msg').textContent = '';
-  }
-  $('rdm-close').addEventListener('click', closeModal);
-  $('rdm-cancel').addEventListener('click', closeModal);
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
-
-  // ─── submit ───
-  $('rdm-submit').addEventListener('click', async () => {
-    const msg = $('rdm-msg');
-    msg.classList.remove('show','error','success');
-    function err(t) { msg.classList.add('show','error'); msg.textContent = '⚠️ ' + t; }
-    function ok(t) { msg.classList.add('show','success'); msg.textContent = '✅ ' + t; }
-
-    if (!_ctx) return err('견적 정보 누락');
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) return err('로그인 필요');
-
-    const customerType = (document.querySelector('input[name="rdm-type"]:checked') || {}).value || 'individual';
-    const phone = $('rdm-phone').value.trim();
-    const addr = $('rdm-addr').value.trim();
-    const happyCall = $('rdm-happy-call').value;
-    const dbSourceId = $('rdm-db-source').value;
-
-    // 공통 필수
-    if (!phone) return err('휴대폰번호 필수');
-    if (!addr) return err('설치주소 필수');
-    if (!happyCall) return err('해피콜시간 필수');
-    if (!dbSourceId) return err('DB 출처 필수');
-
-    // 유형별 필수
-    let payload = {
-      product_id: _ctx.r.product.id,
-      option_id: _ctx.c.option_id || _ctx.r.option?.id,
-      payback: _ctx.c.payback,
-      customer_type: customerType,
-      customer_phone: phone,
-      phone_secondary: $('rdm-phone2').value.trim() || null,
-      phone_secondary_type: $('rdm-phone2-type').value || null,
-      customer_address: addr,
-      address_detail: $('rdm-addr-detail').value.trim() || null,
-      happy_call_time: happyCall,
-      installation_date: $('rdm-install-date').value || null,
-      rental_company_note: $('rdm-rental-note').value.trim() || null,
-      notes: $('rdm-notes').value.trim() || null,
-      db_source_id: parseInt(dbSourceId, 10),
-      add_payback: parseInt($('rdm-add-payback').value, 10) || 0,
-      tags: _tags.length ? _tags : null,
-      customer_id: window.CALL_MODE_CUSTOMER_ID || null,
-      // 🎴 제휴카드 snapshot (견적 시점 카드 정보 박제)
-      card_snapshot: _ctx.card ? {
-        card_label: _ctx.card.card_label,
-        tier: _ctx.card.tier,
-        discount: _ctx.card.discount,
-        final_monthly: _ctx.card.final_monthly,
-      } : null,
-    };
-
-    if (customerType === 'individual') {
-      const name = $('rdm-name').value.trim();
-      const r6 = $('rdm-resident').value.replace(/\D/g,'');
-      const r1 = $('rdm-resident-back').value.replace(/\D/g,'');
-      if (!name) return err('고객명 필수');
-      if (r6.length !== 6 || r1.length !== 1) return err('생년월일 6+1자리 필수');
-      payload.customer_name = name;
-      payload.resident_id = r6;
-      payload.resident_id_back = r1;
-    } else {
-      const bn = $('rdm-business-name').value.trim();
-      const rep = $('rdm-rep-name').value.trim();
-      const bno = $('rdm-business-no').value.replace(/\D/g,'');
-      if (!bn) return err((customerType==='corporation'?'법인명':'상호명') + ' 필수');
-      if (!rep) return err('대표자명 필수');
-      if (bno.length !== 10) return err('사업자번호 10자리 필수');
-      payload.business_name = bn;
-      payload.representative_name = rep;
-      payload.business_no = bno;
-      payload.customer_name = rep; // 대표자명을 customer_name으로
-      if (customerType === 'corporation') {
-        const cno = $('rdm-corp-no').value.replace(/\D/g,'');
-        if (cno.length !== 13) return err('법인등록번호 13자리 필수');
-        payload.corporation_no = cno;
-      }
-    }
-
-    const submitBtn = $('rdm-submit');
-    submitBtn.disabled = true; submitBtn.textContent = '접수 중...';
-    try {
-      const res = await fetch(API_R + '/sales', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '접수 실패');
-      ok('신청 완료 · ID ' + String(data.sale.id).slice(0,8));
-      setTimeout(() => {
-        closeModal();
-        // 폼 초기화
-        ['rdm-name','rdm-resident','rdm-resident-back','rdm-phone','rdm-phone2','rdm-addr','rdm-addr-detail','rdm-business-name','rdm-rep-name','rdm-business-no','rdm-corp-no','rdm-rental-note','rdm-notes','rdm-install-date'].forEach(id => { const el = $(id); if (el) el.value = ''; });
-        $('rdm-add-payback').value = 0;
-        _tags = []; renderTags();
-        alert('✅ 가전렌탈 신청 완료 (ID: ' + data.sale.id + ')\n계약부서 처리 대기');
-        // 콜 모드 연동
-        if (window.CALL_MODE_CUSTOMER_ID && typeof loadNextCallCustomer === 'function') setTimeout(loadNextCallCustomer, 1000);
-      }, 1200);
-    } catch (e) {
-      err(e.message);
-    } finally {
-      submitBtn.disabled = false; submitBtn.textContent = '✅ 신청완료';
-    }
-  });
-})();
 </script>
 
 </body>
