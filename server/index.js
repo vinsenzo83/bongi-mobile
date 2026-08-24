@@ -83,7 +83,6 @@ import authRoutes from './routes/auth.js';
 import adminPlatformRoutes from './routes/admin-platform.js';
 import incentiveRoutes from './routes/incentive.js';
 import deviceInventoryRoutes from './routes/device-inventory.js';
-import rentalRoutes from './routes/rental.js';
 import policyDocsRoutes from './routes/policy-docs.js';
 import customerDbRoutes from './routes/customer-db.js';
 import dashboardRoutes from './routes/dashboard.js';
@@ -234,7 +233,6 @@ app.use('/api/admin/platform', adminPlatformRoutes);
 // ── V5 인센티브 (라우터 내부에서 authenticateJWT/optionalAuth 자체 처리) ──
 app.use('/api/incentive', incentiveRoutes);
 app.use('/api/devices', deviceInventoryRoutes);
-app.use('/api/rental', rentalRoutes);
 app.use('/api/policy-docs', policyDocsRoutes);
 app.use('/api/customer-db', ipAllowlist, authenticateJWT, customerDbRoutes);
 
@@ -290,25 +288,6 @@ if (process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production')
   process.env.NODE_ENV_TIGHT = 'true'; // 후속 코드에서 개발 모드 추가 완화 막기
 }
 
-// 렌탈 상품 상세 API
-import { readFileSync } from 'fs';
-const rentalTicketsPath = join(__dirname, 'data', 'providers', 'rental_tickets.json');
-let rentalTicketsData = [];
-try { rentalTicketsData = JSON.parse(readFileSync(rentalTicketsPath, 'utf8')); } catch {}
-
-app.get('/api/rental/:ticket', (req, res) => {
-  const item = rentalTicketsData.find(t => t.ticket === req.params.ticket.toUpperCase());
-  if (!item) return res.status(404).json({ error: '상품을 찾을 수 없습니다' });
-  res.json(item);
-});
-
-app.get('/api/rental', (req, res) => {
-  const { category, brand } = req.query;
-  let items = rentalTicketsData;
-  if (category) items = items.filter(t => t.category === category);
-  if (brand) items = items.filter(t => t.brand.toLowerCase().includes(brand.toLowerCase()));
-  res.json({ count: items.length, items });
-});
 
 // 봉이 어드민 정적 파일 서빙 (server/public/docs/ 옛 사본 제거 — docs/만 사용)
 // /reports는 line 216에 이미 마운트됨

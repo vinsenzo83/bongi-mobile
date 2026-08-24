@@ -113,7 +113,6 @@ router.get('/products', optionalAuth, async (req, res) => {
     let q = supabase.from('incentive_products').select('*').eq('active', true);
     if (carrier) q = q.eq('carrier', carrier);
     if (tier) q = q.eq('tier', tier);
-    if (premium_only === 'true') q = q.eq('is_premium', true);
     const { data, error } = await q.order('id');
     if (error) throw error;
     res.json({ products: data, count: data.length });
@@ -131,8 +130,8 @@ router.patch('/products/:id', authenticateJWT, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
-    const allowed = ['rebate', 'payback', 'point_weight', 'name', 'active', 'speed', 'tv_tier',
-                     'gift_amount', 'monthly_fee_min', 'monthly_fee_max', 'guide_min', 'guide_max', 'install_fee'];
+    const allowed = ['rebate', 'payback', 'guide_payout', 'max_payout', 'name', 'active', 'speed', 'tv_tier',
+                     'gift_amount', 'monthly_fee_min', 'monthly_fee_max', 'install_fee'];
     const update = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
     if (!Object.keys(update).length) {
@@ -721,9 +720,7 @@ router.get('/dashboard/timeseries', authenticateJWT, async (req, res) => {
         role: r.agent_role,
         center: r.agent_center,
         count: r.total_count || 0,
-        points: Number(r.total_points || 0),
-        premium_count: r.premium_count || 0,
-        grade_applied: r.grade_applied || 1,
+        residual_margin: Number(r.total_residual_margin || 0),
         is_penalty: !!r.is_penalty,
         incentive: r.incentive || 0,
         bonus: r.bonus || 0,
@@ -851,7 +848,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
     // product price snapshot — 등록 시점의 단가를 박제 (이후 product 가격 변경되어도 영향 없음)
     const { data: prodSnap, error: prodSnapErr } = await supabase
       .from('incentive_products')
-      .select('payback, rebate, point_weight, is_premium')
+      .select('payback, rebate, guide_payout, max_payout')
       .eq('id', product_id)
       .single();
     if (prodSnapErr || !prodSnap) {
@@ -887,8 +884,6 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         // ── product 단가 snapshot (등록 시점) ──
         payback_snapshot: prodSnap.payback,
         rebate_snapshot: prodSnap.rebate,
-        point_weight_snapshot: prodSnap.point_weight,
-        is_premium_snapshot: prodSnap.is_premium,
       })
       .select('*, product:incentive_products(*)')
       .single();
@@ -1047,7 +1042,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       // 새 상품 정보 조회 + 옛 상품 정보 (자동 메모 텍스트용)
       const [{ data: newProd, error: newProdErr }, { data: _oldProd }] = await Promise.all([
         supabase.from('incentive_products')
-          .select('id, carrier, speed, tv_tier, payback, rebate, point_weight, is_premium')
+          .select('id, carrier, speed, tv_tier, payback, rebate, guide_payout, max_payout')
           .eq('id', product_id).single(),
         supabase.from('incentive_products')
           .select('carrier, speed, tv_tier').eq('id', existing.product_id).maybeSingle(),
@@ -1058,8 +1053,6 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       update.product_id = product_id;
       update.payback_snapshot = newProd.payback;
       update.rebate_snapshot = newProd.rebate;
-      update.point_weight_snapshot = newProd.point_weight;
-      update.is_premium_snapshot = newProd.is_premium;
       // contract_notes 자동 append 제거 — 변경 이력 카드(📜)에만 기록 (메모 깔끔하게 유지)
     }
 
@@ -1509,7 +1502,7 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
 
     // gzip 적용 후 quote_full_html 포함해도 페이로드 작음 (~10KB 추가) — 모달 즉시 표시
     // 휴지통 모드일 때는 deleted_at/deleted_by_user_id/deleted_reason도 함께 반환
-    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_email,customer_address,customer_address_detail,resident_id,birth_date,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,point_weight_snapshot,is_premium_snapshot,db_source_id,dealer_id,combo_type,combo_members,billing_method,billing_phone,billing_carrier,payment_method,payment_extra,waiting_person,waiting_phone,waiting_relation,seller_phone,onestop_yn,current_carrier';
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_email,customer_address,customer_address_detail,resident_id,birth_date,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,db_source_id,dealer_id,combo_type,combo_members,billing_method,billing_phone,billing_carrier,payment_method,payment_extra,waiting_person,waiting_phone,waiting_relation,seller_phone,onestop_yn,current_carrier';
     let q = supabase
       .from('incentive_sales')
       .select(`${listCols}, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)`)
@@ -1596,62 +1589,23 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
     const filteredRows = me.role === 'agent'
       ? (rows || []).filter(r => r.agent_id === me.id)
       : (rows || []);
-    // 🏠 가전 정산 batch fetch — rental_calc_monthly_settlement RPC를 agent별 병렬 호출
-    // (가전 Grade·단가는 가전 P 기준 독립 산정 — 박제 X, 매번 RPC 계산)
-    const agentIds = filteredRows.map(r => r.agent_id);
-    let rentalMap = new Map();
-    if (agentIds.length) {
-      const rentalResults = await Promise.all(agentIds.map(id =>
-        supabase.rpc('rental_calc_monthly_settlement', { p_agent_id: id, p_year_month: ym })
-          .then(r => ({ id, data: r.data, error: r.error }))
-          .catch(e => ({ id, data: null, error: e }))
-      ));
-      rentalResults.forEach(({ id, data }) => { if (data) rentalMap.set(id, data); });
-    }
-    // RPC 결과를 기존 응답 포맷으로 변환 (agent 중첩 객체)
-    // IT (incentive_calc_overview) + 가전 (rental_calc_monthly_settlement) 각자 Grade·단가 별도
+    // 잔존마진 단일 구조 — 가전렌탈·포인트제는 2026-08-24 폐지
     const settlements = filteredRows.map(r => {
-      const rt = rentalMap.get(r.agent_id) || {};
-      // ⚡ 단순 합산 (Grade는 각자 독립 — 합산은 표시용만)
-      const combined_agent_total = (r.agent_total || 0) + (rt.incentive || 0) + (rt.bonus || 0) - (rt.total_agent_payback_deduct || 0);
-      const combined_company_profit = (r.company_profit || 0) + (rt.company_profit || 0);
       return {
         agent: {
           id: r.agent_id, name: r.agent_name, center: r.agent_center,
           role: r.agent_role, user_id: r.agent_user_id,
         },
-        total_count: r.total_count, total_points: r.total_points,
-        premium_count: r.premium_count, grade_target: r.grade_target,
-        grade_applied: r.grade_applied, is_penalty: r.is_penalty,
-        applied_rate: r.applied_rate,
+        total_count: r.total_count,
+        total_residual_margin: r.total_residual_margin,
+        incentive_rate_applied: r.incentive_rate_applied,
+        is_penalty: r.is_penalty,
         total_revenue: r.total_revenue, total_payback: r.total_payback,
         total_company_payback_burden: r.total_company_payback_burden,
         total_agent_payback_deduct: r.total_agent_payback_deduct,
         base_salary: r.base_salary, incentive: r.incentive, bonus: r.bonus,
         agent_total: r.agent_total, company_profit: r.company_profit,
         profit_rate: r.profit_rate, finalized_at: r.finalized_at,
-        // 🏠 가전 (rental_calc RPC 결과 — 가전 P 기준 독립 Grade·단가)
-        rental_count: rt.total_count || 0,
-        rental_points: rt.total_points || 0,
-        rental_premium_count: rt.premium_count || 0,
-        rental_grade_target: rt.grade_target || 1,
-        rental_grade_applied: rt.grade_applied || 1,
-        rental_is_penalty: rt.is_penalty || false,
-        rental_applied_rate: rt.applied_rate || 0,
-        rental_incentive: rt.incentive || 0,
-        rental_bonus: rt.bonus || 0,
-        rental_revenue: rt.total_revenue || 0,
-        rental_payback: rt.total_payback || 0,
-        rental_company_payback_burden: rt.total_company_payback_burden || 0,
-        rental_agent_payback_deduct: rt.total_agent_payback_deduct || 0,
-        rental_agent_total: rt.agent_total || 0,
-        rental_company_profit: rt.company_profit || 0,
-        // ⚡ 단순 합산 (표시용 — Grade 산정 X)
-        combined_total_count: (r.total_count || 0) + (rt.total_count || 0),
-        combined_total_points: Number(r.total_points || 0) + Number(rt.total_points || 0),
-        combined_premium_count: (r.premium_count || 0) + (rt.premium_count || 0),
-        combined_agent_total,
-        combined_company_profit,
       };
     });
 
@@ -1664,26 +1618,21 @@ router.get('/manager/overview', authenticateJWT, async (req, res) => {
       acc.total_bonus += s.bonus || 0;
       acc.total_company_profit += s.company_profit || 0;
       acc.total_sales_count += s.total_count || 0;
-      acc.total_premium_count += s.premium_count || 0;
       acc.penalty_count += s.is_penalty ? 1 : 0;
       return acc;
     }, {
       total_revenue: 0, total_payback: 0, total_company_payback_burden: 0,
       total_incentive: 0, total_bonus: 0,
-      total_company_profit: 0, total_sales_count: 0, total_premium_count: 0,
+      total_company_profit: 0, total_sales_count: 0,
       penalty_count: 0,
     });
     // 실제 상품 마진 = 매출(리베이트) − 지급 페이백 − 회사 부담 페이백 (인건비 차감 전)
     totals.total_product_margin = totals.total_revenue - totals.total_payback - totals.total_company_payback_burden;
 
-    const grade_distribution = { 1: 0, 2: 0, 3: 0 };
-    settlements.forEach(s => { grade_distribution[s.grade_applied || 1] += 1; });
-
     res.json({
       month: ym,
       agents_count: settlements.length,
       totals,
-      grade_distribution,
       settlements,
     });
   } catch (err) {
@@ -2349,13 +2298,13 @@ router.get('/goals', authenticateJWT, async (req, res) => {
         // 전환 = 계약 카운트 (contract_date 기준, 삭제 제외)
         supabase.from('incentive_sales').select('id', { count:'exact', head:true })
           .eq('agent_id', aid).gte('contract_date', ymStart).lt('contract_date', ymEnd).is('deleted_at', null),
-        // P = V5 정산 RPC (total_points 필드)
+        // 잔존마진 (V5 정산 RPC)
         supabase.rpc('incentive_calc_monthly_settlement', { p_agent_id: aid, p_year_month: ym }),
       ]);
       const callsActual = callsResp.count || 0;
       const convActual = salesResp.count || 0;
       const settle = Array.isArray(settleResp.data) ? settleResp.data[0] : settleResp.data;
-      const points = Number(settle?.total_points || 0);
+      const points = Number(settle?.total_residual_margin || 0);
       return {
         ...g,
         actual: { calls: callsActual, conversions: convActual, points },
@@ -2698,7 +2647,7 @@ router.get('/agents/me/categories', authenticateJWT, async (req, res) => {
     if (!me) return res.status(401).json({ error: 'unauthenticated' });
     // admin/manager는 모든 카테고리
     if (['admin', 'manager'].includes(me.role)) {
-      return res.json({ categories: ['internet_tv','rental_water','rental_air','rental_bidet','rental_massage','rental_all'], role: me.role, unrestricted: true });
+      return res.json({ categories: ['internet_tv','usim'], role: me.role, unrestricted: true });
     }
     // contract/agent는 본인 부서 + handle_categories 합산
     let deptCats = [];
@@ -2721,49 +2670,32 @@ router.get('/departments/stats', authenticateJWT, async (req, res) => {
     const month = ym || new Date().toISOString().slice(0, 7);
     const { data: depts } = await supabase.from('incentive_departments').select('id,name,categories');
 
-    // 1) 직접 집계 — rental_sales · incentive_sales (이번 달 contract_date)
+    // 1) 직접 집계 — incentive_sales (이번 달 contract_date)
     const start = month + '-01';
     const end = month + '-31';
-    const [rentalRes, salesRes, settleRes] = await Promise.all([
-      supabase.from('rental_sales')
-        .select('id,monthly_fee_snapshot,payback_snapshot,status,agent:incentive_agents(department_id)')
-        .gte('contract_date', start).lte('contract_date', end)
-        .is('deleted_at', null),
+    const [salesRes, settleRes] = await Promise.all([
       supabase.from('incentive_sales')
         .select('id,monthly_fee,payback_snapshot,status,agent:incentive_agents(department_id)')
         .gte('contract_date', start).lte('contract_date', end)
         .is('deleted_at', null),
       supabase.from('incentive_monthly_settlements')
-        .select('agent_id,total_count,total_points,premium_count,incentive,bonus,company_profit,rental_count,rental_points,rental_premium_count,rental_incentive,rental_bonus,rental_company_profit,combined_total_count,combined_total_points,combined_agent_total,combined_company_profit,agent:incentive_agents(department_id)')
+        .select('agent_id,total_count,incentive,bonus,company_profit,agent:incentive_agents(department_id)')
         .eq('year_month', month),
     ]);
 
     const byDept = {};
     const ensure = (did) => {
       if (!byDept[did]) byDept[did] = {
-        rental_count: 0, internet_count: 0, total_count: 0,
+        internet_count: 0, total_count: 0,
         total_monthly_fee: 0, total_payback: 0,
         completed_count: 0, cancelled_count: 0,
         // settlements 기반 확장
-        total_points: 0, premium_count: 0, incentive: 0, bonus: 0, company_profit: 0,
-        rental_points: 0, rental_premium_count: 0, rental_incentive: 0, rental_bonus: 0, rental_company_profit: 0,
-        combined_total_count: 0, combined_total_points: 0, combined_agent_total: 0, combined_company_profit: 0,
+        total_residual_margin: 0, incentive: 0, bonus: 0, company_profit: 0,
         // 호환 (legacy UI)
         count: 0, monthly_fee: 0, payback: 0,
       };
       return byDept[did];
     };
-
-    (rentalRes.data || []).forEach(r => {
-      const b = ensure(r.agent?.department_id || 'unassigned');
-      b.rental_count++; b.total_count++; b.count++;
-      b.total_monthly_fee += r.monthly_fee_snapshot || 0;
-      b.monthly_fee += r.monthly_fee_snapshot || 0;
-      b.total_payback += r.payback_snapshot || 0;
-      b.payback += r.payback_snapshot || 0;
-      if (r.status === 'completed') b.completed_count++;
-      if (r.status === 'cancelled') b.cancelled_count++;
-    });
     (salesRes.data || []).forEach(s => {
       const b = ensure(s.agent?.department_id || 'unassigned');
       b.internet_count++; b.total_count++; b.count++;
@@ -2777,20 +2709,11 @@ router.get('/departments/stats', authenticateJWT, async (req, res) => {
     // settlements 기반 (finalize된 경우만 — 부서별 합산)
     (settleRes.data || []).forEach(s => {
       const b = ensure(s.agent?.department_id || 'unassigned');
-      b.total_points += Number(s.total_points || 0) + Number(s.rental_points || 0);
-      b.premium_count += (s.premium_count || 0) + (s.rental_premium_count || 0);
+      b.total_residual_margin += Number(s.total_residual_margin || 0);
       b.incentive += (s.incentive || 0);
       b.bonus += (s.bonus || 0);
       b.company_profit += (s.company_profit || 0);
-      b.rental_points += Number(s.rental_points || 0);
-      b.rental_premium_count += (s.rental_premium_count || 0);
-      b.rental_incentive += (s.rental_incentive || 0);
-      b.rental_bonus += (s.rental_bonus || 0);
-      b.rental_company_profit += (s.rental_company_profit || 0);
-      b.combined_total_count += (s.combined_total_count || 0);
-      b.combined_total_points += Number(s.combined_total_points || 0);
-      b.combined_agent_total += (s.combined_agent_total || 0);
-      b.combined_company_profit += (s.combined_company_profit || 0);
+
     });
 
     const result = (depts || []).map(d => ({ ...d, stats: byDept[d.id] || ensure(d.id) }));
@@ -2805,185 +2728,7 @@ router.get('/departments/stats', authenticateJWT, async (req, res) => {
 // ════════════════════════════════════════════════════════════
 // 🎫 티켓 관리 — 고객→상담사 핫라인 식별 코드
 // ════════════════════════════════════════════════════════════
-// 인터넷+TV 티켓 (incentive_internet_tickets — 105개) + 가전 렌탈 티켓 (rental_products.ticket_number — R0001~)
-
-// ─── 가전 렌탈 티켓 (옵션 단위 — rental_product_options) ───
-// GET /api/incentive/tickets/rental — 옵션 카탈로그 + product 정보 join
-router.get('/tickets/rental', authenticateJWT, async (req, res) => {
-  try {
-    const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!me) return res.status(403).json({ error: '권한 없음' });
-    const { search, ticket, active_only } = req.query;
-    // PostgREST max-rows 1000 → 매번 새 builder로 페이지별 fetch
-    const buildQ = (from, to) => {
-      let qq = supabase.from('rental_product_options')
-        .select(`
-          id, ticket_number, ticket_active, is_active, months, care_service,
-          monthly_fee, normal_price, rebate, payback, ownership_months,
-          inspection_cycle, variant_code, variant_label, promo_type,
-          as_period_months, signup_age_limit, installation_fee,
-          commission_rate, commission_basis, total_rental_fee,
-          margin, tier_calculated, point_weight,
-          product:rental_products!product_id(
-            id, brand, name, model, category_id, is_active, image_url, product_url,
-            description, feature_tags, recommended_capacity, recommended_usage, specifications,
-            market_score, tier, point_weight, is_premium, promo_tag, evaluation_memo, spec_notes,
-            company:rental_companies(id, name, commission_method, commission_rate),
-            category:rental_categories(id, name, slug, product_group, metadata)
-          )
-        `)
-        .not('ticket_number', 'is', null);
-      if (ticket) qq = qq.eq('ticket_number', String(ticket).trim().toUpperCase());
-      if (active_only === 'true' || active_only === '1') qq = qq.eq('ticket_active', true);
-      return qq.order('ticket_number', { ascending: true }).range(from, to);
-    };
-    // 6페이지 = 6000건 cap (현재 5444건 — 매트리스·에어컨·TV 추가 후 확장)
-    const [r1, r2, r3, r4, r5, r6] = await Promise.all([
-      buildQ(0, 999), buildQ(1000, 1999), buildQ(2000, 2999),
-      buildQ(3000, 3999), buildQ(4000, 4999), buildQ(5000, 5999),
-    ]);
-    if (r1.error) throw r1.error;
-    if (r2.error) throw r2.error;
-    if (r3.error) throw r3.error;
-    if (r4.error) throw r4.error;
-    if (r5.error) throw r5.error;
-    if (r6.error) throw r6.error;
-    const data = [
-      ...(r1.data || []), ...(r2.data || []), ...(r3.data || []),
-      ...(r4.data || []), ...(r5.data || []), ...(r6.data || []),
-    ];
-    // 클라이언트에서 brand/name 검색을 위해 평탄화 + product 정보 inline
-    const tickets = (data || []).map(o => ({
-      id: o.id,
-      ticket_number: o.ticket_number,
-      ticket_active: o.ticket_active,
-      is_active: o.is_active,
-      months: o.months,
-      care_service: o.care_service,
-      monthly_fee: o.monthly_fee,
-      normal_price: o.normal_price,
-      rebate: o.rebate,
-      payback: o.payback,
-      ownership_months: o.ownership_months,
-      inspection_cycle: o.inspection_cycle,
-      variant_code: o.variant_code,
-      variant_label: o.variant_label,
-      promo_type: o.promo_type,
-      // 🆕 가전 그룹 신규 6컬럼
-      as_period_months: o.as_period_months,
-      signup_age_limit: o.signup_age_limit,
-      installation_fee: o.installation_fee,
-      commission_rate: o.commission_rate,
-      commission_basis: o.commission_basis,
-      total_rental_fee: o.total_rental_fee,
-      // 인센티브
-      margin: o.margin,
-      tier_calculated: o.tier_calculated,
-      option_point_weight: o.point_weight,
-      // product 평탄화
-      brand: o.product?.brand,
-      product_name: o.product?.name,
-      model: o.product?.model,
-      product_id: o.product?.id,
-      product_active: o.product?.is_active,
-      company_name: o.product?.company?.name || null,
-      commission_method: o.product?.company?.commission_method || null,
-      company_rate: o.product?.company?.commission_rate || null,
-      category_id: o.product?.category?.id || null,
-      category_name: o.product?.category?.name || null,
-      category_slug: o.product?.category?.slug || null,
-      product_group: o.product?.category?.product_group || null,
-      category_metadata: o.product?.category?.metadata || null,
-      image_url: o.product?.image_url || null,
-      product_url: o.product?.product_url || null,
-      // 🆕 AI auto-fill 5컬럼
-      description: o.product?.description || null,
-      feature_tags: o.product?.feature_tags || null,
-      recommended_capacity: o.product?.recommended_capacity || null,
-      recommended_usage: o.product?.recommended_usage || null,
-      specifications: o.product?.specifications || null,
-      // 운영자 평가
-      market_score: o.product?.market_score ?? null,
-      product_tier: o.product?.tier || null,
-      product_point_weight: o.product?.point_weight ?? null,
-      is_premium: o.product?.is_premium || false,
-      promo_tag: o.product?.promo_tag || null,
-      evaluation_memo: o.product?.evaluation_memo || null,
-      spec_notes: o.product?.spec_notes || null,
-    }));
-    // 서버측 search (brand/name/company도 매칭) — Supabase or 쿼리는 join column 못 씀
-    const filtered = search
-      ? tickets.filter(t => {
-          const s = String(search).toLowerCase();
-          return [t.ticket_number, t.brand, t.product_name, t.model, t.company_name, t.category_name].some(v => (v || '').toLowerCase().includes(s));
-        })
-      : tickets;
-    res.json({ tickets: filtered, total: filtered.length });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// GET /api/incentive/tickets/rental/lookup?ticket=R0683
-router.get('/tickets/rental/lookup', authenticateJWT, async (req, res) => {
-  try {
-    const { ticket } = req.query;
-    if (!ticket) return res.status(400).json({ error: 'ticket 쿼리 필수' });
-    const tn = String(ticket).trim().toUpperCase();
-    if (!/^R\d{3,}$/.test(tn)) return res.status(400).json({ error: 'R0001 형식이어야 함' });
-    const { data, error } = await supabase.from('rental_product_options')
-      .select(`
-        id, ticket_number, ticket_active, is_active, months, care_service,
-        monthly_fee, normal_price, rebate, payback, ownership_months,
-        inspection_cycle, variant_code, variant_label, promo_type,
-        as_period_months, signup_age_limit, installation_fee,
-        commission_rate, commission_basis, total_rental_fee,
-        margin, tier_calculated, point_weight,
-        product:rental_products!product_id(
-          id, brand, name, model, category_id, description, feature_tags,
-          recommended_capacity, recommended_usage, specifications,
-          market_score, tier, point_weight, is_premium, promo_tag,
-          evaluation_memo, spec_notes, is_active, image_url, product_url,
-          company:rental_companies(id, name, commission_method, commission_rate),
-          category:rental_categories(id, name, slug, product_group, metadata)
-        )
-      `)
-      .eq('ticket_number', tn).single();
-    if (error || !data) return res.status(404).json({ error: '티켓 없음', ticket_number: tn });
-    res.json({ ticket: data });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// PATCH /api/incentive/tickets/rental/:id/deactivate (옵션 비활성 → ticket_active=false)
-router.patch('/tickets/rental/:id(\\d+)/deactivate', authenticateJWT, async (req, res) => {
-  try {
-    const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!me || !['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
-    const { data, error } = await supabase.from('rental_product_options')
-      .update({ ticket_active: false, updated_at: new Date().toISOString() })
-      .eq('id', req.params.id).not('ticket_number', 'is', null)
-      .select('id,ticket_number,ticket_active,is_active').single();
-    if (error) throw error;
-    if (!data) return res.status(404).json({ error: '티켓 없음' });
-    res.json({ ok: true, ticket: data });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// PATCH /api/incentive/tickets/rental/:id/activate
-router.patch('/tickets/rental/:id(\\d+)/activate', authenticateJWT, async (req, res) => {
-  try {
-    const me = await getCurrentIncentiveAgent(req.user.id);
-    if (!me || !['admin', 'manager'].includes(me.role)) return res.status(403).json({ error: 'admin/manager 전용' });
-    const { data, error } = await supabase.from('rental_product_options')
-      .update({ ticket_active: true, updated_at: new Date().toISOString() })
-      .eq('id', req.params.id).not('ticket_number', 'is', null)
-      .select('id,ticket_number,ticket_active,is_active').single();
-    if (error) throw error;
-    if (!data) return res.status(404).json({ error: '티켓 없음' });
-    res.json({ ok: true, ticket: data });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// POST /api/incentive/tickets/rental — 옵션은 보통 상품 관리에서 등록되며 자동 R 발급
-// 별도 발급 endpoint는 옵션 단위 X (rental.js의 옵션 INSERT trigger에서 자동 처리 권장)
+// 인터넷+TV 티켓 (incentive_internet_tickets — 105개)
 
 // ─── 인터넷+TV 티켓 (incentive_internet_tickets — 105개) ───
 
@@ -3204,7 +2949,7 @@ router.get('/customers/:phone/360', authenticateJWT, async (req, res) => {
     }
 
     // 병렬 fetch: 통화·인터넷영업·가전영업·중고폰·셀프신청·페이백·포인트·친구초대·알람·메모
-    const [calls, itSales, rentalSales, usedPhones, applications, gifts, rewards, alarms, notes] = await Promise.all([
+    const [calls, itSales, usedPhones, applications, gifts, rewards, alarms, notes] = await Promise.all([
       supabase.from('incentive_customer_call_log')
         .select('*, agent:incentive_agents(name)')
         .eq('customer_id', customer?.calldb_id)
@@ -3212,10 +2957,6 @@ router.get('/customers/:phone/360', authenticateJWT, async (req, res) => {
       supabase.from('incentive_sales')
         .select('*, product:incentive_products(name, carrier, type), agent:incentive_agents(name)')
         .eq('customer_phone', phone).order('created_at', { ascending: false }),
-      supabase.from('rental_sales')
-        .select('*, product:rental_products(brand, name, model, company:rental_companies(name)), option:rental_product_options(months, care_service, ticket_number), agent:incentive_agents(name)')
-        .eq('customer_phone', phone).order('created_at', { ascending: false }),
-      supabase.from('bongi_used_phone_buyback').select('*').eq('customer_phone', phone),
       supabase.from('bongi_applications').select('*').eq('phone', phone),
       supabase.from('bongi_gifts').select('*').eq('phone', phone).order('created_at', { ascending: false }),
       customer?.user_id ? supabase.from('bongi_rewards').select('*').eq('user_id', customer.user_id) : { data: [] },
@@ -3236,11 +2977,11 @@ router.get('/customers/:phone/360', authenticateJWT, async (req, res) => {
     // NBA rule-based
     const nba = [];
     if (customer?.gifts_pending > 0) nba.push({ type:'gift', icon:'💰', msg:`현금페이백 ${customer.gifts_pending}건 미수령 — 고객에게 안내 권장` });
-    if (customer?.it_sales_completed > 0 && customer?.rental_sales_completed === 0 && customer?.rental_sales_progress === 0)
+    if (customer?.it_sales_completed > 0)
       nba.push({ type:'cross-sell', icon:'🏠', msg:'인터넷 계약자 — 가전렌탈 cross-sell 기회' });
     if (customer?.lead_age_days > 14 && customer?.call_status !== 'completed' && customer?.call_status !== 'rejected')
       nba.push({ type:'rotting', icon:'⚠️', msg:`rotting ${customer.lead_age_days}일 — 마지막 시도 권유` });
-    if ((customer?.it_sales_completed > 0 || customer?.rental_sales_completed > 0))
+    if (customer?.it_sales_completed > 0)
       nba.push({ type:'renew', icon:'🔄', msg:'재계약 권유 — 약정 만료 60일 전 자동 알람 등록 권장' });
 
     res.json({
@@ -3248,7 +2989,6 @@ router.get('/customers/:phone/360', authenticateJWT, async (req, res) => {
       history,
       calls: calls.data || [],
       it_sales: itSales.data || [],
-      rental_sales: rentalSales.data || [],
       used_phones: usedPhones.data || [],
       applications: applications.data || [],
       gifts: gifts.data || [],
@@ -3339,7 +3079,6 @@ router.get('/customers/export/csv', authenticateJWT, async (req, res) => {
       c.priority_score ?? '',
       c.is_app_member ? '회원' : '비회원',
       c.it_sales_completed || 0,
-      c.rental_sales_completed || 0,
       c.usedphone_count || 0,
       c.gifts_pending || 0,
       c.gifts_total_amount || 0,
@@ -3650,11 +3389,11 @@ router.get('/customers/:phone/nba', authenticateJWT, async (req, res) => {
     if (!c) return res.status(404).json({ error: '고객 없음' });
     const nba = [];
     if (c.gifts_pending > 0) nba.push({ type:'gift', priority:1, icon:'💰', msg:`현금페이백 ${c.gifts_pending}건 미수령`, action:'안내 콜' });
-    if (c.it_sales_completed > 0 && (c.rental_sales_completed + c.rental_sales_progress) === 0)
-      nba.push({ type:'cross-sell-rental', priority:2, icon:'🏠', msg:'인터넷 계약자 — 가전렌탈 권장', action:'cross-sell 콜' });
+    if (c.it_sales_completed > 0)
+      nba.push({ type:'cross-sell-usim', priority:2, icon:'📲', msg:'인터넷 계약자 — 유심 이동 권장 (같은 통신사만 결합 인정)', action:'cross-sell 콜' });
     if (c.lead_age_days > 14 && c.call_status !== 'completed' && c.call_status !== 'rejected')
       nba.push({ type:'rotting', priority:3, icon:'⚠️', msg:`rotting ${c.lead_age_days}일`, action:'마지막 시도' });
-    if ((c.it_sales_completed + c.rental_sales_completed) > 0)
+    if (c.it_sales_completed > 0)
       nba.push({ type:'renew', priority:4, icon:'🔄', msg:'약정 만료 60일 전 재계약 권유', action:'알람 등록' });
     res.json({ phone, nba });
   } catch (e) { res.status(500).json({ error: e.message }); }
