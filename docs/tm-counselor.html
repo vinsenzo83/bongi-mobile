@@ -2737,12 +2737,10 @@ function channelsFor(productId) {
 }
 
 // 채널 → 유심 수수료표의 통신사 키
+// 채널 → 유심 수수료표의 통신사 표시명. 채널이 없으면 인터넷 통신사를 따른다.
 function usimCarrierForChannel(ch, fallbackCarrierKey) {
-  if (ch === 'SKT') return 'SKT';
-  if (ch === 'SKB') return 'SKB';
-  if (ch === 'KT') return 'KT';
-  if (ch === 'LG U+') return 'LG U+';
-  return USIM_CN[fallbackCarrierKey];
+  if (ch === 'SKT' || ch === 'SKB' || ch === 'KT' || ch === 'LG U+') return ch;
+  return USIM_CN[fallbackCarrierKey] || 'SKT';
 }
 
 var USIM_PLANS = [];
@@ -2801,7 +2799,9 @@ function usimProductKey(carrierKey, sp, tvName) {
 //     'none'   그 구간에 행 자체가 없다 → 정책표 미수령
 //     'blank'  행은 있는데 amount 가 null 이다 → 정책상 해당없음 (LG U+ 33군·55군의 UIT 처럼)
 function usimCommission(carrierKey, category, productKey, usimFee) {
-  var cn = USIM_CN[carrierKey];
+  // 인자로 키('kt')가 올 수도, 표시명('KT'·'SKB')이 올 수도 있다.
+  //   USIM_CN['KT'] 는 undefined 라 그대로 쓰면 조회가 통째로 빈다 — 양쪽 다 받는다.
+  var cn = USIM_CN[carrierKey] || carrierKey;
   function rowsFor(pk) {
     return USIM_COMM.filter(function(r) {
       return r.carrier === cn && r.category === category
