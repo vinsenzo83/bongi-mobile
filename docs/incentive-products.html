@@ -588,12 +588,10 @@ function toggleChannels(pid) {
         <table style="width:100%;border-collapse:collapse;font-size:11.5px">
           <thead><tr style="background:#1e293b;color:#94a3b8;font-size:10.5px">
             <th style="padding:6px 9px;text-align:left;width:90px">채널</th>
-            <th style="padding:6px 9px;text-align:left">표기</th>
             <th style="padding:6px 9px;text-align:right;width:100px">가이드 현금</th>
             <th style="padding:6px 9px;text-align:right;width:100px">상품권</th>
             <th style="padding:6px 9px;text-align:right;width:95px">가이드 총액</th>
             <th style="padding:6px 9px;text-align:right;width:100px">MAX</th>
-            <th style="padding:6px 9px;text-align:right;width:100px">설치비</th>
             <th style="padding:6px 9px;text-align:center;width:60px">기본</th>
             <th style="padding:6px 9px;text-align:center;width:70px">작업</th>
           </tr></thead>
@@ -602,7 +600,7 @@ function toggleChannels(pid) {
         <div style="font-size:10px;color:#64748b;margin-top:7px;line-height:1.6">
           · 리베이트·마진은 여기서 다루지 않는다 — <b>회사 마진을 뺀 값이 이미 가이드·MAX 에 반영</b>돼 있다.<br>
           · 가이드 총액은 현금 + 상품권으로 자동 계산된다. <b style="color:#c4b5fd">MAX 는 현금으로만 더 나간다</b>.<br>
-          · 유심 수수료도 이 채널을 따라간다 — SKT 와 SKB 는 구간 경계까지 다르다.
+          · 설치비는 여기서 다루지 않는다 — <b>TM 데이터 관리 › 설치비</b>에서 3사·시간대별로 관리한다.
         </div>
       </div></td>`;
   }
@@ -618,12 +616,10 @@ function chRowHtml(c) {
       style="width:${w};padding:4px 6px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11px;text-align:right">`;
   return `<tr data-ch="${c.id}" style="border-bottom:1px solid #334155">
     <td style="padding:6px 9px"><b style="color:#7dd3fc">${c.channel}</b></td>
-    <td style="padding:6px 9px;color:#94a3b8;font-size:10.5px">${c.label || ''}</td>
     <td style="padding:5px 7px;text-align:right;background:rgba(19,78,74,.25)">${i(c.guide_cash, 'guide_cash', '92px')}</td>
     <td style="padding:5px 7px;text-align:right;background:rgba(17,94,89,.25)">${i(c.guide_voucher, 'guide_voucher', '92px')}</td>
     <td style="padding:6px 9px;text-align:right;font-weight:800;color:#5eead4" id="chg-${c.id}">${c.guide_payout == null ? '—' : fmt(c.guide_payout)}</td>
     <td style="padding:5px 7px;text-align:right;background:rgba(76,29,149,.25)">${i(c.max_payout, 'max_payout', '92px')}</td>
-    <td style="padding:5px 7px;text-align:right">${i(c.install_fee, 'install_fee', '92px')}</td>
     <td style="padding:6px 9px;text-align:center">${c.is_default ? '<span style="color:#fbbf24">★</span>' : ''}</td>
     <td style="padding:6px 9px;text-align:center">
       <button class="btn-row ch-save" data-id="${c.id}" style="background:#059669;color:#fff">저장</button>
@@ -644,7 +640,7 @@ async function saveChannel(id) {
   if (!tr) return;
   const v = f => chNum(tr.querySelector(`.ch-${f}`)?.value);
   const body = { guide_cash: v('guide_cash'), guide_voucher: v('guide_voucher') ?? 0,
-                 max_payout: v('max_payout'), install_fee: v('install_fee') };
+                 max_payout: v('max_payout') };
   if (body.guide_cash != null) body.guide_payout = body.guide_cash + (body.guide_voucher || 0);
   if (body.guide_payout != null && body.max_payout != null && body.max_payout < body.guide_payout) {
     alert('MAX 는 가이드 총액보다 작을 수 없습니다.\n가이드 총액 ' + fmt(body.guide_payout) + ' / MAX ' + fmt(body.max_payout));
