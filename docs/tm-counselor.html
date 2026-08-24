@@ -4183,23 +4183,9 @@ const INC_API = (window.location.origin.includes('localhost') || window.location
 const INC_STATE_KEY = 'incentive-current-state-v1';
 let _incLastFetch = 0;
 
-function incLoadState() {
-  try {
-    const s = JSON.parse(localStorage.getItem(INC_STATE_KEY) || '{}');
-    document.getElementById('inc-current-p').value = s.points ?? 0;
-    document.getElementById('inc-current-prem').value = s.premium ?? 0;
-    document.getElementById('inc-add-payback').value = s.payback ?? 0;
-  } catch(e) {}
-}
-function incSaveState() {
-  try {
-    localStorage.setItem(INC_STATE_KEY, JSON.stringify({
-      points: parseFloat(document.getElementById('inc-current-p').value) || 0,
-      premium: parseInt(document.getElementById('inc-current-prem').value) || 0,
-      payback: parseInt(document.getElementById('inc-add-payback').value) || 0,
-    }));
-  } catch(e) {}
-}
+// 지급액은 상품마다 범위가 달라 저장하지 않는다 — 매번 가이드에서 시작하는 편이 안전하다.
+function incLoadState() {}
+function incSaveState() {}
 
 // TM의 D.{c}.tv[i].n → incentive_products.tv_tier 매핑
 function incGetTvTier(carrier, tvName) {
@@ -4343,16 +4329,11 @@ setTimeout(function() {
       inputBox.style.display = inputBox.style.display === 'none' ? '' : 'none';
     });
   }
-  ['inc-current-p', 'inc-current-prem', 'inc-add-payback'].forEach(function(id) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('input', function() {
-        incSaveState();
-        incSimulate();
-  (function(){ const sl=document.getElementById('inc-payout'); if (sl && !sl._wired) { sl._wired=true; sl.addEventListener('input', incSimulate); } })();
-      });
-    }
-  });
+  // 지급액 슬라이더 — 움직이면 잔존마진·인센티브 즉시 재계산
+  (function () {
+    const sl = document.getElementById('inc-payout');
+    if (sl && !sl._wired) { sl._wired = true; sl.addEventListener('input', incSimulate); }
+  })();
   incLoadState();
   incSimulate();
 }, 100);
@@ -4577,13 +4558,7 @@ async function incFetchMyState() {
     const agent = (typeof authGetUser === 'function') ? authGetUser() : null;
     _incMyState = { settlement: s, agent: agent };
 
-    // 누적 P / 우수 자동 갱신
-    const pEl = document.getElementById('inc-current-p');
-    const premEl = document.getElementById('inc-current-prem');
-    if (pEl && s) pEl.value = s.total_points || 0;
-    if (premEl && s) premEl.value = s.premium_count || 0;
-
-    // 🎯 내 현재 상태 카드 자동 갱신 — IT · 가전 · 통합 3행 4컬럼 (Grade는 각자 독립)
+    // 🎯 내 현재 상태 카드 — 배분율 · 잔존마진 · 예상 인센티브
     const statusEl = document.getElementById('inc-my-status');
     const bodyEl = document.getElementById('inc-my-status-body');
     if (statusEl && bodyEl && s) {
@@ -4630,13 +4605,6 @@ function incApplyAuthState() {
   const loggedIn = !!authGetToken();
   // settlement 데이터를 실제로 받아왔을 때만 readonly (받지 못하면 사용자가 직접 입력 가능)
   const hasState = !!(_incMyState && _incMyState.settlement);
-  ['inc-current-p', 'inc-current-prem'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.readOnly = hasState;
-    el.style.background = hasState ? '#f3f4f6' : '#fff';
-    el.title = hasState ? '로그인된 상담사의 실제 누적 데이터 (자동 갱신)' : '';
-  });
   // 계약 완료 버튼 — re-quote 모드면 "상품 변경 적용"으로 변경
   const dealBtn = document.getElementById('inc-close-deal-btn');
   if (dealBtn) {
