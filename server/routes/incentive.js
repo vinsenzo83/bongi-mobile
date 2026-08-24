@@ -130,7 +130,8 @@ router.patch('/products/:id', authenticateJWT, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
-    const allowed = ['rebate', 'payback', 'guide_cash', 'guide_voucher', 'guide_payout', 'max_payout',
+    // rebate 는 더 이상 관리하지 않는다 — 회사 마진을 뺀 값이 이미 가이드·MAX 에 들어 있다.
+    const allowed = ['payback', 'guide_cash', 'guide_voucher', 'guide_payout', 'max_payout',
                      'name', 'active', 'speed', 'tv_tier',
                      'gift_amount', 'monthly_fee_min', 'monthly_fee_max', 'install_fee'];
     const update = {};

@@ -925,7 +925,6 @@ function renderContractDetails(r) {
         <div style="grid-column:span 2"><span style="color:#94a3b8">약정 종료일</span><br><b style="color:${dDay && dDay<=60 && dDay>0?'#fbbf24':'#cbd5e1'}">${it.end_date?it.end_date.toISOString().slice(0,10):'-'}${dDayHTML?' · '+dDayHTML:''}</b></div>
         ${it.monthly_fee?`<div><span style="color:#94a3b8">월납</span><br><b style="color:#f1f5f9">${fmt(it.monthly_fee)}원</b></div>`:''}
         ${totalPay?`<div><span style="color:#94a3b8">총 납부</span><br><b style="color:#cbd5e1">${fmt(totalPay)}원</b></div>`:''}
-        ${it.rebate?`<div><span style="color:#94a3b8">리베이트</span><br><b style="color:#86efac">${fmt(it.rebate)}원</b></div>`:''}
         ${it.payback?`<div><span style="color:#94a3b8">페이백</span><br><b style="color:#fbbf24">${fmt(it.payback)}원</b></div>`:''}
         ${it.activation_date?`<div><span style="color:#94a3b8">설치/개통일</span><br><b style="color:#cbd5e1">${(it.activation_date||'').slice(0,10)}</b></div>`:''}
         ${it.agent?`<div><span style="color:#94a3b8">담당 상담사</span><br><b style="color:#cbd5e1">${it.agent}</b></div>`:''}
