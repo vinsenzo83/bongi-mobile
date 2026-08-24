@@ -274,7 +274,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         </div>
         <div style="font-size:10.5px;color:#cbd5e1;margin-top:8px;padding-top:8px;border-top:1px solid #334155;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <span>본인 영업 <b id="mgr-ov-mycnt">-</b>건 / 의무 <span id="mgr-ov-oblig">-</span></span>
-          <span>팀 영업이익률 <b id="mgr-ov-pr">-</b> / 임계 <span id="mgr-ov-prmin">-</span></span>
+          <span>팀 잔존율 <b id="mgr-ov-pr">-</b> / 임계 <span id="mgr-ov-prmin">-</span></span>
           <span id="mgr-ov-reason" style="color:#fde047"></span>
         </div>
       </div>
@@ -364,7 +364,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
         <thead>
           <tr>
             <th>센터</th><th>팀장</th><th>본인 영업</th><th>팀 인센 합계</th>
-            <th>오버라이드(정상)</th><th>페널티</th><th>최종 지급</th><th>팀 이익률</th><th>상태</th><th>면제</th>
+            <th>오버라이드(정상)</th><th>차감</th><th>최종 지급</th><th>팀 잔존율</th><th>상태</th><th>면제</th>
           </tr>
         </thead>
         <tbody id="mgr-list-tbody"><tr><td colspan="10" style="text-align:center;color:#64748b;padding:20px">로딩 중...</td></tr></tbody>
@@ -869,9 +869,9 @@ async function toggleAgentDetail(agentId, agentName) {
         '계약일': s.contract_date || '',
         '통신사': p.carrier || '',
         '상품': p.name || '',
-        'Tier': p.tier || '',
-        'P': p.point_weight || 0,
-        '우수': p.is_premium ? 'Y' : 'N',
+        '가이드': p.guide_payout || 0,
+        'MAX': p.max_payout || 0,
+        '실제 지급액': s.actual_payout != null ? s.actual_payout : (p.guide_payout || 0),
         '고객명': s.customer_name || '',
         '전화': s.customer_phone || '',
         '주소': s.customer_address || '',
@@ -912,11 +912,15 @@ async function toggleAgentDetail(agentId, agentName) {
       else if (s.status === 'in_progress') a.in_progress += 1;
       else if (s.status === 'pending') a.pending += 1;
       else if (s.status === 'cancelled') a.cancelled += 1;
-      a.points += parseFloat(p.point_weight) || 0;
-      a.premium += p.is_premium ? 1 : 0;
+      // 잔존마진은 설치완료 건만 잡는다 — 정산과 같은 기준이다.
+      if (s.status === 'completed') {
+        const paid = (s.actual_payout != null) ? s.actual_payout : (p.guide_payout || 0);
+        a.residual += Math.max(0, (p.max_payout || 0) - paid);
+        a.paid += paid;
+      }
       a.payback += s.add_payback || 0;
       return a;
-    }, { count:0, completed:0, in_progress:0, pending:0, cancelled:0, points:0, premium:0, payback:0 });
+    }, { count:0, completed:0, in_progress:0, pending:0, cancelled:0, residual:0, paid:0, payback:0 });
     const sumBar = document.getElementById('agent-sales-summary-bar');
     if (sumBar) {
       sumBar.style.display = 'grid';
@@ -924,15 +928,16 @@ async function toggleAgentDetail(agentId, agentName) {
       sumBar.innerHTML =
         card('총 영업', `${summary.count}건`, '#3b82f6') +
         card('완료/진행/대기/취소', `<span style="color:#86efac">${summary.completed}</span>·<span style="color:#60a5fa">${summary.in_progress}</span>·<span style="color:#fbbf24">${summary.pending}</span>·<span style="color:#fca5a5">${summary.cancelled}</span>`, '#22c55e') +
-        card('누적 P', summary.points.toLocaleString() + 'P', '#a855f7') +
-        card('우수', `${summary.premium}건`, '#f59e0b') +
+        card('잔존마진', summary.residual.toLocaleString() + '원', '#22c55e') +
+        card('실제 지급액', summary.paid.toLocaleString() + '원', '#f59e0b') +
         card('총 페이백', summary.payback.toLocaleString() + '원', '#dc2626');
     }
     container.innerHTML = '<table style="background:transparent;width:100%;border-collapse:collapse"><thead><tr>'
       + '<th style="background:#1e3a8a;color:#bfdbfe;padding:10px 8px;font-size:12px;font-weight:700;border-bottom:2px solid #3b82f6">계약일</th>'
       + '<th style="background:#1e3a8a;color:#bfdbfe;padding:10px 8px;font-size:12px;font-weight:700;border-bottom:2px solid #3b82f6;text-align:left">상품</th>'
-      + '<th style="background:#1e3a8a;color:#bfdbfe;padding:10px 8px;font-size:12px;font-weight:700;border-bottom:2px solid #3b82f6">P</th>'
-      + '<th style="background:#1e3a8a;color:#bfdbfe;padding:10px 8px;font-size:12px;font-weight:700;border-bottom:2px solid #3b82f6">우수</th>'
+      + '<th style="background:#1e3a8a;color:#bfdbfe;padding:10px 8px;font-size:12px;font-weight:700;border-bottom:2px solid #3b82f6">가이드</th>'
+      + '<th style="background:#1e3a8a;color:#bfdbfe;padding:10px 8px;font-size:12px;font-weight:700;border-bottom:2px solid #3b82f6">MAX</th>'
+      + '<th style="background:#1e3a8a;color:#bfdbfe;padding:10px 8px;font-size:12px;font-weight:700;border-bottom:2px solid #3b82f6">실제 지급</th>'
       + '<th style="background:#1e3a8a;color:#bfdbfe;padding:10px 8px;font-size:12px;font-weight:700;border-bottom:2px solid #3b82f6">고객</th>'
       + '<th style="background:#1e3a8a;color:#bfdbfe;padding:10px 8px;font-size:12px;font-weight:700;border-bottom:2px solid #3b82f6">전화</th>'
       + '<th style="background:#1e3a8a;color:#bfdbfe;padding:10px 8px;font-size:12px;font-weight:700;border-bottom:2px solid #3b82f6;text-align:left">주소</th>'
@@ -943,7 +948,7 @@ async function toggleAgentDetail(agentId, agentName) {
       + '</tr></thead><tbody>'
       + sales.map(s => {
           const p = s.product || {};
-          const tierBadge = p.tier ? `<span style="background:${ {S:'#fbbf24',A:'#60a5fa',B:'#94a3b8',C:'#475569'}[p.tier] || '#475569' };color:#fff;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:800;margin-left:4px">${p.tier}</span>` : '';
+          const tierBadge = '';
           const tvCntBadge = (s.tv_count && s.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:3px">TV${s.tv_count}</span>` : '';
           const wifiBadge = s.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:3px">스피커</span>' : '';
           const carrierMap = { kt: { label:'KT', bg:'#dc2626' }, sk: { label:'SK', bg:'#ef4444' }, skt: { label:'SK', bg:'#ef4444' }, lgu: { label:'LG U+', bg:'#a855f7' }, lg: { label:'LG U+', bg:'#a855f7' } };
@@ -960,8 +965,9 @@ async function toggleAgentDetail(agentId, agentName) {
           return `<tr style="${s.status === 'cancelled' ? 'opacity:0.55' : ''};border-bottom:1px solid #1e293b">
             <td style="padding:10px 8px;font-size:12px;text-align:center;color:#cbd5e1">${(s.contract_date||'').slice(5)}</td>
             <td style="padding:10px 8px;font-size:12.5px"><div>${carrierBadge}<b>${p.name||'-'}</b>${tierBadge}${tvCntBadge}${wifiBadge}</div><div style="font-size:10.5px;color:#94a3b8;margin-top:3px">${p.point_weight||'?'}P · ${p.is_premium ? '⭐ 우수' : '일반'}${p.speed ? ' · '+p.speed : ''}</div></td>
-            <td style="padding:10px 8px;font-size:14px;text-align:center"><b style="color:#a5b4fc">${p.point_weight||0}</b></td>
-            <td style="padding:10px 8px;font-size:14px;text-align:center">${p.is_premium ? '<span style="color:#fbbf24;font-size:18px">⭐</span>' : '<span style="color:#64748b">-</span>'}</td>
+            <td style="padding:10px 8px;font-size:13px;text-align:right">${(p.guide_payout||0).toLocaleString()}</td>
+            <td style="padding:10px 8px;font-size:13px;text-align:right;color:#c4b5fd">${(p.max_payout||0).toLocaleString()}</td>
+            <td style="padding:10px 8px;font-size:13px;text-align:right;color:#fbbf24"><b>${((s.actual_payout != null) ? s.actual_payout : (p.guide_payout||0)).toLocaleString()}</b></td>
             <td style="padding:10px 8px;font-size:12.5px"><b>${s.customer_name || '<i style="color:#64748b;font-weight:400">-</i>'}</b></td>
             <td style="padding:10px 8px;font-size:12px;font-family:monospace;color:#cbd5e1">${s.customer_phone || '<i style="color:#64748b">-</i>'}</td>
             <td style="padding:10px 8px;font-size:11.5px;max-width:240px;word-break:break-all;color:#cbd5e1">${s.customer_address || '<i style="color:#dc2626">⚠️ 미입력</i>'}</td>
