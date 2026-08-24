@@ -124,7 +124,6 @@ const SECTIONS = [
 <li><b>상품관리 AI 자연어 input 통합</b> — TM 추천 메타 박스 정형 input 5종 폐기 + AI 4 input 통합 (한 줄 설명·추천 용량·추천 대상·강점 태그)</li>
 <li><b>TM 견적 카드 UI 보완</b> — 카테고리 schema 동적 렌더 + 가전 신규 6컬럼 노출 + AI 자연어 chip</li>
 <li><b>이벤트 페이지 개발</b> 섹션 통합 (<code>flow-used-phone.html</code> FINAL 직후) — Tredit 폐기·봉이 자체 공용 시스템 설계 (bongi_events·applications·coupons + LP 템플릿 + 어댑터)</li>
-<li><b>권한 관리(부서) 단순화</b> — 부서 6개(인터넷팀·정수기팀·공기청정기팀·비데팀·안마의자팀·통합관리팀) → <b>2개로 통합</b> (인터넷팀·가전팀). 가전팀.categories = water-purifier·air-purifier·bidet·mattress·aircon·tv. 빈 부서 ID 3~6은 hard delete. UI는 기존 _cats 2그룹(인터넷+TV / 가전렌탈 통합)을 그대로 사용 — 행만 6→2로 축소</li>
 <li><b>활성 카테고리 6종 이미지 100% 달성</b> — 누락 56장 backfill (same-model 17장 + 제조사 og:image fetch 39장). 정수기 111·공청 23·비데 19·매트리스 86·에어컨 120·TV 76 = <b>435/435 (100%)</b>. 4 agent 병렬(WebFetch 제조사 공식 사이트 + Supabase Storage 업로드 + image_url update)</li>
 </ol>
 <b>검증 완료</b>: 12 endpoint 200 · 6 E2E 케이스 PASS (정수기·매트리스·TV·에어컨·카드 없는 채널·청호 alias) · 회귀 0건<br>
@@ -162,26 +161,40 @@ const SECTIONS = [
   {
     id: 'dashboard', group: '2️⃣ 일일 운영', title: '📊 대시보드', roles: ['all'],
     html: `<h2>대시보드<span class="role-tag r-all">전체</span></h2>
-<p class="lead">role별 다른 KPI·차트 자동 노출.</p>
-<h3>공통 KPI (모든 role)</h3>
+<p class="lead">role 별로 다른 KPI·차트가 자동 노출된다.</p>
+
+<h3>상담사 KPI</h3>
+<table>
+<tr><th>카드</th><th>뜻</th></tr>
+<tr><td>💰 총수령</td><td>기본급 + 인센티브 − 페이백 차감</td></tr>
+<tr><td>📦 설치완료</td><td>이번 달 정산 대상 건수</td></tr>
+<tr><td>🪙 잔존마진</td><td>Σ(MAX − 실제 지급액)</td></tr>
+<tr><td>💵 인센티브</td><td>잔존마진 × 내 배분율</td></tr>
+</table>
+
+<h3>팀장 KPI</h3>
 <ul>
-<li>이번 달 계약 건수·합계 P·인센티브 예상액·등급</li>
-<li>월별 추이 차트 / 상태별 분포 / 상품 TOP10</li>
+<li>👤 내 정산 — 설치완료·잔존마진·인센티브</li>
+<li>🏢 내 센터 합계 — 건수·잔존마진·인센티브</li>
+<li>📊 매니징 KPI — 1인 평균 건수, 건당 평균 잔존마진, <b>MAX 소진율</b></li>
+<li>🎯 <b>MAX 를 많이 쓰는 상담사</b> — 소진율 상위 5명. 코칭 대상이다</li>
 </ul>
-<h3>매니저 전용 카드 (manager·admin)</h3>
+<div class="tip">
+<b>MAX 소진율</b> = 실제 지급액 ÷ (실제 지급액 + 잔존마진). 높을수록 재량을 많이 쓴 것이다.
+낮다고 무조건 좋은 건 아니다 — 계약을 놓치면 애초에 집계되지 않는다.
+</div>
+
+<h3>전체 KPI (admin)</h3>
 <ul>
-<li>👤 내 정산 (본인 P·인센티브)</li>
-<li>🏢 내 센터 합계</li>
-<li>📊 매니징 KPI (팀 등급 분포·페널티 인원·우수 비율)</li>
-<li>💰 센터 영업이익 (admin만)</li>
-<li>🏢 V5.1 팀 오버라이드 (manager 전용)</li>
-<li>⚠️ 페널티 위험 상담사 list</li>
+<li>설치완료 · 잔존마진 · 총 인센티브 · <b>회사 잔존마진 몫</b> · MAX 소진율</li>
+<li>센터별 / 상담사별 / ROI TOP10 표</li>
 </ul>
+
 <h3>📞 실시간 콜 활동 위젯 (manager·admin · 30초 자동 갱신)</h3>
 <table>
 <tr><th>📦 미배정 풀</th><th>⏰ 미연락</th><th>📞 콜백</th><th>🎉 오늘 전환</th><th>🎯 컨택률</th></tr>
 </table>
-<p>오늘 전환은 KST 기준 자정~지금. 업데이트 시각이 우상단에 표시됨.</p>`
+<p>오늘 전환은 KST 기준 자정~지금. 업데이트 시각이 우상단에 표시된다.</p>`
   },
   {
     id: 'call-list', group: '2️⃣ 일일 운영', title: '📋 내 콜 리스트', roles: ['agent', 'manager', 'admin'],
@@ -213,7 +226,7 @@ const SECTIONS = [
   {
     id: 'tm-counselor', group: '2️⃣ 일일 운영', title: '📞 TM 콜 모드', roles: ['agent', 'manager', 'admin'],
     html: `<h2>TM 콜 모드<span class="role-tag r-agent">AGENT</span></h2>
-<p class="lead">고객 카드 + 상담 스크립트 + 메모 + 결과 기록 + 견적 패널 통합. <b>📡 인터넷+TV</b> 탭 / <b>🏠 가전렌탈</b> 탭 자유 전환.</p>
+<p class="lead">고객 카드 + 상담 스크립트 + 메모 + 결과 기록 + 견적 패널 통합. <b>📡 인터넷+TV</b> 탭 / <b>📲 유심 단독</b> 탭 자유 전환.</p>
 <h3>화면 구성</h3>
 <ul>
 <li>좌측 콜 큐 사이드바 (50건, 본인 분배 콜 우선순위 순)</li>
@@ -224,9 +237,8 @@ const SECTIONS = [
 
 <h3>🌟 가전탭 — 자동 P 견적 + 상품 추천 (2026-05-18 신규)</h3>
 <ul>
-<li>운영자는 통신사·모델·약정·케어만 선택 → 옵션의 P·Tier·우수·마진 <b>자동 산출</b></li>
+<li>통신사·속도·TV·결합을 고르면 요금과 사은품(가이드)이 자동 계산된다</li>
 <li>견적 카드에 ⭐ <b>우수(S)</b> 배지 + 정확한 마진·P 표시</li>
-<li>좌측 상품 추천: S Tier 우선 정렬 (rebate ≥ 261k 자동 강조)</li>
 <li>R 티켓번호 빠른 조회 — 가전 단독 ticket (R0001) 입력 시 견적 즉시 복원</li>
 <li><b>🏢 렌탈사(채널) 뱃지</b> (2026-05-24) — 가전 그룹은 같은 모델이 N개 렌탈사 채널로 중개. 추천 카드 옆에 LG헬로비전 16% · KT가전구독 18% 등 채널·수수료율 즉시 식별</li>
 </ul>
@@ -242,7 +254,6 @@ const SECTIONS = [
 <div class="tip">💡 TM 계산기 상단 3-chip 토글로 프로파일 변경. 토글만 바꿔도 추천 1위가 KT가전구독(월납) ↔ LG헬로비전(사은품·마진) 동적으로 바뀜. 선택값은 브라우저 localStorage에 박제.</div>
 <ul>
 <li>스코어 = Σ(가중치 × 정규화 지표). margin/customer/gift는 그룹 내 정규화(0~1), convenience는 운영자 설정(0~1)</li>
-<li>gift_score = rebate × 0.9 / max(group.rebate × 0.9) — 리베이트 큰 채널일수록 페이백·결합혜택 줄 여력 큼</li>
 <li>convenience_score는 정책 메뉴에서 렌탈사별 편집 (대기업 0.75~0.80 / 중견 0.60~0.65 / 그 외 0.50)</li>
 <li>가중치는 정책 메뉴 <code>rental_policy.recommend_profiles</code>에서 admin 조정 가능</li>
 </ul>
@@ -251,7 +262,7 @@ const SECTIONS = [
 <table>
 <tr><th>행</th><th>내용</th></tr>
 <tr><td>📡 인터넷+TV</td><td>오늘 등록한 인터넷+TV만 누적 P·우수·인센티브</td></tr>
-<tr><td>🏠 가전렌탈</td><td>오늘 등록한 가전만 누적 P·우수·인센티브</td></tr>
+<tr><td>📲 유심</td><td>오늘 등록한 유심 건의 잔존마진·인센티브</td></tr>
 <tr><td>⚡ <b>통합 합계</b></td><td>P·우수·인센티브 + <b>우수 보너스 시뮬</b> (premCount × bonus_per_premium)</td></tr>
 </table>
 <div class="tip"><b>이 한 건 추가 시 변화</b>: P x.x→y.y, 우수 m→n, 인센티브 +Z원 미리보기 — 클릭 후 등록 여부 즉시 판단</div>
@@ -276,8 +287,7 @@ const SECTIONS = [
   {
     id: 'contract', group: '2️⃣ 일일 운영', title: '📋 계약 처리', roles: ['admin', 'manager', 'contract', 'agent'],
     html: `<h2>계약 처리<span class="role-tag r-all">전체</span></h2>
-<p class="lead">TM 상담사가 따낸 영업 → 주소·서류 입력 → 최종 계약 진행. <b>📡 인터넷+TV</b> · <b>🏠 가전렌탈</b> 양쪽 통합 list. role별 처리 범위 다름.</p>
-<div class="tip">📌 <b>가전렌탈 신청 모달 (2026-05-18 신규)</b> — 인터넷+TV와 동일 패턴. 견적 자동 채움 + 명의자 구분(개인·개인사업자·법인) + 주소·계좌·설치일정 + 박제 단가(rental_sales snapshot) 보존</div>
+<p class="lead">TM 상담사가 따낸 영업 → 주소·서류 입력 → 최종 계약 진행. role 별로 처리 범위가 다르다.</p>
 <div class="tip">📌 <b>계약 처리 가전탭 layout 통일 (2026-05-18)</b> — 인터넷+TV와 동일 5 stats 카드 + 툴바(월·상태·주소·검색·새로고침·📥엑셀·📁휴지통) + 13 컬럼 table(계약일·접수·상담사·센터·R번호·상품·고객·전화·주소·월납/페이백·상태·작업) + 페이지네이션(20/50/100). 카테고리 슬러그로 자동 필터. 엑셀 26 컬럼 (snapshot·tier·P·우수·취소사유 포함). 휴지통 모드 = <code>?deleted=1</code> 분기.</div>
 <h3>role별 처리 범위</h3>
 <table>
@@ -312,7 +322,7 @@ const SECTIONS = [
 <div class="step"><span class="num">1</span>[🧮 계산기로 상품 변경 ↗] 클릭 → V2 계산기와 동일한 <b>팝업창</b>(1400×900) 열림</div>
 <div class="step"><span class="num">2</span>견적 옵션(왼) + 견적 결과(우측) 표시. 통신사·속도·TV·결합·WiFi·추가 TV·셋톱·인원 등 자유 변경</div>
 <div class="step"><span class="num">3</span>[💾 상품 변경 적용 (사유 입력)] 클릭 → 사유 prompt (<b>고객 요구·시공 불가·기타</b>)</div>
-<div class="step"><span class="num">4</span>저장 시 PATCH /sales/{id} 자동 호출 + snapshot 재계산 (payback·rebate·point_weight·tier·is_premium·company_payback_burden·agent_payback_deduct — 2026-05-18 확장)</div>
+<div class="step"><span class="num">4</span>저장 시 PATCH /sales/{id} 자동 호출 + snapshot 재계산 (가이드·MAX·실제 지급액·tier·is_premium·company_payback_burden·agent_payback_deduct — 2026-05-18 확장)</div>
 <div class="step"><span class="num">5</span>팝업 자동 close + 계약 list 새로고침 + 편집 모달 자동 close</div>
 
 <h3>상태 변경</h3>
@@ -480,7 +490,7 @@ const SECTIONS = [
 <tr><td>B</td><td>📋 콜DB 운영 정보</td><td>import/분배/마지막콜 일자·콜 누적·callback·재시도·거절사유·메모·DNT·우선순위</td></tr>
 <tr><td>C</td><td>📍 다채널 인입 history</td><td>시간순 (콜DB · 셀프신청 · 중고폰 접수 등)</td></tr>
 <tr><td>D</td><td>📞 통화 시도 timeline</td><td>성공/거절/부재/콜백 색상 + 다음 콜 예약 강조</td></tr>
-<tr><td>E</td><td>🎯 4상품 cross-sell 보드</td><td>인터넷+TV·가전렌탈·휴대폰·중고폰 (✅ 보유 / ⏳ 견적중 / 🎯 권유 권장 / 🔥 cross-sell 적기)</td></tr>
+<tr><td>E</td><td>🎯 cross-sell 보드</td><td>인터넷+TV·유심·휴대폰·중고폰 (✅ 보유 / ⏳ 견적중 / 🎯 권유 권장 / 🔥 cross-sell 적기)</td></tr>
 <tr><td>F</td><td>📋 계약 상세 내역</td><td>4상품 통합 list (시간순) — 계약일·약정·<b>약정 종료일 D-day</b>·월납·페이백·담당 상담사·취소사유</td></tr>
 <tr><td>G</td><td>💼 금융 lifecycle</td><td>현금페이백·포인트·친구초대·돈지키미 (4 카드)</td></tr>
 <tr><td>H</td><td>🎯 NBA (Next Best Action)</td><td>rule-based 자동 추천 (gift 미수령·cross-sell 기회·rotting·재계약)</td></tr>
@@ -572,7 +582,7 @@ const SECTIONS = [
 <h3>💡 운영 팁</h3>
 <ul>
 <li><b>rotting lead 우선</b> — 좌측 quick chip [⏰ rotting]으로 15일+ 미접촉 자동 필터링</li>
-<li><b>cross-sell 적기</b> — 인터넷 close 후 6개월 → 가전렌탈 권유 NBA 자동</li>
+<li><b>cross-sell 적기</b> — 인터넷 close 후 유심 번호이동 권유 NBA 자동</li>
 <li><b>약정 만료 D-day</b> — 계약 상세 종료일 D-60일 이내 황금 강조 → 재계약 권유 콜</li>
 <li><b>통화 요약 텍스트가 유일 증거</b> — 봉이는 CTI/녹음 미연동, 매번 통화 후 텍스트 입력 필수</li>
 <li><b>중복 phone</b> — 수동 등록 시 자동 체크, 이미 있으면 좌측 list 검색 안내</li>
@@ -625,8 +635,8 @@ const SECTIONS = [
 <tr><td><b style="color:#a855f7">R</b></td><td>tier=2 (인터넷·TV 회선 포함)</td><td>인터넷 보유 → 렌탈 가전 2순위 영업</td></tr>
 <tr><td><b style="color:#64748b">C</b></td><td>default (위 미매칭)</td><td>기타·미분류</td></tr>
 </table>
-<div class="warn"><b>⚠️ 등급 = 영업 우선순위만</b>. 인센티브 Grade(G1/G2/G3)·상품 Tier(S/A/B/C)와 <b>완전히 별개</b>. 같은 글자 쓰지만 의미 다름:
-<ul><li><b>quality_grade</b> (콜 DB): 콜 분배 우선순위</li><li><b>인센티브 Grade</b> (정산): 월간 P 누적 등급 (1/2/3)</li><li><b>상품 Tier</b> (상품 관리): 마진 분류 (S/A/B/C)</li></ul></div>
+<div class="warn"><b>⚠️ 여기서 말하는 등급은 콜 DB 우선순위다.</b> 급여와 무관하다:
+<ul><li><b>quality_grade</b> (콜 DB): 콜 분배 우선순위 — S/A/B/C/R</li></ul></div>
 
 <h3>3. priority_score 계산식</h3>
 <pre><code>priority_score = basePriority(category) + ageBonus(age)</code></pre>
@@ -730,337 +740,59 @@ const SECTIONS = [
 </ul>`
   },
   {
-    id: 'products', group: '3️⃣ 관리자', title: '📦 상품 관리 + 🏪 대리점', roles: ['admin'],
+    id: 'products', group: '3️⃣ 관리자', title: '📦 상품 관리', roles: ['admin'],
     html: `<h2>상품 관리<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">📡 <b>인터넷+TV</b> 63개 (SKT 30 + KT 18 + LGU+ 15) + 🏠 <b>가전렌탈</b> 옵션 단위 인라인 편집 + 대리점 관리.</p>
+<p class="lead">📡 <b>인터넷+TV</b> 105개 · 📲 <b>유심</b> 요금제. 상담사에게 내려가는 값은 <b>가이드</b>와 <b>MAX</b> 둘뿐이다.</p>
 
-<h3>✨ 자동 계산 룰 (2026-05-18 통일)</h3>
-<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#fbbf24">
-운영자는 <b style="color:#fbbf24">rebate · payback · gift_amount</b> 세 값만 입력. 나머지(<b>P · Tier · 우수 · 마진</b>)는 모두 <b>정책 자동 계산</b>.
-<ul style="margin-top:6px">
-<li>공식: <code>margin = rebate × 0.9 − payback − gift × 10000 − P × weight_cost_per_p</code></li>
-<li>Tier 자동: 마진 → S/A/B/C (정책 임계값 기준)</li>
-<li>P 자동: Tier → <code>tier_to_p</code> JSONB 매핑 (S=2.0 / A=1.5 / B=1.2 / C=1.0)</li>
-<li>우수 자동: S Tier만 ⭐</li>
-</ul>
-정책 수동 override 가능 (옵션별 <code>point_weight · tier</code> 컬럼) — 비워두면 자동.
-</div>
-
-<h3>📡 인터넷+TV 탭</h3>
-<ul>
-<li>통신사·종류·Tier·검색 필터</li>
-<li>리베이트·페이백·사은품 단가 입력 → P·Tier·우수·마진 자동 표시</li>
-<li>[📜 변경 이력] / [📥 엑셀 다운로드] / [📤 엑셀 업로드]</li>
-</ul>
-
-<h3>🏠 가전렌탈 탭 — 정수기 그룹 / 가전 그룹 분리 (2026-05-22)</h3>
-<ul>
-<li>상품(모델) → 옵션(약정·케어 조합) 2단 구조</li>
-<li><b>그룹 탭 2개</b>: 💧 정수기 그룹 (정수기·공기청정기·비데·매트리스·얼음정수기·냉온정수기·연수기) / 🏠 가전 그룹 (에어컨·냉장고·TV·세탁기 등)</li>
-<li><b>그룹 수수료 구조 차이 ⚠️</b> — 정수기 그룹은 <b>직접 수수료(direct)</b>, 가전 그룹은 <b>렌탈사 수수료율(rate) 기반</b>. 메트리스는 정수기 그룹.</li>
-<li>그룹 기준 = <code>rental_categories.product_group</code> (품목 성격)</li>
-<li><b>가전 그룹 한정</b>: 카테고리·브랜드(제조사) 옆에 <b>렌탈사(채널) 드롭다운</b> 추가. 모델 마스터에 🏢 렌탈사 칩, 옵션 디테일 상단에 렌탈사·수수료율 박스. 같은 모델 N채널 즉시 식별.</li>
-<li><b>모델 list 컬럼</b>: 브랜드·상품명·태그·약정·옵션·시장</li>
-<li><b>옵션 표</b>: 리베이트·페이백·사은품 입력 시 옵션별 P·Tier·우수·마진 자동 계산</li>
-<li>옵션 단위 자동 분류 — 같은 모델도 약정·케어에 따라 Tier 다를 수 있음</li>
-</ul>
-
-<h3>📐 옵션 컬럼 정책 — 그룹별 차이 (2026-06-03 확정)</h3>
-<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#fbbf24">
-정수기·매트리스·가전은 영업 룰이 달라 옵션 컬럼 의미·표시가 분기된다. 정책 정의서: <code>docs/specs/rental-option-column-policy.md</code>
-<table style="margin-top:8px;font-size:11px">
-<tr><th style="text-align:left">컬럼</th><th>💧 정수기</th><th>🛏️ 매트리스</th><th>🏠 가전</th><th>의미</th></tr>
-<tr><td>months · care · monthly_fee · rebate · payback · variant_label · promo_type</td><td>✅</td><td>✅</td><td>✅</td><td>공통</td></tr>
-<tr><td><b>inspection_cycle</b> (점검M)</td><td>✅ 필수</td><td>🚫</td><td>🚫</td><td>정수기 점검 주기 (2/4/6M)</td></tr>
-<tr><td><b>ownership_months</b> (소유M)</td><td>✅ 필수</td><td>🚫</td><td>🟡 제로렌탈만</td><td>소유권 이전 시기</td></tr>
-<tr><td><b>normal_price</b></td><td>✅ 월 정상가</td><td>🚫</td><td>✅ 출고가</td><td>그룹별 의미 다름</td></tr>
-<tr><td><b>monthly_diff</b> (증감)</td><td>✅ 필수</td><td>🚫</td><td>🚫</td><td>정가 − 월납</td></tr>
-<tr><td><b>half_fee · half_period</b> (반값)</td><td>✅ 선택</td><td>🚫</td><td>🚫</td><td>반값 행사</td></tr>
-<tr><td><b>rebate_otherco · rebate_half</b></td><td>✅ 선택</td><td>🚫</td><td>🚫</td><td>타사보상·반값 리베</td></tr>
-<tr><td><b>bundle_rate</b> (결합%)</td><td>✅ 선택</td><td>🚫</td><td>🚫</td><td>결합 비율</td></tr>
-<tr><td><b>as_period_months</b> (A/S)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>A/S 보증 기간</td></tr>
-<tr><td><b>signup_age_limit</b> (연령)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>가입 가능 연령</td></tr>
-<tr><td><b>installation_fee</b> (설치비)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>기본 설치비</td></tr>
-<tr><td><b>commission_rate</b> (수수료율%)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>옵션별 rate</td></tr>
-<tr><td><b>commission_basis</b> (수수료기준)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>구독료/월렌탈료/총렌탈료</td></tr>
-<tr><td><b>total_rental_fee</b> (총렌탈료)</td><td>🚫</td><td>🚫</td><td>✅ 신규</td><td>= months × monthly_fee</td></tr>
-<tr><td><b>commission_method</b></td><td>direct</td><td>direct</td><td><b>rate</b></td><td>수수료 방식</td></tr>
-</table>
-<p style="margin-top:6px"><b>UI 옵션 디테일 모달</b>: <code>product.category.product_group</code> 기준으로 컬럼 표시 분기. 🚫 컬럼은 해당 그룹 모달에서 숨김.</p>
-<p><b>매트리스 spec</b>: products.specifications JSONB에 <code>sub_category</code>·<code>size</code>·<code>firmness</code>·<code>promotion</code> 저장 (rental_categories.metadata.extra_fields 동적 폼).</p>
-</div>
-
-<h3>🎨 상품관리 UI 전면 개편 (2026-05-25 Round 1~5)</h3>
-<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#22d3ee">
-좌우 분할 폐기 + 옵션 대형 모달 + 인라인 편집 강화 + 이미지 직접 편집. 엑셀 양식 25컬럼 100% 매핑.
-<ul style="margin-top:6px">
-<li><b>좌우 분할 폐기</b> → 모델 마스터가 풀폭 (11컬럼: 🖼️·브랜드·모델/태그·약정·옵션수·Tier·P·⭐·시장성·활성)</li>
-<li><b>옵션 디테일은 대형 모달 팝업</b> (행 클릭 → max-width 1320px 팝업, Esc/배경 클릭 close, 행 확장 아님)</li>
-<li><b>모델 행 인라인 편집</b>: Tier select (색상 동적 변경) · P number · ⭐ 우수 · 시장성 select · 활성 — 변경 즉시 KPI 카드 재집계</li>
-<li><b>🖼️ 이미지 thumb + URL 편집 모달</b>: 모델 첫 셀 42×42 thumb · 클릭하면 청록 모달(미리보기 + 이미지 URL + 상품 페이지 URL 2 입력 · URL 즉시 미리보기) · <code>rental_products.image_url</code> 컬럼 신설</li>
-<li><b>옵션 표 25컬럼 완전 매핑</b>: 🎫 R번호 (ticket_number) + 🏷️ 변별 (variant_label) 컬럼 추가 + 각 옵션 행 아래 회색 메타 라인 chip — 📐 면적 · 🛡️ AS · 👤 가입연령 · 🔧 설치비 · ∑ 총렌탈료 · 🏷️ promo_type · 💰 net_profit · 📝 margin 수동 (모두 metadata/DB 조건부 노출)</li>
-<li><b>image_url 전 시스템 노출</b>: TM 견적 결과 카드(160×120) · 계약처리 가전 표(40×40) · 계약 상세 모달(80×80) · 티켓 관리 가전 탭(36×36 컬럼) — 모두 자동 표시</li>
-<li><b>import 파서</b>: HEADER_MAP에 '상품이미지·이미지URL' 등 별칭 5종, MODEL_FIELDS forward-fill 포함 — 다음 엑셀에 이미지 컬럼 추가만으로 자동 import</li>
-</ul>
-</div>
-
-<h3>📤 이미지 직접 업로드 (2026-05-27 신규 — Supabase Storage)</h3>
-<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#fbbf24">
-외부 URL 의존 없이 어드민에서 직접 파일 업로드. <code>product-images</code> public bucket(5MB·jpeg/png/webp/gif) + 4 정책(read·insert·update·delete).
-<ul style="margin-top:6px">
-<li><b>단일 업로드</b> — 모델 행 🖼️ thumb 클릭 → 이미지 편집 모달 상단 황금 영역 📤 파일 선택 + ⬆️ 업로드 → 자동 image_url 입력 + 미리보기 + 표 재렌더</li>
-<li><b>일괄 업로드</b> (정수기 49장 같은 대량) — 상품관리 헤더 황금 [🖼️ 이미지 일괄 업로드] 버튼 → 전체화면 모달
-  <ul>
-    <li>drag & drop 또는 클릭으로 여러 파일 한번에 선택</li>
-    <li>파일명 ↔ product 자동 매칭 (lowercase + 영숫자만 normalize · brand+model · model · brand_model 3패턴)</li>
-    <li>매칭 결과 표: 파일명 · 매칭 상품 select(수동 변경 가능) · 상태 · ✕ 삭제</li>
-    <li>미매칭 행은 select로 수동 매핑 (현재 카테고리 필터된 상품만 옵션 노출)</li>
-    <li>⬆️ [매칭된 것만 업로드] → progress bar (0/N → N/N) + 완료 알림 (성공 N · 실패 N)</li>
-  </ul>
-</li>
-<li><b>매칭률 극대화 팁</b>: 파일명을 <code>코웨이-CHP-590N.jpg</code> 또는 <code>CHP-590N.jpg</code> 형태로 저장 → 100% 자동 매칭</li>
-<li><b>API</b>: <code>POST /api/rental/products/:id/image</code> (multer.single, multipart/form-data) → service_role로 Storage upload → public URL 반환 + image_url 자동 update</li>
-</ul>
-</div>
-
-<h3>📤 봉이 표준 등록폼 import (2026-05-22 신규)</h3>
-<p class="lead">빌리고 원본 의존을 끊고 봉이 자체 양식을 입력 경계로 확정. 빌리고든 다른 중개사든 이 양식 하나로 변환 후 import.</p>
-<div class="tip">📌 빈 템플릿: <code>docs/templates/렌탈_상품등록_양식.xlsx</code> · 정의서: <code>docs/specs/rental-register-form.md</code></div>
+<h3>가이드 · MAX</h3>
 <table>
-<tr><th>시트</th><th>필수</th><th>내용</th></tr>
-<tr><td><code>등록확정_상세</code></td><td>✅</td><td>1행 = 헤더, 2행~ 데이터. 1행 = 1옵션 라인 (모델×약정×케어×렌탈사×variant)</td></tr>
-<tr><td><code>수수료정책</code></td><td>선택</td><td>가전 그룹 — 렌탈사별 수수료율 (정책 갱신용)</td></tr>
-<tr><td><code>README</code></td><td>선택</td><td>참고용 (import 무시)</td></tr>
+<tr><th>항목</th><th>뜻</th><th>고객 노출</th></tr>
+<tr><td><b>가이드 현금</b></td><td>공식 사은품 중 현금분</td><td>가능</td></tr>
+<tr><td><b>가이드 상품권</b></td><td>공식 사은품 중 상품권분. <b>고정</b>이며 재량으로 늘어나지 않는다</td><td>가능</td></tr>
+<tr><td><b>가이드 총액</b></td><td>현금 + 상품권. 자동 계산되며 직접 입력하지 않는다</td><td>가능</td></tr>
+<tr><td><b>MAX</b></td><td>상담사 재량 상한. 더 나가는 몫은 <b>현금으로만</b> 붙는다</td><td class="bad"><b>금지</b></td></tr>
 </table>
-<ul>
-<li><b>헤더 동적 매핑</b> — 정수기 24컬럼·가전 28컬럼 한 파서로 처리. 헤더명 별칭 수용(시장성/시장성_⭐, 약정기간/약정기간(개월) 등)</li>
-<li><b>필수 컬럼</b>: 브랜드·대분류·모델명·약정기간·케어서비스·월납부액·리베이트</li>
-<li><b>모델 단위 값</b>(시장성·노출순위·시리즈키·등록상태)은 그 모델 첫 옵션 행에만 채우면 됨. 나머지는 빈칸 — import이 모델 그룹 내에서만 forward-fill</li>
-<li><b>운영값 반영</b>: 등록폼 import은 봉이 운영값(market_score·display_rank·registration_status·evaluation_memo) 자동 반영. 인센티브 컬럼(point_weight·tier·margin·is_premium·payback)은 절대 덮어쓰지 않음(보존)</li>
-<li><b>카테고리 자동 활성화</b>: 등록폼으로 들어온 카테고리는 <code>is_active=true</code> 자동 전환</li>
-<li><b>티켓 자동 발번</b>: 신규 옵션에 R번호 자동 부여 (R0001~, 기존 최대 다음부터) — DB trigger로 보장 (아래 R번호 100% 발급 정책 참고)</li>
-<li><b>선별본 정책</b>: 등록폼은 검수 선별본이라 "이번에 없는 모델" 단종 마킹 X (빌리고 원본 import과 다름)</li>
-</ul>
-<div class="tip">📌 import 절차 — 상품관리 → 가전렌탈 탭 → 📤 빌리고 엑셀 import → 파일 종류 <b>"봉이 표준 등록폼"</b> 선택 → 파일 업로드 → 미리보기 → 확정 반영. 빌리고 원본 옵션(정수기·가전)은 레거시 유지지만 신규 적재는 등록폼으로 통일.</div>
+<div class="warn">
+<b>리베이트·마진은 이 시스템에서 관리하지 않는다.</b> 회사 기본 마진은 가이드·MAX 를 정할 때 이미 빠져 있다.
+그래서 MAX 까지 다 써도 회사가 손해 보지 않는다.
+</div>
+<div class="tip">MAX 는 가이드 총액보다 작을 수 없다. 저장할 때 서버가 막는다.</div>
 
-<h3>🎫 R번호 100% 발급 정책 + ticket_active 자동 sync (2026-06-03 신규)</h3>
-<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#22d3ee">
-<b>원칙</b>: 모든 렌탈 옵션은 활성 여부와 무관하게 <b>R번호 100% 발급</b>. 운영자는 상품 관리에서 <b>옵션 활성/비활성 토글만</b> 관리하면 티켓 상태가 자동으로 따라간다.
-<ul style="margin-top:6px">
-<li><b>trigger 1 — 자동 발번 (BEFORE INSERT)</b>: <code>trg_auto_issue_ticket_on_options</code> · 신규 옵션 INSERT 시 ticket_number가 NULL이면 R{max+1} 자동 부여. 등록폼 import·수동 추가·SQL 직접 INSERT 모두 적용.</li>
-<li><b>trigger 2 — 상태 sync (BEFORE UPDATE OF is_active)</b>: <code>trg_sync_ticket_active_on_options</code> · 옵션 <code>is_active</code> 토글 시 <code>ticket_active</code> 자동 동기화 (R번호는 보존, 재발급 X).</li>
-<li><b>운영자 동선</b>: 상품 관리 → 가전렌탈 탭 → 옵션 행 활성 체크박스 토글 → 티켓 관리 페이지에서 ticket_active 상태 자동 갱신.</li>
-<li><b>검증</b> (2026-06-03 라이브·데브): 옵션 5,444건 = R번호 5,444건(100%), ticket_active sync 미스매치 0건.</li>
-</ul>
+<h3>📡 접수 채널 (SKT / SKB / KT / LG U+)</h3>
+<p>같은 상품이라도 어디로 접수하느냐로 금액이 갈린다. 상품 행 오른쪽 <b>📡 채널</b> 버튼을 누르면 채널별 편집표가 펼쳐진다.</p>
+<table>
+<tr><th>열</th><th>설명</th></tr>
+<tr><td>가이드 현금 / 상품권 / 총액</td><td>채널마다 다르게 넣을 수 있다</td></tr>
+<tr><td>MAX</td><td>채널별 재량 상한</td></tr>
+<tr><td>설치비</td><td>채널별 설치비</td></tr>
+<tr><td>기본 ★</td><td>상담 화면에서 처음 잡히는 채널</td></tr>
+</table>
+<div class="tip">
+상담사는 견적 화면에서 채널을 직접 고를 수 있다. 정책이 바뀌거나 결합이 안 잡히면 다른 채널로 돌린다.
 </div>
 
-<h3>📊 옵션→상품 집계 자동 sync (2026-06-03 신규)</h3>
-<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#22c55e">
-<b>원칙</b>: 상품 관리 list의 약정·옵션수·렌탈료 범위·리베이트 max·care·프로모 chip은 모두 <b>옵션 데이터의 roll-up</b>이다. 옵션 INSERT/UPDATE/DELETE 시 product의 집계 컬럼이 자동 갱신된다 — 수동 backfill 불필요.
-<ul style="margin-top:6px">
-<li><b>trigger 1</b>: <code>trg_sync_option_count_on_options</code> · <code>rental_products.option_count</code> 자동 sync (클라이언트가 0 초과만 list 노출하므로 필수)</li>
-<li><b>trigger 2</b>: <code>trg_sync_months_available_on_options</code> · <code>months_available</code> ARRAY 자동 sync (약정 chip 표시 source)</li>
-<li><b>trigger 3</b>: <code>trg_sync_product_aggregates_on_options</code> · <code>care_services</code>·<code>monthly_fee_min/max</code>·<code>rebate_max/otherco_max/half_max</code>·<code>half_fee_min</code>·<code>half_periods_available</code>·<code>promo_tags_list</code>·<code>promo_type_count</code> 9개 컬럼 일괄 sync</li>
-<li><b>tier·point_weight·is_premium</b>: 정책 변경·옵션 마진 변경 시 RPC <code>rental_recalc_margins_and_premium</code> 호출 (POST <code>/api/rental/recalculate-margins</code>) — 옵션 margin 재계산 + product roll-up (max margin → tier)</li>
-<li><b>검증</b> (2026-06-03): 라이브 옵션 5,442 + product 433 일괄 재계산. 매트리스 86 모델 100% 집계 컬럼 완전 채움 (tier S=78/A=8, premium=86, market_score 86)</li>
-</ul>
+<h3>📲 유심</h3>
+<p>단말 없이 유심만 옮기는 <b>번호이동 전용</b>이다. 신규가입은 안 된다.</p>
+<table>
+<tr><th>구분</th><th>조건</th></tr>
+<tr><td><b>인터넷 결합</b></td><td>인터넷+TV 와 유심을 <b>같이</b> 개통 (UIT결합유심)</td></tr>
+<tr><td><b>유심 단독 · 결합</b></td><td>같은 통신사에 <b>가족 휴대폰</b>이 있거나 <b>인터넷</b>을 쓰는 중</td></tr>
+<tr><td><b>유심 단독 · 미결합</b></td><td>위 둘 다 아님</td></tr>
+</table>
+<div class="warn">결합은 <b>같은 통신사만</b> 인정된다 (SKT·SKB→SKT / KT→KT / LG U+→LG U+).</div>
+<p>유심도 <b>가이드·MAX</b> 만 넣는다. 요금제별로 값이 다르며, 인터넷 결합용과 단독용을 따로 관리한다.</p>
+
+<h3>변경 반영 시점</h3>
+<div class="warn">
+가이드·MAX 변경은 <b>신규 영업부터</b> 적용된다. 이미 등록된 영업은 등록 시점 값이 snapshot 으로 박제되어 보존되며 영향을 받지 않는다.
 </div>
 
-<h3>🤖 AI 자동 상담정보 채움 (2026-06-03 신규)</h3>
-<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#22c55e">
-<b>원칙</b>: 상담사가 CRM만 보고 즉시 상담 가능하도록 6 카테고리 435 product 전체에 <b>description·feature_tags·recommended_capacity·recommended_usage·specifications</b> 5컬럼 100% 적재.
-<ul style="margin-top:6px">
-<li><b>description</b> — 한 줄 50자 (예: "쿠쿠 대용량 스탠드형 얼음정수기 후속, 대용량 제빙")</li>
-<li><b>feature_tags</b> — 강점 태그 3~5개 배열 (예: ["대용량제빙","스탠드","얼음","신형"])</li>
-<li><b>recommended_capacity</b> — 추천 용량/규격 (예: "4~6인 가족·대형", "거실 대형·65인치", "퀸·2인용")</li>
-<li><b>recommended_usage</b> — 추천 사용자/상황 태그 배열 (예: ["거실","신혼","대가족","얼음필요"])</li>
-<li><b>specifications JSONB</b> — 카테고리 schema 키별 spec 값 (예: 정수기는 output_mode·hot_temp_max·filter_stages·ice_capacity·power_w·warranty_years)</li>
-</ul>
-<b>적재 방식</b>: 6 AI 에이전트(카테고리별) 백그라운드 분산 — product_url HTML fetch + 모델명 패턴 추론 결합. SPA로 텍스트 추출 실패한 사이트는 brand+model+name 도메인 지식 기반 fallback. 카테고리별 시리즈 그룹화로 같은 시리즈 동일 spec 공유.
-<br><br>
-<b>정합 결과 (라이브)</b>: TV 76 · 공청 23 · 비데 19 · 매트리스 86 · 에어컨 120 · 정수기 111 = <b>435/435 (100%)</b> 5컬럼 모두 적재.
-<br>
-<b>한계</b>: spec 일부 수치(CADR·dB·BTU)는 SPA fetch 실패로 모델명·시리즈 추론값. 정밀 보정 필요 시 운영자 수동 입력 또는 PDF 카탈로그 파싱 라운드.
-</div>
-
-<h3>📜 변경 이력 자동 기록</h3>
+<h3>엑셀 업로드 / 다운로드</h3>
 <ul>
-<li><code>incentive_products_history</code> · <code>rental_product_options_history</code> 트리거</li>
-<li>gift_amount · tier 추가 추적 (2026-05-18 확장)</li>
-<li>변경자 자동 기록 (PATCH 시점 user 이름)</li>
+<li>다운로드한 파일을 고쳐서 그대로 올리면 일괄 반영된다.</li>
+<li>삭제는 <b>비활성 처리</b>다. 행은 남는다 — 과거 견적·계약 추적 때문이다.</li>
 </ul>
-
-<h3>📋 카테고리 동적 폼 (2026-05-18 신규)</h3>
-<p>가전 상품 편집 → 카테고리(<code>rental_categories.metadata.extra_fields</code> JSONB schema)별로 input 자동 렌더. 같은 카테고리 상품은 같은 필드, 다른 카테고리는 다른 필드.</p>
-<table>
-<tr><th>카테고리</th><th>필드</th></tr>
-<tr><td>💧 정수기</td><td>급수 방식(select)·얼음 용량·온수 최고(℃)·보증 기간·소비 전력</td></tr>
-<tr><td>🌬️ 공기청정기</td><td>적용 면적(㎡)·CADR·필터 등급(H11/H13/H14)·소음(dB)·센서</td></tr>
-<tr><td>💆 안마의자</td><td>마사지 모드 수·최대 사용자 체중·180도 리클라이닝·온열 기능·소비 전력</td></tr>
-<tr><td>🚽 비데</td><td>노즐·좌석 최고온·소비 전력</td></tr>
-<tr><td>🛏️ 매트리스</td><td>소분류(매트리스/모션베드/힐링베드)·규격(S/SS/Q/K/LK)·경도(소프트/미디엄/하드)·프로모션 (2026-06-03 신규)</td></tr>
-<tr><td>💧 정수기</td><td>출수방식·온수최고온·필터단계·얼음용량·소비전력·보증기간 (2026-06-03 신규 6필드)</td></tr>
-<tr><td>🌬️ 공기청정기</td><td>적용면적(㎡)·CADR·필터등급(H11~E12)·최저소음(dB)·센서·소비전력 (2026-06-03 신규 6필드)</td></tr>
-<tr><td>🚽 비데</td><td>노즐(1중/2중/3중)·좌석최고온·세정모드·건조온도·리모컨·소비전력 (2026-06-03 신규 6필드)</td></tr>
-<tr><td>📺 TV</td><td>인치·디스플레이(OLED/QNED/QLED/UHD/Mini LED/Nano Cell)·해상도(4K/8K)·주사율(Hz)·Smart OS·설치(스탠드/벽걸이) (2026-06-03 신규 6필드)</td></tr>
-<tr><td>❄️ 에어컨</td><td>적용평수·적용면적(㎡)·냉방능력(BTU)·종류(스탠드/벽걸이/2in1/홈멀티)·에너지등급·주요기능 (2026-06-03 신규 6필드)</td></tr>
-</table>
-<ul>
-<li>입력값은 <code>rental_products.specifications</code> JSONB에 자동 병합 저장 (기존 하드코딩 input + 동적 input)</li>
-<li>새 카테고리 추가·필드 변경: SQL <code>UPDATE rental_categories SET metadata = jsonb_set(...)</code> 1줄로 모든 상품 편집 화면 자동 확장</li>
-<li>type 지원: select·number·text·checkbox / 옵션: <code>label·unit·placeholder·options[]</code></li>
-</ul>
-
-<h3>🔔 변경 즉시 전파</h3>
-<div class="tip">📌 <b>사은품·페이백·리베이트 변경 시 모든 화면 자동 동기화</b> — BroadcastChannel + 60초 polling (TM 큐콜 견적·TM 상담 v1·v2·다른 탭 즉시 반영). <b>박제된 기존 계약(snapshot)은 영향 없음</b> — 등록 시점 단가·P 보존.</div>
-
-<h3>🏪 통신사별 접수 대리점 (페이지 하단)</h3>
-<p>SKT 🔴 / KT 🟡 / LGU+ 🟣 3 카드. 등록한 대리점이 계약 처리 편집창에 자동 노출.</p>
-<div class="step"><span class="num">1</span>대리점명 + URL 입력 (URL은 http/https/mailto만 허용)</div>
-<div class="step"><span class="num">2</span>[+] 추가 → 활성 체크박스 자동 ON</div>
-<div class="step"><span class="num">3</span>활성 토글로 즉시 ON/OFF (계약 처리에서 비활성은 select 안 보임)</div>
-<div class="step"><span class="num">4</span>[URL] 편집 / [×] 삭제 (sales의 dealer_id는 ON DELETE SET NULL로 보존)</div>
-<div class="tip"><b>비활성 대리점</b>은 신규 계약 select에서 숨김. 기존 계약의 dealer가 비활성으로 변경되면 (비활성) 표기로 select 유지 (이력 보존).</div>`
-  },
-  {
-    id: 'partner-cards', group: '3️⃣ 관리자', title: '🎴 제휴카드사 관리', roles: ['admin', 'manager'],
-    html: `<h2>🎴 제휴카드사 관리<span class="role-tag r-admin">ADMIN/MANAGER</span></h2>
-<p class="lead">가전렌탈 영업 시 고객 안내용 카드 할인 마스터. 11 브랜드 53+ 카드. TM 계산기·계약 모달에서 회사명 옆 🎴 버튼으로 deep link.</p>
-
-<div class="tip">📌 출처: 비에이치컴퍼니 노션 → Google Sheets 자동 import (gviz CSV). 라이브 적용 완료. 추가/편집은 어드민 페이지에서 inline.</div>
-
-<h3>🎨 화면 구성</h3>
-<ul>
-<li><b>헤더 toolbar</b> — 검색·브랜드 필터·📂 <b>카테고리 필터</b>(정수기·공기청정기·비데·에어컨)·활성 필터·신규 카드 버튼</li>
-<li><b>브랜드별 그룹 섹션</b> — 회사명 chip 자동 (rental_companies 매칭) — <b>11/11 brand 매칭 완료 (2026-05-27)</b></li>
-<li><b>각 카드 row</b>: 카드사·이름·📂 카테고리(보라 chip)·연회비·최대할인·기간·🏷️ PROMO·1/2/3 구간(min·base·promo·total)·비고·URL·✏️ 편집</li>
-</ul>
-
-<h3>📊 데이터 구조 (24 컬럼)</h3>
-<table>
-<tr><th>그룹</th><th>컬럼</th></tr>
-<tr><td>식별</td><td>brand · brand_id · company_id (회사 매칭)</td></tr>
-<tr><td>카드</td><td>card_issuer (신한·롯데·국민…) · card_name · annual_fee · card_url</td></tr>
-<tr><td>혜택</td><td>max_discount · discount_months · has_promo (프로모션 여부)</td></tr>
-<tr><td>1 구간</td><td>tier1_min (최소실적) · tier1_base (기본) · tier1_promo (프로모) · tier1_total (총)</td></tr>
-<tr><td>2 구간</td><td>tier2_min · tier2_base · tier2_promo · tier2_total</td></tr>
-<tr><td>3 구간</td><td>tier3_min · tier3_base · tier3_promo · tier3_total</td></tr>
-<tr><td>운영</td><td>notes · is_active · display_rank · created/updated_at</td></tr>
-</table>
-
-<h3>🔗 TM·계약 연동 (Deep Link)</h3>
-<ul>
-<li><b>TM 상담 가전 견적 결과 청록 박스</b>의 🏢 회사명 옆 → 🎴 제휴카드 버튼 → 새 탭 partner-cards <code>?brand=&lt;회사명&gt;</code></li>
-<li><b>계약 처리 상세 모달</b>의 product-header 🏢 회사명 옆 → 🎴 제휴카드 버튼 → 동일</li>
-<li>이동 시 자동 브랜드 필터 적용 (해당 회사 카드만)</li>
-</ul>
-
-<h3>📡 API endpoint (4개) — 2026-05-30 권한 강화</h3>
-<table>
-<tr><th>Method</th><th>경로</th><th>역할</th></tr>
-<tr><td>GET</td><td><code>/api/rental/partner-cards?brand=&active=1</code></td><td>list (인증된 모든 role)</td></tr>
-<tr><td>GET</td><td><code>/api/rental/partner-cards/brands</code></td><td>활성 브랜드 list</td></tr>
-<tr><td>POST</td><td><code>/api/rental/partner-cards</code></td><td>신규 (<b>admin/manager</b> 🆕)</td></tr>
-<tr><td>PATCH</td><td><code>/api/rental/partner-cards/:id</code></td><td>편집 (<b>admin/manager</b> 🆕)</td></tr>
-<tr><td>DELETE</td><td><code>/api/rental/partner-cards/:id</code></td><td>삭제 (<b>admin 전용</b> 🆕)</td></tr>
-</table>
-<div class="tip">📌 <b>2026-05-30 변경</b>: write endpoint(POST·PATCH·DELETE)에 role 체크 추가. 이전엔 인증만 통과하면 모든 role이 카드 추가/수정/삭제 가능했음 — agent도 수정 가능했던 보안 갭 fix.</div>
-
-<h3>💡 운영 팁</h3>
-<ul>
-<li><b>프로모션 종료</b> — has_promo=false + tier_promo 값 0 처리, max_discount는 tier 총합 유지</li>
-<li><b>회사 매칭</b> — 11/11 brand 모두 rental_companies 매칭 완료 (2026-05-27 정리). 신규 brand 추가 시 카드 brand가 rental_companies.name과 정확히 일치하지 않으면 chip이 '(회사 미매칭)'으로 표시 — 회사 마스터에 row 추가 또는 카드 brand 표준화 둘 중 하나 진행.</li>
-<li><b>brand alias 매핑</b> (server) — 회사명 ↔ 카드 brand 차이 흡수: LG전자 ↔ LG전자구독 (양방향) · 현대유버스 → 현대큐밍 (현대 계열 공통). 영업에서 LG전자 회사 선택 시 LG전자구독 카드가 자동 노출.</li>
-<li><b>display_rank</b> — 같은 브랜드 안 카드 정렬용 (낮은 숫자 우선)</li>
-<li><b>비고에 조건 명시</b> — "직전 6개월 무실적자" 등 필수 조건 기재</li>
-<li><b>카드 categories</b> — text[] (예: [정수기, 공기청정기]). 카드관리 페이지 추가/편집 모달에서 쉼표 구분 입력 + GIN 인덱스 → 카테고리 필터 select 즉시 반응. TM 견적 시 product의 카테고리와 자동 교집합.</li>
-</ul>`
-  },
-  {
-    id: 'rules', group: '3️⃣ 관리자', title: '⚙️ 정책 관리 (V5 통일)', roles: ['admin'],
-    html: `<h2>정책 관리<span class="role-tag r-admin">ADMIN</span></h2>
-<p class="lead">📡 <b>인터넷+TV</b>(<code>incentive_rules</code>) · 🏠 <b>가전렌탈</b>(<code>rental_policy</code>) — <b>동일 공식·동일 컬럼 구조</b>로 통일 (2026-05-18). 양쪽 탭에서 같은 항목 편집.</p>
-
-<h3>🎯 자동 분류 공식 (양쪽 탭 공통)</h3>
-<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#fbbf24">
-<b style="color:#fbbf24">margin = rebate × 0.9 − payback − (gift_amount × 10000) − P × weight_cost_per_p</b>
-<table style="margin-top:8px;color:#e2e8f0">
-<tr><th>변수</th><th>의미</th><th>편집 위치</th></tr>
-<tr><td>rebate</td><td>리베이트 수익</td><td>[상품 관리] 옵션별</td></tr>
-<tr><td>payback</td><td>고객 지원금</td><td>[상품 관리] 옵션별 (수동)</td></tr>
-<tr><td>gift_amount</td><td>사은품 단가 (만원)</td><td>[상품 관리] 옵션별</td></tr>
-<tr><td><b>weight_cost_per_p</b></td><td>1포인트당 회사 비용</td><td>[정책 관리] (양쪽 탭)</td></tr>
-<tr><td><b>P</b></td><td>상담사 포인트 (자동)</td><td>최종 Tier에서 매핑</td></tr>
-</table>
-</div>
-
-<h3>🪜 Tier 자동 산출 (2-step 순환 해결)</h3>
-<ol>
-<li>임시 P=1.5로 임시 마진 계산 → 임시 Tier (S/A/B/C)</li>
-<li>임시 Tier → <code>tier_to_p</code> JSONB 매핑 → 최종 P</li>
-<li>최종 P로 최종 마진·Tier·우수 확정</li>
-</ol>
-<table>
-<tr><th>Tier</th><th>기준</th><th>P 기본값</th><th>우수</th></tr>
-<tr><td>🟡 <b>S</b></td><td>마진 ≥ <code>tier_s_min_margin</code></td><td>2.0</td><td>⭐ <b>우수</b></td></tr>
-<tr><td>🟢 A</td><td>마진 ≥ <code>tier_a_min_margin</code></td><td>1.5</td><td>—</td></tr>
-<tr><td>🔵 B</td><td>마진 ≥ <code>tier_b_min_margin</code></td><td>1.2</td><td>—</td></tr>
-<tr><td>⚪ C</td><td>그 외 (B 미만 자동)</td><td>1.0</td><td>—</td></tr>
-</table>
-<div class="tip"><b>우수 = S Tier만</b> (<code>premium_margin_threshold</code> 무관). 모든 정책 S 단일 기준.</div>
-
-<h3>💰 V5 정산 규칙 (불변 핵심)</h3>
-<ul>
-<li>기본급 230만 / 단가 G1=2만 G2=3만 G3=4만</li>
-<li>Grade: G1(0~15P) / G2(16~30P, 우수 5건+) / G3(31P+, 우수 10건+) — 페널티 한 단계 강등</li>
-<li>우수상품: S Tier → 건당 <code>bonus_per_premium</code> (기본 1만)</li>
-<li>페이백 분담: 회사 ≤ <code>payback_company_limit</code> / 상담사 초과분 (자동 계산)</li>
-<li><b>매니저 V5.1 오버라이드</b>: 본인 정산 1.3배 + 팀 보너스 (manager_v51_* 5필드)</li>
-</ul>
-
-<h3>📝 정책 변경 audit log</h3>
-<ul>
-<li>모든 PATCH는 <code>incentive_rules_history</code> · <code>rental_policy_history</code>에 자동 기록 (트리거)</li>
-<li>한글 필드명 + 탭 라벨(📡 인터넷+TV / 🏠 가전렌탈) + 변경자 이름 + 이전값·새값 + 시각</li>
-<li>양쪽 탭 하단 <b>변경 이력</b> 카드에서 즉시 조회</li>
-</ul>
-
-<h3>🔔 BroadcastChannel 즉시 전파</h3>
-<p>정책 PATCH → <code>BroadcastChannel('rental-policy' · 'incentive-policy')</code> → 다른 탭(상품·TM 큐콜·정산)에서 즉시 재 fetch · 재계산. <b>새로고침 불필요</b>.</p>
-
-<h3>🧪 영업이익 시뮬레이터 — 활성정책 자동 동기화</h3>
-<ul>
-<li>페이지 로드 시 활성정책(<code>incentive_rules</code> + <code>rental_policy</code>) → 시뮬 input 자동 채움</li>
-<li>동기화 항목: 기본급·우수보너스·G1/G2/G3 단가·페이백 한도·Tier 임계·tier_to_p·weight_cost_per_p</li>
-<li>"💼 활성정책 동기화" 배지 표시 + [🔄 활성정책 재적용] 버튼 (수동 reset)</li>
-<li>가전 마진 공식 안내 텍스트도 활성 <code>weight_cost_per_p</code> 값으로 동적 갱신</li>
-</ul>
-
-<h3>📋 폐기된 옛 컬럼 (2026-05-18 DROP)</h3>
-<div class="warn">아래 컬럼은 모두 DROP — 화면에서도 사라짐. 옛 가이드/스크립트에 남아있으면 무시.
-<ul style="margin-top:6px">
-<li><code>signup_bonus_per_sale</code> · <code>base_salary_share</code> (가입보너스·기본급 분담)</li>
-<li><code>weight_p_36m/60m/72m/84m</code> (약정별 P)</li>
-<li><code>premium_bonus_p</code> · <code>care_visit_bonus_p</code></li>
-<li><code>target_profit_rate</code> · <code>premium_min_rebate</code> · <code>tier_*_min_rebate</code></li>
-<li><code>effective_at</code> · <code>is_active</code> → <code>effective_from</code> · <code>active</code>로 통합</li>
-</ul></div>
-
-<div class="warn"><b>⚠️ "Grade/Tier" 용어 3종 — 혼동 금지</b>
-<table style="margin-top:8px">
-<tr><th>이름</th><th>값</th><th>의미</th><th>편집 위치</th></tr>
-<tr><td>인센티브 <b>Grade</b></td><td>G1 / G2 / G3</td><td>월간 P 누적 등급 (정산용)</td><td>[정책 관리]</td></tr>
-<tr><td>콜 DB <b>quality_grade</b></td><td>S / A / B / R / C</td><td>콜 분배 우선순위</td><td>[콜 DB 관리] → 룰 설정</td></tr>
-<tr><td>상품 <b>Tier</b></td><td>S / A / B / C</td><td>마진 자동 분류 (옵션 단위)</td><td>[정책 관리] 임계 → [상품 관리] 옵션</td></tr>
-</table>
-세 개념은 같은 글자(S/A/B/C)를 쓰지만 <b>완전히 독립</b>. 화면에서 색상·아이콘으로 구분.</div>`
-  },
-  {
-    id: 'db-sources', group: '3️⃣ 관리자', title: '🗂️ DB 출처 관리', roles: ['admin'],
-    html: `<h2>DB 출처<span class="role-tag r-admin">ADMIN</span></h2>
-<p>콜 DB import 시 출처 라벨 + 색상. 콜 DB 통계 [🗂️ 출처별 컨버전 비교]에서 ROI 비교용.</p>
-<h3>관리</h3>
-<ul><li>이름·색상 추가/수정/삭제 (활성 토글)</li><li>display_order로 정렬</li></ul>`
+`
   },
   {
     id: 'permissions', group: '3️⃣ 관리자', title: '🔐 권한 관리 (메뉴 토글)', roles: ['admin'],
@@ -1079,52 +811,44 @@ const SECTIONS = [
   {
     id: 'settlements', group: '3️⃣ 관리자', title: '💰 월별 정산', roles: ['all'],
     html: `<h2>월별 정산<span class="role-tag r-all">전체</span></h2>
-<p class="lead">월별 V5 정산 — agent별 <b>인터넷+TV · 가전 · 통합 합계</b> 모두 단일 row에 집계 (2026-05-18 통합).</p>
+<p class="lead">잔존마진 배분제 — 시행 2026-09-01.</p>
 
-<h3>📋 컬럼 구조 (incentive_monthly_settlements)</h3>
+<h3>공식</h3>
+<div class="warn" style="background:#0f172a;color:#e2e8f0;border-color:#fbbf24;font-size:14px;line-height:2">
+<b style="color:#86efac">월 급여</b> = <b style="color:#fbbf24">기본급</b> +
+Σ<b style="color:#60a5fa">( MAX 지급가능액 − 실제 고객 지급액 )</b> × <b style="color:#fbbf24">개인 배분율</b>
+− 상담사 페이백 차감
+</div>
+
+<h3>집계 대상</h3>
 <table>
-<tr><th>그룹</th><th>컬럼</th><th>의미</th></tr>
-<tr><td rowspan="3">📡 인터넷+TV</td><td>it_count·points·premium</td><td>건수·P·우수</td></tr>
-<tr><td>it_revenue·incentive·bonus</td><td>매출·인센·우수보너스</td></tr>
-<tr><td>it_company_profit</td><td>회사 이익</td></tr>
-<tr><td rowspan="3">🏠 가전렌탈</td><td>rental_count·points·premium</td><td>건수·P·우수</td></tr>
-<tr><td>rental_revenue·payback·burden·deduct·incentive·bonus</td><td>매출·페이백·회사부담·상담사차감·인센·우수보너스</td></tr>
-<tr><td>rental_company_profit</td><td>회사 이익</td></tr>
-<tr><td rowspan="2">⚡ 통합 합계</td><td>combined_total_count·points·premium</td><td>양쪽 합산 — Grade 산정 기준</td></tr>
-<tr><td>combined_agent_total·company_profit</td><td>상담사 수령액·회사 총 이익</td></tr>
+<tr><th>상태</th><th>반영</th></tr>
+<tr><td>접수 · 진행</td><td>반영 안 됨</td></tr>
+<tr><td><b>설치완료</b></td><td>설치완료된 <b>달</b> 기준. 접수한 달이 아니다</td></tr>
+<tr><td>취소 · 철회</td><td>빠진다. 이미 정산됐으면 다음 달 차감</td></tr>
 </table>
+<div class="tip">실제 지급액이 비어 있으면 <b>가이드를 지급한 것으로 본다.</b></div>
 
-<h3>🔧 신규 RPC (2026-05-18)</h3>
-<ul>
-<li><code>rental_calc_monthly_settlement(agent_id, ym)</code> — 가전만 계산</li>
-<li><code>incentive_finalize_monthly_settlement(agent_id, ym)</code> — <b>가전 + 인터넷 합산 → 단일 row</b> 확정</li>
-</ul>
-
-<h3>상태 흐름</h3>
+<h3>주요 컬럼</h3>
 <table>
-<tr><th>상태</th><th>의미</th><th>편집 가능</th></tr>
-<tr><td>draft</td><td>집계됨</td><td>✅</td></tr>
-<tr><td>locked</td><td>확정 (admin 잠금)</td><td>X</td></tr>
-<tr><td>paid</td><td>지급 완료</td><td>X</td></tr>
+<tr><th>컬럼</th><th>의미</th></tr>
+<tr><td>total_count</td><td>설치완료 건수</td></tr>
+<tr><td><b>total_residual_margin</b></td><td>잔존마진 = Σ(MAX − 실제 지급액). 음수는 0으로 막는다</td></tr>
+<tr><td>incentive_rate_applied</td><td>개인 배분율 (%)</td></tr>
+<tr><td>incentive</td><td>잔존마진 × 배분율</td></tr>
+<tr><td>agent_total</td><td>기본급 + 인센티브 − 페이백 차감</td></tr>
+<tr><td>company_profit</td><td>회사가 가져가는 <b>잔존마진 몫</b> (= 잔존마진 − 인센티브)</td></tr>
+<tr><td>formula_version</td><td><code>residual</code> = 새 공식 / <code>points</code> = 옛 포인트 체계</td></tr>
 </table>
+<div class="warn">
+<b>company_profit 은 전체 영업이익이 아니다.</b> 회사 기본 마진은 가이드·MAX 를 정할 때 이미 반영돼
+이 시스템 밖에 있다. 리베이트를 관리하지 않으므로 매출은 알 수 없다.
+</div>
 
-<h3>액션</h3>
-<ul>
-<li>[집계 실행] (admin) — 전월 sales 집계 → RPC finalize 호출 → settlements row INSERT/UPDATE</li>
-<li>[📥 CSV export] — 27 컬럼 (IT·가전·합산 모두 포함) / [인쇄]</li>
-<li>[🏠 가전 + ⚡ 합계 컬럼 표시] 토글 — 켜면 list에 가전·합산 7컬럼 추가 노출</li>
-<li>cron 자동: 매월 1일 02:00 KST</li>
-</ul>
-<div class="warn"><b>⚠️ 가전 Grade는 인터넷+TV와 별도 운영</b> (2026-05-18 정책 변경) — 각자 P 기준으로 독립 Grade·단가 산정. 메인 화면은 인터넷+TV 기준만 표시. 가전 정산은 행의 <b>[🏠 N건]</b> 버튼 클릭 → 별도 팝업 (rental_calc_monthly_settlement RPC 단독 호출 — 가전 P·Grade·단가·인센·우수·매출·페이백·이익).</div>
-
-<h3>🏠 가전 정산 팝업 (행 [🏠 N건] 버튼)</h3>
-<table>
-<tr><th>구분</th><th>값</th></tr>
-<tr><td>가전 Grade · 단가</td><td>가전 P 기준 (인터넷과 무관)</td></tr>
-<tr><td>가전 인센티브 · 우수 보너스</td><td>가전 단가 × 가전 P + 우수 보너스</td></tr>
-<tr><td>가전 매출 · 페이백 (회사 부담 / 상담사 차감)</td><td>가전 박제값 합산</td></tr>
-<tr><td>가전 상담사 수령 · 회사 이익</td><td>가전 단독 정산 결과</td></tr>
-</table>`
+<h3>이전 정산</h3>
+<p>2026-09-01 이전은 <code>formula_version = 'points'</code> 로 잠겨 있다. 새 공식으로 소급 재계산하지 않는다.
+포인트(P) · 등급(G1~G3) · 우수상품 보너스 · 페널티는 모두 폐지됐다.</p>
+`
   },
   {
     id: 'call-stats', group: '3️⃣ 관리자', title: '📈 콜 통계', roles: ['admin', 'manager'],
@@ -1150,7 +874,7 @@ const SECTIONS = [
 <li>총 마진 (매출 - 페이백 - 비용)</li>
 <li>콜 1건당 평균 마진 (효율 지표)</li>
 <li>인센티브 지급 대비 회사 순수익</li>
-<li>전환율 + 우수상품 비율</li>
+<li>전환율</li>
 <li>ROI 순위 (전체 / 본인 센터)</li>
 </ul>
 <h3>주요 액션</h3>
