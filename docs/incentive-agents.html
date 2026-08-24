@@ -240,7 +240,7 @@ async function fetchAgent() {
         <thead>
           <tr>
             <th>이름 / 이메일</th><th>센터</th><th>역할</th><th>입사일</th>
-            <th>기본급</th><th>활성</th><th>계약</th><th>P</th><th>Grade</th><th>인센티브</th><th>보너스</th><th>총수령</th><th>작업</th>
+            <th>기본급</th><th>활성</th><th>설치완료</th><th>잔존마진</th><th>배분율</th><th>인센티브</th><th>총수령</th><th>작업</th>
           </tr>
         </thead>
         <tbody id="agents-tbody"></tbody>
@@ -534,12 +534,11 @@ function renderAgents(agents) {
     // 6개 실적 컬럼 — 휴지통 모드는 모두 '-'
     const dashStat = '<span style="color:#64748b">-</span>';
     const statCells = _trashMode
-      ? `<td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td>`
+      ? `<td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td><td>${dashStat}</td>`
       : `<td id="stat-count-${a.id}" style="font-size:11px;text-align:right">…</td>
-         <td id="stat-p-${a.id}" style="font-size:11px;text-align:right">…</td>
-         <td id="stat-grade-${a.id}" style="font-size:11px">…</td>
+         <td id="stat-residual-${a.id}" style="font-size:11px;text-align:right;color:#86efac">…</td>
+         <td id="stat-rate-${a.id}" style="font-size:11px;text-align:right">…</td>
          <td id="stat-inc-${a.id}" style="font-size:11px;text-align:right">…</td>
-         <td id="stat-bonus-${a.id}" style="font-size:11px;text-align:right;color:#cbd5e1">…</td>
          <td id="stat-total-${a.id}" style="font-size:12px;text-align:right;color:#86efac;font-weight:800">…</td>`;
 
     let actions;
@@ -572,7 +571,7 @@ function renderAgents(agents) {
   // 휴지통 모드는 정산 조회 생략
   if (_trashMode) return;
 
-  // 각 상담사의 이번 달 실적 비동기 로드 (계약·P·Grade·인센티브·보너스·총수령)
+  // 각 상담사의 이번 달 실적 비동기 로드 (설치완료·잔존마진·배분율·인센티브·총수령)
   const ym = new Date().toISOString().slice(0,7);
   const fmtMoney = (v) => (v == null) ? '-' : Number(v).toLocaleString();
   filtered.forEach(async a => {
@@ -586,12 +585,10 @@ function renderAgents(agents) {
       const s = data.settlement;
       if (!s) return;
       const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
-      set(`stat-count-${a.id}`, `<b>${s.total_count || 0}</b>건<div style="font-size:9px;color:#64748b">우수 ${s.premium_count || 0}</div>`);
-      set(`stat-p-${a.id}`, `<b>${s.total_points || 0}</b>P`);
-      const gColor = ['','#6b7280','#3b82f6','#dc2626'][s.grade_applied || 1] || '#6b7280';
-      set(`stat-grade-${a.id}`, `<span style="background:${gColor};color:#fff;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:800">G${s.grade_applied || 1}</span>${s.is_penalty ? '<div style="font-size:9px;color:#fbbf24;margin-top:2px">⚠️ 페널티</div>' : ''}`);
+      set(`stat-count-${a.id}`, `<b>${s.total_count || 0}</b>건`);
+      set(`stat-residual-${a.id}`, `<b>${fmtMoney(s.total_residual_margin)}</b>`);
+      set(`stat-rate-${a.id}`, `<b>${s.applied_rate || 0}</b>%`);
       set(`stat-inc-${a.id}`, fmtMoney(s.incentive));
-      set(`stat-bonus-${a.id}`, fmtMoney(s.bonus));
       set(`stat-total-${a.id}`, fmtMoney(s.agent_total) + '원');
     } catch {}
   });

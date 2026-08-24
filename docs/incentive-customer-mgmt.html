@@ -348,13 +348,11 @@ function renderList() {
     const chanChips = chans.map(ch => { const m=CHAN_META[ch]; return `<span class="chan-chip ${m.cls}">${m.icon} ${m.label}</span>`; }).join('');
     const prods = [];
     if (c.it_sales_completed > 0) prods.push(`<span class="prod-chip" style="color:#86efac">✓ 인터넷 ${c.it_sales_completed}</span>`);
-    if (c.rental_sales_completed > 0) prods.push(`<span class="prod-chip" style="color:#86efac">✓ 가전 ${c.rental_sales_completed}</span>`);
     if (c.usedphone_count > 0) prods.push(`<span class="prod-chip" style="color:#86efac">✓ 중고폰</span>`);
     if (c.it_sales_progress > 0) prods.push(`<span class="prod-chip" style="color:#fbbf24">⏳ 인터넷</span>`);
-    if (c.rental_sales_progress > 0) prods.push(`<span class="prod-chip" style="color:#fbbf24">⏳ 가전</span>`);
     const age = c.lead_age_days || 0;
     const ageLabel = age === 0 ? '오늘' : `${age}일`;
-    const hasNba = c.gifts_pending > 0 || (c.it_sales_completed > 0 && c.rental_sales_completed === 0) || age > 14;
+    const hasNba = c.gifts_pending > 0 || age > 14;
     return `<div class="lead-card" data-phone="${c.phone}" onclick="selectCustomer('${c.phone}')">
       <div class="lc-r1">
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer" onclick="event.stopPropagation()"><input type="checkbox" class="bulk-cb" data-phone="${c.phone}" onchange="toggleBulk('${c.phone}', this.checked)"></label>
@@ -463,18 +461,12 @@ function renderDetail(r) {
     : c.it_sales_progress > 0
     ? {cls:'quote',val:'⏳ 견적중',sub:`${c.it_sales_progress}건 진행`}
     : {cls:'empty',val:'🎯',sub:'권유 권장'};
-  const rentalCard = c.rental_sales_completed > 0
-    ? {cls:'has',val:`✅ ${c.rental_sales_completed}건`,sub:(r.rental_sales||[]).slice(0,1).map(s=>`${s.product?.brand||''} ${s.product?.model||''}`).join('')}
-    : c.rental_sales_progress > 0
-    ? {cls:'quote',val:'⏳ 견적중',sub:`${c.rental_sales_progress}건 진행`}
-    : (c.it_sales_completed > 0 ? {cls:'quote',val:'🔥',sub:'IT 계약자 — cross-sell 적기'} : {cls:'empty',val:'🎯',sub:'권유 권장'});
   const usedCard = c.usedphone_count > 0
     ? {cls:'has',val:`✅ ${c.usedphone_count}건`,sub:'중고폰 매입'}
     : {cls:'empty',val:'○',sub:'미접촉'};
   const mobileCard = {cls:'empty',val:'🏪',sub:'매장 방문 영역 (TM 외)'};
   const crossHTML = [
     {icon:'🌐',label:'인터넷+TV',d:itCard},
-    {icon:'🏠',label:'가전렌탈',d:rentalCard},
     {icon:'📱',label:'휴대폰',d:mobileCard},
     {icon:'🔄',label:'중고폰',d:usedCard}
   ].map(x => `<div class="cross-card ${x.d.cls}">
@@ -855,25 +847,6 @@ function renderContractDetails(r) {
       activation_date: s.activation_date,
       cancellation_reason: s.cancellation_reason,
       ticket: null,
-    });
-  });
-  // 가전렌탈
-  (r.rental_sales || []).forEach(s => {
-    const end = addMonths(s.contract_date, s.months_snapshot);
-    items.push({
-      type: 'rental', icon: '🏠', typeLabel: '가전렌탈',
-      name: [s.product?.brand, s.product?.name || s.product?.model].filter(Boolean).join(' '),
-      sub: [s.product?.company?.name, s.care_service_snapshot ? '케어 '+s.care_service_snapshot : ''].filter(Boolean).join(' · '),
-      contract_date: s.contract_date,
-      months: s.months_snapshot,
-      end_date: end,
-      monthly_fee: s.monthly_fee_snapshot,
-      payback: s.payback_snapshot,
-      status: s.status,
-      agent: s.agent?.name,
-      activation_date: s.activation_date,
-      cancellation_reason: s.cancellation_reason,
-      ticket: s.option?.ticket_number,
     });
   });
   // 중고폰
