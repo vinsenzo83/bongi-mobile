@@ -146,8 +146,43 @@ async function fetchAgent() {
     <!-- ★ 상품 카테고리 탭 -->
     <div style="display:flex;gap:5px;border-bottom:2px solid #f59e0b;margin-bottom:14px">
       <div class="prod-cat-tab active" data-cat="it" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#cbd5e1;position:relative;bottom:-2px">📡 인터넷 + TV</div>
-      <div class="prod-cat-tab" data-cat="rental" data-group="정수기" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">💧 정수기 그룹</div>
-      <div class="prod-cat-tab" data-cat="rental" data-group="가전" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">🏠 가전 그룹 <span style="background:#f59e0b;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">NEW</span></div>
+      <div class="prod-cat-tab" data-cat="usim" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">📲 유심 <span style="background:#0ea5e9;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">NEW</span></div>
+    </div>
+
+    <!-- ★ 유심 패널 (기본 hidden) — incentive_usim_plans -->
+    <div id="usim-panel" style="display:none">
+      <div style="background:#0c4a6e;border:1px solid #0ea5e9;border-radius:8px;padding:11px 14px;margin-bottom:14px;font-size:12px;color:#bae6fd;line-height:1.7">
+        <b>유심 이동 (SIM-only 개통)</b> — 단말 없이 유심만 해당 통신사로 옮기는 개통이다. 기기 판매가 아니라 <b>할부원금·공시지원금 항목이 없다</b>.<br>
+        ⛔ <b style="color:#fca5a5">번호이동만 가능 · 신규가입 불가</b> — 이미 해당 통신사를 쓰는 고객은 대상이 아니다.<br>
+        인터넷 동시 가입 시 <b>같은 통신사</b> 유심만 결합이 인정된다 (SKT·SKB→SKT / KT→KT / LG U+→LG U+).
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <label style="font-size:12px;color:#94a3b8">통신사</label>
+        <select id="us-f-carrier" style="padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px">
+          <option value="">전체</option><option>SKT</option><option>KT</option><option>LG U+</option>
+        </select>
+        <button id="us-reload" style="padding:7px 13px;background:#334155;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:11.5px;font-weight:700;cursor:pointer">↻ 새로고침</button>
+        <button id="us-add" style="padding:7px 13px;background:#0284c7;border:none;border-radius:5px;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer">+ 요금제 추가</button>
+        <span id="us-count" style="margin-left:auto;font-size:12px;color:#94a3b8"></span>
+      </div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px" id="us-table">
+        <thead><tr style="background:#1e293b;color:#94a3b8;font-size:11px">
+          <th style="padding:9px 10px;text-align:left">통신사</th>
+          <th style="padding:9px 10px;text-align:left">요금제명</th>
+          <th style="padding:9px 10px;text-align:right">월정액</th>
+          <th style="padding:9px 10px;text-align:right">선택약정 25%</th>
+          <th style="padding:9px 10px;text-align:right">페이백</th>
+          <th style="padding:9px 10px;text-align:left">데이터</th>
+          <th style="padding:9px 10px;text-align:center">순서</th>
+          <th style="padding:9px 10px;text-align:center">활성</th>
+          <th style="padding:9px 10px;text-align:center">작업</th>
+        </tr></thead><tbody id="us-body"></tbody>
+      </table></div>
+      <div style="margin-top:10px;font-size:11px;color:#64748b;line-height:1.7">
+        · 선택약정은 월정액 × 75% 다. 값을 비워두면 자동 계산된다.<br>
+        · 삭제는 실제로 지우지 않고 <b>비활성</b> 처리한다 — 과거 견적·계약 추적성을 남기기 위함이다.<br>
+        · 여기서 고친 값은 <b>TM 상담 인터넷+TV 업셀 카드</b>와 <b>유심 단독 탭</b> 양쪽에 동시에 반영된다.
+      </div>
     </div>
 
     <!-- ★ 가전렌탈 패널 (기본 hidden) -->
@@ -531,9 +566,113 @@ async function fetchAgent() {
       const isRental = cat === 'rental';
       F('it-panel').style.display = cat === 'it' ? '' : 'none';
       F('rental-panel').style.display = isRental ? '' : 'none';
+      const up = F('usim-panel'); if (up) up.style.display = cat === 'usim' ? '' : 'none';
       if (isRental) initRental(t.dataset.group);
+      if (cat === 'usim') initUsimAdmin();
     });
   });
+
+
+// ═══════════════════════════════════════════════════════════
+// 📲 유심 관리 — incentive_usim_plans
+// ═══════════════════════════════════════════════════════════
+let _usimRows = [], _usimInited = false;
+const US_API = '/api/incentive/usim-plans';
+function authHeaders() { const tk = getToken(); return tk ? { Authorization: 'Bearer ' + tk } : {}; }
+
+function usimNet(r) { return (r.select_discount != null) ? r.select_discount : Math.round(r.monthly_fee * 0.75); }
+
+async function initUsimAdmin() {
+  if (!_usimInited) {
+    _usimInited = true;
+    F('us-f-carrier').addEventListener('change', renderUsimRows);
+    F('us-reload').addEventListener('click', loadUsimRows);
+    F('us-add').addEventListener('click', addUsimRow);
+  }
+  await loadUsimRows();
+}
+
+async function loadUsimRows() {
+  try {
+    const r = await fetch(US_API + '?all=true', { headers: authHeaders() });
+    const j = await r.json();
+    _usimRows = j.plans || [];
+  } catch (e) { _usimRows = []; }
+  renderUsimRows();
+}
+
+function renderUsimRows() {
+  const car = F('us-f-carrier').value;
+  const rows = _usimRows.filter(r => !car || r.carrier === car);
+  F('us-count').textContent = rows.length + '개' + (car ? ' / 전체 ' + _usimRows.length + '개' : '');
+  const inp = (v, cls, w) => '<input class="' + cls + '" value="' + (v == null ? '' : v) +
+    '" style="width:' + w + ';padding:5px 7px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px;text-align:right">';
+  F('us-body').innerHTML = rows.map(r => {
+    const dim = r.is_active === false ? 'opacity:.45;' : '';
+    return '<tr data-id="' + r.id + '" style="border-bottom:1px solid #334155;' + dim + '">' +
+      '<td style="padding:7px 10px"><b>' + r.carrier + '</b></td>' +
+      '<td style="padding:7px 10px"><input class="u-name" value="' + (r.plan_name || '') + '" style="width:170px;padding:5px 7px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px"></td>' +
+      '<td style="padding:7px 10px;text-align:right">' + inp(r.monthly_fee, 'u-fee', '92px') + '</td>' +
+      '<td style="padding:7px 10px;text-align:right">' + inp(r.select_discount, 'u-sel', '92px') +
+        '<div style="font-size:9.5px;color:#64748b;margin-top:2px">자동 ' + Math.round(r.monthly_fee * 0.75).toLocaleString() + '</div></td>' +
+      '<td style="padding:7px 10px;text-align:right">' + inp(r.payback, 'u-pay', '98px') + '</td>' +
+      '<td style="padding:7px 10px"><input class="u-data" value="' + (r.data_amount || '') + '" style="width:78px;padding:5px 7px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px"></td>' +
+      '<td style="padding:7px 10px;text-align:center">' + inp(r.sort_order, 'u-sort', '46px') + '</td>' +
+      '<td style="padding:7px 10px;text-align:center"><input type="checkbox" class="u-act"' + (r.is_active !== false ? ' checked' : '') + '></td>' +
+      '<td style="padding:7px 10px;text-align:center;white-space:nowrap">' +
+        '<button class="u-save" style="padding:4px 9px;background:#059669;border:none;border-radius:4px;color:#fff;font-size:10.5px;font-weight:700;cursor:pointer">저장</button> ' +
+        '<button class="u-del" style="padding:4px 9px;background:#7f1d1d;border:none;border-radius:4px;color:#fecaca;font-size:10.5px;font-weight:700;cursor:pointer">비활성</button>' +
+      '</td></tr>';
+  }).join('') || '<tr><td colspan="9" style="padding:20px;text-align:center;color:#64748b">등록된 요금제가 없습니다.</td></tr>';
+
+  F('us-body').querySelectorAll('tr[data-id]').forEach(tr => {
+    const id = tr.dataset.id;
+    tr.querySelector('.u-save')?.addEventListener('click', () => saveUsimRow(id, tr));
+    tr.querySelector('.u-del')?.addEventListener('click', () => delUsimRow(id));
+  });
+}
+
+const numOrNull = v => { const n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10); return isNaN(n) ? null : n; };
+
+async function saveUsimRow(id, tr) {
+  const body = {
+    plan_name:       tr.querySelector('.u-name').value.trim(),
+    monthly_fee:     numOrNull(tr.querySelector('.u-fee').value),
+    select_discount: numOrNull(tr.querySelector('.u-sel').value),
+    payback:         numOrNull(tr.querySelector('.u-pay').value) || 0,
+    data_amount:     tr.querySelector('.u-data').value.trim() || null,
+    sort_order:      numOrNull(tr.querySelector('.u-sort').value) || 0,
+    is_active:       tr.querySelector('.u-act').checked,
+  };
+  if (!body.plan_name || body.monthly_fee == null) { alert('요금제명과 월정액은 필수입니다.'); return; }
+  const r = await fetch(US_API + '/' + id, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(body),
+  });
+  if (!r.ok) { alert('저장 실패: ' + (await r.text()).slice(0, 200)); return; }
+  await loadUsimRows();
+}
+
+async function delUsimRow(id) {
+  if (!confirm('비활성 처리합니다. (행은 지우지 않습니다)')) return;
+  const r = await fetch(US_API + '/' + id, { method: 'DELETE', headers: authHeaders() });
+  if (!r.ok) { alert('실패: ' + (await r.text()).slice(0, 200)); return; }
+  await loadUsimRows();
+}
+
+async function addUsimRow() {
+  const carrier = F('us-f-carrier').value || prompt('통신사 (SKT / KT / LG U+)', 'SKT');
+  if (!carrier) return;
+  const plan_name = prompt('요금제명');
+  if (!plan_name) return;
+  const monthly_fee = numOrNull(prompt('월정액 (원)'));
+  if (monthly_fee == null) return;
+  const r = await fetch(US_API, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ carrier, plan_name, monthly_fee, payback: 0, sort_order: 99 }),
+  });
+  if (!r.ok) { alert('추가 실패: ' + (await r.text()).slice(0, 200)); return; }
+  await loadUsimRows();
+}
 
   let _rentalGroup = null, _rentalBaseInited = false;
   async function initRental(group) {
