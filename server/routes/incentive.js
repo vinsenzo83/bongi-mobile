@@ -3466,9 +3466,12 @@ router.get('/usim-plans', optionalAuth, async (req, res) => {
   }
 });
 
+// 화면이 보내는 값은 여기 다 있어야 한다. 빠지면 서버가 조용히 버려서
+// 저장 성공(200)인데 값이 안 들어가는 것처럼 보인다 — 가이드·MAX 가 그랬다.
 const USIM_FIELDS = ['carrier','plan_name','monthly_fee','select_discount','payback','data_amount',
   'network','activation_type','commission','contract_months','device_policy',
-  'bundle_eligible','bundle_lines','bundle_fee_basis','is_special','sort_order','is_active','memo'];
+  'bundle_eligible','bundle_lines','bundle_fee_basis','is_special','sort_order','is_active','memo',
+  'guide_cash','guide_voucher','guide_payout','max_payout','sale_type'];
 
 router.post('/usim-plans', authenticateJWT, async (req, res) => {
   try {
@@ -3506,6 +3509,14 @@ router.patch('/usim-plans/:id', authenticateJWT, async (req, res) => {
     }
     if (!Object.keys(update).length) {
       return res.status(400).json({ error: '변경할 필드가 없습니다 (allowed: ' + USIM_FIELDS.join(', ') + ')' });
+    }
+    // 가이드 총액 = 현금 + 상품권. 화면을 우회해 들어와도 서버에서 다시 맞춘다.
+    if (update.guide_cash != null && update.guide_voucher != null) {
+      update.guide_payout = Number(update.guide_cash) + Number(update.guide_voucher);
+    }
+    if (update.guide_payout != null && update.max_payout != null
+        && Number(update.max_payout) < Number(update.guide_payout)) {
+      return res.status(400).json({ error: 'MAX 는 가이드보다 작을 수 없습니다' });
     }
     const { data, error } = await supabase
       .from('incentive_usim_plans').update(update).eq('id', req.params.id).select().single();
