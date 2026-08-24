@@ -3471,7 +3471,7 @@ router.get('/usim-plans', optionalAuth, async (req, res) => {
 const USIM_FIELDS = ['carrier','plan_name','monthly_fee','select_discount','payback','data_amount',
   'network','activation_type','commission','contract_months','device_policy',
   'bundle_eligible','bundle_lines','bundle_fee_basis','is_special','sort_order','is_active','memo',
-  'guide_cash','guide_voucher','guide_payout','max_payout','sale_type'];
+  'guide_payout','max_payout','sale_type'];   // 유심은 현금/상품권 분리가 없다
 
 router.post('/usim-plans', authenticateJWT, async (req, res) => {
   try {
@@ -3509,10 +3509,6 @@ router.patch('/usim-plans/:id', authenticateJWT, async (req, res) => {
     }
     if (!Object.keys(update).length) {
       return res.status(400).json({ error: '변경할 필드가 없습니다 (allowed: ' + USIM_FIELDS.join(', ') + ')' });
-    }
-    // 가이드 총액 = 현금 + 상품권. 화면을 우회해 들어와도 서버에서 다시 맞춘다.
-    if (update.guide_cash != null && update.guide_voucher != null) {
-      update.guide_payout = Number(update.guide_cash) + Number(update.guide_voucher);
     }
     if (update.guide_payout != null && update.max_payout != null
         && Number(update.max_payout) < Number(update.guide_payout)) {

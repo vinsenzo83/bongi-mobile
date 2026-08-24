@@ -169,8 +169,9 @@ async function fetchAgent() {
       <div id="us-sec-plans">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
           <div style="display:flex;gap:4px">
-            <div class="us-st active" data-st="bundle" style="padding:6px 14px;background:#0284c7;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:700;color:#fff">인터넷 결합</div>
-            <div class="us-st" data-st="solo" style="padding:6px 14px;background:#334155;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:700;color:#94a3b8">유심 단독</div>
+            <div class="us-st active" data-st="uit" style="padding:6px 14px;background:#0284c7;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:700;color:#fff" title="인터넷+TV 와 유심을 같이 개통">① UIT결합유심</div>
+            <div class="us-st" data-st="bundle" style="padding:6px 14px;background:#334155;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:700;color:#94a3b8" title="같은 통신사에 가족 휴대폰이 있거나 인터넷을 쓰는 중">② 가족추가 · 단독MNP(결합)</div>
+            <div class="us-st" data-st="solo" style="padding:6px 14px;background:#334155;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:700;color:#94a3b8" title="아무 조건도 없이 유심만 개통">③ 유심단독MNP(미결합)</div>
           </div>
           <button id="us-reload" style="padding:7px 13px;background:#334155;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:11.5px;font-weight:700;cursor:pointer">↻ 새로고침</button>
           <button id="us-add" style="padding:7px 13px;background:#0284c7;border:none;border-radius:5px;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer">+ 요금제 추가</button>
@@ -191,7 +192,8 @@ async function fetchAgent() {
           </tr></thead><tbody id="us-body"></tbody>
         </table></div>
         <div style="margin-top:10px;font-size:11px;color:#64748b;line-height:1.75">
-          · <b>인터넷 결합</b>과 <b>유심 단독</b>은 수수료 체계가 달라 사은품을 따로 관리한다. 같은 요금제라도 값이 다를 수 있다.<br>
+          · 유심은 <b>3구분</b>이다. ① 인터넷+TV 와 동시 개통 / ② 같은 통신사에 가족 휴대폰·인터넷 보유 / ③ 아무 조건 없음.<br>
+          · 구분마다 수수료 체계가 달라 사은품을 따로 관리한다. <b>같은 요금제라도 값이 다르다.</b><br>
           · <b>가이드</b>=공식 페이백(전원 동일·고객 노출 가능) / <b>MAX</b>=상담사 재량 상한(<b style="color:#fca5a5">고객 노출 금지</b>).<br>
           · <b>수수료(리베이트)는 이 시스템에서 관리하지 않는다.</b> 회사 마진을 뺀 값이 이미 가이드·MAX에 반영돼 있으므로, 상담사에게 필요한 건 이 두 금액뿐이다.<br>
           · 선택약정을 비우면 월정액 × 75% 로 자동 계산된다. 삭제는 비활성 처리다(행 보존).
@@ -403,7 +405,7 @@ async function fetchAgent() {
 // 📲 유심 관리 — incentive_usim_plans
 // ═══════════════════════════════════════════════════════════
 let _usimRows = [], _usimComm = [], _usimAddons = [], _usimInited = false;
-let _usimSub = 'plans', _usimST = 'bundle';
+let _usimSub = 'plans', _usimST = 'uit';
 const US_API = '/api/incentive/usim-plans';
 const UC_API = '/api/incentive/usim-commissions';
 const UA_API = '/api/incentive/usim-addons';
@@ -448,7 +450,7 @@ function renderUsimAll() {
 
 function renderUsimPlans() {
   const car = F('us-f-carrier').value;
-  const rows = _usimRows.filter(r => (!car || r.carrier === car) && (r.sale_type || 'bundle') === _usimST);
+  const rows = _usimRows.filter(r => (!car || r.carrier === car) && (r.sale_type || 'uit') === _usimST);
   F('us-count').textContent = rows.length + '개';
   const inp = (v, cls, w, bg) => '<input class="' + cls + '" value="' + (v == null ? '' : v) +
     '" style="width:' + w + ';padding:5px 7px;background:' + (bg || '#0f172a') + ';border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px;text-align:right">';
