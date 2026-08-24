@@ -948,7 +948,6 @@ async function toggleAgentDetail(agentId, agentName) {
       + '</tr></thead><tbody>'
       + sales.map(s => {
           const p = s.product || {};
-          const tierBadge = '';
           const tvCntBadge = (s.tv_count && s.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:3px">TV${s.tv_count}</span>` : '';
           const wifiBadge = s.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:3px">스피커</span>' : '';
           const carrierMap = { kt: { label:'KT', bg:'#dc2626' }, sk: { label:'SK', bg:'#ef4444' }, skt: { label:'SK', bg:'#ef4444' }, lgu: { label:'LG U+', bg:'#a855f7' }, lg: { label:'LG U+', bg:'#a855f7' } };
@@ -964,7 +963,7 @@ async function toggleAgentDetail(agentId, agentName) {
           const status = `<span style="background:${sm.bg};color:#fff;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700">${sm.txt}</span>`;
           return `<tr style="${s.status === 'cancelled' ? 'opacity:0.55' : ''};border-bottom:1px solid #1e293b">
             <td style="padding:10px 8px;font-size:12px;text-align:center;color:#cbd5e1">${(s.contract_date||'').slice(5)}</td>
-            <td style="padding:10px 8px;font-size:12.5px"><div>${carrierBadge}<b>${p.name||'-'}</b>${tierBadge}${tvCntBadge}${wifiBadge}</div><div style="font-size:10.5px;color:#94a3b8;margin-top:3px">${p.point_weight||'?'}P · ${p.is_premium ? '⭐ 우수' : '일반'}${p.speed ? ' · '+p.speed : ''}</div></td>
+            <td style="padding:10px 8px;font-size:12.5px"><div>${carrierBadge}<b>${p.name||'-'}</b>${tvCntBadge}${wifiBadge}</div><div style="font-size:10.5px;color:#94a3b8;margin-top:3px">${p.speed || ''}</div></td>
             <td style="padding:10px 8px;font-size:13px;text-align:right">${(p.guide_payout||0).toLocaleString()}</td>
             <td style="padding:10px 8px;font-size:13px;text-align:right;color:#c4b5fd">${(p.max_payout||0).toLocaleString()}</td>
             <td style="padding:10px 8px;font-size:13px;text-align:right;color:#fbbf24"><b>${((s.actual_payout != null) ? s.actual_payout : (p.guide_payout||0)).toLocaleString()}</b></td>
