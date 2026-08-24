@@ -130,10 +130,20 @@ router.patch('/products/:id', authenticateJWT, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
-    const allowed = ['rebate', 'payback', 'guide_payout', 'max_payout', 'name', 'active', 'speed', 'tv_tier',
+    const allowed = ['rebate', 'payback', 'guide_cash', 'guide_voucher', 'guide_payout', 'max_payout',
+                     'name', 'active', 'speed', 'tv_tier',
                      'gift_amount', 'monthly_fee_min', 'monthly_fee_max', 'install_fee'];
     const update = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    // 가이드 총액 = 현금 + 상품권. 화면을 우회해 들어와도 서버에서 다시 맞춘다.
+    if (update.guide_cash != null && update.guide_voucher != null) {
+      update.guide_payout = Number(update.guide_cash) + Number(update.guide_voucher);
+    }
+    // MAX 는 가이드 총액 이상. 상품권은 고정이고 재량은 현금분에만 붙는다.
+    if (update.guide_payout != null && update.max_payout != null
+        && Number(update.max_payout) < Number(update.guide_payout)) {
+      return res.status(400).json({ error: 'MAX 는 가이드 총액보다 작을 수 없습니다' });
+    }
     if (!Object.keys(update).length) {
       return res.status(400).json({ error: '변경할 필드가 없습니다 (allowed: ' + allowed.join(', ') + ')' });
     }

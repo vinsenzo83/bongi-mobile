@@ -4446,6 +4446,9 @@ async function incSimulate() {
   const residual = mx - offer;                  // 잔존마진
   const room = mx - offer;                      // 추가 지급 여력 (같은 값이지만 뜻이 다르다)
 
+  // 상품권은 가이드에서 고정으로 나가고, 상담사 재량은 현금분에만 붙는다.
+  const vou  = Number(src.guide_voucher || 0);
+  const cash = offer - vou;                       // 실제 현금 지급액
   if (gEl) gEl.textContent = incFmt(guide);
   if (mEl) mEl.textContent = incFmt(mx);
   if (oEl) oEl.textContent = incFmt(offer);
@@ -4494,6 +4497,13 @@ async function incSimulate() {
                 + '</div>';
             }).join('')
          +  '<div style="font-size:9px;color:#a16207;margin-top:3px;line-height:1.5">회사 마진 기준(리베이트 − MAX). 유심을 고르면 유심 수수료까지 합산해 비교합니다.</div>'
+         +  '</div>';
+  }
+  if (vou > 0) {
+    html += '<div style="background:rgba(255,255,255,0.55);border-radius:6px;padding:6px 9px;margin-bottom:7px;font-size:10.5px;line-height:1.6">'
+         +  '<div style="display:flex;justify-content:space-between"><span style="color:#78350f">현금</span><b>' + incFmt(cash) + '</b></div>'
+         +  '<div style="display:flex;justify-content:space-between"><span style="color:#78350f">상품권 <span style="font-size:9px;opacity:.8">(고정)</span></span><b>' + incFmt(vou) + '</b></div>'
+         +  '<div style="font-size:9px;color:#a16207;margin-top:2px">상품권은 정해진 금액으로 나가고, 더 드리는 건 현금으로만 붙습니다.</div>'
          +  '</div>';
   }
   html += '<div style="height:7px;background:#fde68a;border-radius:4px;overflow:hidden;margin-bottom:8px">'
