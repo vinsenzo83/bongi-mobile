@@ -213,45 +213,6 @@ router.get('/rules', optionalAuth, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// 3. POST /api/incentive/simulate — 시뮬레이션 (인증 불필요)
-//    body: { current_points, current_premium, add_product_id, add_qty, add_payback }
-// ═══════════════════════════════════════════════════════════════
-router.post('/simulate', optionalAuth, async (req, res) => {
-  try {
-    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
-    const {
-      current_points = 0,
-      current_premium = 0,
-      add_product_id,
-      add_qty = 1,
-      add_payback = 0,
-    } = req.body || {};
-
-    if (!add_product_id) {
-      return res.status(400).json({ error: 'add_product_id 필수' });
-    }
-    if (add_payback < 0 || add_payback > 50000) {
-      return res.status(400).json({ error: '추가 페이백은 0~50,000원' });
-    }
-
-    const { data, error } = await supabase.rpc('incentive_simulate_addition', {
-      p_current_points: Number(current_points),
-      p_current_premium: parseInt(current_premium) || 0,
-      p_add_product_id: parseInt(add_product_id),
-      p_add_qty: parseInt(add_qty) || 1,
-      p_add_payback: parseInt(add_payback) || 0,
-    });
-    if (error) throw error;
-    // RPC가 TABLE 반환이므로 배열에서 첫 번째 row 추출
-    const result = Array.isArray(data) ? data[0] : data;
-    res.json({ simulation: result });
-  } catch (err) {
-    console.error('[incentive]', req.method, req.path, err);
-    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════
 // 4. GET /api/incentive/agents/me — 내 incentive_agent 정보
 // ═══════════════════════════════════════════════════════════════
 router.get('/agents/me', authenticateJWT, async (req, res) => {
