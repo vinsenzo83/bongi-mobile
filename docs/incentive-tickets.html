@@ -108,7 +108,6 @@ tbody tr:last-child td { border-bottom: none; }
 
   <nav class="tabs">
     <button class="tab-btn active" data-tab="internet">📡 인터넷+TV <span class="count" id="cnt-internet">-</span></button>
-    <button class="tab-btn" data-tab="rental">🏠 가전 렌탈 <span class="count" id="cnt-rental">-</span></button>
   </nav>
 
   <main class="content">
@@ -143,45 +142,15 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
 
     <!-- ─── 탭 2: 가전 렌탈 (옵션 1501개) ─── -->
-    <div class="tab-panel" id="panel-rental">
-      <div class="toolbar">
-        <input class="search-input" id="search-rental" placeholder="🔍 티켓번호·렌탈사·브랜드·상품명·모델 (예: R0683 / LG헬로비전 / 정수기)">
-        <div class="filter-pills" id="category-pills">
-          <button class="pill active" data-category="all">전체 카테고리</button>
-        </div>
-        <div class="filter-pills" id="brand-pills">
-          <button class="pill active" data-brand="all">전체 브랜드</button>
-        </div>
-        <div class="filter-pills">
-          <button class="pill active" data-status-r="all">상태 전체</button>
-          <button class="pill" data-status-r="active">활성</button>
-          <button class="pill" data-status-r="inactive">비활성</button>
-        </div>
-        <button class="btn" onclick="reloadRental()">🔄 새로고침</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>티켓번호</th><th style="width:48px">🖼️</th><th>🏢 렌탈사</th><th>📂 카테고리</th><th>브랜드</th><th>상품명</th><th>모델</th>
-            <th>약정</th><th>🛠️ 케어</th><th>🔍 점검</th><th>🏷️ 변별</th><th>🎁 프로모</th>
-            <th class="num">월납</th><th class="num">정상가</th><th class="num">💰 페이백</th>
-            <th>상태</th><th>액션</th>
-          </tr></thead>
-          <tbody id="tbody-rental"><tr><td colspan="18" class="loading">로딩...</td></tr></tbody>
-        </table>
-      </div>
-      <div class="footnote">💡 옵션 단위 발급 (R0001~). 신규 옵션 등록 시 자동 R 번호. 상품 관리에서 옵션 비활성 시 티켓도 자동 sync.</div>
-    </div>
-  </main>
+</main>
 </div>
 
 <div id="toast"></div>
 
 <script>
 const API = '/api/incentive';
-let INTERNET = [], RENTAL = [];
+let INTERNET = [];
 let iCarrier = 'all', iStatus = 'all';
-let rBrand = 'all', rStatus = 'all', rCategory = 'all';
 let currentTab = 'internet';
 
 function showToast(msg, isErr) {
@@ -219,7 +188,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 function updateStatsForTab() {
-  const arr = currentTab === 'internet' ? INTERNET : RENTAL;
+  const arr = INTERNET;
   const active = arr.filter(t => t.is_active !== false && (t.ticket_active === undefined || t.ticket_active)).length;
   document.getElementById('stat-active').textContent = active;
   document.getElementById('stat-inactive').textContent = arr.length - active;
@@ -353,115 +322,6 @@ function extractTicketsFromCalc() {
 }
 
 // ════════ 탭 2: 가전 렌탈 (옵션 1501) ════════
-async function loadRental() {
-  try {
-    document.getElementById('tbody-rental').innerHTML = '<tr><td colspan="18" class="loading">로딩...</td></tr>';
-    const { tickets } = await apiFetch('/tickets/rental');
-    RENTAL = tickets;
-    document.getElementById('cnt-rental').textContent = tickets.length;
-    // 카테고리 필터 동적 생성
-    const cats = [...new Set(tickets.map(t => t.category_name).filter(Boolean))].sort();
-    const catPills = document.getElementById('category-pills');
-    catPills.innerHTML = '<button class="pill active" data-category="all">전체</button>' +
-      cats.map(c => {
-        const cnt = tickets.filter(t => t.category_name === c).length;
-        return `<button class="pill" data-category="${c}">${c} (${cnt})</button>`;
-      }).join('');
-    catPills.querySelectorAll('.pill').forEach(p => {
-      p.addEventListener('click', () => {
-        catPills.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
-        p.classList.add('active'); rCategory = p.dataset.category; renderRental();
-      });
-    });
-    // 브랜드 필터 동적 생성
-    const brands = [...new Set(tickets.map(t => t.brand).filter(Boolean))].sort();
-    const pills = document.getElementById('brand-pills');
-    pills.innerHTML = '<button class="pill active" data-brand="all">전체 브랜드</button>' +
-      brands.map(b => `<button class="pill" data-brand="${b}">${b}</button>`).join('');
-    pills.querySelectorAll('.pill').forEach(p => {
-      p.addEventListener('click', () => {
-        pills.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
-        p.classList.add('active'); rBrand = p.dataset.brand; renderRental();
-      });
-    });
-    if (currentTab === 'rental') updateStatsForTab();
-    renderRental();
-  } catch (e) {
-    document.getElementById('tbody-rental').innerHTML = '<tr><td colspan="18" class="empty">로드 실패: ' + e.message + '</td></tr>';
-  }
-}
-
-function renderRental() {
-  const search = document.getElementById('search-rental').value.trim().toLowerCase();
-  const filtered = RENTAL.filter(t => {
-    if (rCategory !== 'all' && t.category_name !== rCategory) return false;
-    if (rBrand !== 'all' && t.brand !== rBrand) return false;
-    const active = t.is_active && t.ticket_active;
-    if (rStatus === 'active' && !active) return false;
-    if (rStatus === 'inactive' && active) return false;
-    if (search) {
-      const blob = ((t.ticket_number||'') + ' ' + (t.company_name||'') + ' ' + (t.category_name||'') + ' ' + (t.brand||'') + ' ' + (t.product_name||'') + ' ' + (t.model||'')).toLowerCase();
-      if (!blob.includes(search)) return false;
-    }
-    return true;
-  });
-  const MAX_RENDER = 500;
-  const limited = filtered.slice(0, MAX_RENDER);
-  let html = limited.length === 0 ? '<tr><td colspan="18" class="empty">검색 결과 없음</td></tr>' :
-    limited.map(t => {
-      const active = t.is_active && t.ticket_active;
-      const thumbCell = t.image_url
-        ? `<img src="${t.image_url}" alt="" loading="lazy" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #475569;background:#fff;padding:1px" onerror="this.style.display='none'">`
-        : `<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#1e293b;border:1px dashed #475569;border-radius:4px;color:#64748b;font-size:14px">🖼️</div>`;
-      const inspCell = t.inspection_cycle ? `<span style="background:rgba(34,197,94,0.18);color:#86efac;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px">${t.inspection_cycle}개월</span>` : '<span style="color:#64748b">-</span>';
-      const variantCell = t.variant_label && t.variant_label !== '기본' ? `<span style="background:rgba(251,191,36,0.18);color:#fbbf24;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px">${t.variant_label}</span>` : `<span style="color:#64748b;font-size:10px">${t.variant_label || '-'}</span>`;
-      const promoCell = t.promo_type ? `<span style="background:rgba(236,72,153,0.18);color:#f9a8d4;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px">${t.promo_type}</span>` : '<span style="color:#64748b">-</span>';
-      return `<tr class="${active ? '' : 'inactive'}">
-        <td><span class="cell-ticket">${t.ticket_number}</span></td>
-        <td style="text-align:center">${thumbCell}</td>
-        <td>${t.company_name ? `<span style="background:rgba(8,145,178,0.18);color:#22d3ee;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;border:1px solid #0891b2">🏢 ${t.company_name}</span>` : '<span style="color:#64748b">-</span>'}</td>
-        <td style="color:#a78bfa;font-size:11px">${t.category_name || '-'}</td>
-        <td><span class="badge badge-brand">${t.brand || '-'}</span></td>
-        <td>${(t.product_name || '-').slice(0, 40)}</td>
-        <td style="color:#64748b;font-size:11px">${t.model || '-'}</td>
-        <td><span class="badge badge-months">${t.months || '-'}M</span></td>
-        <td style="color:#cbd5e1;font-size:11px">${t.care_service || '-'}</td>
-        <td>${inspCell}</td>
-        <td>${variantCell}</td>
-        <td>${promoCell}</td>
-        <td class="num"><span class="cell-fee">${fmt(t.monthly_fee)}원</span></td>
-        <td class="num">${fmt(t.normal_price)}원</td>
-        <td class="num"><span class="cell-gift">${fmt(t.payback)}원</span></td>
-        <td>${active ? '<span class="badge badge-active">● 활성</span>' : '<span class="badge badge-inactive">○ 비활성</span>'}</td>
-        <td>${active ?
-          `<button class="btn" onclick="deactivateRental(${t.id},'${t.ticket_number}')">비활성</button>` :
-          `<button class="btn" onclick="activateRental(${t.id},'${t.ticket_number}')">재활성</button>`}</td>
-      </tr>`;
-    }).join('');
-  if (filtered.length > MAX_RENDER) {
-    html += `<tr><td colspan="18" class="footnote" style="padding:14px 18px;color:#fbbf24">⚠️ ${filtered.length}건 중 상위 ${MAX_RENDER}건만 표시 — 검색·필터로 좁히세요</td></tr>`;
-  }
-  document.getElementById('tbody-rental').innerHTML = html;
-}
-
-document.getElementById('search-rental').addEventListener('input', renderRental);
-document.querySelectorAll('#panel-rental [data-status-r]').forEach(p => {
-  p.addEventListener('click', () => {
-    document.querySelectorAll('#panel-rental [data-status-r]').forEach(x => x.classList.remove('active'));
-    p.classList.add('active'); rStatus = p.dataset['statusR']; renderRental();
-  });
-});
-
-function reloadRental() { loadRental(); showToast('렌탈 새로고침'); }
-async function deactivateRental(id, tn) {
-  if (!confirm(`${tn} 비활성화?`)) return;
-  try { await apiFetch(`/tickets/rental/${id}/deactivate`, { method: 'PATCH' }); showToast(`${tn} 비활성`); loadRental(); }
-  catch (e) { showToast('실패: ' + e.message, true); }
-}
-async function activateRental(id, tn) {
-  try { await apiFetch(`/tickets/rental/${id}/activate`, { method: 'PATCH' }); showToast(`${tn} 재활성`); loadRental(); }
-  catch (e) { showToast('실패: ' + e.message, true); }
-}
 
 // ════════ 동적 sync ════════
 const SYNC_CHANNEL = 'incentive-seed-changed';
@@ -490,7 +350,6 @@ function startDynamicSync() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       autoSync('visibility');
-      loadRental();   // 렌탈은 상품 관리에서 즉시 update 가능 — 자동 refresh
     }
   });
 }
@@ -498,7 +357,6 @@ function startDynamicSync() {
 document.addEventListener('DOMContentLoaded', () => {
   if (!getToken()) { window.parent.postMessage({ type: 'logout' }, '*'); return; }
   loadInternet();
-  loadRental();
   setTimeout(() => autoSync('init'), 2000);
   startDynamicSync();
 });
