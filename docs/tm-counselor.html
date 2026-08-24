@@ -4465,29 +4465,33 @@ async function incSimulate() {
   html += '<div style="background:rgba(255,255,255,0.7);border-radius:6px;padding:7px 9px;margin-bottom:7px;font-size:10.5px">'
        +  '🎯 <b>' + product.name + '</b></div>';
 
-  // ── 채널이 둘 이상이면 총 수익을 나란히 비교해 보여준다
+  // ── 채널이 둘 이상이면 나란히 비교해 보여준다.
+  //    리베이트는 관리하지 않으므로 회사 마진이 아니라 상담사가 실제로 쓸 수 있는
+  //    재량 폭(MAX − 가이드)으로 비교한다. 폭이 클수록 고객에게 더 얹어 줄 수 있다.
   if (chList.length > 1) {
-    // 유심 수수료는 이 시스템에서 관리하지 않는다 — 채널 비교는 유선 리베이트 기준이다.
     const rows = chList.map(function (x) {
-      const wired = (x.rebate != null && x.max_payout != null) ? (x.rebate - x.max_payout) : null;
-      return { ch: x.channel, label: x.label || x.channel, wired: wired, total: wired };
+      const g = (x.guide_payout != null) ? x.guide_payout : null;
+      const m = (x.max_payout   != null) ? x.max_payout   : null;
+      return { ch: x.channel, label: x.label || x.channel, guide: g, max: m,
+               room: (g != null && m != null) ? (m - g) : null };
     });
-    const best = rows.filter(function (r) { return r.total != null; })
-                     .sort(function (a, b) { return b.total - a.total; })[0];
+    const best = rows.filter(function (r) { return r.room != null; })
+                     .sort(function (a, b) { return b.room - a.room; })[0];
     html += '<div style="background:rgba(255,255,255,0.55);border-radius:6px;padding:8px 10px;margin-bottom:7px">'
-         +  '<div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:5px">🔀 접수 채널 — 어디로 넣느냐로 남는 게 달라집니다</div>'
+         +  '<div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:5px">🔀 접수 채널 — 어디로 넣느냐로 줄 수 있는 폭이 달라집니다</div>'
          +  rows.map(function (r) {
               const on = (r.ch === CHANNEL_PICK);
               const win = best && r.ch === best.ch && rows.length > 1;
               return '<div class="inc-ch" data-ch="' + r.ch + '" style="display:flex;align-items:center;gap:7px;padding:5px 7px;margin-bottom:3px;border-radius:5px;cursor:pointer;'
                 + 'background:' + (on ? 'rgba(180,83,9,0.15)' : 'rgba(255,255,255,0.5)') + ';border:1.5px solid ' + (on ? '#b45309' : 'transparent') + '">'
                 + '<span style="font-weight:800;font-size:11.5px;min-width:52px">' + r.ch + '</span>'
-                + '<span style="font-size:9.5px;color:#92400e;flex:1">유선 ' + (r.wired == null ? '—' : incFmt(r.wired)) + '</span>'
-                + '<b style="font-size:13px;color:' + (win ? '#15803d' : '#78350f') + '">' + (r.total == null ? '—' : incFmt(r.total)) + '</b>'
-                + (win ? '<span style="font-size:9px;color:#15803d;font-weight:800">유리</span>' : '')
+                + '<span style="font-size:9.5px;color:#92400e;flex:1">가이드 ' + (r.guide == null ? '—' : incFmt(r.guide))
+                +   ' · MAX ' + (r.max == null ? '—' : incFmt(r.max)) + '</span>'
+                + '<b style="font-size:13px;color:' + (win ? '#15803d' : '#78350f') + '">+' + (r.room == null ? '—' : incFmt(r.room)) + '</b>'
+                + (win ? '<span style="font-size:9px;color:#15803d;font-weight:800">폭 넓음</span>' : '')
                 + '</div>';
             }).join('')
-         +  '<div style="font-size:9px;color:#a16207;margin-top:3px;line-height:1.5">회사 마진 기준(유선 리베이트 − MAX). 유심 사은품은 가이드·MAX 로만 관리하므로 이 비교에 들어가지 않습니다.</div>'
+         +  '<div style="font-size:9px;color:#a16207;margin-top:3px;line-height:1.5">오른쪽 숫자는 재량 폭(MAX − 가이드) — 가이드 위로 더 얹을 수 있는 한도입니다. 덜 쓰고 판 만큼 인센티브로 남습니다.</div>'
          +  '</div>';
   }
   if (vou > 0) {

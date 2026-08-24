@@ -598,7 +598,7 @@ function toggleChannels(pid) {
   } else {
     det.innerHTML = `<td colspan="${cols}" style="padding:0;background:#0f172a">
       <div style="padding:11px 14px">
-        <div style="font-size:11.5px;font-weight:800;color:#7dd3fc;margin-bottom:7px">📡 접수 채널별 금액 — 채널을 바꾸면 상담 견적의 가이드·MAX·마진이 통째로 바뀝니다</div>
+        <div style="font-size:11.5px;font-weight:800;color:#7dd3fc;margin-bottom:7px">📡 접수 채널별 금액 — 채널을 바꾸면 상담 견적의 가이드·MAX 가 통째로 바뀝니다</div>
         <table style="width:100%;border-collapse:collapse;font-size:11.5px">
           <thead><tr style="background:#1e293b;color:#94a3b8;font-size:10.5px">
             <th style="padding:6px 9px;text-align:left;width:90px">채널</th>
@@ -609,14 +609,13 @@ function toggleChannels(pid) {
             <th style="padding:6px 9px;text-align:right;width:95px">가이드 총액</th>
             <th style="padding:6px 9px;text-align:right;width:100px">MAX</th>
             <th style="padding:6px 9px;text-align:right;width:100px">설치비</th>
-            <th style="padding:6px 9px;text-align:right;width:105px">마진</th>
             <th style="padding:6px 9px;text-align:center;width:60px">기본</th>
             <th style="padding:6px 9px;text-align:center;width:70px">작업</th>
           </tr></thead>
           <tbody>${list.map(c => chRowHtml(c)).join('')}</tbody>
         </table>
         <div style="font-size:10px;color:#64748b;margin-top:7px;line-height:1.6">
-          · <b>마진 = 리베이트 − MAX</b>. MAX 까지 다 줘도 남아야 판매 가능한 채널이다.<br>
+          · 리베이트·마진은 여기서 다루지 않는다 — <b>회사 마진을 뺀 값이 이미 가이드·MAX 에 반영</b>돼 있다.<br>
           · 가이드 총액은 현금 + 상품권으로 자동 계산된다. <b style="color:#c4b5fd">MAX 는 현금으로만 더 나간다</b>.<br>
           · 유심 수수료도 이 채널을 따라간다 — SKT 와 SKB 는 구간 경계까지 다르다.
         </div>
@@ -630,19 +629,16 @@ function toggleChannels(pid) {
 const chNum = v => { const n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10); return isNaN(n) ? null : n; };
 
 function chRowHtml(c) {
-  const margin = (c.rebate != null && c.max_payout != null) ? c.rebate - c.max_payout : null;
   const i = (v, f, w) => `<input class="ch-in ch-${f}" data-id="${c.id}" data-f="${f}" value="${v ?? ''}" placeholder="—"
       style="width:${w};padding:4px 6px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11px;text-align:right">`;
   return `<tr data-ch="${c.id}" style="border-bottom:1px solid #334155">
     <td style="padding:6px 9px"><b style="color:#7dd3fc">${c.channel}</b></td>
     <td style="padding:6px 9px;color:#94a3b8;font-size:10.5px">${c.label || ''}</td>
-    <td style="padding:5px 7px;text-align:right">${i(c.rebate, 'rebate', '96px')}</td>
     <td style="padding:5px 7px;text-align:right;background:rgba(19,78,74,.25)">${i(c.guide_cash, 'guide_cash', '92px')}</td>
     <td style="padding:5px 7px;text-align:right;background:rgba(17,94,89,.25)">${i(c.guide_voucher, 'guide_voucher', '92px')}</td>
     <td style="padding:6px 9px;text-align:right;font-weight:800;color:#5eead4" id="chg-${c.id}">${c.guide_payout == null ? '—' : fmt(c.guide_payout)}</td>
     <td style="padding:5px 7px;text-align:right;background:rgba(76,29,149,.25)">${i(c.max_payout, 'max_payout', '92px')}</td>
     <td style="padding:5px 7px;text-align:right">${i(c.install_fee, 'install_fee', '92px')}</td>
-    <td style="padding:6px 9px;text-align:right;font-weight:800;color:${margin == null ? '#64748b' : margin < 0 ? '#f87171' : '#4ade80'}" id="chm-${c.id}">${margin == null ? '—' : fmt(margin)}</td>
     <td style="padding:6px 9px;text-align:center">${c.is_default ? '<span style="color:#fbbf24">★</span>' : ''}</td>
     <td style="padding:6px 9px;text-align:center">
       <button class="btn-row ch-save" data-id="${c.id}" style="background:#059669;color:#fff">저장</button>
@@ -656,20 +652,13 @@ function chPreview(id) {
   const g = (v('guide_cash') || 0) + (v('guide_voucher') || 0);
   const gc = document.getElementById(`chg-${id}`);
   if (gc) gc.textContent = fmt(g);
-  const reb = v('rebate'), mx = v('max_payout');
-  const m = (reb != null && mx != null) ? reb - mx : null;
-  const mc = document.getElementById(`chm-${id}`);
-  if (mc) {
-    mc.textContent = (m == null) ? '—' : fmt(m);
-    mc.style.color = (m == null) ? '#64748b' : (m < 0 ? '#f87171' : '#4ade80');
-  }
 }
 
 async function saveChannel(id) {
   const tr = document.querySelector(`tr[data-ch="${id}"]`);
   if (!tr) return;
   const v = f => chNum(tr.querySelector(`.ch-${f}`)?.value);
-  const body = { rebate: v('rebate'), guide_cash: v('guide_cash'), guide_voucher: v('guide_voucher') ?? 0,
+  const body = { guide_cash: v('guide_cash'), guide_voucher: v('guide_voucher') ?? 0,
                  max_payout: v('max_payout'), install_fee: v('install_fee') };
   if (body.guide_cash != null) body.guide_payout = body.guide_cash + (body.guide_voucher || 0);
   if (body.guide_payout != null && body.max_payout != null && body.max_payout < body.guide_payout) {
