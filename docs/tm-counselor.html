@@ -2760,7 +2760,6 @@ var USIM_PLANS = [];
 var USIM_CN = { skt: 'SKT', kt: 'KT', lgu: 'LG U+' };
 
 function loadUsimPlans() {
-  loadUsimComm();
   loadProductChannels();
   return fetch('/api/incentive/usim-plans')
     .then(function(r) { return r.ok ? r.json() : { plans: [] }; })
@@ -2777,65 +2776,6 @@ function usimPlansFor(carrierKey, saleType) {
   });
 }
 
-// 유심 수수료 행렬 — (인터넷+TV 상품) × (유심 요금제 구간)
-var USIM_COMM = [];
-function loadUsimComm() {
-  return fetch('/api/incentive/usim-commissions')
-    .then(function(r) { return r.ok ? r.json() : { rows: [] }; })
-    .then(function(j) { USIM_COMM = j.rows || []; })
-    .catch(function() { USIM_COMM = []; });
-}
-
-// 인터넷 속도 + TV 상품 → 정책표의 product_key
-//   KT 는 상품별로 수수료가 갈린다. SKT·LGU+ 는 아직 상품무관 기본행으로 폴백된다.
-function usimProductKey(carrierKey, sp, tvName) {
-  if (!tvName || tvName === 'TV 없음') return sp + ' 단독';
-  var t = String(tvName);
-  if (carrierKey === 'kt') {
-    if (t.indexOf('모든G') >= 0) return sp + '+모든G/모든G플러스';
-    if (t.indexOf('라이트') >= 0 || t.indexOf('에센스') >= 0) return sp + '+라이트/에센스';
-    if (t.indexOf('베이직') >= 0) return sp + '+베이직';
-    return sp + '+베이직';
-  }
-  if (carrierKey === 'skt') {
-    if (t.indexOf('올') >= 0) return sp + ' +올 계열';
-    if (t.indexOf('스탠다드') >= 0) return sp + ' +스탠다드 계열';
-    return sp + ' +이코노미';
-  }
-  if (t.indexOf('프리미엄') >= 0) return sp + ' +프리미엄 계열';
-  if (t.indexOf('기본형') >= 0) return sp + ' +기본형';
-  return sp + ' +실속형';
-}
-
-// 상품별 행 → 없으면 상품무관 기본행으로 폴백.
-//   값이 안 나오는 이유가 두 가지라 구분해서 돌려준다.
-//     'none'   그 구간에 행 자체가 없다 → 정책표 미수령
-//     'blank'  행은 있는데 amount 가 null 이다 → 정책상 해당없음 (LG U+ 33군·55군의 UIT 처럼)
-function usimCommission(carrierKey, category, productKey, usimFee) {
-  // 인자로 키('kt')가 올 수도, 표시명('KT'·'SKB')이 올 수도 있다.
-  //   USIM_CN['KT'] 는 undefined 라 그대로 쓰면 조회가 통째로 빈다 — 양쪽 다 받는다.
-  var cn = USIM_CN[carrierKey] || carrierKey;
-  function rowsFor(pk) {
-    return USIM_COMM.filter(function(r) {
-      return r.carrier === cn && r.category === category
-          && (pk === null ? r.product_key == null : r.product_key === pk)
-          && r.fee_tier_min <= usimFee;
-    }).sort(function(a, b) { return b.fee_tier_min - a.fee_tier_min; });
-  }
-  function pick(pk) {
-    var all = rowsFor(pk);
-    if (!all.length) return null;
-    var withVal = all.filter(function(r) { return r.amount != null; });
-    return withVal.length ? { row: withVal[0], blank: false } : { row: all[0], blank: true };
-  }
-  var hit = pick(productKey);
-  if (hit && !hit.blank) return { row: hit.row, by: '상품별', status: 'ok' };
-  var base = pick(null);
-  if (base && !base.blank) return { row: base.row, by: '기본', status: 'ok' };
-  // 값이 없다 — 행이 있으면 정책상 해당없음, 없으면 미수령
-  if (hit || base) return { row: (hit || base).row, by: null, status: 'blank' };
-  return { row: null, by: null, status: 'none' };
-}
 
 function usimSelected() {
   if (!USIM_PICK.on || !USIM_PICK.planId) return null;
@@ -3015,10 +2955,6 @@ function usimSoloQuote(p) {
   // 요건을 확인하지 않았으면 결합으로 잡지 않는다 — 확인 없이 결합가로 안내하면 나중에 환수된다.
   var bundleApplied = USIM_SOLO.bundled && USIM_SOLO.bundleOk;
   var cat = bundleApplied ? '가족추가유심·유심단독MNP(결합)' : '유심단독MNP(미결합)';
-  var ck  = USIM_KEY_OF[p.carrier] || 'skt';
-  var cm  = usimCommission(ck, cat, null, p.monthly_fee);
-  var fee = (cm && cm.status === 'ok') ? cm.row.amount : null;
-  var margin = (fee != null) ? fee - mx : null;
   el.innerHTML =
     '<div style="padding:4px 2px">' +
     '<div style="font-size:10px;color:#7dd3fc;font-weight:800;letter-spacing:.05em;margin-bottom:6px">📲 유심 단독 · ' + p.carrier + ' · 번호이동</div>' +
@@ -3028,11 +2964,8 @@ function usimSoloQuote(p) {
     (pay > 0 ? '<div class="calc-line gift" style="background:rgba(251,191,36,0.14);border-radius:6px;padding:7px 10px;margin-top:8px"><span class="l" style="color:#fbbf24">🎁 개통 사은품 (가이드)</span><span class="v" style="color:#fbbf24;font-size:17px">' + fmt(pay) + '</span></div>' : '') +
     '<div style="margin-top:8px;padding:7px 10px;background:rgba(2,132,199,0.12);border:1px solid rgba(56,189,248,0.3);border-radius:6px;font-size:10.5px;line-height:1.6">' +
       '<div style="color:#7dd3fc;font-weight:800;margin-bottom:3px">' + (bundleApplied ? '🔗 결합 — 가족추가유심 · 유심 단독 MNP(결합시)' : '📲 미결합 — 유심 단독 MNP(미결합시)') + '</div>' +
-      (fee == null
-        ? '<span style="color:#fbbf24">해당 구간 수수료 미수령 — 마진 계산 불가</span>'
-        : '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">수수료 (' + cm.row.tier_label + ')</span><span class="v">' + fmt(fee) + '</span></div>' +
-          '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">MAX 지급</span><span class="v">-' + fmt(mx) + '</span></div>' +
-          '<div class="calc-line" style="padding:2px 0 0;font-size:10.5px;border-top:1px dashed rgba(255,255,255,0.18);margin-top:3px"><span class="l" style="font-weight:800">→ 마진</span><span class="v" style="font-weight:800;color:' + (margin < 0 ? '#f87171' : '#4ade80') + '">' + fmt(margin) + '</span></div>') +
+      '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">가이드 (공식 지급)</span><span class="v">' + fmt(guide) + '</span></div>' +
+      '<div class="calc-line" style="padding:2px 0 0;font-size:10.5px;border-top:1px dashed rgba(255,255,255,0.18);margin-top:3px"><span class="l" style="font-weight:800">MAX (재량 상한 · 고객 노출 금지)</span><span class="v" style="font-weight:800;color:#c4b5fd">' + fmt(mx) + '</span></div>' +
     '</div>' +
     (USIM_SOLO.bundled && !USIM_SOLO.bundleOk
       ? '<div style="margin-top:8px;padding:7px 10px;background:rgba(251,191,36,0.14);border:1px solid rgba(251,191,36,0.4);border-radius:6px;font-size:10.5px;color:#fde68a;line-height:1.6">⚠ <b>결합 요건 미확인</b> — 같은 통신사에 가족 휴대폰이나 인터넷이 있는지 확인 전이라 <b>미결합 수수료</b>로 계산했습니다. 확인 후 체크하면 결합가로 바뀝니다.</div>'
@@ -3605,31 +3538,15 @@ function calc() {
       (function () {
         // UIT결합유심 = 인터넷+TV 와 유심을 함께 개통할 때의 유심 수수료.
         //   같은 유심이라도 어떤 인터넷+TV 를 파느냐로 금액이 갈린다 (KT).
-        // 인터넷과 같은 통신사여야 UIT결합이 인정된다. 다르면 유심 단독 수수료다.
-        // 유심 수수료도 접수 채널을 따라간다 (SKT/SKB 가 서로 다르다)
+        // 인터넷과 같은 통신사여야 UIT결합이 인정된다. 다르면 유심 단독 사은품이다.
+        // 접수 채널을 따라간다 (SKT / SKB 가 서로 다르다)
         var uCar = usimCarrierForChannel(CHANNEL_PICK, c);
-        var pk = usimProductKey(c, sp, hasTv ? d.tv[ti].n : null);
-        var cm = usimCommission(uCar, 'UIT결합유심', pk, usim.monthly_fee);
-        if (cm.status !== 'ok') {
-          // 대체 경로(기존 인터넷에 유심만 추가)의 수수료를 참고로 보여준다
-          var alt = usimCommission(uCar, '가족추가유심·유심단독MNP(결합)', null, usim.monthly_fee);
-          var altTxt = (alt.status === 'ok') ? ' 참고 — 기존 인터넷 보유 고객이면 ' + fmt(alt.row.amount) + '.' : '';
-          return '<div style="margin-top:5px;padding:6px 9px;background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.30);border-radius:5px;font-size:10.5px;color:#fca5a5;line-height:1.6">'
-            + (cm.status === 'blank'
-                ? '⛔ <b>이 요금제 구간은 UIT결합 대상이 아닙니다</b> (정책표 공란).'
-                : '⚠️ <b>UIT결합 수수료 정책표 미수령</b> — 마진을 계산할 수 없습니다.')
-            + altTxt + '</div>';
-        }
         var uGuide = (usim.guide_payout != null) ? usim.guide_payout : uPay;
-        var uMax   = (usim.max_payout   != null) ? usim.max_payout   : uPay;
-        var uMargin = cm.row.amount - uMax;
+        var uMax   = (usim.max_payout   != null) ? usim.max_payout   : uGuide;
         return '<div style="margin-top:5px;padding:6px 9px;background:rgba(2,132,199,0.12);border:1px solid rgba(56,189,248,0.35);border-radius:5px;font-size:10.5px;line-height:1.6">' +
           '<div style="color:#7dd3fc;font-weight:800;margin-bottom:2px">🔗 인터넷+TV 동시 개통 (UIT결합유심) <span style="opacity:.75;font-weight:600">· ' + uCar + ' 접수</span></div>' +
-          '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">적용 상품 · 구간</span><span class="v" style="font-size:10px;opacity:.85">' + pk + ' · ' + cm.row.tier_label + (cm.by === '기본' ? ' <span style="color:#fbbf24">(기본행)</span>' : '') + '</span></div>' +
-          '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">유심 수수료</span><span class="v">' + fmt(cm.row.amount) + '</span></div>' +
-          '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">유심 MAX 지급</span><span class="v">-' + fmt(uMax) + '</span></div>' +
-          '<div class="calc-line" style="padding:2px 0 0;font-size:10.5px;border-top:1px dashed rgba(255,255,255,0.18);margin-top:3px"><span class="l" style="font-weight:800">→ 유심 마진</span><span class="v" style="font-weight:800;color:' + (uMargin < 0 ? '#f87171' : '#4ade80') + '">' + fmt(uMargin) + '</span></div>' +
-          (cm.row.maintain_months ? '<div style="font-size:9.5px;color:rgba(255,255,255,0.5);margin-top:3px">유지 ' + cm.row.maintain_months + '개월 미달 시 환수·미지급</div>' : '') +
+          '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">가이드 (공식 지급)</span><span class="v">' + fmt(uGuide) + '</span></div>' +
+          '<div class="calc-line" style="padding:2px 0 0;font-size:10.5px;border-top:1px dashed rgba(255,255,255,0.18);margin-top:3px"><span class="l" style="font-weight:800">MAX (재량 상한 · 고객 노출 금지)</span><span class="v" style="font-weight:800;color:#c4b5fd">' + fmt(uMax) + '</span></div>' +
         '</div>';
       })() +
       (uHint.applies
@@ -4550,17 +4467,10 @@ async function incSimulate() {
 
   // ── 채널이 둘 이상이면 총 수익을 나란히 비교해 보여준다
   if (chList.length > 1) {
-    const usim = (typeof usimSelected === 'function') ? usimSelected() : null;
+    // 유심 수수료는 이 시스템에서 관리하지 않는다 — 채널 비교는 유선 리베이트 기준이다.
     const rows = chList.map(function (x) {
       const wired = (x.rebate != null && x.max_payout != null) ? (x.rebate - x.max_payout) : null;
-      let uc = null;
-      if (usim) {
-        const hit = usimCommission(usimCarrierForChannel(x.channel, c), 'UIT결합유심',
-          usimProductKey(c, sp, (ti > 0 && d.tv[ti]) ? d.tv[ti].n : null), usim.monthly_fee);
-        if (hit && hit.status === 'ok') uc = hit.row.amount - ((usim.max_payout != null) ? usim.max_payout : (usim.payback || 0));
-      }
-      return { ch: x.channel, label: x.label || x.channel, wired: wired, usim: uc,
-               total: (wired == null ? null : wired + (uc || 0)) };
+      return { ch: x.channel, label: x.label || x.channel, wired: wired, total: wired };
     });
     const best = rows.filter(function (r) { return r.total != null; })
                      .sort(function (a, b) { return b.total - a.total; })[0];
@@ -4572,13 +4482,12 @@ async function incSimulate() {
               return '<div class="inc-ch" data-ch="' + r.ch + '" style="display:flex;align-items:center;gap:7px;padding:5px 7px;margin-bottom:3px;border-radius:5px;cursor:pointer;'
                 + 'background:' + (on ? 'rgba(180,83,9,0.15)' : 'rgba(255,255,255,0.5)') + ';border:1.5px solid ' + (on ? '#b45309' : 'transparent') + '">'
                 + '<span style="font-weight:800;font-size:11.5px;min-width:52px">' + r.ch + '</span>'
-                + '<span style="font-size:9.5px;color:#92400e;flex:1">유선 ' + (r.wired == null ? '—' : incFmt(r.wired))
-                +   (r.usim != null ? ' + 유심 ' + incFmt(r.usim) : '') + '</span>'
+                + '<span style="font-size:9.5px;color:#92400e;flex:1">유선 ' + (r.wired == null ? '—' : incFmt(r.wired)) + '</span>'
                 + '<b style="font-size:13px;color:' + (win ? '#15803d' : '#78350f') + '">' + (r.total == null ? '—' : incFmt(r.total)) + '</b>'
                 + (win ? '<span style="font-size:9px;color:#15803d;font-weight:800">유리</span>' : '')
                 + '</div>';
             }).join('')
-         +  '<div style="font-size:9px;color:#a16207;margin-top:3px;line-height:1.5">회사 마진 기준(리베이트 − MAX). 유심을 고르면 유심 수수료까지 합산해 비교합니다.</div>'
+         +  '<div style="font-size:9px;color:#a16207;margin-top:3px;line-height:1.5">회사 마진 기준(유선 리베이트 − MAX). 유심 사은품은 가이드·MAX 로만 관리하므로 이 비교에 들어가지 않습니다.</div>'
          +  '</div>';
   }
   if (vou > 0) {

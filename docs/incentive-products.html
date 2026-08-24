@@ -159,7 +159,6 @@ async function fetchAgent() {
       <!-- 서브탭 -->
       <div style="display:flex;gap:5px;border-bottom:2px solid #0ea5e9;margin-bottom:14px">
         <div class="us-sub active" data-sub="plans" style="padding:8px 18px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:7px 7px 0 0;cursor:pointer;font-size:12.5px;font-weight:700;color:#cbd5e1;position:relative;bottom:-2px">요금제 · 사은품</div>
-        <div class="us-sub" data-sub="comm" style="padding:8px 18px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:7px 7px 0 0;cursor:pointer;font-size:12.5px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">수수료 정책표</div>
         <div class="us-sub" data-sub="addon" style="padding:8px 18px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:7px 7px 0 0;cursor:pointer;font-size:12.5px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">부가 가감</div>
         <select id="us-f-carrier" style="margin-left:auto;padding:7px 10px;background:#0f172a;border:1px solid #475569;border-radius:5px;color:#e2e8f0;font-size:12px">
           <option value="">전체 통신사</option><option>SKT</option><option>KT</option><option>LG U+</option>
@@ -194,22 +193,8 @@ async function fetchAgent() {
         <div style="margin-top:10px;font-size:11px;color:#64748b;line-height:1.75">
           · <b>인터넷 결합</b>과 <b>유심 단독</b>은 수수료 체계가 달라 사은품을 따로 관리한다. 같은 요금제라도 값이 다를 수 있다.<br>
           · <b>가이드</b>=공식 페이백(전원 동일·고객 노출 가능) / <b>MAX</b>=상담사 재량 상한(<b style="color:#fca5a5">고객 노출 금지</b>).<br>
-          · <b>수수료는 여기서 관리하지 않는다.</b> 요금 구간·조건별로 갈리므로 <b>수수료 정책표</b> 탭에서 따로 넣는다. 마진(수수료−MAX)은 상담 화면에서 계산된다.<br>
+          · <b>수수료(리베이트)는 이 시스템에서 관리하지 않는다.</b> 회사 마진을 뺀 값이 이미 가이드·MAX에 반영돼 있으므로, 상담사에게 필요한 건 이 두 금액뿐이다.<br>
           · 선택약정을 비우면 월정액 × 75% 로 자동 계산된다. 삭제는 비활성 처리다(행 보존).
-        </div>
-      </div>
-
-      <!-- ② 수수료 정책표 -->
-      <div id="us-sec-comm" style="display:none">
-        <div style="background:#1e293b;border:1px solid #475569;border-radius:6px;padding:10px 13px;margin-bottom:12px;font-size:11.5px;color:#cbd5e1;line-height:1.75">
-          <b>(인터넷+TV 상품) × (유심 요금제 구간) → 리베이트</b><br>
-          빈칸은 <b style="color:#fbbf24">정책표 미수령</b>이다. 0원과 다르다. 비어 있으면 <b>상품무관 기본행</b>으로 폴백해 계산한다.<br>
-          통신사 정책표를 받으면 해당 칸만 채우면 된다 — 표 구조는 바꾸지 않아도 된다.
-        </div>
-        <div id="us-comm-wrap"></div>
-        <div style="margin-top:12px;display:flex;gap:8px">
-          <button id="us-comm-save" style="padding:8px 18px;background:#059669;border:none;border-radius:5px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">💾 변경분 저장</button>
-          <span id="us-comm-msg" style="font-size:11.5px;color:#94a3b8;align-self:center"></span>
         </div>
       </div>
 
@@ -400,13 +385,11 @@ async function initUsimAdmin() {
     F('us-f-carrier').addEventListener('change', renderUsimAll);
     F('us-reload').addEventListener('click', loadUsimAll);
     F('us-add').addEventListener('click', addUsimRow);
-    F('us-comm-save').addEventListener('click', saveUsimComm);
     document.querySelectorAll('.us-sub').forEach(t => t.addEventListener('click', () => {
       document.querySelectorAll('.us-sub').forEach(x => { x.classList.remove('active'); x.style.color = '#94a3b8'; });
       t.classList.add('active'); t.style.color = '#cbd5e1';
       _usimSub = t.dataset.sub;
       F('us-sec-plans').style.display = _usimSub === 'plans' ? '' : 'none';
-      F('us-sec-comm').style.display  = _usimSub === 'comm'  ? '' : 'none';
       F('us-sec-addon').style.display = _usimSub === 'addon' ? '' : 'none';
       renderUsimAll();
     }));
@@ -427,7 +410,6 @@ async function loadUsimAll() {
 }
 function renderUsimAll() {
   if (_usimSub === 'plans') renderUsimPlans();
-  else if (_usimSub === 'comm') renderUsimComm();
   else renderUsimAddons();
 }
 
@@ -495,56 +477,6 @@ async function addUsimRow() {
   const r = await fetch(US_API, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ carrier, plan_name, monthly_fee, payback: 0, sale_type: _usimST, sort_order: 99 }) });
   if (!r.ok) { alert('추가 실패: ' + (await r.text()).slice(0, 200)); return; }
-  await loadUsimAll();
-}
-
-// ── ② 수수료 정책표 — 통신사 × 구분별 (상품 행 × 구간 열) 격자
-function renderUsimComm() {
-  const car = F('us-f-carrier').value;
-  const rows = _usimComm.filter(r => !car || r.carrier === car);
-  const carriers = [...new Set(rows.map(r => r.carrier))].sort();
-  let html = '';
-  carriers.forEach(cn => {
-    const cats = [...new Set(rows.filter(r => r.carrier === cn).map(r => r.category))];
-    cats.forEach(cat => {
-      const sub = rows.filter(r => r.carrier === cn && r.category === cat);
-      const tiers = [...new Map(sub.map(r => [r.fee_tier_min, r.tier_label])).entries()].sort((a, b) => a[0] - b[0]);
-      const pks = [...new Set(sub.map(r => r.product_key))].sort((a, b) => (a == null ? -1 : b == null ? 1 : String(a).localeCompare(String(b))));
-      html += '<div style="margin-bottom:16px"><div style="font-size:12.5px;font-weight:800;color:#e2e8f0;margin-bottom:6px">' +
-        '<span style="color:#0ea5e9">' + cn + '</span> · ' + cat + '</div>' +
-        '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:11.5px;min-width:520px"><thead><tr style="background:#1e293b;color:#94a3b8">' +
-        '<th style="padding:7px 10px;text-align:left;min-width:190px">인터넷+TV 상품</th>' +
-        tiers.map(t => '<th style="padding:7px 10px;text-align:right;min-width:96px">' + t[1] + '</th>').join('') +
-        '</tr></thead><tbody>';
-      pks.forEach(pk => {
-        html += '<tr style="border-bottom:1px solid #334155"><td style="padding:6px 10px;color:' + (pk == null ? '#fbbf24' : '#cbd5e1') + '">' +
-          (pk == null ? '전체 (상품무관 기본)' : pk) + '</td>';
-        tiers.forEach(t => {
-          const cell = sub.find(r => r.product_key == pk && r.fee_tier_min === t[0]);
-          html += '<td style="padding:4px 6px;text-align:right">' + (cell
-            ? '<input class="uc-v" data-id="' + cell.id + '" data-orig="' + (cell.amount == null ? '' : cell.amount) + '" value="' + (cell.amount == null ? '' : cell.amount) +
-              '" placeholder="미수령" style="width:92px;padding:4px 6px;background:' + (cell.amount == null ? '#292524' : '#0f172a') +
-              ';border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11px;text-align:right">'
-            : '<span style="color:#475569">·</span>') + '</td>';
-        });
-        html += '</tr>';
-      });
-      html += '</tbody></table></div></div>';
-    });
-  });
-  F('us-comm-wrap').innerHTML = html || '<div style="color:#64748b;font-size:12px">정책표가 없습니다.</div>';
-}
-
-async function saveUsimComm() {
-  const changed = [...document.querySelectorAll('.uc-v')]
-    .filter(el => String(el.value).trim() !== String(el.dataset.orig))
-    .map(el => ({ id: Number(el.dataset.id), amount: String(el.value).trim() === '' ? null : nOrNull(el.value) }));
-  if (!changed.length) { F('us-comm-msg').textContent = '변경된 칸이 없습니다.'; return; }
-  const r = await fetch(UC_API, { method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ rows: changed }) });
-  if (!r.ok) { F('us-comm-msg').textContent = '저장 실패: ' + (await r.text()).slice(0, 120); return; }
-  const j = await r.json();
-  F('us-comm-msg').textContent = j.updated + '칸 저장됨';
   await loadUsimAll();
 }
 
