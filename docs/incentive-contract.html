@@ -1447,10 +1447,21 @@ function openEditModal(id) {
             <div class="ph-payback-label">💵 월 요금</div>
             <div style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:-0.02em">${(c.monthly_fee != null && !isNaN(c.monthly_fee)) ? Number(c.monthly_fee).toLocaleString() : '-'}<span style="font-size:12px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
           </div>
-          <div style="text-align:right">
-            <div class="ph-payback-label">💰 페이백 <span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:1px 5px;border-radius:3px;font-weight:700;font-size:8.5px;margin-left:3px" title="등록 시점에 박제된 단가 — 이후 상품가격 변경되어도 변하지 않음">SNAPSHOT</span></div>
-            <div class="ph-payback-val ph-payback-display" data-snapshot="${(c.payback_snapshot ?? p.payback) || 0}" data-gift-default-won="${(p.gift_amount && Number(p.gift_amount) > 0) ? Math.round(Number(p.gift_amount) * 10000) : 0}">${((c.payback_snapshot ?? p.payback) || 0).toLocaleString()}<span style="font-size:13px;color:#94a3b8;font-weight:600;margin-left:2px">원</span></div>
-          </div>
+          ${(() => {
+            // 인터넷 지급액 — 유심 카드와 같은 형식으로 읽는다.
+            //   옛 payback_snapshot 한 줄은 MAX 를 「페이백」이라 불러 헷갈렸다.
+            const g = c.guide_payout_snapshot, mx = c.max_payout_snapshot, ac = c.actual_payout;
+            if (g == null && mx == null && ac == null) return '';
+            const won = (v) => (v == null ? '-' : Number(v).toLocaleString() + '원');
+            const res = (mx != null && ac != null) ? Number(mx) - Number(ac) : null;
+            return `
+          <div style="display:grid;grid-template-columns:repeat(4,auto);gap:14px;text-align:right">
+            <div><div class="ph-payback-label">가이드</div><div style="font-size:14px;font-weight:800;color:#86efac">${won(g)}</div></div>
+            <div><div class="ph-payback-label">실제 지급액</div><div style="font-size:17px;font-weight:900;color:#fbbf24">${won(ac)}</div></div>
+            <div><div class="ph-payback-label">MAX <span style="background:rgba(248,113,113,.16);color:#fca5a5;padding:1px 4px;border-radius:3px;font-size:8px;font-weight:800">고객 노출 금지</span></div><div style="font-size:14px;font-weight:800;color:#fca5a5">${won(mx)}</div></div>
+            <div><div class="ph-payback-label">잔존마진</div><div style="font-size:14px;font-weight:800;color:#60a5fa">${res == null ? '-' : res.toLocaleString() + '원'}</div></div>
+          </div>`;
+          })()}
         </div>
       </div>
 
@@ -1546,7 +1557,7 @@ function openEditModal(id) {
           </select>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+      <div style="display:grid;grid-template-columns:1fr;gap:14px">
         <div>
           <label class="modal-field-label">🎁 상품권 <span style="font-size:9.5px;color:#94a3b8">(carrier=${p.carrier || '-'} · 상품 관리에서 등록된 종류)</span></label>
           <select class="detail-input gift-voucher-select" id="gift-voucher-select-${c.id || 'new'}" data-field="gift_received" data-carrier="${p.carrier || ''}" data-current="${(c.gift_received || '').replace(/"/g, '&quot;')}" data-gift-default-won="${(p.gift_amount && Number(p.gift_amount) > 0) ? Math.round(Number(p.gift_amount) * 10000) : 0}">
@@ -1555,14 +1566,6 @@ function openEditModal(id) {
           </select>
           <input type="text" class="detail-input gift-voucher-custom" id="gift-voucher-custom-${c.id || 'new'}" data-field="gift_received_custom" placeholder="자유 입력 (예: 다이슨 / 가전렌탈 / 현금 30만)" style="display:none;margin-top:6px" value="${(c.gift_received || '').replace(/"/g, '&quot;')}">
           <div class="modal-field-hint">기본 메리트(상품 gift_amount=${(p.gift_amount && Number(p.gift_amount) > 0) ? Number(p.gift_amount) + '만원' : '0'})</div>
-        </div>
-        <div>
-          <label class="modal-field-label">💰 추가 페이백 (₩, 현금)</label>
-          <input class="detail-input gift-payback-input" data-field="add_payback" type="number" min="0" max="50000" step="1000" value="${c.add_payback || 0}">
-          <div class="modal-field-hint">회사 ≤30,000 / 상담사 차감 30,001~50K</div>
-          <div class="gift-payback-total" id="gift-payback-total-${c.id || 'new'}" style="margin-top:6px;padding:6px 8px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:5px;font-size:11px;color:#fbbf24;font-weight:700">
-            🧾 총 페이백 (현금+상품권): <span class="total-display">${(Number(c.add_payback)||0).toLocaleString()}</span>원
-          </div>
         </div>
       </div>
     </div>
