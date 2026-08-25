@@ -587,6 +587,37 @@ try {
 let _channels = [];
 const CH_API = `${API}/product-channels`;
 
+// 상담 견적은 「채널이 있으면 채널 값, 없으면 상품 값」을 쓴다 (tm-counselor: gsrc = 채널 || 상품).
+// 채널이 하나라도 있으면 상품 행의 가이드·MAX 는 어디에도 쓰이지 않는다 —
+// 편집만 되고 반영은 안 되니, 넣어 놓고 반영된 줄 알면 틀린 금액을 부르게 된다.
+function _hasCh(pid) { return _channels.some(c => String(c.product_id) === String(pid)); }
+function _chSummary(pid) {
+  return _channels.filter(c => String(c.product_id) === String(pid))
+    .map(c => `${c.channel} ${c.guide_payout == null ? '—' : fmt(c.guide_payout)}${c.is_default ? '★' : ''}`)
+    .join(' · ');
+}
+// 채널이 있는 상품은 상품 행의 가이드·MAX 입력을 잠그고, 실제로 쓰이는 채널 값을 적어 준다.
+function lockChannelManaged() {
+  document.querySelectorAll('#products-tbody td[data-locked="1"] input.cell-edit').forEach(inp => {
+    inp.disabled = true;
+    inp.title = '채널이 있는 상품은 여기서 바꿀 수 없습니다 — 📡 채널 에서 관리합니다';
+    inp.style.opacity = '0.45';
+    inp.style.cursor = 'not-allowed';
+  });
+  document.querySelectorAll('#products-tbody tr[data-id]').forEach(tr => {
+    const pid = tr.dataset.id;
+    if (!_hasCh(pid)) return;
+    const cell = document.getElementById('guide-' + pid);
+    if (!cell || cell.dataset.chNoted) return;
+    cell.dataset.chNoted = '1';
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:9px;font-weight:600;color:#7dd3fc;margin-top:2px;white-space:nowrap';
+    note.textContent = _chSummary(pid);
+    note.title = '견적에 실제로 나가는 값 — ★ 가 기본 채널';
+    cell.appendChild(note);
+  });
+}
+
 async function loadChannels() {
   try {
     const r = await fetch(CH_API, { headers: { Authorization: 'Bearer ' + getToken() } });
@@ -629,12 +660,14 @@ function toggleChannels(pid) {
         <div style="font-size:10px;color:#64748b;margin-top:7px;line-height:1.6">
           · 리베이트·마진은 여기서 다루지 않는다 — <b>회사 마진을 뺀 값이 이미 가이드·MAX 에 반영</b>돼 있다.<br>
           · 가이드 총액은 현금 + 상품권으로 자동 계산된다. <b style="color:#c4b5fd">MAX 는 현금으로만 더 나간다</b>.<br>
-          · 설치비는 여기서 다루지 않는다 — <b>TM 데이터 관리 › 설치비</b>에서 3사·시간대별로 관리한다.
+          · 설치비는 여기서 다루지 않는다 — <b>TM 데이터 관리 › 설치비</b>에서 3사·시간대별로 관리한다.<br>
+          · <b style="color:#fbbf24">★ 기본 채널</b> — 상담사가 견적에서 채널을 고르지 않으면 이 채널 값이 나간다. ☆ 를 눌러 바꾼다.
         </div>
       </div></td>`;
   }
   tr.after(det);
   det.querySelectorAll('.ch-save').forEach(b => b.addEventListener('click', () => saveChannel(b.dataset.id)));
+  det.querySelectorAll('.ch-default').forEach(b => b.addEventListener('click', () => setDefaultChannel(b.dataset.id)));
   det.querySelectorAll('.ch-in').forEach(inp => inp.addEventListener('input', () => chPreview(inp.dataset.id)));
 }
 
@@ -649,7 +682,9 @@ function chRowHtml(c) {
     <td style="padding:5px 7px;text-align:right;background:rgba(17,94,89,.25)">${i(c.guide_voucher, 'guide_voucher', '92px')}</td>
     <td style="padding:6px 9px;text-align:right;font-weight:800;color:#5eead4" id="chg-${c.id}">${c.guide_payout == null ? '—' : fmt(c.guide_payout)}</td>
     <td style="padding:5px 7px;text-align:right;background:rgba(76,29,149,.25)">${i(c.max_payout, 'max_payout', '92px')}</td>
-    <td style="padding:6px 9px;text-align:center">${c.is_default ? '<span style="color:#fbbf24">★</span>' : ''}</td>
+    <td style="padding:6px 9px;text-align:center">${c.is_default
+      ? '<span title="기본 채널 — 상담사가 고르지 않으면 이 값이 나간다" style="color:#fbbf24;font-size:15px">★</span>'
+      : `<button class="btn-row ch-default" data-id="${c.id}" title="이 채널을 기본으로" style="background:transparent;border:1px solid #475569;color:#64748b;padding:2px 7px">☆</button>`}</td>
     <td style="padding:6px 9px;text-align:center">
       <button class="btn-row ch-save" data-id="${c.id}" style="background:#059669;color:#fff">저장</button>
     </td></tr>`;
@@ -662,6 +697,33 @@ function chPreview(id) {
   const g = (v('guide_cash') || 0) + (v('guide_voucher') || 0);
   const gc = document.getElementById(`chg-${id}`);
   if (gc) gc.textContent = fmt(g);
+}
+
+// 기본 채널 — 상담사가 견적에서 채널을 고르지 않으면 이 채널 값이 나간다.
+//   상품마다 하나뿐이므로 서버가 나머지를 함께 내린다.
+async function setDefaultChannel(id) {
+  const row = _channels.filter(x => String(x.id) === String(id))[0];
+  if (!row) return;
+  if (!confirm(`「${row.channel}」 을 기본 채널로 지정합니다.\n\n상담사가 채널을 고르지 않으면 이 채널의 가이드·MAX 가 견적에 나갑니다.`)) return;
+  const r = await fetch(`${CH_API}/${id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+    body: JSON.stringify({ is_default: true }),
+  });
+  if (!r.ok) { alert('지정 실패: ' + (await r.text()).slice(0, 200)); return; }
+  const j = await r.json();
+  _channels.forEach(x => { if (String(x.product_id) === String(row.product_id)) x.is_default = (String(x.id) === String(id)); });
+  if (j.channel) { const i = _channels.findIndex(x => String(x.id) === String(id)); if (i >= 0) _channels[i] = j.channel; }
+  const det = document.querySelector(`tr[data-ch="${id}"]`)?.closest('tr[id^="ch-detail"], tr');
+  const pid = row.product_id;
+  const host = document.querySelector(`tr[data-ch="${id}"]`)?.closest('table')?.querySelector('tbody');
+  if (host) host.innerHTML = _channels.filter(x => String(x.product_id) === String(pid)).map(c => chRowHtml(c)).join('');
+  const scope = host?.closest('td');
+  if (scope) {
+    scope.querySelectorAll('.ch-save').forEach(b => b.addEventListener('click', () => saveChannel(b.dataset.id)));
+    scope.querySelectorAll('.ch-default').forEach(b => b.addEventListener('click', () => setDefaultChannel(b.dataset.id)));
+    scope.querySelectorAll('.ch-in').forEach(inp => inp.addEventListener('input', () => chPreview(inp.dataset.id)));
+  }
+  showToast('★ 기본 채널이 「' + row.channel + '」 로 바뀌었습니다');
 }
 
 async function saveChannel(id) {
@@ -725,10 +787,11 @@ function renderTable() {
         ? '<span style="color:#4ade80;font-weight:700" title="WiFi 공유기 포함">✓ 포함</span>'
         : '<span style="color:#64748b" title="WiFi 공유기 미포함">미포함</span>'}</td>
       <td style="font-size:10px;color:#94a3b8">${p.tv_tier || '-'}</td>
-      <td style="background:rgba(19,78,74,.28)"><input class="cell-edit field-cash" type="number" value="${p.guide_cash ?? ''}" min="0" step="10000" data-id="${p.id}" data-field="guide_cash" data-orig="${p.guide_cash ?? ''}" placeholder="미설정"></td>
-      <td style="background:rgba(17,94,89,.28)"><input class="cell-edit field-voucher" type="number" value="${p.guide_voucher ?? ''}" min="0" step="10000" data-id="${p.id}" data-field="guide_voucher" data-orig="${p.guide_voucher ?? ''}" placeholder="0"></td>
+      ${'' /* 채널이 있으면 견적은 채널 값을 쓴다 — 이 행의 값은 어디에도 안 쓰인다 */}
+      <td style="background:rgba(19,78,74,.28)" data-locked="${_hasCh(p.id) ? '1' : ''}"><input class="cell-edit field-cash" type="number" value="${p.guide_cash ?? ''}" min="0" step="10000" data-id="${p.id}" data-field="guide_cash" data-orig="${p.guide_cash ?? ''}" placeholder="미설정"></td>
+      <td style="background:rgba(17,94,89,.28)" data-locked="${_hasCh(p.id) ? '1' : ''}"><input class="cell-edit field-voucher" type="number" value="${p.guide_voucher ?? ''}" min="0" step="10000" data-id="${p.id}" data-field="guide_voucher" data-orig="${p.guide_voucher ?? ''}" placeholder="0"></td>
       <td style="text-align:right;font-weight:800;color:#5eead4;background:rgba(15,118,110,.25)" id="guide-${p.id}">${p.guide_payout == null ? '—' : fmt(p.guide_payout)}</td>
-      <td style="background:rgba(76,29,149,.25)"><input class="cell-edit field-max" type="number" value="${p.max_payout ?? ''}" min="0" step="10000" data-id="${p.id}" data-field="max_payout" data-orig="${p.max_payout ?? ''}" placeholder="미설정"></td>
+      <td style="background:rgba(76,29,149,.25)" data-locked="${_hasCh(p.id) ? '1' : ''}"><input class="cell-edit field-max" type="number" value="${p.max_payout ?? ''}" min="0" step="10000" data-id="${p.id}" data-field="max_payout" data-orig="${p.max_payout ?? ''}" placeholder="미설정"></td>
       <td>${p.active ? '<span style="color:#86efac;font-weight:700">✅</span>' : '<span style="color:#94a3b8">❌</span>'}</td>
       <td>
         <button class="btn-row btn-save" onclick="saveRow(${p.id})">💾 저장</button>
@@ -762,6 +825,7 @@ function renderTable() {
       }
     });
   });
+  lockChannelManaged();
 }
 
 async function saveRow(id) {
@@ -771,8 +835,11 @@ async function saveRow(id) {
   if (!tr) return;
   const body = {};
   // 가이드 총액은 사용자가 직접 넣지 않는다 — 현금 + 상품권 으로 서버에 함께 보낸다
-  const _cash = tr.querySelector('.field-cash');
-  const _vou  = tr.querySelector('.field-voucher');
+  //   채널이 있는 상품은 이 값이 견적에 안 쓰이므로 아예 보내지 않는다.
+  //   보내면 화면엔 저장된 것처럼 보이는데 견적은 그대로라 어긋난다.
+  const _chManaged = _hasCh(id);
+  const _cash = _chManaged ? null : tr.querySelector('.field-cash');
+  const _vou  = _chManaged ? null : tr.querySelector('.field-voucher');
   if (_cash && _vou) {
     const cv = (_cash.value === '') ? null : (parseInt(_cash.value) || 0);
     const vv = (_vou.value === '') ? 0 : (parseInt(_vou.value) || 0);
@@ -780,6 +847,7 @@ async function saveRow(id) {
   }
   tr.querySelectorAll('.cell-edit').forEach(inp => {
     const field = inp.dataset.field;
+    if (_chManaged && ['guide_cash','guide_voucher','max_payout'].includes(field)) return;
     let val = inp.value;
     if (['payback','monthly_fee_min','monthly_fee_max','guide_cash','guide_voucher','max_payout'].includes(field) || field === 'guide_min' || field === 'guide_max' || field === 'install_fee') val = parseInt(val) || 0;
     if (field === 'gift_amount') {

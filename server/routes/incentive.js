@@ -3806,10 +3806,24 @@ router.patch('/product-channels/:id', authenticateJWT, async (req, res) => {
     if (update.guide_cash != null && update.guide_voucher != null) {
       update.guide_payout = Number(update.guide_cash) + Number(update.guide_voucher);
     }
+    // 기본 채널은 상품마다 하나뿐이다. 새로 지정하면 같은 상품의 나머지를 내린다 —
+    // 둘이 기본이면 견적이 어느 쪽을 부를지 알 수 없다.
+    let demoted = 0;
+    if (update.is_default === true) {
+      const { data: cur } = await supabase
+        .from('incentive_product_channels').select('product_id').eq('id', req.params.id).single();
+      if (cur) {
+        const { data: others } = await supabase
+          .from('incentive_product_channels')
+          .update({ is_default: false })
+          .eq('product_id', cur.product_id).neq('id', req.params.id).eq('is_default', true).select('id');
+        demoted = others ? others.length : 0;
+      }
+    }
     const { data, error } = await supabase
       .from('incentive_product_channels').update(update).eq('id', req.params.id).select().single();
     if (error) throw error;
-    res.json({ channel: data });
+    res.json({ channel: data, demoted });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
