@@ -55,6 +55,21 @@ function sameCarrier(a, b) {
   return !!x && x === y;
 }
 
+// 견적은 기본 채널 값을 쓴다. 상품 행이 그와 다르면 화면에서 두 숫자가 싸우고,
+// 어느 쪽이 맞는지 아무도 모른다. 채널을 건드릴 때마다 상품 행을 기본 채널로 맞춘다.
+async function syncProductToDefaultChannel(productId) {
+  if (!productId) return;
+  const { data: def } = await supabase
+    .from('incentive_product_channels')
+    .select('guide_cash, guide_voucher, guide_payout, max_payout')
+    .eq('product_id', productId).eq('is_default', true).maybeSingle();
+  if (!def) return;
+  await supabase.from('incentive_products').update({
+    guide_cash: def.guide_cash, guide_voucher: def.guide_voucher,
+    guide_payout: def.guide_payout, max_payout: def.max_payout,
+  }).eq('id', productId);
+}
+
 async function getCurrentIncentiveAgent(userId) {
   if (!userId) return null;
   const cached = _agentCache.get(userId);
@@ -3823,6 +3838,7 @@ router.patch('/product-channels/:id', authenticateJWT, async (req, res) => {
     const { data, error } = await supabase
       .from('incentive_product_channels').update(update).eq('id', req.params.id).select().single();
     if (error) throw error;
+    await syncProductToDefaultChannel(data.product_id);
     res.json({ channel: data, demoted });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
