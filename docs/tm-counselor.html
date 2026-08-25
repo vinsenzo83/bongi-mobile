@@ -3009,11 +3009,17 @@ function renderUsimPicker() {
   var hint = document.getElementById('usim-carrier-hint');
   if (!wrap || !box) return;
   var cn = usimCarrierName();
-  if (hint) hint.textContent = cn + ' 유심 · 번호이동 전용 · 사은품 별도 지급';
+  // TV 를 같이 파느냐로 유심 구분이 갈린다.
+  //   인터넷 + TV + 유심 → ① UIT결합유심
+  //   인터넷 + 유심      → ② 가족추가·단독MNP(결합)  ← 인터넷을 쓰게 되므로 결합 요건을 이미 만족한다
+  var _tvIdx = parseInt((document.getElementById('c-tv') || {}).value, 10) || 0;
+  var _st = _tvIdx > 0 ? 'uit' : 'bundle';
+  if (hint) hint.textContent = cn + ' 유심 · 번호이동 전용 · '
+    + (_tvIdx > 0 ? 'UIT결합유심' : '가족추가·단독MNP(결합)');
   if (det) det.style.display = USIM_PICK.on ? '' : 'none';
   if (!USIM_PICK.on) { USIM_PICK.planId = null; return; }
 
-  var list = usimPlansFor(USIM_KEY_OF[cn] || 'skt', 'uit');   // ① UIT결합유심 (요금제 자체는 SKT/SKB 동일)
+  var list = usimPlansFor(USIM_KEY_OF[cn] || 'skt', _st);   // 요금제 자체는 SKT/SKB 동일
   if (!list.length) { box.innerHTML = '<div style="font-size:11px;color:#94a3b8">' + cn + ' 유심 요금제가 등록돼 있지 않습니다.</div>'; return; }
   // 통신사가 바뀌어 선택이 무효가 되면 비운다
   if (USIM_PICK.planId && !list.some(function (p) { return String(p.id) === String(USIM_PICK.planId); })) USIM_PICK.planId = null;
@@ -3593,15 +3599,17 @@ function calc() {
       '<div class="calc-line sub" style="padding:1px 0;font-size:11.5px"><span class="l">→ 유심 월 요금</span><span class="v">' + fmt(uFee) + '</span></div>' +
       (uPay > 0 ? '<div class="calc-line gift" style="background:rgba(251,191,36,0.12);border-radius:5px;padding:5px 8px;margin-top:5px"><span class="l" style="color:#fbbf24">🎁 유심 개통 추가 페이백</span><span class="v" style="color:#fbbf24">' + fmt(uPay) + '</span></div>' : '') +
       (function () {
-        // UIT결합유심 = 인터넷+TV 와 유심을 함께 개통할 때의 유심 수수료.
-        //   같은 유심이라도 어떤 인터넷+TV 를 파느냐로 금액이 갈린다 (KT).
-        // 인터넷과 같은 통신사여야 UIT결합이 인정된다. 다르면 유심 단독 사은품이다.
-        // 접수 채널을 따라간다 (SKT / SKB 가 서로 다르다)
+        // TV 를 같이 파느냐로 유심 구분이 갈린다.
+        //   인터넷 + TV + 유심 → ① UIT결합유심
+        //   인터넷 + 유심      → ② 가족추가·단독MNP(결합)
+        //     인터넷을 새로 쓰게 되므로 결합 요건을 이미 만족한다.
+        // 인터넷과 같은 통신사여야 결합이 인정된다. 접수 채널을 따라간다.
         var uCar = usimCarrierForChannel(CHANNEL_PICK, c);
+        var uStLabel = hasTv ? '인터넷+TV 동시 개통 (UIT결합유심)' : '인터넷 + 유심 동시 개통 (가족추가·단독MNP 결합)';
         var uGuide = (usim.guide_payout != null) ? usim.guide_payout : uPay;
         var uMax   = (usim.max_payout   != null) ? usim.max_payout   : uGuide;
         return '<div style="margin-top:5px;padding:6px 9px;background:rgba(2,132,199,0.12);border:1px solid rgba(56,189,248,0.35);border-radius:5px;font-size:10.5px;line-height:1.6">' +
-          '<div style="color:#7dd3fc;font-weight:800;margin-bottom:2px">🔗 인터넷+TV 동시 개통 (UIT결합유심) <span style="opacity:.75;font-weight:600">· ' + uCar + ' 접수</span></div>' +
+          '<div style="color:#7dd3fc;font-weight:800;margin-bottom:2px">🔗 ' + uStLabel + ' <span style="opacity:.75;font-weight:600">· ' + uCar + ' 접수</span></div>' +
           '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">가이드 (공식 지급)</span><span class="v">' + fmt(uGuide) + '</span></div>' +
           '<div class="calc-line" style="padding:2px 0 0;font-size:10.5px;border-top:1px dashed rgba(255,255,255,0.18);margin-top:3px"><span class="l" style="font-weight:800">MAX (재량 상한 · 고객 노출 금지)</span><span class="v" style="font-weight:800;color:#c4b5fd">' + fmt(uMax) + '</span></div>' +
         '</div>';
@@ -3852,7 +3860,10 @@ function syncAllCards() {
 // v1 이벤트 바인딩 (숨김 select가 변경될 때마다 calc + 카드 재동기화)
 document.getElementById('c-carrier').addEventListener('change', function() { buildTV(); updateBundleUI(); updateRangeUI(); updateWifiUI(); updateSetTopInfo(); if (typeof updateLguPremiumBonus === 'function') updateLguPremiumBonus(); if (typeof updateYouthOption === 'function') updateYouthOption(); calc(); syncAllCards(); });
 document.getElementById('c-speed').addEventListener('change', function() { updateWifiUI(); if (typeof updateLguPremiumBonus === 'function') updateLguPremiumBonus(); calc(); syncAllCards(); });
-document.getElementById('c-tv').addEventListener('change', function(){ buildAdditionalTvDropdowns(); if (typeof updateTvCountUI === 'function') updateTvCountUI(); calc(); syncAllCards(); });
+document.getElementById('c-tv').addEventListener('change', function(){ buildAdditionalTvDropdowns(); if (typeof updateTvCountUI === 'function') updateTvCountUI();
+  // TV 유무로 유심 구분이 갈린다(① UIT / ② 결합) — 목록을 다시 그리지 않으면 옛 구분 값이 남는다
+  if (typeof renderUsimPicker === 'function') renderUsimPicker();
+  calc(); syncAllCards(); });
 document.getElementById('c-wifi').addEventListener('change', function(){ calc(); syncAllCards(); });
 document.getElementById('c-bundle').addEventListener('change', function() { updateRangeUI(); if (typeof updateYouthOption === 'function') updateYouthOption(); calc(); syncAllCards(); });
 document.getElementById('c-lines').addEventListener('change', function(){ calc(); syncAllCards(); });
