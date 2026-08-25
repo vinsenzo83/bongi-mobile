@@ -140,8 +140,7 @@ input[type="date"], input[type="month"] { color-scheme: dark; }
 
     <div class="sidebar-section">
       <div class="sidebar-category"><span class="cat-icon">📞</span><span class="cat-label">TM 도구</span></div>
-      <button class="tab-btn" data-key="tm-counselor" data-src="/docs/tm-counselor.html"><span class="icon">📞</span> TM 상담 v1 (큐콜)</button>
-      <button class="tab-btn" data-key="tm-counselor-v2" data-src="/docs/tm-counselor.html?mode=manual"><span class="icon">✏️</span> TM 상담 v2 (수동)</button>
+      <button class="tab-btn" data-key="tm-counselor-v2" data-src="/docs/tm-counselor.html?mode=manual"><span class="icon">📞</span> TM 상담</button>
       <button class="tab-btn" data-key="tm-data" data-src="/docs/calculator.html?admin=1"><span class="icon">🧮</span> TM 데이터 관리</button>
     </div>
 
@@ -531,23 +530,7 @@ window.addEventListener('message', (e) => {
     }
     return;
   }
-  if (e.data?.type === 'open-call-screen' && e.data.customer_id) {
-    const tmBtn = document.querySelector('.tab-btn[data-key="tm-counselor"]');
-    if (tmBtn) {
-      // 콜 모드 src로 강제 변경
-      const newSrc = '/docs/tm-counselor.html?customer_id=' + encodeURIComponent(e.data.customer_id);
-      // 기존 풀에서 tm-counselor iframe 제거 (재로드 강제)
-      const oldIframe = _iframePool.get('/docs/tm-counselor.html');
-      if (oldIframe) { oldIframe.remove(); _iframePool.delete('/docs/tm-counselor.html'); }
-      // 새로 로드
-      tmBtn.dataset.src = newSrc;
-      gLoadTab(tmBtn);
-      // dataset.src 원복 (다음 사용자가 일반 모드로 진입할 수 있게)
-      setTimeout(() => { tmBtn.dataset.src = '/docs/tm-counselor.html'; }, 1000);
-    }
-  } else if (e.data?.type === 'call-queue-empty') {
-    gShowToast('🎉 모든 콜 처리 완료');
-  }
+
 });
 
 // 사이드바 메뉴 바인딩

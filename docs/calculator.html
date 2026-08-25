@@ -834,16 +834,6 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   <div class="note" id="sales-contract-note"></div>
 </div>
 
-<!-- ═══ 8. 사은품 관리 ═══ -->
-<div class="section">
-  <div class="st">🎁 8. 사은품 관리 (총 63개 상품 카탈로그)</div>
-  <div class="note">07_Gift 시트 구조 · 통신사 × 구분(단독/결합) × 상품 구성별 행 단위 관리. 값 변경 즉시 티켓 리스트·계산기 사은품에 반영. 같은 속도+구분 행은 동일 값으로 연동(localStorage 저장).</div>
-  <div id="gift-controls"></div>
-
-  <div class="st2" style="margin-top:18px">📜 변경 이력 (최근 50건)</div>
-  <div id="gift-history"></div>
-</div>
-
 <!-- ═══ 10. 변경 이력 ═══ -->
 <div class="section">
   <div class="st">📜 10. 변경 이력 (전체 섹션 통합)</div>
@@ -2569,7 +2559,6 @@ function resolveDefaultsAndPersist(carrierKey) {
   TICKETS = generateTickets();
   if (typeof renderDefaultControls === 'function') renderDefaultControls();
   if (typeof renderTicketList === 'function') renderTicketList();
-  if (typeof renderGiftControls === 'function') renderGiftControls();
   if (typeof calc === 'function') calc();
 }
 
@@ -2731,14 +2720,12 @@ function renderTicketList() {
     var carrierTickets = TICKETS.filter(function(t){ return t.carrier === key; });
     html += '<div class="st2" style="margin-top:16px"><span class="badge ' + badges[key] + '">' + labels[key] + '</span> ' + d.name + ' — ' + carrierTickets.length + '개 티켓 (' + carrierTickets[0].number + ' ~ ' + carrierTickets[carrierTickets.length-1].number + ')</div>';
     html += '<div style="font-size:10px;color:#666;margin-bottom:6px">기본 셋톱: <b>' + d.setTopName + '</b> (' + fmt(d.setTop) + ') · 기본 WiFi: <b>' + d.wifiName + '</b></div>';
-    html += '<table><thead><tr><th>티켓번호</th><th>속도</th><th>TV 상품</th><th>WiFi</th><th>월 요금</th><th>🎁 사은품</th></tr></thead><tbody>';
+    html += '<table><thead><tr><th>티켓번호</th><th>속도</th><th>TV 상품</th><th>WiFi</th><th>월 요금</th></tr></thead><tbody>';
     carrierTickets.forEach(function(t) {
       var tvLabel = t.tvIdx === 0 ? '<span style="color:#999">인터넷 단독</span>' : d.tv[t.tvIdx].n;
       var price = calcTicketPrice(d, t.speed, t.tvIdx, t.wifi);
       var wifiLabel = t.wifi ? '<span style="color:#16a34a;font-weight:700">✓ 사용</span>' : '<span style="color:#dc2626;font-weight:700">✗ 미사용</span>';
-      var gift = getGiftAmount(d, t.speed, t.tvIdx);
-      var giftLabel = gift > 0 ? '<span style="color:#d97706;font-weight:700">' + fmt(gift) + '</span>' : '<span style="color:#ccc">-</span>';
-      html += '<tr><td style="font-weight:700;font-family:\'SF Mono\',Monaco,monospace;color:#6366f1">' + t.number + '</td><td><b>' + t.speed + '</b></td><td>' + tvLabel + '</td><td>' + wifiLabel + '</td><td><b>' + fmt(price) + '</b></td><td>' + giftLabel + '</td></tr>';
+      html += '<tr><td style="font-weight:700;font-family:\'SF Mono\',Monaco,monospace;color:#6366f1">' + t.number + '</td><td><b>' + t.speed + '</b></td><td>' + tvLabel + '</td><td>' + wifiLabel + '</td><td><b>' + fmt(price) + '</b></td></tr>';
     });
     html += '</tbody></table>';
   });
@@ -2753,15 +2740,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // 사은품 편집 + 이력 관리
-var GIFT_HISTORY_KEY = 'bongi-gift-history';
-var GIFT_HISTORY = [];
-try { GIFT_HISTORY = JSON.parse(localStorage.getItem(GIFT_HISTORY_KEY) || '[]'); } catch (e) { GIFT_HISTORY = []; }
 
-function saveGiftHistory(entry) {
-  GIFT_HISTORY.unshift(entry);
-  if (GIFT_HISTORY.length > 50) GIFT_HISTORY = GIFT_HISTORY.slice(0, 50);
-  try { localStorage.setItem(GIFT_HISTORY_KEY, JSON.stringify(GIFT_HISTORY)); } catch (e) {}
-}
 
 function nowKst() {
   var d = new Date();
@@ -2770,65 +2749,8 @@ function nowKst() {
          pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
 }
 
-function updateGift(carrierKey, bucket, speed, value) {
-  var n = parseInt(String(value).replace(/[^0-9]/g, '')) || 0;
-  if (!D[carrierKey].gift[bucket]) D[carrierKey].gift[bucket] = {};
-  var old = D[carrierKey].gift[bucket][speed] || 0;
-  if (old === n) return;
-  D[carrierKey].gift[bucket][speed] = n;
-  saveGiftOverride(carrierKey, bucket, speed, n);  // ← localStorage 영구 저장 (tm.html 동기화)
-  var carrLabel = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' }[carrierKey];
-  var bucketLabel = bucket === 'solo' ? '인터넷 단독' : '인터넷+TV';
-  logEdit('사은품', carrLabel + ' ' + bucketLabel + ' ' + speed, old, n);
-  saveGiftHistory({
-    at: nowKst(),
-    carrier: carrierKey,
-    bucket: bucket,
-    speed: speed,
-    from: old,
-    to: n
-  });
-  renderTicketList();
-  renderGiftHistory();
-  calc();
-}
 
-function renderGiftHistory() {
-  var el = document.getElementById('gift-history');
-  if (!el) return;
-  if (GIFT_HISTORY.length === 0) {
-    el.innerHTML = '<div class="note" style="text-align:center;color:#999">변경 이력 없음</div>';
-    return;
-  }
-  var labels = { skt: 'SKT', kt: 'KT', lgu: 'LGU+' };
-  var badges = { skt: 'b-skt', kt: 'b-kt', lgu: 'b-lgu' };
-  var bucketLabels = { solo: '인터넷 단독', combo: '인터넷+TV' };
-  var html = '<table><thead><tr><th>일시</th><th>통신사</th><th>구분</th><th>속도</th><th>이전</th><th>변경 후</th><th>증감</th></tr></thead><tbody>';
-  GIFT_HISTORY.forEach(function(h) {
-    var diff = h.to - h.from;
-    var diffStr = diff > 0 ? '+' + fmt(diff) : diff < 0 ? '-' + fmt(-diff) : '0원';
-    var diffColor = diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#999';
-    html += '<tr>' +
-      '<td style="font-size:10px;color:#666">' + h.at + '</td>' +
-      '<td><span class="badge ' + badges[h.carrier] + '">' + labels[h.carrier] + '</span></td>' +
-      '<td>' + bucketLabels[h.bucket] + '</td>' +
-      '<td><b>' + h.speed + '</b></td>' +
-      '<td style="color:#999">' + fmt(h.from) + '</td>' +
-      '<td style="color:#d97706;font-weight:700">' + fmt(h.to) + '</td>' +
-      '<td style="color:' + diffColor + ';font-weight:700">' + diffStr + '</td>' +
-    '</tr>';
-  });
-  html += '</tbody></table>';
-  html += '<button onclick="clearGiftHistory()" style="margin-top:6px;padding:5px 12px;font-size:11px;border:1px solid #dc2626;color:#dc2626;background:#fff;border-radius:4px;cursor:pointer">이력 초기화</button>';
-  el.innerHTML = html;
-}
 
-function clearGiftHistory() {
-  if (!confirm('변경 이력을 모두 삭제하시겠습니까?')) return;
-  GIFT_HISTORY = [];
-  try { localStorage.setItem(GIFT_HISTORY_KEY, '[]'); } catch (e) {}
-  renderGiftHistory();
-}
 
 var GIFT_CATALOG_KEY = 'bongi-gift-catalog-custom';
 var GIFT_CATALOG_DELETED = 'bongi-gift-catalog-deleted';
@@ -2894,7 +2816,6 @@ function deleteCatalogRow(id) {
     saveCustomCatalog(custom);
     if (target) logEdit('사은품', '카탈로그 커스텀 행 삭제', target.product || id, '-');
   }
-  renderGiftControls();
 }
 
 function addCustomCatalogRow() {
@@ -2915,7 +2836,6 @@ function addCustomCatalogRow() {
   saveCustomCatalog(custom);
   document.getElementById('new-product').value = '';
   document.getElementById('new-amount').value = '';
-  renderGiftControls();
 }
 
 function updateCustomGift(id, value) {
@@ -2929,7 +2849,6 @@ function resetCatalog() {
   if (!confirm('커스텀 추가/삭제를 모두 초기화하시겠습니까? (사은품 금액 변경 이력은 유지)')) return;
   saveCustomCatalog([]);
   saveDeletedDefaults([]);
-  renderGiftControls();
 }
 
 var INSTALL_FEES_KEY = 'bongi-install-fees';
@@ -3913,7 +3832,6 @@ function persistTV(carrierKey) {
   TICKETS = generateTickets();
   if (typeof renderTVControls === 'function') renderTVControls();
   if (typeof renderTicketList === 'function') renderTicketList();
-  if (typeof renderGiftControls === 'function') renderGiftControls();
   if (typeof calc === 'function') calc();
 }
 
@@ -4000,63 +3918,6 @@ function renderTVControls() {
   container.innerHTML = html;
 }
 
-function renderGiftControls() {
-  var container = document.getElementById('gift-controls');
-  if (!container) return;
-  var badges = { 'SKT': 'b-skt', 'KT': 'b-kt', 'LG U+': 'b-lgu' };
-  var defaults = buildDefaultCatalog();
-  var deleted = loadDeletedDefaults();
-  var custom = loadCustomCatalog();
-  var rows = defaults.filter(function(r){ return deleted.indexOf(r.id) === -1; }).concat(custom);
-
-  var html = '';
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">';
-  html += '<div style="font-size:11px;color:#666">총 <b>' + rows.length + '개</b> 상품 (기본 ' + (defaults.length - deleted.length) + ' + 커스텀 ' + custom.length + (deleted.length ? ' · 숨김 ' + deleted.length : '') + ')</div>';
-  html += '<button type="button" onclick="resetCatalog()" style="padding:4px 10px;border:1px solid #dc2626;background:#fff;color:#dc2626;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">↻ 카탈로그 초기화</button>';
-  html += '</div>';
-
-  // 새 상품 추가 폼
-  html += '<div style="background:#f9fafb;border:1.5px dashed #93c5fd;border-radius:8px;padding:10px;margin-bottom:10px">';
-  html += '<div style="font-size:11px;font-weight:700;color:#2563eb;margin-bottom:6px">➕ 새 상품 추가</div>';
-  html += '<div style="display:grid;grid-template-columns:90px 80px 80px 1fr 110px 60px;gap:6px;align-items:center">';
-  html += '<select id="new-carrier" style="padding:5px;border:1px solid #cbd5e1;border-radius:4px;font-size:11px"><option value="skt">SKT</option><option value="kt">KT</option><option value="lgu">LG U+</option></select>';
-  html += '<select id="new-type" style="padding:5px;border:1px solid #cbd5e1;border-radius:4px;font-size:11px"><option value="단독">단독</option><option value="결합">결합</option></select>';
-  html += '<select id="new-speed" style="padding:5px;border:1px solid #cbd5e1;border-radius:4px;font-size:11px"><option>100M</option><option>500M</option><option>1G</option></select>';
-  html += '<input type="text" id="new-product" placeholder="상품 구성 (예: 인터넷 1G + B tv 신상품)" style="padding:5px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:11px">';
-  html += '<input type="text" id="new-amount" inputmode="numeric" placeholder="금액(원)" style="padding:5px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:11px;text-align:right">';
-  html += '<button type="button" onclick="addCustomCatalogRow()" style="padding:5px 8px;border:none;background:#059669;color:#fff;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">+ 추가</button>';
-  html += '</div></div>';
-
-  // 카탈로그 표
-  html += '<div style="overflow-x:auto;border:1px solid #e5e7eb;border-radius:8px;max-height:560px;overflow-y:auto">';
-  html += '<table style="margin:0"><thead style="position:sticky;top:0;z-index:1">' +
-    '<tr><th style="width:40px">#</th><th style="width:70px">통신사</th><th style="width:60px">구분</th><th>상품 구성</th><th style="width:130px;text-align:right">사은품(원)</th><th style="width:50px">관리</th></tr>' +
-    '</thead><tbody>';
-  rows.forEach(function(r, i) {
-    var badge = badges[r.carrier] || '';
-    var typeClr = r.type === '단독' ? '#6366f1' : '#92400e';
-    var typeBg = r.type === '단독' ? '#eef2ff' : '#fef3c7';
-    var rowBg = r.isCustom ? 'background:#f0fdf4' : '';
-    var customMark = r.isCustom ? ' <span style="font-size:8px;color:#059669;font-weight:700">CUSTOM</span>' : '';
-    var changeHandler = r.isCustom
-      ? 'updateCustomGift(\'' + r.id + '\', this.value); this.value=(parseInt(String(this.value).replace(/[^0-9]/g,\'\')||0).toLocaleString())'
-      : 'updateGift(\'' + r.carrierKey + '\', \'' + r.bucket + '\', \'' + r.speed + '\', this.value); this.value=(parseInt(String(this.value).replace(/[^0-9]/g,\'\')||0).toLocaleString())';
-    html += '<tr style="' + rowBg + '">' +
-      '<td style="text-align:center;color:#999;font-size:10px">' + (i + 1) + '</td>' +
-      '<td><span class="badge ' + badge + '">' + r.carrier + '</span></td>' +
-      '<td style="text-align:center"><span style="display:inline-block;padding:2px 7px;border-radius:4px;background:' + typeBg + ';color:' + typeClr + ';font-size:10px;font-weight:700">' + r.type + '</span></td>' +
-      '<td style="font-size:11px;color:#1a2744">' + r.product + customMark + '</td>' +
-      '<td style="text-align:right">' +
-        '<input type="text" inputmode="numeric" value="' + r.amount.toLocaleString() + '" ' +
-        'onchange="' + changeHandler + '" ' +
-        'style="width:100px;padding:5px 8px;border:1.5px solid #e5e7eb;border-radius:4px;font-size:11px;font-family:inherit;text-align:right;color:#059669;font-weight:700"> 원' +
-      '</td>' +
-      '<td style="text-align:center"><button type="button" onclick="deleteCatalogRow(\'' + r.id + '\')" style="padding:3px 7px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:4px;font-size:10px;cursor:pointer">🗑</button></td>' +
-      '</tr>';
-  });
-  html += '</tbody></table></div>';
-  container.innerHTML = html;
-}
 // fetchCalcOverridesFromDb / _lastDbFetchStatus 는 _calc-data-sync.js에서 정의.
 
 // 페이지별 D 갱신 훅 — fetchCalcOverridesFromDb가 LS를 갱신한 후 D에 반영.
@@ -4188,7 +4049,6 @@ function applyAllSeedToD() {
   if (typeof renderBundleControls === 'function') renderBundleControls();
   if (typeof renderInstallControls === 'function') renderInstallControls();
   if (typeof renderCardControls === 'function') renderCardControls();
-  if (typeof renderGiftControls === 'function') renderGiftControls();
   if (typeof renderTvPolicyControls === 'function') renderTvPolicyControls();
   if (typeof renderLguBonusControls === 'function') renderLguBonusControls();
 }
@@ -4219,10 +4079,8 @@ async function bootstrapCalculator() {
   renderBundleControls();
   renderInstallControls();
   renderCardControls();
-  renderGiftControls();
   renderTvPolicyControls();
   renderLguBonusControls();
-  renderGiftHistory();
   renderEditHistory();
   // DB 변경이력 통합 (admin/manager 토큰 있을 때만 — Phase 1 마이그레이션)
   if (typeof refreshEditHistoryFromDb === 'function') refreshEditHistoryFromDb();
