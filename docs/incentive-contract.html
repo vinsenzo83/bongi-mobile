@@ -490,7 +490,6 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           <th style="width:8%">고객명</th>
           <th style="width:9%">전화</th>
           <th style="width:13%">주소</th>
-          <th style="width:6%">페이백</th>
           <th style="width:6%">상태</th>
           <th style="width:8%">작업</th>
         </tr>
@@ -709,7 +708,6 @@ function renderTable(contracts) {
         <th style="width:6%">고객명</th>
         <th style="width:7%">전화</th>
         <th style="width:9%">주소</th>
-        <th style="width:5%">페이백</th>
         <th style="width:5%">상태</th>
         <th style="width:7%">작업</th>
         <th style="width:8%;color:#fca5a5">삭제 사유</th>
@@ -727,7 +725,6 @@ function renderTable(contracts) {
         <th style="width:8%">고객명</th>
         <th style="width:9%">전화</th>
         <th style="width:13%">주소</th>
-        <th style="width:6%">페이백</th>
         <th style="width:6%">상태</th>
         <th style="width:8%">작업</th>
       </tr>`;
@@ -777,6 +774,10 @@ function renderTable(contracts) {
     const rowNum = startIdx + i + 1;
     // 유심 단독은 인터넷 상품이 없다. 상품 자리에 유심 정보를 채워 기존 렌더를 그대로 쓴다.
     const p = c.product || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
+    // 인터넷+TV 에 유심을 얹은 건도 한눈에 보여야 한다 — 배지로 붙인다
+    const usimBadge = (c.product && c.usim)
+      ? `<span style="background:#0369a1;color:#fff;font-size:8.5px;font-weight:800;padding:1px 5px;border-radius:3px;margin-left:4px">📲 ${(c.usim.plan_name || '유심').replace(/</g,'&lt;')}</span>`
+      : '';
     const a = c.agent || {};
     const tierBadge = p.tier ? `<span class="tier tier-${p.tier}">${p.tier}</span>` : '';
     const premBadge = '';
@@ -826,11 +827,10 @@ function renderTable(contracts) {
         const cb = carrierMap[carrier];
         const carrierBadge = cb ? `<span style="background:${cb.bg};color:#fff;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:800;margin-right:4px">${cb.label}</span>` : '';
         return carrierBadge;
-      })()}${p.name || '-'}${((c.wifi_option && c.wifi_option !== '미사용' && c.wifi_option !== 'X' && c.wifi_option !== 'N') || /wi-?fi/i.test(c.quote_summary || '')) && !/wi-?fi/i.test(p.name||'') ? '<span style="background:#0891b2;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">+ WiFi</span>' : ''} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.speed || ''}</div></td>
+      })()}${p.name || '-'}${usimBadge}${((c.wifi_option && c.wifi_option !== '미사용' && c.wifi_option !== 'X' && c.wifi_option !== 'N') || /wi-?fi/i.test(c.quote_summary || '')) && !/wi-?fi/i.test(p.name||'') ? '<span style="background:#0891b2;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">+ WiFi</span>' : ''} ${tierBadge}${premBadge}${(c.tv_count && c.tv_count > 1) ? `<span style="background:#6366f1;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">TV ${c.tv_count}대</span>` : ''}${c.wifi_option === 'wifi-speaker' ? '<span style="background:#e40981;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px;margin-left:3px">스피커</span>' : ''}<div style="font-size:9px;color:#64748b">${p.speed || ''}</div></td>
       <td>${c.customer_name || '<i style="color:#94a3b8">-</i>'}</td>
       <td>${c.customer_phone || '<i style="color:#94a3b8">-</i>'}</td>
       <td style="max-width:240px;word-break:break-all;font-size:10.5px">${addrText}</td>
-      <td>${(c.add_payback || 0).toLocaleString()}<div style="font-size:9px;color:#64748b">본인 -${(c.agent_payback_deduct || 0).toLocaleString()}</div></td>
       <td><span class="status status-${c.status}">${ {pending:"계약대기",in_progress:"계약진행",completed:"계약완료",cancelled:"계약취소"}[c.status] || c.status }</span></td>
       <td style="white-space:nowrap">${actionsHtml}</td>
       ${trashExtra}
@@ -1385,10 +1385,43 @@ function openEditModal(id) {
   const wifiOptDisp = wifiOption === 'wifi-speaker' ? '🔊 와이파이 1대 + 스마트홈 스피커'
     : wifiOption === 'wifi2' ? '와이파이 2대' : null;
 
+  // 📲 유심 카드 — 유심 단독이든 인터넷 동반이든 이 정보는 따로 보여야 한다.
+  //    번호이동이라 「현재 통신사」가 개통 가능 여부를 가르는 값이다.
+  const usimCard = c.usim ? `
+    <div class="sec-card" style="border-left:4px solid #0284c7">
+      <div class="sec-title"><span class="sec-icon">📲</span>유심 ${c.sale_kind === 'usim' ? '단독 개통' : '동반 개통'}
+        <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">번호이동 전용 · 신규가입 불가</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:4px 2px">
+        <div><div style="font-size:9px;color:#94a3b8">요금제</div>
+          <div style="font-size:13px;font-weight:800;color:#7dd3fc">${(c.usim.plan_name || '-').replace(/</g,'&lt;')}</div></div>
+        <div><div style="font-size:9px;color:#94a3b8">개통 통신사</div>
+          <div style="font-size:13px;font-weight:800">${c.usim.carrier || '-'}</div></div>
+        <div><div style="font-size:9px;color:#94a3b8">현재 통신사 <span style="color:#fca5a5">확인 필수</span></div>
+          <div style="font-size:13px;font-weight:800;color:${c.current_carrier ? '#e2e8f0' : '#fca5a5'}">${c.current_carrier || '미확인'}</div></div>
+        <div><div style="font-size:9px;color:#94a3b8">월정액 / 데이터</div>
+          <div style="font-size:12.5px">${(c.usim.monthly_fee || 0).toLocaleString()}원 · ${c.usim.data_amount || '-'}</div></div>
+        <div><div style="font-size:9px;color:#5eead4">가이드 (공식 지급)</div>
+          <div style="font-size:13px;font-weight:800;color:#5eead4">${(c.usim_guide_snapshot || 0).toLocaleString()}원</div></div>
+        <div><div style="font-size:9px;color:#fbbf24">실제 지급액</div>
+          <div style="font-size:14px;font-weight:900;color:#fbbf24">${(c.usim_payout ?? c.usim_guide_snapshot ?? 0).toLocaleString()}원</div></div>
+        <div class="financial-mid"><div style="font-size:9px;color:#c4b5fd">MAX <span style="color:#fca5a5">고객 노출 금지</span></div>
+          <div style="font-size:13px;font-weight:800;color:#c4b5fd">${(c.usim_max_snapshot || 0).toLocaleString()}원</div></div>
+        <div class="financial-mid"><div style="font-size:9px;color:#94a3b8">잔존마진</div>
+          <div style="font-size:13px;font-weight:800;color:#86efac">${Math.max(0, (c.usim_max_snapshot || 0) - (c.usim_payout ?? c.usim_guide_snapshot ?? 0)).toLocaleString()}원</div></div>
+      </div>
+      ${c.current_carrier && c.usim.carrier && c.current_carrier === c.usim.carrier
+        ? '<div style="margin-top:9px;padding:7px 10px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:6px;font-size:11px;color:#fca5a5">⛔ <b>현재 통신사와 개통 통신사가 같습니다</b> — 번호이동 대상이 아닙니다. 확인 후 취소하세요.</div>'
+        : ''}
+    </div>` : '';
+
   // 바디 — 통합 상품 정보 카드
-  document.getElementById('modal-body').innerHTML = `
+  //   유심 단독은 인터넷 상품 카드를 감춘다 — 채울 값이 없어 빈 카드가 된다.
+  //   인터넷 동반 건은 상품 카드 뒤에 유심 카드를 붙인다.
+  const isUsimOnly = (c.sale_kind === 'usim');
+  document.getElementById('modal-body').innerHTML = (isUsimOnly ? usimCard : '') + `
     <!-- 📦 계약 상품 정보 -->
-    <div class="sec-card acc-yellow">
+    <div class="sec-card acc-yellow" style="${isUsimOnly ? 'display:none' : ''}">
       <div class="sec-title"><span class="sec-icon">📦</span>계약 상품 정보</div>
 
       <div class="product-header">
@@ -1434,6 +1467,8 @@ function openEditModal(id) {
         <div style="color:#94a3b8;font-size:11px;padding:8px">불러오는 중…</div>
       </div>
     </div>
+
+    ${isUsimOnly ? '' : usimCard}
 
     <!-- 👤 고객 정보 -->
     <div class="sec-card acc-blue">
@@ -2500,26 +2535,7 @@ init();
   const tabsEl = document.getElementById('contract-cat-tabs');
   if (!tabsEl) return;
 
-  async function bootCategoryTabs() {
-    const tk = localStorage.getItem('incentive-auth-token-v1');
-    if (!tk) return;
-    try {
-      const [r1, r2, r3] = await Promise.all([
-        fetch('/api/rental/categories', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json()),
-        fetch('/api/incentive/agents/me/categories', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json()),
-        fetch('/api/rental/products?active_only=0', { headers: { Authorization: 'Bearer ' + tk }}).then(r => r.json()),
-      ]);
-      const allCats = r1.categories || [];
-      const products = r3.products || [];
-      // category_id 기준 상품 수 집계 (운영 중인 카테고리만 탭 노출)
-      const productCount = {};
-      products.forEach(p => { productCount[p.category_id] = (productCount[p.category_id] || 0) + 1; });
-      _categories = allCats.filter(c => (productCount[c.id] || 0) > 0);
-      _myCats = r2.categories || [];
-      _myCatsUnrestricted = !!r2.unrestricted;
-      renderTabs();
-    } catch (e) { console.warn('[cat-tabs]', e); }
-  }
+  async function bootCategoryTabs() { /* 가전렌탈 폐지 — 동적 탭 없음 */ }
 
   function renderTabs() {
     // 인터넷+TV 탭은 hardcoded — 권한 있을 때만 표시

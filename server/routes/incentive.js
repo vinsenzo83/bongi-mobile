@@ -874,7 +874,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       installation_time,
       activation_date,
       add_payback = 0,
-      actual_payout, usim_plan_id, usim_payout, sale_kind,
+      actual_payout, usim_plan_id, usim_payout, sale_kind, current_carrier,
       notes,
       agent_id, // manager/admin이 다른 상담사 대신 입력 가능
       tv_count,
@@ -932,6 +932,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         agent_id: targetAgentId,
         sale_kind: kind,
         product_id: product_id || null,
+        current_carrier: current_carrier || null,
         customer_name,
         customer_phone,
         customer_address,

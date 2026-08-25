@@ -1716,6 +1716,15 @@ function bindShortcutKeys() {
             <label style="font-size:10px;color:#374151">전화번호
               <input type="text" id="us-deal-phone" placeholder="010-0000-0000" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
           </div>
+          <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">
+            현재 사용 중인 통신사 <span style="color:#dc2626">*</span>
+            <span style="color:#6b7280">— 번호이동이라 반드시 확인해야 한다</span>
+            <select id="us-deal-from" style="width:100%;padding:4px 6px;border:1.5px solid #dc2626;border-radius:4px;font-size:11px;background:#fff">
+              <option value="">— 고객에게 물어볼 것 —</option>
+              <option>SKT</option><option>KT</option><option>LG U+</option>
+              <option>SK알뜰</option><option>KT알뜰</option><option>LG알뜰</option>
+              <option>기타 알뜰폰</option>
+            </select></label>
           <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">개통 희망일
             <input type="date" id="us-deal-date" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
           <label style="font-size:10px;color:#374151;display:block;margin-bottom:8px">상담 메모
@@ -4915,7 +4924,20 @@ setTimeout(function() {
 
       const name = $('us-deal-name').value.trim();
       const phone = $('us-deal-phone').value.trim();
+      const from = $('us-deal-from').value;
       if (!name || !phone) { msg.style.color = '#dc2626'; msg.textContent = '고객명과 전화번호는 필수입니다.'; return; }
+      if (!from) {
+        msg.style.color = '#dc2626';
+        msg.textContent = '현재 사용 중인 통신사를 확인하세요 — 번호이동 대상 판단에 필요합니다.';
+        $('us-deal-from').focus();
+        return;
+      }
+      // 이미 그 통신사를 쓰고 있으면 번호이동 대상이 아니다. 등록되면 나중에 취소·환수된다.
+      if (from === p.carrier) {
+        msg.style.color = '#dc2626';
+        msg.textContent = '⛔ 이미 ' + p.carrier + ' 를 쓰는 고객입니다 — 번호이동 대상이 아닙니다.';
+        return;
+      }
 
       const sl = $('us-payout');
       const payout = sl ? (parseInt(sl.value, 10) || null) : null;
@@ -4928,15 +4950,17 @@ setTimeout(function() {
         usim_payout: payout,
         customer_name: name,
         customer_phone: phone,
+        current_carrier: from,
         contract_date: new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }),
         installation_date: $('us-deal-date').value || null,
         notes: $('us-deal-notes').value.trim() || null,
         monthly_fee: net,
-        quote_summary: '유심 단독 · ' + p.carrier + ' · ' + p.plan_name
+        quote_summary: '유심 단독 · ' + from + ' → ' + p.carrier + ' · ' + p.plan_name
           + ' · ' + (bundled ? '가족추가·단독MNP(결합)' : '단독MNP(미결합)'),
         quote_full_html: '<div>유심 단독 개통 — ' + p.carrier + ' ' + p.plan_name
           + '<br>월 요금 ' + fmt(net) + '원 (선택약정 25%)'
           + '<br>구분 ' + (bundled ? '가족추가·단독MNP(결합)' : '단독MNP(미결합)')
+          + '<br>현재 통신사 ' + from + ' → ' + p.carrier
           + '<br>지급액 ' + fmt(payout || 0) + '원</div>',
       };
 
@@ -4953,7 +4977,7 @@ setTimeout(function() {
           return;
         }
         msg.style.color = '#15803d'; msg.textContent = '✅ 등록됨 — 계약 처리로 넘어갔습니다.';
-        ['us-deal-name', 'us-deal-phone', 'us-deal-date', 'us-deal-notes'].forEach(function (id) { $(id).value = ''; });
+        ['us-deal-name', 'us-deal-phone', 'us-deal-from', 'us-deal-date', 'us-deal-notes'].forEach(function (id) { $(id).value = ''; });
         setTimeout(function () { form.style.display = 'none'; msg.textContent = ''; }, 1800);
       } catch (e) {
         msg.style.color = '#dc2626'; msg.textContent = '등록 실패: ' + e.message;
