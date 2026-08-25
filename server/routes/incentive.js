@@ -807,7 +807,7 @@ router.get('/sales', authenticateJWT, async (req, res) => {
 
     let q = supabase
       .from('incentive_sales')
-      .select('*, product:incentive_products(*), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)')
+      .select('*, product:incentive_products(*), usim:incentive_usim_plans(id,carrier,plan_name,sale_type,monthly_fee,data_amount), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)')
       .is('deleted_at', null)
       .order('contract_date', { ascending: false });
 
@@ -921,9 +921,21 @@ router.post('/sales', authenticateJWT, async (req, res) => {
     let usimSnap = null;
     if (usim_plan_id) {
       const { data: u } = await supabase
-        .from('incentive_usim_plans').select('guide_payout, max_payout')
+        .from('incentive_usim_plans').select('carrier, guide_payout, max_payout')
         .eq('id', usim_plan_id).maybeSingle();
-      usimSnap = u || null;
+      if (!u) return res.status(400).json({ error: '존재하지 않는 usim_plan_id' });
+      usimSnap = u;
+
+      // 유심은 번호이동 전용이다. 지금 쓰는 통신사와 개통할 통신사가 같으면
+      // 개통 자체가 성립하지 않는다 — 화면에서만 막으면 API 로 새어 들어온다.
+      if (!current_carrier) {
+        return res.status(400).json({ error: '유심은 번호이동이라 현재 통신사가 필요합니다' });
+      }
+      if (String(current_carrier).trim() === String(u.carrier).trim()) {
+        return res.status(400).json({
+          error: `현재 통신사와 개통 통신사가 같습니다 (${u.carrier}) — 번호이동 대상이 아닙니다`,
+        });
+      }
     }
 
     const { data, error } = await supabase
@@ -1588,7 +1600,7 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
     const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_email,customer_address,customer_address_detail,resident_id,birth_date,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,db_source_id,dealer_id,combo_type,combo_members,billing_method,billing_phone,billing_carrier,payment_method,payment_extra,waiting_person,waiting_phone,waiting_relation,seller_phone,onestop_yn,current_carrier,sale_kind,usim_plan_id,usim_payout,usim_guide_snapshot,usim_max_snapshot,actual_payout,guide_payout_snapshot,max_payout_snapshot';
     let q = supabase
       .from('incentive_sales')
-      .select(`${listCols}, usim:incentive_usim_plans(id,carrier,plan_name,monthly_fee,data_amount), product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)`)
+      .select(`${listCols}, usim:incentive_usim_plans(id,carrier,plan_name,sale_type,monthly_fee,data_amount), product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)`)
       .gte('contract_date', monthStart)
       .lte('contract_date', monthEnd);
 
