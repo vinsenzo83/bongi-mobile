@@ -874,7 +874,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       installation_time,
       activation_date,
       add_payback = 0,
-      actual_payout, usim_plan_id, usim_payout,
+      actual_payout, usim_plan_id, usim_payout, sale_kind,
       notes,
       agent_id, // manager/admin이 다른 상담사 대신 입력 가능
       tv_count,
@@ -886,7 +886,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       db_source_id,
     } = req.body || {};
 
-    if (!product_id) return res.status(400).json({ error: 'product_id 필수' });
+    // product_id 필수 여부는 아래에서 sale_kind 로 판단한다 (유심 단독은 없다)
     if (add_payback < 0 || add_payback > 50000) {
       return res.status(400).json({ error: '추가 페이백은 0~50,000원' });
     }
@@ -896,14 +896,25 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       targetAgentId = agent_id;
     }
 
+    // 유심 단독은 붙일 인터넷 상품이 없다. 둘 다 없으면 아무것도 아닌 계약이다.
+    const kind = (sale_kind === 'usim') ? 'usim' : 'internet';
+    if (kind === 'usim' && !usim_plan_id) {
+      return res.status(400).json({ error: '유심 단독 계약은 usim_plan_id 가 필요합니다' });
+    }
+    if (kind === 'internet' && !product_id) {
+      return res.status(400).json({ error: 'product_id 가 필요합니다' });
+    }
+
     // product price snapshot — 등록 시점의 단가를 박제 (이후 product 가격 변경되어도 영향 없음)
-    const { data: prodSnap, error: prodSnapErr } = await supabase
-      .from('incentive_products')
-      .select('payback, guide_payout, max_payout')
-      .eq('id', product_id)
-      .single();
-    if (prodSnapErr || !prodSnap) {
-      return res.status(400).json({ error: '존재하지 않는 product_id' });
+    let prodSnap = null;
+    if (product_id) {
+      const { data: ps, error: psErr } = await supabase
+        .from('incentive_products')
+        .select('payback, guide_payout, max_payout')
+        .eq('id', product_id)
+        .single();
+      if (psErr || !ps) return res.status(400).json({ error: '존재하지 않는 product_id' });
+      prodSnap = ps;
     }
 
     // 유심을 함께 개통한 건이면 그 시점 가이드·MAX 도 박제한다
@@ -919,7 +930,8 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       .from('incentive_sales')
       .insert({
         agent_id: targetAgentId,
-        product_id,
+        sale_kind: kind,
+        product_id: product_id || null,
         customer_name,
         customer_phone,
         customer_address,
@@ -942,11 +954,11 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         monthly_fee: monthly_fee || null,
         db_source_id: db_source_id ? parseInt(db_source_id) : null,
         // ── product 단가 snapshot (등록 시점) ──
-        payback_snapshot: prodSnap.payback,
+        payback_snapshot: prodSnap ? prodSnap.payback : null,
         // 잔존마진은 (MAX − 실제 지급액) 이다. 두 값을 등록 시점으로 박제해야
         // 나중에 상품 MAX 를 바꿔도 지난 정산이 흔들리지 않는다.
-        guide_payout_snapshot: prodSnap.guide_payout,
-        max_payout_snapshot: prodSnap.max_payout,
+        guide_payout_snapshot: prodSnap ? prodSnap.guide_payout : null,
+        max_payout_snapshot: prodSnap ? prodSnap.max_payout : null,
         actual_payout: (actual_payout == null) ? null : Number(actual_payout),
         usim_plan_id: usim_plan_id || null,
         usim_payout: (usim_payout == null) ? null : Number(usim_payout),
@@ -1572,10 +1584,10 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
 
     // gzip 적용 후 quote_full_html 포함해도 페이로드 작음 (~10KB 추가) — 모달 즉시 표시
     // 휴지통 모드일 때는 deleted_at/deleted_by_user_id/deleted_reason도 함께 반환
-    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_email,customer_address,customer_address_detail,resident_id,birth_date,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,db_source_id,dealer_id,combo_type,combo_members,billing_method,billing_phone,billing_carrier,payment_method,payment_extra,waiting_person,waiting_phone,waiting_relation,seller_phone,onestop_yn,current_carrier';
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_email,customer_address,customer_address_detail,resident_id,birth_date,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,db_source_id,dealer_id,combo_type,combo_members,billing_method,billing_phone,billing_carrier,payment_method,payment_extra,waiting_person,waiting_phone,waiting_relation,seller_phone,onestop_yn,current_carrier,sale_kind,usim_plan_id,usim_payout,usim_guide_snapshot,usim_max_snapshot,actual_payout,guide_payout_snapshot,max_payout_snapshot';
     let q = supabase
       .from('incentive_sales')
-      .select(`${listCols}, product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)`)
+      .select(`${listCols}, usim:incentive_usim_plans(id,carrier,plan_name,monthly_fee,data_amount), product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)`)
       .gte('contract_date', monthStart)
       .lte('contract_date', monthEnd);
 

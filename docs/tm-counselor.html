@@ -1704,6 +1704,31 @@ function bindShortcutKeys() {
           </div>
         </div>
         <div style="font-size:9px;color:#a16207;margin-top:6px">설치완료 건에만 확정됩니다. 취소·철회 시 차감됩니다.</div>
+
+        <button type="button" id="us-deal-btn" style="width:100%;margin-top:10px;padding:9px;background:#16a34a;color:#fff;
+                border:none;border-radius:6px;font-size:12.5px;font-weight:800;cursor:pointer">📝 이 견적으로 계약 등록</button>
+
+        <div id="us-deal-form" style="display:none;margin-top:8px;background:#fff;border:1.5px solid #16a34a;border-radius:6px;padding:11px 12px">
+          <div style="font-weight:800;color:#15803d;margin-bottom:7px;font-size:12px">📝 유심 단독 계약</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+            <label style="font-size:10px;color:#374151">고객명
+              <input type="text" id="us-deal-name" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
+            <label style="font-size:10px;color:#374151">전화번호
+              <input type="text" id="us-deal-phone" placeholder="010-0000-0000" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
+          </div>
+          <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">개통 희망일
+            <input type="date" id="us-deal-date" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
+          <label style="font-size:10px;color:#374151;display:block;margin-bottom:8px">상담 메모
+            <textarea id="us-deal-notes" rows="2" placeholder="현재 통신사 · 특이사항" style="width:100%;padding:5px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;resize:vertical"></textarea></label>
+          <div style="font-size:9.5px;color:#b91c1c;margin-bottom:8px;line-height:1.6">
+            ⛔ <b>번호이동 전용</b> — 고객이 이미 그 통신사를 쓰고 있으면 등록하지 말 것.
+          </div>
+          <div style="display:flex;gap:6px">
+            <button type="button" id="us-deal-cancel" style="flex:1;padding:6px;background:#fff;border:1px solid #94a3b8;border-radius:4px;font-size:11px;cursor:pointer">취소</button>
+            <button type="button" id="us-deal-submit" style="flex:1;padding:6px;background:#16a34a;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">✅ 등록</button>
+          </div>
+          <div id="us-deal-msg" style="font-size:10px;margin-top:5px;min-height:14px"></div>
+        </div>
       </div>
 
       <div class="tm-card" style="background:#fff7ed;border:1.5px solid #fdba74">
@@ -4857,6 +4882,85 @@ setTimeout(function() {
       });
     }
   })();
+
+  // 선택된 유심 요금제 (유심 단독 탭)
+  function usimPickedPlan() {
+    if (!USIM_SOLO.planId) return null;
+    return USIM_PLANS.filter(function (p) { return String(p.id) === String(USIM_SOLO.planId); })[0] || null;
+  }
+  function usimAuthToken() {
+    return (typeof authGetToken === 'function') ? authGetToken()
+      : localStorage.getItem('incentive-auth-token-v1');
+  }
+
+  // ═══ 유심 단독 계약 등록 ═══
+  // 유심만 파는 건은 붙일 인터넷 상품이 없다. sale_kind='usim' 으로 따로 등록한다.
+  (function () {
+    const $ = function (id) { return document.getElementById(id); };
+    const btn = $('us-deal-btn'), form = $('us-deal-form');
+    if (!btn || !form || btn._wired) return;
+    btn._wired = true;
+
+    btn.addEventListener('click', function () {
+      if (!usimPickedPlan()) { alert('요금제를 먼저 고르세요.'); return; }
+      form.style.display = form.style.display === 'none' ? '' : 'none';
+      if (form.style.display !== 'none') $('us-deal-name').focus();
+    });
+    $('us-deal-cancel').addEventListener('click', function () { form.style.display = 'none'; });
+
+    $('us-deal-submit').addEventListener('click', async function () {
+      const msg = $('us-deal-msg');
+      const p = usimPickedPlan();
+      if (!p) { msg.style.color = '#dc2626'; msg.textContent = '요금제를 고르세요.'; return; }
+
+      const name = $('us-deal-name').value.trim();
+      const phone = $('us-deal-phone').value.trim();
+      if (!name || !phone) { msg.style.color = '#dc2626'; msg.textContent = '고객명과 전화번호는 필수입니다.'; return; }
+
+      const sl = $('us-payout');
+      const payout = sl ? (parseInt(sl.value, 10) || null) : null;
+      const bundled = USIM_SOLO.bundled && USIM_SOLO.bundleOk;
+      const net = usimNetFee(p);
+
+      const body = {
+        sale_kind: 'usim',
+        usim_plan_id: p.id,
+        usim_payout: payout,
+        customer_name: name,
+        customer_phone: phone,
+        contract_date: new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }),
+        installation_date: $('us-deal-date').value || null,
+        notes: $('us-deal-notes').value.trim() || null,
+        monthly_fee: net,
+        quote_summary: '유심 단독 · ' + p.carrier + ' · ' + p.plan_name
+          + ' · ' + (bundled ? '가족추가·단독MNP(결합)' : '단독MNP(미결합)'),
+        quote_full_html: '<div>유심 단독 개통 — ' + p.carrier + ' ' + p.plan_name
+          + '<br>월 요금 ' + fmt(net) + '원 (선택약정 25%)'
+          + '<br>구분 ' + (bundled ? '가족추가·단독MNP(결합)' : '단독MNP(미결합)')
+          + '<br>지급액 ' + fmt(payout || 0) + '원</div>',
+      };
+
+      msg.style.color = '#6b7280'; msg.textContent = '등록 중…';
+      try {
+        const r = await fetch(INC_API + '/sales', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + usimAuthToken() },
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) {
+          msg.style.color = '#dc2626';
+          msg.textContent = '등록 실패: ' + (await r.text()).slice(0, 150);
+          return;
+        }
+        msg.style.color = '#15803d'; msg.textContent = '✅ 등록됨 — 계약 처리로 넘어갔습니다.';
+        ['us-deal-name', 'us-deal-phone', 'us-deal-date', 'us-deal-notes'].forEach(function (id) { $(id).value = ''; });
+        setTimeout(function () { form.style.display = 'none'; msg.textContent = ''; }, 1800);
+      } catch (e) {
+        msg.style.color = '#dc2626'; msg.textContent = '등록 실패: ' + e.message;
+      }
+    });
+  })();
+
   incLoadState();
   incSimulate();
 }, 100);
