@@ -1833,27 +1833,41 @@ function bindShortcutKeys() {
         <div id="inc-my-status-body"></div>
       </div>
 
+      <!-- 💸 고객 지급액 결정 — 상품별로 묶는다. 인터넷과 유심은 사은품 체계가 달라 섞으면 헷갈린다. -->
       <div id="inc-input" style="background:rgba(255,255,255,0.6);border-radius:6px;padding:9px 11px;margin-bottom:8px">
-        <div style="font-size:9.5px;color:#78350f;margin-bottom:6px;font-weight:800">💸 고객 지급액 결정</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;margin-bottom:7px">
-          <div><div style="font-size:9px;color:#78350f">가이드</div><div id="inc-guide" style="font-size:13px;font-weight:900;color:#0f766e">—</div></div>
-          <div><div style="font-size:9px;color:#78350f">현재 제안액</div><div id="inc-offer" style="font-size:15px;font-weight:900;color:#b45309">—</div></div>
-          <div><div style="font-size:9px;color:#78350f">MAX</div><div id="inc-max" style="font-size:13px;font-weight:900;color:#6d28d9">—</div></div>
+        <div style="font-size:9.5px;color:#78350f;margin-bottom:7px;font-weight:800">💸 고객 지급액 결정</div>
+
+        <!-- 인터넷 + TV -->
+        <div style="background:rgba(255,255,255,0.55);border-radius:6px;padding:8px 9px">
+          <div style="font-size:10px;color:#b45309;font-weight:800;margin-bottom:6px">📡 인터넷 + TV <span id="inc-prod-name" style="font-weight:600;opacity:.75"></span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;margin-bottom:7px">
+            <div><div style="font-size:9px;color:#78350f">가이드</div><div id="inc-guide" style="font-size:13px;font-weight:900;color:#0f766e">—</div></div>
+            <div><div style="font-size:9px;color:#78350f">현재 제안액</div><div id="inc-offer" style="font-size:15px;font-weight:900;color:#b45309">—</div></div>
+            <div><div style="font-size:9px;color:#78350f">MAX</div><div id="inc-max" style="font-size:13px;font-weight:900;color:#6d28d9">—</div></div>
+          </div>
+          <input type="range" id="inc-payout" min="0" max="0" step="10000" value="0" style="width:100%;accent-color:#d97706">
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+            <span style="font-size:9.5px;color:#78350f;font-weight:700;white-space:nowrap">지급액</span>
+            <input type="number" id="inc-payout-num" step="1000" placeholder="가이드~MAX"
+                   style="flex:1;padding:5px 8px;border:1.5px solid #d97706;border-radius:5px;font-size:13px;font-weight:800;
+                          text-align:right;background:#fff;color:#b45309;font-variant-numeric:tabular-nums">
+            <span style="font-size:10px;color:#78350f">원</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:#92400e;margin-top:3px">
+            <span>가이드 이하 불가</span><span id="inc-room">추가 지급 가능 —</span><span>MAX 초과 불가</span>
+          </div>
         </div>
-        <input type="range" id="inc-payout" min="0" max="0" step="10000" value="0" style="width:100%;accent-color:#d97706">
-        <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
-          <span style="font-size:9.5px;color:#78350f;font-weight:700;white-space:nowrap">직접 입력</span>
-          <input type="number" id="inc-payout-num" step="1000" placeholder="가이드~MAX"
-                 style="flex:1;padding:5px 8px;border:1.5px solid #d97706;border-radius:5px;font-size:13px;font-weight:800;
-                        text-align:right;background:#fff;color:#b45309;font-variant-numeric:tabular-nums">
-          <span style="font-size:10px;color:#78350f">원</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:#92400e;margin-top:3px">
-          <span>가이드 이하 불가</span><span id="inc-room">추가 지급 가능 —</span><span>MAX 초과 불가</span>
-        </div>
-        <div id="inc-usim-row" style="display:none;margin-top:9px;padding-top:9px;border-top:1px dashed rgba(217,119,6,0.35)">
+
+        <!-- 유심 (선택 시에만) -->
+        <div id="inc-usim-row" style="display:none;background:rgba(2,132,199,0.10);border:1px solid rgba(56,189,248,0.30);border-radius:6px;padding:8px 9px;margin-top:7px">
+          <div style="font-size:10px;color:#0369a1;font-weight:800;margin-bottom:6px">📲 유심 <span id="inc-usim-plan" style="font-weight:600;opacity:.8"></span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;margin-bottom:7px">
+            <div><div style="font-size:9px;color:#78350f">가이드</div><div id="inc-usim-guide" style="font-size:13px;font-weight:900;color:#0f766e">—</div></div>
+            <div><div style="font-size:9px;color:#78350f">현재 제안액</div><div id="inc-usim-offer" style="font-size:15px;font-weight:900;color:#0369a1">—</div></div>
+            <div><div style="font-size:9px;color:#78350f">MAX</div><div id="inc-usim-max" style="font-size:13px;font-weight:900;color:#6d28d9">—</div></div>
+          </div>
           <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:9.5px;color:#0369a1;font-weight:800;white-space:nowrap">📲 유심 지급액</span>
+            <span style="font-size:9.5px;color:#0369a1;font-weight:700;white-space:nowrap">지급액</span>
             <input type="number" id="inc-usim-num" step="1000"
                    style="flex:1;padding:5px 8px;border:1.5px solid #0284c7;border-radius:5px;font-size:13px;font-weight:800;
                           text-align:right;background:#fff;color:#0369a1;font-variant-numeric:tabular-nums">
@@ -4554,6 +4568,7 @@ async function incSimulate() {
     uOffer = (uNum && uNum.value !== '') ? Math.max(uGuide, Math.min(uMax, parseInt(uNum.value, 10) || uGuide)) : uGuide;
     uResidual = Math.max(0, uMax - uOffer);
   }
+  const hasTvSel = (parseInt((document.getElementById('c-tv') || {}).value, 10) || 0) > 0;
   const totalResidual = residual + uResidual;
 
   // 유심 지급액 칸은 고정 마크업이다 — 결과 HTML 안에 두면 한 글자 칠 때마다 지워진다.
@@ -4563,8 +4578,13 @@ async function incSimulate() {
   if (uSel && uNumEl) {
     uNumEl.min = uGuide; uNumEl.max = uMax;
     if (document.activeElement !== uNumEl) uNumEl.value = uOffer;
-    const h = document.getElementById('inc-usim-hint');
-    if (h) h.textContent = (uSel.plan_name || '') + ' · 가이드 ' + incFmt(uGuide) + ' ~ MAX ' + incFmt(uMax);
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    set('inc-usim-plan', uSel.plan_name || '');
+    set('inc-usim-guide', incFmt(uGuide));
+    set('inc-usim-offer', incFmt(uOffer));
+    set('inc-usim-max', incFmt(uMax));
+    set('inc-usim-hint', hasTvSel ? '① UIT결합유심 (인터넷+TV 동시 개통)'
+                                  : '② 가족추가·단독MNP(결합) — 인터넷을 함께 개통');
   }
 
   const incentive = Math.round(totalResidual * rate / 100);
@@ -4572,8 +4592,8 @@ async function incSimulate() {
 
   const bar = Math.max(0, Math.min(100, mx > guide ? ((offer - guide) / (mx - guide)) * 100 : 0));
   let html = '';
-  html += '<div style="background:rgba(255,255,255,0.7);border-radius:6px;padding:7px 9px;margin-bottom:7px;font-size:10.5px">'
-       +  '🎯 <b>' + product.name + '</b></div>';
+  const _pn = document.getElementById('inc-prod-name');
+  if (_pn) _pn.textContent = product.name || '';
 
   // ── 채널이 둘 이상이면 나란히 비교해 보여준다.
   //    리베이트는 관리하지 않으므로 회사 마진이 아니라 상담사가 실제로 쓸 수 있는
@@ -4611,18 +4631,6 @@ async function incSimulate() {
          +  '<div style="font-size:9px;color:#a16207;margin-top:2px">상품권은 정해진 금액으로 나가고, 더 드리는 건 현금으로만 붙습니다.</div>'
          +  '</div>';
   }
-  if (uSel) {
-    html += '<div style="background:rgba(2,132,199,0.10);border:1px solid rgba(56,189,248,0.35);border-radius:6px;padding:8px 10px;margin-bottom:7px">'
-         +  '<div style="font-size:9.5px;color:#0369a1;font-weight:800;margin-bottom:5px">📲 유심 개통 — ' + (uSel.plan_name || '') + '</div>'
-         +  '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">'
-         +    '<div><div style="font-size:9px;color:#78350f">가이드</div><div style="font-size:12.5px;font-weight:900;color:#0f766e">' + incFmt(uGuide) + '</div></div>'
-         +    '<div><div style="font-size:9px;color:#78350f">제안액</div><div style="font-size:14px;font-weight:900;color:#b45309">' + incFmt(uOffer) + '</div></div>'
-         +    '<div><div style="font-size:9px;color:#78350f">MAX</div><div style="font-size:12.5px;font-weight:900;color:#6d28d9">' + incFmt(uMax) + '</div></div>'
-         +  '</div>'
-         +  '<div style="font-size:9px;color:#0369a1;margin-top:4px">지급액은 위 <b>고객 지급액 결정</b> 칸에서 입력합니다. 유심 잔존마진 <b>' + incFmt(uResidual) + '</b></div>'
-         +  '</div>';
-  }
-
   html += '<div style="height:7px;background:#fde68a;border-radius:4px;overflow:hidden;margin-bottom:8px">'
        +  '<div style="height:100%;width:' + bar.toFixed(1) + '%;background:linear-gradient(90deg,#0f766e,#d97706)"></div></div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;margin-bottom:7px">'
