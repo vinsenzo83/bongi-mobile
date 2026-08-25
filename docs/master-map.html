@@ -50,6 +50,8 @@ h2 .n{display:inline-block;width:22px;height:22px;line-height:22px;text-align:ce
 .step{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:11px 13px}
 .step .t{font-size:12px;font-weight:800;margin-bottom:4px}
 .step .d{font-size:10.5px;color:var(--tx2);line-height:1.7}
+.st3{font-size:11px;font-weight:800;color:var(--tx2);letter-spacing:.03em;margin:0 0 6px}
+.step.warnstep{border-color:var(--warn);background:rgba(217,119,6,.06)}
 .arr{align-self:center;color:var(--tx3);font-size:17px;font-weight:900}
 
 /* 표 */
@@ -163,6 +165,7 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-si
 
 <!-- ─────────────────────────────────────── -->
 <h2><span class="n">2</span>서비스 플로우</h2>
+<div class="st3">A. 인터넷 · TV (유심 동반 가능)</div>
 <div class="flow">
   <div class="step"><div class="t">① 상담</div><div class="d">통신사 · 속도 · TV · 결합을 고르면 요금이 계산된다</div></div>
   <div class="arr">→</div>
@@ -176,6 +179,25 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-si
   <div class="arr">→</div>
   <div class="step"><div class="t">⑥ 설치완료</div><div class="d">이때부터 정산에 잡힌다</div></div>
 </div>
+<div class="st3" style="margin-top:16px">B. 유심 단독 — 인터넷 없이 유심만 판다</div>
+<div class="flow">
+  <div class="step"><div class="t">① 요금제</div><div class="d">통신사 · 요금제를 고른다 — 월정액·데이터는 TM 데이터 관리 값</div></div>
+  <div class="arr">→</div>
+  <div class="step"><div class="t">② 결합 요건</div><div class="d"><b>본인 포함 가족 중</b> 그 통신사 인터넷·휴대폰을 쓰는가 → ② / 아니면 ③</div></div>
+  <div class="arr">→</div>
+  <div class="step"><div class="t">③ 지급액 결정</div><div class="d">그 구분의 유심 가이드~MAX 사이에서 정한다</div></div>
+  <div class="arr">→</div>
+  <div class="step warnstep"><div class="t">④ 현재 통신사 확인</div><div class="d"><b>번호이동이라 반드시 묻는다.</b> 개통하려는 통신사와 같으면 등록 자체가 막힌다</div></div>
+  <div class="arr">→</div>
+  <div class="step"><div class="t">⑤ 계약 등록</div><div class="d">유심 가이드·MAX 를 <b>박제</b>한다 · 인터넷 상품 없이 등록된다</div></div>
+  <div class="arr">→</div>
+  <div class="step"><div class="t">⑥ 설치완료</div><div class="d">개통 확인 후. 이때부터 정산에 잡힌다</div></div>
+</div>
+<div class="note warn">
+  <b>④ 현재 통신사를 안 물으면 나중에 취소·환수된다.</b> 번호이동은 지금 쓰는 통신사가 개통하려는 통신사와
+  달라야 성립한다. 계약 처리 화면에서 같으면 「⛔ 번호이동 대상이 아닙니다」로 막고, 확인이 안 된 건은 붉게 표시한다.
+</div>
+
 <div class="note warn">
   ⑤에서 <b>가이드·MAX 를 계약에 박제</b>하는 이유 — 나중에 상품 MAX 를 바꾸면 지난 정산이 흔들린다.
   등록 시점 값으로 계산해야 이미 확정된 급여가 움직이지 않는다.
@@ -224,22 +246,25 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-si
 <h2><span class="n">4</span>유심 3구분 — 어느 값을 부를 것인가</h2>
 <p class="lead">같은 요금제라도 구분마다 가이드·MAX 가 다르다. <b>번호이동 전용 · 신규가입 불가</b>이며 결합은 같은 통신사만 인정된다 (SKT·SKB→SKT / KT→KT / LG U+→LG U+).</p>
 <table>
-  <thead><tr><th style="width:52px">구분</th><th style="width:220px">이름</th><th>조건</th><th style="width:200px">어디서 잡히나</th></tr></thead>
+  <thead><tr><th style="width:52px">구분</th><th style="width:200px">이름</th><th>조건</th><th style="width:190px">어디서 잡히나</th><th style="width:120px">단독 계약</th></tr></thead>
   <tbody>
     <tr>
       <td><b>①</b></td><td>UIT결합유심</td>
       <td>인터넷 <b>+ TV</b> + 유심을 한 번에 개통</td>
       <td>상담 › 인터넷+TV 탭 <b>(TV 있음)</b></td>
+      <td style="color:var(--tx3)">불가 — 인터넷 건에 딸린다</td>
     </tr>
     <tr>
       <td><b>②</b></td><td>가족추가 · 단독MNP(결합)</td>
       <td><b>본인 포함 가족 중</b> 개통하려는 통신사의 인터넷이나 휴대폰을 쓰고 있는 경우</td>
       <td>상담 › 인터넷+TV 탭 <b>(TV 없음)</b><br>상담 › 유심 단독 탭 <b>(요건 체크)</b></td>
+      <td style="color:var(--ok)">가능</td>
     </tr>
     <tr>
       <td><b>③</b></td><td>유심단독MNP(미결합)</td>
       <td>아무도 안 쓰는 경우</td>
       <td>상담 › 유심 단독 탭 <b>(체크 안 함)</b></td>
+      <td style="color:var(--ok)">가능</td>
     </tr>
   </tbody>
 </table>
@@ -289,6 +314,10 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-si
     <tr><td><span class="tag t-money">사은품</span> 채널별 금액</td><td><code>incentive_product_channels</code></td><td>상품 관리 › 📡 채널</td></tr>
     <tr><td><span class="tag t-money">사은품</span> 유심 가이드·MAX</td><td><code>incentive_usim_plans</code></td><td>상품 관리 › 📲 유심</td></tr>
     <tr><td>계약 · 스냅샷</td><td><code>incentive_sales</code></td><td>상담 등록 → 계약 처리</td></tr>
+    <tr><td>인터넷 건 / 유심 단독 건 구분</td><td><code>incentive_sales.sale_kind</code> = <code>internet</code> | <code>usim</code></td><td>상담 화면이 자동 기록</td></tr>
+    <tr><td>어느 유심 요금제로 팔았나</td><td><code>incentive_sales.usim_plan_id</code> · <code>usim_payout</code></td><td>상담 › 유심 지급액</td></tr>
+    <tr><td><span class="tag t-money">박제</span> 유심 가이드·MAX</td><td><code>usim_guide_snapshot</code> · <code>usim_max_snapshot</code></td><td>계약 등록 시점에 굳는다</td></tr>
+    <tr><td>현재 통신사 (번호이동 판정)</td><td><code>incentive_sales.current_carrier</code></td><td>상담 등록 <b>필수</b></td></tr>
     <tr><td>정산</td><td><code>incentive_calc_monthly_settlement</code></td><td>자동 계산</td></tr>
   </tbody>
 </table>
