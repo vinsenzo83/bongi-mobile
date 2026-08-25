@@ -874,6 +874,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       installation_time,
       activation_date,
       add_payback = 0,
+      actual_payout, usim_plan_id, usim_payout,
       notes,
       agent_id, // manager/admin이 다른 상담사 대신 입력 가능
       tv_count,
@@ -905,6 +906,15 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       return res.status(400).json({ error: '존재하지 않는 product_id' });
     }
 
+    // 유심을 함께 개통한 건이면 그 시점 가이드·MAX 도 박제한다
+    let usimSnap = null;
+    if (usim_plan_id) {
+      const { data: u } = await supabase
+        .from('incentive_usim_plans').select('guide_payout, max_payout')
+        .eq('id', usim_plan_id).maybeSingle();
+      usimSnap = u || null;
+    }
+
     const { data, error } = await supabase
       .from('incentive_sales')
       .insert({
@@ -933,7 +943,15 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         db_source_id: db_source_id ? parseInt(db_source_id) : null,
         // ── product 단가 snapshot (등록 시점) ──
         payback_snapshot: prodSnap.payback,
-        rebate_snapshot: prodSnap.rebate,
+        // 잔존마진은 (MAX − 실제 지급액) 이다. 두 값을 등록 시점으로 박제해야
+        // 나중에 상품 MAX 를 바꿔도 지난 정산이 흔들리지 않는다.
+        guide_payout_snapshot: prodSnap.guide_payout,
+        max_payout_snapshot: prodSnap.max_payout,
+        actual_payout: (actual_payout == null) ? null : Number(actual_payout),
+        usim_plan_id: usim_plan_id || null,
+        usim_payout: (usim_payout == null) ? null : Number(usim_payout),
+        usim_guide_snapshot: usimSnap ? usimSnap.guide_payout : null,
+        usim_max_snapshot: usimSnap ? usimSnap.max_payout : null,
       })
       .select('*, product:incentive_products(*)')
       .single();
@@ -995,7 +1013,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     const me = await getCurrentIncentiveAgent(req.user.id);
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
-    const { status, cancellation_reason, notes, contract_notes, add_payback, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, customer_email, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id, dealer_id,
+    const { status, cancellation_reason, notes, contract_notes, add_payback, actual_payout, usim_payout, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, customer_email, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id, dealer_id,
       birth_date, combo_type, combo_members, billing_method, billing_phone, billing_carrier, payment_method, payment_extra, waiting_person, waiting_phone, waiting_relation, seller_phone, onestop_yn, current_carrier } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
@@ -1043,6 +1061,8 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (notes !== undefined) update.notes = notes;
     if (contract_notes !== undefined) update.contract_notes = contract_notes;
     if (add_payback !== undefined) update.add_payback = add_payback;
+    if (actual_payout !== undefined) update.actual_payout = (actual_payout === null) ? null : Number(actual_payout);
+    if (usim_payout !== undefined) update.usim_payout = (usim_payout === null) ? null : Number(usim_payout);
     if (customer_address !== undefined) update.customer_address = customer_address;
     if (customer_address_detail !== undefined) update.customer_address_detail = customer_address_detail;
     if (bank_account_holder !== undefined) update.bank_account_holder = bank_account_holder;

@@ -1907,12 +1907,6 @@ function bindShortcutKeys() {
           <input type="text" id="deal-address-detail" placeholder="예: 101동 502호" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">📝 상담 메모
           <textarea id="deal-notes" rows="3" placeholder="상담 내용 / 특이사항 / 고객 요청 등" style="width:100%;padding:5px 7px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;resize:vertical;font-family:inherit"></textarea></label>
-        <label style="font-size:10px;color:#374151;display:block;margin-bottom:6px">🗂️ DB 출처 <span style="color:#dc2626">*</span>
-          <select id="deal-db-source" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;background:#fff">
-            <option value="">— 선택하세요 —</option>
-          </select></label>
-        <label style="font-size:10px;color:#374151;display:block;margin-bottom:8px">추가 페이백 (₩, 0~50,000)
-          <input type="number" id="deal-payback" min="0" max="50000" step="1000" value="0" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:11px"></label>
         <div style="display:flex;gap:6px">
           <button type="button" id="inc-deal-cancel" style="flex:1;padding:6px;background:#fff;border:1px solid #94a3b8;border-radius:4px;font-size:11px;cursor:pointer">취소</button>
           <button type="button" id="inc-deal-submit" style="flex:1;padding:6px;background:#16a34a;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">✅ 등록</button>
@@ -5226,19 +5220,14 @@ async function incSubmitDeal() {
   const address = (document.getElementById('deal-address').value || '').trim() || null;
   const addressDetail = (document.getElementById('deal-address-detail').value || '').trim() || null;
   const notes = (document.getElementById('deal-notes').value || '').trim() || null;
-  const payback = parseInt(document.getElementById('deal-payback').value) || 0;
-  const dbSourceIdRaw = document.getElementById('deal-db-source')?.value || '';
-  const dbSourceId = dbSourceIdRaw ? parseInt(dbSourceIdRaw, 10) : null;
+  // 실제 지급액은 위 「고객 지급액 결정」에서 정한 값이다. 여기서 또 받으면
+  // 같은 금액을 두 번 넣게 되고, 정산이 어느 쪽을 믿을지 알 수 없다.
+  const _sl = document.getElementById('inc-payout');
+  const actualPayout = (_sl && !_sl.disabled) ? (parseInt(_sl.value, 10) || null) : null;
+  const _un = document.getElementById('inc-usim-num');
+  const _usim = (typeof usimSelected === 'function') ? usimSelected() : null;
+  const usimPayout = (_usim && _un && _un.value !== '') ? (parseInt(_un.value, 10) || null) : null;
 
-  if (payback < 0 || payback > 50000) {
-    msg.textContent = '페이백은 0~50,000원';
-    return;
-  }
-  if (!dbSourceId && !_isManualMode) {
-    msg.textContent = '⚠️ DB 출처를 선택하세요 (어느 DB로 상담했는지)';
-    document.getElementById('deal-db-source')?.focus();
-    return;
-  }
 
   const payload = buildSalePayload({
     product_id: _incLastMatchedProduct.id,
@@ -5249,8 +5238,9 @@ async function incSubmitDeal() {
     installation_date: installDate,
     installation_time: installationTime,
     notes: notes,
-    add_payback: payback,
-    db_source_id: dbSourceId,
+    actual_payout: actualPayout,
+    usim_plan_id: _usim ? _usim.id : null,
+    usim_payout: usimPayout,
   });
 
   // 견적서 누락 차단 — 계약 처리에서 동일 정보 보여줘야 하므로 필수
@@ -5291,7 +5281,6 @@ async function incSubmitDeal() {
       ['deal-name', 'deal-phone', 'deal-install-date', 'deal-installation-time', 'deal-address', 'deal-address-detail', 'deal-notes'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
-      document.getElementById('deal-payback').value = 0;
       msg.textContent = '';
     }, 2500);
 
