@@ -496,6 +496,8 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   <a class="nav-link" href="#sec-5">🔧 설치비</a>
   <a class="nav-link" href="#sec-6">💳 제휴카드</a>
   <a class="nav-link" href="#sec-7">💡 영업포인트</a>
+  <a class="nav-link" href="#sec-11">📲 유심 요금제</a>
+  <a class="nav-link" href="#sec-12">📡 접수 채널</a>
   <a class="nav-link" href="#sec-9">🎫 티켓</a>
   <a class="nav-link" href="#sec-10">📜 변경이력</a>
 </nav>
@@ -839,6 +841,29 @@ body.bongi-edit-locked button:not(.bongi-allow-locked) {
   <div class="st">📜 10. 변경 이력 (전체 섹션 통합)</div>
   <div class="note">1·2·3·4·5·6·8번 섹션의 모든 데이터 변경 사항을 시간순으로 기록. localStorage 영구 저장 (최대 500건).</div>
   <div id="edit-history"></div>
+</div>
+
+<!-- ═══ 11. 유심 요금제 ═══ -->
+<div class="section">
+  <div class="st">📲 11. 유심 요금제 (3사 · 추가/편집/삭제)</div>
+  <div class="note">
+    유심 이동(SIM-only) 요금제 마스터. <b>번호이동 전용 · 신규가입 불가</b>.<br>
+    여기서는 <b>요금</b>만 관리한다 — 가이드·MAX(사은품)는 <b>상품 관리 › 📲 유심</b>에서 넣는다.<br>
+    선택약정을 비우면 월정액 × 75% 로 자동 계산된다.
+  </div>
+  <div id="usim-plan-controls">불러오는 중…</div>
+</div>
+
+<!-- ═══ 12. 접수 채널 ═══ -->
+<div class="section">
+  <div class="st">📡 12. 접수 채널 (통신사별 추가/삭제)</div>
+  <div class="note">
+    같은 상품도 <b>어디로 접수하느냐</b>로 사은품이 갈린다. 채널이 <b>존재하는가</b>는 여기서 정하고,
+    <b>얼마를 주는가</b>는 상품 관리 › 📡 채널에서 넣는다.<br>
+    채널을 추가하면 그 통신사 <b>상품 전부</b>에 행이 생긴다 — 한 상품만 있으면 상담 견적에서 고를 수 없다.<br>
+    ⛔ <b>마지막 채널은 지울 수 없다</b> — 채널이 0개면 가이드·MAX 가 안 잡혀 견적이 계산되지 않는다.
+  </div>
+  <div id="channel-controls">불러오는 중…</div>
 </div>
 
 <!-- ═══ 9. 티켓 조합 리스트 ═══ -->
@@ -4098,6 +4123,247 @@ async function bootstrapCalculator() {
     bongiSetEditingLocked(false);
   }
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 11. 유심 요금제 · 12. 접수 채널 — 마스터 데이터
+//   여기서는 "무엇이 있는가"만 정한다. 금액(가이드·MAX)은 상품 관리에서 넣는다.
+// ═══════════════════════════════════════════════════════════════
+(function () {
+  var API = '/api/incentive';
+  var tk = function () { try { return localStorage.getItem(INCENTIVE_TOKEN_KEY); } catch (e) { return null; } };
+  var H = function (extra) {
+    var h = extra || {};
+    var t = tk(); if (t) h.Authorization = 'Bearer ' + t;
+    return h;
+  };
+  var esc = function (v) { return String(v == null ? '' : v).replace(/[<>&"]/g, function (c) {
+    return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]; }); };
+  var won = function (n) { return n == null ? '' : Number(n).toLocaleString(); };
+  var CARRIERS = ['SKT', 'KT', 'LG U+'];
+  var ST_LABEL = { uit: '① UIT결합유심', bundle: '② 가족추가·단독MNP(결합)', solo: '③ 유심단독MNP(미결합)' };
+
+  // ─── 유심 요금제 ───────────────────────────────────────────
+  var _plans = [];
+  function loadPlans() {
+    return fetch(API + '/usim-plans?all=true', { headers: H() })
+      .then(function (r) { return r.ok ? r.json() : { plans: [] }; })
+      .then(function (j) { _plans = j.plans || []; renderPlans(); })
+      .catch(function () {
+        var el = document.getElementById('usim-plan-controls');
+        if (el) el.innerHTML = '<div style="color:#dc2626">불러오지 못했습니다.</div>';
+      });
+  }
+
+  function renderPlans() {
+    var el = document.getElementById('usim-plan-controls');
+    if (!el) return;
+    // 요금은 구분과 무관하게 같다 — 통신사 × 요금제명으로 묶어 한 줄로 보여준다
+    var seen = {}, rows = [];
+    _plans.forEach(function (p) {
+      var k = p.carrier + '|' + p.plan_name;
+      if (seen[k]) { seen[k].types.push(p.sale_type); return; }
+      seen[k] = { p: p, types: [p.sale_type] };
+      rows.push(seen[k]);
+    });
+    rows.sort(function (a, b) {
+      return CARRIERS.indexOf(a.p.carrier) - CARRIERS.indexOf(b.p.carrier)
+          || (a.p.sort_order || 0) - (b.p.sort_order || 0);
+    });
+    var h = '<div style="margin-bottom:10px">'
+      + '<button type="button" id="usim-add-btn" class="btn-add">+ 요금제 추가</button>'
+      + '<span style="margin-left:10px;font-size:11px;color:#666">' + rows.length + '종 · 구분 3개씩 자동 생성</span></div>'
+      + '<table><thead><tr><th>통신사</th><th>요금제명</th><th>월정액</th><th>선택약정 25%</th><th>데이터</th><th>구분</th><th>순서</th><th>상태</th></tr></thead><tbody>';
+    rows.forEach(function (r) {
+      var p = r.p;
+      var net = (p.select_discount != null) ? p.select_discount : Math.round(p.monthly_fee * 0.75);
+      h += '<tr data-key="' + esc(p.carrier + '|' + p.plan_name) + '">'
+        + '<td><b>' + esc(p.carrier) + '</b></td>'
+        + '<td><input class="up-name" value="' + esc(p.plan_name) + '" style="width:170px"></td>'
+        + '<td><input class="up-fee" type="number" value="' + (p.monthly_fee == null ? '' : p.monthly_fee) + '" style="width:96px;text-align:right"></td>'
+        + '<td><input class="up-sel" type="number" value="' + (p.select_discount == null ? '' : p.select_discount) + '" placeholder="' + net + '" style="width:96px;text-align:right"></td>'
+        + '<td><input class="up-data" value="' + esc(p.data_amount) + '" style="width:86px"></td>'
+        + '<td style="font-size:10px;color:#666">' + r.types.map(function (t) { return (ST_LABEL[t] || t).slice(0, 2); }).join(' ') + '</td>'
+        + '<td><input class="up-sort" type="number" value="' + (p.sort_order == null ? '' : p.sort_order) + '" style="width:52px;text-align:center"></td>'
+        + '<td style="white-space:nowrap">'
+        + '<button type="button" class="up-save btn-save">저장</button> '
+        + '<button type="button" class="up-del btn-del">삭제</button></td></tr>';
+    });
+    h += '</tbody></table>';
+    el.innerHTML = h;
+
+    el.querySelectorAll('tr[data-key]').forEach(function (tr) {
+      tr.querySelector('.up-save').addEventListener('click', function () { savePlan(tr); });
+      tr.querySelector('.up-del').addEventListener('click', function () { delPlan(tr); });
+    });
+    var add = document.getElementById('usim-add-btn');
+    if (add) add.addEventListener('click', addPlan);
+  }
+
+  function siblings(key) {
+    var parts = key.split('|');
+    return _plans.filter(function (p) { return p.carrier === parts[0] && p.plan_name === parts[1]; });
+  }
+
+  function savePlan(tr) {
+    var num = function (sel) {
+      var v = tr.querySelector(sel).value;
+      if (v === '') return null;
+      var n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10);
+      return isNaN(n) ? null : n;
+    };
+    var body = {
+      plan_name: tr.querySelector('.up-name').value.trim(),
+      monthly_fee: num('.up-fee'),
+      select_discount: num('.up-sel'),
+      data_amount: tr.querySelector('.up-data').value.trim() || null,
+      sort_order: num('.up-sort') || 0,
+    };
+    if (!body.plan_name || body.monthly_fee == null) { alert('요금제명과 월정액은 필수입니다.'); return; }
+    // 같은 요금제의 3구분 행을 모두 같은 값으로 맞춘다 — 요금은 구분과 무관하다
+    var rows = siblings(tr.dataset.key);
+    Promise.all(rows.map(function (p) {
+      return fetch(API + '/usim-plans/' + p.id, {
+        method: 'PATCH', headers: H({ 'Content-Type': 'application/json' }), body: JSON.stringify(body),
+      });
+    })).then(function (rs) {
+      var bad = rs.filter(function (r) { return !r.ok; });
+      if (bad.length) { alert('저장 실패 (' + bad.length + '건)'); return; }
+      loadPlans();
+    });
+  }
+
+  function delPlan(tr) {
+    var rows = siblings(tr.dataset.key);
+    if (!confirm(tr.dataset.key.replace('|', ' ') + ' 를 비활성화합니다.\n구분 ' + rows.length + '건이 함께 처리되며, 행은 남습니다 (과거 견적 추적).')) return;
+    Promise.all(rows.map(function (p) {
+      return fetch(API + '/usim-plans/' + p.id, { method: 'DELETE', headers: H() });
+    })).then(loadPlans);
+  }
+
+  function addPlan() {
+    var carrier = prompt('통신사 (SKT / KT / LG U+)', 'SKT');
+    if (!carrier) return;
+    carrier = carrier.trim();
+    if (CARRIERS.indexOf(carrier) < 0) { alert('SKT · KT · LG U+ 중 하나여야 합니다.'); return; }
+    var name = prompt('요금제명');
+    if (!name || !name.trim()) return;
+    var fee = parseInt(prompt('월정액 (원)', '33000') || '', 10);
+    if (isNaN(fee)) { alert('월정액을 숫자로 넣어주세요.'); return; }
+    var data = prompt('데이터 (예: 4GB / 무제한)', '') || null;
+    // 3구분을 한 번에 만든다 — 하나만 만들면 상담 화면에서 구분이 비어 보인다
+    Promise.all(['uit', 'bundle', 'solo'].map(function (st) {
+      return fetch(API + '/usim-plans', {
+        method: 'POST', headers: H({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          carrier: carrier, plan_name: name.trim(), monthly_fee: fee,
+          select_discount: Math.round(fee * 0.75), data_amount: data,
+          payback: 0, sale_type: st, sort_order: 99, is_active: true,
+        }),
+      });
+    })).then(function (rs) {
+      var bad = rs.filter(function (r) { return !r.ok; });
+      if (bad.length) { alert('등록 실패 (' + bad.length + '건)'); return; }
+      alert(carrier + ' ' + name.trim() + ' 등록됨 — 3구분 생성.\n가이드·MAX 는 상품 관리 › 유심 에서 넣습니다.');
+      loadPlans();
+    });
+  }
+
+  // ─── 접수 채널 ─────────────────────────────────────────────
+  var CARRIER_KEY = { SKT: 'SK', KT: 'KT', 'LG U+': 'LG' };
+  function loadChannels() {
+    return fetch(API + '/product-channels', { headers: H() })
+      .then(function (r) { return r.ok ? r.json() : { channels: [] }; })
+      .then(function (j) { renderChannels(j.channels || []); })
+      .catch(function () {
+        var el = document.getElementById('channel-controls');
+        if (el) el.innerHTML = '<div style="color:#dc2626">불러오지 못했습니다.</div>';
+      });
+  }
+
+  function renderChannels(chs) {
+    var el = document.getElementById('channel-controls');
+    if (!el) return;
+    return fetch(API + '/products?active_only=true', { headers: H() })
+      .then(function (r) { return r.ok ? r.json() : { products: [] }; })
+      .then(function (j) {
+        var prods = j.products || [];
+        var pById = {}; prods.forEach(function (p) { pById[p.id] = p; });
+        // 통신사 → 채널 → 상품수
+        var map = {};
+        chs.forEach(function (c) {
+          var p = pById[c.product_id]; if (!p) return;
+          map[p.carrier] = map[p.carrier] || {};
+          map[p.carrier][c.channel] = (map[p.carrier][c.channel] || 0) + 1;
+        });
+        var total = {};
+        prods.forEach(function (p) { total[p.carrier] = (total[p.carrier] || 0) + 1; });
+
+        var h = '';
+        CARRIERS.forEach(function (cn) {
+          var key = CARRIER_KEY[cn];
+          var chans = map[key] || {};
+          var names = Object.keys(chans).sort();
+          h += '<div class="st2" style="margin-top:14px">' + cn + ' <span style="font-size:11px;color:#666">— 상품 ' + (total[key] || 0) + '개</span></div>';
+          h += '<table><thead><tr><th>채널</th><th>적용 상품</th><th>상태</th></tr></thead><tbody>';
+          if (!names.length) {
+            h += '<tr><td colspan="3" style="color:#999">채널이 없습니다 — 견적이 계산되지 않습니다.</td></tr>';
+          }
+          names.forEach(function (n) {
+            var cnt = chans[n];
+            var partial = cnt < (total[key] || 0);
+            h += '<tr><td><b>' + esc(n) + '</b></td>'
+              + '<td>' + cnt + ' / ' + (total[key] || 0)
+              + (partial ? ' <span style="color:#d97706;font-weight:700">⚠ 일부만</span>' : '') + '</td>'
+              + '<td><button type="button" class="ch-del btn-del" data-carrier="' + key + '" data-ch="' + esc(n) + '"'
+              + (names.length <= 1 ? ' disabled title="마지막 채널은 지울 수 없습니다"' : '') + '>삭제</button></td></tr>';
+          });
+          h += '</tbody></table>';
+          h += '<div style="margin-top:6px"><button type="button" class="ch-add btn-add" data-carrier="' + key + '" data-name="' + cn + '">+ ' + cn + ' 채널 추가</button></div>';
+        });
+        el.innerHTML = h;
+
+        el.querySelectorAll('.ch-add').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var name = prompt(b.dataset.name + ' 에 추가할 채널명 (예: SKB)');
+            if (!name || !name.trim()) return;
+            fetch(API + '/product-channels/bulk', {
+              method: 'POST', headers: H({ 'Content-Type': 'application/json' }),
+              body: JSON.stringify({ carrier: b.dataset.carrier, channel: name.trim() }),
+            }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+              .then(function (res) {
+                if (!res.ok) { alert('추가 실패: ' + (res.j.error || '')); return; }
+                alert(res.j.created + '개 상품에 「' + name.trim() + '」 채널을 만들었습니다.\n금액은 상품 관리 › 📡 채널 에서 넣습니다.');
+                loadChannels();
+              });
+          });
+        });
+        el.querySelectorAll('.ch-del').forEach(function (b) {
+          if (b.disabled) return;
+          b.addEventListener('click', function () {
+            if (!confirm('「' + b.dataset.ch + '」 채널을 삭제합니다.\n그 통신사 상품 전부에서 사라지고, 넣어둔 금액도 함께 지워집니다.')) return;
+            fetch(API + '/product-channels/bulk?carrier=' + encodeURIComponent(b.dataset.carrier)
+                  + '&channel=' + encodeURIComponent(b.dataset.ch), { method: 'DELETE', headers: H() })
+              .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+              .then(function (res) {
+                if (!res.ok) { alert('삭제 실패: ' + (res.j.error || '')); return; }
+                alert(res.j.deleted + '건 삭제됨');
+                loadChannels();
+              });
+          });
+        });
+      });
+  }
+
+  // 로그인 상태에서만 부른다 — 비로그인은 401 이라 의미 없다
+  if (tk()) { loadPlans(); loadChannels(); }
+  else {
+    ['usim-plan-controls', 'channel-controls'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.innerHTML = '<div style="color:#999">로그인 후 표시됩니다.</div>';
+    });
+  }
+})();
 
 bootstrapCalculator();
 

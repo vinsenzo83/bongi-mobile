@@ -409,7 +409,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
             <th style="width:8%">상담사</th>
             <th style="width:7%">센터</th>
             <th style="width:7%">R번호</th>
-            <th style="width:18%">상품 (Tier·P)</th>
+            <th style="width:18%">상품</th>
             <th style="width:8%">고객명</th>
             <th style="width:9%">전화</th>
             <th style="width:13%">주소</th>
@@ -485,8 +485,8 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           <th style="width:6%">접수</th>
           <th style="width:8%">상담사</th>
           <th style="width:7%">센터</th>
-          <th style="width:7%">DB</th>
-          <th style="width:14%">상품 (Tier·P)</th>
+          
+          <th style="width:14%">상품</th>
           <th style="width:8%">고객명</th>
           <th style="width:9%">전화</th>
           <th style="width:13%">주소</th>
@@ -681,11 +681,6 @@ function renderTable(contracts) {
   let filtered = contracts;
   if (filterAddr === 'missing') filtered = filtered.filter(c => !c.customer_address || !c.customer_address.trim());
   if (filterAddr === 'present') filtered = filtered.filter(c => c.customer_address && c.customer_address.trim());
-  if (filterDbId) {
-    if (filterDbId === '_none') {
-    } else {
-    }
-  }
   if (filterName) {
     filtered = filtered.filter(c => {
       const name = (c.customer_name || '').toLowerCase();
@@ -710,8 +705,7 @@ function renderTable(contracts) {
         <th style="width:5%">접수</th>
         <th style="width:7%">상담사</th>
         <th style="width:6%">센터</th>
-        <th style="width:6%">DB</th>
-        <th style="width:11%">상품 (Tier·P)</th>
+        <th style="width:11%">상품</th>
         <th style="width:6%">고객명</th>
         <th style="width:7%">전화</th>
         <th style="width:9%">주소</th>
@@ -729,8 +723,7 @@ function renderTable(contracts) {
         <th style="width:6%">접수</th>
         <th style="width:8%">상담사</th>
         <th style="width:7%">센터</th>
-        <th style="width:7%">DB</th>
-        <th style="width:14%">상품 (Tier·P)</th>
+        <th style="width:14%">상품</th>
         <th style="width:8%">고객명</th>
         <th style="width:9%">전화</th>
         <th style="width:13%">주소</th>
@@ -820,17 +813,12 @@ function renderTable(contracts) {
     // 접수 시간 (created_at) — MM/DD HH:MM
     const cAt = c.created_at ? new Date(c.created_at) : null;
     const fmtCreated = cAt ? `${String(cAt.getMonth()+1).padStart(2,'0')}/${String(cAt.getDate()).padStart(2,'0')}<div style="font-size:9px;color:#64748b">${String(cAt.getHours()).padStart(2,'0')}:${String(cAt.getMinutes()).padStart(2,'0')}</div>` : '-';
-    // DB 출처 배지 (없으면 회색 '-')
-    const dbCell = dbSrc
-      ? `<span style="background:${dbSrc.color || '#3b82f6'};color:#fff;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:800;letter-spacing:0.02em">${(dbSrc.name || '').replace(/</g,'&lt;')}</span>`
-      : '<span style="color:#64748b;font-size:10px">-</span>';
     return `<tr class="${rowCls}" data-id="${c.id}" style="${trashRowStyle}">
       <td style="text-align:center;color:#64748b;font-weight:700;font-size:11px">${rowNum}</td>
       <td>${(c.contract_date || '').slice(5)}</td>
       <td style="font-size:10.5px;color:#cbd5e1">${fmtCreated}</td>
       <td><b>${a.name || '-'}</b></td>
       <td style="font-size:11px;color:#a5b4fc">${a.center || '-'}</td>
-      <td>${dbCell}</td>
       <td>${(() => {
         const carrier = (p.carrier || '').toLowerCase();
         const carrierMap = { kt: { label: 'KT', bg: '#dc2626' }, sk: { label: 'SK', bg: '#ef4444' }, skt: { label: 'SK', bg: '#ef4444' }, lgu: { label: 'LG U+', bg: '#a855f7' }, lg: { label: 'LG U+', bg: '#a855f7' } };
