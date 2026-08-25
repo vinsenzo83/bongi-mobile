@@ -1851,6 +1851,16 @@ function bindShortcutKeys() {
         <div style="display:flex;justify-content:space-between;font-size:9px;color:#92400e;margin-top:3px">
           <span>가이드 이하 불가</span><span id="inc-room">추가 지급 가능 —</span><span>MAX 초과 불가</span>
         </div>
+        <div id="inc-usim-row" style="display:none;margin-top:9px;padding-top:9px;border-top:1px dashed rgba(217,119,6,0.35)">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:9.5px;color:#0369a1;font-weight:800;white-space:nowrap">📲 유심 지급액</span>
+            <input type="number" id="inc-usim-num" step="1000"
+                   style="flex:1;padding:5px 8px;border:1.5px solid #0284c7;border-radius:5px;font-size:13px;font-weight:800;
+                          text-align:right;background:#fff;color:#0369a1;font-variant-numeric:tabular-nums">
+            <span style="font-size:10px;color:#78350f">원</span>
+          </div>
+          <div id="inc-usim-hint" style="font-size:9px;color:#0369a1;margin-top:3px"></div>
+        </div>
       </div>
       <div id="inc-result" style="font-size:11px;color:#78350f;line-height:1.6">
         <div style="opacity:0.7">견적을 만들면 자동 계산됩니다.</div>
@@ -4541,6 +4551,17 @@ async function incSimulate() {
   }
   const totalResidual = residual + uResidual;
 
+  // 유심 지급액 칸은 고정 마크업이다 — 결과 HTML 안에 두면 한 글자 칠 때마다 지워진다.
+  const uRow = document.getElementById('inc-usim-row');
+  const uNumEl = document.getElementById('inc-usim-num');
+  if (uRow) uRow.style.display = uSel ? '' : 'none';
+  if (uSel && uNumEl) {
+    uNumEl.min = uGuide; uNumEl.max = uMax;
+    if (document.activeElement !== uNumEl) uNumEl.value = uOffer;
+    const h = document.getElementById('inc-usim-hint');
+    if (h) h.textContent = (uSel.plan_name || '') + ' · 가이드 ' + incFmt(uGuide) + ' ~ MAX ' + incFmt(uMax);
+  }
+
   const incentive = Math.round(totalResidual * rate / 100);
   const companyExtra = totalResidual - incentive;
 
@@ -4588,19 +4609,12 @@ async function incSimulate() {
   if (uSel) {
     html += '<div style="background:rgba(2,132,199,0.10);border:1px solid rgba(56,189,248,0.35);border-radius:6px;padding:8px 10px;margin-bottom:7px">'
          +  '<div style="font-size:9.5px;color:#0369a1;font-weight:800;margin-bottom:5px">📲 유심 개통 — ' + (uSel.plan_name || '') + '</div>'
-         +  '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;margin-bottom:6px">'
+         +  '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">'
          +    '<div><div style="font-size:9px;color:#78350f">가이드</div><div style="font-size:12.5px;font-weight:900;color:#0f766e">' + incFmt(uGuide) + '</div></div>'
          +    '<div><div style="font-size:9px;color:#78350f">제안액</div><div style="font-size:14px;font-weight:900;color:#b45309">' + incFmt(uOffer) + '</div></div>'
          +    '<div><div style="font-size:9px;color:#78350f">MAX</div><div style="font-size:12.5px;font-weight:900;color:#6d28d9">' + incFmt(uMax) + '</div></div>'
          +  '</div>'
-         +  '<div style="display:flex;align-items:center;gap:6px">'
-         +    '<span style="font-size:9.5px;color:#78350f;font-weight:700;white-space:nowrap">유심 지급액</span>'
-         +    '<input type="number" id="inc-usim-num" step="1000" min="' + uGuide + '" max="' + uMax + '" value="' + uOffer + '"'
-         +      ' style="flex:1;padding:5px 8px;border:1.5px solid #0284c7;border-radius:5px;font-size:13px;font-weight:800;'
-         +      'text-align:right;background:#fff;color:#0369a1;font-variant-numeric:tabular-nums">'
-         +    '<span style="font-size:10px;color:#78350f">원</span>'
-         +  '</div>'
-         +  '<div style="font-size:9px;color:#0369a1;margin-top:3px">유심 잔존마진 <b>' + incFmt(uResidual) + '</b> — 인터넷 건과 합산해 인센티브가 계산됩니다.</div>'
+         +  '<div style="font-size:9px;color:#0369a1;margin-top:4px">지급액은 위 <b>고객 지급액 결정</b> 칸에서 입력합니다. 유심 잔존마진 <b>' + incFmt(uResidual) + '</b></div>'
          +  '</div>';
   }
 
@@ -4626,21 +4640,6 @@ async function incSimulate() {
   html += '<div style="font-size:9px;color:#a16207;margin-top:5px;line-height:1.55">'
        +  '설치완료 건에만 확정됩니다. 취소·철회 시 차감됩니다.</div>';
   result.innerHTML = html;
-  // 유심 지급액 직접 입력 — 다시 그릴 때마다 배선한다
-  (function () {
-    const un = document.getElementById('inc-usim-num');
-    if (!un) return;
-    un.addEventListener('input', function () {
-      const lo = Number(un.min), hi = Number(un.max);
-      let v = parseInt(String(un.value).replace(/[^0-9-]/g, ''), 10);
-      if (isNaN(v)) return;
-      if (v > hi) { un.value = hi; }
-      if (v < lo && String(un.value).length >= String(lo).length) { un.value = lo; }
-      incSimulate();
-      const again = document.getElementById('inc-usim-num');
-      if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
-    });
-  })();
   result.querySelectorAll('.inc-ch').forEach(function (el) {
     el.addEventListener('click', function () {
       CHANNEL_PICK = el.dataset.ch;
@@ -4690,6 +4689,26 @@ setTimeout(function() {
         incSimulate();
       };
       num.addEventListener('input', apply);
+
+      // 유심 지급액 — 같은 방식으로 한 번만 배선한다
+      const un = document.getElementById('inc-usim-num');
+      if (un && !un._wired) {
+        un._wired = true;
+        un.addEventListener('input', function () {
+          const lo = Number(un.min), hi = Number(un.max);
+          let v = parseInt(String(un.value).replace(/[^0-9-]/g, ''), 10);
+          if (isNaN(v)) return;
+          if (v > hi) un.value = hi;
+          incSimulate();
+        });
+        un.addEventListener('blur', function () {
+          const lo = Number(un.min), hi = Number(un.max);
+          let v = parseInt(String(un.value).replace(/[^0-9-]/g, ''), 10);
+          if (isNaN(v)) v = lo;
+          un.value = Math.max(lo, Math.min(hi, v));
+          incSimulate();
+        });
+      }
       // 포커스를 잃으면 범위 밖 값을 눈에 보이게 정리한다
       num.addEventListener('blur', function () {
         if (!sl) return;
