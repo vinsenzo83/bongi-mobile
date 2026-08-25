@@ -1672,6 +1672,40 @@ function bindShortcutKeys() {
         <div class="tm-card-title"><span class="num">3</span>요금제 <span style="font-size:10.5px;font-weight:700;color:#0369a1;margin-left:6px">번호이동 전용 · 단말 없이 유심만 개통</span></div>
         <div class="usim-grid" id="us-plans"></div>
       </div>
+
+      <!-- 💸 고객 지급액 결정 — 인터넷+TV 와 같은 규칙. 요금제를 골라야 나온다. -->
+      <div class="tm-card" id="us-pay-card" style="display:none;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #f59e0b">
+        <div class="tm-card-title"><span class="num">4</span>고객 지급액 결정</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:9px">
+          <div><div style="font-size:9.5px;color:#78350f">가이드</div><div id="us-guide" style="font-size:15px;font-weight:900;color:#0f766e">—</div></div>
+          <div><div style="font-size:9.5px;color:#78350f">현재 제안액</div><div id="us-offer" style="font-size:18px;font-weight:900;color:#b45309">—</div></div>
+          <div><div style="font-size:9.5px;color:#78350f">MAX <span style="font-size:8.5px;color:#b91c1c">고객 노출 금지</span></div><div id="us-max" style="font-size:15px;font-weight:900;color:#6d28d9">—</div></div>
+        </div>
+        <input type="range" id="us-payout" min="0" max="0" step="10000" value="0" style="width:100%;accent-color:#d97706">
+        <div style="display:flex;align-items:center;gap:7px;margin-top:8px">
+          <span style="font-size:10.5px;color:#78350f;font-weight:800;white-space:nowrap">지급액</span>
+          <input type="number" id="us-payout-num" step="1000"
+                 style="flex:1;padding:6px 9px;border:1.5px solid #d97706;border-radius:6px;font-size:14px;font-weight:800;
+                        text-align:right;background:#fff;color:#b45309;font-variant-numeric:tabular-nums">
+          <span style="font-size:11px;color:#78350f">원</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#92400e;margin-top:4px">
+          <span>가이드 이하 불가</span><span id="us-room">추가 지급 가능 —</span><span>MAX 초과 불가</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+          <div style="background:rgba(255,255,255,0.65);border-radius:7px;padding:8px 10px">
+            <div style="font-size:9.5px;color:#78350f">잔존마진 (MAX−지급)</div>
+            <div id="us-residual" style="font-size:17px;font-weight:900;color:#0f766e">—</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.65);border-radius:7px;padding:8px 10px">
+            <div style="font-size:9.5px;color:#78350f">이 건의 내 인센티브</div>
+            <div id="us-inc" style="font-size:17px;font-weight:900;color:#b45309">—</div>
+            <div id="us-inc-sub" style="font-size:9px;color:#a16207"></div>
+          </div>
+        </div>
+        <div style="font-size:9px;color:#a16207;margin-top:6px">설치완료 건에만 확정됩니다. 취소·철회 시 차감됩니다.</div>
+      </div>
+
       <div class="tm-card" style="background:#fff7ed;border:1.5px solid #fdba74">
         <div class="tm-card-title"><span class="num">⚠</span>개통 전 반드시 확인</div>
         <div style="font-size:12px;color:#7c2d12;line-height:1.75">
@@ -2971,10 +3005,77 @@ function usimSoloRender() {
   usimSoloQuote(sel);
 }
 
+// 유심 단독도 인터넷+TV 와 같은 규칙으로 지급액을 정한다.
+// 이 값이 곧 잔존마진이 되고 인센티브로 이어진다 — 화면에 없으면 상담사가 재량을 못 쓴다.
+function usimSoloPayout(p) {
+  var card = document.getElementById('us-pay-card');
+  var sl = document.getElementById('us-payout');
+  var num = document.getElementById('us-payout-num');
+  if (!card || !sl) return null;
+  if (!p) { card.style.display = 'none'; return null; }
+
+  var guide = (p.guide_payout != null) ? p.guide_payout : (p.payback || 0);
+  var mx    = (p.max_payout   != null) ? p.max_payout   : guide;
+  card.style.display = '';
+
+  // 요금제나 구분이 바뀌면 범위를 다시 잡는다 (가이드에서 시작 — 회사에 가장 유리)
+  var key = String(p.id) + '|' + guide + '|' + mx;
+  if (sl.dataset.key !== key) { sl.dataset.key = key; sl.min = guide; sl.max = mx; sl.value = guide; }
+  sl.min = guide; sl.max = mx;
+  if (Number(sl.value) < guide) sl.value = guide;
+  if (Number(sl.value) > mx) sl.value = mx;
+
+  var offer = Number(sl.value);
+  var residual = Math.max(0, mx - offer);
+  var rate = Number(window._incAgentRate);
+  if (!rate || isNaN(rate)) rate = 20;
+  var inc = Math.round(residual * rate / 100);
+
+  var set = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
+  set('us-guide', fmt(guide));
+  set('us-offer', fmt(offer));
+  set('us-max', fmt(mx));
+  set('us-room', '추가 지급 가능 ' + fmt(mx - offer));
+  set('us-residual', fmt(residual));
+  set('us-inc', fmt(inc));
+  set('us-inc-sub', fmt(residual) + ' × ' + rate + '% (내 배분율)');
+  if (num) {
+    num.min = guide; num.max = mx;
+    if (document.activeElement !== num) num.value = offer;
+  }
+
+  if (!sl._wired) {
+    sl._wired = true;
+    sl.addEventListener('input', function () { usimSoloRender(); });
+  }
+  if (num && !num._wired) {
+    num._wired = true;
+    var apply = function () {
+      var lo = Number(num.min), hi = Number(num.max);
+      var v = parseInt(String(num.value).replace(/[^0-9-]/g, ''), 10);
+      if (isNaN(v)) return;
+      if (v > hi) num.value = hi;
+      sl.value = Math.max(lo, Math.min(hi, parseInt(num.value, 10) || lo));
+      usimSoloRender();
+    };
+    num.addEventListener('input', apply);
+    num.addEventListener('blur', function () {
+      var lo = Number(num.min), hi = Number(num.max);
+      var v = parseInt(String(num.value).replace(/[^0-9-]/g, ''), 10);
+      if (isNaN(v)) v = lo;
+      num.value = Math.max(lo, Math.min(hi, v));
+      sl.value = num.value;
+      usimSoloRender();
+    });
+  }
+  return offer;
+}
+
 function usimSoloQuote(p) {
   var el = document.getElementById('c-result');
   if (!el) return;
   if (!p) {
+    usimSoloPayout(null);
     el.innerHTML = '<div style="padding:16px;font-size:12.5px;color:rgba(255,255,255,0.55);line-height:1.7">' +
       '📲 <b style="color:#7dd3fc">유심 단독 판매</b><br>통신사와 요금제를 고르면 견적이 나옵니다.<br><br>' +
       '<span style="color:#fca5a5">번호이동만 가능</span> — 고객의 현재 통신사를 먼저 확인하세요.</div>';
@@ -2983,8 +3084,9 @@ function usimSoloQuote(p) {
   var net = usimNetFee(p), dc = p.monthly_fee - net;
   var guide = (p.guide_payout != null) ? p.guide_payout : (p.payback || 0);
   var mx    = (p.max_payout   != null) ? p.max_payout   : guide;
-  var pay = guide;
-  // 인터넷 보유 여부로 수수료 구분이 갈린다
+  var pay = usimSoloPayout(p);          // 상담사가 정한 실제 지급액
+  if (pay == null) pay = guide;
+  // 결합 여부로 구분이 갈린다
   // 요건을 확인하지 않았으면 결합으로 잡지 않는다 — 확인 없이 결합가로 안내하면 나중에 환수된다.
   var bundleApplied = USIM_SOLO.bundled && USIM_SOLO.bundleOk;
   var cat = bundleApplied ? '가족추가유심·유심단독MNP(결합)' : '유심단독MNP(미결합)';
