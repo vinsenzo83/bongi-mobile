@@ -11,7 +11,7 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
 * { box-sizing: border-box; margin:0; padding:0; }
-body { font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
+body { font-family:'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji',  'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
 /* 읽기 전용 모드 — agent role */
 body.role-readonly select, body.role-readonly input:not([type="search"]):not([readonly]), body.role-readonly textarea { pointer-events:none !important; opacity:0.7 !important; background:#1e293b !important; }
 body.role-readonly button[data-mutate], body.role-readonly .btn-edit, body.role-readonly .btn-delete, body.role-readonly .btn-restore, body.role-readonly .btn-cancel-contract, body.role-readonly .status-change-btn { display:none !important; }
@@ -1414,16 +1414,29 @@ function openEditModal(id) {
           <input class="detail-input" data-field="resident_id" value="${(c.resident_id || '').replace(/"/g, '&quot;')}" placeholder="000000-0000000" autocomplete="off" maxlength="14" inputmode="numeric" style="letter-spacing:0.04em" oninput="this.value = (this.value.replace(/\D/g,'').slice(0,13)).replace(/^(\d{6})(\d{0,7}).*/, (m,a,b)=>b?a+'-'+b:a);">
         </div>
         <div>
-          <label class="modal-field-label">📡 현재 사용 중인 통신사 <span style="font-size:9.5px;color:#94a3b8">(이전 통신사·해지 대상)</span></label>
-          <select class="detail-input" data-field="current_carrier">
+          <label class="modal-field-label">📡 현재 사용 중인 통신사 ${(isUsimOnly || hasUsim) ? '<span style="color:#dc2626">*</span> <span style="font-size:9.5px;color:#7dd3fc">번호이동 판정 — 개통 통신사와 같으면 등록 불가</span>' : '<span style="font-size:9.5px;color:#94a3b8">(이전 통신사·해지 대상)</span>'}</label>
+          ${(() => {
+            // 표기가 SK / SKT / LG / LG U+ 로 갈려 저장돼 있다. 값이 안 맞으면 셀렉트가
+            // 「— 선택 —」으로 비어 보이고, 상담사가 다시 고르지 않으면 그대로 저장된다.
+            // 화면 표기는 통신사 정식 이름으로 통일하고, 옛 표기는 정규화해서 잡아 준다.
+            const OPTS = ['SKT', 'KT', 'LG U+', 'SKT알뜰', 'KT알뜰', 'LG U+알뜰'];
+            const norm = (v) => {
+              if (!v) return '';
+              const t = String(v).trim().toUpperCase().replace(/[\s\-_+]/g, '');
+              const mvno = /알뜰|MVNO/.test(t) ? '알뜰' : '';
+              const base = /^(SKT|SK|에스케이)/.test(t) ? 'SKT'
+                         : /^(KT|케이티|OLLEH|올레)/.test(t) ? 'KT'
+                         : /^(LGU|LG|엘지|UPLUS|U)/.test(t) ? 'LG U+' : '';
+              return base ? base + mvno : '';
+            };
+            const cur = norm(c.current_carrier);
+            const req = isUsimOnly || hasUsim;
+            return `
+          <select class="detail-input" data-field="current_carrier"${req ? ' style="border-color:#0284c7"' : ''}>
             <option value="">— 선택 —</option>
-            <option value="SK"      ${c.current_carrier==='SK'?'selected':''}>SK</option>
-            <option value="KT"      ${c.current_carrier==='KT'?'selected':''}>KT</option>
-            <option value="LG"      ${c.current_carrier==='LG'?'selected':''}>LG</option>
-            <option value="SK알뜰"  ${c.current_carrier==='SK알뜰'?'selected':''}>SK알뜰</option>
-            <option value="KT알뜰"  ${c.current_carrier==='KT알뜰'?'selected':''}>KT알뜰</option>
-            <option value="LG알뜰"  ${c.current_carrier==='LG알뜰'?'selected':''}>LG알뜰</option>
-          </select>
+            ${OPTS.map(o => `<option value="${o}" ${cur === o ? 'selected' : ''}>${o}</option>`).join('')}
+          </select>`;
+          })()}
         </div>
       </div>
       <div class="sec-row">
@@ -1898,7 +1911,8 @@ async function injectDealerSection(c) {
   window._updateDealerLink(wrap.querySelector('select'));
 
   // ── [📍 조회하기] 버튼을 고객 정보 카드의 설치 주소 옆으로 inject ──
-  if (installUrl) {
+  //    유심 단독은 설치가 없다 — 배송지에 설치가능 조회를 붙일 이유가 없다.
+  if (installUrl && c.sale_kind !== 'usim') {
     const addrInput = document.getElementById('addr-input-' + c.id);
     const existed = document.getElementById('install-check-btn-' + c.id);
     if (addrInput && !existed) {

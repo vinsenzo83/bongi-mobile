@@ -37,6 +37,24 @@ function normalizeNotes(s) {
 const _agentCache = new Map();
 const AGENT_CACHE_TTL = 60_000;
 
+// 통신사 표기가 갈려 있다 — 상품은 SK·LG, 유심 요금제는 SKT·LG U+, 계약은 둘 다 섞여 들어온다.
+// 번호이동 판정은 문자열이 아니라 "같은 사업자인가"로 해야 한다.
+// 알뜰(MVNO)은 본사와 다른 사업자다 — SK알뜰 → SKT 는 번호이동이 성립하므로 접미사를 남긴다.
+function normCarrier(raw) {
+  if (!raw) return '';
+  const v = String(raw).trim().toUpperCase().replace(/[\s\-_+]/g, '');
+  const mvno = /알뜰|MVNO/.test(v) ? '알뜰' : '';
+  const base = /^(SKT|SK|에스케이)/.test(v) ? 'SK'
+             : /^(KT|케이티|OLLEH|올레)/.test(v) ? 'KT'
+             : /^(LGU|LG|엘지|UPLUS|U)/.test(v) ? 'LG'
+             : v;
+  return base + mvno;
+}
+function sameCarrier(a, b) {
+  const x = normCarrier(a), y = normCarrier(b);
+  return !!x && x === y;
+}
+
 async function getCurrentIncentiveAgent(userId) {
   if (!userId) return null;
   const cached = _agentCache.get(userId);
@@ -931,7 +949,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       if (!current_carrier) {
         return res.status(400).json({ error: '유심은 번호이동이라 현재 통신사가 필요합니다' });
       }
-      if (String(current_carrier).trim() === String(u.carrier).trim()) {
+      if (sameCarrier(current_carrier, u.carrier)) {
         return res.status(400).json({
           error: `현재 통신사와 개통 통신사가 같습니다 (${u.carrier}) — 번호이동 대상이 아닙니다`,
         });
