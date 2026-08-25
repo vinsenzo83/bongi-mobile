@@ -3629,6 +3629,102 @@ router.get('/product-channels', optionalAuth, async (req, res) => {
 const CH_FIELDS = ['channel','label','guide_cash','guide_voucher','guide_payout',
                    'max_payout','install_fee','is_default','is_active','memo'];
 
+// ═══════════════════════════════════════════════════════════════
+// 접수 채널 마스터 (TM 데이터 관리)
+//   채널이 "존재하는가"는 여기서, "얼마를 주는가"는 상품 관리에서 정한다.
+//   채널을 추가하면 해당 통신사 상품 전부에 행이 생긴다 — 한 상품만 있으면
+//   상담 견적에서 그 채널을 고를 수 없다.
+// ═══════════════════════════════════════════════════════════════
+router.post('/product-channels/bulk', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const carrier = String(req.body?.carrier || '').trim();
+    const channel = String(req.body?.channel || '').trim();
+    if (!carrier || !channel) return res.status(400).json({ error: 'carrier · channel 은 필수입니다' });
+
+    const { data: prods, error: pErr } = await supabase
+      .from('incentive_products').select('id, guide_cash, guide_voucher, guide_payout, max_payout')
+      .eq('carrier', carrier);
+    if (pErr) throw pErr;
+    if (!prods?.length) return res.status(400).json({ error: carrier + ' 상품이 없습니다' });
+
+    // 이미 있는 채널은 건너뛴다
+    const { data: exist } = await supabase
+      .from('incentive_product_channels').select('product_id')
+      .eq('channel', channel).in('product_id', prods.map(p => p.id));
+    const has = new Set((exist || []).map(r => r.product_id));
+
+    // 첫 채널이면 기본으로 잡는다
+    const { data: anyCh } = await supabase
+      .from('incentive_product_channels').select('product_id')
+      .in('product_id', prods.map(p => p.id)).limit(1);
+    const isFirst = !(anyCh && anyCh.length);
+
+    const rows = prods.filter(p => !has.has(p.id)).map(p => ({
+      product_id: p.id, channel,
+      guide_cash: p.guide_cash, guide_voucher: p.guide_voucher,
+      guide_payout: p.guide_payout, max_payout: p.max_payout,
+      is_default: isFirst, is_active: true,
+    }));
+    if (!rows.length) return res.json({ created: 0, note: '이미 모든 상품에 있습니다' });
+
+    const { data, error } = await supabase.from('incentive_product_channels').insert(rows).select('id');
+    if (error) throw error;
+    res.status(201).json({ created: data.length, carrier, channel });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요', detail: err.message });
+  }
+});
+
+router.delete('/product-channels/bulk', authenticateJWT, async (req, res) => {
+  try {
+    if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!isAdmin(me)) return res.status(403).json({ error: 'admin 전용' });
+
+    const carrier = String(req.query.carrier || '').trim();
+    const channel = String(req.query.channel || '').trim();
+    if (!carrier || !channel) return res.status(400).json({ error: 'carrier · channel 은 필수입니다' });
+
+    const { data: prods } = await supabase
+      .from('incentive_products').select('id').eq('carrier', carrier);
+    const ids = (prods || []).map(p => p.id);
+    if (!ids.length) return res.json({ deleted: 0 });
+
+    // 마지막 채널은 지우지 않는다 — 채널이 0개면 상담 견적에서 가이드·MAX 가 안 잡힌다
+    const { data: all } = await supabase
+      .from('incentive_product_channels').select('channel').in('product_id', ids);
+    const kinds = new Set((all || []).map(r => r.channel));
+    if (kinds.size <= 1) {
+      return res.status(400).json({ error: carrier + ' 의 마지막 채널은 지울 수 없습니다 (견적이 계산되지 않습니다)' });
+    }
+
+    const { data, error } = await supabase
+      .from('incentive_product_channels').delete()
+      .eq('channel', channel).in('product_id', ids).select('id');
+    if (error) throw error;
+
+    // 기본 채널을 지웠으면 남은 것 중 하나를 기본으로 올린다
+    for (const pid of ids) {
+      const { data: rest } = await supabase
+        .from('incentive_product_channels').select('id, is_default')
+        .eq('product_id', pid).order('id');
+      if (rest?.length && !rest.some(r => r.is_default)) {
+        await supabase.from('incentive_product_channels')
+          .update({ is_default: true }).eq('id', rest[0].id);
+      }
+    }
+    res.json({ deleted: data.length, carrier, channel });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요', detail: err.message });
+  }
+});
+
 router.patch('/product-channels/:id', authenticateJWT, async (req, res) => {
   try {
     if (!supabase) return res.status(503).json({ error: 'Supabase 미연결' });

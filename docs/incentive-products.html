@@ -457,14 +457,13 @@ function renderUsimPlans() {
   F('us-body').innerHTML = rows.map(r => {
     return '<tr data-id="' + r.id + '" style="border-bottom:1px solid #334155;' + (r.is_active === false ? 'opacity:.45;' : '') + '">' +
       '<td style="padding:7px 10px"><b>' + r.carrier + '</b></td>' +
-      '<td style="padding:7px 10px"><input class="u-name" value="' + (r.plan_name || '') + '" style="width:160px;padding:5px 7px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px"></td>' +
-      '<td style="padding:7px 10px;text-align:right">' + inp(r.monthly_fee, 'u-fee', '86px') + '</td>' +
-      '<td style="padding:7px 10px;text-align:right">' + inp(r.select_discount, 'u-sel', '86px') +
-        '<div style="font-size:9px;color:#64748b;margin-top:2px">자동 ' + won(Math.round(r.monthly_fee * 0.75)) + '</div></td>' +
+      '<td style="padding:7px 10px;color:#cbd5e1;font-size:11.5px">' + (r.plan_name || '') + '</td>' +
+      '<td style="padding:7px 10px;text-align:right;color:#cbd5e1">' + won(r.monthly_fee) + '</td>' +
+      '<td style="padding:7px 10px;text-align:right;color:#cbd5e1">' + won(r.select_discount != null ? r.select_discount : Math.round(r.monthly_fee * 0.75)) + '</td>' +
       '<td style="padding:7px 10px;text-align:right;background:rgba(19,78,74,.35)">' + inp(r.guide_payout, 'u-guide', '92px', '#042f2e') + '</td>' +
       '<td style="padding:7px 10px;text-align:right;background:rgba(76,29,149,.3)">' + inp(r.max_payout, 'u-max', '92px', '#2e1065') + '</td>' +
-      '<td style="padding:7px 10px"><input class="u-data" value="' + (r.data_amount || '') + '" style="width:72px;padding:5px 7px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:11.5px"></td>' +
-      '<td style="padding:7px 10px;text-align:center">' + inp(r.sort_order, 'u-sort', '44px') + '</td>' +
+      '<td style="padding:7px 10px;color:#cbd5e1;font-size:11.5px">' + (r.data_amount || '') + '</td>' +
+      '<td style="padding:7px 10px;text-align:center;color:#94a3b8">' + (r.sort_order != null ? r.sort_order : '') + '</td>' +
       '<td style="padding:7px 10px;text-align:center"><input type="checkbox" class="u-act"' + (r.is_active !== false ? ' checked' : '') + '></td>' +
       '<td style="padding:7px 10px;text-align:center;white-space:nowrap">' +
         '<button class="u-save" style="padding:4px 9px;background:#059669;border:none;border-radius:4px;color:#fff;font-size:10.5px;font-weight:700;cursor:pointer">저장</button> ' +
@@ -478,17 +477,12 @@ function renderUsimPlans() {
 }
 
 async function saveUsimRow(id, tr) {
+  // 요금제·월정액·데이터는 TM 데이터 관리에서 관리한다. 여기서는 돈만 고친다.
   const body = {
-    plan_name:       tr.querySelector('.u-name').value.trim(),
-    monthly_fee:     nOrNull(tr.querySelector('.u-fee').value),
-    select_discount: nOrNull(tr.querySelector('.u-sel').value),
-    guide_payout:    nOrNull(tr.querySelector('.u-guide').value),
-    max_payout:      nOrNull(tr.querySelector('.u-max').value),
-    data_amount:     tr.querySelector('.u-data').value.trim() || null,
-    sort_order:      nOrNull(tr.querySelector('.u-sort').value) || 0,
-    is_active:       tr.querySelector('.u-act').checked,
+    guide_payout: nOrNull(tr.querySelector('.u-guide').value),
+    max_payout:   nOrNull(tr.querySelector('.u-max').value),
+    is_active:    tr.querySelector('.u-act').checked,
   };
-  if (!body.plan_name || body.monthly_fee == null) { alert('요금제명과 월정액은 필수입니다.'); return; }
   if (body.guide_payout != null && body.max_payout != null && body.max_payout < body.guide_payout) {
     alert('MAX 는 가이드보다 작을 수 없습니다.'); return;
   }
