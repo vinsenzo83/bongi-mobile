@@ -135,6 +135,21 @@ body.admin-only input:focus, body.admin-only select:focus, body.admin-only texta
   border-color: #60a5fa !important; outline: none !important; box-shadow: 0 0 0 2px rgba(96,165,250,0.18) !important;
 }
 body.admin-only button { color: #e2e8f0 !important; }
+/* 클래스만 붙은 버튼(.btn-add·.btn-del·.btn-save)은 인라인 스타일이 없다.
+   위 규칙이 브라우저 기본 회색 버튼에 밝은 글자를 얹어 글자가 사라진다 — 면까지 같이 칠한다. */
+.btn-add, .btn-del, .btn-save {
+  padding: 6px 12px; font-size: 11px; font-weight: 700;
+  border-radius: 5px; cursor: pointer; white-space: nowrap;
+}
+.btn-add { border: 1.5px dashed #6366f1; background: #eef2ff; color: #4338ca; }
+.btn-del { border: 1px solid #dc2626; background: #fff; color: #dc2626; }
+.btn-save { border: none; background: #6366f1; color: #fff; }
+body.admin-only .btn-add { background: #1e293b !important; border-color: #818cf8 !important; color: #c7d2fe !important; }
+body.admin-only .btn-del { background: #1e293b !important; border-color: #f87171 !important; color: #fca5a5 !important; }
+body.admin-only .btn-save { background: #4f46e5 !important; border-color: #4f46e5 !important; color: #fff !important; }
+body.admin-only .btn-add:hover:not([disabled]) { background: #312e81 !important; }
+body.admin-only .btn-del:hover:not([disabled]) { background: #450a0a !important; }
+body.admin-only .btn-save:hover:not([disabled]) { background: #6366f1 !important; }
 /* 흰 배경 인라인 버튼·div → 다크 슬레이트 */
 body.admin-only button[style*="background:#fff"],
 body.admin-only button[style*="background: #fff"],
