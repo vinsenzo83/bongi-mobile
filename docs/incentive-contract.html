@@ -1501,7 +1501,7 @@ function openEditModal(id) {
       <div class="sec-grid-2 sec-row">
         <div>
           <label class="modal-field-label">주민번호 <span style="font-size:9.5px;color:#94a3b8">(최종계약시 · 13자리)</span></label>
-          <input class="detail-input" data-field="resident_id" value="${(c.resident_id || '').replace(/"/g, '&quot;')}" placeholder="830111-1664210" maxlength="14" inputmode="numeric" style="letter-spacing:0.04em" oninput="this.value = (this.value.replace(/\D/g,'').slice(0,13)).replace(/^(\d{6})(\d{0,7}).*/, (m,a,b)=>b?a+'-'+b:a);">
+          <input class="detail-input" data-field="resident_id" value="${(c.resident_id || '').replace(/"/g, '&quot;')}" placeholder="000000-0000000" autocomplete="off" maxlength="14" inputmode="numeric" style="letter-spacing:0.04em" oninput="this.value = (this.value.replace(/\D/g,'').slice(0,13)).replace(/^(\d{6})(\d{0,7}).*/, (m,a,b)=>b?a+'-'+b:a);">
         </div>
         <div>
           <label class="modal-field-label">📡 현재 사용 중인 통신사 <span style="font-size:9.5px;color:#94a3b8">(이전 통신사·해지 대상)</span></label>
@@ -1726,7 +1726,7 @@ function openEditModal(id) {
         </div>
         <div>
           <label class="modal-field-label">계좌번호</label>
-          <input class="detail-input" data-field="bank_account_number" value="${(c.bank_account_number || '').replace(/"/g, '&quot;')}" placeholder="000-0000-0000-00 (- 자유 입력)" style="letter-spacing:0.04em;font-family:'SF Mono',Monaco,monospace">
+          <input class="detail-input" data-field="bank_account_number" autocomplete="off" value="${(c.bank_account_number || '').replace(/"/g, '&quot;')}" placeholder="000-0000-0000-00 (- 자유 입력)" style="letter-spacing:0.04em;font-family:'SF Mono',Monaco,monospace">
         </div>
       </div>
       <div class="modal-field-hint">💡 현금 페이백 입금 시 사용. 사은품이 현금이 아니면 비워두세요.</div>
@@ -2934,7 +2934,7 @@ init();
           </div>
           <div>
             <label class="modal-field-label">주민번호 <span style="font-size:9.5px;color:#94a3b8">(최종계약시 · 13자리)</span></label>
-            <input class="detail-input" data-field="resident_id" value="${esc(s.resident_id)}" placeholder="830111-1664210" maxlength="14" inputmode="numeric" style="letter-spacing:0.04em" oninput="this.value=(this.value.replace(/\\D/g,'').slice(0,13)).replace(/^(\\d{6})(\\d{0,7}).*/,(m,a,b)=>b?a+'-'+b:a);">
+            <input class="detail-input" data-field="resident_id" value="${esc(s.resident_id)}" placeholder="000000-0000000" autocomplete="off" maxlength="14" inputmode="numeric" style="letter-spacing:0.04em" oninput="this.value=(this.value.replace(/\\D/g,'').slice(0,13)).replace(/^(\\d{6})(\\d{0,7}).*/,(m,a,b)=>b?a+'-'+b:a);">
           </div>
         </div>
         <div class="sec-row">
@@ -3008,7 +3008,7 @@ init();
           </div>
           <div>
             <label class="modal-field-label">계좌번호</label>
-            <input class="detail-input" data-field="bank_account_number" value="${esc(s.bank_account_number)}" placeholder="000-0000-0000-00" style="letter-spacing:0.04em;font-family:'SF Mono',Monaco,monospace">
+            <input class="detail-input" data-field="bank_account_number" autocomplete="off" value="${esc(s.bank_account_number)}" placeholder="000-0000-0000-00" style="letter-spacing:0.04em;font-family:'SF Mono',Monaco,monospace">
           </div>
         </div>
       </div>
