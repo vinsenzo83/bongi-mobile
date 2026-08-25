@@ -1856,6 +1856,8 @@ function bindShortcutKeys() {
           <div style="display:flex;justify-content:space-between;font-size:9px;color:#92400e;margin-top:3px">
             <span>가이드 이하 불가</span><span id="inc-room">추가 지급 가능 —</span><span>MAX 초과 불가</span>
           </div>
+          <!-- 접수 채널 — 인터넷+TV 에 붙는 값이라 이 블록 안에 둔다 -->
+          <div id="inc-ch-box" style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed rgba(217,119,6,0.3)"></div>
         </div>
 
         <!-- 유심 (선택 시에만) -->
@@ -4598,18 +4600,22 @@ async function incSimulate() {
   // ── 채널이 둘 이상이면 나란히 비교해 보여준다.
   //    리베이트는 관리하지 않으므로 회사 마진이 아니라 상담사가 실제로 쓸 수 있는
   //    재량 폭(MAX − 가이드)으로 비교한다. 폭이 클수록 고객에게 더 얹어 줄 수 있다.
-  if (chList.length > 1) {
-    const rows = chList.map(function (x) {
-      const g = (x.guide_payout != null) ? x.guide_payout : null;
-      const m = (x.max_payout   != null) ? x.max_payout   : null;
-      return { ch: x.channel, label: x.label || x.channel, guide: g, max: m,
-               room: (g != null && m != null) ? (m - g) : null };
-    });
-    const best = rows.filter(function (r) { return r.room != null; })
-                     .sort(function (a, b) { return b.room - a.room; })[0];
-    html += '<div style="background:rgba(255,255,255,0.55);border-radius:6px;padding:8px 10px;margin-bottom:7px">'
-         +  '<div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:5px">🔀 접수 채널 — 어디로 넣느냐로 줄 수 있는 폭이 달라집니다</div>'
-         +  rows.map(function (r) {
+  //    인터넷+TV 에 붙는 값이므로 결과 영역이 아니라 그 블록 안에 그린다.
+  const chBox = document.getElementById('inc-ch-box');
+  if (chBox) {
+    if (chList.length > 1) {
+      const rows = chList.map(function (x) {
+        const g = (x.guide_payout != null) ? x.guide_payout : null;
+        const m = (x.max_payout   != null) ? x.max_payout   : null;
+        return { ch: x.channel, guide: g, max: m,
+                 room: (g != null && m != null) ? (m - g) : null };
+      });
+      const best = rows.filter(function (r) { return r.room != null; })
+                       .sort(function (a, b) { return b.room - a.room; })[0];
+      chBox.style.display = '';
+      chBox.innerHTML =
+           '<div style="font-size:9.5px;color:#78350f;font-weight:800;margin-bottom:5px">🔀 접수 채널 — 어디로 넣느냐로 줄 수 있는 폭이 달라집니다</div>'
+         + rows.map(function (r) {
               const on = (r.ch === CHANNEL_PICK);
               const win = best && r.ch === best.ch && rows.length > 1;
               return '<div class="inc-ch" data-ch="' + r.ch + '" style="display:flex;align-items:center;gap:7px;padding:5px 7px;margin-bottom:3px;border-radius:5px;cursor:pointer;'
@@ -4620,10 +4626,24 @@ async function incSimulate() {
                 + '<b style="font-size:13px;color:' + (win ? '#15803d' : '#78350f') + '">+' + (r.room == null ? '—' : incFmt(r.room)) + '</b>'
                 + (win ? '<span style="font-size:9px;color:#15803d;font-weight:800">폭 넓음</span>' : '')
                 + '</div>';
-            }).join('')
-         +  '<div style="font-size:9px;color:#a16207;margin-top:3px;line-height:1.5">오른쪽 숫자는 재량 폭(MAX − 가이드) — 가이드 위로 더 얹을 수 있는 한도입니다. 덜 쓰고 판 만큼 인센티브로 남습니다.</div>'
-         +  '</div>';
+           }).join('')
+         + '<div style="font-size:9px;color:#a16207;margin-top:3px;line-height:1.5">오른쪽 숫자는 재량 폭(MAX − 가이드) — 가이드 위로 더 얹을 수 있는 한도입니다.</div>';
+      // 다시 그렸으니 배선도 다시 건다
+      chBox.querySelectorAll('.inc-ch').forEach(function (el) {
+        el.addEventListener('click', function () {
+          if (el.dataset.ch === CHANNEL_PICK) return;
+          CHANNEL_PICK = el.dataset.ch;
+          const sl = document.getElementById('inc-payout');
+          if (sl) sl.dataset.pid = '';   // 채널이 바뀌면 가이드~MAX 범위가 달라진다
+          incSimulate();
+        });
+      });
+    } else {
+      chBox.style.display = 'none';
+      chBox.innerHTML = '';
+    }
   }
+
   if (vou > 0) {
     html += '<div style="background:rgba(255,255,255,0.55);border-radius:6px;padding:6px 9px;margin-bottom:7px;font-size:10.5px;line-height:1.6">'
          +  '<div style="display:flex;justify-content:space-between"><span style="color:#78350f">현금</span><b>' + incFmt(cash) + '</b></div>'
@@ -4653,14 +4673,6 @@ async function incSimulate() {
   html += '<div style="font-size:9px;color:#a16207;margin-top:5px;line-height:1.55">'
        +  '설치완료 건에만 확정됩니다. 취소·철회 시 차감됩니다.</div>';
   result.innerHTML = html;
-  result.querySelectorAll('.inc-ch').forEach(function (el) {
-    el.addEventListener('click', function () {
-      CHANNEL_PICK = el.dataset.ch;
-      const sl = document.getElementById('inc-payout');
-      if (sl) sl.dataset.pid = '';   // 채널이 바뀌면 가이드~MAX 범위가 달라지므로 다시 잡는다
-      incSimulate();
-    });
-  });
 }
 
 
