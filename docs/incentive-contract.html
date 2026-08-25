@@ -775,7 +775,8 @@ function renderTable(contracts) {
   const colSpan = trashMode ? 16 : 13;
   tbody.innerHTML = pageItems.map((c, i) => {
     const rowNum = startIdx + i + 1;
-    const p = c.product || {};
+    // 유심 단독은 인터넷 상품이 없다. 상품 자리에 유심 정보를 채워 기존 렌더를 그대로 쓴다.
+    const p = c.product || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
     const a = c.agent || {};
     const tierBadge = p.tier ? `<span class="tier tier-${p.tier}">${p.tier}</span>` : '';
     const premBadge = '';
@@ -1367,7 +1368,8 @@ function openEditModal(id) {
   // 견적서가 escape되어 저장된 경우 자동 복원
   if (c.quote_full_html) c.quote_full_html = unescapeHtml(c.quote_full_html);
   if (c.quote_summary) c.quote_summary = unescapeHtml(c.quote_summary);
-  const p = c.product || {};
+  // 유심 단독은 인터넷 상품이 없다. 상품 자리에 유심 정보를 채워 기존 렌더를 그대로 쓴다.
+  const p = c.product || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
   const a = c.agent || {};
   const tierBadge = p.tier ? `<span class="tier tier-${p.tier}">${p.tier}</span>` : '';
   const premBadge = '';
@@ -1838,7 +1840,8 @@ async function injectDealerSection(c) {
     || (_me.role === 'manager' && c.agent?.center === _me.center)
     || (_me.role === 'agent' && c.agent_id === _me.id);
   if (!_canMutate) return;
-  const p = c.product || {};
+  // 유심 단독은 인터넷 상품이 없다. 상품 자리에 유심 정보를 채워 기존 렌더를 그대로 쓴다.
+  const p = c.product || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
   // 'SK'/'LG'(신표기) + 'SKT'/'LGU+'(구표기 backward compat) 둘 다 허용
   const carrierMap = { 'SK':'skt', 'SKT':'skt', 'KT':'kt', 'LG':'lgu', 'LGU+':'lgu', 'lgu+':'lgu' };
   const carrier = carrierMap[p.carrier] || (p.carrier || '').toLowerCase().replace('+','');
