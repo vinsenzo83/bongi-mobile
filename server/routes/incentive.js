@@ -1039,7 +1039,8 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
 
     const { status, cancellation_reason, notes, contract_notes, add_payback, actual_payout, usim_payout, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, customer_email, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id, dealer_id,
-      birth_date, combo_type, combo_members, billing_method, billing_phone, billing_carrier, payment_method, payment_extra, waiting_person, waiting_phone, waiting_relation, seller_phone, onestop_yn, current_carrier } = req.body || {};
+      birth_date, combo_type, combo_members, billing_method, billing_phone, billing_carrier, payment_method, payment_extra, waiting_person, waiting_phone, waiting_relation, seller_phone, onestop_yn, current_carrier,
+      usim_delivery_address, usim_delivery_address_detail, usim_shipped_at, usim_tracking_no } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -1088,6 +1089,11 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (add_payback !== undefined) update.add_payback = add_payback;
     if (actual_payout !== undefined) update.actual_payout = (actual_payout === null) ? null : Number(actual_payout);
     if (usim_payout !== undefined) update.usim_payout = (usim_payout === null) ? null : Number(usim_payout);
+    // 유심은 택배로 보내고 고객이 받아서 연락하면 개통한다 — 보냈는지 알아야 문의에 답한다
+    if (usim_delivery_address !== undefined) update.usim_delivery_address = usim_delivery_address || null;
+    if (usim_delivery_address_detail !== undefined) update.usim_delivery_address_detail = usim_delivery_address_detail || null;
+    if (usim_shipped_at !== undefined) update.usim_shipped_at = usim_shipped_at || null;
+    if (usim_tracking_no !== undefined) update.usim_tracking_no = usim_tracking_no || null;
     if (customer_address !== undefined) update.customer_address = customer_address;
     if (customer_address_detail !== undefined) update.customer_address_detail = customer_address_detail;
     if (bank_account_holder !== undefined) update.bank_account_holder = bank_account_holder;
@@ -1597,7 +1603,7 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
 
     // gzip 적용 후 quote_full_html 포함해도 페이로드 작음 (~10KB 추가) — 모달 즉시 표시
     // 휴지통 모드일 때는 deleted_at/deleted_by_user_id/deleted_reason도 함께 반환
-    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_email,customer_address,customer_address_detail,resident_id,birth_date,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,db_source_id,dealer_id,combo_type,combo_members,billing_method,billing_phone,billing_carrier,payment_method,payment_extra,waiting_person,waiting_phone,waiting_relation,seller_phone,onestop_yn,current_carrier,sale_kind,usim_plan_id,usim_payout,usim_guide_snapshot,usim_max_snapshot,actual_payout,guide_payout_snapshot,max_payout_snapshot';
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_email,customer_address,customer_address_detail,resident_id,birth_date,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,db_source_id,dealer_id,combo_type,combo_members,billing_method,billing_phone,billing_carrier,payment_method,payment_extra,waiting_person,waiting_phone,waiting_relation,seller_phone,onestop_yn,current_carrier,sale_kind,usim_plan_id,usim_payout,usim_guide_snapshot,usim_max_snapshot,usim_delivery_address,usim_delivery_address_detail,usim_shipped_at,usim_tracking_no,actual_payout,guide_payout_snapshot,max_payout_snapshot';
     let q = supabase
       .from('incentive_sales')
       .select(`${listCols}, usim:incentive_usim_plans(id,carrier,plan_name,sale_type,monthly_fee,data_amount), product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)`)

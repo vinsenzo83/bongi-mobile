@@ -1276,6 +1276,12 @@ function openEditModal(id) {
   // 유심 단독은 인터넷 상품이 없다. 상품 자리에 유심 정보를 채워 기존 렌더를 그대로 쓴다.
   const p = c.product || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
   const a = c.agent || {};
+  // 계약은 세 형태다. 받아야 할 정보가 서로 다르다.
+  //   ① 인터넷·TV        — 설치가 있다
+  //   ② 인터넷+TV+유심   — 설치 + 유심 택배가 따로 간다
+  //   ③ 유심 결합/단독   — 설치가 없다. 택배로 보내고 고객이 받아서 연락하면 개통한다.
+  const isUsimOnly = c.sale_kind === 'usim';
+  const hasUsim    = !!c.usim;
   const tierBadge = p.tier ? `<span class="tier tier-${p.tier}">${p.tier}</span>` : '';
   const premBadge = '';
   const hasAddr = c.customer_address && c.customer_address.trim();
@@ -1323,7 +1329,6 @@ function openEditModal(id) {
   // 바디 — 통합 상품 정보 카드
   //   유심 단독은 인터넷 상품 카드를 감춘다 — 채울 값이 없어 빈 카드가 된다.
   //   인터넷 동반 건은 상품 카드 뒤에 유심 카드를 붙인다.
-  const isUsimOnly = (c.sale_kind === 'usim');
   document.getElementById('modal-body').innerHTML = (isUsimOnly ? usimCard : '') + `
     <!-- 📦 계약 상품 정보 -->
     <div class="sec-card acc-yellow" style="${isUsimOnly ? 'display:none' : ''}">
@@ -1422,7 +1427,7 @@ function openEditModal(id) {
         </div>
       </div>
       <div class="sec-row">
-        <label class="modal-field-label">📍 설치 주소 (기본) <span style="color:#dc2626">*</span></label>
+        <label class="modal-field-label">${isUsimOnly ? '📦 유심 배송 주소 (택배)' : '📍 설치 주소 (기본)'} <span style="color:#dc2626">*</span></label>
         <div style="display:flex;gap:8px">
           <input class="detail-input" data-field="customer_address" id="addr-input-${c.id}" value="${(c.customer_address || '').replace(/"/g, '&quot;')}" placeholder="주소 검색 또는 직접 입력" style="border-color:${hasAddr ? '#475569' : '#dc2626'} !important;flex:1" readonly>
           <button type="button" onclick="openAddressSearch('#addr-input-${c.id}')" style="padding:0 18px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;white-space:nowrap">🔍 주소 검색</button>
@@ -1432,11 +1437,12 @@ function openEditModal(id) {
       <div class="sec-row">
         <label class="modal-field-label">🏠 상세 주소 (동·호수·층) <span style="color:#dc2626">*</span></label>
         <input class="detail-input" data-field="customer_address_detail" value="${(c.customer_address_detail || '').replace(/"/g, '&quot;')}" placeholder="예: 101동 502호, 3층 사무실, 지하 1층 카페 옆">
-        <div class="modal-field-hint">⚠️ 설치 기사 방문에 필수 — 정확하게 입력</div>
+        <div class="modal-field-hint">${isUsimOnly ? '⚠️ 택배 수령에 필수 — 받는 곳을 정확하게' : '⚠️ 설치 기사 방문에 필수 — 정확하게 입력'}</div>
       </div>
     </div>
 
-    <!-- 📅 설치 / 🎁 사은품 / 💰 페이백 -->
+    <!-- 📅 설치 / 🎁 사은품 — 유심 단독은 설치가 없다 -->
+    ${isUsimOnly ? '' : `
     <div class="sec-card acc-green">
       <div class="sec-title"><span class="sec-icon">📅</span>설치 · 사은품</div>
       <div class="sec-grid-2 sec-row">
@@ -1473,12 +1479,49 @@ function openEditModal(id) {
           <div class="modal-field-hint">기본 메리트(상품 gift_amount=${(p.gift_amount && Number(p.gift_amount) > 0) ? Number(p.gift_amount) + '만원' : '0'})</div>
         </div>
       </div>
-    </div>
+    </div>`}
+
+    <!-- 📦 유심 배송 · 개통 — 택배로 보내고, 고객이 받아서 연락하면 개통한다 -->
+    ${!hasUsim ? '' : `
+    <div class="sec-card" style="border-left:4px solid #0284c7">
+      <div class="sec-title"><span class="sec-icon">📦</span>유심 배송 · 개통
+        <span style="font-size:10px;color:#94a3b8;font-weight:600;margin-left:auto">택배 수령 → 고객 연락 → 개통</span>
+      </div>
+      ${isUsimOnly ? '' : `
+      <div class="sec-row">
+        <label class="modal-field-label">📦 유심 배송지</label>
+        <input class="detail-input" data-field="usim_delivery_address" value="${(c.usim_delivery_address || '').replace(/"/g, '&quot;')}" placeholder="비우면 위 설치 주소로 보냅니다">
+        <input class="detail-input" data-field="usim_delivery_address_detail" style="margin-top:6px" value="${(c.usim_delivery_address_detail || '').replace(/"/g, '&quot;')}" placeholder="상세 주소 (동·호수·층)">
+        <div class="modal-field-hint">설치 주소와 같으면 비워 두십시오 — 인터넷 설치일과 유심 개통일은 별개입니다.</div>
+      </div>`}
+      <div class="sec-grid-3 sec-row">
+        <div>
+          <label class="modal-field-label">🚚 발송일</label>
+          <input class="detail-input" data-field="usim_shipped_at" type="date" value="${c.usim_shipped_at || ''}">
+          <div class="modal-field-hint">보냈는지 알아야 문의에 답할 수 있습니다</div>
+        </div>
+        <div>
+          <label class="modal-field-label">🔖 송장번호</label>
+          <input class="detail-input" data-field="usim_tracking_no" autocomplete="off" value="${(c.usim_tracking_no || '').replace(/"/g, '&quot;')}" placeholder="예: 1234-5678-9012">
+        </div>
+        <div>
+          <label class="modal-field-label">📲 개통일</label>
+          <input class="detail-input" data-field="activation_date" type="date" value="${c.activation_date || ''}">
+          <div class="modal-field-hint">고객이 수령 후 연락한 날</div>
+        </div>
+      </div>
+    </div>`}
 
     <!-- 🔗 결합 · 청구 · 납부 -->
     <div class="sec-card acc-purple">
       <div class="sec-title"><span class="sec-icon">🔗</span>결합 · 청구 · 납부</div>
-      <div class="sec-row">
+      ${!isUsimOnly ? '' : `<div class="sec-row">
+        <div style="padding:9px 12px;background:rgba(2,132,199,.10);border:1px solid rgba(2,132,199,.35);border-radius:7px;font-size:11px;color:#7dd3fc;line-height:1.7">
+          유심 ${(c.usim && c.usim.sale_type === 'bundle') ? '<b>결합</b> — 본인 포함 가족 중 ' + (c.usim.carrier || '') + ' 인터넷·휴대폰을 쓰는 건입니다.' : '<b>단독</b> — 결합 대상이 없는 건입니다.'}
+          인터넷 결합할인 종류는 해당하지 않습니다.
+        </div>
+      </div>`}
+      <div class="sec-row" style="${isUsimOnly ? 'display:none' : ''}">
         <label class="modal-field-label">결합 유형 <span style="font-size:9.5px;color:#94a3b8">(통신사: ${p.carrier || '-'} 기준 자동 추출 — "기타" 선택 시 자유 입력)</span></label>
         ${(() => {
           // 통신사별 결합할인 종류 (4번 결합할인 카테고리 기준 — calculator.html 동기화)
@@ -1572,7 +1615,8 @@ function openEditModal(id) {
 
     <!-- 👥 댁내 대기자 · 판매자 연락처 -->
     <div class="sec-card acc-yellow">
-      <div class="sec-title"><span class="sec-icon">👥</span>댁내 대기자 · 판매자 연락처</div>
+      <div class="sec-title"><span class="sec-icon">👥</span>${isUsimOnly ? '판매자 연락처' : '댁내 대기자 · 판매자 연락처'}</div>
+      ${isUsimOnly ? '' : `
       <div class="sec-grid-3 sec-row">
         <div>
           <label class="modal-field-label">👥 대기자 관계 <span style="font-size:9.5px;color:#94a3b8">(설치 당일)</span></label>
@@ -1595,13 +1639,14 @@ function openEditModal(id) {
           <label class="modal-field-label">📞 댁내 대기자 CTN</label>
           <input class="detail-input waiting-phone-input" data-field="waiting_phone" value="${(c.waiting_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678">
         </div>
-      </div>
-      <div class="sec-grid-2 sec-row">
+      </div>`}
+      <div class="${isUsimOnly ? 'sec-row' : 'sec-grid-2 sec-row'}">
         <div>
           <label class="modal-field-label">⭐ 판매자 연락처 <span style="color:#dc2626">*</span> <span style="font-size:9.5px;color:#fbbf24">(꼭 실제 소통 가능한 번호)</span></label>
           <input class="detail-input" data-field="seller_phone" value="${(c.seller_phone || '').replace(/"/g, '&quot;')}" placeholder="010-1234-5678" style="border-color:#fbbf24 !important">
-          <div class="modal-field-hint">💬 카톡 무응답 시 설치 일정·상품 변경 연락용 — 실제 받을 수 있는 번호</div>
+          <div class="modal-field-hint">💬 카톡 무응답 시 ${isUsimOnly ? '배송·개통' : '설치 일정·상품 변경'} 연락용 — 실제 받을 수 있는 번호</div>
         </div>
+        ${isUsimOnly ? '' : `
         <div>
           <label class="modal-field-label">🚀 원스톱 여부</label>
           <select class="detail-input" data-field="onestop_yn">
@@ -1610,7 +1655,7 @@ function openEditModal(id) {
             <option value="투스톱" ${c.onestop_yn==='투스톱'?'selected':''}>📋 투스톱 (계약 후 별도 설치)</option>
             <option value="해당없음" ${c.onestop_yn==='해당없음'?'selected':''}>해당 없음</option>
           </select>
-        </div>
+        </div>`}
       </div>
     </div>
 
