@@ -596,6 +596,30 @@ function _chSummary(pid) {
     .map(c => `${c.channel} ${c.guide_payout == null ? '—' : fmt(c.guide_payout)}${c.is_default ? '★' : ''}`)
     .join(' · ');
 }
+// 채널을 저장하면 서버가 상품 행을 기본 채널 값으로 맞춘다. 화면도 그 자리에서 같이 갱신한다 —
+// 안 그리면 저장은 됐는데 옛 숫자가 남아, 안 바뀐 줄 알고 다시 넣게 된다.
+function refreshProductRow(pid) {
+  const prod = _products.filter(x => String(x.id) === String(pid))[0];
+  const def  = _channels.filter(c => String(c.product_id) === String(pid) && c.is_default)[0];
+  if (!prod || !def) return;
+  prod.guide_cash    = def.guide_cash;
+  prod.guide_voucher = def.guide_voucher;
+  prod.guide_payout  = def.guide_payout;
+  prod.max_payout    = def.max_payout;
+  const tr = document.querySelector(`#products-tbody tr[data-id="${pid}"]`);
+  if (!tr) return;
+  const put = (sel, v) => { const e = tr.querySelector(sel); if (e) { e.value = (v == null ? '' : v); e.dataset.orig = e.value; } };
+  put('.field-cash',    def.guide_cash);
+  put('.field-voucher', def.guide_voucher);
+  put('.field-max',     def.max_payout);
+  const cell = document.getElementById('guide-' + pid);
+  if (cell) {
+    cell.innerHTML = (def.guide_payout == null ? '—' : fmt(def.guide_payout));
+    delete cell.dataset.chNoted;
+  }
+  lockChannelManaged();
+}
+
 // 채널이 있는 상품은 상품 행의 가이드·MAX 입력을 잠그고, 실제로 쓰이는 채널 값을 적어 준다.
 function lockChannelManaged() {
   document.querySelectorAll('#products-tbody td[data-locked="1"] input.cell-edit').forEach(inp => {
@@ -723,6 +747,7 @@ async function setDefaultChannel(id) {
     scope.querySelectorAll('.ch-default').forEach(b => b.addEventListener('click', () => setDefaultChannel(b.dataset.id)));
     scope.querySelectorAll('.ch-in').forEach(inp => inp.addEventListener('input', () => chPreview(inp.dataset.id)));
   }
+  refreshProductRow(row.product_id);
   showToast('★ 기본 채널이 「' + row.channel + '」 로 바뀌었습니다');
 }
 
@@ -745,7 +770,8 @@ async function saveChannel(id) {
   const j = await r.json();
   const idx = _channels.findIndex(x => String(x.id) === String(id));
   if (idx >= 0) _channels[idx] = j.channel;
-  showToast('✅ 채널 저장됨');
+  refreshProductRow(j.channel.product_id);
+  showToast('✅ 채널 저장됨 — 상품 행도 함께 갱신');
 }
 
 function renderTable() {
