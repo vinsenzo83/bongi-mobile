@@ -3,347 +3,870 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>봉이 TM CRM — 전체 연결맵</title>
-<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<title>봉이모바일 — 전체 연결 맵</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0f172a; --panel:#1e293b; --line:#334155; --line2:#475569;
-  --tx:#e2e8f0; --tx2:#94a3b8; --tx3:#64748b;
-  --fee:#38bdf8;      /* 요금 — TM 데이터 관리 */
-  --money:#5eead4;    /* 가이드 — 공식 지급 */
-  --max:#c4b5fd;      /* MAX — 재량 상한 */
-  --warn:#fbbf24; --bad:#fca5a5; --ok:#86efac;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Pretendard Variable',-apple-system,sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';background:var(--bg);color:var(--tx);
-     padding:24px 20px 60px;line-height:1.6;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em}
-.wrap{max-width:1180px;margin:0 auto}
-
-header{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:26px}
-h1{font-size:24px;font-weight:900;letter-spacing:-0.03em}
-.sub{font-size:12.5px;color:var(--tx2);margin-top:6px}
-.stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}
-.stat{font-size:11.5px;color:var(--tx3)}
-.stat b{color:var(--tx);font-size:14px;font-variant-numeric:tabular-nums;margin-right:3px}
-
-h2{font-size:16px;font-weight:800;color:var(--warn);margin:34px 0 12px;
-   padding-bottom:7px;border-bottom:1px solid var(--line)}
-h2 .n{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:6px;
-      background:var(--line2);color:var(--tx);font-size:11px;font-weight:900;margin-right:8px;vertical-align:1px}
-.lead{font-size:12.5px;color:var(--tx2);margin-bottom:14px}
-
-/* 화면 지도 */
-.map{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
-.card{background:var(--panel);border:1px solid var(--line2);border-radius:11px;padding:14px 16px}
-.card.fee{border-color:rgba(56,189,248,.45)}
-.card.money{border-color:rgba(94,234,212,.45)}
-.card h3{font-size:13.5px;font-weight:800;margin-bottom:3px}
-.card .role{font-size:10.5px;font-weight:800;letter-spacing:.05em;margin-bottom:8px}
-.card.fee .role{color:var(--fee)}
-.card.money .role{color:var(--money)}
-.card ul{list-style:none;font-size:11.5px;color:var(--tx2);line-height:1.85}
-.card li::before{content:'·';color:var(--tx3);margin-right:6px}
-.card .foot{font-size:10.5px;color:var(--tx3);margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
-
-/* 흐름 */
-.flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
-.step{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:11px 13px}
-.step .t{font-size:12px;font-weight:800;margin-bottom:4px}
-.step .d{font-size:10.5px;color:var(--tx2);line-height:1.7}
-.st3{font-size:11px;font-weight:800;color:var(--tx2);letter-spacing:.03em;margin:0 0 6px}
-.step.warnstep{border-color:var(--warn);background:rgba(217,119,6,.06)}
-.arr{align-self:center;color:var(--tx3);font-size:17px;font-weight:900}
-
-/* 표 */
-table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:10px;overflow:hidden;margin-top:4px}
-th{background:var(--line);font-size:11px;font-weight:700;padding:9px 12px;text-align:left;white-space:nowrap}
-td{font-size:12px;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-tr:last-child td{border-bottom:none}
-td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,monospace}
-.tag{display:inline-block;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:4px;white-space:nowrap}
-.t-fee{background:rgba(56,189,248,.16);color:var(--fee)}
-.t-money{background:rgba(94,234,212,.16);color:var(--money)}
-.t-max{background:rgba(196,181,253,.16);color:var(--max)}
-.t-bad{background:rgba(239,68,68,.16);color:var(--bad)}
-
-/* 공식 */
-.eq{background:#0b1220;border:1px solid var(--line2);border-radius:10px;padding:15px 18px;
-    font-size:14.5px;line-height:2.1;letter-spacing:-0.01em}
-.eq b{color:var(--money)} .eq .m{color:var(--max)} .eq .r{color:var(--warn)}
-.eq .sm{display:block;font-size:11px;color:var(--tx3);margin-top:7px;letter-spacing:0}
-
-.note{border-radius:9px;padding:11px 14px;font-size:11.5px;line-height:1.8;margin-top:12px}
-.note.warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.32);color:#fde68a}
-.note.bad{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.32);color:var(--bad)}
-.note.ok{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.3);color:var(--ok)}
-
-.split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:820px){.split{grid-template-columns:1fr}}
-footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:11px;color:var(--tx3)}
+:root { --bg:#f8f7f4; --bg2:#fff; --border:#e2ddd6; --navy:#1a2744; --blue:#2563eb; --blue2:#dbeafe; --green:#059669; --green2:#d1fae5; --orange:#d97706; --orange2:#fef3c7; --red:#dc2626; --red2:#fee2e2; --purple:#7c3aed; --purple2:#f3e8ff; --text:#1a1a1a; --text2:#4a4a4a; --text3:#8a8a8a; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; padding:40px; max-width:1400px; margin:0 auto; }
+h1 { font-size:28px; font-weight:900; color:var(--navy); margin-bottom:4px; }
+.subtitle { font-size:12px; color:var(--text3); margin-bottom:40px; font-family:'JetBrains Mono',monospace; }
+.section-title { font-size:20px; font-weight:900; color:var(--navy); margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+.section-num { background:var(--navy); color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+.card { background:var(--bg2); border:1.5px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; }
+.mono { font-family:'JetBrains Mono',monospace; font-size:10px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:700; }
+.b-blue { background:var(--blue2); color:var(--blue); } .b-green { background:var(--green2); color:var(--green); }
+.b-orange { background:var(--orange2); color:var(--orange); } .b-red { background:var(--red2); color:var(--red); }
+.b-purple { background:var(--purple2); color:var(--purple); } .b-gray { background:#f3f4f6; color:#6b7280; }
+table { width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }
+th { background:var(--navy); color:#fff; padding:8px 10px; text-align:left; font-size:10px; }
+td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+a { color:var(--blue); text-decoration:none; }
+a:hover { text-decoration:underline; }
+.note { background:#eff6ff; border:1.5px solid #93c5fd; border-radius:8px; padding:8px 14px; font-size:10px; color:var(--navy); line-height:1.6; margin-top:8px; }
+.flow-map { display:flex; flex-direction:column; gap:0; }
+.flow-row { display:flex; align-items:center; gap:0; }
+.flow-node { padding:10px 14px; border-radius:10px; font-size:11px; font-weight:600; text-align:center; min-width:110px; cursor:pointer; transition:all 0.15s; }
+.flow-node:hover { transform:scale(1.05); box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+.flow-arrow { color:var(--text3); font-size:18px; font-weight:700; padding:0 4px; }
+.flow-arrow-down { text-align:center; color:var(--text3); font-size:18px; margin:2px 0; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.doc-card { background:var(--bg2); border:2px solid var(--border); border-radius:12px; padding:16px; transition:all 0.15s; cursor:pointer; text-decoration:none; display:block; color:var(--text); }
+.doc-card:hover { border-color:var(--blue); box-shadow:0 4px 12px rgba(37,99,235,0.15); transform:translateY(-2px); text-decoration:none; }
+.doc-card .doc-num { font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:var(--border); }
+.doc-card .doc-title { font-size:15px; font-weight:700; color:var(--navy); margin-top:4px; }
+.doc-card .doc-desc { font-size:11px; color:var(--text3); margin-top:4px; line-height:1.5; }
+/* Step Memo Popup Feature */
+.memo-btn-wrap{display:flex;justify-content:flex-end;margin:-4px 0 12px 0}
+.memo-open-btn{background:none;border:1.5px solid #d97706;color:#d97706;border-radius:8px;padding:3px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s}
+.memo-open-btn:hover{background:#d97706;color:#fff}
+.memo-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:9999;justify-content:center;align-items:center}
+.memo-overlay.active{display:flex}
+.memo-popup{background:#fff;border-radius:16px;width:460px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;font-family:'Noto Sans KR',sans-serif}
+.memo-popup-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--navy,#1a2744);color:#fff;font-size:13px;font-weight:700}
+.memo-popup-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;opacity:.7}
+.memo-popup-close:hover{opacity:1}
+.memo-popup-body{flex:1;overflow-y:auto;padding:16px 20px}
+.memo-popup-list{margin-bottom:12px}
+.memo-popup-item{background:#f8f8f6;border:1px solid #e8e4de;border-radius:10px;padding:12px 14px;margin-bottom:8px;position:relative}
+.memo-popup-item-title{font-size:12px;font-weight:700;color:#1a2744;margin-bottom:2px}
+.memo-popup-item-meta{font-size:10px;color:#8a8a8a;font-weight:600;margin-bottom:4px}
+.memo-popup-item-content{font-size:12px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap}
+.memo-popup-item-del{position:absolute;top:10px;right:12px;background:none;border:1px solid #fca5a5;color:#dc2626;font-size:10px;cursor:pointer;padding:2px 8px;border-radius:4px;opacity:.6;font-family:'Noto Sans KR',sans-serif}
+.memo-popup-item-del:hover{opacity:1;background:#fef2f2}
+.memo-popup-empty{text-align:center;color:#aaa;font-size:12px;padding:24px 0}
+.memo-popup-footer{padding:14px 20px;border-top:1.5px solid #e8e4de;background:#fafaf8}
+.memo-popup-footer input,.memo-popup-footer textarea{width:100%;border:1.5px solid #e2ddd6;border-radius:8px;padding:8px 10px;font-size:12px;font-family:'Noto Sans KR',sans-serif;box-sizing:border-box;margin-bottom:8px;outline:none;transition:border .15s}
+.memo-popup-footer input:focus,.memo-popup-footer textarea:focus{border-color:#d97706}
+.memo-popup-footer textarea{resize:vertical;min-height:56px}
+.memo-popup-footer-row{display:flex;gap:8px;align-items:center}
+.memo-popup-footer-row input{flex:1;margin-bottom:0}
+.memo-popup-submit{padding:8px 20px;border:none;border-radius:8px;background:#059669;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap}
+.memo-popup-submit:hover{background:#047857}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<header>
-  <h1>🗺️ 봉이 TM CRM — 전체 연결맵</h1>
-  <div class="sub">어느 값이 어디서 나와 어디로 가는가 · 기준 2026-08-25</div>
-  <div class="stats">
-    <span class="stat"><b>105</b>상품</span>
-    <span class="stat"><b>165</b>채널행 (4종)</span>
-    <span class="stat"><b>27</b>유심 요금제</span>
-    <span class="stat"><b>14</b>부가 가감</span>
-    <span class="stat"><b>5</b>상담사</span>
-    <span class="stat"><b>11</b>메뉴</span>
+<h1>봉이모바일 전체 연결 맵</h1>
+<div class="subtitle">15개 플로우 문서 · 전체 시스템 연결 관계 · 2026-07 여행 eSIM · 채팅형 무인 고객센터(통신3사) 추가</div>
+
+<!-- ==================== 0. TM CRM 어드민 시스템 (B2B 내부 운영) ==================== -->
+<div id="tm-crm-admin" class="section-title"><div class="section-num">🏢</div>TM CRM 어드민 시스템 (내부 운영)</div>
+<div style="margin-bottom:16px;padding:12px 16px;background:linear-gradient(135deg,#f0f9ff,#dbeafe);border-left:4px solid #1d4ed8;border-radius:8px;font-size:12px;line-height:1.7;color:#1a2744">
+  <strong>📌 TM 콜센터·매장·정산 등 내부 운영 시스템</strong> — 고객 사이트(B2C)와 별개로 운영자·상담사·매니저가 사용.
+  <a href="#tm-crm-flow" style="display:inline-block;margin-left:8px;padding:3px 10px;background:#8b5cf6;color:#fff;border-radius:12px;font-size:10px;font-weight:700;text-decoration:none">↓ 통합 플로우 (1번 섹션 10번)</a>
+</div>
+<div class="grid3" style="margin-bottom:32px">
+  <a class="doc-card" href="incentive-admin.html" target="_blank" style="border-color:#1d4ed8;background:linear-gradient(135deg,#fff,#dbeafe);box-shadow:0 4px 12px rgba(29,78,216,0.2)">
+    <div class="doc-num" style="color:#1d4ed8">🚀</div>
+    <div class="doc-title">어드민 메인 (전체 메뉴)</div>
+    <div class="doc-desc">대시보드 · 콜DB · 계약처리 · 정산 · TM 상담 · 19개 메뉴 통합 진입점</div>
+  </a>
+  <a class="doc-card" href="incentive-customer-db.html" target="_blank">
+    <div class="doc-num">📞</div>
+    <div class="doc-title">콜 DB 관리</div>
+    <div class="doc-desc">마감원장 import · 분배 · 5등급(S/A/B/R/C) · cross-source dedup</div>
+  </a>
+  <a class="doc-card" href="tm-counselor.html" target="_blank">
+    <div class="doc-num">📱</div>
+    <div class="doc-title">TM 상담 (큐콜·수동)</div>
+    <div class="doc-desc">고객 카드 · 견적 calc · 콜 결과 기록 · 계약 등록</div>
+  </a>
+  <a class="doc-card" href="incentive-dashboard.html" target="_blank">
+    <div class="doc-num">📊</div>
+    <div class="doc-title">대시보드</div>
+    <div class="doc-desc">role별 KPI · 매니저 카드 · 실시간 콜 활동 위젯</div>
+  </a>
+  <a class="doc-card" href="incentive-contract.html" target="_blank">
+    <div class="doc-num">📋</div>
+    <div class="doc-title">계약 처리</div>
+    <div class="doc-desc">영업 → 주소·서류 → 계약 확정 · role별 처리 범위</div>
+  </a>
+  <a class="doc-card" href="incentive-settlements.html" target="_blank">
+    <div class="doc-num">💰</div>
+    <div class="doc-title">월별 정산</div>
+    <div class="doc-desc">V5 인센티브 자동 집계 · agent별 P·우수·인센티브</div>
+  </a>
+  <a class="doc-card" href="incentive-manual.html" target="_blank">
+    <div class="doc-num">📚</div>
+    <div class="doc-title">사용 매뉴얼</div>
+    <div class="doc-desc">24개 섹션 · role 필터 · 검색 · import 필터링 가이드</div>
+  </a>
+  <a class="doc-card" href="flow-tm-crm.html">
+    <div class="doc-num">🗺️</div>
+    <div class="doc-title">TM CRM 플로우</div>
+    <div class="doc-desc">콜 분배 → 상담 → 계약 → 정산 전체 흐름 다이어그램</div>
+  </a>
+</div>
+
+<!-- ==================== 1. 개발 로드맵 (Phase 순서) ==================== -->
+<div class="section-title"><div class="section-num">1</div>플로우 문서 + 개발 로드맵</div>
+<div style="margin-bottom:16px;padding:12px 16px;background:linear-gradient(135deg,#eef2ff,#fef3c7);border-left:4px solid #3617ce;border-radius:8px;font-size:12px;line-height:1.7;color:#1a2744">
+  <strong>📌 개발 진행 순서 (모듈식 · 카테고리별 2주 스프린트)</strong>: 한 카테고리씩 완성 → 다음 모듈 → 나중에 통합<br>
+  <strong>🟢 Phase 1: 01 인터넷+TV</strong> → <strong>🟡 Phase 2: 04 매장·휴대폰 시세</strong> → <strong>🔵 Phase 3: 03 중고폰 매입</strong> → <strong>🟣 Phase 4: 02 렌탈</strong><br>
+  <span style="font-size:11px;color:#4b5563">⏱️ <strong>각 카테고리 2주</strong> · Phase 1~4 = 8주 · Phase 외(05-09) 병렬 · <strong>총 약 11주 (~2.75개월)</strong><br>
+  👥 팀: 백엔드 2 · 풀스택 1 · AI 1 · 디자이너 1 (총 5명)<br>
+  🧪 외부 API는 <strong>Mock + 테스트 문서</strong>로 개발 (Tredit · PASS · 카카오 알림톡 · 렌트리 크롤링) → 승인 후 환경변수 플래그로 교체</span>
+</div>
+<div class="grid3" style="margin-bottom:32px">
+  <a class="doc-card" href="business-playbook.html" style="border-color:#1a2744;background:linear-gradient(135deg,#fff,#eef2ff)">
+    <div class="doc-num" style="color:#3617ce">📘</div>
+    <div class="doc-title">비즈니스 플레이북 (신규 팀원 브리핑)</div>
+    <div class="doc-desc">회사 비전 · 매장·플랫폼 선순환 · AI/CRM/CTI · 수익 모델 · 기술 스택 · 개발 로드맵</div>
+  </a>
+  <a class="doc-card" href="service-flow-v2.html">
+    <div class="doc-num">00</div>
+    <div class="doc-title">전체 서비스 플로우</div>
+    <div class="doc-desc">고객 접속 → 회원가입 → AI 채팅 → 상품 탐색 → 신청 → 계약 → 현금 페이백 → 마이페이지</div>
+  </a>
+  <a class="doc-card" href="flow-internet-tv.html" style="border-color:#10b981;background:linear-gradient(135deg,#fff,#d1fae5);box-shadow:0 4px 12px rgba(16,185,129,0.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;flex-wrap:wrap">
+      <div class="doc-num" style="color:#059669">01</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span style="padding:3px 10px;background:#059669;color:#fff;border-radius:12px;font-size:10px;font-weight:700">🟢 Phase 1</span>
+        <span class="duration-btn" data-card="01" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
+        <span class="status-btn" data-card="01" data-state="fixed" onclick="cycleStatus(event, this)" style="padding:3px 10px;background:#d1fae5;color:#065f46;border:1.5px solid #059669;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">✅ 데이터 픽스</span>
+      </div>
+    </div>
+    <div class="doc-title">인터넷+TV 상품관리 · 요금 계산기</div>
+    <div class="doc-desc">SKT/KT/LG U+ · 결합할인 · 현금 페이백 · 계산기 v1/v2 · <strong>1,434 케이스 검증 완료</strong></div>
+  </a>
+  <a class="doc-card" href="flow-store-price.html" style="border-color:#f59e0b;background:linear-gradient(135deg,#fff,#fef3c7);box-shadow:0 4px 12px rgba(245,158,11,0.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;flex-wrap:wrap">
+      <div class="doc-num" style="color:var(--orange)">04</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span style="padding:3px 10px;background:var(--orange);color:#fff;border-radius:12px;font-size:10px;font-weight:700">🟡 Phase 2</span>
+        <span class="duration-btn" data-card="04" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
+        <span class="status-btn" data-card="04" data-state="partial" onclick="cycleStatus(event, this)" style="padding:3px 10px;background:#fef3c7;color:#92400e;border:1.5px solid #f7c94f;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">🟡 부분 픽스</span>
+      </div>
+    </div>
+    <div class="doc-title">매장 · 휴대폰 시세</div>
+    <div class="doc-desc">12 매장 + 온라인 1 · 공통폼 · 유심 9종 · 부가서비스 10 · <strong style="color:#dc2626">⚠️ 요금제명/월요금 최종 확정 필요</strong></div>
+  </a>
+  <a class="doc-card" href="flow-used-phone.html" style="border-color:#3b82f6;background:linear-gradient(135deg,#fff,#dbeafe);box-shadow:0 4px 12px rgba(59,130,246,0.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;flex-wrap:wrap">
+      <div class="doc-num" style="color:var(--blue)">03</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span style="padding:3px 10px;background:var(--blue);color:#fff;border-radius:12px;font-size:10px;font-weight:700">🔵 Phase 3</span>
+        <span class="duration-btn" data-card="03" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
+        <span class="status-btn" data-card="03" data-state="unfixed" onclick="cycleStatus(event, this)" style="padding:3px 10px;background:#fee2e2;color:#991b1b;border:1.5px solid #dc2626;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⚠️ 데이터 미픽스</span>
+      </div>
+    </div>
+    <div class="doc-title">중고폰 매입</div>
+    <div class="doc-desc">302개 모델 · Tredit API 연동 · A~E 등급 · <strong style="color:#dc2626">⚠️ 매입가 기준·검수 정책·입금 조건 확정 필요</strong></div>
+  </a>
+  <a class="doc-card" href="flow-rental.html" style="border-color:#8b5cf6;background:linear-gradient(135deg,#fff,#f3e8ff);box-shadow:0 4px 12px rgba(139,92,246,0.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;flex-wrap:wrap">
+      <div class="doc-num" style="color:var(--purple)">02</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span style="padding:3px 10px;background:var(--purple);color:#fff;border-radius:12px;font-size:10px;font-weight:700">🟣 Phase 4</span>
+        <span class="duration-btn" data-card="02" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
+        <span class="status-btn" data-card="02" data-state="unfixed" onclick="cycleStatus(event, this)" style="padding:3px 10px;background:#fee2e2;color:#991b1b;border:1.5px solid #dc2626;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⚠️ 데이터 미픽스</span>
+      </div>
+    </div>
+    <div class="doc-title">렌탈 상품관리</div>
+    <div class="doc-desc">51개 상품 · 렌트리 URL 파싱 · 카테고리 11개 · <strong style="color:#dc2626">⚠️ 티켓 매핑·월 렌탈료·약정 조건 확정 필요</strong></div>
+  </a>
+  <a class="doc-card" href="flow-ticket.html" style="border-color:#dbeafe">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+      <div class="doc-num" style="color:var(--blue)">05</div>
+      <span class="duration-btn" data-card="05" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
+    </div>
+    <div class="doc-title">티켓 관리</div>
+    <div class="doc-desc">인터넷 105개 + 렌탈 51개 = 156개 · 조합 자동 생성 · 셋톱·WiFi 모델 별도</div>
+  </a>
+  <a class="doc-card" href="flow-applications.html" style="border-color:#fef3c7">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+      <div class="doc-num" style="color:var(--orange)">06</div>
+      <span class="duration-btn" data-card="06" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
+    </div>
+    <div class="doc-title">신청 현황</div>
+    <div class="doc-desc">모든 유입 경로 통합 · CRM 양방향 동기화 · 상태 전이</div>
+  </a>
+  <a class="doc-card" href="flow-gifts.html" style="border-color:#d1fae5">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+      <div class="doc-num" style="color:var(--green)">07</div>
+      <span class="duration-btn" data-card="07" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
+    </div>
+    <div class="doc-title">현금 페이백 관리</div>
+    <div class="doc-desc">계약완료 → 지급대기 자동 생성 · PASS+계좌 필수 · 비회원 알림톡 3단계</div>
+  </a>
+  <a class="doc-card" href="flow-points-referral-guard.html" style="border-color:#f3e8ff">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+      <div class="doc-num" style="color:var(--purple)">08</div>
+      <span class="duration-btn" data-card="08" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
+    </div>
+    <div class="doc-title">포인트 + 친구초대 + 돈지키미 + 알림</div>
+    <div class="doc-desc">적립/출금 · 추천코드 · 약정 알람 · 앱푸시/카카오톡</div>
+  </a>
+  <a class="doc-card" href="flow-reviews.html" style="border-color:#fef3c7">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+      <div class="doc-num" style="color:var(--orange)">09</div>
+      <span class="duration-btn" data-card="09" data-weeks="2" onclick="editDuration(event, this)" style="padding:3px 10px;background:#1a2744;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;user-select:none">⏱️ 2주</span>
+    </div>
+    <div class="doc-title">후기 관리</div>
+    <div class="doc-desc">자체 후기 · 사진 필수 · 15,000P 적립 · AI 채팅 자동 노출</div>
+  </a>
+  <a id="tm-crm-flow" class="doc-card" href="flow-tm-crm.html" style="border-color:#8b5cf6;background:linear-gradient(135deg,#fff,#f3e8ff);box-shadow:0 4px 12px rgba(139,92,246,0.15)">
+    <div class="doc-num" style="color:#8b5cf6">10</div>
+    <div class="doc-title">📞 봉이 TM CRM (통합 플로우)</div>
+    <div class="doc-desc">광주 콜센터 인터넷·TV·렌탈 영업 시스템 — DB 등급→분배→TM 큐콜→견적→계약→정산 8단계 + 4 role + 18 메뉴 + 인센티브 V5 자동 정산. <b>STEP 0~7 + FINAL + 부록</b></div>
+    <div style="margin-top:8px"><span onclick="event.preventDefault();event.stopPropagation();document.getElementById('tm-crm-admin').scrollIntoView({behavior:'smooth'});" style="display:inline-block;padding:3px 10px;background:#1d4ed8;color:#fff;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer">↑ 어드민 시스템 (0번 섹션)</span></div>
+  </a>
+  <a class="doc-card" href="data-flow-diagram.html">
+    <div class="doc-num">11</div>
+    <div class="doc-title">전체 데이터 흐름도</div>
+    <div class="doc-desc">ERD · API 목록 · 상태 전이도 · 아키텍처</div>
+  </a>
+  <a class="doc-card" href="flow-mvno.html" style="border-color:#f59e0b;background:linear-gradient(135deg,#fff,#fef3c7)">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+      <div class="doc-num" style="color:#d97706">12</div>
+      <span style="background:#f59e0b;color:#fff;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800">NEW</span>
+    </div>
+    <div class="doc-title" style="color:#92400e">📱 알뜰폰 (MVNO 대리점)</div>
+    <div class="doc-desc">봉이 자체 5 SKU · KT엠·미디어로그 제휴 · *#06# EID 분기 · 티켓 M00001~ · <strong style="color:#d97706">⚠️ MVNO 본사 협상 후 출시</strong></div>
+  </a>
+  <a class="doc-card" href="flow-membership-platform.html" style="border-color:#3617ce;background:linear-gradient(135deg,#fff,#eef2ff);box-shadow:0 4px 12px rgba(54,23,206,0.18)">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+      <div class="doc-num" style="color:#3617ce">13</div>
+      <span style="background:#3617ce;color:#fff;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800">NEW</span>
+    </div>
+    <div class="doc-title" style="color:#1e1b4b">🎯 회원 100만 플랫폼 (개발 기획서)</div>
+    <div class="doc-desc"><strong style="color:#3617ce">V1 MVP = 친구초대 · 경품응모(자동) · 포인트사용 · 추천왕</strong> 4핵심 · 30만→100만 · 나머지(등급·AI·판매점) V2+ 보류 · PASS 인증 어뷰징 차단 · DB·API·와이어프레임 설계 완료</div>
+  </a>
+  <a class="doc-card" href="flow-travel-esim.html" style="border-color:#22c55e;background:linear-gradient(135deg,#fff,#dcfce7)">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+      <div class="doc-num" style="color:#16a34a">14</div>
+      <span style="background:#22c55e;color:#fff;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800">NEW</span>
+    </div>
+    <div class="doc-title" style="color:#166534">✈️ 여행 eSIM (글로벌 데이터 재판매)</div>
+    <div class="doc-desc">CMI-DW(차이나모바일) 도매 재판매 · 유심사 벤치마크 · 마진 50~60% · 로밍 크로스셀 · <strong style="color:#16a34a">기획서+와이어프레임 완료</strong> · <strong style="color:#d97706">⚠️ CMLink 계약 후 출시</strong></div>
+  </a>
+  <a class="doc-card" href="flow-cs-center.html" style="border-color:#2563eb;background:linear-gradient(135deg,#fff,#eff6ff)">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+      <div class="doc-num" style="color:#2563eb">15</div>
+      <span style="background:#2563eb;color:#fff;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:800">NEW</span>
+    </div>
+    <div class="doc-title" style="color:#1e3a8a">💬 채팅형 무인 고객센터 (통신3사)</div>
+    <div class="doc-desc">SKT·KT·LG U+ 공식 데이터 322건(거미검증·환각0) · 상담사 개입 없이 채팅 완결 · RAG(임베딩+하이브리드 검색) · <strong style="color:#2563eb">데이터 구축 완료</strong> · <strong style="color:#d97706">⚠️ 임베딩+챗봇 개발 남음</strong></div>
+  </a>
+</div>
+
+<!-- ==================== 2. 고객 여정 전체 맵 ==================== -->
+<div class="section-title"><div class="section-num">2</div>고객 여정 — 전체 연결 맵</div>
+<div class="card" style="padding:28px">
+  <div style="font-size:11px;color:var(--text3);margin-bottom:20px">위에서 아래로 전체 흐름이 이어집니다. 각 단계를 클릭하면 해당 플로우 문서로 이동합니다.</div>
+
+  <!-- 접속 -->
+  <div style="text-align:center;margin-bottom:4px">
+    <a href="service-flow-v2.html" class="flow-node" style="background:var(--navy);color:#fff;display:inline-block">고객 접속<br><span style="font-size:9px;opacity:0.7">회원 / 비회원</span></a>
   </div>
-</header>
+  <div class="flow-arrow-down">↓</div>
 
-<!-- ─────────────────────────────────────── -->
-<h2><span class="n">1</span>화면 지도 — 무엇을 어디서 관리하는가</h2>
-<p class="lead">한 값은 <b>한 곳에서만</b> 관리한다. 두 곳에 있으면 어느 쪽이 맞는지 알 수 없다.</p>
-
-<div class="map">
-  <div class="card fee">
-    <div class="role">요금 · 고객이 내는 돈</div>
-    <h3>TM 데이터 관리</h3>
-    <ul>
-      <li>인터넷 · WiFi</li>
-      <li>TV 상품 · 셋톱박스</li>
-      <li>결합 할인</li>
-      <li>설치비 <span class="tag t-fee">여기만</span></li>
-      <li>제휴카드 · 영업포인트</li>
-      <li>유심 요금제 <span class="tag t-fee">월정액·약정·데이터</span></li>
-      <li>접수 채널 <span class="tag t-fee">존재 여부</span></li>
-      <li>티켓 조합 · 변경 이력</li>
-    </ul>
-    <div class="foot">바꾸면 <b>고객 월 요금</b>이 바뀐다</div>
+  <!-- 회원가입/로그인 -->
+  <div style="text-align:center;margin-bottom:4px">
+    <a href="service-flow-v2.html" class="flow-node" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue);display:inline-block">회원가입 / 로그인<br><span style="font-size:9px">카카오 · 구글 · PASS 인증</span></a>
   </div>
+  <div class="flow-arrow-down">↓</div>
 
-  <div class="card money">
-    <div class="role">사은품 · 우리가 주는 돈</div>
-    <h3>상품 관리</h3>
-    <ul>
-      <li>가이드 현금 · 상품권 · 총액</li>
-      <li>MAX <span class="tag t-max">고객 노출 금지</span></li>
-      <li>채널별 금액 <span class="tag t-money">SKT·SKB·KT·LG U+</span></li>
-      <li>유심 가이드 · MAX <span class="tag t-money">3구분</span></li>
-      <li>상품 추가 <span class="tag t-money">티켓번호 자동</span></li>
-    </ul>
-    <div class="foot">바꾸면 <b>사은품·인센티브</b>가 바뀐다</div>
+  <!-- AI 채팅 -->
+  <div style="text-align:center;margin-bottom:4px">
+    <a href="service-flow-v2.html" class="flow-node" style="background:var(--navy);color:#fff;display:inline-block;min-width:200px">AI 채팅 상담<br><span style="font-size:9px;opacity:0.7">모든 상품 탐색의 시작점</span></a>
   </div>
+  <div class="flow-arrow-down">↓</div>
 
-  <div class="card">
-    <div class="role" style="color:var(--warn)">사용</div>
-    <h3>TM 상담</h3>
-    <ul>
-      <li>견적 계산 (요금 + 사은품)</li>
-      <li>접수 채널 선택</li>
-      <li>유심 함께 개통</li>
-      <li>고객 지급액 결정</li>
-      <li>계약 등록</li>
-    </ul>
-    <div class="foot">상담사 화면 · <b>데이터 수정 불가</b></div>
+  <!-- 5가지 카테고리 분기 — 2026-06-06 ⑤ 알뜰폰 추가 (MVNO 대리점 모델) -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <a href="flow-internet-tv.html" class="flow-node" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue)">① 인터넷+TV<br><span style="font-size:9px">SKT/KT/LG U+</span></a>
+    <a href="flow-store-price.html" class="flow-node" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange)">② 휴대폰 시세<br><span style="font-size:9px">매장 방문 유도</span></a>
+    <a href="flow-rental.html" class="flow-node" style="background:var(--green2);border:2px solid var(--green);color:var(--green)">③ 렌탈<br><span style="font-size:9px">51개 상품</span></a>
+    <a href="flow-used-phone.html" class="flow-node" style="background:var(--purple2);border:2px solid var(--purple);color:var(--purple)">④ 중고폰 매입<br><span style="font-size:9px">302개 모델</span></a>
+    <a href="flow-mvno.html" class="flow-node" style="background:#fef3c7;border:2px solid #f59e0b;color:#92400e">⑤ 알뜰폰 <span style="background:#f59e0b;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;margin-left:3px">NEW</span><br><span style="font-size:9px">MVNO 대리점 · 봉이 전용 요금제</span></a>
   </div>
+  <div class="flow-arrow-down">↓</div>
 
-  <div class="card">
-    <div class="role" style="color:var(--warn)">처리 · 정산</div>
-    <h3>계약 처리 · 급여</h3>
-    <ul>
-      <li>계약 상태 관리</li>
-      <li>설치 완료 확정</li>
-      <li>상담사 관리 · ROI</li>
-      <li>급여 안내</li>
-    </ul>
-    <div class="foot">설치완료 건만 <b>정산 대상</b></div>
+  <!-- 정보 수집 바텀시트 (SelectCard) — ⑤ MvnoSelectCard 추가 -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <div class="flow-node" style="background:#fff;color:var(--blue);border:2px solid var(--blue);font-size:10px">InternetSelectCard<br><span style="font-size:9px">통신사→속도→TV (3단계)</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--orange);border:2px solid var(--orange);font-size:10px">PhoneSelectCard<br><span style="font-size:9px">통신사→유형→제조사→기종 (4단계)</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--green);border:2px solid var(--green);font-size:10px">RentalSelectCard<br><span style="font-size:9px">카테고리→브랜드 (2단계)</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--purple);border:2px solid var(--purple);font-size:10px">UsedPhoneSelectCard<br><span style="font-size:9px">제조사→모델→용량→상태 (4단계)</span></div>
+    <div class="flow-node" style="background:#fff;color:#92400e;border:2px solid #f59e0b;font-size:10px">MvnoSelectCard<br><span style="font-size:9px">망→데이터→타겟 (3단계)</span></div>
   </div>
-</div>
+  <div class="flow-arrow-down">↓</div>
 
-<div class="note bad">
-  <b>⛔ MAX 는 고객에게 절대 노출하지 않는다.</b> 견적서·문자·웹 어디에도 나가지 않는다.
-  고객에게 말하는 금액은 <b>가이드</b>와 <b>실제로 드리기로 한 금액</b>뿐이다.
-</div>
-
-<!-- ─────────────────────────────────────── -->
-<h2><span class="n">2</span>서비스 플로우</h2>
-<div class="st3">A. 인터넷 · TV (유심 동반 가능)</div>
-<div class="flow">
-  <div class="step"><div class="t">① 상담</div><div class="d">통신사 · 속도 · TV · 결합을 고르면 요금이 계산된다</div></div>
-  <div class="arr">→</div>
-  <div class="step"><div class="t">② 채널 선택</div><div class="d">SKT / SKB — 어디로 접수하느냐로 사은품이 갈린다</div></div>
-  <div class="arr">→</div>
-  <div class="step"><div class="t">③ 유심 (선택)</div><div class="d">함께 개통하면 사은품이 따로 붙는다</div></div>
-  <div class="arr">→</div>
-  <div class="step"><div class="t">④ 지급액 결정</div><div class="d">가이드~MAX 사이에서 상담사가 정한다</div></div>
-  <div class="arr">→</div>
-  <div class="step"><div class="t">⑤ 계약 등록</div><div class="d">그 시점 가이드·MAX 를 <b>박제</b>한다</div></div>
-  <div class="arr">→</div>
-  <div class="step"><div class="t">⑥ 설치완료</div><div class="d">이때부터 정산에 잡힌다</div></div>
-</div>
-<div class="st3" style="margin-top:16px">B. 유심 단독 — 인터넷 없이 유심만 판다</div>
-<div class="flow">
-  <div class="step"><div class="t">① 요금제</div><div class="d">통신사 · 요금제를 고른다 — 월정액·데이터는 TM 데이터 관리 값</div></div>
-  <div class="arr">→</div>
-  <div class="step"><div class="t">② 결합 요건</div><div class="d"><b>본인 포함 가족 중</b> 그 통신사 인터넷·휴대폰을 쓰는가 → ② / 아니면 ③</div></div>
-  <div class="arr">→</div>
-  <div class="step"><div class="t">③ 지급액 결정</div><div class="d">그 구분의 유심 가이드~MAX 사이에서 정한다</div></div>
-  <div class="arr">→</div>
-  <div class="step warnstep"><div class="t">④ 현재 통신사 확인</div><div class="d"><b>번호이동이라 반드시 묻는다.</b> 개통하려는 통신사와 같으면 등록 자체가 막힌다</div></div>
-  <div class="arr">→</div>
-  <div class="step"><div class="t">⑤ 계약 등록</div><div class="d">유심 가이드·MAX 를 <b>박제</b>한다 · 인터넷 상품 없이 등록된다</div></div>
-  <div class="arr">→</div>
-  <div class="step"><div class="t">⑥ 설치완료</div><div class="d">개통 확인 후. 이때부터 정산에 잡힌다</div></div>
-</div>
-<div class="note warn">
-  <b>④ 현재 통신사를 안 물으면 나중에 취소·환수된다.</b> 번호이동은 지금 쓰는 통신사가 개통하려는 통신사와
-  달라야 성립한다. 계약 처리 화면에서 같으면 「⛔ 번호이동 대상이 아닙니다」로 막고, 확인이 안 된 건은 붉게 표시한다.
-</div>
-
-<div class="note warn">
-  ⑤에서 <b>가이드·MAX 를 계약에 박제</b>하는 이유 — 나중에 상품 MAX 를 바꾸면 지난 정산이 흔들린다.
-  등록 시점 값으로 계산해야 이미 확정된 급여가 움직이지 않는다.
-</div>
-
-<!-- ─────────────────────────────────────── -->
-<h2><span class="n">3</span>돈의 흐름 — 가이드에서 급여까지</h2>
-<div class="eq">
-  <span class="r">잔존마진</span> = <span class="m">MAX</span> − <b>실제 지급액</b><br>
-  <span class="r">월 급여</span> = 기본급 + Σ<span class="r">잔존마진</span> × 개인 배분율 − 페이백 차감
-  <span class="sm">유심을 함께 개통하면 (유심 MAX − 유심 지급액) 을 더한다. 설치완료 건만 집계한다.</span>
-</div>
-
-<table style="margin-top:14px">
-  <thead><tr><th style="width:120px">항목</th><th>뜻</th><th style="width:120px">고객 안내</th></tr></thead>
-  <tbody>
-    <tr>
-      <td><span class="tag t-money">가이드</span></td>
-      <td>공식 사은품. 전 상담사 동일하며 <b>지급 하한</b>이다. 현금 + 상품권으로 구성되고 <b>상품권은 고정</b>이다.</td>
-      <td style="color:var(--ok)">가능</td>
-    </tr>
-    <tr>
-      <td><span class="tag t-max">MAX</span></td>
-      <td>상담사 재량 <b>상한</b>. 더 나가는 몫은 <b>현금으로만</b> 붙는다.</td>
-      <td style="color:var(--bad)"><b>금지</b></td>
-    </tr>
-    <tr>
-      <td>실제 지급액</td>
-      <td>상담사가 정해 계약에 저장한 값. 비어 있으면 가이드를 지급한 것으로 본다.</td>
-      <td style="color:var(--ok)">가능</td>
-    </tr>
-    <tr>
-      <td>잔존마진</td>
-      <td>안 쓴 재량. 이 중 개인 배분율만큼이 인센티브, 나머지는 회사 몫.</td>
-      <td style="color:var(--tx3)">내부</td>
-    </tr>
-  </tbody>
-</table>
-
-<div class="note ok">
-  회사 기본 마진은 <b>가이드·MAX 를 정할 때 이미 빠져 있다.</b> MAX 까지 다 써도 회사가 손해 보지 않는다 —
-  그래서 상담사는 마음 놓고 재량을 쓰고, 안 써도 되는 건에서 아끼면 그게 그대로 자기 몫이 된다.
-</div>
-
-<!-- ─────────────────────────────────────── -->
-<h2><span class="n">4</span>유심 3구분 — 어느 값을 부를 것인가</h2>
-<p class="lead">같은 요금제라도 구분마다 가이드·MAX 가 다르다. <b>번호이동 전용 · 신규가입 불가</b>이며 결합은 같은 통신사만 인정된다 (SKT·SKB→SKT / KT→KT / LG U+→LG U+).</p>
-<table>
-  <thead><tr><th style="width:52px">구분</th><th style="width:200px">이름</th><th>조건</th><th style="width:190px">어디서 잡히나</th><th style="width:120px">단독 계약</th></tr></thead>
-  <tbody>
-    <tr>
-      <td><b>①</b></td><td>UIT결합유심</td>
-      <td>인터넷 <b>+ TV</b> + 유심을 한 번에 개통</td>
-      <td>상담 › 인터넷+TV 탭 <b>(TV 있음)</b></td>
-      <td style="color:var(--tx3)">불가 — 인터넷 건에 딸린다</td>
-    </tr>
-    <tr>
-      <td><b>②</b></td><td>가족추가 · 단독MNP(결합)</td>
-      <td><b>본인 포함 가족 중</b> 개통하려는 통신사의 인터넷이나 휴대폰을 쓰고 있는 경우</td>
-      <td>상담 › 인터넷+TV 탭 <b>(TV 없음)</b><br>상담 › 유심 단독 탭 <b>(요건 체크)</b></td>
-      <td style="color:var(--ok)">가능</td>
-    </tr>
-    <tr>
-      <td><b>③</b></td><td>유심단독MNP(미결합)</td>
-      <td>아무도 안 쓰는 경우</td>
-      <td>상담 › 유심 단독 탭 <b>(체크 안 함)</b></td>
-      <td style="color:var(--ok)">가능</td>
-    </tr>
-  </tbody>
-</table>
-<div class="note warn">
-  <b>인터넷 + 유심(TV 없음) 은 ② 다.</b> 인터넷을 새로 쓰게 되므로 결합 요건을 이미 만족한다 — ③ 이 될 수 없다.
-  ① 로 잡으면 사은품을 요금제당 10만원가량 더 부르게 된다.
-</div>
-
-<!-- ─────────────────────────────────────── -->
-<h2><span class="n">5</span>접수 채널</h2>
-<div class="split">
-  <div>
-    <table>
-      <thead><tr><th style="width:110px">통신사</th><th>채널</th></tr></thead>
-      <tbody>
-        <tr><td>SKT</td><td><b>SKB</b> · <b>SKT</b> — 같은 상품도 사은품이 갈린다</td></tr>
-        <tr><td>KT</td><td>KT</td></tr>
-        <tr><td>LG U+</td><td>LG U+</td></tr>
-      </tbody>
-    </table>
+  <!-- 상품 카드 — ⑤ MvnoPlanCard 추가 -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <div class="flow-node" style="background:#1e1e1e;color:#fff;border:1px solid #333;font-size:10px">ProductCard<br><span style="color:#60a5fa">다크테마</span></div>
+    <div class="flow-node" style="background:#1e1e1e;color:#fff;border:1px solid #333;font-size:10px">MobilePriceCard<br><span style="color:#60a5fa">다크테마</span></div>
+    <div class="flow-node" style="background:#1e1e1e;color:#fff;border:1px solid #333;font-size:10px">RentalCard<br><span style="color:#4ade80">다크테마</span></div>
+    <div class="flow-node" style="background:#fff;color:var(--navy);border:1px solid #e8e8e8;font-size:10px">TradeinCard<br><span style="color:var(--blue)">라이트테마</span></div>
+    <div class="flow-node" style="background:#fff;color:#92400e;border:1px solid #f59e0b;font-size:10px">MvnoPlanCard<br><span style="color:#f59e0b">라이트테마</span></div>
   </div>
-  <div>
-    <table>
-      <thead><tr><th style="width:110px">무엇을</th><th>어디서</th></tr></thead>
-      <tbody>
-        <tr><td>채널이 <b>있는가</b></td><td>TM 데이터 관리 › 접수 채널</td></tr>
-        <tr><td>그 채널에 <b>얼마</b></td><td>상품 관리 › 📡 채널</td></tr>
-      </tbody>
-    </table>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 티켓 + 신청 분기 -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <a href="flow-ticket.html" class="flow-node" style="background:var(--blue2);border:2px solid var(--blue);color:var(--blue)">티켓번호 부여<br><span style="font-size:9px">SK0188 / R001 / <strong style="color:#f59e0b">M00001 알뜰폰</strong></span></a>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <a href="flow-applications.html" class="flow-node" style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);font-size:10px;padding:6px 10px">셀프신청</a>
+      <div class="flow-node" style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);font-size:10px;padding:6px 10px">바로상담 (전화)</div>
+      <div class="flow-node" style="background:var(--purple2);border:1.5px solid var(--purple);color:var(--purple);font-size:10px;padding:6px 10px">티켓전화</div>
+    </div>
+    <div class="flow-node" style="background:var(--orange2);border:2px solid var(--orange);color:var(--orange);font-size:10px">매장 방문<br><span style="font-size:9px">(휴대폰만)</span></div>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 신청 → CRM -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <a href="flow-applications.html" class="flow-node" style="background:var(--navy);color:#fff">신청현황<br><span style="font-size:9px;opacity:0.7">어드민 ↔ CRM 동기화</span></a>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 계약완료 후 -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <div class="flow-node" style="background:var(--green2);border:2px solid var(--green);color:var(--green)">계약완료</div>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 후속 처리 -->
+  <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+    <a href="flow-gifts.html" class="flow-node" style="background:var(--orange2);border:1.5px solid var(--orange);color:var(--orange);font-size:10px">현금 페이백<br>자동 생성</a>
+    <a href="flow-points-referral-guard.html" class="flow-node" style="background:var(--green2);border:1.5px solid var(--green);color:var(--green);font-size:10px">포인트<br>자동 적립</a>
+    <a href="flow-reviews.html" class="flow-node" style="background:var(--blue2);border:1.5px solid var(--blue);color:var(--blue);font-size:10px">후기 작성<br>15,000P</a>
+    <a href="flow-points-referral-guard.html" class="flow-node" style="background:var(--purple2);border:1.5px solid var(--purple);color:var(--purple);font-size:10px">친구초대<br>보상</a>
+    <a href="flow-points-referral-guard.html" class="flow-node" style="background:var(--red2);border:1.5px solid var(--red);color:var(--red);font-size:10px">돈지키미<br>약정 알람</a>
+  </div>
+  <div class="flow-arrow-down">↓</div>
+
+  <!-- 마이페이지 -->
+  <div style="text-align:center">
+    <a href="service-flow-v2.html" class="flow-node" style="background:var(--navy);color:#fff;display:inline-block;min-width:200px">마이페이지<br><span style="font-size:9px;opacity:0.7">신청이력 · 현금 페이백 · 포인트 · 돈지키미</span></a>
   </div>
 </div>
-<div class="note warn">
-  채널을 추가하면 그 통신사 <b>상품 전부</b>에 행이 생긴다. 한 상품만 있으면 상담 견적에서 그 채널을 고를 수 없다.<br>
-  <b>마지막 채널은 지울 수 없다</b> — 채널이 0개면 가이드·MAX 가 안 잡혀 견적이 계산되지 않는다.<br>
-  티켓번호는 <b>상품에 하나</b>다. 그 아래로 채널만 갈린다.
+
+<!-- ==================== 3. 데이터 연결 맵 ==================== -->
+<div class="section-title"><div class="section-num">3</div>데이터 연결 맵 — 어디서 입력하면 어디에 반영되나</div>
+<div class="card">
+  <table>
+    <thead><tr><th>어드민 입력</th><th>DB 테이블</th><th>반영되는 곳</th><th>관련 문서</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>인터넷+TV 상품</strong><br><span style="font-size:9px;color:var(--text3)">03~05번</span></td>
+        <td class="mono">speeds / tv / settop / wifi</td>
+        <td>InternetSelectCard(바텀시트) · 고객 상품 카드 · AI 채팅 · 티켓 자동 생성 · 현금 페이백 금액 · CRM</td>
+        <td><a href="flow-internet-tv.html">인터넷+TV</a> · <a href="flow-ticket.html">티켓</a></td>
+      </tr>
+      <tr>
+        <td><strong>렌탈 상품</strong><br><span style="font-size:9px;color:var(--text3)">06번</span></td>
+        <td class="mono">rental_products</td>
+        <td>RentalSelectCard(바텀시트) · 렌탈 카드 · AI 채팅 · 티켓(R001~) · 신청현황 · CRM</td>
+        <td><a href="flow-rental.html">렌탈</a> · <a href="flow-ticket.html">티켓</a></td>
+      </tr>
+      <tr>
+        <td><strong>중고폰 시세</strong><br><span style="font-size:9px;color:var(--text3)">07번</span></td>
+        <td class="mono">used_phone_prices</td>
+        <td>UsedPhoneSelectCard(바텀시트) · TradeinCard · AI 채팅 · 매입 접수 · 중고폰 현황</td>
+        <td><a href="flow-used-phone.html">중고폰</a></td>
+      </tr>
+      <tr>
+        <td><strong>휴대폰 시세</strong><br><span style="font-size:9px;color:var(--text3)">08번</span></td>
+        <td class="mono">phone_prices</td>
+        <td>PhoneSelectCard(바텀시트) · MobilePriceCard · AI 채팅 · 매장별 시세</td>
+        <td><a href="flow-store-price.html">매장·시세</a></td>
+      </tr>
+      <tr>
+        <td><strong>매장 정보</strong><br><span style="font-size:9px;color:var(--text3)">09번</span></td>
+        <td class="mono">stores</td>
+        <td>StoreCard · 고객 매장 페이지 · AI 채팅 매장 추천</td>
+        <td><a href="flow-store-price.html">매장·시세</a></td>
+      </tr>
+      <tr>
+        <td><strong>현금 페이백 금액</strong><br><span style="font-size:9px;color:var(--text3)">상품관리 하단</span></td>
+        <td class="mono">어드민 수기 입력</td>
+        <td>고객 카드 · AI 채팅 · 신청서 · 현금 페이백관리 · CRM · 마이페이지</td>
+        <td><a href="flow-internet-tv.html">인터넷+TV</a> · <a href="flow-gifts.html">현금 페이백</a></td>
+      </tr>
+      <tr>
+        <td><strong>공시지원금</strong><br><span style="font-size:9px;color:var(--text3)">20번</span></td>
+        <td class="mono">subsidy_data</td>
+        <td>AI 채팅 공시/선택약정 비교 · 어드민 크롤링 관리</td>
+        <td><a href="data-flow-diagram.html">데이터 흐름도</a></td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
-<!-- ─────────────────────────────────────── -->
-<h2><span class="n">6</span>데이터 원천</h2>
-<table>
-  <thead><tr><th style="width:190px">값</th><th style="width:290px">저장 위치</th><th>바꾸는 곳</th></tr></thead>
-  <tbody>
-    <tr><td><span class="tag t-fee">요금</span> 인터넷·WiFi·TV·셋톱·결합</td><td>파일 시드 + DB overrides</td><td>TM 데이터 관리 1~4</td></tr>
-    <tr><td><span class="tag t-fee">요금</span> 설치비</td><td>DB overrides (section=install)</td><td>TM 데이터 관리 5</td></tr>
-    <tr><td><span class="tag t-fee">요금</span> 유심 요금제</td><td><code>incentive_usim_plans</code></td><td>TM 데이터 관리 11</td></tr>
-    <tr><td><span class="tag t-money">사은품</span> 가이드·MAX</td><td><code>incentive_products</code></td><td>상품 관리</td></tr>
-    <tr><td><span class="tag t-money">사은품</span> 채널별 금액</td><td><code>incentive_product_channels</code></td><td>상품 관리 › 📡 채널</td></tr>
-    <tr><td><span class="tag t-money">사은품</span> 유심 가이드·MAX</td><td><code>incentive_usim_plans</code></td><td>상품 관리 › 📲 유심</td></tr>
-    <tr><td>계약 · 스냅샷</td><td><code>incentive_sales</code></td><td>상담 등록 → 계약 처리</td></tr>
-    <tr><td>인터넷 건 / 유심 단독 건 구분</td><td><code>incentive_sales.sale_kind</code> = <code>internet</code> | <code>usim</code></td><td>상담 화면이 자동 기록</td></tr>
-    <tr><td>어느 유심 요금제로 팔았나</td><td><code>incentive_sales.usim_plan_id</code> · <code>usim_payout</code></td><td>상담 › 유심 지급액</td></tr>
-    <tr><td><span class="tag t-money">박제</span> 유심 가이드·MAX</td><td><code>usim_guide_snapshot</code> · <code>usim_max_snapshot</code></td><td>계약 등록 시점에 굳는다</td></tr>
-    <tr><td>현재 통신사 (번호이동 판정)</td><td><code>incentive_sales.current_carrier</code></td><td>상담 등록 <b>필수</b></td></tr>
-    <tr><td>정산</td><td><code>incentive_calc_monthly_settlement</code></td><td>자동 계산</td></tr>
-  </tbody>
-</table>
-
-<!-- ─────────────────────────────────────── -->
-<h2><span class="n">7</span>지켜야 할 것</h2>
-<table>
-  <thead><tr><th style="width:230px">원칙</th><th>이유</th></tr></thead>
-  <tbody>
-    <tr><td><b>한 값은 한 곳에서만</b></td><td>사은품·설치비가 두 곳에 있어 서로 다른 값이 나왔다. 어느 쪽이 맞는지 알 수 없다.</td></tr>
-    <tr><td><b>실제 지급액을 그대로 기록</b></td><td>더 드리고 안 올리면 잔존마진이 실제보다 크게 잡혀 정정·환수 대상이 된다.</td></tr>
-    <tr><td><b>등록 시점 값을 박제</b></td><td>상품 MAX 를 바꿔도 지난 정산이 흔들리지 않아야 한다.</td></tr>
-    <tr><td><b>스키마를 바꿀 땐 의존성부터</b></td><td>컬럼·테이블을 지울 때 트리거·뷰·RLS 정책을 함께 손보지 않으면 화면이 조용히 죽는다.</td></tr>
-    <tr><td><b>삭제 대신 비활성</b></td><td>과거 견적·계약 추적성을 잃지 않기 위해 행은 남긴다.</td></tr>
-  </tbody>
-</table>
-
-<div class="note bad">
-  <b>폐지된 것</b> — 리베이트 · 마진 · Tier · 상담사 포인트(P) · 우수상품 보너스 · 등급(G1~G3) · 페널티 · 가전렌탈 · 콜 DB.<br>
-  2026-08 이전 정산은 옛 포인트 체계로 확정된 그대로 두고 소급 계산하지 않는다.
+<!-- ==================== 4. 신청 → 계약 → 후속 처리 연결 ==================== -->
+<div class="section-title"><div class="section-num">4</div>신청 → 계약완료 후 자동 트리거 맵</div>
+<div class="card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px">계약완료 시 자동으로 발생하는 7가지</div>
+  <table>
+    <thead><tr><th>#</th><th>트리거</th><th>대상</th><th>조건</th><th>관련 문서</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>현금 페이백 지급대기 자동 생성</strong></td><td>bongi_gifts (지급대기)</td><td>계약완료 확인 (CRM)</td><td><a href="flow-gifts.html">현금 페이백</a></td></tr>
+      <tr><td>2</td><td><strong>포인트 자동 적립</strong> (본인 계약)</td><td>bongi_cash_balance</td><td>앱회원 + PASS 인증</td><td><a href="flow-points-referral-guard.html">포인트</a></td></tr>
+      <tr><td>3</td><td><strong>친구초대 보상</strong> (추천인+친구)</td><td>bongi_rewards</td><td>양쪽 PASS 인증 완료</td><td><a href="flow-points-referral-guard.html">친구초대</a></td></tr>
+      <tr><td>4</td><td><strong>비회원 → 앱 가입 유도 알림톡</strong></td><td>카카오 알림톡</td><td>비회원인 경우</td><td><a href="flow-gifts.html">현금 페이백</a></td></tr>
+      <tr><td>5</td><td><strong>회원관리 신청 건수 +1</strong></td><td>bongi_user_profiles</td><td>전화번호 매칭</td><td><a href="service-flow-v2.html">서비스 플로우</a></td></tr>
+      <tr><td>6</td><td><strong>마이페이지 신청이력 반영</strong></td><td>bongi_applications</td><td>앱회원만</td><td><a href="flow-applications.html">신청현황</a></td></tr>
+      <tr><td>7</td><td><strong>후기 작성 유도 앱 푸시</strong></td><td>앱 푸시</td><td>설치완료 후</td><td><a href="flow-reviews.html">후기</a></td></tr>
+    </tbody>
+  </table>
 </div>
 
-<footer>
-  봉이 TM CRM · 전체 연결맵 — 화면이나 정책이 바뀌면 이 문서를 같이 고친다.
-</footer>
-
+<!-- ==================== 5. 회원 유형별 데이터 흐름 ==================== -->
+<div class="section-title"><div class="section-num">5</div>회원 유형별 데이터 연결</div>
+<div class="card">
+  <div class="grid2">
+    <div>
+      <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">고객 유형 4가지</div>
+      <table>
+        <thead><tr><th>유형</th><th>유입 경로</th><th>데이터 보유</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge b-green">앱회원</span></td><td>카카오/구글 로그인</td><td>이름·전화·소셜·PASS(선택)·마이페이지</td></tr>
+          <tr><td><span class="badge b-orange">비회원(셀프)</span></td><td>셀프신청</td><td>이름·전화·주소·계좌</td></tr>
+          <tr><td><span class="badge b-blue">비회원(CRM)</span></td><td>전화/매장</td><td>이름·전화 (CRM에서 수집)</td></tr>
+          <tr><td><span class="badge b-purple">비회원(중고폰)</span></td><td>매입 접수</td><td>이름·전화·생년월일·성별·통신사 (PASS 완료)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">전화번호 = 핵심 키</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.8">
+        · 어떤 경로로 유입돼도 전화번호 기준 한 고객으로 통합<br>
+        · 비회원 → 앱 가입 시 전화번호로 자동 매칭<br>
+        · 셀프신청/CRM/중고폰 데이터 모두 연결<br>
+        · 중고폰 고객은 PASS 인증 완료 상태 → 앱 가입 시 재인증 불필요
+      </div>
+      <div class="note" style="margin-top:8px">
+        <strong>이름 자동 수정 우선순위:</strong><br>
+        PASS 실명 > 카카오 실명 > 구글 입력 > 셀프신청 입력 > CRM 입력
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- ==================== 6. PASS 인증 의존성 맵 ==================== -->
+<div class="section-title"><div class="section-num">6</div>PASS 본인인증 — 의존성 맵</div>
+<div class="card">
+  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">PASS 인증이 필요한 기능 (돈이 오가는 순간)</div>
+  <table>
+    <thead><tr><th>기능</th><th>PASS 필수</th><th>이유</th><th>관련 문서</th></tr></thead>
+    <tbody>
+      <tr><td><strong>현금 페이백 지급</strong></td><td><span class="badge b-red">필수</span></td><td>현금 지급 → 본인 확인</td><td><a href="flow-gifts.html">현금 페이백</a></td></tr>
+      <tr><td><strong>포인트 출금</strong></td><td><span class="badge b-red">필수</span></td><td>현금 출금 → 본인 확인</td><td><a href="flow-points-referral-guard.html">포인트</a></td></tr>
+      <tr><td><strong>포인트 적립 (전체)</strong></td><td><span class="badge b-red">필수</span></td><td>어뷰징 방지 (CI 중복 체크)</td><td><a href="flow-points-referral-guard.html">포인트</a></td></tr>
+      <tr><td><strong>친구초대 보상</strong></td><td><span class="badge b-red">양쪽 필수</span></td><td>허위가입 방지</td><td><a href="flow-points-referral-guard.html">친구초대</a></td></tr>
+      <tr><td><strong>중고폰 매입 접수</strong></td><td><span class="badge b-red">필수</span></td><td>매입금 지급 → 본인 확인</td><td><a href="flow-used-phone.html">중고폰</a></td></tr>
+      <tr><td><strong>후기 작성 (15,000P)</strong></td><td><span class="badge b-red">필수</span></td><td>포인트 적립 전제 조건</td><td><a href="flow-reviews.html">후기</a></td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>PASS 인증으로 확보:</strong> 실명 · 생년월일 · 성별 · 통신사 · CI(고유값)<br>
+    <strong>카카오/구글로는 못 받는 값:</strong> 통신사, CI → PASS만 가능
+  </div>
+</div>
+
+<!-- ==================== 7. 어드민 메뉴 ↔ 문서 매핑 ==================== -->
+<div class="section-title"><div class="section-num">7</div>어드민 메뉴 ↔ 플로우 문서 매핑</div>
+<div class="card">
+  <table>
+    <thead><tr><th>어드민 #</th><th>메뉴</th><th>플로우 문서</th><th>DB 테이블</th></tr></thead>
+    <tbody>
+      <tr><td>01</td><td>대시보드</td><td><a href="data-flow-diagram.html">데이터 흐름도</a></td><td>전체 집계</td></tr>
+      <tr><td>02</td><td>회원 관리</td><td><a href="service-flow-v2.html">서비스 플로우</a></td><td class="mono">user_profiles</td></tr>
+      <tr><td>03~05</td><td>SKT / KT / LG U+ 상품</td><td><a href="flow-internet-tv.html">인터넷+TV</a></td><td class="mono">speeds / tv / settop / wifi</td></tr>
+      <tr><td>06</td><td>렌탈 상품</td><td><a href="flow-rental.html">렌탈</a></td><td class="mono">rental_products</td></tr>
+      <tr><td>07</td><td>중고폰 매입 시세</td><td><a href="flow-used-phone.html">중고폰</a></td><td class="mono">used_phone_prices</td></tr>
+      <tr><td>08</td><td>휴대폰 시세</td><td><a href="flow-store-price.html">매장·시세</a></td><td class="mono">phone_prices</td></tr>
+      <tr><td>09</td><td>매장 관리</td><td><a href="flow-store-price.html">매장·시세</a></td><td class="mono">stores</td></tr>
+      <tr><td>10</td><td>티켓 관리</td><td><a href="flow-ticket.html">티켓</a></td><td class="mono">tickets (156)</td></tr>
+      <tr><td>11</td><td>신청 현황</td><td><a href="flow-applications.html">신청현황</a></td><td class="mono">applications</td></tr>
+      <tr><td>12</td><td>중고폰 매입 현황</td><td><a href="flow-used-phone.html">중고폰</a></td><td class="mono">used_phone_buyback</td></tr>
+      <tr><td>13</td><td>현금 페이백 관리</td><td><a href="flow-gifts.html">현금 페이백</a></td><td class="mono">gifts</td></tr>
+      <tr><td>14</td><td>포인트 관리</td><td><a href="flow-points-referral-guard.html">포인트</a></td><td class="mono">cash_balance / withdrawals</td></tr>
+      <tr><td>15</td><td>후기 관리</td><td><a href="flow-reviews.html">후기</a></td><td class="mono">reviews (99)</td></tr>
+      <tr><td>16</td><td>돈지키미</td><td><a href="flow-points-referral-guard.html">돈지키미</a></td><td class="mono">user_alarms</td></tr>
+      <tr><td>17</td><td>알림 관리</td><td><a href="flow-points-referral-guard.html">알림</a></td><td class="mono">notifications</td></tr>
+      <tr><td>20</td><td>공시지원금</td><td><a href="data-flow-diagram.html">데이터 흐름도</a></td><td class="mono">subsidy_data (1,134)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== 8. 기술 스택 ==================== -->
+<div class="section-title"><div class="section-num">8</div>기술 스택 + 인프라</div>
+<div class="card">
+  <div class="grid2">
+    <div>
+      <table>
+        <thead><tr><th>계층</th><th>기술</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge b-blue">프론트</span></td><td>React 19 + Vite + react-router-dom</td></tr>
+          <tr><td><span class="badge b-orange">API</span></td><td>Express (ES modules) · REST API</td></tr>
+          <tr><td><span class="badge b-purple">AI</span></td><td>Claude API (@anthropic-ai/sdk)</td></tr>
+          <tr><td><span class="badge b-green">DB</span></td><td>Supabase (PostgreSQL) · 23개 테이블</td></tr>
+          <tr><td><span class="badge b-red">어드민</span></td><td>HTML 단일파일 (정적) · API fetch</td></tr>
+          <tr><td><span class="badge b-gray">배포</span></td><td>Railway · GitHub 자동 배포</td></tr>
+          <tr><td><span class="badge b-gray">크롤링</span></td><td>Playwright (공시지원금) · 매일 09:00 KST</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th>URL</th><th>용도</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://bongi-mobile-production.up.railway.app/" class="mono">고객 웹</a></td><td>React 프론트</td></tr>
+          <tr><td><a href="https://bongi-mobile-production.up.railway.app/admin/" class="mono">어드민</a></td><td>관리자 CRM</td></tr>
+          <tr><td><a href="https://bongi-mobile-production.up.railway.app/api/health" class="mono">API 헬스체크</a></td><td>서버 상태</td></tr>
+          <tr><td><a href="https://supabase.com/dashboard/project/dugaqvvnhsgenhmhuyju" class="mono">Supabase</a></td><td>DB 대시보드</td></tr>
+          <tr><td><a href="https://railway.com/project/9f6d9d05-3f97-4254-86e6-ee30d75c0be4" class="mono">Railway</a></td><td>배포 관리</td></tr>
+          <tr><td><a href="https://github.com/vinsenzo83/bongi-mobile" class="mono">GitHub</a></td><td>소스코드</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 9. API 현황 ==================== -->
+<div class="section-title"><div class="section-num">9</div>API 현황 (50+ 엔드포인트)</div>
+<div class="card">
+  <div class="grid2">
+    <div>
+      <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">공개 API (인증 불필요)</div>
+      <table>
+        <thead><tr><th>경로</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">/api/products/*</td><td>상품/카테고리/티켓/중고폰 카탈로그</td></tr>
+          <tr><td class="mono">/api/stores</td><td>매장 목록/상세</td></tr>
+          <tr><td class="mono">/api/applications</td><td>셀프신청 접수/조회</td></tr>
+          <tr><td class="mono">/api/reviews</td><td>후기 목록/작성/이미지 업로드</td></tr>
+          <tr><td class="mono">/api/cash/*</td><td>포인트 잔액/내역/출금/은행/정책</td></tr>
+          <tr><td class="mono">/api/referrals/*</td><td>추천코드/실적/등록/계약/보상정책</td></tr>
+          <tr><td class="mono">/api/alarms</td><td>돈지키미 CRUD</td></tr>
+          <tr><td class="mono">/api/chat/*</td><td>AI 채팅 세션/메시지/스트리밍</td></tr>
+          <tr><td class="mono">/api/auth/*</td><td>회원가입/로그인/소셜프로필</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">어드민 API (50+ 엔드포인트)</div>
+      <table>
+        <thead><tr><th>경로</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">/api/admin/platform/members</td><td>회원 목록/상세(8탭)/동기화</td></tr>
+          <tr><td class="mono">/api/admin/platform/applications</td><td>신청 목록/상태·상품 변경</td></tr>
+          <tr><td class="mono">/api/admin/platform/gifts</td><td>현금 페이백 목록(회원 매칭)/상태 변경</td></tr>
+          <tr><td class="mono">/api/admin/platform/cash/*</td><td>출금 목록(회원 매칭)/승인(조건검증)/적립내역/수동적립</td></tr>
+          <tr><td class="mono">/api/admin/platform/don-jikimi</td><td>돈지키미 목록(회원 매칭)/상태 변경</td></tr>
+          <tr><td class="mono">/api/admin/platform/notifications</td><td>알림 목록(회원 매칭)/수동발송/재발송</td></tr>
+          <tr><td class="mono">/api/admin/platform/used-phone-buyback</td><td>중고폰 매입현황</td></tr>
+          <tr><td class="mono">/api/admin/platform/subsidy</td><td>공시지원금/벌크삽입/크롤링</td></tr>
+          <tr><td class="mono">/api/admin/platform/tickets</td><td>티켓 목록/동기화</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 10. 최신 시스템 현황 ==================== -->
+<div class="section-title"><div class="section-num">10</div>최신 시스템 현황 (2026-04-09)</div>
+<div class="card">
+  <table>
+    <thead><tr><th>항목</th><th>상태</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td><strong>DB 상태값</strong></td><td><span class="badge b-green">전부 한글</span></td><td>신청완료/상담중/계약완료/지급대기/지급완료/승인/대기/반려/적립/출금 등</td></tr>
+      <tr><td><strong>회원 동기화</strong></td><td><span class="badge b-green">구현 완료</span></td><td>member-sync.js — 전화번호 기준 전체 테이블 동기화</td></tr>
+      <tr><td><strong>중고폰 매입</strong></td><td><span class="badge b-green">분리 완료</span></td><td>신청현황에서 분리 → bongi_used_phone_buyback 별도 관리</td></tr>
+      <tr><td><strong>출금 조건 검증</strong></td><td><span class="badge b-green">구현 완료</span></td><td>승인 시 5만P+PASS+계좌+계약1회 자동 검증</td></tr>
+      <tr><td><strong>Race Condition</strong></td><td><span class="badge b-green">수정 완료</span></td><td>deduct_cash_balance/add_cash_balance RPC 원자적 처리</td></tr>
+      <tr><td><strong>출금 반려 환불</strong></td><td><span class="badge b-green">구현 완료</span></td><td>반려 시 잔액 복구 + cash_history 환불 기록</td></tr>
+      <tr><td><strong>SQL Injection</strong></td><td><span class="badge b-green">방지 완료</span></td><td>sanitizeSearch() 적용</td></tr>
+      <tr><td><strong>공시지원금 크롤링</strong></td><td><span class="badge b-green">정상 작동</span></td><td>Playwright dynamic import + 매일 09:00 KST</td></tr>
+      <tr><td><strong>이미지 자동 리사이즈</strong></td><td><span class="badge b-green">구현 완료</span></td><td>후기/중고폰 사진 자동 압축</td></tr>
+      <tr><td><strong>마이페이지 API 연동</strong></td><td><span class="badge b-orange">4/8 완료</span></td><td>Home/Applications/Points/Gifts 완료. Referral/MoneyGuard/Profile/BankAccount 미완</td></tr>
+      <tr><td><strong>어드민 API 인증</strong></td><td><span class="badge b-orange">미적용</span></td><td>MVP 단계 — 출시 직전 authenticateJWT 적용 예정</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:11px">
+  봉이모바일 · 전체 연결 맵 · 2026-04-09<br>
+  11개 플로우 문서 + 1개 마스터 맵
+</div>
+
+<script>
+(function(){
+  var API='https://bongi-mobile-production.up.railway.app/api/admin/platform/dev-notes';
+  var docName=document.title;
+  var memoCache={};
+
+  /* ---- overlay (singleton) ---- */
+  var overlay=document.createElement('div');
+  overlay.className='memo-overlay';
+  overlay.innerHTML='<div class="memo-popup">'+
+    '<div class="memo-popup-header"><span class="memo-popup-title"></span><button class="memo-popup-close">&times;</button></div>'+
+    '<div class="memo-popup-body"><div class="memo-popup-list"></div></div>'+
+    '<div class="memo-popup-footer">'+
+      '<input class="memo-title-input" placeholder="\uba54\ubaa8 \uc81c\ubaa9 (\uc120\ud0dd)" />'+
+      '<textarea class="memo-content-input" placeholder="\uba54\ubaa8 \ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694..."></textarea>'+
+      '<div class="memo-popup-footer-row"><input class="memo-author-input" placeholder="\uc791\uc131\uc790" /><button class="memo-popup-submit">\ub4f1\ub85d</button></div>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+
+  var popupTitle=overlay.querySelector('.memo-popup-title');
+  var popupList=overlay.querySelector('.memo-popup-list');
+  var inputTitle=overlay.querySelector('.memo-title-input');
+  var inputContent=overlay.querySelector('.memo-content-input');
+  var inputAuthor=overlay.querySelector('.memo-author-input');
+  var currentStep=null;
+  var currentBtn=null;
+
+  overlay.querySelector('.memo-popup-close').onclick=closePopup;
+  overlay.addEventListener('click',function(e){if(e.target===overlay)closePopup();});
+
+  function closePopup(){overlay.classList.remove('active');currentStep=null;currentBtn=null;}
+
+  function getAuthor(){
+    var a=inputAuthor.value.trim();
+    if(a)localStorage.setItem('stepMemoAuthor',a);
+    return a||localStorage.getItem('stepMemoAuthor')||'\uc775\uba85';
+  }
+
+  function fmtDate(d){
+    var dt=new Date(d);
+    var m=String(dt.getMonth()+1).padStart(2,'0'),dd=String(dt.getDate()).padStart(2,'0');
+    var hh=String(dt.getHours()).padStart(2,'0'),mm=String(dt.getMinutes()).padStart(2,'0');
+    return m+'-'+dd+' '+hh+':'+mm;
+  }
+
+  function renderPopup(stepText){
+    popupList.innerHTML='';
+    var notes=(memoCache[stepText]||[]);
+    if(!notes.length){popupList.innerHTML='<div class="memo-popup-empty">\ub4f1\ub85d\ub41c \uba54\ubaa8\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.</div>';return;}
+    notes.forEach(function(n){
+      var item=document.createElement('div');item.className='memo-popup-item';
+      var meta=document.createElement('div');meta.className='memo-popup-item-meta';
+      meta.textContent=(n.author||'\uc775\uba85')+' \u00b7 '+fmtDate(n.created_at||n.createdAt||new Date());
+      var content=document.createElement('div');content.className='memo-popup-item-content';
+      content.textContent=n.content||'';
+      var del=document.createElement('button');del.className='memo-popup-item-del';del.textContent='\uc0ad\uc81c';
+      del.onclick=function(){deleteMemo(n.id,stepText);};
+      item.appendChild(meta);item.appendChild(content);item.appendChild(del);
+      if(n.title){
+        var raw=n.title.replace(/^\[[^\]]*\]\s*/,'');
+        if(raw){var tt=document.createElement('div');tt.className='memo-popup-item-title';tt.textContent=raw;item.insertBefore(tt,meta);}
+      }
+      popupList.appendChild(item);
+    });
+  }
+
+  function updateBtnCount(btn,stepText){
+    var count=(memoCache[stepText]||[]).length;
+    var label=btn.getAttribute('data-label');
+    btn.textContent='\ud83d\udcdd '+label+(count?' ('+count+')':'');
+  }
+
+  function loadMemos(stepText,btn){
+    fetch(API+'?page='+encodeURIComponent(docName))
+    .then(function(r){return r.json()})
+    .then(function(data){
+      var all=data.data||data.notes||data||[];
+      memoCache[stepText]=all.filter(function(n){return n.title&&n.title.indexOf('['+stepText+']')===0;});
+      if(btn)updateBtnCount(btn,stepText);
+      if(currentStep===stepText)renderPopup(stepText);
+    }).catch(function(){});
+  }
+
+  function saveMemo(stepText){
+    var author=getAuthor();
+    var t=inputTitle.value.trim();
+    var c=inputContent.value.trim();
+    if(!c){alert('\ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694');return;}
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({page:docName,type:'\uba54\ubaa8',title:'['+stepText+'] '+(t||'\uba54\ubaa8'),content:c,author:author})
+    }).then(function(r){return r.json()}).then(function(){
+      inputTitle.value='';inputContent.value='';
+      loadMemos(stepText,currentBtn);
+    }).catch(function(e){alert('\uc800\uc7a5 \uc2e4\ud328: '+e.message);});
+  }
+
+  function deleteMemo(id,stepText){
+    if(!confirm('\uc774 \uba54\ubaa8\ub97c \uc0ad\uc81c\ud558\uc2dc\uaca0\uc2b5\ub2c8\uae4c?'))return;
+    fetch(API+'/'+id,{method:'DELETE'})
+    .then(function(){loadMemos(stepText,currentBtn);})
+    .catch(function(e){alert('\uc0ad\uc81c \uc2e4\ud328: '+e.message);});
+  }
+
+  function openPopup(stepText,btn){
+    currentStep=stepText;currentBtn=btn;
+    popupTitle.textContent='\ud83d\udcdd '+stepText;
+    inputAuthor.value=localStorage.getItem('stepMemoAuthor')||'';
+    inputTitle.value='';inputContent.value='';
+    renderPopup(stepText);
+    overlay.classList.add('active');
+  }
+
+  overlay.querySelector('.memo-popup-submit').onclick=function(){
+    if(currentStep)saveMemo(currentStep);
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    var cards=document.querySelectorAll('.step-card');
+    cards.forEach(function(card){
+      var prev=card.previousElementSibling;
+      var stepText=(prev&&prev.classList.contains('step-label'))?prev.textContent.trim():'';
+      if(!stepText)stepText=card.textContent.trim().substring(0,40);
+
+      var wrap=document.createElement('div');wrap.className='memo-btn-wrap';
+      var btn=document.createElement('button');btn.className='memo-open-btn';
+      btn.setAttribute('data-label','\uba54\ubaa8');
+      btn.textContent='\ud83d\udcdd \uba54\ubaa8';
+      btn.onclick=function(){openPopup(stepText,btn);};
+      wrap.appendChild(btn);
+      card.parentNode.insertBefore(wrap,card.nextSibling);
+
+      loadMemos(stepText,btn);
+    });
+  });
+})();
+</script>
+
+<!-- ==================== 11. 개발자 참고 URL ==================== -->
+<div class="section-title"><div class="section-num">11</div>🔗 개발자 참고 URL</div>
+<div class="card">
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin-bottom:8px">주요 서비스 URL</div>
+  <table>
+    <thead><tr><th>항목</th><th>URL</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td><strong>고객 웹</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/</a></td><td>고객용 프론트</td></tr>
+      <tr><td><strong>어드민 CRM</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/admin/" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/admin/</a></td><td>02번 메뉴 클릭</td></tr>
+      <tr><td><strong>API 헬스체크</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/api/health" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/api/health</a></td><td>서버 상태 확인</td></tr>
+      <tr><td><strong>API 베이스</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/api" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/api</a></td><td>모든 API 엔드포인트</td></tr>
+      <tr><td><strong>MVP 기능명세서</strong></td><td class="mono">~/봉이프로젝트/mvp-spec.html</td><td>로컬 파일</td></tr>
+      <tr><td><strong>플로우 문서</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/docs/" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/docs/</a></td><td>12개 플로우 문서</td></tr>
+      <tr><td><strong>🧮 요금 계산기 v1 (상담원용)</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/docs/calculator.html" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/docs/calculator.html</a></td><td>3사 전체 결합 상세 · 프리미엄 가족결합 · TM 참고용</td></tr>
+      <tr><td><strong>🧮 요금 계산기 v2 (고객용)</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/docs/calculator-v2.html" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/docs/calculator-v2.html</a></td><td>카드형 UI · 심플 버전 · 실시간 요금 계산</td></tr>
+      <tr><td><strong>🧪 프리미엄 로직 테스트</strong></td><td><a href="https://bongi-mobile-production.up.railway.app/docs/test-premium.html" target="_blank" class="mono">https://bongi-mobile-production.up.railway.app/docs/test-premium.html</a></td><td>KT 프리미엄 가족결합 10개 케이스 검증</td></tr>
+      <tr><td><strong>🧮 계산기 소스코드</strong></td><td><a href="https://github.com/vinsenzo83/bongi-mobile/blob/master/docs/calculator.html" target="_blank" class="mono">github.com/vinsenzo83/bongi-mobile/blob/master/docs/calculator.html</a></td><td>v1 HTML 단일 파일</td></tr>
+      <tr><td><strong>GitHub</strong></td><td><a href="https://github.com/vinsenzo83/bongi-mobile" target="_blank" class="mono">https://github.com/vinsenzo83/bongi-mobile</a></td><td>소스코드</td></tr>
+      <tr><td><strong>Supabase</strong></td><td class="mono">dugaqvvnhsgenhmhuyju (프로젝트 ID)</td><td>DB 대시보드</td></tr>
+      <tr><td><strong>Railway</strong></td><td class="mono">bongi-mobile 프로젝트</td><td>배포 관리</td></tr>
+      <tr><td><strong>피그마</strong></td><td><a href="https://www.figma.com/design/p23XZoRIXZGFo5OiWCdU5s/" target="_blank" class="mono">https://www.figma.com/design/p23XZoRIXZGFo5OiWCdU5s/</a></td><td>상품별 카드 UI/UX</td></tr>
+    </tbody>
+  </table>
+
+  <div style="font-size:12px;font-weight:900;color:var(--navy);margin:20px 0 8px 0">주요 API 엔드포인트</div>
+  <table>
+    <thead><tr><th>API</th><th>Method</th><th>URL</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><strong>상품 조회</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/products</td><td>전체 상품</td></tr>
+      <tr><td><strong>신청 접수</strong></td><td><span class="badge b-blue">POST</span></td><td class="mono">/api/applications</td><td>신청서 제출</td></tr>
+      <tr><td><strong>채팅 AI</strong></td><td><span class="badge b-blue">POST</span></td><td class="mono">/api/ai/chat</td><td>Claude AI 채팅</td></tr>
+      <tr><td><strong>현금 페이백</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/admin/platform/gifts</td><td>현금 페이백 관리</td></tr>
+      <tr><td><strong>출금 요청</strong></td><td><span class="badge b-blue">POST</span></td><td class="mono">/api/cash/withdraw</td><td>캐시 출금</td></tr>
+      <tr><td><strong>친구초대</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/referrals/my-code</td><td>추천코드 조회</td></tr>
+      <tr><td><strong>돈지키미</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/alarms</td><td>알람 목록</td></tr>
+      <tr><td><strong>후기</strong></td><td><span class="badge b-gray">GET/POST</span></td><td class="mono">/api/reviews</td><td>후기 CRUD</td></tr>
+      <tr><td><strong>회원 프로필</strong></td><td><span class="badge b-green">GET</span></td><td class="mono">/api/user/profile</td><td>내 정보</td></tr>
+      <tr><td><strong>계좌 관리</strong></td><td><span class="badge b-gray">GET/POST</span></td><td class="mono">/api/user/bank-account</td><td>계좌 CRUD</td></tr>
+      <tr><td><strong>주소 관리</strong></td><td><span class="badge b-gray">GET/POST</span></td><td class="mono">/api/user/addresses</td><td>주소 CRUD</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+(function(){
+  var STATES = [
+    {name:'unfixed', label:'⚠️ 데이터 미픽스', bg:'#fee2e2', color:'#991b1b', border:'#dc2626'},
+    {name:'partial', label:'🟡 데이터 부분 픽스',   bg:'#fef3c7', color:'#92400e', border:'#f7c94f'},
+    {name:'fixed',   label:'✅ 데이터 픽스',   bg:'#d1fae5', color:'#065f46', border:'#059669'}
+  ];
+
+  function renderToggle(container, cardId, currentState) {
+    container.innerHTML = '';
+    STATES.forEach(function(st){
+      var btn = document.createElement('span');
+      btn.textContent = st.label;
+      btn.dataset.card = cardId;
+      btn.dataset.state = st.name;
+      var active = st.name === currentState;
+      btn.style.cssText = 'padding:3px 8px;border-radius:10px;font-size:9px;font-weight:700;cursor:pointer;user-select:none;transition:all 0.15s;' +
+        (active
+          ? 'background:' + st.bg + ';color:' + st.color + ';border:1.5px solid ' + st.border + ';box-shadow:0 2px 4px rgba(0,0,0,0.1)'
+          : 'background:#f3f4f6;color:#9ca3af;border:1.5px solid #e5e7eb;opacity:0.55');
+      btn.onclick = function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        localStorage.setItem('master-map-status-' + cardId, st.name);
+        renderToggle(container, cardId, st.name);
+      };
+      btn.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+      btn.addEventListener('touchstart', function(e){ e.stopPropagation(); });
+      container.appendChild(btn);
+    });
+  }
+
+  window.editDuration = function(e, el) {
+    e.preventDefault();
+    e.stopPropagation();
+    var current = el.dataset.weeks || '2';
+    var input = prompt('개발 기간 (주 단위)', current);
+    if (input === null) return;
+    var n = parseInt(input);
+    if (isNaN(n) || n < 1 || n > 52) { alert('1~52주 범위로 입력'); return; }
+    el.dataset.weeks = n;
+    el.textContent = '⏱️ ' + n + '주';
+    localStorage.setItem('master-map-weeks-' + el.dataset.card, n);
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    // Duration 복원
+    document.querySelectorAll('.duration-btn').forEach(function(el){
+      var saved = localStorage.getItem('master-map-weeks-' + el.dataset.card);
+      if (saved) {
+        el.dataset.weeks = saved;
+        el.textContent = '⏱️ ' + saved + '주';
+      }
+      el.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+      el.addEventListener('touchstart', function(e){ e.stopPropagation(); });
+    });
+    document.querySelectorAll('.status-btn').forEach(function(el){
+      var cardId = el.dataset.card;
+      var saved = localStorage.getItem('master-map-status-' + cardId);
+      var initial = saved || el.dataset.state;
+      // 단일 버튼을 3개 토글 그룹 컨테이너로 교체
+      var container = document.createElement('div');
+      container.className = 'status-toggle';
+      container.style.cssText = 'display:flex;gap:3px;flex-wrap:wrap';
+      el.parentNode.replaceChild(container, el);
+      renderToggle(container, cardId, initial);
+    });
+  });
+})();
+</script>
+
 </body>
 </html>
