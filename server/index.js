@@ -360,6 +360,12 @@ cron.schedule('30 3 * * *', () => {
   runCardMaskingJob().catch(e => console.error('card-masking 에러:', e.message));
 }, { timezone: 'Asia/Seoul' });
 
+// 상담 데스크 아웃바운드 큐 워커 (setTimeout 체인 + 자체 reap 타이머 — cron 불필요)
+//   DESK_WORKER_ENABLED=true 일 때만 돈다. 외부 API 를 때리는 루프라 킬 스위치가 기본 꺼짐이다.
+//   (타이머는 unref 되어 있고 정지 시 할 정리가 없다 — SIGTERM 기본 동작을 건드리지 않는다)
+import { startDeskWorker } from './services/desk-worker.js';
+startDeskWorker();
+
 // 정산은 RPC `incentive_calc_monthly_settlement(agent_id, ym)` 즉시 계산 — cron 불필요
 
 app.listen(PORT, () => {

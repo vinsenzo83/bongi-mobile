@@ -608,6 +608,16 @@ router.post('/conversations/:id/snooze', agentGuard, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// GET /api/desk/queue/stats — 아웃바운드 큐 상태 (운영 가시성 · manager 이상)
+//   워커(services/desk-worker.js)가 잘 도는지, 적체가 있는지 보는 창이다.
+//   kind 별 {pending,sending,sent,failed,expired,oldest_pending}.
+//   ⚠ crm_note·crm_callback 은 워커가 집지 않는다(핸들러 미등록) — pending 이 쌓이는 것이 정상이다.
+router.get('/queue/stats', agentGuard, requireMinRole('manager'), async (req, res, next) => {
+  try {
+    res.json(await rpc('outbound_stats', {}));
+  } catch (e) { next(e); }
+});
+
 // ─────────────────────────────────────────────────────────────────
 // § 미사용 (2026-09-04 범위 변경으로 제거)
 //   · POST /api/desk/conversations            (desk_start)
