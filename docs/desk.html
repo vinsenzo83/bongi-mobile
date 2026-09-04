@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이 상담 데스크 — 상담사</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard Variable',-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;color:#e2e8f0;font-size:13px;height:100vh;overflow:hidden}
+/* grid 로 하면 배너가 display:none 일 때 그리드 아이템에서 빠져 .desk 가 auto 행으로 밀린다
+   (= API 연결 정상일 때 화면이 아래로 안 참). flex 는 숨겨진 자식 영향을 받지 않는다. */
+.wrap{display:flex;flex-direction:column;height:100vh;min-height:0}
+
+/* 헤더 */
+.hdr{padding:8px 16px;background:#1e293b;border-bottom:1px solid #334155;display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex-shrink:0}
+.hdr h1{font-size:14.5px;color:#f8fafc;font-weight:800}
+.hdr .sp{flex:1}
+.hdr .env{font-size:10.5px;color:#64748b}
+.hdr .me{font-size:11px;color:#cbd5e1;font-weight:700}
+.hdr .me b{color:#fbbf24}
+
+/* 배너 */
+.banner{padding:6px 16px;font-size:11.5px;font-weight:700;display:none;align-items:center;gap:8px;flex-shrink:0}
+.banner.on{display:flex}
+.banner.warn{background:rgba(251,191,36,.14);border-bottom:1px solid rgba(251,191,36,.45);color:#fbbf24}
+.banner.err{background:rgba(220,38,38,.14);border-bottom:1px solid rgba(220,38,38,.45);color:#fca5a5}
+.banner.info{background:rgba(8,145,178,.14);border-bottom:1px solid rgba(8,145,178,.45);color:#67e8f9}
+.banner .sp{flex:1}
+
+.btn{background:#334155;color:#cbd5e1;border:1px solid #475569;padding:5px 10px;border-radius:5px;font-size:11.5px;cursor:pointer;font-family:inherit}
+.btn:hover:not(:disabled){background:#475569}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.b-pri{background:#0891b2;color:#fff;border-color:#0891b2}
+.b-warn{background:#f59e0b;color:#0f172a;border-color:#f59e0b;font-weight:700}
+.b-ok{background:#16a34a;color:#fff;border-color:#16a34a}
+.b-dan{background:#dc2626;color:#fff;border-color:#dc2626}
+.b-purple{background:#7c3aed;color:#fff;border-color:#7c3aed;font-weight:700}
+.btn.sm{padding:3px 8px;font-size:10.5px}
+.flash{animation:fl 1.4s ease-out}
+@keyframes fl{0%{box-shadow:0 0 0 2px #fbbf24;background:rgba(251,191,36,.12)}100%{box-shadow:none;background:transparent}}
+
+/* 말풍선 */
+.msg{margin-bottom:10px;display:flex;gap:8px;max-width:82%}
+.msg.out{margin-left:auto;flex-direction:row-reverse}
+.av{width:25px;height:25px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.av-c{background:#334155;color:#cbd5e1}.av-b{background:linear-gradient(135deg,#0891b2,#7c3aed);color:#fff}.av-a{background:#16a34a;color:#fff}
+.bub{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:8px 11px;font-size:12.5px;line-height:1.55;word-break:break-word}
+.msg.out .bub{background:#164e63;border-color:#0891b2}
+.bub .nm{font-size:10px;color:#94a3b8;font-weight:700;margin-bottom:3px}
+.bub .tm{font-size:9px;color:#64748b;margin-top:4px;text-align:right}
+/* .msg.out .bub 가 클래스 3개(0,3,0)라 .bub.note(0,2,0)를 이긴다 → 내부메모가 노란색이 안 된다.
+   상담사 메모는 항상 out 쪽에 그려지므로 out 조합까지 명시해야 한다. */
+.bub.note,.msg.out .bub.note{background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.4)}
+.bub.note .nm{color:#fbbf24}
+.bub.pending{opacity:.55}
+.bub.failed,.msg.out .bub.failed{border-color:#dc2626}
+.bub.dropped,.msg.out .bub.dropped{opacity:.42;border-style:dashed;border-color:#dc2626;background:#1e293b;position:relative}
+.bub.dropped .nm{color:#fca5a5}
+.drop-tag{position:absolute;right:8px;top:-9px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;padding:1px 7px;border-radius:8px}
+.src{font-size:9.5px;color:#67e8f9;margin-top:5px;padding-top:5px;border-top:1px dashed #334155}
+.blocked{font-size:10px;color:#fca5a5;margin-top:5px;padding:5px 7px;border-radius:5px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.35)}
+.sys{text-align:center;font-size:10px;color:#64748b;margin:10px 0}
+.sys span{background:#1e293b;padding:3px 11px;border-radius:11px;border:1px solid #334155}
+.sys.ho span{background:rgba(34,197,94,.12);border-color:#16a34a;color:#86efac;font-weight:700;padding:5px 14px}
+.sys.bg span{background:rgba(124,58,237,.15);border-color:#7c3aed;color:#c4b5fd;font-weight:700;padding:5px 14px}
+.card{background:#0f172a;border:1px solid #475569;border-radius:8px;padding:9px;margin-top:7px}
+.card .cn{font-size:12px;font-weight:800;color:#fbbf24}
+.card .cd{font-size:10.5px;color:#94a3b8;margin-top:3px}
+.card .cp{font-size:13px;font-weight:800;color:#86efac;margin-top:5px}
+
+/* 배지 */
+.tg{display:inline-block;font-size:9px;font-weight:700;padding:1.5px 6px;border-radius:3px;margin-right:3px}
+.i-presale{background:rgba(96,165,250,.2);color:#93c5fd}
+.i-cs{background:rgba(148,163,184,.22);color:#cbd5e1}
+.i-claim{background:rgba(220,38,38,.25);color:#fca5a5}
+.c-tag{background:rgba(134,239,172,.18);color:#86efac}
+.d-tag{background:rgba(124,58,237,.2);color:#c4b5fd}
+
+/* 3분할 */
+.desk{display:grid;grid-template-columns:288px 1fr 330px;flex:1 1 auto;overflow:hidden;min-height:0}
+.pane{display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.pane+.pane{border-left:1px solid #334155}
+.ph2{padding:7px 11px;background:#1e293b;border-bottom:1px solid #334155;flex-shrink:0}
+.pt{font-size:10px;color:#fbbf24;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;justify-content:space-between}
+.pt .m{color:#94a3b8;font-weight:600;text-transform:none;font-size:10px}
+.ax{font-size:8.5px;color:#64748b;font-weight:800;text-transform:uppercase;margin:5px 0 3px}
+.row{display:flex;gap:3px;flex-wrap:wrap}
+.chip{font-size:10px;padding:2.5px 7px;border-radius:11px;background:#0f172a;color:#94a3b8;cursor:pointer;border:1px solid #334155;user-select:none}
+.chip.active{background:#0891b2;color:#fff;border-color:#0891b2}
+.chip.int.active{background:#7c3aed;border-color:#7c3aed;color:#fff}
+.chip.f.active{background:#475569;border-color:#64748b;color:#f1f5f9}
+.dtab{font-size:10.5px;padding:3px 9px;border-radius:5px;background:#0f172a;color:#94a3b8;cursor:pointer;border:1px solid #334155;font-weight:700;user-select:none}
+.dtab.active{background:#334155;color:#f1f5f9;border-color:#64748b}
+.dtab .n{color:#fbbf24;font-weight:800;margin-left:4px}
+.list{flex:1;overflow-y:auto;padding:6px 7px}
+.cv{background:#1e293b;border:1px solid #334155;border-radius:7px;padding:8px 10px;margin-bottom:5px;cursor:pointer}
+.cv:hover{border-color:#0891b2}
+.cv.sel{border-color:#fbbf24;background:rgba(251,191,36,.06)}
+.cv-r1{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;gap:6px}
+.cv-n{font-weight:700;font-size:12.5px;color:#f1f5f9}
+.cv-t{font-size:9.5px;color:#64748b;font-family:'SF Mono',Monaco,monospace;flex-shrink:0}
+.cv-p{font-size:9.5px;color:#64748b;font-family:'SF Mono',Monaco,monospace}
+.cv-l{font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}
+.cv-r3{display:flex;justify-content:space-between;align-items:center;margin-top:5px}
+.st{font-size:9px;font-weight:700;padding:1.5px 6px;border-radius:9px}
+.st-bot{background:rgba(103,232,249,.18);color:#67e8f9}
+.st-wait{background:rgba(251,191,36,.2);color:#fbbf24}
+.st-asg{background:rgba(34,197,94,.18);color:#86efac}
+.st-close{background:rgba(71,85,105,.3);color:#94a3b8}
+.ur{background:#dc2626;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:8px}
+.sla{font-size:9.5px;font-weight:700;color:#fca5a5}
+
+.cvhd{padding:8px 13px;background:#1e293b;border-bottom:1px solid #334155;display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0;min-height:44px}
+.cvhd .who{font-weight:800;font-size:14px;color:#f8fafc}
+.cvhd .p{font-family:'SF Mono',Monaco,monospace;font-size:11px;color:#94a3b8}
+.cvhd .acts{margin-left:auto;display:flex;gap:5px;align-items:center}
+.stream{flex:1;overflow-y:auto;padding:13px;background:#0f172a;min-height:0}
+.comp{border-top:1px solid #334155;background:#1e293b;padding:8px 11px;flex-shrink:0}
+.ai{background:rgba(8,145,178,.1);border:1px solid rgba(8,145,178,.4);border-radius:7px;padding:6px 9px;margin-bottom:6px}
+.ai .h{font-size:9.5px;color:#67e8f9;font-weight:800;margin-bottom:3px;display:flex;justify-content:space-between}
+.ai .s{font-size:11.5px;color:#cbd5e1;line-height:1.5;cursor:pointer;padding:3px 0;border-bottom:1px dotted #334155}
+.ai .s:last-child{border:none}
+.ai .s:hover{color:#f1f5f9}
+.ctabs{display:flex;gap:4px;margin-bottom:5px;align-items:center}
+.ct{font-size:10.5px;line-height:1.6;padding:3px 10px;border-radius:5px;background:#0f172a;color:#94a3b8;cursor:pointer;border:1px solid #334155;font-weight:700;flex:0 0 auto}
+.ct.active{background:#0891b2;color:#fff;border-color:#0891b2}
+.ct.nt.active{background:#f59e0b;color:#0f172a;border-color:#f59e0b}
+.cbox{display:flex;gap:6px;align-items:flex-end}
+.cbox textarea{flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;border-radius:7px;padding:7px 10px;font-size:12.5px;font-family:inherit;resize:none;height:46px}
+.cbox textarea:disabled{opacity:.5}
+.cbox textarea.note{background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.45)}
+.closebar{display:flex;gap:5px;margin-top:6px;align-items:center;flex-wrap:wrap}
+.closebar .lb{font-size:9.5px;color:#64748b;font-weight:800;text-transform:uppercase}
+.cpanel{margin-top:7px;background:#0f172a;border:1px solid #475569;border-radius:8px;padding:9px 11px}
+.cpanel.call{border-color:#f59e0b}
+.cpanel .t{font-size:11.5px;font-weight:800;color:#fbbf24;margin-bottom:6px}
+.cpanel .warnline{font-size:10.5px;color:#fca5a5;margin-bottom:6px;line-height:1.5}
+.cpanel input[type=datetime-local],.cpanel textarea,.cpanel select{background:#1e293b;border:1px solid #475569;color:#e2e8f0;border-radius:6px;padding:5px 8px;font-size:11.5px;font-family:inherit}
+.cpanel textarea{width:100%;height:44px;resize:none;margin-top:6px}
+.slots{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0}
+.slot{font-size:10.5px;padding:4px 10px;border-radius:14px;background:#1e293b;border:1px solid #475569;color:#cbd5e1;cursor:pointer;user-select:none}
+.slot.picked{background:#16a34a;border-color:#16a34a;color:#fff;font-weight:700}
+.crow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:7px}
+
+.sec{background:#1e293b;border-bottom:1px solid #334155;padding:10px 13px}
+.sec.hop{background:rgba(34,197,94,.07);border-left:3px solid #16a34a}
+.sect{font-size:10px;color:#fbbf24;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;display:flex;justify-content:space-between;gap:6px}
+.sec.hop .sect{color:#86efac}
+.sect .lnk{color:#67e8f9;font-weight:600;text-transform:none;font-size:10px}
+.kv{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;border-bottom:1px dotted #334155;gap:8px}
+.kv .k{color:#94a3b8;flex-shrink:0}
+.kv .v{color:#e2e8f0;font-weight:600;text-align:right}
+.unans{background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.45);border-radius:6px;padding:7px 9px;margin-top:6px}
+.unans .h{font-size:9.5px;color:#fbbf24;font-weight:800;margin-bottom:3px}
+.unans li{font-size:11.5px;color:#fde68a;margin-left:14px;line-height:1.6}
+.tl{font-size:11px;padding:5px 0;border-bottom:1px dotted #334155}
+.tl .d{color:#64748b;font-size:9.5px;font-family:'SF Mono',Monaco,monospace}
+.tl .c{color:#cbd5e1;margin-top:2px}
+.tag{font-size:9px;padding:1px 5px;border-radius:3px;margin-right:4px}
+.t-call{background:rgba(96,165,250,.2);color:#93c5fd}
+.t-chat{background:rgba(103,232,249,.2);color:#67e8f9}
+.t-sale{background:rgba(34,197,94,.2);color:#86efac}
+.t-etc{background:rgba(148,163,184,.22);color:#cbd5e1}
+.empty{padding:22px;text-align:center;color:#64748b;font-size:11.5px;line-height:1.7}
+
+/* 이관·보류 다이얼로그 */
+.mask{position:fixed;inset:0;background:rgba(2,6,23,.72);display:flex;align-items:center;justify-content:center;z-index:80}
+.modal{background:#1e293b;border:1px solid #475569;border-radius:10px;padding:15px 17px;width:430px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal h3{font-size:13.5px;color:#f8fafc;margin-bottom:4px}
+.modal .sub{font-size:10.5px;color:#94a3b8;margin-bottom:11px;line-height:1.65}
+.modal .sub b{color:#fbbf24}
+.fld{margin-bottom:9px}
+.fld label{display:block;font-size:9.5px;color:#fbbf24;font-weight:800;text-transform:uppercase;margin-bottom:3px;letter-spacing:.04em}
+.fld input,.fld select,.fld textarea{width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit}
+.fld textarea{height:52px;resize:none}
+.fld .hint{font-size:10px;color:#64748b;margin-top:3px;line-height:1.5}
+.req{color:#fca5a5}
+/* CRM 연동 대기 안내 */
+.crmwait{margin-top:8px;background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.35);border-radius:7px;padding:8px 10px}
+.crmwait .t{font-size:10.5px;font-weight:800;color:#67e8f9;margin-bottom:3px}
+.crmwait .d{font-size:10.5px;color:#94a3b8;line-height:1.6}
+.crmwait .ref{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px}
+.crmwait .ref .k{font-size:10px;color:#94a3b8;flex-shrink:0}
+.crmwait code.sel{user-select:all;-webkit-user-select:all;cursor:text;font-family:'SF Mono',Monaco,monospace;font-size:11px;color:#fbbf24;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:2px 6px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1e293b;border:1px solid #475569;color:#f1f5f9;padding:9px 16px;border-radius:8px;font-size:12px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:99;display:none;max-width:70vw}
+#toast.on{display:block}
+#toast.bad{border-color:#dc2626;color:#fca5a5}
+#toast.good{border-color:#16a34a;color:#86efac}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr">
+    <h1>💬 봉이 상담 데스크</h1>
+    <span class="me" id="meBox">—</span>
+    <div class="sp"></div>
+    <span class="env" id="envBox"></span>
+    <button class="btn sm" id="reloadBtn">↻ 새로고침</button>
+  </div>
+
+  <div class="banner" id="banner"><span id="bannerMsg"></span><span class="sp"></span><button class="btn sm" id="retryBtn">API 재시도</button></div>
+
+  <div class="desk">
+    <!-- 좌 288px 인박스 -->
+    <div class="pane">
+      <div class="ph2">
+        <div class="pt">인박스 <span class="m" id="cvN"></span></div>
+        <div class="row" id="rDept"></div>
+        <div class="ax">축1 · 문의 성격 (intent)</div><div class="row" id="rIntent"></div>
+        <div class="ax">축2 · 상품 카테고리</div><div class="row" id="rCat"></div>
+        <div class="ax">상태 필터</div><div class="row" id="rFilter"></div>
+      </div>
+      <div class="list" id="cvList"></div>
+    </div>
+
+    <!-- 중 대화창 -->
+    <div class="pane">
+      <div class="cvhd" id="cvHd"></div>
+      <div class="stream" id="stream"></div>
+      <div class="comp" id="comp"></div>
+    </div>
+
+    <!-- 우 330px 360° -->
+    <div class="pane" style="overflow-y:auto" id="p360"></div>
+  </div>
+</div>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════
+   봉이 상담 데스크 — 상담사 화면
+   PRD: docs/specs/cs-chat-desk-2026-09-03.md §6.1 / §4.2.7 / §4.2.8
+   와이어프레임: docs/wireframes/cs-chat-desk.html ② 상담사 데스크
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 설정 ── */
+const API       = '/api/desk';
+const AUTH      = '/api/auth';
+const TOKEN_KEY = 'incentive-auth-token-v1';   // incentive-admin.html 과 동일
+const REFRESH_KEY = 'incentive-refresh-token-v1';
+// ?mock=1 강제 목업 · ?mock=0 강제 실 API · 기본은 실 API 시도 후 실패 시 목업
+let USE_MOCK = /[?&]mock=1/.test(location.search);
+const FORCE_API = /[?&]mock=0/.test(location.search);
+
+const getToken = () => { try { return localStorage.getItem(TOKEN_KEY); } catch(e) { return null; } };
+
+/* ── 공통 유틸 ── */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+/* 서버는 sanitizeBody 로 이미 escape 된 본문을 준다(&lt; …).
+   여기서 평문으로 되돌려 저장하고 렌더 시점에 항상 esc() 로 다시 escape 한다 → 표시 정상 + XSS 안전. */
+function unesc(s){
+  if(typeof s !== 'string' || s.indexOf('&') < 0) return s;
+  return s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"')
+          .replace(/&#0?39;/g,"'").replace(/&#x27;/gi,"'").replace(/&nbsp;/g,' ').replace(/&amp;/g,'&');
+}
+function pick(o, ...ks){ if(!o) return undefined; for(const k of ks){ if(o[k]!==undefined && o[k]!==null && o[k]!=='') return o[k]; } return undefined; }
+function toast(msg, kind){ const t=document.getElementById('toast'); t.className='on '+(kind||''); t.textContent=msg;
+  clearTimeout(toast._h); toast._h=setTimeout(()=>{t.className='';}, 3200); }
+function hhmm(v){
+  if(!v) return '';
+  const d = new Date(v);
+  if(isNaN(d)) return String(v);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function ago(v){
+  if(!v) return '';
+  const d = new Date(v);
+  if(isNaN(d)) return String(v);           // 서버가 이미 '방금' 같은 문구를 주면 그대로
+  const m = Math.floor((Date.now()-d.getTime())/60000);
+  if(m < 1) return '방금';
+  if(m < 60) return m+'분 전';
+  if(m < 1440) return Math.floor(m/60)+'시간 전';
+  return (d.getMonth()+1)+'/'+d.getDate();
+}
+function fmtDT(v){
+  if(!v) return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(String(v))) return String(v);   // 날짜만 온 값은 타임존 보정하지 않는다
+  const d = new Date(v);
+  if(isNaN(d)) return String(v);                 // 서버가 '2026-08-11' 같은 문자열을 주면 그대로
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+function localInputValue(d){
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes());
+}
+
+/* ── 토픽 라벨 ──
+   ★ 토픽 목록·라벨을 코드에 두지 않는다. 카테고리는 DB 에서 계속 켜진다(40행 중 34개가 비활성 대기).
+     코드 상수는 시간이 지나면 반드시 낡고, 없어진 slug 를 서버로 되쏘면 이관이 튕긴다.
+     이름·아이콘은 서버가 준 값(topic_name/topic_icon, /desk/topics)만 캐시해서 쓰고,
+     모르는 slug 는 정직하게 slug 그대로 보여준다. */
+const TOPIC_SEEN = {};
+function tm(slug, name, icon){
+  if(name || icon) TOPIC_SEEN[slug] = {icon: icon || (TOPIC_SEEN[slug]||{}).icon || '📦', name: name || slug};
+  return TOPIC_SEEN[slug] || {icon:'📦', name: slug || '미분류'};
+}
+// desk_conversation.handoff.reason 은 코드값이다 (T1~T4 | BARGE_IN)
+const HO_REASON = {T1:'T1 근거없음', T2:'T2 고객요청', T3:'T3 구매의사', T4:'T4 클레임', BARGE_IN:'BARGE_IN (상담사 개입)'};
+const INTENTS = [{k:'presale',n:'상품문의',c:'i-presale'},{k:'cs',n:'고객센터',c:'i-cs'},{k:'claim',n:'클레임',c:'i-claim'}];
+function intentOf(k){ return INTENTS.find(x=>x.k===k) || {k:k,n:k||'—',c:'i-cs'}; }
+const FILTERS = [{k:'mine',n:'내 상담'},{k:'waiting',n:'대기중'},{k:'bot',n:'AI 응대중'},{k:'snoozed',n:'보류'},{k:'closed',n:'종료'}];
+const ST = {bot:['st-bot','AI 응대중'],waiting:['st-wait','인계 대기'],assigned:['st-asg','상담중'],snoozed:['st-close','보류'],closed:['st-close','종료']};
+function stOf(s){ return ST[s] || ['st-close', s||'—']; }
+const OUTCOMES = {
+  resolved_chat:{label:'채팅 종결', icon:'✅', need_time:false},
+  booked_call  :{label:'콜 예약',   icon:'📞', need_time:true },
+  booked_visit :{label:'매장 예약', icon:'🏪', need_time:false},
+  ticket       :{label:'티켓 접수', icon:'🎫', need_time:false}
+};
+
+/* ── 상태 ── */
+const S = {
+  convs: [], sel: null, detail: null,
+  me: null, unrestricted: false, unassigned: false,
+  fDept: null, fInt: null, fCat: null, fStatus: null, scopeCats: null,
+  topics: null, depts: null, agents: null, dlg: null, dlgVal: {},   // dlg = 'transfer' | 'snooze' | null
+  tab: 'reply', drafts: {}, closing: null, callbackAt: '',
+  lastSeq: {},                                  // 폴링 커서 (서버 last_seq)
+  pollTimer: null, inboxTimer: null, pollConv: null, pollFails: 0, pollBusy: false,
+  apiState: 'init'   // init | ok | mock | error
+};
+
+/* ══════════════ API 레이어 ══════════════ */
+/* 서버 거절은 전부 {error:"한국어 사유"} 단일 형태다 (400/401/403/404) */
+class ApiError extends Error{
+  constructor(status, body){
+    let msg = null;
+    // 상담사측은 {error}, /topics 등 공유 경로는 {ok:false, reason} — 둘 다 읽는다
+    try{ const j = JSON.parse(body); msg = j && (j.error || j.reason); }catch(e){}
+    super(msg || ('HTTP '+status));
+    this.status = status; this.body = body; this.reason = msg || null;
+  }
+}
+
+/* 서버 사유 문구가 있으면 그대로 보여준다 (RPC reason 이 이미 한국어다) */
+function errMsg(e){ return (e && (e.reason || e.message)) || String(e); }
+
+async function tryRefresh(){
+  let rt = null; try { rt = localStorage.getItem(REFRESH_KEY); } catch(e){}
+  if(!rt) return false;
+  try{
+    const res = await fetch(AUTH+'/refresh', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({refresh_token:rt})});
+    if(!res.ok) return false;
+    const d = await res.json();
+    if(!d.access_token) return false;
+    localStorage.setItem(TOKEN_KEY, d.access_token);
+    if(d.refresh_token) localStorage.setItem(REFRESH_KEY, d.refresh_token);
+    return true;
+  }catch(e){ return false; }
+}
+
+async function api(path, opts, allowRetry){
+  opts = opts || {};
+  const tk = getToken();
+  const headers = Object.assign({}, opts.headers||{});
+  if(tk) headers['Authorization'] = 'Bearer ' + tk;
+  if(opts.body) headers['Content-Type'] = 'application/json';
+  const res = await fetch(API + path, Object.assign({}, opts, {headers}));
+  if(res.status === 401 && allowRetry !== false){
+    if(await tryRefresh()) return api(path, opts, false);
+  }
+  if(!res.ok){ let t=''; try{ t = await res.text(); }catch(e){} throw new ApiError(res.status, t); }
+  if(res.status === 204) return null;
+  const ct = res.headers.get('content-type')||'';
+  return ct.includes('json') ? res.json() : res.text();
+}
+
+/* ══════════════ 정규화 — 서버 필드명 변형을 흡수한다 ══════════════ */
+function normConv(r, extra){
+  const status = pick(r,'status') || 'bot';
+  const slug = pick(r,'topic','topic_slug','category','category_slug') || '';
+  const t = tm(slug, pick(r,'topic_name'), pick(r,'topic_icon'));
+  const waitSec = pick(r,'waiting_sec');
+  const breach = pick(r,'sla_breach');
+  let sla = pick(r,'sla_warning','sla','sla_breach_label') || null;
+  if(!sla && breach) sla = waitSec != null ? ('대기 ' + Math.max(1, Math.round(waitSec/60)) + '분 초과') : 'SLA 초과';
+  const c = {
+    id: String(pick(r,'id','conversation_id','conv_id')),
+    name: pick(r,'name','customer_name','display_name') || '이름 미확인',
+    phone: pick(r,'phone','phone_masked','customer_phone','masked_phone') || '—',   // ★ 서버가 마스킹해서 준다. 재가공 금지
+    intent: pick(r,'intent') || '',
+    cat: slug, topicName: t.name, topicIcon: t.icon,
+    dept: pick(r,'department','department_name','dept_name') || '—',
+    status,
+    // inbox: assigned = uuid / detail: assigned_agent = 이름 문자열
+    agentName: pick(r,'assigned_agent','assigned_agent_name','agent_name') || null,
+    agentId: pick(r,'assigned','assigned_agent_id','agent_id') || null,
+    mine: !!(pick(r,'mine','is_mine')),
+    at: pick(r,'last_at','last_message_at','updated_at','created_at') || null,
+    last: pick(r,'last_body','last_message','last_message_body','preview') || '',
+    unread: Number(pick(r,'unread','unread_count') || 0),
+    sla,
+    hoReason: pick(r,'handoff_reason') || null,
+    entry: pick(r,'entry') || null
+  };
+  return extra ? Object.assign(c, extra) : c;
+}
+/* PII 차단 표시 — 서버는 사유 문자열(blocked_reason)을 줄 수도, 불리언 플래그(pii_blocked:true)만 줄 수도 있다.
+   불리언을 그대로 렌더하면 말풍선에 "⛔ true" 가 찍힌다.
+   §4.2.7 하드룰: 조용히 지우지 않고 이유를 설명한다 → 플래그만 와도 문구를 채워 보여준다. */
+function normBlocked(m){
+  const v = pick(m,'blocked_reason','pii_blocked','blocked');
+  if(v == null || v === false || v === 'false') return null;
+  if(v === true || v === 'true' || v === 1 || v === '1')
+    return '개인정보(주민번호·계좌·카드)가 감지되어 저장이 차단되었습니다. 통화에서 확인드립니다.';
+  return String(v);
+}
+function normMsg(m, i, fallbackAgent){
+  const kindRaw = String(pick(m,'sender','sender_type','role','from','type') || 'system').toLowerCase();
+  let kind = 'system';
+  if(/customer|visitor|user|고객/.test(kindRaw)) kind='customer';
+  else if(/bot|ai|assistant/.test(kindRaw)) kind='bot';
+  else if(/agent|human|staff|상담/.test(kindRaw)) kind='agent';
+  let src = pick(m,'sources','bot_sources','source');
+  if(src && !Array.isArray(src)) src = [src];
+  const body = unesc(pick(m,'body','content','text','message') || '');
+  // 서버 시스템 메시지에는 event 구분자가 없다 → 본문으로 인계/개입을 판별해 배지 색을 맞춘다
+  let ev = pick(m,'event','system_kind') || null;
+  if(!ev && kind === 'system'){
+    if(/BARGE_IN|개입/.test(body)) ev = 'barge_in';
+    else if(/인계|이관|배정/.test(body)) ev = 'handoff';
+  }
+  return {
+    seq: Number(pick(m,'seq','sequence','id') || i+1),
+    kind,
+    name: pick(m,'sender_name','agent_name','name') ||
+          (kind==='customer'?'고객':kind==='bot'?'봉이봇':kind==='agent'?(fallbackAgent||'상담사'):'시스템'),
+    body,
+    sources: src || null,
+    priv: !!(pick(m,'private','is_private','internal')),
+    dropped: !!(pick(m,'dropped','discarded')),
+    blocked: normBlocked(m),
+    event: ev,
+    at: pick(m,'at','created_at','ts') || null,
+    card: pick(m,'card','product_card','rich') || null,
+    pending: !!m.__pending, failed: !!m.__failed
+  };
+}
+function normDetail(d){
+  d = d || {};
+  const conv = pick(d,'conversation','conv') || d;
+  const msgsRaw = pick(d,'messages','msgs') || pick(conv,'messages','msgs') || [];
+  const ho = pick(d,'handoff','handoff_package') || null;      // handoff_reason 이 NULL 이면 서버가 null 을 준다
+  const cust = pick(d,'customer') || {};
+  const crm = pick(d,'crm','crm_summary') || {};               // crm_customer_id 없으면 null
+  const hist = pick(d,'history','timeline','consult_history') || [];
+  const sug = pick(d,'suggestions','ai_suggestions','suggested_replies') || [];
+
+  // collected 는 객체 맵({"가구원":"4인"}), unanswered 는 문자열 배열이 확정 형태다
+  let collected = pick(ho,'collected','collected_info','slots') || [];
+  if(collected && !Array.isArray(collected)) collected = Object.keys(collected).map(k=>[k, collected[k]]);
+  else collected = collected.map(x => Array.isArray(x) ? x : [pick(x,'label','key','k')||'', pick(x,'value','v')||'']);
+  let unans = pick(ho,'unanswered','unresolved','bot_unanswered','open_items') || [];
+  if(unans && !Array.isArray(unans)) unans = [unans];
+  unans = unans.map(u => typeof u === 'string' ? u : (pick(u,'question','text','body') || JSON.stringify(u)));
+
+  // 상세 응답의 이름·전화는 루트가 아니라 customer 아래에 있다
+  const nc = normConv(conv, {});
+  if(nc.name === '이름 미확인' && pick(cust,'name')) nc.name = pick(cust,'name');
+  if(nc.phone === '—' && pick(cust,'phone')) nc.phone = pick(cust,'phone');
+
+  // bot_cost 는 {tokens_in, tokens_out, krw} 객체다 (숫자 아님)
+  const bc = pick(d,'bot_cost','bot_cost_krw','cost');
+  const botCost = (bc && typeof bc === 'object') ? pick(bc,'krw','cost_krw') : bc;
+
+  return {
+    conv: nc,
+    msgs: (msgsRaw||[]).map((m,i) => normMsg(m, i, nc.agentName)),
+    handoff: ho ? {
+      reason: pick(ho,'reason','handoff_reason','trigger') || '—',
+      conf: pick(ho,'confidence','conf','classification_confidence'),
+      summary: pick(ho,'summary','sum','ai_summary') || '',
+      collected, unanswered: unans
+    } : null,
+    customer: {
+      name: pick(cust,'name','customer_name'),
+      phone: pick(cust,'phone','phone_masked','masked_phone'),
+      grade: pick(cust,'grade','customer_grade'),
+      dnt: pick(cust,'is_dnt','dnt')
+    },
+    crm: {
+      // crm_matched · crm_id · call_purpose 는 customer 아래, 등급·DNT 는 crm 아래에 있다
+      matched: pick(cust,'crm_matched') !== undefined ? pick(cust,'crm_matched') : pick(crm,'matched','is_matched','match'),
+      customerId: pick(cust,'crm_id') || pick(crm,'customer_id','crm_id'),
+      ref: pick(crm,'ref','crm_ref') || pick(cust,'crm_ref'),          // 단독 전환 후: desk.contacts.crm_ref
+      syncedAt: pick(crm,'synced_at','crm_synced_at'),
+      consentAt: pick(crm,'consent_at'),
+      purpose: pick(cust,'call_purpose') || pick(crm,'call_purpose','purpose','category'),
+      grade: pick(crm,'grade','customer_grade'),
+      dnt: pick(crm,'dnt','is_dnt'),
+      callStatus: pick(crm,'call_status'),
+      lastContacted: pick(crm,'last_contacted'),
+      tags: pick(cust,'tags'),
+      chats: pick(crm,'chat_count','chats','history_count')
+    },
+    history: (hist||[]).map(h => Array.isArray(h)
+      ? {at:h[0], type:h[1], label:h[2], body:h[3]}
+      : {at: pick(h,'at','created_at','date','occurred_at'),
+         // 서버는 kind 에 "채팅"|"콜" 한글을 준다 → 배지 라벨로 그대로 쓰고 색만 매핑
+         type: pick(h,'kind','channel','type') || 'etc',
+         label: pick(h,'label','kind','type_label'),
+         body: unesc(pick(h,'text','body','summary','title','content','note') || '')}),
+    botCost,
+    suggestions: (sug||[]).map(s => typeof s === 'string' ? s : (pick(s,'body','text','content')||''))
+  };
+}
+
+/* ══════════════ 목업 (와이어프레임 데이터 동일) ══════════════
+   실 API 와 같은 "원본 shape" 로 두어 정규화 레이어를 그대로 통과시킨다. */
+const MOCK_ME = {id:'mock-agent', name:'박상담', department_name:'가전팀', role:'agent', unrestricted:false};
+function mAt(minAgo){ return new Date(Date.now() - minAgo*60000).toISOString(); }
+const MOCK = [
+{ id:'c1', customer_name:'김영수', phone:'010-****-4821', intent:'presale', topic_slug:'water-purifier', topic_name:'정수기', topic_icon:'💧',
+  department_name:'가전팀', status:'assigned', assigned_agent_name:'박상담', is_mine:true,
+  last_message_at:mAt(1), unread_count:0, bot_cost_krw:184,
+  handoff:{reason:'T3 구매의사', confidence:0.91, summary:'4인 가족 직수형, 월 3만원 이하 희망. 토요일 오전 설치 원함',
+    collected:[['가구원','4인'],['유형 / 예산','직수형 / 월 3만원대'],['봇 제시 견적','코웨이 아이콘 29,900원']],
+    unanswered:['기존 KT 인터넷과 결합 할인 가능 여부','토요일 오전 설치기사 배정 가능 여부']},
+  customer:{name:'김영수', phone:'010-****-4821', grade:'A', is_dnt:false},
+  crm:{matched:true, customer_id:'CDB-30142', call_purpose:'렌탈권유', grade:'A / 수신동의', chat_count:3},
+  history:[{at:'2026-09-03 14:22', channel:'chat', body:'채팅 — 정수기 렌탈 문의 (4인, 직수형)'},
+           {at:'2026-08-11 10:05', channel:'call', body:'렌탈권유 · 부재중 (2회차)'},
+           {at:'2026-06-02 16:40', channel:'sale', body:'KT 인터넷+TV 500M 개통완료'}],
+  suggestions:['6월 KT 인터넷 개통 이력이 있어 결합 시 월 5,500원 추가 할인 가능합니다.',
+               '직수형 4인 가구는 코웨이 아이콘이 적합합니다. 설치는 토요일 오전 가능합니다.'],
+  messages:[
+   {seq:1, sender_type:'system', body:'대화 시작 · 앱 진입 · 로그인 고객 · intent=presale · 정수기 → 가전팀', created_at:mAt(46)},
+   {seq:2, sender_type:'customer', sender_name:'김영수', body:'정수기 렌탈 알아보려고요', created_at:mAt(46)},
+   {seq:3, sender_type:'bot', sender_name:'봉이봇', body:'안녕하세요 김영수 고객님! 가구원 수와 희망 유형을 알려주시면 맞는 상품을 찾아드립니다.', created_at:mAt(46)},
+   {seq:4, sender_type:'customer', sender_name:'김영수', body:'4인 가족이고 직수형이요. 월 3만원 안쪽이면 좋겠어요', created_at:mAt(44)},
+   {seq:5, sender_type:'bot', sender_name:'봉이봇', body:'조건에 맞는 상품입니다.', created_at:mAt(44),
+    card:{name:'코웨이 아이콘 정수기 (직수형)', desc:'4인 가구 적합 · 설치비 무료', price:'월 29,900원 · 사은품 15만원'},
+    sources:['rental_products #R0683']},
+   {seq:6, sender_type:'customer', sender_name:'김영수', body:'제가 6월에 여기서 KT 인터넷 했는데 결합 할인 되나요?', created_at:mAt(43)},
+   {seq:7, sender_type:'bot', sender_name:'봉이봇', body:'결합 할인은 기존 계약 조건 확인이 필요합니다. 담당 상담사에게 연결해드릴게요.', created_at:mAt(43),
+    sources:['⚠ 근거 미확보 → 추측 없이 인계 (T1)']},
+   {seq:8, sender_type:'system', event:'handoff', body:'🤝 박상담(가전팀) 인계받음 · 대기 42초 · AI 대화 전문 이관됨', created_at:mAt(43)},
+   {seq:9, sender_type:'agent', sender_name:'박상담', is_private:true, body:'콜DB 기존 고객. 6월 KT 인터넷 개통건 확인 → 결합 5,500원 할인 적용 가능.', created_at:mAt(43)},
+   {seq:10, sender_type:'agent', sender_name:'박상담', body:'안녕하세요, 가전팀 박상담입니다. 앞의 내용 확인했습니다. 6월 KT 인터넷 개통 건이 있어 결합 시 월 5,500원 추가 할인 가능합니다.', created_at:mAt(42)},
+   {seq:11, sender_type:'customer', sender_name:'김영수', body:'좋네요 그럼 진행할게요', created_at:mAt(41)}]},
+
+{ id:'c2', customer_name:'박준호', phone:'010-****-7752', intent:'cs', topic_slug:'water-purifier', topic_name:'정수기', topic_icon:'💧',
+  department_name:'고객지원팀', status:'bot', last_message_at:mAt(2), unread_count:0, bot_cost_krw:61,
+  crm:{matched:true, customer_id:'CDB-21877', call_purpose:'—', grade:'B / 수신동의', chat_count:1},
+  history:[{at:'2026-05-20', channel:'sale', body:'코웨이 정수기 렌탈 개통'}],
+  suggestions:['필터 교체는 3개월 주기이며, 다음 방문은 9월 12일 예정입니다.'],
+  messages:[
+   {seq:1, sender_type:'system', body:'대화 시작 · intent=cs · 정수기 → 고객지원팀 (cs 는 상품 불문 CS 팀)', created_at:mAt(6)},
+   {seq:2, sender_type:'customer', sender_name:'박준호', body:'정수기 필터 교체 언제 오나요', created_at:mAt(6)},
+   {seq:3, sender_type:'bot', sender_name:'봉이봇', body:'확인해드릴게요. 잠시만 기다려주세요.', created_at:mAt(6), sources:['cs.faqs #211']},
+   {seq:4, sender_type:'customer', sender_name:'박준호', body:'그리고 요금이 저번달보다 많이 나왔던데 왜죠?', created_at:mAt(5)}]},
+
+{ id:'c3', customer_name:'이하나', phone:'010-****-1093', intent:'presale', topic_slug:'internet_tv', topic_name:'인터넷·TV', topic_icon:'🌐',
+  department_name:'인터넷팀', status:'waiting', last_message_at:mAt(4), unread_count:2, sla_warning:'SLA 1분 초과',
+  handoff:{reason:'T1 근거없음', confidence:0.88, summary:'인터넷 500M 신규 가입 문의. 아파트 거주, 통신사 미정',
+    collected:[['속도','500M'],['거주형태','아파트']],
+    unanswered:['해당 아파트 KT 인입 가능 여부','현재 진행중인 사은품 프로모션']},
+  crm:{matched:false, call_purpose:'—', grade:'— / 미확인', chat_count:0},
+  history:[],
+  suggestions:['어느 지역 아파트인지 알려주시면 인입 가능 통신사를 확인해드리겠습니다.'],
+  messages:[
+   {seq:1, sender_type:'system', body:'대화 시작 · intent=presale · 인터넷·TV → 인터넷팀', created_at:mAt(9)},
+   {seq:2, sender_type:'customer', sender_name:'이하나', body:'인터넷 500M 얼마인가요?', created_at:mAt(9)},
+   {seq:3, sender_type:'bot', sender_name:'봉이봇', body:'인터넷 500M 상품 안내드릴게요.', created_at:mAt(9), sources:['bongi_internet_speeds']},
+   {seq:4, sender_type:'customer', sender_name:'이하나', body:'우리 아파트도 되나요? 사은품은요?', created_at:mAt(8)},
+   {seq:5, sender_type:'bot', sender_name:'봉이봇', body:'인입 가능 여부는 확인이 필요합니다. 상담사에게 연결해드릴게요.', created_at:mAt(8), sources:['⚠ 근거 미확보 → 인계 (T1)']},
+   {seq:6, sender_type:'system', body:'⏳ 인터넷팀 대기열 등록 · 4분 경과 (SLA 3분 초과)', created_at:mAt(4)}]},
+
+{ id:'c4', customer_name:'정수아', phone:'010-****-8834', intent:'claim', topic_slug:'aircon', topic_name:'에어컨', topic_icon:'❄️',
+  department_name:'고객지원팀', status:'waiting', last_message_at:mAt(11), unread_count:3, sla_warning:'클레임 최우선',
+  handoff:{reason:'T4 클레임', confidence:0.96, summary:'에어컨 설치기사 미방문. 환불 요구.',
+    collected:[['약속일','2026-09-01']],
+    unanswered:['설치기사 배정 이력 확인','환불 규정 적용 여부 — 매니저 판단 필요']},
+  crm:{matched:true, customer_id:'CDB-40021', call_purpose:'—', grade:'A / 수신동의', chat_count:2},
+  history:[{at:'2026-08-28', channel:'sale', body:'에어컨 렌탈 계약'}],
+  suggestions:[],
+  messages:[
+   {seq:1, sender_type:'system', body:'대화 시작 · intent=claim → 고객지원팀(매니저) · priority 10', created_at:mAt(12)},
+   {seq:2, sender_type:'customer', sender_name:'정수아', body:'설치기사가 안 왔어요 환불해주세요', created_at:mAt(12)},
+   {seq:3, sender_type:'bot', sender_name:'봉이봇', body:'불편을 드려 죄송합니다. 담당 매니저에게 즉시 연결해드리겠습니다.', created_at:mAt(12),
+    sources:['T4 — 사과만 하고 즉시 인계. 보상·협상 언급 금지']},
+   {seq:4, sender_type:'system', body:'⚠️ 매니저 에스컬레이션 · 11분 경과', created_at:mAt(11)}]},
+
+{ id:'c5', customer_name:'최민서', phone:'010-****-2210', intent:'cs', topic_slug:'internet_tv', topic_name:'인터넷·TV', topic_icon:'🌐',
+  department_name:'고객지원팀', status:'bot', last_message_at:mAt(8), unread_count:0, bot_cost_krw:92,
+  crm:{matched:true, customer_id:'CDB-11902', call_purpose:'—', grade:'B / 수신동의', chat_count:1},
+  history:[{at:'2026-08-30', channel:'sale', body:'KT 인터넷 개통 신청'}],
+  suggestions:['신청일 기준 3~5영업일 내 개통되며, 현재 기사 배정 완료 상태입니다.'],
+  messages:[
+   {seq:1, sender_type:'system', body:'대화 시작 · intent=cs · 인터넷·TV → 고객지원팀', created_at:mAt(10)},
+   {seq:2, sender_type:'customer', sender_name:'최민서', body:'개통 언제 되나요', created_at:mAt(10)},
+   {seq:3, sender_type:'bot', sender_name:'봉이봇', body:'8월 30일 신청 건은 기사 배정이 완료되어 9월 4일 개통 예정입니다.', created_at:mAt(10),
+    sources:['cs.faqs #88','bongi_applications']},
+   {seq:4, sender_type:'customer', sender_name:'최민서', body:'제 주민번호 (마스킹됨) 로 조회되나요?', created_at:mAt(9),
+    blocked_reason:'주민등록번호가 감지되어 저장이 차단되었습니다. 통화에서 확인드립니다.'}]}
+];
+// 목업 토픽 목록 — 코드 상수가 아니라 목업 픽스처다(실 경로에서는 서버 /desk/topics 만 쓴다)
+const MOCK_TOPICS = [
+  {slug:'mobile', name:'휴대폰', icon:'📱'}, {slug:'internet_tv', name:'인터넷·TV', icon:'🌐'},
+  {slug:'usedphone', name:'중고폰', icon:'🔄'}, {slug:'water-purifier', name:'정수기', icon:'💧'},
+  {slug:'air-purifier', name:'공기청정기', icon:'🌬'}, {slug:'bidet', name:'비데', icon:'🚽'},
+  {slug:'mattress', name:'매트리스', icon:'🛏'}, {slug:'aircon', name:'에어컨', icon:'❄️'},
+  {slug:'tv', name:'TV', icon:'📺'}
+];
+MOCK_TOPICS.forEach(t => tm(t.slug, t.name, t.icon));
+function mockConv(id){ return MOCK.find(c => c.id === id); }
+
+/* ══════════════ 데이터 로드 ══════════════ */
+function setBanner(kind, msg, showRetry){
+  const b = document.getElementById('banner');
+  if(!kind){ b.className='banner'; return; }
+  b.className = 'banner on ' + kind;
+  document.getElementById('bannerMsg').innerHTML = msg;
+  document.getElementById('retryBtn').style.display = showRetry ? '' : 'none';
+}
+function goMock(why){
+  USE_MOCK = true; S.apiState = 'mock';
+  setBanner('warn', '⚠ API 연결 대기 — <b>목업 데이터</b>로 표시 중입니다. 여기서 하는 조작은 저장되지 않습니다. <span style="font-weight:600;color:#94a3b8">('+esc(why)+')</span>', true);
+}
+
+async function loadScope(){
+  if(USE_MOCK){ S.me = MOCK_ME; S.unrestricted = false; S.scopeCats = MOCK_TOPICS.map(t => t.slug); return; }
+  try{
+    // { agent_id, name, role, department_id, unrestricted, categories:[slug] }
+    const d = await api('/agent/scope');
+    const a = pick(d,'agent','me') || d || {};
+    S.me = {
+      id: pick(a,'agent_id','id'),
+      name: pick(a,'name','agent_name','display_name') || '상담사',
+      department_name: pick(a,'department_name','department') || '',
+      role: pick(a,'role') || ''
+    };
+    S.unrestricted = !!(pick(d,'unrestricted') || pick(a,'unrestricted'));
+    // ★ unassigned=true = 담당 카테고리가 아예 배정되지 않은 계정 → 인박스가 비는 게 정상이다.
+    //   그냥 빈 목록을 보여주면 상담사가 화면 고장으로 오해한다.
+    S.unassigned = !!(pick(d,'unassigned') || pick(a,'unassigned'));
+    const cats = pick(a,'categories','handle_categories');
+    S.scopeCats = Array.isArray(cats) ? cats : null;   // 담당 카테고리 → 축2 칩 시드
+  }catch(e){
+    S.me = null;   // scope 실패는 치명적이지 않다 — inbox 로 판정한다
+  }
+}
+
+/* GET /api/desk/topics — JWT 로도 열렸다(2026-09-04).
+   ★ 이 엔드포인트만 에러 형태가 다르다: {ok:false, reason} (앱팀과 공유하는 경로)
+   폴백 순서 (하드코딩 목록 없음):
+     1순위 라이브 응답
+     2순위 마지막 성공 응답 캐시(sessionStorage) — 코드 상수보다 항상 덜 낡다
+     3순위 없음 → 칩 영역에 실패를 표시하고 이관 다이얼로그의 토픽 선택을 잠근다 */
+const TOPIC_CACHE_KEY = 'desk-topics-cache-v1';
+function readTopicCache(){
+  try{
+    const raw = sessionStorage.getItem(TOPIC_CACHE_KEY);
+    if(!raw) return null;
+    const o = JSON.parse(raw);
+    return (o && Array.isArray(o.topics) && o.topics.length) ? o : null;
+  }catch(e){ return null; }
+}
+function writeTopicCache(topics){
+  try{ sessionStorage.setItem(TOPIC_CACHE_KEY, JSON.stringify({at: Date.now(), topics})); }catch(e){}
+}
+async function loadTopics(){
+  if(USE_MOCK){ S.topics = MOCK_TOPICS.slice(); S.topicsSource = 'live'; return; }
+  try{
+    const d = await api('/topics');
+    if(d && d.ok === false) throw new Error(pick(d,'reason') || '토픽 조회 실패');
+    const list = (pick(d,'topics') || []).map(t => ({
+      slug: pick(t,'slug','topic'), name: pick(t,'name'), icon: pick(t,'icon') || '📦', group: pick(t,'group')
+    })).filter(t => t.slug);
+    if(!list.length) throw new Error('토픽 목록이 비어 있습니다');
+    S.topics = list; S.topicsSource = 'live'; S.topicsAt = Date.now();
+    list.forEach(t => tm(t.slug, t.name, t.icon));
+    writeTopicCache(list);
+  }catch(e){
+    const c = readTopicCache();
+    if(c){
+      S.topics = c.topics; S.topicsSource = 'cache'; S.topicsAt = c.at;
+      c.topics.forEach(t => tm(t.slug, t.name, t.icon));
+    }else{
+      S.topics = null; S.topicsSource = null;
+    }
+  }
+}
+
+/* 이관 다이얼로그용 부서·상담사 목록 — 데스크 전용 엔드포인트 (2026-09-04 신설).
+   ★ /api/incentive/agents 를 쓰지 않는다: manager 이상 게이트라 agent 가 403 이고,
+     노출 항목도 과다하다(이메일·급여 등). desk_assignable_agents 는 최소 항목만 준다.
+   ★ to_agent 로 보내는 값은 incentive_agents.id = 여기 항목의 id 다. user_id 가 아니다
+     (둘 다 uuid 라 형식검증에 안 걸리고, 잘못 보내면 FK 위반 400 이 난다). */
+async function loadDepartments(){
+  if(USE_MOCK){
+    S.depts = [{id:1,name:'인터넷팀',online:2,waiting:3},{id:2,name:'가전팀',online:4,waiting:0},{id:3,name:'고객지원팀',online:1,waiting:2}];
+    return;
+  }
+  if(S.depts != null) return;
+  try{
+    const d = await api('/departments');
+    S.depts = (pick(d,'departments') || d || []).map(x => ({
+      id: pick(x,'id'), name: pick(x,'name'),
+      online: pick(x,'online'), waiting: pick(x,'waiting')
+    })).filter(x => x.id != null && x.name);
+  }catch(e){
+    // 데스크 라우트가 아직 없으면 기존 부서 목록으로 폴백 (JWT 만 있으면 전 역할 조회 가능)
+    try{
+      const tk = getToken();
+      const r = await fetch('/api/incentive/departments', {headers: tk ? {Authorization:'Bearer ' + tk} : {}});
+      S.depts = r.ok ? ((await r.json()).departments || []).map(x => ({id:x.id, name:x.name})) : [];
+    }catch(e2){ S.depts = []; }
+  }
+}
+async function loadAgents(departmentId){
+  if(USE_MOCK){
+    S.agents = [{id:'m-1',name:'이상담',department:'인터넷팀',presence:'online',active:1,max:4},
+                {id:'m-2',name:'최상담',department:'가전팀',presence:'away',active:3,max:4}];
+    return;
+  }
+  const key = departmentId == null ? '' : String(departmentId);
+  if(S.agentsKey === key && S.agents != null) return;
+  try{
+    const d = await api('/agents' + (key ? '?department_id=' + encodeURIComponent(key) : ''));
+    S.agents = (pick(d,'agents') || d || []).map(a => ({
+      id: pick(a,'id'),                       // ★ incentive_agents.id — user_id 아님
+      name: pick(a,'name'),
+      role: pick(a,'role'),
+      department: pick(a,'department'),
+      presence: pick(a,'presence'),
+      active: pick(a,'active_count'),
+      max: pick(a,'max_concurrent'),
+      isMe: !!pick(a,'is_me')
+    })).filter(a => a.id && a.name && !a.isMe);   // 자기 자신에게 이관할 일은 없다
+    S.agentsKey = key;
+  }catch(e){
+    // 404(미배선) · 403 · 빈 목록 모두 "담당자 지정 필드를 숨김" 으로 처리한다
+    S.agents = []; S.agentsKey = key;
+  }
+}
+async function loadRosters(departmentId){
+  await Promise.all([loadDepartments(), loadAgents(departmentId)]);
+}
+
+async function loadInbox(){
+  if(USE_MOCK){ S.convs = MOCK.map(normConv); return; }
+  const qs = new URLSearchParams();
+  if(S.fInt) qs.set('intent', S.fInt);
+  if(S.fCat) qs.set('topic', S.fCat);
+  if(S.fStatus && S.fStatus !== 'mine') qs.set('status', S.fStatus);
+  if(S.fStatus === 'mine') qs.set('mine', 'true');
+  const d = await api('/inbox' + (qs.toString() ? '?'+qs : ''));
+  const arr = Array.isArray(d) ? d : (pick(d,'conversations','items','rows','data') || []);
+  S.convs = arr.map(normConv);
+  S.apiState = 'ok';
+  setBanner(null);
+}
+
+async function loadDetail(id){
+  if(USE_MOCK){ S.detail = normDetail(mockConv(id)); return; }
+  const d = await api('/conversations/' + encodeURIComponent(id));
+  S.detail = normDetail(d);
+  // inbox 카드에 없는 최신 값 반영
+  const i = S.convs.findIndex(c => c.id === id);
+  if(i >= 0 && S.detail.conv){
+    // sla_breach·waiting_sec 은 inbox 항목에만 있다 — 상세 응답에는 없으므로 인박스 값을 넘겨받는다
+    S.detail.conv.sla = S.convs[i].sla;
+    S.detail.conv.unread = S.convs[i].unread;
+    S.convs[i] = Object.assign({}, S.convs[i], {
+      status: S.detail.conv.status, agentName: S.detail.conv.agentName,
+      name: S.detail.conv.name !== '이름 미확인' ? S.detail.conv.name : S.convs[i].name,
+      phone: S.detail.conv.phone !== '—' ? S.detail.conv.phone : S.convs[i].phone
+    });
+  }
+}
+
+/* ══════════════ 실시간 = 폴링 (SSE 철회, 2026-09-04 계약변경) ══════════════
+   GET /conversations/:id?since_seq=<last_seq> 가 그 seq 초과분만(exclusive) 준다.
+   내부메모(private:true)도 이 경로로 함께 온다 → 별도 레이어 불필요.
+   응답의 last_seq 를 다음 요청 커서로 그대로 되쓴다 (messages 가 비면 보낸 값을 되돌려준다).
+   대화창 2.5초 · 인박스 8초. 탭이 백그라운드면 쉰다. */
+const POLL_CONV_MS = 2500, POLL_INBOX_MS = 8000;
+
+function stopPoll(){
+  if(S.pollTimer){ clearInterval(S.pollTimer); S.pollTimer = null; }
+  S.pollConv = null;
+}
+function stopInboxPoll(){ if(S.inboxTimer){ clearInterval(S.inboxTimer); S.inboxTimer = null; } }
+
+function startPoll(id){
+  stopPoll();
+  if(USE_MOCK || !id) return;
+  S.pollConv = id; S.pollFails = 0;
+  S.pollTimer = setInterval(() => pollConvOnce(id), POLL_CONV_MS);
+}
+
+async function pollConvOnce(id){
+  if(S.sel !== id || !S.detail || document.hidden || S.pollBusy) return;
+  S.pollBusy = true;
+  try{
+    const since = S.lastSeq[id] || 0;
+    const d = await api('/conversations/' + encodeURIComponent(id) + '?since_seq=' + since);
+    const nd = normDetail(d);
+    // last_seq 를 서버가 주면 그것이 커서다. 없으면 받은 메시지의 최대 seq 로 폴백.
+    const srvLast = pick(d, 'last_seq');
+    let maxSeq = since;
+    let added = 0;
+    nd.msgs.forEach(m => {
+      if(m.seq > maxSeq) maxSeq = m.seq;
+      if(m.seq <= since) return;
+      // 낙관적으로 붙여둔 내 메시지를 서버본으로 교체
+      const pi = S.detail.msgs.findIndex(x => x.pending && x.body === m.body);
+      if(pi >= 0){ S.detail.msgs[pi] = m; added++; return; }
+      if(S.detail.msgs.some(x => x.seq === m.seq)) return;
+      S.detail.msgs.push(m); added++;
+    });
+    S.lastSeq[id] = (srvLast != null) ? Number(srvLast) : maxSeq;
+    if(added){
+      S.detail.msgs.sort((a,b) => a.seq - b.seq);
+      const last = S.detail.msgs.filter(m => !m.priv).slice(-1)[0];
+      const c = S.convs.find(x => x.id === id);
+      if(c && last){ c.last = last.body; c.at = last.at; }
+      renderStream(); renderInbox();
+    }
+    // 상태·핸드오프·CRM 은 증분 조회에도 매번 실려 온다 → 변경 시 갱신
+    if(nd.conv.status && (nd.conv.status !== S.detail.conv.status || nd.conv.agentName !== S.detail.conv.agentName)){
+      S.detail.conv.status = nd.conv.status;
+      S.detail.conv.agentName = nd.conv.agentName;
+      S.detail.conv.dept = nd.conv.dept;
+      S.detail.conv.cat = nd.conv.cat; S.detail.conv.topicName = nd.conv.topicName; S.detail.conv.topicIcon = nd.conv.topicIcon;
+      const c = S.convs.find(x => x.id === id);
+      if(c){ c.status = nd.conv.status; c.agentName = nd.conv.agentName; c.dept = nd.conv.dept;
+             c.cat = nd.conv.cat; c.topicName = nd.conv.topicName; c.topicIcon = nd.conv.topicIcon; }
+      if(nd.handoff) S.detail.handoff = nd.handoff;
+      renderHeader(); renderComposer(); renderInbox(); renderPanel();
+    }
+    if(S.pollFails > 0){ S.pollFails = 0; if(S.apiState === 'ok') setBanner(null); }
+  }catch(e){
+    S.pollFails++;
+    // 한두 번 실패는 조용히 넘기고, 계속 실패하면 상담사에게 알린다 (조용히 멈춘 화면이 제일 위험하다)
+    if(S.pollFails === 3) setBanner('info', '실시간 갱신이 지연되고 있습니다 — 재시도 중 (since_seq=' + (S.lastSeq[id]||0) + ')', false);
+  }finally{ S.pollBusy = false; }
+}
+
+function startInboxPoll(){
+  stopInboxPoll();
+  if(USE_MOCK) return;
+  S.inboxTimer = setInterval(async () => {
+    if(document.hidden) return;
+    try{ await loadInbox(); renderInbox(); }catch(e){ /* 인박스 폴링 실패는 다음 주기에 재시도 */ }
+  }, POLL_INBOX_MS);
+}
+
+// 탭이 다시 보이면 즉시 한 번 당겨온다 (백그라운드 동안 밀린 것 복구)
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden || USE_MOCK) return;
+  if(S.sel) pollConvOnce(S.sel);
+  loadInbox().then(renderInbox).catch(() => {});
+});
+
+/* ══════════════ 렌더 ══════════════ */
+function renderMe(){
+  document.getElementById('meBox').innerHTML = S.me
+    ? '<b>' + esc(S.me.name) + '</b>' + (S.me.department_name ? ' · ' + esc(S.me.department_name) : '') + (S.me.role ? ' <span style="color:#64748b">('+esc(S.me.role)+')</span>' : '')
+    : '<span style="color:#64748b">상담사 미확인</span>';
+  document.getElementById('envBox').textContent = USE_MOCK ? '목업 모드' : (S.apiState === 'ok' ? 'API 연결됨' : '');
+}
+
+function visibleConvs(){
+  return S.convs.filter(c =>
+    (!S.fDept || c.dept === S.fDept) &&
+    (!S.fInt || c.intent === S.fInt) &&
+    (!S.fCat || c.cat === S.fCat) &&
+    (!S.fStatus || (S.fStatus === 'mine'
+        ? (c.mine || (S.me && c.agentName === S.me.name) || (S.me && c.agentId && c.agentId === S.me.id))
+        : c.status === S.fStatus)));
+}
+
+function renderInbox(){
+  // 부서 탭 — 실제 인입된 부서만
+  const depts = [...new Set(S.convs.map(c => c.dept).filter(Boolean))];
+  document.getElementById('rDept').innerHTML =
+    '<div class="dtab ' + (S.fDept===null?'active':'') + '" data-d="">전체<span class="n">' + S.convs.length + '</span></div>' +
+    depts.map(d => '<div class="dtab ' + (S.fDept===d?'active':'') + '" data-d="' + esc(d) + '">' + esc(d) +
+      '<span class="n">' + S.convs.filter(c=>c.dept===d).length + '</span></div>').join('');
+
+  document.getElementById('rIntent').innerHTML = INTENTS.map(i =>
+    '<div class="chip int ' + (S.fInt===i.k?'active':'') + '" data-i="' + i.k + '">' + i.n + '</div>').join('');
+
+  /* 축2 소스 — 전부 서버가 준 살아있는 값이다. 코드 상수 목록은 없다.
+       제한 계정 : scope.categories → /desk/topics → 캐시
+       unrestricted : /desk/topics → 캐시 → scope.categories (unrestricted 면 여기에도 전체가 담겨 온다)
+     셋 다 없으면 목록을 지어내지 않고 실패를 표시한다. 칩 0개는 버그가 아니라 정직한 상태다.
+     (인박스에 실제로 온 카테고리는 라이브 데이터이므로 어떤 경우에도 합집합으로 남긴다 —
+      안 그러면 눈앞의 대화를 필터로 좁힐 수 없다) */
+  const allTopics = (S.topics && S.topics.length) ? S.topics.map(t => t.slug) : null;
+  const myCats = (S.scopeCats && S.scopeCats.length) ? S.scopeCats : null;
+  const base = S.unrestricted ? (allTopics || myCats) : (myCats || allTopics);
+  const seen = S.convs.map(c => c.cat).filter(Boolean);
+  const cats = [...new Set((base || []).concat(seen))];
+
+  const catBox = document.getElementById('rCat');
+  const chipHtml = cats.map(sl => {
+    const t = tm(sl);
+    return '<div class="chip ' + (S.fCat===sl?'active':'') + '" data-c="' + esc(sl) + '">' + t.icon + ' ' + esc(t.name) + '</div>';
+  }).join('');
+  // 폴백 상태는 반드시 화면에 드러낸다 — 조용히 폴백하면 "왜 제습기가 안 보이지"를 아무도 추적 못 한다
+  let notice = '';
+  if(!base)
+    notice = '<div style="font-size:9.5px;color:#fca5a5;width:100%;margin-top:3px;line-height:1.5">⚠ 토픽 목록을 불러오지 못했습니다' +
+             (cats.length ? ' — 아래는 인박스에 실제로 온 카테고리만입니다' : '') +
+             ' <button class="btn sm" id="topicRetry">재시도</button></div>';
+  else if(S.topicsSource === 'cache')
+    notice = '<div style="font-size:9.5px;color:#fbbf24;width:100%;margin-top:3px">⚠ 토픽 목록을 불러오지 못해 <b>캐시된 목록</b>을 표시 중입니다 ' +
+             '<button class="btn sm" id="topicRetry">재시도</button></div>';
+  catBox.innerHTML = chipHtml + notice;
+
+  document.getElementById('rFilter').innerHTML = FILTERS.map(f =>
+    '<div class="chip f ' + (S.fStatus===f.k?'active':'') + '" data-f="' + f.k + '">' + f.n + '</div>').join('');
+
+  const L = visibleConvs();
+  document.getElementById('cvN').textContent = L.length + '건';
+  document.getElementById('cvList').innerHTML = L.map(c => {
+    const it = intentOf(c.intent), t = {icon:c.topicIcon, name:c.topicName}, s = stOf(c.status);
+    return '<div class="cv ' + (S.sel===c.id?'sel':'') + '" data-id="' + esc(c.id) + '">' +
+      '<div class="cv-r1"><span class="cv-n">' + esc(c.name) + '</span><span class="cv-t">' + esc(ago(c.at)) + '</span></div>' +
+      '<div class="cv-p">' + esc(c.phone) + '</div>' +
+      '<div style="margin-top:3px"><span class="tg ' + it.c + '">' + esc(it.n) + '</span>' +
+        '<span class="tg c-tag">' + t.icon + ' ' + esc(t.name) + '</span>' +
+        '<span class="tg d-tag">' + esc(c.dept) + '</span></div>' +
+      '<div class="cv-l">' + esc(c.last) + '</div>' +
+      '<div class="cv-r3"><span class="st ' + s[0] + '">' + esc(s[1]) + '</span><span>' +
+        (c.sla ? '<span class="sla">⚠ ' + esc(c.sla) + '</span> ' : '') +
+        (c.unread ? '<span class="ur">' + c.unread + '</span>' : '') + '</span></div></div>';
+  }).join('') || (S.unassigned && !S.convs.length
+    ? '<div class="empty"><b style="color:#fbbf24">담당 카테고리가 배정되지 않았습니다</b><br>' +
+      '관리자에게 문의하세요. 화면 오류가 아니라 배정 대기 상태입니다.</div>'
+    : '<div class="empty">해당 조건의 대화가 없습니다</div>');
+
+  document.querySelectorAll('#rDept .dtab').forEach(e => e.onclick = () => { S.fDept = e.dataset.d || null; renderInbox(); });
+  document.querySelectorAll('#rIntent .chip').forEach(e => e.onclick = () => { S.fInt = (S.fInt===e.dataset.i?null:e.dataset.i); refilter(); });
+  document.querySelectorAll('#rCat .chip').forEach(e => e.onclick = () => { S.fCat = (S.fCat===e.dataset.c?null:e.dataset.c); refilter(); });
+  document.querySelectorAll('#rFilter .chip').forEach(e => e.onclick = () => { S.fStatus = (S.fStatus===e.dataset.f?null:e.dataset.f); refilter(); });
+  document.querySelectorAll('#cvList .cv').forEach(e => e.onclick = () => selectConv(e.dataset.id));
+  const tr = document.getElementById('topicRetry');
+  if(tr) tr.onclick = async () => { tr.disabled = true; await loadTopics(); renderInbox(); if(S.dlg) renderDialog(); };
+}
+async function refilter(){
+  renderInbox();
+  if(!USE_MOCK){ try{ await loadInbox(); }catch(e){ /* 필터 조회 실패는 로컬 필터로 대체 */ } renderInbox(); }
+}
+
+function bubble(m){
+  if(m.kind === 'system'){
+    const cls = m.event === 'handoff' ? 'ho' : (m.event === 'barge_in' ? 'bg' : '');
+    return '<div class="sys ' + cls + '"><span>' + esc(m.body) + '</span></div>';
+  }
+  const out = m.kind !== 'customer';
+  const av = m.kind === 'customer' ? 'av-c' : (m.kind === 'bot' ? 'av-b' : 'av-a');
+  const nm = m.name + (m.priv ? ' · 내부 메모' : '');
+  return '<div class="msg ' + (out?'out':'') + '"><div class="av ' + av + '">' + esc(nm.slice(0,1)) + '</div>' +
+    '<div class="bub ' + (m.priv?'note':'') + ' ' + (m.dropped?'dropped':'') + ' ' + (m.pending?'pending':'') + ' ' + (m.failed?'failed':'') + '">' +
+    (m.dropped ? '<span class="drop-tag">폐기됨</span>' : '') +
+    '<div class="nm">' + esc(nm) + '</div>' + esc(m.body).replace(/\n/g,'<br>') +
+    (m.card ? '<div class="card"><div class="cn">' + esc(pick(m.card,'name','n')||'') + '</div>' +
+              '<div class="cd">' + esc(pick(m.card,'desc','d')||'') + '</div>' +
+              '<div class="cp">' + esc(pick(m.card,'price','p')||'') + '</div></div>' : '') +
+    (m.blocked ? '<div class="blocked">⛔ ' + esc(m.blocked) + '</div>' : '') +
+    (m.sources && m.sources.length ? '<div class="src">📎 ' + m.sources.map(s => esc(typeof s === 'string' ? s : JSON.stringify(s))).join(' · ') + '</div>' : '') +
+    '<div class="tm">' + esc(hhmm(m.at)) + (m.pending?' · 전송중':'') + (m.failed?' · <span style="color:#fca5a5">실패</span>':'') + '</div></div></div>';
+}
+
+/* ── §7 쓰기 게이트 (서버에서 강제됨 · UI 는 미리 알려주는 역할) ──
+   쓰기(이관·보류·종결·답변) = ① 미배정  ② 내 대화  ③ admin·manager(unrestricted)
+   내부 메모는 남의 대화에도 허용된다(감독·인수인계, 고객에 안 보임).
+   ★ 자기 대화를 남에게 넘기는 것은 허용된다 — §7 이 막는 건 "남이 응대 중인 대화를 빼앗는 것"이다. */
+function ownerOf(c){
+  if(!c || !c.agentId) return null;                       // 미배정
+  if(S.me && c.agentId === S.me.id) return null;          // 내 대화
+  return c.agentName || '다른 상담사';
+}
+function writeBlockReason(c){
+  if(S.unrestricted) return null;
+  const owner = ownerOf(c);
+  return owner ? (owner + ' 님이 응대 중입니다. 강제 개입은 관리자만 가능합니다') : null;
+}
+
+function renderHeader(){
+  const hd = document.getElementById('cvHd');
+  const d = S.detail;
+  if(!d){ hd.innerHTML = '<span style="color:#64748b;font-size:11.5px">왼쪽에서 대화를 선택하세요</span>'; return; }
+  const c = d.conv, it = intentOf(c.intent), t = {icon:c.topicIcon, name:c.topicName};
+  let acts = '';
+  if(c.status === 'bot')
+    acts = '<button class="btn b-purple" id="bargeBtn">⚡ 지금 이어받기</button><span style="font-size:10px;color:#64748b">AI 응대중 — 개입 가능</span>';
+  else if(c.status === 'waiting')
+    acts = '<button class="btn b-ok" id="claimBtn">배정받기</button><button class="btn" id="trBtn">이관</button>';
+  else if(c.status === 'closed')
+    acts = '<span style="font-size:10.5px;color:#94a3b8">종료된 대화</span>';
+  else {
+    const blocked = writeBlockReason(c);
+    const dis = blocked ? ' disabled title="' + esc(blocked) + '"' : '';
+    acts = '<button class="btn" id="relBtn"' + dis + '>↩ AI 에 되돌리기</button>' +
+           '<button class="btn" id="trBtn"' + dis + '>이관</button>' +
+           '<button class="btn" id="snBtn"' + dis + '>보류</button>' +
+           (blocked ? '<span style="font-size:10px;color:#fca5a5;max-width:230px;line-height:1.4">' + esc(blocked) + '</span>' : '');
+  }
+  hd.innerHTML = '<span class="who">' + esc(c.name) + '</span><span class="p">' + esc(c.phone) + '</span>' +
+    '<span class="tg ' + it.c + '">' + esc(it.n) + '</span>' +
+    '<span class="tg c-tag">' + t.icon + ' ' + esc(t.name) + '</span>' +
+    '<span class="tg d-tag">' + esc(c.dept) + '</span>' +
+    (c.agentName ? '<span style="font-size:10.5px;color:#86efac">담당 ' + esc(c.agentName) + '</span>' : '') +
+    (c.sla ? '<span class="sla">⚠ ' + esc(c.sla) + '</span>' : '') +
+    '<div class="acts">' + acts + '</div>';
+
+  const bb = document.getElementById('bargeBtn'); if(bb) bb.onclick = () => doClaim(true);
+  const cb = document.getElementById('claimBtn'); if(cb) cb.onclick = () => doClaim(false);
+  const rb = document.getElementById('relBtn');   if(rb) rb.onclick = () => doRelease();
+  const tb = document.getElementById('trBtn');   if(tb) tb.onclick = () => openDialog('transfer');
+  const nb = document.getElementById('snBtn');   if(nb) nb.onclick = () => openDialog('snooze');
+}
+
+function renderStream(){
+  const st = document.getElementById('stream');
+  if(!S.detail){ st.innerHTML = '<div class="empty">대화를 선택하면 타임라인이 표시됩니다.</div>'; return; }
+  const near = st.scrollHeight - st.scrollTop - st.clientHeight < 120;
+  st.innerHTML = S.detail.msgs.map(bubble).join('') || '<div class="empty">메시지가 없습니다</div>';
+  if(near || st._first !== S.sel){ st.scrollTop = st.scrollHeight; st._first = S.sel; }
+}
+
+function renderComposer(){
+  const el = document.getElementById('comp');
+  const d = S.detail;
+  if(!d){ el.innerHTML = ''; return; }
+  const c = d.conv;
+  const blocked = writeBlockReason(c);            // §7 — 남이 응대 중인 대화
+  const isNote = (S.tab === 'note');
+  // 답변은 게이트에 걸리지만 내부 메모는 남의 대화에도 허용된다
+  const canSend = isNote ? (c.status !== 'closed') : (!blocked && c.status === 'assigned');
+  const sug = d.suggestions || [];
+  const draft = S.drafts[c.id] || '';
+
+  el.innerHTML =
+    (sug.length
+      ? '<div class="ai"><div class="h"><span>🤖 AI 추천 답변 — 클릭 시 입력창 삽입 (자동 전송 안 함)</span><span style="color:#64748b">' +
+        (d.botCost != null ? '봇 비용 ' + esc(d.botCost) + '원' : '근거 ' + sug.length + '건') + '</span></div>' +
+        sug.map((s,i) => '<div class="s" data-s="' + i + '">' + esc(s) + '</div>').join('') + '</div>'
+      : '') +
+    '<div class="ctabs">' +
+      '<div class="ct ' + (S.tab==='reply'?'active':'') + '" data-t="reply">답장</div>' +
+      '<div class="ct nt ' + (S.tab==='note'?'active':'') + '" data-t="note">내부 메모</div>' +
+      (canSend ? '' : '<span style="font-size:10px;color:#fbbf24;margin-left:6px">' +
+        esc(blocked && !isNote ? blocked + ' (내부 메모는 가능)' : '배정받아야 전송할 수 있습니다') + '</span>') +
+    '</div>' +
+    '<div class="cbox"><textarea id="ta" class="' + (isNote?'note':'') + '" ' + (canSend?'':'disabled') +
+      ' placeholder="' + (isNote?'내부 메모 — 고객에게 보이지 않습니다':'답장 입력…  (Ctrl+Enter 전송)') + '">' + esc(draft) + '</textarea>' +
+      '<button class="btn b-pri" id="sendBtn" style="height:46px;padding:0 15px" ' + (canSend?'':'disabled') + '>전송</button></div>' +
+    '<div class="closebar"><span class="lb">종결</span>' +
+      Object.keys(OUTCOMES).map(k => {
+        const o = OUTCOMES[k];
+        const cls = k==='resolved_chat'?'b-ok':(k==='booked_call'?'b-warn':'');
+        const dis = (c.status === 'closed' || blocked) ? ' disabled' : '';
+        const ttl = blocked ? ' title="' + esc(blocked) + '"' : '';
+        return '<button class="btn ' + cls + '" data-oc="' + k + '"' + dis + ttl + '>' + o.icon + ' ' + o.label + '</button>';
+      }).join('') +
+    '</div>' +
+    '<div id="closeSlot"></div>';
+
+  el.querySelectorAll('.ai .s').forEach(e => e.onclick = () => {
+    const ta = document.getElementById('ta');
+    if(!ta || ta.disabled){ toast(writeBlockReason(c) || '배정받은 뒤에 사용할 수 있습니다'); return; }
+    ta.value = (ta.value ? ta.value + '\n' : '') + sug[+e.dataset.s];
+    S.drafts[c.id] = ta.value; ta.focus();
+  });
+  el.querySelectorAll('.ct').forEach(e => e.onclick = () => { S.tab = e.dataset.t; renderComposer(); });
+  const ta = document.getElementById('ta');
+  if(ta){
+    ta.oninput = () => { S.drafts[c.id] = ta.value; };
+    ta.onkeydown = ev => { if((ev.metaKey||ev.ctrlKey) && ev.key === 'Enter'){ ev.preventDefault(); doSend(); } };
+  }
+  const sb = document.getElementById('sendBtn'); if(sb) sb.onclick = () => doSend();
+  el.querySelectorAll('[data-oc]').forEach(e => e.onclick = () => openClosePanel(e.dataset.oc));
+  if(S.closing) renderClosePanel();
+}
+
+/* ── 종결 패널 — 콜 예약은 시각 없이는 확정 불가 (§4.2.7 무단 발신 0건) ── */
+function openClosePanel(oc){
+  S.closing = (S.closing === oc) ? null : oc;
+  if(S.closing !== 'booked_call') S.callbackAt = '';
+  renderClosePanel();
+}
+function renderClosePanel(){
+  const slot = document.getElementById('closeSlot');
+  if(!slot) return;
+  if(!S.closing){ slot.innerHTML = ''; return; }
+  const o = OUTCOMES[S.closing];
+  const needTime = o.need_time;
+  const now = new Date();
+  slot.innerHTML =
+    '<div class="cpanel ' + (needTime?'call':'') + '">' +
+      '<div class="t">' + o.icon + ' ' + o.label + ' — outcome=<code>' + S.closing + '</code></div>' +
+      (needTime
+        ? '<div class="warnline">⚠ 상담사가 임의로 전화하지 않는다. <b>고객이 고른 시각</b>이 없으면 예약을 확정할 수 없습니다. (무단 발신 0건)</div>' +
+          '<div class="slots" id="slotRow">' +
+            ['오늘 오후','내일 오전','내일 오후'].map((s,i) => '<span class="slot" data-q="' + i + '">' + s + '</span>').join('') +
+          '</div>' +
+          '<input type="datetime-local" id="cbAt" min="' + localInputValue(now) + '" value="' + esc(S.callbackAt) + '">'
+        : '') +
+      '<textarea id="closeSum" placeholder="종결 요약 (선택) — CRM 기록에 남습니다"></textarea>' +
+      '<div class="crow">' +
+        '<button class="btn b-ok" id="closeGo" ' + (needTime && !S.callbackAt ? 'disabled title="콜 예약 시각을 먼저 선택하세요"' : '') + '>' +
+          (needTime ? '예약 확정' : '종결 확정') + '</button>' +
+        '<button class="btn" id="closeCancel">취소</button>' +
+        (needTime && !S.callbackAt ? '<span style="font-size:10.5px;color:#fbbf24">시각 미선택 — 확정 불가</span>' : '') +
+      '</div>' +
+    '</div>';
+
+  const at = document.getElementById('cbAt');
+  if(at) at.onchange = at.oninput = () => { S.callbackAt = at.value; renderClosePanel(); };
+  slot.querySelectorAll('#slotRow .slot').forEach(e => e.onclick = () => {
+    const d = new Date();
+    const q = +e.dataset.q;
+    if(q === 0){ d.setHours(15,0,0,0); if(d <= new Date()) d.setTime(Date.now()+3600000); }
+    if(q === 1){ d.setDate(d.getDate()+1); d.setHours(10,0,0,0); }
+    if(q === 2){ d.setDate(d.getDate()+1); d.setHours(15,0,0,0); }
+    S.callbackAt = localInputValue(d); renderClosePanel();
+  });
+  const go = document.getElementById('closeGo');
+  if(go) go.onclick = () => doClose(S.closing, (document.getElementById('closeSum')||{}).value || '');
+  const cc = document.getElementById('closeCancel');
+  if(cc) cc.onclick = () => { S.closing = null; S.callbackAt = ''; renderClosePanel(); };
+  // 종결 패널이 열리며 입력영역이 커지면 타임라인 하단이 가려진다 → 최신 메시지로 고정
+  const st = document.getElementById('stream'); if(st) st.scrollTop = st.scrollHeight;
+}
+
+function renderPanel(){
+  const el = document.getElementById('p360');
+  const d = S.detail;
+  if(!d){ el.innerHTML = '<div class="empty">대화를 선택하면 고객 360° 정보가 표시됩니다.</div>'; return; }
+  const t = {icon:d.conv.topicIcon, name:d.conv.topicName};
+  let h = '';
+
+  if(d.handoff){
+    const ho = d.handoff;
+    h += '<div class="sec hop"><div class="sect">🤝 AI 핸드오프 패키지</div>' +
+      '<div class="kv"><span class="k">인계 사유</span><span class="v">' + esc(HO_REASON[ho.reason] || ho.reason) + '</span></div>' +
+      '<div class="kv"><span class="k">분류 신뢰도</span><span class="v">' + esc(d.conv.intent) + ' · ' + esc(t.name) +
+        (ho.conf != null ? ' (' + esc(ho.conf) + ')' : '') + '</span></div>' +
+      (ho.summary ? '<div class="kv"><span class="k">요약</span><span class="v" style="text-align:left">' + esc(ho.summary) + '</span></div>' : '') +
+      ho.collected.map(x => '<div class="kv"><span class="k">' + esc(x[0]) + '</span><span class="v">' + esc(x[1]) + '</span></div>').join('') +
+      (ho.unanswered.length
+        ? '<div class="unans"><div class="h">⚠ AI 가 못 푼 것 — 이게 사람이 할 일</div><ul>' +
+          ho.unanswered.map(u => '<li>' + esc(u) + '</li>').join('') + '</ul></div>'
+        : '') +
+      '</div>';
+  } else {
+    h += '<div class="sec"><div class="sect">🤖 AI 응대중</div>' +
+      '<div style="font-size:11.5px;color:#94a3b8;line-height:1.7">아직 인계되지 않았습니다. 봇이 응대 중이며 핸드오프 패키지는 인계 시점에 생성됩니다.<br>' +
+      '<b style="color:#c4b5fd">지켜보다 [지금 이어받기] 로 개입할 수 있습니다.</b></div></div>';
+  }
+
+  const crm = d.crm;
+  const matched = crm.matched === true ? '✅ 기존 고객 (콜DB)' : (crm.matched === false ? '❌ 신규 (콜DB 없음)' : (crm.matched || '—'));
+  /* 단독 전환 후 등급·콜상태·콜목적·최근접촉은 우리 DB 에 없다(남의 CRM 데이터라 더 이상 안 읽는다).
+     ★ 빈칸으로 두면 상담사가 고장인지 설계인지 알 수 없다 → 안 보이는 이유와 어디서 볼 수 있는지를 화면이 말한다.
+     ★ CRM 원장 URL 스킴이 아직 없다 → 링크를 지어내지 않는다. 버튼은 비활성, crm_ref 는 복사할 수 있게 노출. */
+  // 사라진다고 확정된 것만 기준으로 삼는다: 등급 · 콜 상태 · 최근 접촉.
+  // (콜 목적은 customer.call_purpose 로 남을지 미확정이라 판정에 넣지 않는다)
+  const hasLegacyCrm = !!(crm.grade || d.customer.grade || crm.callStatus || crm.lastContacted);
+  const crmKey = crm.ref || crm.customerId;
+  // 구 형태에서는 헤더에 CRM 참조를 그대로 보여준다(재작성 중 빠뜨렸던 것).
+  // 새 형태에서는 아래 "CRM 연동 대기" 안내가 복사 가능한 형태로 들고 있으므로 중복 표시하지 않는다.
+  h += '<div class="sec"><div class="sect">고객' +
+    ((hasLegacyCrm && crmKey) ? '<span class="lnk">CRM ' + esc(crmKey) + '</span>' : '') + '</div>' +
+    '<div class="kv"><span class="k">CRM 매칭</span><span class="v">' + esc(matched) + '</span></div>' +
+    (crm.purpose ? '<div class="kv"><span class="k">콜 목적</span><span class="v">' + esc(crm.purpose) + '</span></div>' : '') +
+    ((crm.grade || d.customer.grade) ? '<div class="kv"><span class="k">등급</span><span class="v">' + esc(crm.grade || d.customer.grade) + '</span></div>' : '') +
+    // DNT 는 단독 전환 후에도 남는다 — 등급이 사라져도 이 줄은 유지된다
+    ((crm.dnt != null || d.customer.dnt != null)
+      ? '<div class="kv"><span class="k">수신 동의</span><span class="v">' +
+        (crm.dnt === true || d.customer.dnt === true
+          ? '<span style="color:#fca5a5">수신거부(DNT)</span>'
+          : '수신동의' + (crm.consentAt ? ' <span style="color:#64748b">' + esc(fmtDT(crm.consentAt)) + '</span>' : '')) +
+        '</span></div>'
+      : '') +
+    (crm.callStatus ? '<div class="kv"><span class="k">콜 상태</span><span class="v">' + esc(crm.callStatus) + '</span></div>' : '') +
+    (crm.lastContacted ? '<div class="kv"><span class="k">최근 접촉</span><span class="v">' + esc(fmtDT(crm.lastContacted)) + '</span></div>' : '') +
+    (crm.chats != null ? '<div class="kv"><span class="k">채팅 이력</span><span class="v">' + esc(crm.chats) + '회</span></div>' : '') +
+    (crm.tags && crm.tags.length ? '<div class="kv"><span class="k">태그</span><span class="v">' + esc([].concat(crm.tags).join(', ')) + '</span></div>' : '') +
+    (d.conv.entry ? '<div class="kv"><span class="k">유입 퍼널</span><span class="v">' + esc(d.conv.entry) + '</span></div>' : '') +
+    (d.botCost != null ? '<div class="kv"><span class="k">봇 비용</span><span class="v">' + esc(d.botCost) + '원</span></div>' : '') +
+    (hasLegacyCrm ? '' :
+      '<div class="crmwait">' +
+        '<div class="t">CRM 연동 대기</div>' +
+        '<div class="d">고객 등급·콜 이력·최근 접촉은 CRM 시스템에서 확인하세요. 이 화면에는 표시되지 않습니다.</div>' +
+        (crmKey
+          ? '<div class="ref"><span class="k">고객 참조번호</span><code class="sel">' + esc(crmKey) + '</code></div>'
+          : '<div class="d" style="margin-top:4px">참조번호 없음 — CRM 에 연결되지 않은 고객입니다.</div>') +
+        (crm.syncedAt ? '<div class="d" style="margin-top:3px">최근 동기화 ' + esc(fmtDT(crm.syncedAt)) + '</div>' : '') +
+        '<button class="btn sm" disabled title="연동 준비 중 — CRM 원장 URL 이 아직 정해지지 않았습니다" style="margin-top:6px">CRM 원장 열기 ↗</button>' +
+      '</div>') +
+    '</div>';
+
+  // 서버 kind 는 "채팅"|"콜" 한글, 목업/구버전은 chat|call|sale — 둘 다 받는다
+  const TAGCLS = {call:'t-call', chat:'t-chat', sale:'t-sale', '콜':'t-call', '채팅':'t-chat', '계약':'t-sale'};
+  const TAGNM  = {call:'콜', chat:'채팅', sale:'계약'};
+  h += '<div class="sec"><div class="sect">통합 상담이력 (채팅+콜)</div>' +
+    (d.history.length
+      ? d.history.map(x => {
+          const ty = String(x.type||'etc').toLowerCase();
+          return '<div class="tl"><div class="d">' + esc(fmtDT(x.at)) + '</div><div class="c">' +
+            '<span class="tag ' + (TAGCLS[ty] || TAGCLS[x.type] || 't-etc') + '">' + esc(x.label || TAGNM[ty] || x.type) + '</span>' + esc(x.body) + '</div></div>';
+        }).join('')
+      : '<div style="font-size:11.5px;color:#64748b">이력 없음 — 신규 고객</div>') +
+    '</div>';
+
+  el.innerHTML = h;
+}
+
+function renderAll(){ renderMe(); renderInbox(); renderHeader(); renderStream(); renderComposer(); renderPanel(); }
+function flash(){ ['stream','p360'].forEach(id => { const e = document.getElementById(id); e.classList.remove('flash'); void e.offsetWidth; e.classList.add('flash'); }); }
+
+/* ══════════════ 이관 · 보류 다이얼로그 ══════════════ */
+async function openDialog(kind){
+  S.dlg = kind;
+  S.dlgVal = {reason:'', topic:'', dept:'', agent:'', until:''};
+  renderDialog();
+  if(kind === 'transfer'){ await loadRosters(); if(S.dlg === 'transfer') renderDialog(); }
+}
+function closeDialog(){ S.dlg = null; document.getElementById('modal').innerHTML = ''; }
+
+function renderDialog(){
+  const el = document.getElementById('modal');
+  if(!S.dlg || !S.detail){ el.innerHTML = ''; return; }
+  const c = S.detail.conv, v = S.dlgVal;
+  let inner = '';
+
+  if(S.dlg === 'transfer'){
+    // ★ 토픽 목록이 없으면 선택을 잠근다 — 낡은/지어낸 slug 로 이관하면 서버가 튕긴다
+    const topics = (S.topics && S.topics.length) ? S.topics : null;
+    inner =
+      '<h3>대화 이관</h3>' +
+      '<div class="sub">' + esc(c.name) + ' · 현재 <b>' + esc(c.dept) + '</b> / ' + esc(c.topicName) + '<br>' +
+        '메시지는 이동하지 않습니다 — 같은 스레드 그대로이고 내부메모도 받는 사람이 그대로 봅니다.<br>' +
+        '이관 사유는 <b>서버가 내부메모로 자동 기록</b>합니다. 따로 메모를 남기지 마세요.</div>' +
+      '<div class="fld"><label>이관 사유 <span class="req">*</span></label>' +
+        '<textarea id="trReason" placeholder="예) 가전팀 소관입니다">' + esc(v.reason) + '</textarea></div>' +
+      '<div class="fld"><label>토픽 변경 (선택)</label><select id="trTopic"' + (topics ? '' : ' disabled') + '>' +
+        '<option value="">변경 안 함 — ' + esc(c.topicName) + '</option>' +
+        (topics || []).map(t => '<option value="' + esc(t.slug) + '"' + (v.topic===t.slug?' selected':'') + '>' + (t.icon||'') + ' ' + esc(t.name) + '</option>').join('') +
+        '</select><div class="hint">' +
+        (topics
+          ? (S.topicsSource === 'cache'
+              ? '<span style="color:#fbbf24">⚠ 캐시된 토픽 목록입니다 — 그사이 바뀌었으면 서버가 거부할 수 있습니다.</span><br>'
+              : '') + '토픽만 바꾸면 2축 라우팅이 담당 부서를 자동으로 다시 계산합니다.'
+          : '<span style="color:#fca5a5">토픽 목록을 불러오지 못해 토픽 변경을 잠갔습니다 — 부서 지정으로 이관하세요.</span>') +
+        '</div></div>' +
+      (S.depts && S.depts.length
+        ? '<div class="fld"><label>부서 지정 (선택)</label><select id="trDept">' +
+            '<option value="">자동 — 2축 라우팅에 맡김</option>' +
+            S.depts.map(d => {
+              // 온라인·대기 건수를 같이 보여줘야 어디로 보낼지 판단할 수 있다
+              const meta = [];
+              if(d.online != null) meta.push('온라인 ' + d.online + '명');
+              if(d.waiting != null) meta.push('대기 ' + d.waiting + '건');
+              return '<option value="' + esc(d.id) + '"' + (String(v.dept)===String(d.id)?' selected':'') + '>' +
+                     esc(d.name) + (meta.length ? ' (' + esc(meta.join(' · ')) + ')' : '') + '</option>';
+            }).join('') +
+          '</select></div>'
+        : '') +
+      (S.agents && S.agents.length
+        ? '<div class="fld"><label>담당자 지정 (선택)</label><select id="trAgent">' +
+            '<option value="">지정 안 함 — 대기열로 보냄</option>' +
+            S.agents.map(a => {
+              const meta = [];
+              if(a.department) meta.push(a.department);
+              // presence: online|offline|away|... — 모르는 값은 서버 문자열 그대로 보여준다
+              if(a.presence) meta.push(({online:'온라인', offline:'오프라인', away:'자리비움', busy:'통화중'})[a.presence] || a.presence);
+              if(a.active != null) meta.push('상담 ' + a.active + (a.max != null ? '/' + a.max : ''));
+              return '<option value="' + esc(a.id) + '"' + (v.agent===a.id?' selected':'') + '>' +
+                     esc(a.name) + (meta.length ? ' — ' + esc(meta.join(' · ')) + '' : '') + '</option>';
+            }).join('') +
+          '</select><div class="hint">지정하면 그 상담사에게 바로 배정(assigned), 비우면 대기열(waiting)로 돌아갑니다.</div></div>'
+        : '<div class="fld"><div class="hint">배정 가능한 상담사가 없습니다 — 부서·토픽 이관만 가능합니다.</div></div>') +
+      '<div class="crow"><button class="btn b-pri" id="dlgGo"' + (v.reason.trim() ? '' : ' disabled title="이관 사유를 입력하세요"') + '>이관 실행</button>' +
+        '<button class="btn" id="dlgCancel">취소</button>' +
+        (v.reason.trim() ? '' : '<span style="font-size:10.5px;color:#fbbf24">사유 미입력 — 실행 불가</span>') + '</div>';
+  }
+
+  if(S.dlg === 'snooze'){
+    const now = new Date();
+    const min = new Date(Date.now() + 60000);
+    const future = v.until && new Date(v.until).getTime() > Date.now();
+    inner =
+      '<h3>대화 보류</h3>' +
+      '<div class="sub">' + esc(c.name) + ' · 보류해도 인박스에서 사라지지 않습니다(종료 아님). 해제 시각이 지나면 다시 올라옵니다.</div>' +
+      '<div class="fld"><label>보류 해제 시각 <span class="req">*</span></label>' +
+        '<input type="datetime-local" id="snUntil" min="' + localInputValue(min) + '" value="' + esc(v.until) + '">' +
+        '<div class="slots" id="snSlots">' +
+          '<span class="slot" data-q="0">1시간 후</span><span class="slot" data-q="1">오늘 18시</span><span class="slot" data-q="2">내일 오전 9시</span>' +
+        '</div>' +
+        (v.until && !future ? '<div class="hint" style="color:#fca5a5">현재보다 이후 시각이어야 합니다.</div>' : '') +
+      '</div>' +
+      '<div class="fld"><label>사유 (선택)</label><input id="snReason" placeholder="예) 고객 요청" value="' + esc(v.reason) + '"></div>' +
+      '<div class="crow"><button class="btn b-pri" id="dlgGo"' + (future ? '' : ' disabled title="보류 해제 시각을 선택하세요"') + '>보류</button>' +
+        '<button class="btn" id="dlgCancel">취소</button>' +
+        (future ? '' : '<span style="font-size:10.5px;color:#fbbf24">시각 미선택 — 실행 불가</span>') + '</div>';
+  }
+
+  el.innerHTML = '<div class="mask" id="dlgMask"><div class="modal">' + inner + '</div></div>';
+
+  const bind = (id, ev, fn) => { const e = document.getElementById(id); if(e) e[ev] = fn; };
+  bind('trReason','oninput', e => { S.dlgVal.reason = e.target.value; renderDialog(); document.getElementById('trReason').focus(); });
+  bind('trTopic','onchange', e => { S.dlgVal.topic = e.target.value; });
+  bind('trDept','onchange', async e => {
+    S.dlgVal.dept = e.target.value; S.dlgVal.agent = '';
+    // agent/contract 는 지정한 이관 대상 부서의 상담사만 볼 수 있다 → 부서가 바뀌면 다시 받는다
+    await loadAgents(S.dlgVal.dept || null);
+    if(S.dlg === 'transfer') renderDialog();
+  });
+  bind('trAgent','onchange', e => { S.dlgVal.agent = e.target.value; });
+  bind('snUntil','oninput', e => { S.dlgVal.until = e.target.value; renderDialog(); });
+  bind('snReason','oninput', e => { S.dlgVal.reason = e.target.value; });
+  const slots = document.getElementById('snSlots');
+  if(slots) slots.querySelectorAll('.slot').forEach(e => e.onclick = () => {
+    const d = new Date(); const q = +e.dataset.q;
+    if(q === 0) d.setTime(Date.now() + 3600000);
+    if(q === 1){ d.setHours(18,0,0,0); if(d.getTime() <= Date.now()) d.setDate(d.getDate()+1); }
+    if(q === 2){ d.setDate(d.getDate()+1); d.setHours(9,0,0,0); }
+    S.dlgVal.until = localInputValue(d); renderDialog();
+  });
+  bind('dlgCancel','onclick', () => closeDialog());
+  bind('dlgGo','onclick', () => (S.dlg === 'transfer' ? doTransfer() : doSnooze()));
+  const mask = document.getElementById('dlgMask');
+  if(mask) mask.onclick = ev => { if(ev.target === mask) closeDialog(); };
+}
+document.addEventListener('keydown', ev => { if(ev.key === 'Escape' && S.dlg) closeDialog(); });
+
+async function doTransfer(){
+  const c = S.detail && S.detail.conv; if(!c) return;
+  const v = S.dlgVal;
+  const reason = (v.reason||'').trim();
+  if(!reason){ toast('이관 사유는 필수입니다', 'bad'); return; }      // 서버도 400 으로 막지만 여기서 먼저 막는다
+  const payload = {reason};
+  if(v.topic) payload.to_topic = v.topic;
+  if(v.dept)  payload.to_department = Number(v.dept);
+  if(v.agent) payload.to_agent = v.agent;
+
+  if(USE_MOCK){
+    const toDept = (S.depts.find(d => String(d.id) === String(v.dept))||{}).name;
+    const toName = (S.agents.find(a => a.id === v.agent)||{}).name;
+    const from = c.dept;
+    if(v.topic){ const t = tm(v.topic); c.cat = v.topic; c.topicName = t.name; c.topicIcon = t.icon; }
+    if(toDept) c.dept = toDept;
+    c.status = v.agent ? 'assigned' : 'waiting';
+    c.agentName = toName || null;
+    const inv = S.convs.find(x => x.id === c.id);
+    if(inv){ inv.dept = c.dept; inv.cat = c.cat; inv.topicName = c.topicName; inv.topicIcon = c.topicIcon; inv.status = c.status; inv.agentName = c.agentName; inv.mine = !!v.agent && toName === (S.me&&S.me.name); }
+    const nseq = (S.detail.msgs.reduce((a,m)=>Math.max(a,m.seq||0),0)) + 1;
+    // 서버가 자동 삽입하는 내부메모를 목업에서도 동일하게 재현한다
+    S.detail.msgs.push(normMsg({seq:nseq, sender:'agent', sender_name:(S.me&&S.me.name)||'상담사', private:true,
+      body:'[이관] ' + from + ' → ' + c.dept + ' · 사유: ' + reason, at:new Date().toISOString()}));
+    closeDialog(); renderAll(); flash(); toast('이관 완료 (목업) — ' + c.dept, 'good'); return;
+  }
+  try{
+    const r = await api('/conversations/' + encodeURIComponent(c.id) + '/transfer', {method:'POST', body: JSON.stringify(payload)});
+    closeDialog();
+    await loadDetail(c.id); await safeLoadInbox(); renderAll(); flash();
+    const dept = pick(r,'department'), st = pick(r,'status');
+    toast('이관 완료' + (dept ? ' — ' + dept : '') + (st ? ' (' + (stOf(st)[1]) + ')' : ''), 'good');
+  }catch(e){
+    toast('이관 실패: ' + errMsg(e), 'bad');
+    // "존재하지 않는 토픽" 류는 목록이 낡았다는 뜻 → 즉시 새로 받아 다이얼로그를 갱신한다
+    if(/토픽|topic/i.test(errMsg(e))){ await loadTopics(); renderInbox(); if(S.dlg) renderDialog(); }
+  }
+}
+
+async function doSnooze(){
+  const c = S.detail && S.detail.conv; if(!c) return;
+  const v = S.dlgVal;
+  if(!v.until || new Date(v.until).getTime() <= Date.now()){ toast('보류 해제 시각은 현재보다 이후여야 합니다', 'bad'); return; }
+  const payload = {until: new Date(v.until).toISOString()};
+  if((v.reason||'').trim()) payload.reason = v.reason.trim();
+
+  if(USE_MOCK){
+    c.status = 'snoozed';
+    const inv = S.convs.find(x => x.id === c.id); if(inv) inv.status = 'snoozed';
+    const nseq = (S.detail.msgs.reduce((a,m)=>Math.max(a,m.seq||0),0)) + 1;
+    S.detail.msgs.push(normMsg({seq:nseq, sender:'system',
+      body:'⏸ 보류 · 해제 예정 ' + v.until.replace('T',' ') + ((v.reason||'').trim() ? ' · 사유: ' + v.reason.trim() : ''),
+      at:new Date().toISOString()}));
+    closeDialog(); renderAll(); toast('보류 (목업)', 'good'); return;
+  }
+  try{
+    const r = await api('/conversations/' + encodeURIComponent(c.id) + '/snooze', {method:'POST', body: JSON.stringify(payload)});
+    closeDialog();
+    await loadDetail(c.id); await safeLoadInbox(); renderAll();
+    toast('보류 처리 — ' + fmtDT(pick(r,'until') || payload.until) + ' 해제 예정', 'good');
+  }catch(e){ toast('보류 실패: ' + errMsg(e), 'bad'); }
+}
+
+/* ══════════════ 액션 ══════════════ */
+async function selectConv(id){
+  S.sel = id; S.closing = null; S.callbackAt = ''; closeDialog();
+  renderInbox();
+  try{
+    await loadDetail(id);
+  }catch(e){
+    if(e instanceof ApiError && e.status === 403){ toast('담당 카테고리가 아닙니다 (403)', 'bad'); S.detail = null; }
+    else { toast('대화 조회 실패: ' + errMsg(e), 'bad'); S.detail = null; }
+    renderAll(); return;
+  }
+  const mx = S.detail.msgs.reduce((a,m) => Math.max(a, m.seq||0), 0);
+  if(S.lastSeq[id] == null) S.lastSeq[id] = mx;
+  renderAll();
+  startPoll(id);
+}
+
+async function doClaim(bargeIn){
+  const c = S.detail && S.detail.conv; if(!c) return;
+  if(USE_MOCK){
+    c.status = 'assigned'; c.agentName = (S.me&&S.me.name)||'나';
+    const inv = S.convs.find(x => x.id === c.id); if(inv){ inv.status='assigned'; inv.agentName=c.agentName; inv.mine=true; inv.sla=null; inv.unread=0; }
+    const nseq = (S.detail.msgs.reduce((a,m)=>Math.max(a,m.seq||0),0)) + 1;
+    if(bargeIn){
+      S.detail.msgs.push(normMsg({seq:nseq, sender_type:'system', event:'barge_in',
+        body:'⚡ ' + c.agentName + ' 님이 중간 개입했습니다 — handoff_reason = BARGE_IN', created_at:new Date().toISOString()}));
+      S.detail.msgs.push(normMsg({seq:nseq+1, sender_type:'bot', sender_name:'봉이봇', dropped:true,
+        body:'요금 문의는 청구 내역 확인이 필요합니다…', created_at:new Date().toISOString(),
+        sources:['desk.bot_say() → status ≠ bot 이므로 NULL 반환 · DB 저장 안 됨']}));
+      S.detail.handoff = {reason:'BARGE_IN (상담사 개입)', conf:null,
+        summary:'봇이 처리하지 못하는 것을 보고 상담사가 직접 개입',
+        collected:[['개입 시각', hhmm(new Date().toISOString())],['개입 전 상태','AI 응대중']],
+        unanswered:['개입 사유 확인 필요']};
+    }else{
+      S.detail.msgs.push(normMsg({seq:nseq, sender_type:'system', event:'handoff',
+        body:'🤝 ' + c.agentName + ' 인계받음 · AI 대화 전문 이관됨', created_at:new Date().toISOString()}));
+    }
+    renderAll(); flash(); toast('배정 완료 (목업)', 'good'); return;
+  }
+  try{
+    await api('/conversations/' + encodeURIComponent(c.id) + '/claim', {method:'POST', body: JSON.stringify({barge_in: !!bargeIn})});
+    await loadDetail(c.id); await safeLoadInbox(); renderAll(); flash();
+    toast(bargeIn ? '중간 개입 완료 (BARGE_IN)' : '배정 완료', 'good');
+  }catch(e){
+    // claim 경합은 400 + {"error":"이미 다른 상담사가 받았습니다"} 로 온다 — 서버 문구를 그대로 노출
+    toast('배정 실패: ' + errMsg(e), 'bad');
+    try{ await loadDetail(c.id); renderAll(); }catch(_){}
+  }
+}
+
+async function doRelease(){
+  const c = S.detail && S.detail.conv; if(!c) return;
+  if(USE_MOCK){
+    c.status = 'bot'; c.agentName = null;
+    const inv = S.convs.find(x => x.id === c.id); if(inv){ inv.status='bot'; inv.agentName=null; inv.mine=false; }
+    const nseq = (S.detail.msgs.reduce((a,m)=>Math.max(a,m.seq||0),0)) + 1;
+    S.detail.msgs.push(normMsg({seq:nseq, sender_type:'system',
+      body:'↩ 상담사가 AI 에 되돌림 — desk.release_to_bot() · status=bot', created_at:new Date().toISOString()}));
+    renderAll(); toast('AI 에 되돌림 (목업)'); return;
+  }
+  try{
+    await api('/conversations/' + encodeURIComponent(c.id) + '/release', {method:'POST', body: JSON.stringify({})});
+    await loadDetail(c.id); await safeLoadInbox(); renderAll(); toast('AI 에 되돌렸습니다');
+  }catch(e){ toast('되돌리기 실패: ' + errMsg(e), 'bad'); }
+}
+
+async function doSend(){
+  const ta = document.getElementById('ta'); if(!ta || ta.disabled) return;
+  const body = ta.value.trim(); if(!body) return;
+  const c = S.detail.conv, priv = (S.tab === 'note');
+  const nseq = (S.detail.msgs.reduce((a,m)=>Math.max(a,m.seq||0),0)) + 1;
+  const optimistic = normMsg({seq:nseq, sender_type:'agent', sender_name:(S.me&&S.me.name)||'상담사',
+    body, is_private:priv, created_at:new Date().toISOString(), __pending: !USE_MOCK});
+  S.detail.msgs.push(optimistic);
+  ta.value = ''; S.drafts[c.id] = '';
+  const inv = S.convs.find(x => x.id === c.id); if(inv && !priv){ inv.last = body; inv.at = new Date().toISOString(); }
+  renderStream(); renderInbox();
+  if(USE_MOCK){ toast(priv ? '내부 메모 저장 (목업)' : '전송 (목업)'); return; }
+  try{
+    // 응답은 201 { "seq": 42 } 뿐이다 — 본문이 없으므로 낙관적 메시지를 덮어쓰지 말고 seq 만 확정한다
+    const r = await api('/conversations/' + encodeURIComponent(c.id) + '/reply', {method:'POST', body: JSON.stringify({body, private: priv})});
+    const saved = pick(r,'message','msg') || r || {};
+    const i = S.detail.msgs.indexOf(optimistic);
+    if(i >= 0){
+      if(saved.body) S.detail.msgs[i] = normMsg(saved, i, (S.me&&S.me.name));
+      else {
+        S.detail.msgs[i].pending = false;
+        if(saved.seq != null) S.detail.msgs[i].seq = Number(saved.seq);
+      }
+      const sq = S.detail.msgs[i].seq;
+      // 내 메시지는 다음 폴링에도 실려 오므로 커서를 올려 중복 append 를 막는다
+      if(sq && sq > (S.lastSeq[c.id]||0)) S.lastSeq[c.id] = sq;
+      S.detail.msgs.sort((a,b) => a.seq - b.seq);
+    }
+    renderStream();
+  }catch(e){
+    optimistic.pending = false; optimistic.failed = true;
+    renderStream(); toast('전송 실패: ' + errMsg(e), 'bad');
+  }
+}
+
+async function doClose(outcome, summary){
+  const c = S.detail && S.detail.conv; if(!c || !outcome) return;
+  if(!OUTCOMES[outcome]){ toast('허용되지 않은 outcome: ' + outcome, 'bad'); return; }
+  // ★ 하드 가드 — 콜 예약은 고객이 고른 시각 없이는 절대 확정되지 않는다
+  if(OUTCOMES[outcome].need_time && !S.callbackAt){ toast('콜 예약 시각을 먼저 선택하세요 (무단 발신 금지)', 'bad'); return; }
+  const payload = {outcome, summary: summary || ''};
+  if(OUTCOMES[outcome].need_time) payload.callback_at = new Date(S.callbackAt).toISOString();
+
+  if(USE_MOCK){
+    c.status = 'closed';
+    const inv = S.convs.find(x => x.id === c.id); if(inv) inv.status = 'closed';
+    const nseq = (S.detail.msgs.reduce((a,m)=>Math.max(a,m.seq||0),0)) + 1;
+    S.detail.msgs.push(normMsg({seq:nseq, sender_type:'system',
+      body:'✅ 종결 · outcome=' + outcome + (payload.callback_at ? ' · 콜백 ' + S.callbackAt.replace('T',' ') : ''),
+      created_at:new Date().toISOString()}));
+    S.closing = null; S.callbackAt = '';
+    renderAll(); toast('종결 (목업) — ' + OUTCOMES[outcome].label, 'good'); return;
+  }
+  try{
+    await api('/conversations/' + encodeURIComponent(c.id) + '/close', {method:'POST', body: JSON.stringify(payload)});
+    S.closing = null; S.callbackAt = '';
+    await loadDetail(c.id); await safeLoadInbox(); renderAll();
+    toast('종결 완료 — ' + OUTCOMES[outcome].label, 'good');
+  }catch(e){ toast('종결 실패: ' + errMsg(e), 'bad'); }
+}
+
+async function safeLoadInbox(){ try{ await loadInbox(); }catch(e){} }
+
+/* ══════════════ 부팅 ══════════════ */
+async function boot(){
+  if(USE_MOCK){
+    goMock('?mock=1');
+    await loadScope(); await loadTopics(); await loadInbox();
+    renderAll(); selectConv(S.convs[0] && S.convs[0].id);
+    return;
+  }
+  if(!getToken() && !FORCE_API){
+    goMock('로그인 토큰 없음');
+    await loadScope(); await loadTopics(); await loadInbox(); renderAll();
+    if(S.convs[0]) selectConv(S.convs[0].id);
+    return;
+  }
+  try{
+    await loadScope();
+    await loadTopics();
+    await loadInbox();
+    renderAll();
+    startInboxPoll();
+    if(S.convs[0]) selectConv(S.convs[0].id);
+  }catch(e){
+    const why = (e instanceof ApiError) ? ('HTTP ' + e.status) : (e.message || '네트워크 오류');
+    if(FORCE_API){
+      S.apiState = 'error';
+      setBanner('err', '❌ API 오류 — ' + esc(why) + ' (mock=0 이라 목업으로 전환하지 않습니다)', true);
+      renderAll(); return;
+    }
+    goMock(why);
+    await loadScope(); await loadTopics(); await loadInbox(); renderAll();
+    if(S.convs[0]) selectConv(S.convs[0].id);
+  }
+}
+
+document.getElementById('reloadBtn').onclick = async () => {
+  await safeLoadInbox(); renderInbox();
+  if(S.sel){ try{ await loadDetail(S.sel); renderAll(); }catch(e){} }
+  toast('새로고침');
+};
+document.getElementById('retryBtn').onclick = async () => {
+  USE_MOCK = false; S.apiState = 'init';
+  setBanner('info', 'API 재시도 중…', false);
+  stopPoll(); stopInboxPoll();
+  await boot();
+};
+window.addEventListener('beforeunload', () => { stopPoll(); stopInboxPoll(); });
+
+boot();
+</script>
+</body>
+</html>

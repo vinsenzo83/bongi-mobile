@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>봉이 상담 데스크 — 와이어프레임</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard Variable',sans-serif;background:#0f172a;color:#e2e8f0;font-size:13px;height:100vh;overflow:hidden}
+.wrap{display:grid;grid-template-rows:auto 1fr;height:100vh}
+.hdr{padding:9px 18px;background:#1e293b;border-bottom:1px solid #334155;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hdr h1{font-size:15px;color:#f8fafc;font-weight:800}
+.bp{background:#fbbf24;color:#0f172a;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;margin-left:6px}
+.tabs{display:flex;gap:4px}
+.tab{padding:5px 13px;border-radius:6px;background:#334155;color:#94a3b8;font-size:11.5px;font-weight:700;cursor:pointer;border:1px solid transparent}
+.tab.active{background:#0891b2;color:#fff;border-color:#0891b2}
+.hdr .sp{flex:1}
+.hdr .env{font-size:10.5px;color:#64748b}
+.btn{background:#334155;color:#cbd5e1;border:1px solid #475569;padding:5px 10px;border-radius:5px;font-size:11.5px;cursor:pointer;font-family:inherit}
+.btn:hover{background:#475569}
+.btn:disabled{opacity:.4;cursor:default}
+.b-pri{background:#0891b2;color:#fff;border-color:#0891b2}
+.b-warn{background:#f59e0b;color:#0f172a;border-color:#f59e0b;font-weight:700}
+.b-ok{background:#16a34a;color:#fff;border-color:#16a34a}
+.b-dan{background:#dc2626;color:#fff;border-color:#dc2626}
+.b-purple{background:#7c3aed;color:#fff;border-color:#7c3aed;font-weight:700}
+.view{display:none;height:100%;overflow:hidden}
+.view.active{display:block}
+.flash{animation:fl 1.4s ease-out}
+@keyframes fl{0%{box-shadow:0 0 0 2px #fbbf24;background:rgba(251,191,36,.12)}100%{box-shadow:none;background:transparent}}
+
+/* 말풍선 공통 */
+.msg{margin-bottom:10px;display:flex;gap:8px;max-width:82%}
+.msg.out{margin-left:auto;flex-direction:row-reverse}
+.av{width:25px;height:25px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.av-c{background:#334155;color:#cbd5e1}.av-b{background:linear-gradient(135deg,#0891b2,#7c3aed);color:#fff}.av-a{background:#16a34a;color:#fff}
+.bub{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:8px 11px;font-size:12.5px;line-height:1.55}
+.msg.out .bub{background:#164e63;border-color:#0891b2}
+.bub .nm{font-size:10px;color:#94a3b8;font-weight:700;margin-bottom:3px}
+.bub .tm{font-size:9px;color:#64748b;margin-top:4px;text-align:right}
+.bub.note,.msg.out .bub.note{background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.4)}
+.bub.note .nm{color:#fbbf24}
+.bub.dropped,.msg.out .bub.dropped{opacity:.42;border-style:dashed;border-color:#dc2626;background:#1e293b;position:relative}
+.bub.dropped .nm{color:#fca5a5}
+.drop-tag{position:absolute;right:8px;top:-9px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;padding:1px 7px;border-radius:8px}
+.src{font-size:9.5px;color:#67e8f9;margin-top:5px;padding-top:5px;border-top:1px dashed #334155}
+.blocked{font-size:10px;color:#fca5a5;margin-top:5px;padding:5px 7px;border-radius:5px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.35)}
+.sys{text-align:center;font-size:10px;color:#64748b;margin:10px 0}
+.sys span{background:#1e293b;padding:3px 11px;border-radius:11px;border:1px solid #334155}
+.sys.ho span{background:rgba(34,197,94,.12);border-color:#16a34a;color:#86efac;font-weight:700;padding:5px 14px}
+.sys.bg span{background:rgba(124,58,237,.15);border-color:#7c3aed;color:#c4b5fd;font-weight:700;padding:5px 14px}
+.card{background:#0f172a;border:1px solid #475569;border-radius:8px;padding:9px;margin-top:7px}
+.card .cn{font-size:12px;font-weight:800;color:#fbbf24}
+.card .cd{font-size:10.5px;color:#94a3b8;margin-top:3px}
+.card .cp{font-size:13px;font-weight:800;color:#86efac;margin-top:5px}
+.callcard{background:rgba(34,197,94,.08);border:1px solid #16a34a;border-radius:8px;padding:10px;margin-top:7px}
+.callcard .t{font-size:11.5px;font-weight:800;color:#86efac}
+.callcard .d{font-size:10.5px;color:#cbd5e1;margin-top:4px}
+.slots{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.slot{font-size:10.5px;padding:4px 10px;border-radius:14px;background:#0f172a;border:1px solid #475569;color:#cbd5e1;cursor:pointer}
+.slot.picked{background:#16a34a;border-color:#16a34a;color:#fff;font-weight:700}
+
+/* 배지 */
+.tg{display:inline-block;font-size:9px;font-weight:700;padding:1.5px 6px;border-radius:3px;margin-right:3px}
+.i-presale{background:rgba(96,165,250,.2);color:#93c5fd}
+.i-cs{background:rgba(148,163,184,.22);color:#cbd5e1}
+.i-claim{background:rgba(220,38,38,.25);color:#fca5a5}
+.c-tag{background:rgba(134,239,172,.18);color:#86efac}
+.d-tag{background:rgba(124,58,237,.2);color:#c4b5fd}
+
+/* ①고객앱 */
+.fw{display:grid;grid-template-columns:390px 1fr;height:100%;overflow:hidden}
+.pcol{border-right:1px solid #334155;background:#111827;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;gap:9px}
+.phone{width:340px;height:592px;background:#1e293b;border:8px solid #000;border-radius:26px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.6)}
+.ph-hd{background:linear-gradient(135deg,#0891b2,#7c3aed);padding:11px 13px;color:#fff;flex-shrink:0}
+.ph-hd .t{font-size:14px;font-weight:800}
+.ph-hd .s{font-size:10.5px;opacity:.85;margin-top:2px}
+.ph-body{flex:1;overflow-y:auto;padding:12px;background:#0f172a}
+.ph-foot{border-top:1px solid #334155;padding:8px;background:#1e293b;flex-shrink:0}
+.ph-foot input{width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;border-radius:16px;padding:7px 12px;font-size:11.5px;font-family:inherit}
+.dots{display:flex;gap:4px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:#334155}.dot.on{background:#fbbf24}
+.narr{padding:18px 22px;overflow-y:auto}
+.narr h2{font-size:15px;color:#f8fafc;margin-bottom:5px}
+.narr .sub{font-size:11.5px;color:#94a3b8;margin-bottom:14px;line-height:1.7}
+.sb{background:#1e293b;border:1px solid #334155;border-left:3px solid #334155;border-radius:8px;padding:11px 13px;margin-bottom:7px;opacity:.4}
+.sb.on{opacity:1;border-left-color:#fbbf24;background:rgba(251,191,36,.06)}
+.sb.done{opacity:.7;border-left-color:#16a34a}
+.sb .n{font-size:10px;font-weight:800;color:#fbbf24}
+.sb .t{font-size:12.5px;font-weight:700;color:#f1f5f9;margin-top:2px}
+.sb .d{font-size:11px;color:#94a3b8;margin-top:4px;line-height:1.65}
+code{font-family:'SF Mono',Monaco,monospace;background:#0f172a;padding:1.5px 5px;border-radius:4px;font-size:10.5px;color:#67e8f9}
+
+/* ②데스크 */
+.desk{display:grid;grid-template-columns:288px 1fr 330px;height:100%;overflow:hidden}
+.pane{display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.pane+.pane{border-left:1px solid #334155}
+.ph2{padding:7px 11px;background:#1e293b;border-bottom:1px solid #334155;flex-shrink:0}
+.pt{font-size:10px;color:#fbbf24;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;justify-content:space-between}
+.pt .m{color:#94a3b8;font-weight:600;text-transform:none;font-size:10px}
+.ax{font-size:8.5px;color:#64748b;font-weight:800;text-transform:uppercase;margin:5px 0 3px}
+.row{display:flex;gap:3px;flex-wrap:wrap}
+.chip{font-size:10px;padding:2.5px 7px;border-radius:11px;background:#0f172a;color:#94a3b8;cursor:pointer;border:1px solid #334155}
+.chip.active{background:#0891b2;color:#fff;border-color:#0891b2}
+.chip.int.active{background:#7c3aed;border-color:#7c3aed;color:#fff}
+.chip.f.active{background:#475569;border-color:#64748b;color:#f1f5f9}
+.chip.new{border-color:#fbbf24;color:#fbbf24}
+.list{flex:1;overflow-y:auto;padding:6px 7px}
+.cv{background:#1e293b;border:1px solid #334155;border-radius:7px;padding:8px 10px;margin-bottom:5px;cursor:pointer}
+.cv:hover{border-color:#0891b2}
+.cv.sel{border-color:#fbbf24;background:rgba(251,191,36,.06)}
+.cv-r1{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.cv-n{font-weight:700;font-size:12.5px;color:#f1f5f9}
+.cv-t{font-size:9.5px;color:#64748b;font-family:'SF Mono',monospace}
+.cv-l{font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}
+.cv-r3{display:flex;justify-content:space-between;align-items:center;margin-top:5px}
+.st{font-size:9px;font-weight:700;padding:1.5px 6px;border-radius:9px}
+.st-bot{background:rgba(103,232,249,.18);color:#67e8f9}
+.st-wait{background:rgba(251,191,36,.2);color:#fbbf24}
+.st-asg{background:rgba(34,197,94,.18);color:#86efac}
+.st-close{background:rgba(71,85,105,.3);color:#94a3b8}
+.ur{background:#dc2626;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:8px}
+.sla{font-size:9.5px;font-weight:700;color:#fca5a5}
+.cvhd{padding:8px 13px;background:#1e293b;border-bottom:1px solid #334155;display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.cvhd .who{font-weight:800;font-size:14px;color:#f8fafc}
+.cvhd .p{font-family:'SF Mono',monospace;font-size:11px;color:#94a3b8}
+.cvhd .acts{margin-left:auto;display:flex;gap:5px}
+.stream{flex:1;overflow-y:auto;padding:13px;background:#0f172a}
+.comp{border-top:1px solid #334155;background:#1e293b;padding:8px 11px;flex-shrink:0}
+.ai{background:rgba(8,145,178,.1);border:1px solid rgba(8,145,178,.4);border-radius:7px;padding:6px 9px;margin-bottom:6px}
+.ai .h{font-size:9.5px;color:#67e8f9;font-weight:800;margin-bottom:3px;display:flex;justify-content:space-between}
+.ai .s{font-size:11.5px;color:#cbd5e1;line-height:1.5;cursor:pointer;padding:3px 0;border-bottom:1px dotted #334155}
+.ai .s:last-child{border:none}
+.ctabs{display:flex;gap:4px;margin-bottom:5px;align-items:center}
+.ct{font-size:10.5px;line-height:1.6;padding:3px 10px;border-radius:5px;background:#0f172a;color:#94a3b8;cursor:pointer;border:1px solid #334155;font-weight:700;flex:0 0 auto}
+.ct.active{background:#0891b2;color:#fff;border-color:#0891b2}
+.ct.nt.active{background:#f59e0b;color:#0f172a;border-color:#f59e0b}
+.cbox{display:flex;gap:6px;align-items:flex-end}
+.cbox textarea{flex:1;background:#0f172a;border:1px solid #475569;color:#e2e8f0;border-radius:7px;padding:7px 10px;font-size:12.5px;font-family:inherit;resize:none;height:46px}
+.closebar{display:flex;gap:5px;margin-top:6px;align-items:center;flex-wrap:wrap}
+.closebar .lb{font-size:9.5px;color:#64748b;font-weight:800;text-transform:uppercase}
+.sec{background:#1e293b;border-bottom:1px solid #334155;padding:10px 13px}
+.sec.hop{background:rgba(34,197,94,.07);border-left:3px solid #16a34a}
+.sect{font-size:10px;color:#fbbf24;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;display:flex;justify-content:space-between}
+.sec.hop .sect{color:#86efac}
+.sect .lnk{color:#67e8f9;font-weight:600;text-transform:none;cursor:pointer;font-size:10px}
+.kv{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;border-bottom:1px dotted #334155;gap:8px}
+.kv .k{color:#94a3b8;flex-shrink:0}
+.kv .v{color:#e2e8f0;font-weight:600;text-align:right}
+.unans{background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.45);border-radius:6px;padding:7px 9px;margin-top:6px}
+.unans .h{font-size:9.5px;color:#fbbf24;font-weight:800;margin-bottom:3px}
+.unans li{font-size:11.5px;color:#fde68a;margin-left:14px;line-height:1.6}
+.tl{font-size:11px;padding:5px 0;border-bottom:1px dotted #334155}
+.tl .d{color:#64748b;font-size:9.5px;font-family:'SF Mono',monospace}
+.tl .c{color:#cbd5e1;margin-top:2px}
+.tag{font-size:9px;padding:1px 5px;border-radius:3px;margin-right:4px}
+.t-call{background:rgba(96,165,250,.2);color:#93c5fd}
+.t-chat{background:rgba(103,232,249,.2);color:#67e8f9}
+.t-sale{background:rgba(34,197,94,.2);color:#86efac}
+.empty{padding:22px;text-align:center;color:#64748b;font-size:11.5px}
+
+/* ③④ 관리자·통계 */
+.adm{padding:18px 22px;overflow-y:auto;height:100%}
+.adm h2{font-size:15px;color:#f8fafc;margin-bottom:4px}
+.adm h3{font-size:12.5px;color:#f8fafc;margin:20px 0 4px}
+.adm .sub{font-size:11.5px;color:#94a3b8;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:6px}
+th{background:#1e293b;color:#fbbf24;font-size:10px;font-weight:800;text-align:left;padding:6px 9px;text-transform:uppercase;border-bottom:1px solid #334155}
+td{padding:6px 9px;border-bottom:1px solid #1e293b;color:#cbd5e1;vertical-align:top}
+tr:hover td{background:rgba(30,41,59,.5)}
+.pill{display:inline-block;font-size:9.5px;padding:2px 7px;border-radius:10px;margin:1px 2px 1px 0;background:#334155;color:#cbd5e1}
+.pill.on{background:rgba(34,197,94,.2);color:#86efac}
+.pill.off{background:rgba(71,85,105,.3);color:#64748b}
+.pill.warn{background:rgba(251,191,36,.2);color:#fbbf24}
+.pill.new{background:#fbbf24;color:#0f172a;font-weight:800}
+.pill.any{background:rgba(124,58,237,.25);color:#c4b5fd;font-style:italic}
+.note{background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.3);border-radius:8px;padding:10px 12px;font-size:11.5px;color:#a5f3fc;line-height:1.7;margin-bottom:12px}
+.note b{color:#67e8f9}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:16px}
+.kpi{background:#1e293b;border:1px solid #334155;border-radius:9px;padding:12px 13px}
+.kpi .l{font-size:10.5px;color:#94a3b8;font-weight:700}
+.kpi .v{font-size:23px;font-weight:900;color:#f8fafc;margin-top:5px}
+.kpi .g{font-size:10px;color:#64748b;margin-top:3px}
+.kpi.good .v{color:#86efac}.kpi.bad .v{color:#fca5a5}.kpi.warn .v{color:#fbbf24}
+.bar{height:7px;background:#0f172a;border-radius:4px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:#0891b2}
+.bar i.ok{background:#16a34a}.bar i.no{background:#dc2626}
+.subtabs{display:flex;gap:5px;margin-bottom:14px}
+.subtab{padding:5px 12px;border-radius:6px;background:#1e293b;border:1px solid #334155;color:#94a3b8;font-size:11.5px;font-weight:700;cursor:pointer}
+.subtab.active{background:#334155;color:#f1f5f9;border-color:#64748b}
+.sv{display:none}.sv.active{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <h1>💬 봉이 상담 데스크<span class="bp">PROTOTYPE</span></h1>
+  <div class="tabs">
+    <div class="tab active" data-v="flow">① 고객 앱</div>
+    <div class="tab" data-v="desk">② 상담사 데스크</div>
+    <div class="tab" data-v="admin">③ 관리자</div>
+    <div class="tab" data-v="funnel">④ 퍼널</div>
+    <div class="tab" data-v="stat">⑤ 통계</div>
+  </div>
+  <div class="sp"></div>
+  <span class="env">1차 사용자 = <b style="color:#cbd5e1">고객</b> · 실측 rental_categories 40행(활성6) · 부서 3 · 상담사 11</span>
+</div>
+
+<!-- ① 고객 앱 -->
+<div class="view active" id="v-flow">
+<div class="fw">
+  <div class="pcol">
+    <div class="phone">
+      <div class="ph-hd"><div class="t">💬 봉이 상담 <span id="phWho" style="font-size:10px;font-weight:600;opacity:.85"></span></div>
+        <div class="s" id="phSub"></div></div>
+      <div class="ph-body" id="phBody"></div>
+      <div class="ph-foot"><input placeholder="메시지 입력…"></div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn" id="pv">◀</button>
+      <span class="dots" id="dts"></span>
+      <button class="btn b-pri" id="nx">다음 ▶</button>
+      <button class="btn" id="rs">처음</button>
+    </div>
+  </div>
+  <div class="narr">
+    <h2>AI 가 1차로 받고, 못 푸는 지점에서만 사람이 2차로 이어받는다</h2>
+    <div class="sub"><b style="color:#f8fafc">대화는 하나다.</b> 새 채팅방을 만들지 않는다 — <code>conversation.id</code> 불변, <code>status</code> 만 <code>bot → waiting → assigned</code>.<br>
+      <b style="color:#fca5a5">"처음부터 다시 설명"이 발생하면 이 설계는 실패한 것이다.</b></div>
+    <div id="steps"></div>
+  </div>
+</div>
+</div>
+
+<!-- ② 상담사 데스크 -->
+<div class="view" id="v-desk">
+<div class="desk">
+  <div class="pane">
+    <div class="ph2">
+      <div class="pt">인박스 <span class="m" id="cvN"></span></div>
+      <div class="ax">축1 · 문의 성격 (intent)</div><div class="row" id="rIntent"></div>
+      <div class="ax">축2 · 상품 카테고리</div><div class="row" id="rCat"></div>
+      <div class="ax">상태 필터</div><div class="row" id="rFilter"></div>
+    </div>
+    <div class="list" id="cvList"></div>
+  </div>
+  <div class="pane">
+    <div class="cvhd" id="cvHd"></div>
+    <div class="stream" id="stream"></div>
+    <div class="comp" id="comp"></div>
+  </div>
+  <div class="pane" style="overflow-y:auto" id="p360"></div>
+</div>
+</div>
+
+<!-- ③ 관리자 -->
+<div class="view" id="v-admin">
+<div class="adm">
+  <h2>관리자 — 토픽 · 부서 · 라우팅 · 봇</h2>
+  <div class="sub">신규 테이블 없이 <code>rental_categories</code> + <code>incentive_departments.categories</code> + <code>desk.routing_rules</code> 로 운영한다.</div>
+  <div class="subtabs">
+    <div class="subtab active" data-s="s1">토픽·부서</div>
+    <div class="subtab" data-s="s2">라우팅 규칙</div>
+    <div class="subtab" data-s="s3">봇 설정</div>
+    <div class="subtab" data-s="s4">상담사 배치</div>
+  </div>
+
+  <div class="sv active" id="s-s1">
+    <div class="note"><b>확장 (코드 변경 0 · 배포 0)</b><br>
+      ① <code>rental_categories.is_active = true</code> → 위젯 토픽 자동 노출<br>
+      ② <code>desk.routing_rules</code> 규칙 1줄 → 담당 부서 지정. 안 넣어도 <b>priority 900 폴백</b>이 받아 유실 0
+      <div style="margin-top:8px"><button class="btn b-warn" id="exBtn">▶ 제습기 카테고리 켜기 (SQL 1줄)</button>
+      <span id="exMsg" style="color:#86efac;font-weight:700;margin-left:8px"></span></div></div>
+    <h3 style="margin-top:0">부서 = 큐</h3>
+    <div class="sub">인박스 탭은 이 수만큼만 생긴다. 카테고리가 40개로 늘어도 화면은 안 터진다.</div>
+    <table><thead><tr><th style="width:130px">부서</th><th>담당 카테고리 (categories JSONB)</th><th style="width:70px">상담사</th><th style="width:70px">SLA</th><th style="width:70px">폴백</th></tr></thead><tbody id="tDept"></tbody></table>
+    <h3>토픽 소스 (desk.v_topics)</h3>
+    <div class="sub">시스템 토픽 3 + 활성 렌탈 카테고리. 비활성 34종은 켜는 순간 자동 합류. <b style="color:#fca5a5">cs 는 토픽이 아니라 intent 다.</b></div>
+    <table><thead><tr><th style="width:150px">slug</th><th style="width:130px">이름</th><th style="width:110px">상품군</th><th style="width:150px">출처</th><th>presale 담당</th></tr></thead><tbody id="tTopic"></tbody></table>
+    <h3>비활성 카테고리 34종 (켜기 대기)</h3>
+    <div style="line-height:2.1" id="offC"></div>
+  </div>
+
+  <div class="sv" id="s-s2">
+    <h3 style="margin-top:0">라우팅 규칙 (desk.routing_rules)</h3>
+    <div class="sub">priority 오름차순 첫 매칭. <span class="pill any">*</span> = 와일드카드(NULL). <code>desk.route(intent, category)</code> 가 조회한다.</div>
+    <table><thead><tr><th style="width:75px">priority</th><th style="width:100px">intent</th><th style="width:165px">category</th><th style="width:150px">→ 부서</th><th>의미</th></tr></thead><tbody id="tRule"></tbody></table>
+    <h3>매트릭스 검증 — 같은 상품이라도 성격에 따라 팀이 갈린다</h3>
+    <div class="sub">1축이면 "정수기 구매문의"와 "정수기 AS"가 같은 칸에 들어가 구분이 안 된다.</div>
+    <table><thead><tr><th style="width:180px">상품 카테고리</th><th>상품문의 presale</th><th>고객센터 cs</th><th>클레임 claim</th></tr></thead><tbody id="tMatrix"></tbody></table>
+  </div>
+
+  <div class="sv" id="s-s3">
+    <h3 style="margin-top:0">토픽별 봇 설정</h3>
+    <div class="sub">봇 지침·허용 도구는 토픽 단위. <b style="color:#fca5a5">근거 없으면 답하지 않는다(B1)</b> 는 전역 규칙이라 끌 수 없다.</div>
+    <table><thead><tr><th style="width:160px">토픽</th><th style="width:70px">봇</th><th style="width:230px">허용 도구 (bot_tools)</th><th>봇 지침 (bot_prompt)</th></tr></thead><tbody id="tBot"></tbody></table>
+    <h3>전역 안전장치 (끌 수 없음)</h3>
+    <table><thead><tr><th style="width:60px">#</th><th style="width:270px">규칙</th><th>구현 지점</th></tr></thead><tbody>
+      <tr><td>B1</td><td>근거 없으면 답하지 않는다 → T1 인계</td><td>의미검색 임계값 게이트</td></tr>
+      <tr><td>B2</td><td>답변마다 근거 기록</td><td><code>desk.bot_say(…, p_sources)</code></td></tr>
+      <tr><td>B3</td><td>정형 수치는 계산하지 않고 조회</td><td>도구 반환값만 인용</td></tr>
+      <tr><td>B4</td><td>가격 협상·보상 약속·계약 확정 금지</td><td>시스템 프롬프트 + 후처리</td></tr>
+      <tr><td>PII</td><td>주민번호·계좌·카드 저장 차단</td><td>입력 게이트 + 렌더층 이중 마스킹</td></tr>
+      <tr><td>💰</td><td>봇 턴 20회 초과 → 강제 인계 / 일 상한 초과 → 봇 off</td><td><code>bot_cost_krw</code> 집계</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="sv" id="s-s4">
+    <h3 style="margin-top:0">상담사 배치</h3>
+    <div class="sub">담당 판정 = <code>department.categories ∪ agents.handle_categories</code> — <b>기존 공식 그대로, 새 권한 로직 0</b></div>
+    <table><thead><tr><th style="width:110px">상담사</th><th style="width:110px">소속 부서</th><th style="width:200px">겸업 카테고리</th><th style="width:90px">동시상담</th><th style="width:90px">근무상태</th><th>비고</th></tr></thead><tbody id="tAgent"></tbody></table>
+  </div>
+</div>
+</div>
+
+
+<!-- ④ 퍼널 -->
+<div class="view" id="v-funnel">
+<div class="adm">
+  <h2>퍼널(진입점) — 다양한 곳에서 들어온다</h2>
+  <div class="sub">퍼널마다 코드를 만들면 늘 때마다 배포해야 한다. <b style="color:#f8fafc"><code>desk.entry_points</code> 레지스트리 1개</b>로 처리한다.</div>
+  <div class="note"><b>핵심 원칙 — 퍼널이 이미 아는 것은 고객에게 다시 묻지 않는다</b><br>
+    bongee.ai 중고폰 시세에서 들어온 고객에게 "무엇을 도와드릴까요?"를 다시 묻는 건 낭비다.
+    그 퍼널은 이미 <code>intent=presale · topic=usedphone</code> 을 안다 → <b>토픽 선택 화면을 건너뛴다</b>.<br>
+    <b>임베드는 1줄</b> — <code>&lt;script src="…/desk/widget.js" data-entry="geo-answer"&gt;</code>. 설정은 전부 서버에서 내려온다.</div>
+
+  <div style="display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start">
+    <div>
+      <h3 style="margin-top:0">퍼널 레지스트리 (dev 시드 9종)</h3>
+      <div class="sub">행을 클릭하면 오른쪽에 그 퍼널의 <b>실제 첫 화면</b>이 뜬다.</div>
+      <table><thead><tr><th style="width:145px">slug</th><th style="width:70px">채널</th><th style="width:150px">사전 분류</th><th style="width:80px">표시</th><th style="width:80px">콜목적</th><th>라우팅 → 부서</th></tr></thead>
+        <tbody id="tFunnel"></tbody></table>
+
+      <h3>퍼널별로 커스텀되는 것</h3>
+      <table><thead><tr><th style="width:130px">항목</th><th style="width:150px">컬럼</th><th>예</th></tr></thead><tbody>
+        <tr><td>인사말</td><td><code>greeting</code></td><td>bongee → "내 폰 시세 확인 도와드릴게요"</td></tr>
+        <tr><td>첫 화면 버튼</td><td><code>quick_replies</code></td><td>["시세 알려주세요","매입 절차","소거증명"]</td></tr>
+        <tr><td>봇 지침 추가</td><td><code>bot_prompt_add</code></td><td>광고 랜딩 → "해당 캠페인 사은품 먼저 안내"</td></tr>
+        <tr><td>표시 형태</td><td><code>display</code></td><td>앱=fullscreen · 웹=floating · 랜딩=inline</td></tr>
+        <tr><td>사전 분류</td><td><code>default_intent/topic</code> + <code>lock_topic</code></td><td>토픽 선택 화면 건너뛰기</td></tr>
+        <tr><td>담당 부서 강제</td><td><code>department_id</code></td><td>특정 캠페인은 전담팀으로</td></tr>
+      </tbody></table>
+
+      <h3>CRM 연결 — 새 체계를 만들지 않는다</h3>
+      <div class="sub">기존 콜DB 소스(실측 4종)에 <b>채팅 유입 1종만 추가</b>하고 퍼널은 <code>crm_tags</code> 로 구분한다.</div>
+      <table><thead><tr><th style="width:180px">기존 콜DB 소스</th><th style="width:110px">보유 건수</th><th>비고</th></tr></thead><tbody>
+        <tr><td>봉이모바일 DB</td><td>3,106</td><td>기존</td></tr>
+        <tr><td>일타폰DB</td><td>3,098</td><td>기존</td></tr>
+        <tr><td>회사특판 DB</td><td>3</td><td>기존</td></tr>
+        <tr><td><b style="color:#fbbf24">채팅 유입 (CHAT)</b></td><td>신규</td><td><span class="pill new">추가</span> 퍼널 9종이 이 아래 tags 로 구분</td></tr>
+      </tbody></table>
+      <div class="sqlbox" style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:11px;font-family:'SF Mono',monospace;font-size:10.5px;line-height:1.8;color:#cbd5e1;margin-top:8px">채팅 대화 → 전화번호 확보 → incentive_customer_db INSERT
+  db_source_id = entry_point.db_source_id      <span style="color:#64748b">-- 채팅 유입</span>
+  category     = entry_point.crm_call_purpose  <span style="color:#64748b">-- 기변|이동|렌탈권유|신규</span>
+  tags        += entry_point.crm_tags          <span style="color:#64748b">-- bongee, geo, usedphone …</span>
+  source_data  = entry_context                 <span style="color:#64748b">-- utm·bref 원문 보존</span>
+<span style="color:#86efac">→ 기존 콜DB 화면·통계·분배 로직이 그대로 채팅 리드를 취급한다. 새 화면 불필요.</span></div>
+    </div>
+
+    <div>
+      <h3 style="margin-top:0">미리보기</h3>
+      <div class="sub" id="fpName">퍼널을 선택하세요</div>
+      <div style="width:330px;background:#1e293b;border:7px solid #000;border-radius:22px;overflow:hidden;box-shadow:0 14px 34px rgba(0,0,0,.5)">
+        <div class="ph-hd" style="padding:10px 12px"><div class="t" style="font-size:13px">💬 봉이 상담</div>
+          <div class="s" id="fpDisp"></div></div>
+        <div style="height:330px;overflow-y:auto;padding:12px;background:#0f172a" id="fpBody"></div>
+      </div>
+      <div style="margin-top:10px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px;font-size:11px;line-height:1.8" id="fpMeta"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ⑤ 통계 -->
+<div class="view" id="v-stat">
+<div class="adm">
+  <h2>통계 — §11.6 정의 기준</h2>
+  <div class="sub">쿼리로 못 쓰면 지표가 아니다. 각 카드 아래가 실제 판정 조건이다. <b style="color:#64748b">(수치는 예시)</b></div>
+  <div class="kpis" id="kpis"></div>
+  <h3 style="margin-top:0">부서 × intent 인입</h3>
+  <table><thead><tr><th style="width:150px">부서</th><th>상품문의</th><th>고객센터</th><th>클레임</th><th>합계</th><th style="width:180px">FRT(사람)</th></tr></thead><tbody id="tStat"></tbody></table>
+  <h3>토픽별 봇 성적 — 인계 사유 분해</h3>
+  <div class="sub">T1(근거없음) 비율이 높은 토픽 = <b style="color:#fbbf24">지식베이스가 부족한 토픽</b>. 여기에 FAQ 를 채워야 한다.</div>
+  <table><thead><tr><th style="width:160px">토픽</th><th style="width:80px">인입</th><th style="width:110px">봇 완결</th><th>T1 근거없음</th><th>T2 요청</th><th>T3 구매의사</th><th>T4 클레임</th><th>개입</th></tr></thead><tbody id="tBotStat"></tbody></table>
+</div>
+</div>
+
+</div>
+<script>
+/* ===== 데이터 ===== */
+const SYS=[{slug:'mobile',name:'휴대폰',icon:'📱',group:'통신'},
+ {slug:'internet_tv',name:'인터넷·TV',icon:'🌐',group:'통신'},
+ {slug:'usedphone',name:'중고폰',icon:'🔄',group:'중고'}];
+const RENT=[{slug:'water-purifier',name:'정수기',icon:'💧',on:1},{slug:'air-purifier',name:'공기청정기',icon:'🌬',on:1},
+ {slug:'bidet',name:'비데',icon:'🚽',on:1},{slug:'mattress',name:'매트리스',icon:'🛏',on:1},
+ {slug:'aircon',name:'에어컨',icon:'❄️',on:1},{slug:'tv',name:'TV',icon:'📺',on:1},
+ {slug:'dehumidifier',name:'제습기',icon:'💨',on:0}];
+const OFFC=['얼음정수기','냉온정수기','안마의자','세탁기','건조기','식기세척기','침대프레임','제습기','연수기','샤워기','전기레인지','오븐','커피머신','음식물처리기','식물재배기','냉장고','김치냉장고','청소기','로봇청소기','의류관리기','의류청정기','힐링케어','미용/의료기기','PC·노트북','모니터','게임기','빔프로젝터','스피커','펫용품','해충방제','방향기','핸드드라이어','여행 eSIM','기타가전'];
+const INTENTS=[{k:'presale',n:'상품문의',c:'i-presale'},{k:'cs',n:'고객센터',c:'i-cs'},{k:'claim',n:'클레임',c:'i-claim'}];
+const FILTERS=[{k:'mine',n:'내 상담'},{k:'waiting',n:'대기중'},{k:'bot',n:'AI 응대중'},{k:'snoozed',n:'보류'},{k:'closed',n:'종료'}];
+let DEPTS=[{id:1,name:'인터넷팀',cats:['internet_tv'],ag:4,sla:'3분',fb:0},
+ {id:2,name:'가전팀',cats:['water-purifier','air-purifier','bidet','mattress','aircon','tv'],ag:5,sla:'3분',fb:0},
+ {id:3,name:'고객지원팀',cats:[],ag:2,sla:'2분',fb:1,note:'cs·claim 전량 + 폴백'}];
+const ME='박상담';
+function topics(){return [...SYS,...RENT.filter(r=>r.on).map(r=>({...r,group:'가전렌탈'}))];}
+function tm(s){return topics().find(t=>t.slug===s)||RENT.find(r=>r.slug===s)||{name:s,icon:'📦'};}
+function deptOf(intent,cat){ if(intent==='cs'||intent==='claim')return DEPTS.find(d=>d.fb);
+  return DEPTS.find(d=>d.cats.includes(cat))||DEPTS.find(d=>d.fb); }
+
+/* 대화 */
+let CVS=[
+{id:'c1',name:'김영수',ph:'010-****-4821',intent:'presale',cat:'water-purifier',status:'assigned',agent:ME,t:'방금',unread:0,
+ hop:{reason:'T3 구매의사',conf:'0.91',sum:'4인 가족 직수형, 월 3만원 이하 희망. 토요일 오전 설치 원함',
+  col:[['가구원','4인'],['유형 / 예산','직수형 / 월 3만원대'],['봇 제시 견적','코웨이 아이콘 29,900원']],
+  un:['기존 KT 인터넷과 결합 할인 가능 여부','토요일 오전 설치기사 배정 가능 여부']},
+ crm:{match:'✅ 기존 고객 (콜DB)',purpose:'렌탈권유',grade:'A / 수신동의',hist:'3회 · 최근 오늘'},
+ tl:[['2026-09-03 14:22','t-chat','채팅','정수기 렌탈 문의 — 4인, 직수형'],
+     ['2026-08-11 10:05','t-call','콜','렌탈권유 · 부재중 (2회차)'],
+     ['2026-06-02 16:40','t-sale','계약','KT 인터넷+TV 500M 개통완료']],
+ ai:['"6월 KT 인터넷 개통 이력이 있어 결합 시 월 5,500원 추가 할인 가능합니다."','"직수형 4인 가구는 코웨이 아이콘이 적합합니다. 설치는 토요일 오전 가능합니다."'],
+ msgs:[{k:'sys',t:'대화 시작 · 앱 진입 · 로그인 고객 · intent=presale · 정수기 → 가전팀'},
+  {d:'in',a:'av-c',n:'김영수',b:'정수기 렌탈 알아보려고요',t:'14:18'},
+  {d:'out',a:'av-b',n:'봉이봇',b:'안녕하세요 김영수 고객님! 가구원 수와 희망 유형을 알려주시면 맞는 상품을 찾아드립니다.',t:'14:18'},
+  {d:'in',a:'av-c',n:'김영수',b:'4인 가족이고 직수형이요. 월 3만원 안쪽이면 좋겠어요',t:'14:20'},
+  {d:'out',a:'av-b',n:'봉이봇',b:'조건에 맞는 상품입니다.',t:'14:20',card:{n:'코웨이 아이콘 정수기 (직수형)',d:'4인 가구 적합 · 설치비 무료',p:'월 29,900원 · 사은품 15만원'},s:'근거 · rental_products #R0683'},
+  {d:'in',a:'av-c',n:'김영수',b:'제가 6월에 여기서 KT 인터넷 했는데 결합 할인 되나요?',t:'14:21'},
+  {d:'out',a:'av-b',n:'봉이봇',b:'결합 할인은 기존 계약 조건 확인이 필요합니다. 담당 상담사에게 연결해드릴게요.',t:'14:21',s:'⚠ 근거 미확보 → 추측 없이 인계 (T1)'},
+  {k:'ho',t:'🤝 박상담(가전팀) 인계받음 · 대기 42초 · AI 대화 전문 이관됨'},
+  {d:'out',a:'av-a',n:'박상담 · 내부 메모',b:'콜DB 기존 고객. 6월 KT 인터넷 개통건 확인 → 결합 5,500원 할인 적용 가능.',t:'14:21',note:1},
+  {d:'out',a:'av-a',n:'박상담',b:'안녕하세요, 가전팀 박상담입니다. 앞의 내용 확인했습니다. 6월 KT 인터넷 개통 건이 있어 결합 시 월 5,500원 추가 할인 가능합니다.',t:'14:22'},
+  {d:'in',a:'av-c',n:'김영수',b:'좋네요 그럼 진행할게요',t:'14:23'}]},
+
+{id:'c2',name:'박준호',ph:'010-****-7752',intent:'cs',cat:'water-purifier',status:'bot',t:'2분 전',unread:0,
+ crm:{match:'✅ 기존 고객',purpose:'—',grade:'B / 수신동의',hist:'1회'},
+ tl:[['2026-05-20','t-sale','계약','코웨이 정수기 렌탈 개통']],
+ ai:['"필터 교체는 3개월 주기이며, 다음 방문은 9월 12일 예정입니다."'],
+ msgs:[{k:'sys',t:'대화 시작 · intent=cs · 정수기 → 고객지원팀 (cs 는 상품 불문 CS 팀)'},
+  {d:'in',a:'av-c',n:'박준호',b:'정수기 필터 교체 언제 오나요',t:'14:26'},
+  {d:'out',a:'av-b',n:'봉이봇',b:'확인해드릴게요. 잠시만 기다려주세요.',t:'14:26',s:'근거 · cs.faqs #211'},
+  {d:'in',a:'av-c',n:'박준호',b:'그리고 요금이 저번달보다 많이 나왔던데 왜죠?',t:'14:27'}]},
+
+{id:'c3',name:'이하나',ph:'010-****-1093',intent:'presale',cat:'internet_tv',status:'waiting',t:'4분 전',unread:2,sla:'SLA 1분 초과',
+ hop:{reason:'T1 근거없음',conf:'0.88',sum:'인터넷 500M 신규 가입 문의. 아파트 거주, 통신사 미정',
+  col:[['속도','500M'],['거주형태','아파트']],un:['해당 아파트 KT 인입 가능 여부','현재 진행중인 사은품 프로모션']},
+ crm:{match:'❌ 신규 (콜DB 없음)',purpose:'—',grade:'— / 미확인',hist:'첫 문의'},
+ tl:[],ai:['"어느 지역 아파트인지 알려주시면 인입 가능 통신사를 확인해드리겠습니다."'],
+ msgs:[{k:'sys',t:'대화 시작 · intent=presale · 인터넷·TV → 인터넷팀'},
+  {d:'in',a:'av-c',n:'이하나',b:'인터넷 500M 얼마인가요?',t:'14:24'},
+  {d:'out',a:'av-b',n:'봉이봇',b:'인터넷 500M 상품 안내드릴게요.',t:'14:24',s:'근거 · bongi_internet_speeds'},
+  {d:'in',a:'av-c',n:'이하나',b:'우리 아파트도 되나요? 사은품은요?',t:'14:25'},
+  {d:'out',a:'av-b',n:'봉이봇',b:'인입 가능 여부는 확인이 필요합니다. 상담사에게 연결해드릴게요.',t:'14:25',s:'⚠ 근거 미확보 → 인계 (T1)'},
+  {k:'sys',t:'⏳ 인터넷팀 대기열 등록 · 4분 경과 (SLA 3분 초과)'}]},
+
+{id:'c4',name:'정수아',ph:'010-****-8834',intent:'claim',cat:'aircon',status:'waiting',t:'11분 전',unread:3,sla:'클레임 최우선',
+ hop:{reason:'T4 클레임',conf:'0.96',sum:'에어컨 설치기사 미방문. 환불 요구.',col:[['약속일','2026-09-01']],un:['설치기사 배정 이력 확인','환불 규정 적용 여부 — 매니저 판단 필요']},
+ crm:{match:'✅ 기존 고객',purpose:'—',grade:'A / 수신동의',hist:'2회'},
+ tl:[['2026-08-28','t-sale','계약','에어컨 렌탈 계약']],
+ ai:['(클레임은 AI 추천 답변을 제공하지 않습니다 — 매니저가 직접 판단)'],
+ msgs:[{k:'sys',t:'대화 시작 · intent=claim → 고객지원팀(매니저) · priority 10'},
+  {d:'in',a:'av-c',n:'정수아',b:'설치기사가 안 왔어요 환불해주세요',t:'14:17'},
+  {d:'out',a:'av-b',n:'봉이봇',b:'불편을 드려 죄송합니다. 담당 매니저에게 즉시 연결해드리겠습니다.',t:'14:17',s:'T4 — 사과만 하고 즉시 인계. 보상·협상 언급 금지'},
+  {k:'sys',t:'⚠️ 매니저 에스컬레이션 · 11분 경과'}]},
+
+{id:'c5',name:'최민서',ph:'010-****-2210',intent:'cs',cat:'internet_tv',status:'bot',t:'8분 전',unread:0,
+ crm:{match:'✅ 기존 고객',purpose:'—',grade:'B / 수신동의',hist:'1회'},
+ tl:[['2026-08-30','t-sale','계약','KT 인터넷 개통 신청']],
+ ai:['"신청일 기준 3~5영업일 내 개통되며, 현재 기사 배정 완료 상태입니다."'],
+ msgs:[{k:'sys',t:'대화 시작 · intent=cs · 인터넷·TV → 고객지원팀'},
+  {d:'in',a:'av-c',n:'최민서',b:'개통 언제 되나요',t:'14:20'},
+  {d:'out',a:'av-b',n:'봉이봇',b:'8월 30일 신청 건은 기사 배정이 완료되어 9월 4일 개통 예정입니다.',t:'14:20',s:'근거 · cs.faqs #88 · bongi_applications'},
+  {d:'in',a:'av-c',n:'최민서',b:'제 주민번호 901231-1234567 로 조회되나요?',t:'14:21',pii:1}]}
+];
+let sel='c1', fInt=null, fCat=null, fSt=null;
+
+/* ===== ① 고객앱 ===== */
+const STEPS=[
+ ['STEP 1','앱 진입 · 문의 유형 선택','로그인 상태라 <code>auth_user_id</code>·전화번호를 처음부터 확보 → <b>봇이 연락처를 묻지 않는다</b>.'],
+ ['STEP 2','AI 1차 상담 — 근거 있는 것만','<code>cs.faqs</code> 308건 + 상품 DB 근거로 답한다. <b>지어내지 않는다.</b> 답변마다 근거를 기록한다(B2).'],
+ ['STEP 3','AI 가 견적까지 좁힌다','가구원·유형·예산 수집 후 실시간 가격 제시. 여기까지가 AI 의 최대 사거리.'],
+ ['STEP 4','⚠ AI 가 못 푸는 지점','"기존 KT 인터넷과 결합 할인 되나요?" → 개인 계약 조건 필요. <b>추측 금지</b>. <code>bot_unanswered</code> 에 기록되고 인계 트리거.'],
+ ['STEP 5','🤝 이관 — 같은 대화, 같은 창','새 채팅방 없음. 시스템 메시지 한 줄. 상담사는 전문 + 핸드오프 패키지를 동시에 받는다.'],
+ ['STEP 6','사람이 2차로 진행','상담사는 <b>앞 내용을 이미 알고</b> 시작. AI 는 뒤에서 추천 답변만(자동 전송 없음).'],
+ ['STEP 7','⛔ 개인정보는 채팅에서 안 받는다','주민번호·계좌·카드는 <b>저장 자체를 차단</b>한다. 조용히 지우지 않고 이유를 설명한다.'],
+ ['STEP 8','종결 — 콜 예약','개통은 본인확인·서류가 필요해 통화로만. <b>상담사가 임의로 전화하지 않는다</b> — 고객이 시간을 고른다.']];
+let step=0;
+function bub(m){
+  if(m.k) return `<div class="sys ${m.k==='ho'?'ho':(m.k==='bg'?'bg':'')}"><span>${m.t}</span></div>`;
+  return `<div class="msg ${m.d==='out'?'out':''}"><div class="av ${m.a}">${m.n[0]}</div>
+   <div class="bub ${m.note?'note':''} ${m.dropped?'dropped':''}">${m.dropped?'<span class="drop-tag">폐기됨</span>':''}
+   <div class="nm">${m.n}</div>${m.b}
+   ${m.card?`<div class="card"><div class="cn">${m.card.n}</div><div class="cd">${m.card.d}</div><div class="cp">${m.card.p}</div></div>`:''}
+   ${m.extra||''}${m.pii?'<div class="blocked">⛔ 주민등록번호가 감지되어 <b>저장이 차단</b>되었습니다. 통화에서 확인드립니다.</div>':''}
+   ${m.s?`<div class="src">📎 ${m.s}</div>`:''}<div class="tm">${m.t}</div></div></div>`;
+}
+function renderPhone(){
+  const b=document.getElementById('phBody'), human=step>=4;
+  document.getElementById('phWho').textContent=human?'· 박상담 상담사':'· AI 상담원';
+  document.getElementById('phSub').textContent=human?'가전팀 박상담 상담사가 진행 중입니다':'AI 상담원이 먼저 도와드립니다';
+  if(step===0){
+    const gs=[...new Set(topics().map(t=>t.group))];
+    b.innerHTML=`<div style="font-size:12.5px;font-weight:700;margin-bottom:9px">무엇을 도와드릴까요?</div>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">`+gs.map(g=>{const i=topics().filter(t=>t.group===g);
+     return `<div style="background:#1e293b;border:1px solid #334155;border-radius:9px;padding:11px 8px;text-align:center">
+      <div style="font-size:19px">${i[0].icon}</div><div style="font-size:11px;font-weight:700;margin-top:4px">${g}</div></div>`;}).join('')
+     +`</div><div style="font-size:12.5px;font-weight:700;margin:11px 0 7px">가전렌탈</div><div style="display:flex;flex-wrap:wrap;gap:5px">`
+     +RENT.filter(r=>r.on).map(c=>`<div style="background:#1e293b;border:1px solid ${c.slug==='dehumidifier'?'#fbbf24':'#334155'};border-radius:15px;padding:6px 11px;font-size:11px">${c.icon} ${c.name}${c.slug==='dehumidifier'?' ✨':''}</div>`).join('')
+     +`</div><div style="margin-top:12px;font-size:10px;color:#64748b;line-height:1.7">활성 카테고리가 DB에서 그대로 그려집니다.<br>비활성 34종은 켜는 즉시 나타납니다.</div>`;
+    return;
+  }
+  const M=[{k:'sys',t:'💧 정수기 · 상품문의 → 가전팀'},
+   {d:'in',a:'av-c',n:'김영수',b:'정수기 렌탈 알아보려고요',t:'14:18'}];
+  if(step>=1)M.push({d:'out',a:'av-b',n:'봉이봇',b:'안녕하세요 김영수 고객님! 정수기 렌탈 도와드릴게요. 가구원 수와 희망 유형(직수형/저수조형)을 알려주시면 맞는 상품을 찾아드립니다.',t:'14:18'});
+  if(step>=2){M.push({d:'in',a:'av-c',n:'김영수',b:'4인 가족이고 직수형이요. 월 3만원 안쪽이면 좋겠어요',t:'14:20'});
+   M.push({d:'out',a:'av-b',n:'봉이봇',b:'조건에 맞는 상품입니다.',t:'14:20',card:{n:'코웨이 아이콘 정수기 (직수형)',d:'4인 가구 적합 · 3개월 방문관리 · 설치비 무료',p:'월 29,900원 · 사은품 15만원'},s:'근거 · rental_products #R0683 · 실시간 가격 조회'});}
+  if(step>=3){M.push({d:'in',a:'av-c',n:'김영수',b:'제가 6월에 여기서 KT 인터넷 했는데 결합 할인 되나요?',t:'14:21'});
+   M.push({d:'out',a:'av-b',n:'봉이봇',b:'결합 할인은 고객님의 기존 계약 조건을 확인해야 정확히 안내드릴 수 있습니다. 담당 상담사에게 바로 연결해드릴게요.',t:'14:21',s:'⚠ 근거 미확보 → 추측하지 않고 인계 (T1)'});}
+  if(step>=4)M.push({k:'ho',t:'🤝 상담사 박○○ 님이 참여했습니다'});
+  if(step>=5)M.push({d:'out',a:'av-a',n:'박상담',b:'안녕하세요, 가전팀 박상담입니다. <b>앞의 내용 확인했습니다.</b> 6월 KT 인터넷 개통 건이 있어서 결합 시 월 5,500원 추가 할인 가능합니다. 실제 부담은 24,400원입니다.',t:'14:22'});
+  if(step>=6){M.push({d:'in',a:'av-c',n:'김영수',b:'좋네요 진행할게요. 주민번호 901231-1234567 입니다',t:'14:23',pii:1});
+   M.push({d:'out',a:'av-a',n:'박상담',b:'주민번호는 채팅으로 받지 않습니다. 통화에서 확인드릴게요.',t:'14:23'});}
+  if(step>=7){M.push({d:'out',a:'av-a',n:'박상담',b:'개통은 본인확인·서류가 필요해서 통화로만 진행됩니다. 편하신 시간 골라주세요.',t:'14:24',
+    extra:`<div class="callcard"><div class="t">📞 통화 예약</div><div class="d">주민번호·계좌는 채팅에서 받지 않습니다</div>
+     <div class="slots"><span class="slot">오늘 오후</span><span class="slot picked">내일 오전</span><span class="slot">내일 오후</span><span class="slot">직접 지정</span></div></div>`});
+   M.push({k:'sys',t:'✅ 내일 오전 10시 · 박상담 전화 예정 — outcome=booked_call'});}
+  b.innerHTML=M.map(bub).join(''); b.scrollTop=b.scrollHeight;
+}
+function renderSteps(){
+  document.getElementById('steps').innerHTML=STEPS.map((s,i)=>
+   `<div class="sb ${i===step?'on':(i<step?'done':'')}"><div class="n">${s[0]}</div><div class="t">${s[1]}</div><div class="d">${s[2]}</div></div>`).join('');
+  document.getElementById('dts').innerHTML=STEPS.map((_,i)=>`<span class="dot ${i<=step?'on':''}"></span>`).join('');
+  document.getElementById('pv').disabled=step===0; document.getElementById('nx').disabled=step===STEPS.length-1;
+}
+
+/* ===== ② 데스크 ===== */
+function renderInbox(){
+  document.getElementById('rIntent').innerHTML=INTENTS.map(i=>`<div class="chip int ${fInt===i.k?'active':''}" data-i="${i.k}">${i.n}</div>`).join('');
+  document.getElementById('rCat').innerHTML=topics().map(t=>`<div class="chip ${fCat===t.slug?'active':''} ${t.slug==='dehumidifier'?'new':''}" data-c="${t.slug}">${t.icon} ${t.name}</div>`).join('');
+  document.getElementById('rFilter').innerHTML=FILTERS.map(f=>`<div class="chip f ${fSt===f.k?'active':''}" data-f="${f.k}">${f.n}</div>`).join('');
+  document.querySelectorAll('#rIntent .chip').forEach(e=>e.onclick=()=>{fInt=fInt===e.dataset.i?null:e.dataset.i;renderInbox()});
+  document.querySelectorAll('#rCat .chip').forEach(e=>e.onclick=()=>{fCat=fCat===e.dataset.c?null:e.dataset.c;renderInbox()});
+  document.querySelectorAll('#rFilter .chip').forEach(e=>e.onclick=()=>{fSt=fSt===e.dataset.f?null:e.dataset.f;renderInbox()});
+  const L=CVS.filter(c=>(!fInt||c.intent===fInt)&&(!fCat||c.cat===fCat)&&
+    (!fSt|| (fSt==='mine'? c.agent===ME : c.status===fSt)));
+  document.getElementById('cvN').textContent=L.length+'건';
+  const S={bot:['st-bot','AI 응대중'],waiting:['st-wait','인계 대기'],assigned:['st-asg','상담중'],snoozed:['st-close','보류'],closed:['st-close','종료']};
+  document.getElementById('cvList').innerHTML=L.map(c=>{
+    const it=INTENTS.find(x=>x.k===c.intent),t=tm(c.cat),d=deptOf(c.intent,c.cat);
+    return `<div class="cv ${sel===c.id?'sel':''}" data-id="${c.id}">
+     <div class="cv-r1"><span class="cv-n">${c.name}</span><span class="cv-t">${c.t}</span></div>
+     <div><span class="tg ${it.c}">${it.n}</span><span class="tg c-tag">${t.icon} ${t.name}</span><span class="tg d-tag">${d.name}</span></div>
+     <div class="cv-l">${c.msgs[c.msgs.length-1].b||''}</div>
+     <div class="cv-r3"><span class="st ${S[c.status][0]}">${S[c.status][1]}</span>
+      <span>${c.sla?`<span class="sla">⚠ ${c.sla}</span> `:''}${c.unread?`<span class="ur">${c.unread}</span>`:''}</span></div></div>`;
+  }).join('')||'<div class="empty">해당 조건의 대화가 없습니다</div>';
+  document.querySelectorAll('#cvList .cv').forEach(e=>e.onclick=()=>{sel=e.dataset.id;renderInbox();renderConv()});
+}
+function renderConv(){
+  const c=CVS.find(x=>x.id===sel); if(!c){document.getElementById('cvHd').innerHTML='';return;}
+  const it=INTENTS.find(x=>x.k===c.intent),t=tm(c.cat),d=deptOf(c.intent,c.cat);
+  let acts='';
+  if(c.status==='bot') acts=`<button class="btn b-purple" id="bargeBtn">⚡ 지금 이어받기</button><span style="font-size:10px;color:#64748b;align-self:center">AI 응대중 — 개입 가능</span>`;
+  else if(c.status==='waiting') acts=`<button class="btn b-ok" id="claimBtn">배정받기</button><button class="btn">이관</button>`;
+  else acts=`<button class="btn" id="relBtn">↩ AI 에 되돌리기</button><button class="btn">이관</button><button class="btn">보류</button>`;
+  document.getElementById('cvHd').innerHTML=`<span class="who">${c.name}</span><span class="p">${c.ph}</span>
+   <span class="tg ${it.c}">${it.n}</span><span class="tg c-tag">${t.icon} ${t.name}</span><span class="tg d-tag">${d.name}</span>
+   <div class="acts">${acts}</div>`;
+  document.getElementById('stream').innerHTML=c.msgs.map(bub).join('');
+  const st=document.getElementById('stream'); st.scrollTop=st.scrollHeight;
+
+  document.getElementById('comp').innerHTML=`
+   <div class="ai"><div class="h"><span>🤖 AI 추천 답변 — 클릭 시 입력창 삽입 (자동 전송 안 함)</span><span style="color:#64748b">근거 ${c.ai.length}건</span></div>
+    ${c.ai.map(a=>`<div class="s">${a}</div>`).join('')}</div>
+   <div class="ctabs"><div class="ct active">답장</div><div class="ct nt">내부 메모</div></div>
+   <div class="cbox"><textarea placeholder="답장 입력…  /  를 누르면 상용구"></textarea><button class="btn b-pri" style="height:46px;padding:0 15px">전송</button></div>
+   <div class="closebar"><span class="lb">종결</span>
+    <button class="btn b-ok">✅ 채팅 종결</button><button class="btn b-warn">📞 콜 예약</button>
+    <button class="btn">🏪 매장 예약</button><button class="btn">🎫 티켓 접수</button></div>`;
+  document.querySelectorAll('#comp .ct').forEach(e=>e.onclick=()=>{document.querySelectorAll('#comp .ct').forEach(x=>x.classList.remove('active'));e.classList.add('active')});
+
+  let h='';
+  if(c.hop) h+=`<div class="sec hop"><div class="sect">🤝 AI 핸드오프 패키지 <span class="lnk">전문 ↗</span></div>
+   <div class="kv"><span class="k">인계 사유</span><span class="v">${c.hop.reason}</span></div>
+   <div class="kv"><span class="k">분류 신뢰도</span><span class="v">${c.intent} · ${t.name} (${c.hop.conf})</span></div>
+   <div class="kv"><span class="k">요약</span><span class="v" style="text-align:left">${c.hop.sum}</span></div>
+   ${c.hop.col.map(x=>`<div class="kv"><span class="k">${x[0]}</span><span class="v">${x[1]}</span></div>`).join('')}
+   <div class="unans"><div class="h">⚠ AI 가 못 푼 것 — 이게 사람이 할 일</div><ul>${c.hop.un.map(u=>`<li>${u}</li>`).join('')}</ul></div></div>`;
+  else h+=`<div class="sec"><div class="sect">🤖 AI 응대중</div>
+   <div style="font-size:11.5px;color:#94a3b8;line-height:1.7">아직 인계되지 않았습니다. 봇이 응대 중이며 핸드오프 패키지는 인계 시점에 생성됩니다.<br>
+   <b style="color:#c4b5fd">지켜보다 [지금 이어받기] 로 개입할 수 있습니다.</b></div></div>`;
+  h+=`<div class="sec"><div class="sect">고객 <span class="lnk">CRM 원장 ↗</span></div>
+   <div class="kv"><span class="k">CRM 매칭</span><span class="v">${c.crm.match}</span></div>
+   <div class="kv"><span class="k">콜 목적</span><span class="v">${c.crm.purpose}</span></div>
+   <div class="kv"><span class="k">등급 / DNT</span><span class="v">${c.crm.grade}</span></div>
+   <div class="kv"><span class="k">채팅 이력</span><span class="v">${c.crm.hist}</span></div></div>`;
+  h+=`<div class="sec"><div class="sect">통합 상담이력</div>${c.tl.length?c.tl.map(x=>
+   `<div class="tl"><div class="d">${x[0]}</div><div class="c"><span class="tag ${x[1]}">${x[2]}</span>${x[3]}</div></div>`).join('')
+   :'<div style="font-size:11.5px;color:#64748b">이력 없음 — 신규 고객</div>'}</div>`;
+  document.getElementById('p360').innerHTML=h;
+
+  const bb=document.getElementById('bargeBtn');
+  if(bb) bb.onclick=()=>{
+    c.status='assigned'; c.agent=ME;
+    c.msgs.push({k:'bg',t:'⚡ 박상담 님이 중간 개입했습니다 — handoff_reason = BARGE_IN'});
+    c.msgs.push({d:'out',a:'av-b',n:'봉이봇',b:'요금 문의는 청구 내역 확인이 필요합니다…',t:'14:27',dropped:1,
+      s:'desk.bot_say() → status ≠ bot 이므로 NULL 반환 · DB 저장 안 됨'});
+    c.msgs.push({d:'out',a:'av-a',n:'박상담',b:'안녕하세요 박준호 고객님, 상담사 박상담입니다. 필터 교체는 9월 12일 예정이고, 요금은 제가 직접 확인해서 안내드릴게요.',t:'14:28'});
+    c.hop={reason:'BARGE_IN (상담사 개입)',conf:'—',sum:'봇이 요금 문의를 처리하지 못하는 것을 보고 상담사가 직접 개입',
+      col:[['개입 시각','14:27'],['개입 전 상태','AI 응대중']],un:['9월 청구 증가 사유 확인 필요']};
+    renderInbox(); renderConv();
+    ['stream','p360'].forEach(id=>{const e=document.getElementById(id);e.classList.remove('flash');void e.offsetWidth;e.classList.add('flash')});
+  };
+  const cb=document.getElementById('claimBtn');
+  if(cb) cb.onclick=()=>{c.status='assigned';c.agent=ME;c.sla=null;c.unread=0;
+    c.msgs.push({k:'ho',t:`🤝 ${ME} 인계받음 · AI 대화 전문 이관됨`}); renderInbox(); renderConv();};
+  const rb=document.getElementById('relBtn');
+  if(rb) rb.onclick=()=>{c.status='bot';c.agent=null;
+    c.msgs.push({k:'sys',t:'↩ 상담사가 AI 에 되돌림 — desk.release_to_bot() · status=bot'}); renderInbox(); renderConv();};
+}
+
+/* ===== ③ 관리자 ===== */
+function rules(){
+  const r=[[10,'claim',null,'고객지원팀','클레임은 상품 불문 최우선'],[20,'cs',null,'고객지원팀','개통 후 문의는 전부 CS'],
+   [50,'presale','internet_tv','인터넷팀',''],[50,'presale','mobile','폴백','규칙 없음 → 900 이 받음'],
+   [50,'presale','usedphone','폴백','규칙 없음 → 900 이 받음']];
+  RENT.filter(x=>x.on).forEach(c=>r.push([50,'presale',c.slug,'가전팀',c.slug==='dehumidifier'?'★ 방금 추가된 규칙':'']));
+  r.push([900,null,null,'고객지원팀 (폴백)','어디에도 안 걸리면']);
+  return r;
+}
+function renderAdmin(){
+  document.getElementById('tDept').innerHTML=DEPTS.map(d=>`<tr><td><b>${d.name}</b></td>
+   <td>${d.cats.length?d.cats.map(c=>`<span class="pill ${c==='dehumidifier'?'new':'on'}">${tm(c).icon} ${tm(c).name}</span>`).join(''):`<span class="pill any">${d.note||'intent 기준'}</span>`}</td>
+   <td>${d.ag}명</td><td>${d.sla}</td><td>${d.fb?'<span class="pill on">✅</span>':'—'}</td></tr>`).join('');
+  document.getElementById('tTopic').innerHTML=topics().map(t=>{
+    const d=deptOf('presale',t.slug), src=RENT.some(r=>r.slug===t.slug)?'rental_categories':'desk.topics';
+    return `<tr><td><code>${t.slug}</code></td><td>${t.icon} ${t.name}</td><td>${t.group}</td>
+     <td><span class="pill ${src==='rental_categories'?'on':''}">${src}</span></td>
+     <td>${d.fb&&!d.cats.includes(t.slug)?'<span class="pill off">폴백</span>':`<span class="pill on">${d.name}</span>`}</td></tr>`;}).join('');
+  const on=RENT.find(r=>r.slug==='dehumidifier').on;
+  document.getElementById('offC').innerHTML=OFFC.map(c=>`<span class="pill ${c==='제습기'&&on?'new':'off'}">${c}</span>`).join('');
+  document.getElementById('tRule').innerHTML=rules().map(r=>`<tr><td><code>${r[0]}</code></td>
+   <td>${r[1]?`<span class="pill ${r[1]==='claim'?'warn':'on'}">${r[1]}</span>`:'<span class="pill any">*</span>'}</td>
+   <td>${r[2]?`<span class="pill ${r[2]==='dehumidifier'?'new':''}">${tm(r[2]).icon} ${tm(r[2]).name}</span>`:'<span class="pill any">*</span>'}</td>
+   <td>${r[3]}</td><td style="color:#64748b">${r[4]}</td></tr>`).join('');
+  document.getElementById('tMatrix').innerHTML=topics().map(t=>{
+    const p=deptOf('presale',t.slug);
+    return `<tr><td style="font-weight:700;color:#f1f5f9">${t.icon} ${t.name}</td>
+     <td><span class="pill ${p.fb?'off':'on'}">${p.fb?'폴백':p.name}</span></td>
+     <td><span class="pill">고객지원팀</span></td><td><span class="pill warn">고객지원팀(매니저)</span></td></tr>`;}).join('');
+  document.getElementById('tBot').innerHTML=topics().map(t=>`<tr>
+   <td>${t.icon} ${t.name}</td><td><span class="pill on">ON</span></td>
+   <td style="font-size:10.5px;color:#94a3b8">${t.group==='통신'?'search_mobile_plans, get_bundle_discount, search_mobile_prices':'search_rental, compare_rental, get_rental_detail'}</td>
+   <td style="font-size:10.5px;color:#94a3b8">${t.group==='통신'?'요금제·시세는 반드시 도구 조회. 약정가 임의 계산 금지':'가구원·설치공간 먼저 확인. 렌탈료는 DB 값 그대로'}</td></tr>`).join('');
+  document.getElementById('tAgent').innerHTML=[
+   ['박상담','가전팀',['internet_tv'],'4','online','겸업 — 인터넷 문의도 받음'],
+   ['김상담','인터넷팀',[],'4','online',''],
+   ['이상담','인터넷팀',[],'3','away',''],
+   ['최지원','고객지원팀',[],'6','online','CS·클레임 전량'],
+   ['정매니저','고객지원팀',[],'2','online','클레임 에스컬레이션 수신']
+  ].map(a=>`<tr><td><b>${a[0]}</b></td><td><span class="pill on">${a[1]}</span></td>
+   <td>${a[2].length?a[2].map(c=>`<span class="pill warn">${tm(c).icon} ${tm(c).name}</span>`).join(''):'<span class="pill off">없음</span>'}</td>
+   <td>${a[3]}건</td><td><span class="pill ${a[4]==='online'?'on':'off'}">${a[4]}</span></td><td style="color:#64748b">${a[5]}</td></tr>`).join('');
+}
+
+
+/* ===== ④ 퍼널 ===== */
+const FUNNELS=[
+ {slug:'app-home',name:'앱 홈',ch:'app',intent:null,topic:null,lock:0,disp:'fullscreen',
+  greet:'무엇을 도와드릴까요?',qr:['요금제 상담','인터넷 상담','가전 렌탈','개통 현황'],purpose:'-',tags:['app']},
+ {slug:'app-product',name:'앱 상품상세',ch:'app',intent:'presale',topic:null,lock:1,disp:'fullscreen',
+  greet:'이 상품 상담 도와드릴게요',qr:['가격 알려주세요','사은품 있나요','설치 가능한가요'],purpose:'신규',tags:['app','product']},
+ {slug:'app-mypage',name:'앱 마이페이지',ch:'app',intent:'cs',topic:null,lock:0,disp:'fullscreen',
+  greet:'가입 내역 관련 문의를 도와드릴게요',qr:['개통 현황','요금 문의','해지 문의'],purpose:'-',tags:['app','cs']},
+ {slug:'web-rental',name:'고객웹 렌탈 카탈로그',ch:'web',intent:'presale',topic:'water-purifier',lock:0,disp:'floating',
+  greet:'가전 렌탈 상담 도와드릴게요',qr:['정수기 추천','설치 일정','사은품'],purpose:'렌탈권유',tags:['web','rental']},
+ {slug:'bongee-usedphone',name:'bongee.ai 중고폰 시세',ch:'web',intent:'presale',topic:'usedphone',lock:1,disp:'floating',
+  greet:'내 폰 시세 확인 도와드릴게요',qr:['시세 알려주세요','매입 절차','소거증명'],purpose:'기변',tags:['bongee','usedphone']},
+ {slug:'geo-answer',name:'GEO 답변 페이지',ch:'geo',intent:'presale',topic:null,lock:0,disp:'floating',
+  greet:'더 궁금한 점 있으신가요?',qr:['정확한 시세','가입 상담','매장 위치'],purpose:'신규',tags:['geo'],
+  note:'★ ref=bref 를 실어와 GEO 유입→채팅→리드→계약을 한 키로 연결 (유입 1,840건·전환 0 이었던 숙제)'},
+ {slug:'naver-blog',name:'네이버 블로그',ch:'blog',intent:'presale',topic:null,lock:0,disp:'floating',
+  greet:'상담 도와드릴게요',qr:['요금 비교','가입 문의'],purpose:'신규',tags:['naver']},
+ {slug:'store-qr',name:'매장 QR',ch:'store_qr',intent:null,topic:null,lock:0,disp:'fullscreen',
+  greet:'매장 방문 감사합니다',qr:['상담 대기','상품 문의'],purpose:'-',tags:['store'],note:'store_id 자동 부착 — 8개 직영매장'},
+ {slug:'ad-landing',name:'광고 랜딩',ch:'ad',intent:'presale',topic:'internet_tv',lock:1,disp:'inline',
+  greet:'인터넷 가입 상담',qr:['최저가 확인','사은품','가입 신청'],purpose:'신규',tags:['ad']},
+];
+let fsel='bongee-usedphone';
+function renderFunnel(){
+  document.getElementById('tFunnel').innerHTML=FUNNELS.map(f=>{
+    const d=deptOf(f.intent||'etc',f.topic);
+    const pre=[f.intent?`<span class="pill on">${f.intent}</span>`:'',
+               f.topic?`<span class="pill ${f.lock?'new':''}">${tm(f.topic).icon} ${tm(f.topic).name}${f.lock?' 🔒':''}</span>`:''].join('')||'<span class="pill off">고객이 선택</span>';
+    return `<tr data-f="${f.slug}" style="cursor:pointer;${fsel===f.slug?'background:rgba(251,191,36,.08)':''}">
+     <td><code>${f.slug}</code></td><td><span class="pill">${f.ch}</span></td><td>${pre}</td>
+     <td><span class="pill ${f.disp==='fullscreen'?'on':''}">${f.disp}</span></td><td>${f.purpose}</td>
+     <td>${f.intent==='cs'?'<span class="pill">고객지원팀</span>':(f.topic&&!d.fb?`<span class="pill on">${d.name}</span>`:'<span class="pill off">'+(f.topic?'폴백':'상품에 따라')+'</span>')}</td></tr>`;
+  }).join('');
+  document.querySelectorAll('#tFunnel tr').forEach(e=>e.onclick=()=>{fsel=e.dataset.f;renderFunnel()});
+
+  const f=FUNNELS.find(x=>x.slug===fsel);
+  document.getElementById('fpName').innerHTML=`<b style="color:#f8fafc">${f.name}</b> · <code>${f.slug}</code>`;
+  document.getElementById('fpDisp').textContent=`${f.disp} · ${f.ch}`;
+  let b='';
+  if(f.lock&&f.topic){
+    b=`<div class="sys"><span>${tm(f.topic).icon} ${tm(f.topic).name} · ${f.intent} — 토픽 선택 건너뜀 🔒</span></div>`
+     +`<div class="msg"><div class="av av-b">봉</div><div class="bub"><div class="nm">봉이봇</div>${f.greet}<div class="tm">방금</div></div></div>`;
+  } else if(f.intent&&!f.topic){
+    b=`<div class="sys"><span>intent=${f.intent} 사전 지정 · 상품만 고르면 됨</span></div>`
+     +`<div class="msg"><div class="av av-b">봉</div><div class="bub"><div class="nm">봉이봇</div>${f.greet}<div class="tm">방금</div></div></div>`;
+  } else {
+    b=`<div style="font-size:12.5px;font-weight:700;margin-bottom:9px">${f.greet}</div>`;
+  }
+  b+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:9px">`+
+     f.qr.map(q=>`<div style="background:#1e293b;border:1px solid #475569;border-radius:14px;padding:5px 11px;font-size:11px">${q}</div>`).join('')+`</div>`;
+  document.getElementById('fpBody').innerHTML=b;
+  document.getElementById('fpMeta').innerHTML=
+   `<div style="color:#fbbf24;font-weight:800;font-size:9.5px;text-transform:uppercase;margin-bottom:5px">CRM 매핑</div>
+    <div><span style="color:#94a3b8">db_source</span> → 채팅 유입 (CHAT)</div>
+    <div><span style="color:#94a3b8">category</span> → ${f.purpose}</div>
+    <div><span style="color:#94a3b8">tags</span> → ${f.tags.map(t=>`<span class="pill">${t}</span>`).join('')}</div>
+    <div style="margin-top:6px;color:#94a3b8;font-size:10px">임베드</div>
+    <div style="font-family:'SF Mono',monospace;font-size:9.5px;color:#67e8f9;word-break:break-all">&lt;script src="…/desk/widget.js" data-entry="${f.slug}"&gt;</div>
+    ${f.note?`<div style="margin-top:7px;padding-top:7px;border-top:1px dotted #334155;color:#fde68a;font-size:10.5px;line-height:1.6">${f.note}</div>`:''}`;
+}
+
+/* ===== ⑤ 통계 ===== */
+function renderStat(){
+  const K=[['CS 채팅종결률','82%','목표 80% · outcome=resolved_chat AND intent=cs','good',82],
+   ['봇 자기완결률','58%','목표 60% · handoff_reason IS NULL','warn',58],
+   ['상담사 개입률','11%','낮을수록 좋다 · BARGE_IN / 전체','warn',11],
+   ['무단 발신','0건','DB 제약으로 구조적 차단','good',0],
+   ['FRT · 봇','2.4초','목표 3초','good',0],
+   ['FRT · 사람','4분 12초','목표 3분 — 미달','bad',0],
+   ['대기 이탈','6.1%','목표 5% 이하 — 미달','bad',0],
+   ['봇 원가 / 대화','38원','일 상한 대비 24%','good',0]];
+  document.getElementById('kpis').innerHTML=K.map(k=>`<div class="kpi ${k[3]}">
+   <div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="g">${k[2]}</div>
+   ${k[4]?`<div class="bar"><i class="${k[3]==='good'?'ok':(k[3]==='bad'?'no':'')}" style="width:${Math.min(k[4],100)}%"></i></div>`:''}</div>`).join('');
+  document.getElementById('tStat').innerHTML=[
+   ['인터넷팀',48,0,0,'3분 41초'],['가전팀',63,0,0,'2분 55초'],['고객지원팀',6,91,12,'4분 48초']
+  ].map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>
+   <td><b>${r[1]+r[2]+r[3]}</b></td><td>${r[4]}</td></tr>`).join('');
+  document.getElementById('tBotStat').innerHTML=[
+   ['internet_tv',54,'61%',18,4,9,1,3],['water-purifier',41,'66%',9,3,8,2,2],
+   ['aircon',22,'45%','9 ⚠',2,4,3,4],['mobile',19,'32%','11 ⚠',3,2,0,3],['usedphone',12,'75%',2,1,0,0,0]
+  ].map(r=>`<tr><td>${tm(r[0]).icon} ${tm(r[0]).name}</td><td>${r[1]}</td>
+   <td><b style="color:${parseInt(r[2])<50?'#fca5a5':'#86efac'}">${r[2]}</b></td>
+   <td style="color:${String(r[3]).includes('⚠')?'#fbbf24':'#cbd5e1'}">${r[3]}</td>
+   <td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[7]}</td></tr>`).join('');
+}
+
+/* 확장성 데모 */
+document.getElementById('exBtn').onclick=function(){
+  const r=RENT.find(x=>x.slug==='dehumidifier'); r.on=r.on?0:1;
+  const g=DEPTS.find(d=>d.name==='가전팀');
+  if(r.on){if(!g.cats.includes('dehumidifier'))g.cats.push('dehumidifier');}
+  else g.cats=g.cats.filter(c=>c!=='dehumidifier');
+  this.textContent=r.on?'◀ 제습기 카테고리 끄기':'▶ 제습기 카테고리 켜기 (SQL 1줄)';
+  document.getElementById('exMsg').textContent=r.on?'✅ 위젯·인박스 칩·라우팅·매트릭스에 배포 없이 반영됨':'';
+  renderAll();
+  ['tDept','tTopic','offC','tRule','tMatrix','rCat'].forEach(id=>{const e=document.getElementById(id);
+    if(e){e.classList.remove('flash');void e.offsetWidth;e.classList.add('flash')}});
+};
+function renderAll(){renderPhone();renderSteps();renderInbox();renderConv();renderAdmin();renderFunnel();renderStat();}
+document.getElementById('nx').onclick=()=>{if(step<STEPS.length-1){step++;renderPhone();renderSteps()}};
+document.getElementById('pv').onclick=()=>{if(step>0){step--;renderPhone();renderSteps()}};
+document.getElementById('rs').onclick=()=>{step=0;renderPhone();renderSteps()};
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');document.getElementById('v-'+t.dataset.v).classList.add('active')});
+document.querySelectorAll('.subtab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.sv').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');document.getElementById('s-'+t.dataset.s).classList.add('active')});
+renderAll();
+</script>
+</body>
+</html>

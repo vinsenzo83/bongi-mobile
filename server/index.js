@@ -50,6 +50,10 @@ if (process.env.SENTRY_DSN) {
         delete event.request.cookies;
         delete event.request.data;
         delete event.request.query_string;
+        // URL 에 붙은 쿼리도 통째로 제거 (external_id·토큰 등이 로그에 남지 않게)
+        if (typeof event.request.url === 'string') {
+          event.request.url = event.request.url.split('?')[0];
+        }
         if (event.request.headers) {
           for (const k of Object.keys(event.request.headers)) {
             if (/auth|cookie|token|key/i.test(k)) event.request.headers[k] = '[redacted]';
@@ -92,6 +96,7 @@ import cacheRoutes from './routes/cache.js';
 import crmRoutes from './routes/crm.js';
 // ── 별도 운영 (특판 LP) ──
 import specialPromoRoutes from './routes/special-promo.js';
+import deskRoutes from './routes/desk.js';
 // ── 옛 고객 SPA — 등록 안 됨, 파일만 보존 (추후 필요 시 재활성) ──
 // import productRoutes from './routes/products.js';
 // import applicationRoutes from './routes/applications.js';
@@ -245,6 +250,9 @@ app.use('/api/special-promo', (req, res, next) => {
   }
   return basicAuth(req, res, next);
 }, specialPromoRoutes);
+
+// ── 상담 데스크 (고객측 무인증 + 상담사측 JWT — 라우터 내부에서 분리 처리) ──
+app.use('/api/desk', deskRoutes);
 
 // ── 옛 고객 SPA 라우트 비활성 (2026-05-07 TM CRM 분리) ──
 // /api/products, /api/stores, /api/applications, /api/mock, /api/reviews,
