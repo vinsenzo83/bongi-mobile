@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { supabase } from '../db/supabase.js';
+import { supabase, authClient } from '../db/supabase.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { authenticateJWT } from '../middleware/auth.js';
 
@@ -17,7 +17,7 @@ router.post('/signup', authLimiter, async (req, res) => {
   }
 
   try {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await authClient().auth.signUp({
       email,
       password,
       options: {
@@ -59,7 +59,7 @@ router.post('/login', authLimiter, async (req, res) => {
   }
 
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await authClient().auth.signInWithPassword({ email, password });
     if (error) return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다' });
 
     // 🆕 2FA — incentive_agents에 totp_enabled=true면 totp_code 검증
@@ -143,7 +143,7 @@ router.post('/refresh', async (req, res) => {
   const { refresh_token } = req.body || {};
   if (!refresh_token) return res.status(400).json({ error: 'refresh_token 필수' });
   try {
-    const { data, error } = await supabase.auth.refreshSession({ refresh_token });
+    const { data, error } = await authClient().auth.refreshSession({ refresh_token });
     if (error || !data?.session) {
       return res.status(401).json({ error: '세션 만료. 다시 로그인하세요.' });
     }
@@ -229,7 +229,7 @@ router.post('/change-password', authenticateJWT, async (req, res) => {
 
     // 현재 비번 검증 — 본인 이메일로 재로그인 시도
     const email = req.user.email;
-    const { error: signinErr } = await supabase.auth.signInWithPassword({ email, password: current_password });
+    const { error: signinErr } = await authClient().auth.signInWithPassword({ email, password: current_password });
     if (signinErr) return res.status(400).json({ error: '현재 비밀번호가 올바르지 않습니다' });
 
     // 새 비번으로 업데이트
