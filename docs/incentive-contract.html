@@ -345,6 +345,8 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
     <!-- ★ 카테고리 탭 (동적) — 본인 권한 카테고리만 노출 -->
     <div id="contract-cat-tabs" style="display:flex;gap:4px;border-bottom:1.5px solid #475569;margin-bottom:14px;padding:0 4px">
       <button type="button" class="cat-tab active" data-cat="internet_tv" style="background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;color:#cbd5e1;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px">📡 인터넷+TV</button>
+      <button type="button" class="cat-tab" data-cat="platform" style="background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;color:#94a3b8;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px">🛒 어드민 계약</button>
+      <button type="button" class="cat-tab" data-cat="quickconsult" style="background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;color:#94a3b8;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px">💬 간편상담</button>
       <!-- 가전렌탈 탭은 카테고리 fetch 후 동적 추가 -->
     </div>
 
@@ -438,6 +440,111 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
     </div>
 
     <!-- ★ 인터넷+TV 패널 (기본 — 기존 통계·툴바·테이블 모두 여기 안에) -->
+    <!-- ═══════════ 어드민 계약 패널 (플랫폼 셀프신청 → 콜센터 계약처리) ═══════════ -->
+    <div id="platform-contract-panel" style="display:none">
+
+      <div style="background:rgba(15,23,42,0.55);border:1.5px solid #475569;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+        <div style="font-size:12.5px;color:#cbd5e1;line-height:1.6">
+          <b style="color:#fbbf24">🛒 어드민에서 넘어온 계약</b> — 고객이 봉이 플랫폼에서 직접 신청한 건이다.
+          <b style="color:#e2e8f0">계약정보는 이미 들어와 있고</b>, 콜센터는 확인 전화(해피콜) 후 처리한다.
+          <span id="plat-src-badge" style="font-size:11px;color:#64748b"></span>
+        </div>
+      </div>
+
+      <div class="stats" id="platform-stats" style="grid-template-columns:repeat(5, 1fr)">
+        <div class="stat-card" style="border-color:#f59e0b"><div class="stat-label" style="color:#fbbf24">📞 해피콜 대기</div><div class="stat-val" id="pstat-happy" style="color:#fbbf24">-</div><div class="stat-sub">신청 후 미통화</div></div>
+        <div class="stat-card" style="border-color:#3b82f6"><div class="stat-label" style="color:#60a5fa">🚧 계약진행</div><div class="stat-val" id="pstat-in_progress" style="color:#60a5fa">-</div><div class="stat-sub">처리 중</div></div>
+        <div class="stat-card" style="border-color:#22c55e"><div class="stat-label" style="color:#86efac">✅ 계약완료</div><div class="stat-val" id="pstat-completed" style="color:#86efac">-</div><div class="stat-sub">인센티브 카운트</div></div>
+        <div class="stat-card"><div class="stat-label">📋 이번 달 신청</div><div class="stat-val" id="pstat-total">-</div><div class="stat-sub">플랫폼 유입</div></div>
+        <div class="stat-card" style="border-color:#dc2626"><div class="stat-label" style="color:#fca5a5">❌ 취소</div><div class="stat-val" id="pstat-cancelled" style="color:#fca5a5">-</div><div class="stat-sub">정산 제외</div></div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 10px">
+        <input type="text" id="plat-q" placeholder="이름·전화·신청번호" style="min-width:190px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px">
+        <select id="plat-status" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px">
+          <option value="">상태 전체</option>
+          <option>해피콜 대기</option><option>계약대기</option><option>계약진행</option><option>계약완료</option><option>계약취소</option>
+        </select>
+        <select id="plat-route" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px">
+          <option value="">접수경로 전체</option>
+          <option>셀프신청</option><option>AI상담</option><option>상담티켓</option><option>어드민등록</option><option>전화상담</option>
+        </select>
+        <button id="plat-refresh" style="background:#3b82f6;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">🔄 새로고침</button>
+        <span id="plat-count" style="margin-left:auto;font-size:12px;color:#64748b"></span>
+      </div>
+
+      <div style="background:rgba(15,23,42,0.55);border:1.5px solid #475569;border-radius:10px;overflow:hidden">
+        <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr>
+              <th style="width:14%">신청번호</th><th style="width:9%">접수일시</th><th style="width:12%">고객</th>
+              <th style="width:24%">신청 상품</th><th style="width:8%">유형</th><th style="width:8%">접수경로</th>
+              <th style="width:9%">상태</th><th style="width:8%">담당</th><th style="width:8%">상세</th>
+            </tr>
+          </thead>
+          <tbody id="plat-tbody">
+            <tr><td colspan="9" style="padding:30px;text-align:center;color:#64748b">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ 간편상담 패널 (계약정보 없이 상담 요청만 들어온 건) ═══════════ -->
+    <div id="quickconsult-panel" style="display:none">
+
+      <div style="background:rgba(15,23,42,0.55);border:1.5px solid #475569;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+        <div style="font-size:12.5px;color:#cbd5e1;line-height:1.6">
+          <b style="color:#a78bfa">💬 간편상담</b> — 리드 채널로 들어온 <b style="color:#e2e8f0">이름 · 연락처 · 신청상품</b> 세 가지뿐인 건이다.
+          <b style="color:#fbbf24">아웃바운드 콜을 돌려야 한다.</b>
+          <span style="color:#64748b">계약정보가 없으므로 통화로 확정하고, 확정되면 어드민 계약으로 넘어간다.</span>
+        </div>
+        <div style="font-size:11.5px;color:#fca5a5;margin-top:7px;padding-top:7px;border-top:1px solid #334155">
+          ⏱ <b>경과 시간 순으로 정렬된다</b> — 리드는 늦게 걸수록 안 받는다. 오래된 건이 위로 온다.
+        </div>
+      </div>
+
+      <div class="stats" id="quick-stats" style="grid-template-columns:repeat(5, 1fr)">
+        <div class="stat-card" style="border-color:#f59e0b"><div class="stat-label" style="color:#fbbf24">🔔 미응대</div><div class="stat-val" id="qstat-new" style="color:#fbbf24">-</div><div class="stat-sub">아직 안 걸었다</div></div>
+        <div class="stat-card" style="border-color:#3b82f6"><div class="stat-label" style="color:#60a5fa">📞 상담중</div><div class="stat-val" id="qstat-doing" style="color:#60a5fa">-</div><div class="stat-sub">진행 중</div></div>
+        <div class="stat-card" style="border-color:#22c55e"><div class="stat-label" style="color:#86efac">🔄 계약 전환</div><div class="stat-val" id="qstat-conv" style="color:#86efac">-</div><div class="stat-sub">어드민 계약으로</div></div>
+        <div class="stat-card"><div class="stat-label">📋 이번 달 요청</div><div class="stat-val" id="qstat-total">-</div><div class="stat-sub">간편상담 유입</div></div>
+        <div class="stat-card" style="border-color:#dc2626"><div class="stat-label" style="color:#fca5a5">❌ 미컨택 종결</div><div class="stat-val" id="qstat-lost" style="color:#fca5a5">-</div><div class="stat-sub">연결 실패</div></div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 10px">
+        <input type="text" id="quick-q" placeholder="이름·전화" style="min-width:190px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px">
+        <select id="quick-status" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px">
+          <option value="">상태 전체</option>
+          <option>미응대</option><option>상담중</option><option>계약 전환</option><option>미컨택 종결</option>
+        </select>
+        <select id="quick-interest" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px">
+          <option value="">신청상품 전체</option>
+          <option>휴대폰</option><option>인터넷+TV</option><option>유심</option><option>렌탈</option><option>미정</option>
+        </select>
+        <button id="quick-refresh" style="background:#3b82f6;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">🔄 새로고침</button>
+        <span id="quick-count" style="margin-left:auto;font-size:12px;color:#64748b"></span>
+      </div>
+
+      <div style="background:rgba(15,23,42,0.55);border:1.5px solid #475569;border-radius:10px;overflow:hidden">
+        <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr>
+              <th style="width:11%">요청일시</th><th style="width:8%">경과</th>
+              <th style="width:11%">이름</th><th style="width:13%">연락처</th><th style="width:20%">신청상품</th>
+              <th style="width:8%">채널</th><th style="width:9%">상태</th><th style="width:8%">담당</th><th style="width:12%">액션</th>
+            </tr>
+          </thead>
+          <tbody id="quick-tbody">
+            <tr><td colspan="9" style="padding:30px;text-align:center;color:#64748b">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
     <div id="internet-contract-panel">
     <!-- 통계 카드 -->
     <div class="stats" id="stats" style="grid-template-columns:repeat(5, 1fr)">
@@ -2638,6 +2745,17 @@ init();
   function switchPanel(cat) {
     const it = document.getElementById('internet-contract-panel');
     const rental = document.getElementById('rental-contract-panel');
+    const plat = document.getElementById('platform-contract-panel');
+    const quick = document.getElementById('quickconsult-panel');
+    if (plat)  plat.style.display  = (cat === 'platform') ? '' : 'none';
+    if (quick) quick.style.display = (cat === 'quickconsult') ? '' : 'none';
+    if (cat === 'platform' || cat === 'quickconsult') {
+      if (it) it.style.display = 'none';
+      if (rental) rental.style.display = 'none';
+      if (cat === 'platform'     && window.PlatformContract) window.PlatformContract.load();
+      if (cat === 'quickconsult' && window.QuickConsult)     window.QuickConsult.load();
+      return;
+    }
     if (cat === 'internet_tv') {
       if (it) it.style.display = '';
       if (rental) rental.style.display = 'none';
@@ -3441,5 +3559,509 @@ function syncWaitingPerson(selectEl) {
 
 
 
+
+<!-- ═══════════ 어드민 계약 · 간편상담 ═══════════ -->
+<script>
+(function () {
+  'use strict';
+
+  // ────────────────────────────────────────────────────────────────
+  //  ★ 여기가 유일한 데이터 교체 지점 ★
+  //    어드민(api.dev.bongee.ai)이 붙으면 이 두 함수만 fetch 로 바꾼다.
+  //    화면·필터·상세·수정은 손대지 않는다.
+  // ────────────────────────────────────────────────────────────────
+  const USE_MOCK = true;
+
+  async function fetchPlatformApplications() {
+    if (USE_MOCK) return MOCK_PLATFORM.slice();
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    const r = await fetch('/api/platform/applications', { headers: { Authorization: 'Bearer ' + tk } });
+    if (!r.ok) throw new Error('목록 조회 실패 (' + r.status + ')');
+    return (await r.json()).items || [];
+  }
+
+  async function fetchQuickLeads() {
+    if (USE_MOCK) return MOCK_QUICK.slice();
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    const r = await fetch('/api/platform/quick-consults', { headers: { Authorization: 'Bearer ' + tk } });
+    if (!r.ok) throw new Error('목록 조회 실패 (' + r.status + ')');
+    return (await r.json()).items || [];
+  }
+
+  // 수정·상태변경은 어드민 원장을 바꾸므로 큐를 태운다 (직접 호출 금지)
+  async function pushToAdmin(appId, patch, reason) {
+    if (USE_MOCK) { console.info('[queue→어드민]', appId, patch, reason); return { queued: true }; }
+    const tk = localStorage.getItem('incentive-auth-token-v1');
+    const r = await fetch('/api/platform/applications/' + encodeURIComponent(appId) + '/patch', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patch: patch, reason: reason || null })
+    });
+    if (!r.ok) throw new Error('반영 요청 실패 (' + r.status + ')');
+    return await r.json();
+  }
+
+  // ── 목업 데이터 (구조 확인용 — 실데이터 아님) ──────────────────
+  const MOCK_PLATFORM = [
+    { app_no:'260909180005-00008', received_at:'2026-09-09T18:00:00+09:00', name:'조현준', phone:'010-3008-1097',
+      product:'갤럭시 Z Fold8 Ultra 256GB', product_sub:'+ LG U+ 인터넷+TV 1G (U+tv 실속형)',
+      kind:'휴대폰·결합', route:'셀프신청', status:'계약완료', agent:'빈센조', ticket:'LG0012',
+      carrier:'LG U+', prev_carrier:'SKT', open_type:'번호이동', store:'온라인 통합 매장',
+      plan:'플러스플랜115', plan_fee:115000, monthly_total:136850, device_price:1390000, payment:'현금일시불',
+      bundle:'인터넷+TV 동시가입', bundle_program:'LG U+ 참쉬운가족결합',
+      maker:'삼성전자', model:'갤럭시 Z Fold8 Ultra', storage:'256GB', second_device:'갤럭시 워치8 (40mm LTE)',
+      member_type:'회원', gender:'남자', birth:'1996-07-10', channel:'온라인',
+      bank:'국민은행', holder:'조현준', address:'06241 서울 강남구 테헤란로2길 27 1002',
+      install_wish:'2026-09-10 오후', existing_internet:'신규',
+      net_speed:'1G', net_fee:50600, tv_product:'U+tv 실속형', tv_fee:13200, net_final:50600,
+      agreements:{ required:[['매장 방문 예약 서비스 이용약관',true],['개인정보 수집·이용 동의',true],['인터넷+TV 결합 약정 동의',true]],
+                   optional:[['마케팅 정보 수신 동의',false]],
+                   mobile:[['요금제·약정 유지',true],['추가지원금 환수',true],['기기 수령 후 개통',true],['의무 가입 조건',true],['지원금 확정',true]] },
+      steps:[['해피콜','09-09 18:01'],['계약완료','09-09 18:01'],['휴대폰 배송','09-09 18:01'],['휴대폰 개통','09-09 18:01']],
+      history:[['09-09 18:01','계약완료 → 개통·설치완료','필수'],['09-09 18:01','해피콜 → 계약완료',''],['09-09 18:00','신청 접수','셀프신청']],
+      memo:'해피콜 완료. 설치일 09-10 오후로 고객 확인.' },
+    { app_no:'260909161025-00006', received_at:'2026-09-09T16:10:00+09:00', name:'조현준', phone:'010-3008-1097',
+      product:'SKT 인터넷+TV 1G', product_sub:'B tv 이코노미',
+      kind:'인터넷+TV', route:'셀프신청', status:'계약진행', agent:'빈센조', ticket:'SK0006',
+      carrier:'SKT', prev_carrier:'-', open_type:'신규', store:'온라인 통합 매장',
+      plan:'-', plan_fee:0, monthly_total:41800, device_price:0, payment:'-',
+      bundle:'-', bundle_program:'-', maker:'-', model:'-', storage:'-', second_device:'-',
+      member_type:'회원', gender:'남자', birth:'1996-07-10', channel:'온라인',
+      bank:'국민은행', holder:'조현준', address:'06241 서울 강남구 테헤란로2길 27 1002',
+      install_wish:'2026-09-12 오전', existing_internet:'신규',
+      net_speed:'1G', net_fee:33000, tv_product:'B tv 이코노미', tv_fee:8800, net_final:41800,
+      agreements:{ required:[['매장 방문 예약 서비스 이용약관',true],['개인정보 수집·이용 동의',true],['인터넷+TV 결합 약정 동의',true]],
+                   optional:[['마케팅 정보 수신 동의',true]], mobile:[] },
+      steps:[['해피콜','09-09 16:20'],['계약완료',''],['설치 예약',''],['설치 완료','']],
+      history:[['09-09 16:20','신청완료 → 상담중','해피콜'],['09-09 16:10','신청 접수','셀프신청']],
+      memo:'' },
+    { app_no:'260908164802-00005', received_at:'2026-09-08T16:48:00+09:00', name:'이명덕', phone:'010-8813-0286',
+      product:'갤럭시 Z Fold8 Ultra 256GB', product_sub:'+ KT 인터넷+TV',
+      kind:'휴대폰·결합', route:'셀프신청', status:'해피콜 대기', agent:'', ticket:'KT0005',
+      carrier:'KT', prev_carrier:'LG U+', open_type:'번호이동', store:'미지정',
+      plan:'요고 69', plan_fee:69000, monthly_total:112000, device_price:1290000, payment:'할부',
+      bundle:'인터넷+TV 동시가입', bundle_program:'KT 총액결합',
+      maker:'삼성전자', model:'갤럭시 Z Fold8 Ultra', storage:'256GB', second_device:'-',
+      member_type:'비회원', gender:'남자', birth:'1981-03-22', channel:'온라인',
+      bank:'', holder:'', address:'', install_wish:'', existing_internet:'기존 LG U+',
+      net_speed:'500M', net_fee:33000, tv_product:'지니TV 베이직', tv_fee:11000, net_final:44000,
+      agreements:{ required:[['매장 방문 예약 서비스 이용약관',true],['개인정보 수집·이용 동의',true],['인터넷+TV 결합 약정 동의',true]],
+                   optional:[['마케팅 정보 수신 동의',false]],
+                   mobile:[['요금제·약정 유지',true],['추가지원금 환수',true],['기기 수령 후 개통',true],['의무 가입 조건',true],['지원금 확정',true]] },
+      steps:[['해피콜',''],['계약완료',''],['휴대폰 배송',''],['휴대폰 개통','']],
+      history:[['09-08 16:48','신청 접수','셀프신청']],
+      memo:'' }
+  ];
+
+  const MOCK_QUICK = [
+    { id:'q1', requested_at:'2026-09-10T09:12:00+09:00', name:'박서연', phone:'010-2244-7781',
+      product:'인터넷+TV', channel:'네이버', status:'미응대', agent:'', note:'' },
+    { id:'q2', requested_at:'2026-09-09T21:40:00+09:00', name:'최민호', phone:'010-5510-3382',
+      product:'휴대폰', channel:'인스타', status:'미응대', agent:'', note:'' },
+    { id:'q3', requested_at:'2026-09-09T14:05:00+09:00', name:'김하늘', phone:'010-7781-2210',
+      product:'유심', channel:'블로그', status:'상담중', agent:'빈센조', note:'2차 통화 예정 — 내일 오전' },
+    { id:'q4', requested_at:'2026-09-08T11:33:00+09:00', name:'정우성', phone:'010-3390-8814',
+      product:'인터넷+TV', channel:'네이버', status:'계약 전환', agent:'빈센조', note:'→ 260909161025-00006' },
+    { id:'q5', requested_at:'2026-09-07T17:20:00+09:00', name:'한지민', phone:'010-8820-1145',
+      product:'미정', channel:'검색광고', status:'미컨택 종결', agent:'빈센조', note:'4회 부재' }
+  ];
+
+  // ── 공통 유틸 ──────────────────────────────────────────────────
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const won = (n) => (n == null || n === '' || n === 0) ? '-' : Number(n).toLocaleString('ko-KR') + '원';
+  const dt = (iso) => { const d = new Date(iso); if (isNaN(d)) return '-';
+    const p = (x) => String(x).padStart(2,'0');
+    return p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
+  function elapsed(iso) {
+    let ms = Date.now() - new Date(iso).getTime();
+    if (isNaN(ms)) return { txt:'-', hours:0 };
+    if (ms < 0) ms = 0;   // 서버·클라이언트 시계 차이로 미래가 들어올 수 있다
+    const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60;
+    if (h === 0 && m === 0) return { txt:'방금', hours:0 };
+    return { txt: h >= 24 ? Math.floor(h/24) + '일 ' + (h%24) + '시간' : (h > 0 ? h + '시간 ' + m + '분' : m + '분'), hours: h };
+  }
+  const PILL = { '해피콜 대기':'a','계약대기':'a','미응대':'a','계약진행':'b','상담중':'b',
+                 '계약완료':'g','계약 전환':'g','계약취소':'r','미컨택 종결':'r' };
+  function pill(v) {
+    const c = PILL[v] || 'n';
+    const map = { a:['rgba(245,158,11,.16)','#fbbf24','rgba(245,158,11,.45)'],
+                  b:['rgba(59,130,246,.16)','#60a5fa','rgba(59,130,246,.45)'],
+                  g:['rgba(34,197,94,.16)','#86efac','rgba(34,197,94,.45)'],
+                  r:['rgba(220,38,38,.16)','#fca5a5','rgba(220,38,38,.45)'],
+                  n:['rgba(100,116,139,.18)','#94a3b8','#475569'] }[c];
+    return '<span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:11px;'
+      + 'background:' + map[0] + ';color:' + map[1] + ';border:1px solid ' + map[2] + ';white-space:nowrap">' + esc(v) + '</span>';
+  }
+  function toast(msg, bad) {
+    const d = document.createElement('div');
+    d.textContent = msg;
+    d.style.cssText = 'position:fixed;left:50%;bottom:34px;transform:translateX(-50%);z-index:99999;'
+      + 'background:' + (bad ? '#7f1d1d' : '#166534') + ';color:#fff;padding:11px 20px;border-radius:8px;'
+      + 'font-size:13px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.45)';
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 2600);
+  }
+
+  // ══════════════════ 어드민 계약 ══════════════════
+  const Platform = (function () {
+    let rows = [];
+    const F = { q:'', status:'', route:'' };
+
+    async function load() {
+      const tb = $('plat-tbody');
+      if (!tb) return;
+      tb.innerHTML = '<tr><td colspan="9" style="padding:30px;text-align:center;color:#64748b">불러오는 중...</td></tr>';
+      try { rows = await fetchPlatformApplications(); }
+      catch (e) {
+        tb.innerHTML = '<tr><td colspan="9" style="padding:30px;text-align:center;color:#fca5a5">'
+          + esc(e.message) + '</td></tr>';
+        return;
+      }
+      const b = $('plat-src-badge');
+      if (b) b.textContent = USE_MOCK ? '· 목업 데이터 (어드민 API 미연결)' : '';
+      render();
+    }
+
+    function filtered() {
+      const q = F.q.trim().toLowerCase();
+      return rows.filter(r =>
+        (!F.status || r.status === F.status) &&
+        (!F.route  || r.route  === F.route) &&
+        (!q || (r.name + r.phone + r.app_no + r.product).toLowerCase().includes(q)));
+    }
+
+    function render() {
+      const list = filtered();
+      const cnt = (st) => rows.filter(r => r.status === st).length;
+      const set = (id, v) => { const el = $(id); if (el) el.textContent = v + '건'; };
+      set('pstat-happy', cnt('해피콜 대기'));
+      set('pstat-in_progress', cnt('계약진행') + cnt('계약대기'));
+      set('pstat-completed', cnt('계약완료'));
+      set('pstat-total', rows.length);
+      set('pstat-cancelled', cnt('계약취소'));
+      const c = $('plat-count'); if (c) c.textContent = list.length + '건';
+
+      const tb = $('plat-tbody');
+      if (!list.length) {
+        tb.innerHTML = '<tr><td colspan="9" style="padding:34px;text-align:center;color:#64748b">해당하는 건이 없습니다.</td></tr>';
+        return;
+      }
+      tb.innerHTML = list.map((r, i) =>
+        '<tr style="cursor:pointer" data-i="' + i + '">'
+        + '<td style="font-family:\'SF Mono\',Monaco,monospace;font-size:11px">' + esc(r.app_no) + '</td>'
+        + '<td style="font-family:\'SF Mono\',Monaco,monospace;font-size:11px;color:#94a3b8">' + dt(r.received_at) + '</td>'
+        + '<td><div style="font-weight:600">' + esc(r.name) + '</div>'
+          + '<div style="font-size:11px;color:#64748b;font-family:\'SF Mono\',Monaco,monospace">' + esc(r.phone) + '</div></td>'
+        + '<td><div>' + esc(r.product) + '</div>'
+          + (r.product_sub ? '<div style="font-size:11px;color:#64748b">' + esc(r.product_sub) + '</div>' : '') + '</td>'
+        + '<td>' + pill(r.kind) + '</td>'
+        + '<td>' + pill(r.route) + '</td>'
+        + '<td>' + pill(r.status) + '</td>'
+        + '<td>' + (r.agent ? esc(r.agent) : '<span style="color:#64748b">미배정</span>') + '</td>'
+        + '<td><button data-open="' + i + '" style="background:#3b82f6;color:#fff;border:none;padding:5px 12px;'
+          + 'border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">상세</button></td>'
+        + '</tr>').join('');
+      tb.querySelectorAll('[data-open]').forEach(btn => {
+        btn.addEventListener('click', (ev) => { ev.stopPropagation(); openDetail(list[+btn.dataset.open]); });
+      });
+      tb.querySelectorAll('tr[data-i]').forEach(tr => {
+        tr.addEventListener('click', () => openDetail(list[+tr.dataset.i]));
+      });
+    }
+
+    // ── 상세 모달 ───────────────────────────────────────────────
+    const LOCKED = '신청번호·접수일시·접수경로·채널·회원구분·성별·생년월일';
+    function openDetail(r) {
+      const back = document.createElement('div');
+      back.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:9998;'
+        + 'display:flex;align-items:flex-start;justify-content:center;padding:26px 16px;overflow-y:auto';
+      const step = (n, t) => '<div style="border:1.5px solid ' + (t ? '#22c55e' : '#475569')
+        + ';background:' + (t ? 'rgba(34,197,94,.1)' : 'transparent')
+        + ';border-radius:9px;padding:7px 13px;text-align:center;min-width:96px">'
+        + '<div style="font-size:11.5px;font-weight:700;color:' + (t ? '#86efac' : '#64748b') + '">'
+        + (t ? '✓ ' : '') + esc(n) + '</div>'
+        + '<div style="font-size:9.5px;color:#64748b;font-family:\'SF Mono\',Monaco,monospace;margin-top:2px">'
+        + esc(t || '대기') + '</div></div>';
+      const kv = (k, v, editable, field) =>
+        '<dt style="color:#64748b">' + esc(k) + '</dt><dd style="margin:0;color:#e2e8f0;font-weight:600">'
+        + esc(v == null || v === '' ? '-' : v)
+        + (editable ? ' <span data-edit="' + field + '" style="display:inline-block;font-family:\'SF Mono\',Monaco,monospace;'
+            + 'font-size:9.5px;font-weight:700;background:#fbbf24;color:#0f172a;padding:1px 6px;border-radius:3px;'
+            + 'margin-left:5px;cursor:pointer">수정</span>' : '') + '</dd>';
+      const box = (title, right, inner) =>
+        '<div style="background:rgba(15,23,42,.55);border:1px solid #334155;border-radius:8px;padding:12px 14px">'
+        + '<div style="font-size:11.5px;font-weight:700;color:#cbd5e1;margin-bottom:9px;display:flex;'
+        + 'justify-content:space-between;align-items:center"><span>' + esc(title) + '</span>'
+        + '<span style="font-size:10px;color:#64748b;font-family:\'SF Mono\',Monaco,monospace;font-weight:500">'
+        + esc(right || '') + '</span></div>' + inner + '</div>';
+      const dl = (pairs) => '<dl style="display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:11.5px;margin:0">'
+        + pairs + '</dl>';
+      const ag = (arr) => arr.map(a => '<span style="' + (a[1] ? '' : 'color:#64748b') + '">' + esc(a[0])
+        + '</span><span style="color:' + (a[1] ? '#86efac' : '#64748b') + '">' + (a[1] ? '동의' : '미동의') + '</span>').join('');
+
+      back.innerHTML =
+        '<div style="background:#0f172a;border:1.5px solid #475569;border-radius:12px;max-width:1120px;width:100%;'
+        + 'padding:20px 22px;color:#e2e8f0;font-size:13px">'
+        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px">'
+          + '<div><div style="font-size:17px;font-weight:800;color:#f1f5f9">' + esc(r.name)
+          + ' <span style="font-weight:600;color:#cbd5e1;font-family:\'SF Mono\',Monaco,monospace">' + esc(r.phone) + '</span></div>'
+          + '<div style="font-size:11.5px;color:#64748b;margin-top:3px">' + esc(r.kind) + ' · ' + esc(r.open_type)
+          + ' · ' + esc(r.route) + ' · ' + dt(r.received_at) + ' 접수 · <span style="font-family:\'SF Mono\',Monaco,monospace">'
+          + esc(r.app_no) + '</span></div></div>'
+          + '<div style="display:flex;gap:7px;align-items:center">' + pill(r.status)
+          + '<button id="pd-close" style="background:#334155;color:#cbd5e1;border:none;padding:6px 13px;border-radius:6px;'
+          + 'font-size:12px;font-weight:700;cursor:pointer">닫기</button></div></div>'
+
+        + '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:13px 0 15px">'
+          + r.steps.map(x => step(x[0], x[1])).join('<span style="color:#475569">—</span>') + '</div>'
+
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px">'
+          + box('요금제 월납 합계','', '<div style="font-size:18px;font-weight:800;font-family:\'SF Mono\',Monaco,monospace">' + won(r.monthly_total) + '</div>')
+          + box('최종 기기값','',   '<div style="font-size:18px;font-weight:800;font-family:\'SF Mono\',Monaco,monospace">' + won(r.device_price) + '</div>')
+          + box('결제','',          '<div style="font-size:16px;font-weight:700">' + esc(r.payment || '-') + '</div>')
+          + box('결합','',          '<div style="font-size:14px;font-weight:700">' + esc(r.bundle || '-') + '</div>')
+        + '</div>'
+
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px">'
+          + box('상품', '티켓 ' + (r.ticket || '-'), dl(
+              kv('상품명', r.product) + kv('함께 신청', r.product_sub) + kv('통신사', r.carrier)
+              + kv('개통 유형', r.open_type) + kv('이전 통신사', r.prev_carrier)
+              + kv('희망 매장', r.store, true, 'store')
+              + kv('요금제', (r.plan || '-') + (r.plan_fee ? ' · ' + won(r.plan_fee) : ''), true, 'plan')))
+          + box('회원 · 접수', '수정 불가', dl(
+              kv('회원 구분', r.member_type) + kv('성별 · 생년월일', (r.gender || '-') + ' · ' + (r.birth || '-'))
+              + kv('접수 경로', r.route) + kv('신청 일시', dt(r.received_at))
+              + kv('접수번호', r.app_no) + kv('채널', r.channel)))
+        + '</div>'
+
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px">'
+          + box('단말기 · 세컨디바이스','', dl(
+              kv('제조사', r.maker) + kv('모델', r.model, true, 'model')
+              + kv('용량', r.storage, true, 'storage') + kv('세컨디바이스', r.second_device, true, 'second_device')))
+          + box('신청자 · 설치','', dl(
+              kv('환급 은행', r.bank, true, 'bank') + kv('예금주', r.holder, true, 'holder')
+              + kv('설치 주소', r.address, true, 'address')
+              + kv('설치 희망', r.install_wish, true, 'install_wish')
+              + kv('기존 인터넷', r.existing_internet)))
+        + '</div>'
+
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px">'
+          + box('인터넷+TV 구성','', dl(
+              kv('인터넷 속도', r.net_speed, true, 'net_speed') + kv('인터넷 월정액', won(r.net_fee))
+              + kv('TV 상품', r.tv_product, true, 'tv_product') + kv('TV 월정액', won(r.tv_fee))
+              + kv('결합 프로그램', r.bundle_program, true, 'bundle_program')
+              + kv('인터넷 최종', won(r.net_final))))
+          + box('동의 · 약관', '수정 불가',
+              '<div style="display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:11.5px">'
+              + ag(r.agreements.required) + ag(r.agreements.optional)
+              + (r.agreements.mobile.length
+                 ? '<span style="color:#64748b;font-size:10.5px;grid-column:1/-1;padding-top:6px;border-top:1px solid #334155;margin-top:5px">'
+                   + '휴대폰 ' + r.agreements.mobile.length + '종 — ' + r.agreements.mobile.map(x => esc(x[0])).join(' / ') + '</span>'
+                 : '') + '</div>')
+        + '</div>'
+
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:14px">'
+          + box('상태 이력','', '<div style="font-size:11.5px;display:grid;grid-template-columns:auto 1fr;gap:5px 12px">'
+              + r.history.map(h => '<span style="color:#64748b;font-family:\'SF Mono\',Monaco,monospace">' + esc(h[0])
+                + '</span><span>' + esc(h[1]) + (h[2] ? ' <span style="color:#64748b">· ' + esc(h[2]) + '</span>' : '') + '</span>').join('')
+              + '</div>')
+          + box('메모', 'CRM · 어드민 공유',
+              '<textarea id="pd-memo" style="width:100%;background:#0f172a;border:1px solid #334155;border-radius:6px;'
+              + 'padding:9px;font-size:11.5px;color:#cbd5e1;min-height:58px;resize:vertical;font-family:inherit">'
+              + esc(r.memo || '') + '</textarea>')
+        + '</div>'
+
+        + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid #334155;padding-top:14px">'
+          + '<span style="font-size:11.5px;color:#64748b">상태 변경</span>'
+          + '<select id="pd-status" style="background:#1e293b;border:1px solid #475569;color:#e2e8f0;padding:7px 11px;'
+          + 'border-radius:6px;font-size:12.5px">'
+          + ['해피콜 대기','계약대기','계약진행','계약완료','계약취소']
+              .map(x => '<option' + (x === r.status ? ' selected' : '') + '>' + x + '</option>').join('')
+          + '</select>'
+          + '<button id="pd-save" style="background:#22c55e;color:#052e16;border:none;padding:8px 18px;border-radius:6px;'
+          + 'font-size:12.5px;font-weight:800;cursor:pointer">저장 · 어드민 반영</button>'
+          + '<span style="margin-left:auto;font-size:11px;color:#64748b">수정 불가 — ' + LOCKED + '</span>'
+        + '</div></div>';
+
+      document.body.appendChild(back);
+      const close = () => back.remove();
+      back.addEventListener('click', (e) => { if (e.target === back) close(); });
+      back.querySelector('#pd-close').addEventListener('click', close);
+
+      // 필드 수정
+      back.querySelectorAll('[data-edit]').forEach(tag => {
+        tag.addEventListener('click', async () => {
+          const f = tag.dataset.edit;
+          const cur = r[f] == null ? '' : String(r[f]);
+          const next = window.prompt(f + ' 새 값', cur);
+          if (next === null || next === cur) return;
+          const reason = window.prompt('변경 사유 (어드민 이력에 남는다)', '') || '';
+          const risky = ['plan','bundle_program','model','storage'].includes(f);
+          try {
+            await pushToAdmin(r.app_no, { [f]: next }, reason);
+            r[f] = next;
+            if (risky) {
+              r.status = '계약대기';
+              toast('반영 요청됨 — 지원금·약정 조건이 바뀌어 재동의 전까지 계약완료로 못 넘어갑니다', true);
+            } else {
+              toast('반영 요청됨 · 어드민 이력에 기록됩니다');
+            }
+            close(); render();
+          } catch (e) { toast(e.message, true); }
+        });
+      });
+
+      back.querySelector('#pd-save').addEventListener('click', async () => {
+        const st = back.querySelector('#pd-status').value;
+        const memo = back.querySelector('#pd-memo').value;
+        const patch = {};
+        if (st !== r.status) patch.status = st;
+        if (memo !== (r.memo || '')) patch.memo = memo;
+        if (!Object.keys(patch).length) { toast('바뀐 것이 없습니다'); return; }
+        try {
+          await pushToAdmin(r.app_no, patch, '계약처리 화면');
+          Object.assign(r, patch);
+          if (patch.status) r.history.unshift([dt(new Date().toISOString()), '→ ' + patch.status, 'CRM']);
+          toast('저장됨 · 어드민에 반영 요청');
+          close(); render();
+        } catch (e) { toast(e.message, true); }
+      });
+    }
+
+    function bind() {
+      const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
+      on('plat-q','input',      (e) => { F.q = e.target.value; render(); });
+      on('plat-status','change',(e) => { F.status = e.target.value; render(); });
+      on('plat-route','change', (e) => { F.route = e.target.value; render(); });
+      on('plat-refresh','click', load);
+    }
+    return { load, bind };
+  })();
+
+  // ══════════════════ 간편상담 (리드 → 아웃바운드 콜) ══════════════════
+  const Quick = (function () {
+    let rows = [];
+    const F = { q:'', status:'', product:'' };
+
+    async function load() {
+      const tb = $('quick-tbody');
+      if (!tb) return;
+      tb.innerHTML = '<tr><td colspan="9" style="padding:30px;text-align:center;color:#64748b">불러오는 중...</td></tr>';
+      try { rows = await fetchQuickLeads(); }
+      catch (e) {
+        tb.innerHTML = '<tr><td colspan="9" style="padding:30px;text-align:center;color:#fca5a5">' + esc(e.message) + '</td></tr>';
+        return;
+      }
+      render();
+    }
+
+    function filtered() {
+      const q = F.q.trim().toLowerCase();
+      const list = rows.filter(r =>
+        (!F.status  || r.status  === F.status) &&
+        (!F.product || r.product === F.product) &&
+        (!q || (r.name + r.phone).toLowerCase().includes(q)));
+      // 아웃바운드는 오래된 것부터 — 늦게 걸수록 안 받는다
+      const rank = { '미응대':0, '상담중':1, '계약 전환':2, '미컨택 종결':3 };
+      return list.sort((a, b) =>
+        (rank[a.status] - rank[b.status]) || (new Date(a.requested_at) - new Date(b.requested_at)));
+    }
+
+    function render() {
+      const list = filtered();
+      const cnt = (st) => rows.filter(r => r.status === st).length;
+      const set = (id, v) => { const el = $(id); if (el) el.textContent = v + '건'; };
+      set('qstat-new', cnt('미응대'));
+      set('qstat-doing', cnt('상담중'));
+      set('qstat-conv', cnt('계약 전환'));
+      set('qstat-total', rows.length);
+      set('qstat-lost', cnt('미컨택 종결'));
+      const c = $('quick-count'); if (c) c.textContent = list.length + '건';
+
+      const tb = $('quick-tbody');
+      if (!list.length) {
+        tb.innerHTML = '<tr><td colspan="9" style="padding:34px;text-align:center;color:#64748b">해당하는 건이 없습니다.</td></tr>';
+        return;
+      }
+      tb.innerHTML = list.map((r, i) => {
+        const e = elapsed(r.requested_at);
+        const open = r.status === '미응대' || r.status === '상담중';
+        const warn = open && e.hours >= 24 ? '#fca5a5' : (open && e.hours >= 3 ? '#fbbf24' : '#94a3b8');
+        return '<tr data-i="' + i + '">'
+          + '<td style="font-family:\'SF Mono\',Monaco,monospace;font-size:11px;color:#94a3b8">' + dt(r.requested_at) + '</td>'
+          + '<td style="font-family:\'SF Mono\',Monaco,monospace;font-size:11px;color:' + warn + ';font-weight:700">'
+            + (open ? esc(e.txt) : '-') + '</td>'
+          + '<td style="font-weight:600">' + esc(r.name) + '</td>'
+          + '<td style="font-family:\'SF Mono\',Monaco,monospace;font-size:11.5px">' + esc(r.phone) + '</td>'
+          + '<td>' + esc(r.product) + (r.note ? '<div style="font-size:11px;color:#64748b">' + esc(r.note) + '</div>' : '') + '</td>'
+          + '<td>' + pill(r.channel) + '</td>'
+          + '<td>' + pill(r.status) + '</td>'
+          + '<td>' + (r.agent ? esc(r.agent) : '<span style="color:#64748b">미배정</span>') + '</td>'
+          + '<td><div style="display:flex;gap:4px">'
+            + (open ? '<button data-call="' + i + '" style="background:#3b82f6;color:#fff;border:none;padding:5px 10px;'
+                + 'border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">📞 결과</button>' : '')
+            + (r.status === '상담중' ? '<button data-conv="' + i + '" style="background:#22c55e;color:#052e16;border:none;'
+                + 'padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">계약 전환</button>' : '')
+          + '</div></td></tr>';
+      }).join('');
+
+      tb.querySelectorAll('[data-call]').forEach(b =>
+        b.addEventListener('click', () => callResult(list[+b.dataset.call])));
+      tb.querySelectorAll('[data-conv]').forEach(b =>
+        b.addEventListener('click', () => convert(list[+b.dataset.conv])));
+    }
+
+    function callResult(r) {
+      const res = window.prompt(
+        r.name + ' (' + r.phone + ') 통화 결과를 고르세요\n\n'
+        + '1 = 상담중 (연결됨 · 계속 진행)\n'
+        + '2 = 미컨택 종결 (부재·거절)\n'
+        + '취소 = 아무것도 안 함', '1');
+      if (res === null) return;
+      if (res.trim() === '1') {
+        r.status = '상담중';
+        r.agent = r.agent || (window._meName || '나');
+        const memo = window.prompt('메모 (선택)', r.note || '');
+        if (memo !== null) r.note = memo;
+        toast('상담중으로 기록');
+      } else if (res.trim() === '2') {
+        const why = window.prompt('종결 사유 (필수)', '');
+        if (!why) { toast('사유가 없으면 종결할 수 없습니다', true); return; }
+        r.status = '미컨택 종결'; r.note = why;
+        r.agent = r.agent || (window._meName || '나');
+        toast('미컨택 종결로 기록');
+      } else { toast('1 또는 2 를 입력하세요', true); return; }
+      render();
+    }
+
+    function convert(r) {
+      if (!window.confirm(r.name + ' 건을 계약으로 전환합니다.\n어드민 계약 탭으로 넘어갑니다. 진행할까요?')) return;
+      r.status = '계약 전환';
+      r.note = '→ 계약 생성됨';
+      toast('계약 전환 — 어드민 계약 탭에서 이어서 처리하세요');
+      render();
+    }
+
+    function bind() {
+      const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
+      on('quick-q','input',        (e) => { F.q = e.target.value; render(); });
+      on('quick-status','change',  (e) => { F.status = e.target.value; render(); });
+      on('quick-interest','change',(e) => { F.product = e.target.value; render(); });
+      on('quick-refresh','click', load);
+    }
+    return { load, bind };
+  })();
+
+  window.PlatformContract = Platform;
+  window.QuickConsult = Quick;
+
+  function boot() { Platform.bind(); Quick.bind(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+
+})();
+</script>
 </body>
 </html>
