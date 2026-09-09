@@ -358,6 +358,11 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
           <b style="color:#e2e8f0">계약정보는 이미 들어와 있고</b>, 콜센터는 확인 전화(해피콜) 후 처리한다.
           <span id="plat-src-badge" style="font-size:11px;color:#64748b"></span>
         </div>
+        <div style="font-size:11.5px;color:#fca5a5;margin-top:7px;padding-top:7px;border-top:1px solid #334155;line-height:1.6">
+          ⚠ <b>어드민 "계약완료"와 여기 "계약완료"는 다른 것이다.</b>
+          어드민은 <b>서류상 계약 성사</b>(개통·설치 전)이고, 여기는 <b>설치·개통이 확인된 건</b>이라 인센티브가 확정된다.
+          그래서 어드민 계약완료는 <b style="color:#60a5fa">계약진행</b>으로 받는다 — 개통 전에 인센티브가 나가지 않게.
+        </div>
       </div>
 
       <div class="stats" id="platform-stats" style="grid-template-columns:repeat(5, 1fr)">
@@ -2827,7 +2832,7 @@ function syncWaitingPerson(selectEl) {
   const MOCK_PLATFORM = [
     { app_no:'260909180005-00008', received_at:'2026-09-09T18:00:00+09:00', name:'조현준', phone:'010-3008-1097',
       product:'갤럭시 Z Fold8 Ultra 256GB', product_sub:'+ LG U+ 인터넷+TV 1G (U+tv 실속형)',
-      kind:'휴대폰·결합', route:'셀프신청', status:'계약완료', agent:'빈센조', ticket:'LG0012',
+      kind:'휴대폰·결합', route:'셀프신청', admin_status:'개통·설치완료', agent:'빈센조', ticket:'LG0012',
       carrier:'LG U+', prev_carrier:'SKT', open_type:'번호이동', store:'온라인 통합 매장',
       plan:'플러스플랜115', plan_fee:115000, monthly_total:136850, device_price:1390000, payment:'현금일시불',
       bundle:'인터넷+TV 동시가입', bundle_program:'LG U+ 참쉬운가족결합',
@@ -2844,7 +2849,7 @@ function syncWaitingPerson(selectEl) {
       memo:'해피콜 완료. 설치일 09-10 오후로 고객 확인.' },
     { app_no:'260909161025-00006', received_at:'2026-09-09T16:10:00+09:00', name:'조현준', phone:'010-3008-1097',
       product:'SKT 인터넷+TV 1G', product_sub:'B tv 이코노미',
-      kind:'인터넷+TV', route:'셀프신청', status:'계약진행', agent:'빈센조', ticket:'SK0006',
+      kind:'인터넷+TV', route:'셀프신청', admin_status:'계약완료', agent:'빈센조', ticket:'SK0006',
       carrier:'SKT', prev_carrier:'-', open_type:'신규', store:'온라인 통합 매장',
       plan:'-', plan_fee:0, monthly_total:41800, device_price:0, payment:'-',
       bundle:'-', bundle_program:'-', maker:'-', model:'-', storage:'-', second_device:'-',
@@ -2859,7 +2864,7 @@ function syncWaitingPerson(selectEl) {
       memo:'' },
     { app_no:'260908164802-00005', received_at:'2026-09-08T16:48:00+09:00', name:'이명덕', phone:'010-8813-0286',
       product:'갤럭시 Z Fold8 Ultra 256GB', product_sub:'+ KT 인터넷+TV',
-      kind:'휴대폰·결합', route:'셀프신청', status:'해피콜 대기', agent:'', ticket:'KT0005',
+      kind:'휴대폰·결합', route:'셀프신청', admin_status:'신청완료', agent:'', ticket:'KT0005',
       carrier:'KT', prev_carrier:'LG U+', open_type:'번호이동', store:'미지정',
       plan:'요고 69', plan_fee:69000, monthly_total:112000, device_price:1290000, payment:'할부',
       bundle:'인터넷+TV 동시가입', bundle_program:'KT 총액결합',
@@ -2906,6 +2911,46 @@ function syncWaitingPerson(selectEl) {
   }
   const PILL = { '해피콜 대기':'a','계약대기':'a','미응대':'a','계약진행':'b','상담중':'b',
                  '계약완료':'g','계약 전환':'g','계약취소':'r','미컨택 종결':'r' };
+
+  // ────────────────────────────────────────────────────────────────
+  //  상태 매핑 — 어드민 ↔ CRM
+  //
+  //  ★ 어드민의 '계약완료'와 CRM의 '계약완료'는 같은 말이 아니다.
+  //      어드민 계약완료 = 서류상 계약 성사. 개통·설치 전.
+  //      CRM  계약완료 = 설치·개통이 확인된 건. 인센티브가 확정된다.
+  //    그대로 이으면 개통도 안 된 건에 인센티브가 나간다.
+  //    그래서 어드민 '계약완료'는 CRM '계약진행'으로 받는다.
+  //
+  //  ★ 화면에는 둘 다 보여준다. 한쪽만 보이면 왜 다른지 아무도 설명 못 한다.
+  // ────────────────────────────────────────────────────────────────
+  const ADMIN_TO_CRM = {
+    '신청완료':      '해피콜 대기',
+    '상담중':        '계약진행',
+    '계약완료':      '계약진행',      // ← 아직 개통 전이므로 CRM 계약완료가 아니다
+    '개통완료':      '계약완료',
+    '설치완료':      '계약완료',
+    '개통·설치완료': '계약완료',
+    '취소':          '계약취소'
+  };
+  // CRM 에서 상태를 바꿔 어드민으로 되쏠 때. 한 값이 여럿으로 갈리는 곳은
+  // 상품 종류(휴대폰/인터넷)를 보고 고른다.
+  function crmToAdmin(crmStatus, kind) {
+    switch (crmStatus) {
+      case '해피콜 대기': return '신청완료';
+      case '계약대기':
+      case '계약진행':    return '상담중';
+      case '계약완료':
+        if (!kind) return '개통·설치완료';
+        if (kind.indexOf('인터넷') >= 0 && kind.indexOf('휴대폰') < 0) return '설치완료';
+        if (kind.indexOf('결합') >= 0) return '개통·설치완료';
+        return '개통완료';
+      case '계약취소':    return '취소';
+      default:            return null;
+    }
+  }
+  function toCrm(adminStatus) {
+    return ADMIN_TO_CRM[adminStatus] || '해피콜 대기';   // 모르는 값은 큐 맨 앞으로 — 사라지게 두지 않는다
+  }
   function pill(v) {
     const c = PILL[v] || 'n';
     const map = { a:['rgba(245,158,11,.16)','#fbbf24','rgba(245,158,11,.45)'],
@@ -2935,7 +2980,10 @@ function syncWaitingPerson(selectEl) {
       const tb = $('plat-tbody');
       if (!tb) return;
       tb.innerHTML = '<tr><td colspan="9" style="padding:30px;text-align:center;color:#64748b">불러오는 중...</td></tr>';
-      try { rows = await fetchPlatformApplications(); }
+      try {
+        rows = await fetchPlatformApplications();
+        rows.forEach(r => { r.status = toCrm(r.admin_status); });   // CRM 상태는 어드민 상태에서 파생한다
+      }
       catch (e) {
         tb.innerHTML = '<tr><td colspan="9" style="padding:30px;text-align:center;color:#fca5a5">'
           + esc(e.message) + '</td></tr>';
@@ -2980,7 +3028,8 @@ function syncWaitingPerson(selectEl) {
           + (r.product_sub ? '<div style="font-size:11px;color:#64748b">' + esc(r.product_sub) + '</div>' : '') + '</td>'
         + '<td>' + pill(r.kind) + '</td>'
         + '<td>' + pill(r.route) + '</td>'
-        + '<td>' + pill(r.status) + '</td>'
+        + '<td>' + pill(r.status)
+          + '<div style="font-size:10px;color:#64748b;margin-top:3px">어드민 ' + esc(r.admin_status) + '</div></td>'
         + '<td>' + (r.agent ? esc(r.agent) : '<span style="color:#64748b">미배정</span>') + '</td>'
         + '<td><button data-open="' + i + '" style="background:#3b82f6;color:#fff;border:none;padding:5px 12px;'
           + 'border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">상세</button></td>'
@@ -3033,6 +3082,7 @@ function syncWaitingPerson(selectEl) {
           + ' · ' + esc(r.route) + ' · ' + dt(r.received_at) + ' 접수 · <span style="font-family:\'SF Mono\',Monaco,monospace">'
           + esc(r.app_no) + '</span></div></div>'
           + '<div style="display:flex;gap:7px;align-items:center">' + pill(r.status)
+          + '<span style="font-size:10.5px;color:#64748b">어드민 <b style="color:#94a3b8">' + esc(r.admin_status) + '</b></span>'
           + '<button id="pd-close" style="background:#334155;color:#cbd5e1;border:none;padding:6px 13px;border-radius:6px;'
           + 'font-size:12px;font-weight:700;cursor:pointer">닫기</button></div></div>'
 
@@ -3139,13 +3189,20 @@ function syncWaitingPerson(selectEl) {
         const st = back.querySelector('#pd-status').value;
         const memo = back.querySelector('#pd-memo').value;
         const patch = {};
-        if (st !== r.status) patch.status = st;
+        let nextAdmin = null;
+        if (st !== r.status) {
+          nextAdmin = crmToAdmin(st, r.kind);
+          if (!nextAdmin) { toast('이 상태는 어드민에 대응값이 없습니다', true); return; }
+          patch.status = nextAdmin;          // ★ 어드민 원장에는 어드민 표기로 보낸다
+        }
         if (memo !== (r.memo || '')) patch.memo = memo;
         if (!Object.keys(patch).length) { toast('바뀐 것이 없습니다'); return; }
         try {
           await pushToAdmin(r.app_no, patch, '계약처리 화면');
-          Object.assign(r, patch);
-          if (patch.status) r.history.unshift([dt(new Date().toISOString()), '→ ' + patch.status, 'CRM']);
+          if (nextAdmin) { r.admin_status = nextAdmin; r.status = toCrm(nextAdmin); }
+          if (patch.memo != null) r.memo = patch.memo;
+          if (nextAdmin) r.history.unshift([dt(new Date().toISOString()),
+                                            '→ ' + nextAdmin + ' (CRM ' + st + ')', 'CRM']);
           toast('저장됨 · 어드민에 반영 요청');
           close(); render();
         } catch (e) { toast(e.message, true); }
