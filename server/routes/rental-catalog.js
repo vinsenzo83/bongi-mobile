@@ -307,7 +307,8 @@ router.get('/agent/tickets/:ticket', ...agent, async (req, res) => {
     const { data: offer } = await supabase.from('rental_cat_offers').select(AGENT_OFFER_COLS).eq('ticket_number', ticket).maybeSingle().throwOnError();
     if (!offer) return res.status(404).json({ error: '티켓 없음', ticket_number: ticket });
     const { data: model } = await supabase.from('rental_cat_model_summary')
-      .select('id, supplier_id, supplier_name, model_key, model_code, product_name, brand, category, image_url, status').eq('id', offer.model_id).single().throwOnError();
+      .select('*').eq('id', offer.model_id).single().throwOnError();
+    delete model.rebate_changed_count;
     res.json({ offer, model, usable: offer.status === 'active' });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
