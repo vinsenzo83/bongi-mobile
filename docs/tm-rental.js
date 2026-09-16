@@ -284,7 +284,27 @@
       '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l">✨ 월 렌탈료</span><span class="v" style="font-size:20px">' + won(o.display_fee) + '</span></div>' +
       (pay > 0 ? '<div class="calc-line gift" style="background:rgba(251,191,36,0.14);border-radius:6px;padding:7px 10px;margin-top:8px"><span class="l" style="color:#fbbf24">🎁 혜택 ' + fm + '개월 무료</span><span class="v" style="color:#fbbf24;font-size:17px">' + won(pay) + '</span></div>' : '') +
       (o.prepay_amount ? '<div class="calc-line"><span class="l">선납금</span><span class="v">' + won(o.prepay_amount) + '</span></div>' : '') +
+      cardsHtml(o) +
       '</div>';
+  }
+
+  // 제휴카드 — 카드로 자동이체하면 전월실적 구간별로 월 렌탈료에서 빠진다 (공개 정보라 고객 안내 가능)
+  function cardsHtml(o) {
+    var cards = (RT.offer === o && RT.cards) || [];
+    if (!cards.length) return '';
+    var fee = o.display_fee || o.monthly_fee || 0;
+    var top = cards.slice(0, 5).map(function (c) {
+      var tiers = (c.tiers || []).filter(function (t) { return t.total; });
+      var best = tiers[tiers.length - 1];
+      var tierText = tiers.map(function (t) { return (t.min_spend ? Math.round(t.min_spend / 10000) + '만↑ ' : '') + '-' + won(t.total); }).join(' / ');
+      return '<div style="padding:4px 0;border-top:1px dashed rgba(255,255,255,0.12)">' +
+        '<div class="calc-line" style="padding:0"><span class="l" style="font-size:11px">' + esc(c.card_name.indexOf(c.card_issuer) >= 0 ? c.card_name : c.card_issuer + ' ' + c.card_name) + '</span>' +
+        (best ? '<span class="v" style="font-size:12px;color:#86efac">최대 월 ' + won(Math.max(0, fee - best.total)) + '</span>' : '') + '</div>' +
+        '<div style="font-size:9.5px;color:rgba(255,255,255,0.55)">전월실적 ' + esc(tierText) +
+        (c.discount_months ? ' · ' + c.discount_months + '개월' : '') + (c.verify_status && c.verify_status !== 'verified' ? ' · <span style="color:#fca5a5">확인필요</span>' : '') + '</div></div>';
+    }).join('');
+    return '<div style="margin-top:8px;padding:6px 10px;background:rgba(34,197,94,0.08);border:1px solid rgba(134,239,172,0.3);border-radius:6px">' +
+      '<div style="font-size:10.5px;color:#86efac;font-weight:800;margin-bottom:2px">💳 제휴카드 할인 ' + cards.length + '장' + (cards.length > 5 ? ' (상위 5장)' : '') + '</div>' + top + '</div>';
   }
 
   function quote(o) {
@@ -312,7 +332,9 @@
       var j = await api('/agent/offers/' + o.id + '/form');
       if (RT.offer !== o) return;
       RT.form = j.form;
+      RT.cards = j.cards || [];
       renderForm(j.form);
+      quote(o);
     } catch (e) { box.innerHTML = '<div class="rt-empty">⚠ ' + esc(e.message) + '</div>'; }
   }
 

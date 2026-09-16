@@ -56,7 +56,7 @@ function conditionOf(appliesTo) {
 }
 
 /** 계약정보 입력폼 명세 */
-export function buildApplicationForm({ supplier, offer, model }) {
+export function buildApplicationForm({ supplier, offer, model, cards = [] }) {
   const fileKind = offer?.source?.file_kind || supplier?.file_kind;
   const policy = pickPolicy(supplier?.signup_policy, fileKind);
   const holders = holderTypes(policy);
@@ -133,6 +133,12 @@ export function buildApplicationForm({ supplier, offer, model }) {
       payFields.push({ key: 'payer_name', label: '납부자 이름', type: 'text', required: true, show_if: { field: 'third_party_payer', truthy: true } });
       payFields.push({ key: 'payer_relation', label: '계약자와 관계', type: 'text', required: true, show_if: { field: 'third_party_payer', truthy: true } });
     }
+  }
+  // 제휴카드 — 고객이 할인카드로 자동이체하면 렌탈사 접수 시 카드명을 알려야 한다 (카드번호는 받지 않음)
+  if (cards.length) {
+    payFields.push({ key: 'partner_card', label: '제휴카드 할인', type: 'select', required: false,
+      options: ['사용 안 함', ...cards.map((c) => (c.card_name.includes(c.card_issuer) ? c.card_name : `${c.card_issuer} ${c.card_name}`).trim())],
+      show_if: { field: 'payment_method', in: ['카드'] }, hint: '할인은 카드사 전월실적 기준 — 고객에게 실적 조건을 함께 안내' });
   }
   sections.push({ id: 'payment', title: '납부', fields: payFields, notice: '카드번호·계좌번호는 여기 적지 않습니다. 렌탈사 본인인증·해피콜에서 고객이 직접 등록합니다.' });
 

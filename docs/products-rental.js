@@ -179,6 +179,33 @@
   }
 
   // ─── 프로모션 ───
+  // ─── 제휴카드 ───
+  var VERIFY = { verified: '✅ 확인', changed: '🔄 변경반영', unverified: '⚠ 미확인', not_found: '❌ 없음', url_dead: '❌ 링크끊김' };
+  async function loadCards() {
+    var box = $('rp-cards'); if (!box) return;
+    try {
+      var j = await call('/cards');
+      var sup = {}; (ST.suppliers || []).forEach(function (s) { sup[s.id] = s.name; });
+      $('rp-card-count').textContent = j.cards.length + '장 · 사용 ' + j.cards.filter(function (c) { return c.is_active; }).length;
+      box.innerHTML = j.cards.map(function (c) {
+        var tiers = (c.tiers || []).map(function (t) { return (t.min_spend ? Math.round(t.min_spend / 10000) + '만↑ ' : '') + won(t.total) + (t.promo ? '(프로모션 ' + won(t.promo) + ' 포함)' : ''); }).join(' / ');
+        return '<tr data-cid="' + esc(c.id) + '" style="' + (c.is_active ? '' : 'opacity:.45') + '"><td>' + esc(sup[c.supplier_id] || c.supplier_id) + '</td>' +
+          '<td><b>' + esc(c.card_name.indexOf(c.card_issuer) >= 0 ? c.card_name : c.card_issuer + ' ' + c.card_name) + '</b>' + (c.card_url ? ' <a href="' + esc(c.card_url) + '" target="_blank" rel="noopener" style="color:#93c5fd;font-size:10px">공식</a>' : '') +
+          (c.notes ? '<div style="font-size:10px;color:#94a3b8">' + esc(c.notes) + '</div>' : '') + '</td>' +
+          '<td style="font-size:11px">' + esc(tiers) + '</td><td>' + esc(c.discount_months || '—') + '</td><td>' + esc(c.annual_fee || '—') + '</td>' +
+          '<td style="font-size:10.5px">' + esc((c.categories || []).join('·') || '전 품목') + '</td>' +
+          '<td style="font-size:11px">' + esc(VERIFY[c.verify_status] || c.verify_status || '—') + (c.verified_at ? '<div style="font-size:9.5px;color:#94a3b8">' + esc(c.verified_at) + '</div>' : '') + '</td>' +
+          '<td><input type="checkbox" class="rp-card-on"' + (c.is_active ? ' checked' : '') + '></td></tr>';
+      }).join('') || '<tr><td colspan="8" style="color:#94a3b8">등록된 제휴카드가 없습니다</td></tr>';
+    } catch (e) { box.innerHTML = '<tr><td colspan="8">⚠ ' + esc(e.message) + '</td></tr>'; }
+  }
+  document.addEventListener('change', async function (e) {
+    if (!e.target.classList || !e.target.classList.contains('rp-card-on')) return;
+    var tr = e.target.closest('tr');
+    try { await call('/cards/' + tr.dataset.cid, { method: 'PATCH', json: { is_active: e.target.checked } }); msg('rp-card-msg', '✅ 저장됨'); tr.style.opacity = e.target.checked ? '' : '.45'; }
+    catch (err) { e.target.checked = !e.target.checked; msg('rp-card-msg', err.message, true); }
+  });
+
   async function loadPromos() {
     try {
       var j = await call('/promotions');
@@ -232,6 +259,6 @@
       catch (err) { e.target.checked = !e.target.checked; alert(err.message); }
     });
     $('rp-p-add').addEventListener('click', addPromo);
-    loadStats(); loadModels(); loadPromos();
+    loadStats(); loadModels(); loadPromos(); loadCards();
   };
 })();

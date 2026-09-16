@@ -400,8 +400,51 @@ export async function loadOfferContext(offerId) {
     supabase.from('rental_cat_models').select('id, model_key, model_code, product_name, brand, category, category_raw, image_url, status').eq('id', offer.model_id).single().throwOnError(),
     supabase.from('rental_cat_suppliers').select('id, name, file_kind, signup_policy, signup_policy_as_of').eq('id', offer.supplier_id).single().throwOnError(),
   ]);
-  return { offer, model, supplier, form: buildApplicationForm({ supplier, offer, model }) };
+  const cards = cardsFor(await activeCards(offer.supplier_id), model);
+  return { offer, model, supplier, cards, form: buildApplicationForm({ supplier, offer, model, cards }) };
 }
+
+// ─── 제휴카드 ───
+const CARD_COLS = 'id, supplier_id, card_issuer, card_name, annual_fee, tiers, max_discount, discount_months, has_promo, categories, notes, card_url, verify_status, verified_at, is_active, display_rank';
+// 카드 대상 품목 원문(정수기·비데·공기청정기·매트리스·에어컨·TV) ↔ 모델 카테고리
+const CARD_CATEGORY = { 'water-purifier': '정수기', bidet: '비데', 'air-purifier': '공기청정기', furniture: '매트리스', aircon: '에어컨', tv: 'TV' };
+async function activeCards(supplierId) {
+  const { data } = await supabase.from('rental_cat_cards').select(CARD_COLS).eq('supplier_id', supplierId).eq('is_active', true)
+    .order('display_rank', { ascending: true, nullsFirst: false }).order('max_discount', { ascending: false }).throwOnError();
+  return data || [];
+}
+// 대상 품목이 적힌 카드는 그 품목 모델에만 — 품목 표기가 없거나 카드 품목표에 없는 카테고리면 렌탈사 전체 카드로 본다
+function cardsFor(cards, model) {
+  const label = CARD_CATEGORY[model?.category];
+  return cards.filter((c) => !c.categories?.length || !label || c.categories.includes(label));
+}
+router.get('/agent/suppliers/:id/cards', ...agent, async (req, res) => {
+  try {
+    const cards = await activeCards(String(req.params.id));
+    res.json({ cards });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+router.get('/cards', ...admin, async (req, res) => {
+  try {
+    let q = supabase.from('rental_cat_cards').select(CARD_COLS).order('supplier_id').order('max_discount', { ascending: false });
+    if (req.query.supplier) q = q.eq('supplier_id', req.query.supplier);
+    const { data } = await q.throwOnError();
+    res.json({ cards: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+router.patch('/cards/:id', ...admin, async (req, res) => {
+  try {
+    if (badId(req, res)) return;
+    const allowed = ['is_active', 'notes', 'display_rank', 'discount_months', 'annual_fee', 'card_url'];
+    const row = Object.fromEntries(allowed.filter((k) => req.body[k] !== undefined).map((k) => [k, req.body[k]]));
+    if (row.is_active !== undefined && typeof row.is_active !== 'boolean') return res.status(400).json({ error: 'is_active 는 true/false' });
+    if (!Object.keys(row).length) return res.status(400).json({ error: '바꿀 항목이 없습니다' });
+    row.updated_at = new Date().toISOString();
+    const { data } = await supabase.from('rental_cat_cards').update(row).eq('id', req.params.id).select(CARD_COLS).maybeSingle().throwOnError();
+    if (!data) return res.status(404).json({ error: '카드 없음' });
+    res.json({ card: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
 
 router.get('/agent/offers/:id/form', ...agent, async (req, res) => {
   try {
@@ -409,7 +452,7 @@ router.get('/agent/offers/:id/form', ...agent, async (req, res) => {
     const ctx = await loadOfferContext(req.params.id);
     if (!ctx) return res.status(404).json({ error: '조건 없음' });
     const { rebate, source, ...offer } = ctx.offer;
-    res.json({ offer, model: ctx.model, supplier: { id: ctx.supplier.id, name: ctx.supplier.name }, form: ctx.form });
+    res.json({ offer, model: ctx.model, supplier: { id: ctx.supplier.id, name: ctx.supplier.name }, form: ctx.form, cards: ctx.cards });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
