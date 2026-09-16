@@ -81,3 +81,11 @@ test('LG구독 이름 = 제품군 + 인치/평형 + 구분', async () => {
   assert.equal(lgSubscribeName({ category: '식기세척기', div1: 'DUE5BGE.AKOR', div2: '빌트인', model: 'DUE5BGE.AKOR' }), 'LG 식기세척기 빌트인');
   assert.equal(lgSubscribeName({ category: '스타일러', div1: '5벌', div2: '26년', model: 'SC5GMR81H.AKOR' }), 'LG 스타일러 5벌');
 });
+
+test('LG 하이드로타워·하이드로에센셜은 렌탈사 표기와 무관하게 가습기', async () => {
+  const { categorize } = await import('../../server/services/rental-import/core.js');
+  assert.equal(categorize('하이드로타워', 'LG 하이드로타워 25년형 하이드로타워'), 'humidifier');
+  assert.equal(categorize('하이드로에센셜', 'LG 하이드로에센셜 25년형 하이드로타워 에센셜'), 'humidifier');
+  assert.equal(categorize('공기청정기', 'LG 에어케어 하이드로타워 HY705RSUAB (36개월)'), 'humidifier');
+  assert.equal(categorize('선풍기', '[특가]샤크_무선 미스트 플렉스브리즈 하이드로고_FA050KR'), 'facility');
+});

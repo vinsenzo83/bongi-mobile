@@ -229,7 +229,7 @@ export const CATEGORIES = [
   ['it', 'PC·IT·카메라', /노트북|PC|워치|태블릿|게임|촬영|카메라|빔|프로젝터|플스|엑박|아이패드|갤럭시탭|프린터|피아노|악기|전자칠판|복합기|미싱/i],
   ['mobility', '전기자전거·스쿠터', /자전거|스쿠터|킥보드/],
   ['business', '업소용·제빙기', /업소용|제빙기|김밥|사업자/],
-  ['facility', '보일러·환기·설비', /보일러|환기|전열교환|온수기|휴벤|휴젠뜨|양변기|선풍기|하이드로타워|난방기|도어락/],
+  ['facility', '보일러·환기·설비', /보일러|환기|전열교환|온수기|휴벤|휴젠뜨|양변기|선풍기|난방기|도어락/],
   ['pest', '해충방제·위생', /해충|방제|방역|에어커튼|핸드\s?드라이|안전용품|향기/],
   ['pet', '반려동물', /반려|펫|애완|리터로봇/],
 ];
@@ -256,8 +256,14 @@ export function composeProductName({ product_name, model_code, model_key, brand,
   return composed || clean(product_name) || clean(model_code) || null;
 }
 
+// 렌탈사마다 품목 표기가 엇갈리는 상품 — 이름으로 먼저 정한다
+//   LG 하이드로타워·하이드로에센셜 = 퓨리케어 가습기 (LG구독은 제품군을 '하이드로타워', BS 는 '공기청정기'로 적는다)
+const CATEGORY_OVERRIDES = [
+  ['humidifier', /하이드로\s?(타워|에센셜)/],
+];
 export function categorize(categoryRaw, productName) {
   const hay = `${categoryRaw || ''} ${productName || ''}`;
+  for (const [slug, re] of CATEGORY_OVERRIDES) if (re.test(hay)) return slug;
   for (const [slug, , re] of CATEGORIES) if (re.test(categoryRaw || '')) return slug;
   for (const [slug, , re] of CATEGORIES) if (re.test(hay)) return slug;
   return 'etc';
