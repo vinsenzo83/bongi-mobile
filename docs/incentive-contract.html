@@ -313,6 +313,7 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 })();
 </script>
 <script src="/docs/_security.js" defer></script>
+<script src="/docs/contract-rental.js?v=3" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -344,14 +345,18 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
   <div id="main-area" style="display:none">
     <!-- ★ 계약처리 카테고리 탭 -->
     <div id="contract-cat-tabs" style="display:flex;gap:4px;border-bottom:1.5px solid #475569;margin-bottom:14px;padding:0 4px;flex-wrap:wrap">
-      <button type="button" class="cat-tab active" data-cat="internet_tv" style="background:#3b82f6;border:1.5px solid #3b82f6;border-bottom:none;border-radius:8px 8px 0 0;color:#fff;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px">📡 인터넷+TV</button>
-      <button type="button" class="cat-tab" data-cat="platform" style="background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;color:#94a3b8;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px">🛒 어드민 계약</button>
+      <button type="button" class="cat-tab active" data-cat="internet_tv" style="background:#3b82f6;border:1.5px solid #3b82f6;border-bottom:none;border-radius:8px 8px 0 0;color:#fff;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px">📞 콜센터계약</button>
+      <button type="button" class="cat-tab" data-cat="platform" style="background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;color:#94a3b8;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px">🛒 플랫폼계약</button>
       <button type="button" class="cat-tab" data-cat="quickconsult" style="background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;color:#94a3b8;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px">💬 간편상담</button>
       <button type="button" class="cat-tab" data-cat="gifts" style="background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;color:#94a3b8;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;position:relative;bottom:-2px">🎁 사은품 지급</button>
     </div>
 
     <!-- ═══════════ 어드민 계약 패널 (플랫폼 셀프신청 → 콜센터 계약처리) ═══════════ -->
     <div id="platform-contract-panel" style="display:none">
+      <div id="plat-kind-tabs" style="display:flex;gap:6px;margin-bottom:12px">
+        <button type="button" class="plat-kind" data-kind="telecom" style="padding:7px 16px;border-radius:999px;border:1.5px solid #3b82f6;background:#1d4ed8;color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">📡 통신계약 <span class="kind-count" style="opacity:.75"></span></button>
+        <button type="button" class="plat-kind" data-kind="rental" style="padding:7px 16px;border-radius:999px;border:1.5px solid #475569;background:#1e293b;color:#94a3b8;font-size:12.5px;font-weight:800;cursor:pointer">🧊 렌탈계약 <span class="kind-count" style="opacity:.75"></span></button>
+      </div>
 
       <div style="background:rgba(15,23,42,0.55);border:1.5px solid #475569;border-radius:10px;padding:12px 14px;margin-bottom:14px">
         <div style="font-size:12.5px;color:#cbd5e1;line-height:1.6">
@@ -511,6 +516,11 @@ input[type="month"]:hover::-webkit-calendar-picker-indicator {
 
     <!-- ★ 인터넷+TV 패널 (기본 — 기존 통계·툴바·테이블 모두 여기 안에) -->
     <div id="internet-contract-panel">
+    <!-- 콜센터계약 — 상품군별 분기 (받는 정보·처리 절차가 다르다) -->
+    <div id="kind-tabs" style="display:flex;gap:6px;margin-bottom:12px">
+      <button type="button" class="kind-tab" data-kind="telecom" style="padding:7px 16px;border-radius:999px;border:1.5px solid #3b82f6;background:#1d4ed8;color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">📡 통신계약 <span class="kind-count" style="opacity:.75"></span></button>
+      <button type="button" class="kind-tab" data-kind="rental" style="padding:7px 16px;border-radius:999px;border:1.5px solid #475569;background:#1e293b;color:#94a3b8;font-size:12.5px;font-weight:800;cursor:pointer">🧊 렌탈계약 <span class="kind-count" style="opacity:.75"></span></button>
+    </div>
     <!-- 통계 카드 -->
     <div class="stats" id="stats" style="grid-template-columns:repeat(5, 1fr)">
       <div class="stat-card"><div class="stat-label">📋 이번 달 영업</div><div class="stat-val" id="stat-total">-</div><div class="stat-sub" id="stat-completed-meta">-</div></div>
@@ -731,6 +741,7 @@ async function fetchContracts() {
 
 // ─── 렌더 ───
 function renderStats(contracts) {
+  contracts = byKind(contracts);   // 통신계약 / 렌탈계약 탭 기준
   const total = contracts.length;
   const completed = contracts.filter(c => c.status === 'completed').length;
   const inProgress = contracts.filter(c => c.status === 'in_progress').length;
@@ -745,8 +756,37 @@ function renderStats(contracts) {
   document.getElementById('stat-cancelled').textContent = cancelled + '건';
 }
 
+// 콜센터계약 분기 — telecom(통신계약: 인터넷+TV+유심) / rental(렌탈계약)
+let _kind = 'telecom';
+function byKind(list) {
+  return (list || []).filter(c => _kind === 'rental' ? c.sale_kind === 'rental' : c.sale_kind !== 'rental');
+}
+function renderKindCounts(list) {
+  document.querySelectorAll('#kind-tabs .kind-tab').forEach(b => {
+    const n = (list || []).filter(c => b.dataset.kind === 'rental' ? c.sale_kind === 'rental' : c.sale_kind !== 'rental').length;
+    const el = b.querySelector('.kind-count'); if (el) el.textContent = n;
+  });
+}
+// 스크립트가 탭 DOM 보다 먼저 실행될 수 있어 위임으로 받는다
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('#kind-tabs .kind-tab');
+  if (!b) return;
+  {
+    _kind = b.dataset.kind;
+    document.querySelectorAll('#kind-tabs .kind-tab').forEach(x => {
+      const on = x === b;
+      x.style.background = on ? '#1d4ed8' : '#1e293b'; x.style.borderColor = on ? '#3b82f6' : '#475569'; x.style.color = on ? '#fff' : '#94a3b8';
+    });
+    _currentPage = 1;
+    renderStats(_currentContracts);
+    renderTable(_currentContracts);
+  }
+});
+
 let _currentPage = 1;
 function renderTable(contracts) {
+  renderKindCounts(contracts);
+  contracts = byKind(contracts);
   const filterAddr = document.getElementById('filter-address').value;
   const filterName = (document.getElementById('filter-name')?.value || '').trim().toLowerCase();
   let filtered = contracts;
@@ -845,7 +885,7 @@ function renderTable(contracts) {
   tbody.innerHTML = pageItems.map((c, i) => {
     const rowNum = startIdx + i + 1;
     // 유심 단독은 인터넷 상품이 없다. 상품 자리에 유심 정보를 채워 기존 렌더를 그대로 쓴다.
-    const p = c.product || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
+    const p = c.product || (window.rentalAsProduct && rentalAsProduct(c)) || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
     // 인터넷+TV 에 유심을 얹은 건도 한눈에 보여야 한다 — 배지로 붙인다
     const usimBadge = (c.product && c.usim)
       ? `<span style="background:#0369a1;color:#fff;font-size:8.5px;font-weight:800;padding:1px 5px;border-radius:3px;margin-left:4px">📲 ${(c.usim.plan_name || '유심').replace(/</g,'&lt;')}</span>`
@@ -1014,6 +1054,9 @@ function renderTable(contracts) {
       </td>
     </tr>`;
   }).join('');
+
+  // 렌탈 계약은 인터넷용 인라인 입력칸을 쓰지 않는다 — 전용 화면(모달)으로만 편집
+  pageItems.filter(c => c.sale_kind === 'rental').forEach(c => { const d = document.getElementById('detail-' + c.id); if (d) d.remove(); });
 
   // 행 단위 작업 핸들러
   tbody.querySelectorAll('.btn-action').forEach(btn => {
@@ -1441,13 +1484,15 @@ function openEditModal(id) {
   if (c.quote_full_html) c.quote_full_html = unescapeHtml(c.quote_full_html);
   if (c.quote_summary) c.quote_summary = unescapeHtml(c.quote_summary);
   // 유심 단독은 인터넷 상품이 없다. 상품 자리에 유심 정보를 채워 기존 렌더를 그대로 쓴다.
-  const p = c.product || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
+  const p = c.product || (window.rentalAsProduct && rentalAsProduct(c)) || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
   const a = c.agent || {};
   // 계약은 세 형태다. 받아야 할 정보가 서로 다르다.
   //   ① 인터넷·TV        — 설치가 있다
   //   ② 인터넷+TV+유심   — 설치 + 유심 택배가 따로 간다
   //   ③ 유심 결합/단독   — 설치가 없다. 택배로 보내고 고객이 받아서 연락하면 개통한다.
   const isUsimOnly = c.sale_kind === 'usim';
+  // ④ 렌탈 — 받는 정보가 전혀 다르다(렌탈사 가입기준·서류·전자서명·해피콜). 전용 화면으로 연다.
+  if (c.sale_kind === 'rental' && window.openRentalContractModal) { openRentalContractModal(c); return; }
   const hasUsim    = !!c.usim;
   const tierBadge = p.tier ? `<span class="tier tier-${p.tier}">${p.tier}</span>` : '';
   const premBadge = '';
@@ -2009,7 +2054,7 @@ async function injectDealerSection(c) {
     || (_me.role === 'agent' && c.agent_id === _me.id);
   if (!_canMutate) return;
   // 유심 단독은 인터넷 상품이 없다. 상품 자리에 유심 정보를 채워 기존 렌더를 그대로 쓴다.
-  const p = c.product || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
+  const p = c.product || (window.rentalAsProduct && rentalAsProduct(c)) || (c.usim ? { name: '📲 ' + (c.usim.plan_name || '유심'), carrier: c.usim.carrier, type: '유심 단독', speed: c.usim.data_amount || '' } : {});
   // 'SK'/'LG'(신표기) + 'SKT'/'LGU+'(구표기 backward compat) 둘 다 허용
   const carrierMap = { 'SK':'skt', 'SKT':'skt', 'KT':'kt', 'LG':'lgu', 'LGU+':'lgu', 'lgu+':'lgu' };
   const carrier = carrierMap[p.carrier] || (p.carrier || '').toLowerCase().replace('+','');
@@ -2079,7 +2124,7 @@ async function injectDealerSection(c) {
 
   // ── [📍 조회하기] 버튼을 고객 정보 카드의 설치 주소 옆으로 inject ──
   //    유심 단독은 설치가 없다 — 배송지에 설치가능 조회를 붙일 이유가 없다.
-  if (installUrl && c.sale_kind !== 'usim') {
+  if (installUrl && c.sale_kind !== 'usim' && c.sale_kind !== 'rental') {
     const addrInput = document.getElementById('addr-input-' + c.id);
     const existed = document.getElementById('install-check-btn-' + c.id);
     if (addrInput && !existed) {
@@ -3024,7 +3069,9 @@ function syncWaitingPerson(selectEl) {
   // ══════════════════ 어드민 계약 ══════════════════
   const Platform = (function () {
     let rows = [];
-    const F = { q:'', status:'', route:'' };
+    const F = { q:'', status:'', route:'', kind:'telecom' };
+    // 플랫폼계약 분기 — 렌탈 신청(유형에 '렌탈')과 통신 신청(휴대폰·인터넷·유심)
+    const isRentalRow = (r) => /렌탈/.test(r.kind || '');
 
     async function load() {
       const tb = $('plat-tbody');
@@ -3047,6 +3094,7 @@ function syncWaitingPerson(selectEl) {
     function filtered() {
       const q = F.q.trim().toLowerCase();
       return rows.filter(r =>
+        (F.kind === 'rental' ? isRentalRow(r) : !isRentalRow(r)) &&
         (!F.status || r.status === F.status) &&
         (!F.route  || r.route  === F.route) &&
         (!q || (r.name + r.phone + r.app_no + r.product).toLowerCase().includes(q)));
@@ -3054,18 +3102,24 @@ function syncWaitingPerson(selectEl) {
 
     function render() {
       const list = filtered();
-      const cnt = (st) => rows.filter(r => r.status === st).length;
+      document.querySelectorAll('#plat-kind-tabs .plat-kind').forEach(b => {
+        const n = rows.filter(r => b.dataset.kind === 'rental' ? isRentalRow(r) : !isRentalRow(r)).length;
+        const el = b.querySelector('.kind-count'); if (el) el.textContent = n;
+      });
+      const scoped = rows.filter(r => F.kind === 'rental' ? isRentalRow(r) : !isRentalRow(r));
+      const cnt = (st) => scoped.filter(r => r.status === st).length;
       const set = (id, v) => { const el = $(id); if (el) el.textContent = v + '건'; };
       set('pstat-happy', cnt('해피콜 대기'));
       set('pstat-in_progress', cnt('계약진행') + cnt('계약대기'));
       set('pstat-completed', cnt('계약완료'));
-      set('pstat-total', rows.length);
+      set('pstat-total', scoped.length);
       set('pstat-cancelled', cnt('계약취소'));
       const c = $('plat-count'); if (c) c.textContent = list.length + '건';
 
       const tb = $('plat-tbody');
       if (!list.length) {
-        tb.innerHTML = '<tr><td colspan="9" style="padding:34px;text-align:center;color:#64748b">해당하는 건이 없습니다.</td></tr>';
+        tb.innerHTML = '<tr><td colspan="9" style="padding:34px;text-align:center;color:#64748b">'
+          + (F.kind === 'rental' && !scoped.length ? '플랫폼 렌탈 신청이 아직 없습니다. (플랫폼 어드민 렌탈 연동 후 들어옵니다)' : '해당하는 건이 없습니다.') + '</td></tr>';
         return;
       }
       tb.innerHTML = list.map((r, i) =>
@@ -3265,6 +3319,11 @@ function syncWaitingPerson(selectEl) {
       on('plat-status','change',(e) => { F.status = e.target.value; render(); });
       on('plat-route','change', (e) => { F.route = e.target.value; render(); });
       on('plat-refresh','click', load);
+      document.querySelectorAll('#plat-kind-tabs .plat-kind').forEach(b => b.addEventListener('click', () => {
+        F.kind = b.dataset.kind;
+        document.querySelectorAll('#plat-kind-tabs .plat-kind').forEach(x => { const on = x === b; x.style.background = on ? '#1d4ed8' : '#1e293b'; x.style.borderColor = on ? '#3b82f6' : '#475569'; x.style.color = on ? '#fff' : '#94a3b8'; });
+        render();
+      }));
     }
     return { load, bind };
   })();
