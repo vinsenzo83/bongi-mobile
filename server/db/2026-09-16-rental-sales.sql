@@ -24,7 +24,8 @@ create unique index if not exists incentive_sales_rental_dedupe_idx
   where sale_kind = 'rental' and deleted_at is null and status <> 'cancelled';
 
 -- 사은품 원장 트리거 — 계약의 고객명·계좌·상품·티켓을 원장으로 넘긴다(지급 화면에서 계좌 확인 가능하게)
---   계약완료 = 계약부서가 설치/개통과 본인확인을 마친 건 → auth_status '인증완료'
+--   렌탈 계약완료 = 계약 체크리스트의 '본인인증 완료'가 필수로 끝난 건 → auth_status '인증완료'
+--   인터넷·유심은 기존 동작 그대로(null) — 본인확인 기준이 따로 정해지기 전까지 바꾸지 않는다
 create or replace function public.trg_sales_to_gift_func()
  returns trigger language plpgsql security definer set search_path to 'public'
 as $function$
@@ -47,7 +48,7 @@ begin
   insert into bongi_gifts (phone, name, amount, status, auth_status, bank, account_number, account_holder, product_name, ticket_no, contract_date, source_sale_table, source_sale_id, created_at)
   values (v_phone, new.customer_name, v_amount,
     case when exists(select 1 from bongi_user_profiles where phone = v_phone) then '지급대기' else '비회원대기' end,
-    '인증완료', new.bank_name, new.bank_account_number, new.bank_account_holder, v_product, v_ticket, new.contract_date::text,
+    case when new.sale_kind = 'rental' then '인증완료' end, new.bank_name, new.bank_account_number, new.bank_account_holder, v_product, v_ticket, new.contract_date::text,
     tg_table_name, new.id::text, now());
   return new;
 end; $function$;
