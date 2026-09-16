@@ -1,8 +1,26 @@
 import { Router } from 'express';
 import { supabase } from '../db/supabase.js';
+import { authenticateJWT } from '../middleware/auth.js';
 import { syncMemberData as _syncMemberData, syncAllMembers } from '../services/member-sync.js';
 
 const router = Router();
+
+// 🔒 전 엔드포인트 인증 — 고객 이름·전화·계좌(사은품 원장)와 상품 삭제·지급 처리가 여기 있다.
+//    2026-09-16 까지 인증 없이 열려 있었다. 로그인한 CRM 직원(admin·contract·manager)만 허용한다.
+const STAFF_ROLES = new Set(['admin', 'contract', 'manager']);
+router.use(authenticateJWT, async (req, res, next) => {
+  try {
+    const { data: agent } = await supabase.from('incentive_agents')
+      .select('id, name, role, active').eq('user_id', req.user.id).maybeSingle();
+    if (!agent || !agent.active || !STAFF_ROLES.has(agent.role)) {
+      return res.status(403).json({ error: '권한 없음' });
+    }
+    req.agent = agent;
+    next();
+  } catch (_e) {
+    res.status(500).json({ error: '권한 확인 실패' });
+  }
+});
 
 // SQL Injection 방지: .or() 문자열 보간에 사용되는 검색어에서 특수문자 제거
 function sanitizeSearch(str) {
@@ -147,9 +165,10 @@ router.get('/gifts', async (req, res) => {
 // PATCH /admin/platform/gifts/:id — 사은품 상태 변경 (지급 처리)
 router.patch('/gifts/:id', async (req, res) => {
   try {
-    const { status, paid_at } = req.body;
+    const { status, paid_at, memo } = req.body;
     const update = { status };
     if (status === '지급완료') update.paid_at = paid_at || new Date().toISOString();
+    if (memo !== undefined) update.memo = memo;   // 보류 사유 — 화면이 보내는데 버려지고 있었다
     const { data, error } = await supabase.from('bongi_gifts').update(update).eq('id', req.params.id).select();
     if (error) throw error;
     res.json({ gift: data[0] });
