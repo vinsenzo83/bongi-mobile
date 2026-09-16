@@ -11,6 +11,8 @@
  *   PATCH /models/:id                카테고리·이름·이미지·상태·플랫폼 연동 표시
  *   PATCH /offers/:id                가이드·MAX·상태·노출·메모·적용기간
  *   POST  /offers/bulk-payout        필터된 조건에 가이드·MAX 일괄(고정액 또는 리베이트 기준식), dry_run 지원
+ *   POST  /offers/apply-margin       마진율 규칙으로 가이드·MAX 일괄 (DB 함수, 전체·렌탈사별)
+ *   GET   /stats                     상품관리 요약
  *   GET/POST/PATCH /promotions
  * 상담원(로그인 사용자)
  *   GET   /agent/models              검색 (리베이트 없음)
@@ -272,6 +274,28 @@ router.post('/offers/bulk-payout', ...admin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
+// 마진율 규칙으로 가이드·MAX 일괄 (DB 함수 — 수만 건 한 번에, 이력 포함)
+router.post('/offers/apply-margin', ...admin, async (req, res) => {
+  try {
+    const margin = Number(req.body?.margin_pct) / 100;
+    if (!(margin >= 0 && margin < 1)) return res.status(400).json({ error: '마진율은 0~99%' });
+    const basis = req.body?.basis === 'vat' ? 'vat' : 'supply';
+    const { data } = await supabase.rpc('rental_cat_apply_margin', {
+      p_margin: margin, p_basis: basis, p_supplier: req.body?.supplier_id || null,
+      p_only_unset: !!req.body?.only_unset, p_dry_run: req.body?.dry_run !== false, p_user: req.agent.name,
+    }).throwOnError();
+    _catCacheReset();
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+router.get('/stats', ...admin, async (req, res) => {
+  try {
+    const { data } = await supabase.rpc('rental_cat_stats').throwOnError();
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
 // ─── 프로모션 ───
 router.get('/promotions', ...agent, async (req, res) => {
   try {
@@ -343,6 +367,7 @@ router.get('/agent/offers/:id/form', ...agent, async (req, res) => {
 
 // 카테고리별 판매중 모델 수 (5분 캐시)
 let _catCache = null;
+function _catCacheReset() { _catCache = null; }
 router.get('/agent/categories', ...agent, async (req, res) => {
   try {
     if (!_catCache || _catCache.at < Date.now() - 5 * 60 * 1000) {

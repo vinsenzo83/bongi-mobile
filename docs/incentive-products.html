@@ -147,6 +147,87 @@ async function fetchAgent() {
     <div style="display:flex;gap:5px;border-bottom:2px solid #f59e0b;margin-bottom:14px">
       <div class="prod-cat-tab active" data-cat="it" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#cbd5e1;position:relative;bottom:-2px">📡 인터넷 + TV</div>
       <div class="prod-cat-tab" data-cat="usim" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">📲 유심 <span style="background:#0ea5e9;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">NEW</span></div>
+      <div class="prod-cat-tab" data-cat="rental" style="padding:10px 22px;background:#1e293b;border:1.5px solid #475569;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;color:#94a3b8;position:relative;bottom:-2px">🧊 렌탈 <span style="background:#f59e0b;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">NEW</span></div>
+    </div>
+
+    <!-- ★ 렌탈 패널 — 로직은 /docs/products-rental.js -->
+    <div id="rental-panel" style="display:none">
+      <div style="background:#422006;border:1px solid #f59e0b;border-radius:8px;padding:11px 14px;margin-bottom:14px;font-size:12px;color:#fde68a;line-height:1.7">
+        <b>렌탈 (빌리고)</b> — 조건(약정·관리·주기·할인유형)마다 월 렌탈료·리베이트가 다르다. 티켓도 조건마다 붙는다.<br>
+        매달 빌리고 엑셀을 올리면 요금·리베이트·판매상태가 갱신된다. <b>가이드·MAX 는 엑셀이 덮지 않는다.</b> 리베이트가 바뀐 조건은 「리베이트 변동」으로 표시된다.<br>
+        고객 공개 채널(앱·홈페이지)에는 지급액을 금액이 아닌 <b>N개월 무료</b>로만 노출한다. MAX 는 상담원 전용.
+      </div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(6,1fr)">
+        <div class="kpi-card"><div class="kpi-label">모델</div><div class="kpi-val" id="rp-k-models">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">판매 조건(티켓)</div><div class="kpi-val" id="rp-k-offers">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">가이드·MAX 설정</div><div class="kpi-val" id="rp-k-set" style="color:#86efac">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">⚠️ 미설정</div><div class="kpi-val" id="rp-k-unset" style="color:#fca5a5">-</div><div class="kpi-sub">계약 등록 불가</div></div>
+        <div class="kpi-card"><div class="kpi-label">리베이트 변동</div><div class="kpi-val" id="rp-k-rebate" style="color:#c4b5fd">-</div><div class="kpi-sub">가이드 재검토</div></div>
+        <div class="kpi-card"><div class="kpi-label">플랫폼 연동 모델</div><div class="kpi-val" id="rp-k-linked" style="color:#60a5fa">-</div></div>
+      </div>
+      <div id="rp-msg" style="font-size:12px;margin-bottom:8px"></div>
+
+      <div class="section">
+        <h2>📤 빌리고 월별 엑셀 적재 <span style="font-size:11px;color:#94a3b8;font-weight:600">정수기 파일 / 가전 파일 각각 올린다</span></h2>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="month" id="rp-month" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px">
+          <input type="file" id="rp-file" accept=".xlsx" style="color:#e2e8f0;font-size:12px">
+          <button class="btn-secondary" id="rp-preview">미리보기</button>
+          <button class="btn-primary" id="rp-commit" style="display:none">확정 반영</button>
+          <span id="rp-import-msg" style="font-size:12px"></span>
+        </div>
+        <div id="rp-import-result"></div>
+      </div>
+
+      <div class="section">
+        <h2>🧮 가이드·MAX 일괄 규칙 <span style="font-size:11px;color:#94a3b8;font-weight:600">MAX = 리베이트 × (1−마진) 천원 버림 · 가이드 = MAX 만원 버림</span></h2>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="rp-m-supplier" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px"></select>
+          <label style="font-size:12px">마진 <input type="number" id="rp-margin" value="10" min="0" max="99" step="0.5" style="width:60px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px;border-radius:6px"> %</label>
+          <select id="rp-basis" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px">
+            <option value="supply">기준: 리베이트 공급가 (VAT 제외)</option>
+            <option value="vat">기준: 리베이트 VAT 포함</option>
+          </select>
+          <label style="font-size:12px"><input type="checkbox" id="rp-only-unset"> 미설정 조건만</label>
+          <button class="btn-secondary" id="rp-margin-preview">미리보기</button>
+          <button class="btn-primary" id="rp-margin-apply">적용</button>
+          <span id="rp-margin-msg" style="font-size:12px"></span>
+        </div>
+        <div id="rp-margin-samples" style="margin-top:10px"></div>
+      </div>
+
+      <div class="section">
+        <h2>📋 렌탈 상품 · 조건 <span id="rp-count" style="font-size:11px;color:#94a3b8;font-weight:600"></span></h2>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <input type="text" id="rp-q" placeholder="모델·상품명·브랜드" style="min-width:200px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px">
+          <select id="rp-f-supplier" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px"></select>
+          <select id="rp-f-category" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px"></select>
+          <select id="rp-f-flag" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px">
+            <option value="">전체</option><option value="unset">가이드 미설정 있음</option><option value="rebate">리베이트 변동 있음</option><option value="linked">플랫폼 연동</option>
+          </select>
+          <span style="font-size:11px;color:#94a3b8">행을 누르면 조건별 가이드·MAX 를 수정합니다</span>
+        </div>
+        <table>
+          <thead><tr><th></th><th>렌탈사</th><th>카테고리</th><th>상품</th><th>조건</th><th>최저 월</th><th>가이드</th><th>최대 무료</th><th>연동</th></tr></thead>
+          <tbody id="rp-models"></tbody>
+        </table>
+        <button class="btn-secondary" id="rp-more" style="display:none;margin-top:8px;width:100%">더 보기</button>
+      </div>
+
+      <div class="section">
+        <h2>🎉 프로모션 <span style="font-size:11px;color:#94a3b8;font-weight:600">엑셀 셀 밖(공지 이미지·PDF)의 프로모션 — 기간 필수</span></h2>
+        <div style="display:grid;grid-template-columns:160px 1fr 1fr 140px 140px 1fr auto;gap:6px;margin-bottom:10px">
+          <select id="rp-p-supplier" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px"></select>
+          <input id="rp-p-title" placeholder="프로모션명 (예: 코웨이 패키지 플러스)" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px">
+          <input id="rp-p-summary" placeholder="상담원용 요약 (예: 2대 이상 15% + 3~5개월 반값)" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px">
+          <input type="date" id="rp-p-from" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px">
+          <input type="date" id="rp-p-to" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px">
+          <input id="rp-p-stack" placeholder="중복 (예: 결합X 선납O 타사보상X)" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px">
+          <button class="btn-primary" id="rp-p-add">등록</button>
+        </div>
+        <div id="rp-promo-msg" style="font-size:12px;margin-bottom:6px"></div>
+        <table><thead><tr><th>렌탈사</th><th>프로모션</th><th>기간</th><th>중복</th><th>상태</th></tr></thead><tbody id="rp-promos"></tbody></table>
+      </div>
     </div>
 
     <!-- ★ 유심 패널 (기본 hidden) — incentive_usim_plans -->
@@ -396,7 +477,9 @@ async function fetchAgent() {
       const cat = t.dataset.cat;
       F('it-panel').style.display = cat === 'it' ? '' : 'none';
       const up = F('usim-panel'); if (up) up.style.display = cat === 'usim' ? '' : 'none';
+      const rp = F('rental-panel'); if (rp) rp.style.display = cat === 'rental' ? '' : 'none';
       if (cat === 'usim') initUsimAdmin();
+      if (cat === 'rental' && window.initRentalAdmin) initRentalAdmin();
     });
   });
 
@@ -1327,5 +1410,6 @@ async function showHistory(productId) {
 
 init();
 </script>
+<script src="/docs/products-rental.js?v=1"></script>
 </body>
 </html>
