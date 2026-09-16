@@ -201,3 +201,42 @@ export function applyRule(rule, { monthly_fee, contract_months, total_fee }) {
   if (rule.basis === 'multiple_monthly') return monthly_fee != null ? Math.round(monthly_fee * rule.value) : null;
   return null;
 }
+
+/**
+ * 표준 카테고리 — 엑셀 제품군 표기(냉장고 / 가전 / 냉장고 / 일반냉장고 컨버터블 Fit&Max …)를 상담용 분류로 정리.
+ * 순서가 우선순위다(김치냉장고가 냉장고보다 먼저).
+ */
+export const CATEGORIES = [
+  ['fridge', '냉장고·냉동고', /얼정냉|퓨어 프레시|정수기?냉장고/],   // LG 얼음정수냉장고는 냉장고
+  ['water-purifier', '정수기', /정수기|냉온정|얼음정수|직수|탱크형|워터|얼음.{0,3}(데스크|스탠드)|POU|정수 필터|휘카페|에스프레카페/],
+  ['air-purifier', '공기청정기', /공기청정|청정기|에어케어|공기살균/],
+  ['bidet', '비데', /비데/],
+  ['softener', '연수기·샤워', /연수기|샤워/],
+  ['dehumidifier', '제습기', /제습/],
+  ['humidifier', '가습기', /가습/],
+  ['aircon', '에어컨·냉난방기', /에어컨|냉난방|냉방기|시스템에어/],
+  ['kimchi-fridge', '김치냉장고', /김치/],
+  ['fridge', '냉장고·냉동고', /냉장|냉동|Fit&Max|와인셀러|퓨어 프레시|쇼케이스/i],
+  ['washer', '세탁기·건조기', /세탁|건조기|워시|드럼|세건|통돌이/],
+  ['clothes-care', '의류관리기', /스타일러|의류관리|슈케어|에어드레서/],
+  ['tv', 'TV·모니터', /TV|OLED|QNED|NANO|UHD|ULTRA|MRGB|스탠바이미|스바미|모니터/i],
+  ['cleaner', '청소기', /청소기|로봇청소|HOM-BOT|로니/i],
+  ['dishwasher', '식기세척기', /식기세척|식세기/],
+  ['food-waste', '음식물처리기', /음식물/],
+  ['kitchen', '주방가전', /밥솥|레인지|오븐|에어프라이|커피|블랜더|블렌더|그리들|조리기|인덕션|가스렌지|가스레인지|쿠킹|식물재배|씽크|식기소독|튀김기|그릴/],
+  ['furniture', '매트리스·침대·가구', /매트리스|침대|프레임|소파|가구|식탁|체어|의자(?!.*안마)|헤드보드|파운데이션|베개|필로우/],
+  ['massage', '안마의자·헬스케어', /안마|힐링|건강|의료|마사지|헬스|운동|홈메디|테라솔|반신욕|런닝머신|체지방|뷰티|미용|다한증|전기요/],
+  ['it', 'PC·IT·카메라', /노트북|PC|워치|태블릿|게임|촬영|카메라|빔|프로젝터|플스|엑박|아이패드|갤럭시탭|프린터|피아노|악기|전자칠판|복합기|미싱/i],
+  ['mobility', '전기자전거·스쿠터', /자전거|스쿠터|킥보드/],
+  ['business', '업소용·제빙기', /업소용|제빙기|김밥|사업자/],
+  ['facility', '보일러·환기·설비', /보일러|환기|전열교환|온수기|휴벤|휴젠뜨|양변기|선풍기|하이드로타워|난방기|도어락/],
+  ['pest', '해충방제·위생', /해충|방제|방역|에어커튼|핸드\s?드라이|안전용품|향기/],
+  ['pet', '반려동물', /반려|펫|애완|리터로봇/],
+];
+export function categorize(categoryRaw, productName) {
+  const hay = `${categoryRaw || ''} ${productName || ''}`;
+  for (const [slug, , re] of CATEGORIES) if (re.test(categoryRaw || '')) return slug;
+  for (const [slug, , re] of CATEGORIES) if (re.test(hay)) return slug;
+  return 'etc';
+}
+export const CATEGORY_LABEL = Object.fromEntries([...CATEGORIES.map(([slug, label]) => [slug, label]), ['etc', '기타']]);

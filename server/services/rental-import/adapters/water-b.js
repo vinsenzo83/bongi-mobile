@@ -358,6 +358,15 @@ function cumingName(raw) {
   return { code, desc: rest.join(' ') || null };
 }
 
+function cumingCare(block) {
+  const v = block.variant || '';
+  let care = block.care; let cycle = block.cycle;
+  if (!care && /필터형/.test(v)) { care = 'self'; cycle = cycle || +((v.match(/(\d+)\s*개월/) || [])[1]) || null; }
+  if (!care && /단독형/.test(v)) care = 'visit';
+  const label = block.careLabel || (/필터형|단독형|관리형|셀프형/.test(v) ? v : null);
+  return { care_type: care, care_label: label, cycle_months: cycle };
+}
+
 function cumingParse(rows, ctx) {
   const offers = []; const skipped = [];
   const h = findHeaderRow(rows, ['제품군', '프로모션', '모델명', '기간', '렌탈료']);
@@ -408,7 +417,8 @@ function cumingParse(rows, ctx) {
         product_name: block.name, model_code: block.code,
         variant_code: [block.desc, block.variant, extra].filter(Boolean).join(' / '),
         contract_months: contract, obligation_months: contract,
-        care_type: block.care, care_label: block.careLabel || block.variant, cycle_months: block.cycle,
+        // K/Q/SS 같은 사이즈·등급 값은 관리방식이 아니다 → variant 로만 쓴다
+        ...cumingCare(block),
         offer_type: phases.length ? 'half' : 'normal', offer_label: promo,
         monthly_fee: fee, price_phases: phases,
         rebate, rebate_basis: 'amount', rebate_detail: { total: row[c.rebate] },

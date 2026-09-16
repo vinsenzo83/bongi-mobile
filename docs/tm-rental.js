@@ -12,7 +12,7 @@
   var API = '/api/rental-catalog';
   var TYPE_LABEL = { normal: '일반', package: '패키지', bundle: '결합', trade_in: '타사보상', half: '반값할인', prepay: '선납', promo: '프로모션', special: '특가', field: '현장', staff: '임직원', purchase: '일시불' };
   var CARE_LABEL = { visit: '방문', self: '자가', delivery: '택배', none: '관리없음' };
-  var RT = { inited: false, models: [], model: null, offers: [], pick: {}, offer: null, form: null, searchSeq: 0 };
+  var RT = { inited: false, models: [], model: null, offers: [], pick: {}, offer: null, form: null, searchSeq: 0, category: '', page: 1, total: 0 };
 
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -62,6 +62,7 @@
     box.innerHTML = RT.models.map(function (m) {
       var sel = RT.model && RT.model.id === m.id ? ' sel' : '';
       return '<div class="usim-card' + sel + '" data-mid="' + esc(m.id) + '">' +
+        (m.image_url ? '<img class="rt-thumb" loading="lazy" src="' + esc(m.image_url) + '" alt="">' : '') +
         '<div class="un">' + esc(m.product_name || m.model_code || m.model_key) + '</div>' +
         '<div class="uf"><span>' + esc(m.supplier_name) + '</span><b>' + esc(m.model_code || m.model_key) + '</b></div>' +
         '<div class="uf"><span>조건 ' + m.offer_count + '개</span><span>가이드 설정 ' + (m.payout_set_count || 0) + '</span></div>' +
@@ -70,23 +71,57 @@
     }).join('');
   }
 
-  async function search() {
+  async function search(append) {
     var q = ($('rt-q').value || '').trim();
     var sup = $('rt-supplier').value;
     var msg = $('rt-search-msg');
     var seq = ++RT.searchSeq;
     if (/^R\d{6}$/i.test(q)) return openTicket(q.toUpperCase());
-    if (!q && !sup) { RT.models = []; $('rt-models').innerHTML = '<div class="rt-empty">모델명·상품명·티켓번호로 찾으세요.</div>'; return; }
-    msg.textContent = '검색 중…';
+    RT.page = append ? RT.page + 1 : 1;
+    msg.textContent = '불러오는 중…';
     try {
-      var qs = '?size=60' + (q ? '&q=' + encodeURIComponent(q) : '') + (sup ? '&supplier=' + encodeURIComponent(sup) : '');
+      var qs = '?size=30&page=' + RT.page + (q ? '&q=' + encodeURIComponent(q) : '') + (sup ? '&supplier=' + encodeURIComponent(sup) : '') + (RT.category ? '&category=' + encodeURIComponent(RT.category) : '');
       var j = await api('/agent/models' + qs);
       if (seq !== RT.searchSeq) return;
-      RT.models = j.models || [];
-      msg.textContent = j.total > RT.models.length ? '총 ' + j.total + '개 중 ' + RT.models.length + '개 표시 — 검색어를 더 구체적으로' : '총 ' + (j.total || 0) + '개';
+      RT.models = append ? RT.models.concat(j.models || []) : (j.models || []);
+      RT.total = j.total || 0;
+      msg.textContent = '총 ' + RT.total.toLocaleString() + '개' + (RT.total > RT.models.length ? ' · ' + RT.models.length + '개 표시' : '');
+      $('rt-more').style.display = RT.total > RT.models.length ? '' : 'none';
       renderModels();
     } catch (e) { msg.textContent = '⚠ ' + e.message; }
   }
+
+  async function loadCategories() {
+    try {
+      var j = await api('/agent/categories');
+      var cats = [{ slug: '', label: '전체', count: (j.categories || []).reduce(function (n, c) { return n + c.count; }, 0) }].concat(j.categories || []);
+      $('rt-cats').innerHTML = cats.map(function (c) {
+        return '<div class="tm-option' + (RT.category === c.slug ? ' selected' : '') + '" data-cat="' + esc(c.slug) + '">' + esc(c.label) + ' <span style="opacity:.55;font-size:10px">' + c.count.toLocaleString() + '</span></div>';
+      }).join('');
+    } catch (e) { $('rt-search-msg').textContent = '⚠ ' + e.message; }
+  }
+
+  function renderProductInfo(m) {
+    var box = $('rt-product-info');
+    if (!box) return;
+    if (!m) { box.innerHTML = ''; return; }
+    var sp = m.specs || {};
+    var rows = [];
+    var add = function (k, v) { if (v != null && v !== '' && !(Array.isArray(v) && !v.length)) rows.push('<dt>' + esc(k) + '</dt><dd>' + esc(Array.isArray(v) ? v.join(', ') : v) + '</dd>'); };
+    add('렌탈사', m.supplier_name); add('제조사', sp.brand || m.brand); add('모델', m.model_code || m.model_key); add('제품군', m.category_raw);
+    add('추천 사용', sp.recommended_capacity); add('용도', sp.recommended_usage); add('크기(mm)', sp.size_mm); add('무게(kg)', sp.weight_kg);
+    Object.keys(sp.specifications || {}).forEach(function (k) { var v = sp.specifications[k]; if (v != null && v !== '') add(SPEC_LABEL[k] || k, v); });
+    box.innerHTML = '<div class="rt-info">' + (m.image_url ? '<img src="' + esc(m.image_url) + '" alt="">' : '') +
+      '<div style="flex:1;min-width:0"><h4>' + esc(sp.name || m.product_name || m.model_code) + '</h4>' +
+      (sp.description ? '<div style="font-size:11.5px;color:#334155">' + esc(sp.description) + '</div>' : '') +
+      (sp.feature_tags && sp.feature_tags.length ? '<div class="rt-tags" style="margin-top:4px">' + sp.feature_tags.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') + '</div>' : '') +
+      (sp.spec_notes ? '<div class="rt-hint" style="margin-top:3px">' + esc(sp.spec_notes) + '</div>' : '') +
+      '<dl>' + rows.join('') + '</dl>' +
+      (sp.product_url ? '<a href="' + esc(sp.product_url) + '" target="_blank" rel="noopener" style="font-size:11px">제품 상세 페이지 ↗</a>' : '') +
+      (!m.specs || !m.specs.source ? '<div class="rt-hint" style="margin-top:4px">등록된 상세 사양이 없습니다 (엑셀 기본정보만 표시)</div>' : '') +
+      '</div></div>';
+  }
+  var SPEC_LABEL = { power_w: '소비전력(W)', output_mode: '출수', hot_temp_max: '온수 최고(℃)', ice_capacity: '제빙량', filter_stages: '필터 단계', warranty_years: '보증(년)', capacity_l: '용량(L)', area_m2: '사용면적(㎡)', noise_db: '소음(dB)', energy_grade: '에너지등급' };
 
   async function openTicket(ticket) {
     var msg = $('rt-search-msg');
@@ -104,14 +139,16 @@
     RT.model = RT.models.filter(function (m) { return m.id === modelId; })[0] || RT.model;
     RT.pick = {}; RT.offer = null; RT.form = null;
     renderModels();
+    renderProductInfo(RT.model);
     $('rt-offer-card').style.display = '';
+    $('rt-offer-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('rt-axes').innerHTML = '<div class="rt-empty">조건 불러오는 중…</div>';
     try {
       var j = await api('/agent/models/' + modelId + '/offers');
       RT.offers = j.offers || [];
       if (offerId) {
         var o = RT.offers.filter(function (x) { return x.id === offerId; })[0];
-        if (o) RT.pick = axisValues(o);
+        if (o) RT.pick = pickFor(o);
       }
       renderOffers();
     } catch (e) { $('rt-axes').innerHTML = '<div class="rt-empty">⚠ ' + esc(e.message) + '</div>'; }
@@ -125,6 +162,14 @@
     { key: 'variant', label: '세부', get: function (o) { return o.variant_code || '기본'; } },
   ];
   function axisValues(o) { var v = {}; AXES.forEach(function (a) { v[a.key] = a.get(o); }); return v; }
+  // 조건 하나를 고를 때: 세부코드는 앞 세 축만으로 조건이 갈리지 않을 때만 고정한다
+  // (코웨이는 세부코드에 관리방식이 들어 있어 고정하면 방문/자가 중 한쪽이 숨는다)
+  function pickFor(o) {
+    var v = axisValues(o);
+    var same = RT.offers.filter(function (x) { return typeText(x) === v.type && contractText(x) === v.contract && careText(x) === v.care; });
+    if (same.length <= 1) delete v.variant;
+    return v;
+  }
   function matches(o, except) {
     return AXES.every(function (a) { return a.key === except || !RT.pick[a.key] || a.get(o) === RT.pick[a.key]; });
   }
@@ -132,10 +177,19 @@
   function renderOffers() {
     var axesBox = $('rt-axes');
     var html = '';
+    // 세부코드 고정이 다른 축 선택지를 가리지 않게: 앞 세 축으로 이미 하나로 좁혀지면 세부 고정 해제
+    if (RT.pick.variant) {
+      var core = RT.offers.filter(function (o) { return AXES.slice(0, 3).every(function (a) { return !RT.pick[a.key] || a.get(o) === RT.pick[a.key]; }); });
+      if (core.length <= 1) delete RT.pick.variant;
+    }
     AXES.forEach(function (a) {
       var vals = [];
       RT.offers.forEach(function (o) { if (matches(o, a.key)) { var v = a.get(o); if (vals.indexOf(v) < 0) vals.push(v); } });
-      if (a.key === 'variant' && vals.length <= 1) { if (RT.pick.variant && vals.indexOf(RT.pick.variant) < 0) delete RT.pick.variant; return; }
+      // 세부 칩은 할인유형·약정·관리를 다 고른 뒤에도 조건이 갈릴 때만 보인다
+      if (a.key === 'variant' && (vals.length <= 1 || AXES.slice(0, 3).some(function (x) { return !RT.pick[x.key]; }))) {
+        if (RT.pick.variant && vals.indexOf(RT.pick.variant) < 0) delete RT.pick.variant;
+        return;
+      }
       if (RT.pick[a.key] && vals.indexOf(RT.pick[a.key]) < 0) delete RT.pick[a.key];
       if (vals.length === 1) RT.pick[a.key] = vals[0];
       html += '<div class="rt-axis"><div class="rt-axis-label">' + a.label + '</div><div class="tm-options">' +
@@ -465,10 +519,19 @@
     if (RT.inited) return;
     RT.inited = true;
     loadSuppliers();
+    loadCategories();
+    search();
+    $('rt-cats').addEventListener('click', function (e) {
+      var c = e.target.closest('[data-cat]'); if (!c) return;
+      RT.category = c.dataset.cat;
+      $('rt-cats').querySelectorAll('.tm-option').forEach(function (x) { x.classList.toggle('selected', x === c); });
+      search();
+    });
+    $('rt-more').addEventListener('click', function () { search(true); });
     var timer;
-    $('rt-q').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, 300); });
+    $('rt-q').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { search(); }, 300); });
     $('rt-q').addEventListener('keypress', function (e) { if (e.key === 'Enter') { clearTimeout(timer); search(); } });
-    $('rt-supplier').addEventListener('change', search);
+    $('rt-supplier').addEventListener('change', function () { search(); });
     $('rt-models').addEventListener('click', function (e) {
       var c = e.target.closest('[data-mid]'); if (c) openModel(c.dataset.mid);
     });
@@ -481,7 +544,7 @@
     $('rt-offer-table').addEventListener('click', function (e) {
       var tr = e.target.closest('[data-oid]'); if (!tr) return;
       var o = RT.offers.filter(function (x) { return x.id === tr.dataset.oid; })[0];
-      if (o) { RT.pick = axisValues(o); renderOffers(); }
+      if (o) { RT.pick = pickFor(o); renderOffers(); }
     });
     var sl = $('rt-payout'), num = $('rt-payout-num');
     sl.addEventListener('input', function () { payout(RT.offer); });

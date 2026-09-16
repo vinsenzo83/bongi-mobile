@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { supabase } from '../db/supabase.js';
 import { authenticateJWT, optionalAuth } from '../middleware/auth.js';
 import { loadOfferContext } from './rental-catalog.js';
-import { validateApplication } from '../services/rental-application.js';
+import { validateApplication, buildProcessChecklist } from '../services/rental-application.js';
 
 const router = Router();
 
@@ -1129,7 +1129,8 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
 
     const { status, cancellation_reason, notes, contract_notes, add_payback, actual_payout, usim_payout, customer_address, customer_address_detail, bank_account_holder, bank_name, bank_account_number, customer_name, customer_phone, customer_email, installation_date, installation_time, resident_id, gift_received, tv_count, additional_products, wifi_option, quote_summary, quote_full_html, activation_date, expected_updated_at, product_id, db_source_id, dealer_id,
       birth_date, combo_type, combo_members, billing_method, billing_phone, billing_carrier, payment_method, payment_extra, waiting_person, waiting_phone, waiting_relation, seller_phone, onestop_yn, current_carrier,
-      usim_delivery_address, usim_delivery_address_detail, usim_shipped_at, usim_tracking_no } = req.body || {};
+      usim_delivery_address, usim_delivery_address_detail, usim_shipped_at, usim_tracking_no,
+      rental_application, rental_process } = req.body || {};
     const { data: existing } = await supabase
       .from('incentive_sales')
       .select('*')
@@ -1218,6 +1219,36 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (onestop_yn !== undefined) update.onestop_yn = onestop_yn;
     if (current_carrier !== undefined) update.current_carrier = current_carrier;
 
+    // 렌탈 — 신청정보·계약진행은 렌탈사 가입기준 폼 명세의 키만 받는다
+    if (existing.sale_kind === 'rental' && (rental_application !== undefined || rental_process !== undefined || status === 'completed')) {
+      const ctx = existing.rental_offer_id ? await loadOfferContext(existing.rental_offer_id) : null;
+      if (!ctx) return res.status(400).json({ error: '렌탈 조건을 찾을 수 없습니다' });
+      let app = existing.rental_application || {};
+      if (rental_application !== undefined) {
+        const merged = { ...app, ...rental_application };
+        const v = validateApplication(ctx.form, merged);
+        if (!v.ok) return res.status(400).json({ error: '계약정보 확인 필요', fields: v.errors });
+        app = v.data;
+        update.rental_application = app;
+        if (app.birth_date !== undefined) update.birth_date = app.birth_date || null;
+        if (app.customer_email !== undefined) update.customer_email = app.customer_email || null;
+        if (app.payment_method !== undefined) update.payment_method = app.payment_method || null;
+      }
+      const checklist = buildProcessChecklist(ctx.form, app);
+      let proc = existing.rental_process || {};
+      if (rental_process !== undefined) {
+        const allowed = new Set(checklist.map((i) => i.key));
+        proc = { ...proc };
+        for (const [k, v] of Object.entries(rental_process || {})) if (allowed.has(k)) proc[k] = v;
+        update.rental_process = proc;
+      }
+      const nextStatus = status !== undefined ? status : existing.status;
+      if (nextStatus === 'completed' && existing.status !== 'completed') {
+        const missing = checklist.filter((i) => i.required && !proc[i.key]).map((i) => i.label);
+        if (missing.length) return res.status(400).json({ error: '렌탈 계약 완료 전 확인 필요: ' + missing.join(', '), missing });
+      }
+    }
+
     // product 변경 — pending·in_progress 단계까지 허용 (completed·cancelled 차단)
     // 변경 시 snapshot 재계산 + 사유 필수 + contract_notes에 자동 timestamp 기록
     if (product_id !== undefined && product_id !== existing.product_id) {
@@ -1281,6 +1312,28 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     }
 
     res.json({ sale: data });
+  } catch (err) {
+    console.error('[incentive]', req.method, req.path, err);
+    res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
+  }
+});
+
+// 렌탈 계약 — 계약처리 상세용 입력폼 명세 + 진행 체크리스트
+router.get('/sales/:id/rental-form', authenticateJWT, async (req, res) => {
+  try {
+    const me = await getCurrentIncentiveAgent(req.user.id);
+    if (!me) return res.status(403).json({ error: 'incentive_agent 미등록' });
+    const { data: sale } = await supabase.from('incentive_sales')
+      .select('id, agent_id, sale_kind, rental_offer_id, rental_application, rental_process').eq('id', req.params.id).maybeSingle();
+    if (!sale || sale.sale_kind !== 'rental') return res.status(404).json({ error: '렌탈 계약 아님' });
+    if (me.role === 'agent' && sale.agent_id !== me.id) return res.status(403).json({ error: '본인 계약만 조회 가능' });
+    const ctx = await loadOfferContext(sale.rental_offer_id);
+    if (!ctx) return res.status(404).json({ error: '렌탈 조건 없음' });
+    res.json({
+      form: ctx.form,
+      checklist: buildProcessChecklist(ctx.form, sale.rental_application || {}),
+      offer_status: ctx.offer.status,
+    });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
@@ -1692,7 +1745,7 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
 
     // gzip 적용 후 quote_full_html 포함해도 페이로드 작음 (~10KB 추가) — 모달 즉시 표시
     // 휴지통 모드일 때는 deleted_at/deleted_by_user_id/deleted_reason도 함께 반환
-    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_email,customer_address,customer_address_detail,resident_id,birth_date,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,db_source_id,dealer_id,combo_type,combo_members,billing_method,billing_phone,billing_carrier,payment_method,payment_extra,waiting_person,waiting_phone,waiting_relation,seller_phone,onestop_yn,current_carrier,sale_kind,usim_plan_id,usim_payout,usim_guide_snapshot,usim_max_snapshot,usim_delivery_address,usim_delivery_address_detail,usim_shipped_at,usim_tracking_no,actual_payout,guide_payout_snapshot,max_payout_snapshot';
+    const listCols = 'id,agent_id,product_id,customer_name,customer_phone,customer_email,customer_address,customer_address_detail,resident_id,birth_date,bank_account_holder,bank_name,bank_account_number,contract_date,installation_date,installation_time,activation_date,add_payback,gift_received,tv_count,additional_products,wifi_option,quote_summary,quote_full_html,monthly_fee,notes,contract_notes,status,cancellation_reason,company_payback_burden,agent_payback_deduct,contract_pending_at,contract_in_progress_at,contract_completed_at,contract_cancelled_at,created_at,updated_at,deleted_at,deleted_by_user_id,deleted_reason,payback_snapshot,rebate_snapshot,db_source_id,dealer_id,combo_type,combo_members,billing_method,billing_phone,billing_carrier,payment_method,payment_extra,waiting_person,waiting_phone,waiting_relation,seller_phone,onestop_yn,current_carrier,sale_kind,usim_plan_id,usim_payout,usim_guide_snapshot,usim_max_snapshot,usim_delivery_address,usim_delivery_address_detail,usim_shipped_at,usim_tracking_no,actual_payout,guide_payout_snapshot,max_payout_snapshot,rental_offer_id,rental_supplier_id,rental_ticket_number,rental_snapshot,rental_application,rental_process';
     let q = supabase
       .from('incentive_sales')
       .select(`${listCols}, usim:incentive_usim_plans(id,carrier,plan_name,sale_type,monthly_fee,data_amount), product:incentive_products(*), agent:incentive_agents!incentive_sales_agent_id_fkey(id,name,center,role), dealer:incentive_dealers!incentive_sales_dealer_id_fkey(id,name,url,active,carrier)`)

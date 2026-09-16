@@ -26,6 +26,7 @@ import { authenticateJWT } from '../middleware/auth.js';
 import { parseRentalWorkbook } from '../services/rental-import/index.js';
 import { previewImport, commitImport } from '../services/rental-import/commit.js';
 import { buildApplicationForm } from '../services/rental-application.js';
+import { CATEGORIES, CATEGORY_LABEL } from '../services/rental-import/core.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
@@ -148,7 +149,7 @@ async function searchModels(q) {
   if (q.linked === 'true') query = query.eq('platform_linked', true);
   if (q.payout === 'unset') query = query.lt('payout_set_count', 1);
   if (q.rebate_changed === 'true') query = query.gt('rebate_changed_count', 0);
-  query = query.gt('offer_count', 0).order('supplier_id').order('model_key').range((page - 1) * size, page * size - 1);
+  query = query.gt('offer_count', 0).order('payout_set_count', { ascending: false }).order('supplier_id').order('model_key').range((page - 1) * size, page * size - 1);
   const { data, count } = await query.throwOnError();
   return { models: data, total: count, page, size };
 }
@@ -178,10 +179,12 @@ router.patch('/models/:id', ...admin, async (req, res) => {
 });
 
 // ─── 가이드·MAX ───
+const GUIDE_UNIT = 10000;  // 가이드는 만원 단위 (대표 지시 2026-09-16)
 function validPayout(guide, max) {
   const g = guide == null ? null : Number(guide);
   const m = max == null ? null : Number(max);
   if ((g != null && (!Number.isInteger(g) || g < 0)) || (m != null && (!Number.isInteger(m) || m < 0))) return '가이드·MAX 는 0 이상의 원 단위 정수여야 합니다';
+  if (g != null && g % GUIDE_UNIT !== 0) return `가이드는 ${GUIDE_UNIT.toLocaleString()}원 단위여야 합니다`;
   if (g != null && m != null && m < g) return 'MAX 는 가이드보다 작을 수 없습니다';
   return null;
 }
@@ -216,7 +219,8 @@ router.patch('/offers/:id', ...admin, async (req, res) => {
  * body: { filter: { ids?, model_id?, supplier_id?, offer_type?, only_unset? },
  *         set: { mode:'fixed', guide, max } | { mode:'rebate', guide_rate, guide_minus, max_rate, max_minus, round_to },
  *         dry_run }
- * rebate 모드: 값 = floor((rebate × rate − minus) / round_to) × round_to  (0 미만이면 0)
+ * rebate 모드: 값 = floor((rebate × rate − minus) / round_to) × round_to  (0 미만이면 0, round_to 기본 1만원)
+ * 가이드는 항상 1만원 단위로 버림
  */
 router.post('/offers/bulk-payout', ...admin, async (req, res) => {
   try {
@@ -234,14 +238,18 @@ router.post('/offers/bulk-payout', ...admin, async (req, res) => {
       rows.push(...data);
       if (data.length < 1000) break;
     }
-    const roundTo = Math.max(1, parseInt(set.round_to, 10) || 1000);
+    const roundTo = Math.max(1, parseInt(set.round_to, 10) || GUIDE_UNIT);
     const calc = (rebate, rate, minus) => (rebate == null ? null : Math.max(0, Math.floor((rebate * Number(rate || 0) - Number(minus || 0)) / roundTo) * roundTo));
     const planned = [];
     const skipped = [];
     for (const r of rows) {
       let guide; let max;
       if (set.mode === 'fixed') { guide = set.guide ?? r.guide_payout; max = set.max ?? r.max_payout; }
-      else if (set.mode === 'rebate') { guide = calc(r.rebate, set.guide_rate, set.guide_minus); max = calc(r.rebate, set.max_rate, set.max_minus); }
+      else if (set.mode === 'rebate') {
+        guide = calc(r.rebate, set.guide_rate, set.guide_minus);
+        if (guide != null) guide = Math.floor(guide / GUIDE_UNIT) * GUIDE_UNIT;   // 반올림 단위와 무관하게 가이드는 만원 단위
+        max = calc(r.rebate, set.max_rate, set.max_minus);
+      }
       else return res.status(400).json({ error: "set.mode 는 'fixed' 또는 'rebate'" });
       const bad = validPayout(guide, max);
       if (bad || (set.mode === 'rebate' && r.rebate == null)) { skipped.push({ id: r.id, reason: bad || '리베이트 없음' }); continue; }
@@ -330,6 +338,25 @@ router.get('/agent/offers/:id/form', ...agent, async (req, res) => {
     if (!ctx) return res.status(404).json({ error: '조건 없음' });
     const { rebate, source, ...offer } = ctx.offer;
     res.json({ offer, model: ctx.model, supplier: { id: ctx.supplier.id, name: ctx.supplier.name }, form: ctx.form });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// 카테고리별 판매중 모델 수 (5분 캐시)
+let _catCache = null;
+router.get('/agent/categories', ...agent, async (req, res) => {
+  try {
+    if (!_catCache || _catCache.at < Date.now() - 5 * 60 * 1000) {
+      const counts = {};
+      for (let from = 0; ; from += 1000) {
+        const { data } = await supabase.from('rental_cat_model_summary').select('category, supplier_id')
+          .eq('status', 'active').gt('offer_count', 0).order('id').range(from, from + 999).throwOnError();
+        for (const m of data) counts[m.category || 'etc'] = (counts[m.category || 'etc'] || 0) + 1;
+        if (data.length < 1000) break;
+      }
+      const order = [...new Set([...CATEGORIES.map(([slug]) => slug), 'etc'])];
+      _catCache = { at: Date.now(), list: order.filter((c) => counts[c]).map((c) => ({ slug: c, label: CATEGORY_LABEL[c], count: counts[c] })) };
+    }
+    res.json({ categories: _catCache.list });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 

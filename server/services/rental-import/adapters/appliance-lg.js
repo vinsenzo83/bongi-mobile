@@ -45,7 +45,8 @@ function pushDedup(offers, seen, offer) {
 
 function careFrom(raw) {
   const s = nospace(raw);
-  if (!s || s === '-' || s === '0') return { care_type: null, cycle_months: null };
+  if (!s) return { care_type: null, cycle_months: null };
+  if (s === '-' || s === '0') return { care_type: 'none', cycle_months: null };  // 방문주기 칸이 '-' = 관리 없는 상품(TV 등)
   if (s.includes('자가')) return { care_type: 'self', cycle_months: null };
   const n = toMonths(s) ?? (/^\d+$/.test(s) ? parseInt(s, 10) : null);
   if (n) return { care_type: 'visit', cycle_months: n };

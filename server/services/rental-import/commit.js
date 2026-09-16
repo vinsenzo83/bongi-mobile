@@ -8,7 +8,7 @@
  *  - 반복행(#2 등)도 그대로 별도 조건으로 보존한다.
  */
 import { createHash } from 'crypto';
-import { sheetBase } from './core.js';
+import { sheetBase, categorize } from './core.js';
 
 // 엑셀 렌탈사 표기 → 고정 id. 없는 이름은 해시 id 로 생성(첫 등장 시 보고됨)
 const SUPPLIER_IDS = {
@@ -129,7 +129,7 @@ export async function commitImport(supabase, { batch, offers, sheets, user, supp
     const k = `${sid}|${key}`;
     if (!models.has(k)) models.set(k, {
       supplier_id: sid, model_key: key, model_code: o.model_code, product_name: o.product_name,
-      brand: o.brand, category_raw: o.category_raw, last_batch_id: batch.id, updated_at: now,
+      brand: o.brand, category_raw: o.category_raw, category: categorize(o.category_raw, o.product_name), last_batch_id: batch.id, updated_at: now,
     });
   }
   const modelIds = new Map();
