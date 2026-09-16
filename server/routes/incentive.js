@@ -856,7 +856,7 @@ router.get('/sales', authenticateJWT, async (req, res) => {
       if (!isManagerOrAdmin(me)) q = q.eq('agent_id', me.id);
       const { data, error } = await q.limit(50);
       if (error) throw error;
-      return res.json({ sales: data, count: data.length, phone });
+      return res.json({ sales: data.map((x) => hideRentalRebate(x, me)), count: data.length, phone });
     }
 
     // 기본 모드: month + agent
@@ -879,12 +879,23 @@ router.get('/sales', authenticateJWT, async (req, res) => {
     q = q.eq('agent_id', targetAgentId).gte('contract_date', monthStart).lte('contract_date', monthEnd);
     const { data, error } = await q;
     if (error) throw error;
-    res.json({ sales: data, count: data.length, month: ym });
+    res.json({ sales: data.map((x) => hideRentalRebate(x, me)), count: data.length, month: ym });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
   }
 });
+
+// 렌탈 리베이트는 관리자·계약부서 정보 — 상담원(agent)·매니저 응답에서는 뺀다
+function hideRentalRebate(sale, me) {
+  if (!sale || sale.sale_kind !== 'rental' || (me && ['admin', 'contract'].includes(me.role))) return sale;
+  const { rebate_snapshot, ...rest } = sale;
+  if (rest.rental_snapshot?.offer) {
+    const { source, ...offer } = rest.rental_snapshot.offer;
+    rest.rental_snapshot = { ...rest.rental_snapshot, offer };
+  }
+  return rest;
+}
 
 // 렌탈 계약 스냅샷 — 계약 시점의 조건·요금·가이드·MAX·리베이트를 박제한다
 function rentalSaleColumns({ offer, model, supplier }, application, actualPayout) {
@@ -978,8 +989,8 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       const o = rentalCtx.offer;
       if (o.status !== 'active') return res.status(400).json({ error: `판매중이 아닌 조건입니다 (${o.ticket_number})` });
       if (o.guide_payout == null || o.max_payout == null) return res.status(400).json({ error: `가이드·MAX 가 설정되지 않은 조건입니다 (${o.ticket_number})` });
-      const pay = actual_payout == null ? null : Number(actual_payout);
-      if (pay == null || pay < o.guide_payout || pay > o.max_payout) {
+      const pay = actual_payout == null || actual_payout === '' ? null : Number(actual_payout);
+      if (!Number.isInteger(pay) || pay < o.guide_payout || pay > o.max_payout) {
         return res.status(400).json({ error: `지급액은 가이드 ${o.guide_payout.toLocaleString()} ~ MAX ${o.max_payout.toLocaleString()} 사이여야 합니다` });
       }
       const v = validateApplication(rentalCtx.form, { ...(rental_application || {}), customer_name, customer_phone, customer_address, customer_address_detail, installation_date, installation_time, notes });
@@ -1111,7 +1122,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       } catch (e) { console.warn('[customer-db auto-convert]', e); }
     }
 
-    res.json({ sale: data, converted_customer_ids: convertedCustomerIds });
+    res.json({ sale: hideRentalRebate(data, me), converted_customer_ids: convertedCustomerIds });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
@@ -1220,7 +1231,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
     if (current_carrier !== undefined) update.current_carrier = current_carrier;
 
     // 렌탈 — 신청정보·계약진행은 렌탈사 가입기준 폼 명세의 키만 받는다
-    if (existing.sale_kind === 'rental' && (rental_application !== undefined || rental_process !== undefined || status === 'completed')) {
+    if (existing.sale_kind === 'rental' && (rental_application !== undefined || rental_process !== undefined || actual_payout !== undefined || status === 'completed')) {
       const ctx = existing.rental_offer_id ? await loadOfferContext(existing.rental_offer_id) : null;
       if (!ctx) return res.status(400).json({ error: '렌탈 조건을 찾을 수 없습니다' });
       let app = existing.rental_application || {};
@@ -1237,14 +1248,41 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       const checklist = buildProcessChecklist(ctx.form, app);
       let proc = existing.rental_process || {};
       if (rental_process !== undefined) {
-        const allowed = new Set(checklist.map((i) => i.key));
+        const byKey = new Map(checklist.map((i) => [i.key, i]));
         proc = { ...proc };
-        for (const [k, v] of Object.entries(rental_process || {})) if (allowed.has(k)) proc[k] = v;
+        for (const [k, v] of Object.entries(rental_process || {})) {
+          const item = byKey.get(k);
+          if (!item) continue;
+          // 타입대로만 받는다 — "false" 문자열 같은 truthy 값으로 완료 차단을 우회하지 못하게
+          if (item.type === 'date') {
+            if (v === null || v === '') proc[k] = null;
+            else if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) proc[k] = v;
+            else return res.status(400).json({ error: `${item.label}: 날짜 형식(YYYY-MM-DD)` });
+          } else if (item.type === 'text') {
+            if (v === null || v === '') proc[k] = null;
+            else if (typeof v === 'string' && v.trim().length <= 100) proc[k] = v.trim();
+            else return res.status(400).json({ error: `${item.label}: 100자 이내 문자열` });
+          } else {
+            if (typeof v !== 'boolean') return res.status(400).json({ error: `${item.label}: true/false 만 가능` });
+            proc[k] = v;
+          }
+        }
         update.rental_process = proc;
+      }
+      // 렌탈 지급액은 계약 시점 가이드~MAX 안에서만 바꿀 수 있고, 사은품 원장 금액(payback_snapshot)도 같이 맞춘다
+      if (actual_payout !== undefined) {
+        if (existing.status === 'completed') return res.status(400).json({ error: '계약완료 후에는 지급액을 바꿀 수 없습니다 (사은품 원장에서 조정)' });
+        const pay = actual_payout === null || actual_payout === '' ? null : Number(actual_payout);
+        if (!Number.isInteger(pay) || pay < existing.guide_payout_snapshot || pay > existing.max_payout_snapshot) {
+          return res.status(400).json({ error: `지급액은 가이드 ${Number(existing.guide_payout_snapshot).toLocaleString()} ~ MAX ${Number(existing.max_payout_snapshot).toLocaleString()} 사이 정수` });
+        }
+        update.actual_payout = pay;
+        update.payback_snapshot = pay;
       }
       const nextStatus = status !== undefined ? status : existing.status;
       if (nextStatus === 'completed' && existing.status !== 'completed') {
-        const missing = checklist.filter((i) => i.required && !proc[i.key]).map((i) => i.label);
+        const done = (i) => (i.type === 'date' ? /^\d{4}-\d{2}-\d{2}$/.test(proc[i.key] || '') : i.type === 'text' ? !!(proc[i.key] && String(proc[i.key]).trim()) : proc[i.key] === true);
+        const missing = checklist.filter((i) => i.required && !done(i)).map((i) => i.label);
         if (missing.length) return res.status(400).json({ error: '렌탈 계약 완료 전 확인 필요: ' + missing.join(', '), missing });
       }
     }
@@ -1311,7 +1349,7 @@ router.patch('/sales/:id', authenticateJWT, async (req, res) => {
       } catch (e) { console.warn('[customer-db sale-revert]', e); }
     }
 
-    res.json({ sale: data });
+    res.json({ sale: hideRentalRebate(data, me) });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
@@ -1773,7 +1811,7 @@ router.get('/contracts', authenticateJWT, async (req, res) => {
     const orderField = trash ? 'deleted_at' : 'contract_date';
     const { data, error } = await q.order(orderField, { ascending: false });
     if (error) throw error;
-    res.json({ contracts: data, count: data.length, month: ym, trash });
+    res.json({ contracts: data.map((x) => hideRentalRebate(x, me)), count: data.length, month: ym, trash });
   } catch (err) {
     console.error('[incentive]', req.method, req.path, err);
     res.status(500).json({ error: '서버 오류 — 잠시 후 다시 시도하세요' });
