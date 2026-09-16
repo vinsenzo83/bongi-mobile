@@ -277,12 +277,14 @@ router.post('/offers/bulk-payout', ...admin, async (req, res) => {
 // 마진율 규칙으로 가이드·MAX 일괄 (DB 함수 — 수만 건 한 번에, 이력 포함)
 router.post('/offers/apply-margin', ...admin, async (req, res) => {
   try {
-    const margin = Number(req.body?.margin_pct) / 100;
+    const margin = Number(req.body?.margin_pct) / 100;                 // MAX 마진
     if (!(margin >= 0 && margin < 1)) return res.status(400).json({ error: '마진율은 0~99%' });
+    const guideMargin = req.body?.guide_margin_pct == null || req.body.guide_margin_pct === '' ? null : Number(req.body.guide_margin_pct) / 100;
+    if (guideMargin != null && !(guideMargin >= margin && guideMargin < 1)) return res.status(400).json({ error: '가이드 마진은 MAX 마진 이상이어야 합니다' });
     const basis = req.body?.basis === 'vat' ? 'vat' : 'supply';
     const { data } = await supabase.rpc('rental_cat_apply_margin', {
       p_margin: margin, p_basis: basis, p_supplier: req.body?.supplier_id || null,
-      p_only_unset: !!req.body?.only_unset, p_dry_run: req.body?.dry_run !== false, p_user: req.agent.name,
+      p_only_unset: !!req.body?.only_unset, p_dry_run: req.body?.dry_run !== false, p_user: req.agent.name, p_guide_margin: guideMargin,
     }).throwOnError();
     _catCacheReset();
     res.json(data);

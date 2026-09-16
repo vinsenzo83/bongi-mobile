@@ -174,34 +174,40 @@ alter table rental_cat_offers add column if not exists ticket_number text unique
   default ('R' || lpad(nextval('rental_cat_ticket_seq')::text, 6, '0'));
 
 -- 9. 가이드·MAX 일괄 규칙 (마진율) — 수만 건을 한 번에, 이력 포함
---    MAX = 기준리베이트 × (1 − 마진율) 을 천원 버림, 가이드 = MAX 를 만원 버림
---    기준리베이트: basis='supply' → 리베이트/1.1 (VAT 제외), 'vat' → 리베이트 그대로
+--    기준리베이트: basis='supply' → 리베이트/1.1 (VAT 미포함), 'vat' → 리베이트 그대로
+--    MAX   = 기준 × (1 − p_margin)        천원 버림
+--    가이드 = 기준 × (1 − p_guide_margin)  만원 버림 (p_guide_margin 없으면 MAX 를 만원 버림), MAX 를 넘지 않음
+--    모요 역산(2026-09-16, 102조건): 지원금 ≈ 공급가 × 67% → 가이드 마진 33% 가 모요 수준
 create or replace function rental_cat_apply_margin(
   p_margin numeric, p_basis text default 'supply', p_supplier text default null,
-  p_only_unset boolean default false, p_dry_run boolean default true, p_user text default null)
+  p_only_unset boolean default false, p_dry_run boolean default true, p_user text default null,
+  p_guide_margin numeric default null)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare v_count int; v_sample jsonb;
+declare v_count int; v_sample jsonb; v_label text;
 begin
   if p_margin < 0 or p_margin >= 1 then raise exception 'margin 은 0 이상 1 미만'; end if;
+  if p_guide_margin is not null and (p_guide_margin < p_margin or p_guide_margin >= 1) then raise exception '가이드 마진은 MAX 마진 이상 1 미만'; end if;
   create temp table _calc on commit drop as
     select o.id, o.ticket_number, o.guide_payout old_g, o.max_payout old_m, o.rebate, o.display_fee,
-      (floor(case when p_basis = 'vat' then o.rebate else o.rebate / 1.1 end * (1 - p_margin) / 1000) * 1000)::int new_m
+      case when p_basis = 'vat' then o.rebate::numeric else o.rebate / 1.1 end base
     from rental_cat_offers o
     where o.status <> 'discontinued' and o.rebate is not null and o.rebate > 0
       and (p_supplier is null or o.supplier_id = p_supplier)
       and (not p_only_unset or o.guide_payout is null);
-  alter table _calc add column new_g int;
-  update _calc set new_g = (floor(new_m / 10000.0) * 10000)::int where true;   -- safeupdate: WHERE 필수
+  alter table _calc add column new_m int, add column new_g int;
+  update _calc set new_m = (floor(base * (1 - p_margin) / 1000) * 1000)::int where true;
+  update _calc set new_g = least(new_m, (floor(base * (1 - coalesce(p_guide_margin, p_margin)) / 10000) * 10000)::int) where true;
+  update _calc set new_g = (floor(new_g / 10000.0) * 10000)::int where true;
   select count(*) into v_count from _calc;
   select coalesce(jsonb_agg(to_jsonb(s)), '[]') into v_sample from (select ticket_number, rebate, display_fee, old_g, old_m, new_g, new_m,
     case when display_fee > 0 then new_g / display_fee end free_months from _calc order by random() limit 12) s;
+  v_label := coalesce(p_user, 'rule') || ' · 가이드 마진 ' || round(coalesce(p_guide_margin, p_margin) * 100, 2) || '% · MAX 마진 ' || round(p_margin * 100, 2) || '% (' || p_basis || ')';
   if not p_dry_run then
     update rental_cat_offers o set guide_payout = c.new_g, max_payout = c.new_m, rebate_changed = false,
-      payout_updated_by = coalesce(p_user, 'rule') || ' · 마진 ' || round(p_margin * 100, 2) || '% (' || p_basis || ')', payout_updated_at = now(), updated_at = now()
+      payout_updated_by = v_label, payout_updated_at = now(), updated_at = now()
       from _calc c where o.id = c.id;
     insert into rental_cat_offer_changes (offer_id, change_type, changed_by, before, after)
-      select id, 'payout', coalesce(p_user, 'rule') || ' · 마진 ' || round(p_margin * 100, 2) || '%',
-        jsonb_build_object('guide_payout', old_g, 'max_payout', old_m), jsonb_build_object('guide_payout', new_g, 'max_payout', new_m) from _calc;
+      select id, 'payout', v_label, jsonb_build_object('guide_payout', old_g, 'max_payout', old_m), jsonb_build_object('guide_payout', new_g, 'max_payout', new_m) from _calc;
   end if;
   return jsonb_build_object('matched', v_count, 'dry_run', p_dry_run, 'samples', v_sample);
 end $$;

@@ -180,12 +180,13 @@ async function fetchAgent() {
       </div>
 
       <div class="section">
-        <h2>🧮 가이드·MAX 일괄 규칙 <span style="font-size:11px;color:#94a3b8;font-weight:600">MAX = 리베이트 × (1−마진) 천원 버림 · 가이드 = MAX 만원 버림</span></h2>
+        <h2>🧮 가이드·MAX 일괄 규칙 <span style="font-size:11px;color:#94a3b8;font-weight:600">가이드 = 공급가 × (1−가이드마진) 만원 버림 · MAX = 공급가 × (1−MAX마진) 천원 버림 · 모요 지원금 ≈ 공급가 67% (마진 33%)</span></h2>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select id="rp-m-supplier" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px"></select>
-          <label style="font-size:12px">마진 <input type="number" id="rp-margin" value="10" min="0" max="99" step="0.5" style="width:60px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px;border-radius:6px"> %</label>
+          <label style="font-size:12px">가이드 마진 <input type="number" id="rp-guide-margin" value="33" min="0" max="99" step="0.5" style="width:60px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px;border-radius:6px"> %</label>
+          <label style="font-size:12px">MAX 마진 <input type="number" id="rp-margin" value="10" min="0" max="99" step="0.5" style="width:60px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px;border-radius:6px"> %</label>
           <select id="rp-basis" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:7px;border-radius:6px">
-            <option value="supply">기준: 리베이트 공급가 (VAT 제외)</option>
+            <option value="supply">기준: 리베이트 공급가 (VAT 미포함)</option>
             <option value="vat">기준: 리베이트 VAT 포함</option>
           </select>
           <label style="font-size:12px"><input type="checkbox" id="rp-only-unset"> 미설정 조건만</label>
@@ -1410,6 +1411,6 @@ async function showHistory(productId) {
 
 init();
 </script>
-<script src="/docs/products-rental.js?v=1"></script>
+<script src="/docs/products-rental.js?v=2"></script>
 </body>
 </html>
