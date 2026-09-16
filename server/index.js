@@ -233,7 +233,7 @@ app.get('/view/:file', (req, res) => {
 // ── 인증 ──
 app.use('/api/auth', authRoutes);
 
-// ── 어드민 API (인증 없이 접근 — 어드민 HTML 정적 파일용) ──
+// ── 어드민 API — 라우터 안에서 로그인 + 직원 역할(admin·contract·manager) 검사 ──
 app.use('/api/admin/platform', adminPlatformRoutes);
 
 // ── V5 인센티브 (라우터 내부에서 authenticateJWT/optionalAuth 자체 처리) ──
