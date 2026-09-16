@@ -46,7 +46,30 @@ function cowayCare(raw) {
   if (/1\s*회\s*서비스/.test(s)) return { care_type: 'none', cycle_months: null };
   if (/점검주기|^\d+M$/.test(s)) return { care_type: 'visit', cycle_months: cycle };
   if (/베이직케어|토탈케어|방문관리/.test(s)) return { care_type: 'visit', cycle_months: cycle };
-  return { care_type: null, cycle_months: cycle }; // 스페셜체인지 등 — 원문 care_label 로 보존
+  if (/케어\s*X/i.test(s)) return { care_type: 'none', cycle_months: null };   // 매트리스 스페셜체인지(케어X,교체O) — 방문관리 없음, 교체만
+  return { care_type: null, cycle_months: cycle };
+}
+
+// ─── 코웨이 9월 정책 프로모션 PDF (시트 밖 조건) ───────────────────────────
+// 반값 개월 — PDF 반값표가 시트와 다를 때 PDF 를 따른다 (테라솔U: 시트가 약정별로 한 칸씩 밀려 있음, W·S인덕션: 시트 '-')
+const COWAY_HALF_OVERRIDE = [
+  { re: /^테라솔\s*U/, months: { 60: 12, 72: 18, 84: 24 } },
+  { re: /W\s*인덕션\s*프로|^S\s*인덕션/, months: { 60: 6, 72: 9, 84: 12 } },
+];
+// 타사보상 — '26년 9월 총주문 마감. 반값할인과 중복 불가라 일반(normal) 조건에서만 만든다.
+//   정수기: 약정할인가 10% + 1년간 월 1만원(A477), 얼음 데스크탑 6/7년은 월 2만원
+//   청정기(LG/삼성/위닉스 사용고객)·비데(쿠쿠/노비타/SK/대림/더이누스/유스파 사용고객): 신규렌탈가 10%
+const COWAY_TRADE_IN = [
+  { re: /^아이콘얼음|^얼음정수기 RO/, target: '정수기', extra: (m) => (m >= 72 ? 20000 : 10000), who: '타사 정수기 사용고객' },
+  { re: /^아이콘(2|3|\s*프로)|^노블 (정수기|빌트인)|^엘리트|^워터스탠드|^아이콘 스탠드|^아이스\s*스탠드(3\.0)?$|^아이스스탠드3\.0/, target: '정수기', extra: () => 10000, who: '타사 정수기 사용고객' },
+  { models: ['AP-1519M', 'AP-1523D', 'AP-1023F', 'AP-3021D', 'AP-1623M', 'AP-2023K', 'AP-3024H', 'AP-4025D', 'APD-1023A', 'APD-1025E'], target: '청정기', extra: () => 0, who: 'LG/삼성/위닉스 청정기 사용고객' },
+  { models: ['BAS37-C', 'BAS38-C', 'BAS40-A', 'BAS41-A', 'BAS49-A', 'BA36-B'], target: '비데', extra: () => 0, who: '쿠쿠/노비타/SK/대림/더이누스/유스파 비데 사용고객' },
+];
+function cowayTradeIn(product, model, contract, categoryRaw) {
+  // 품목이 맞아야 한다 — '엘리트' 같은 이름이 매트리스에도 있다
+  const hit = COWAY_TRADE_IN.find((t) => clean(categoryRaw).includes(t.target) && (t.models ? t.models.includes(model) : t.re.test(product)));
+  if (!hit) return null;
+  return { ...hit, extraWon: hit.extra(contract) };
 }
 
 const coway = {
@@ -73,7 +96,9 @@ const coway = {
       if (!model || fee == null) { skipped.push({ row: r + 1, reason: '모델·렌탈료 없음' }); continue; }
       const contract = toMonths(row[c.contract]);
       const care = cowayCare(row[c.care]);
-      const halfMonths = hasVal(row[c.half]) ? toMonths(row[c.half]) : null;
+      const product = clean(row[c.product]);
+      const halfOverride = COWAY_HALF_OVERRIDE.find((o) => o.re.test(product));
+      const halfMonths = halfOverride ? (halfOverride.months[contract] || null) : hasVal(row[c.half]) ? toMonths(row[c.half]) : null;
       const detail = {
         base: toWon(row[c.base]), extra: toWon(row[c.extra]), ice_group: toWon(row[c.ice]),
         hotcold_group: toWon(row[c.hotcold]), promo_trade_in: toWon(row[c.promoTrade]),
@@ -92,7 +117,22 @@ const coway = {
       if (halfMonths) {
         offers.push(makeOffer({
           ...common, offer_type: 'half', offer_label: `${halfMonths}개월 반값`,
-          price_phases: halfPhases(fee, halfMonths), rebate: detail.half,
+          price_phases: halfPhases(fee, halfMonths),
+          // 반값 수수료 칸이 비어 있는 행(PDF 로 반값을 추가한 인덕션 등)은 80% 차감 대상이 아니므로 총수수료
+          rebate: detail.half ?? detail.total,
+          notes: halfOverride ? '반값 개월: 코웨이 9월 정책 프로모션 PDF 반값표 기준(시트와 다름)' : undefined,
+        }));
+      }
+      const trade = cowayTradeIn(product, model, contract, row[c.category]);
+      if (trade) {
+        const tFee = Math.floor((fee * 0.9) / 100) * 100;   // 약정할인가 10% (100원 미만 버림 — 최종 금액은 렌탈사 접수 화면 기준)
+        offers.push(makeOffer({
+          ...common, offer_type: 'trade_in',
+          offer_label: trade.extraWon ? `타사보상 10% + 1년 월 ${trade.extraWon / 10000}만원(A477)` : '타사보상 10%',
+          monthly_fee: tFee,
+          price_phases: trade.extraWon ? [{ from: 1, to: 12, fee: Math.max(0, tFee - trade.extraWon) }] : [],
+          rebate: detail.trade_in ?? detail.total,
+          notes: `대상: ${trade.who} · 물마크 번호 필수(중복 시 수수료 100% 되물림) · 반값 중복 불가 · 9월 총주문 마감`,
         }));
       }
     }
@@ -115,6 +155,21 @@ const cowayPromo = {
 // ------------------------------------------------------------------
 // 쿠쿠 · 쿠쿠타사보상
 // ------------------------------------------------------------------
+// 쿠쿠 타사보상 시트 모델칸 문구 — "※ 의무 3 / 5 / 6 / 7 년 : 12회차 1만원 추가 할인", "의무 3 / 5년 : 12회차 … 의무 6 / 년 : 16회차 …"
+//   '6 / 년' 처럼 뒤 연수가 빠진 표기는 앞 문구(3/5/6/7년)와 짝을 맞춰 7년까지로 본다
+export function extraPhase(cell, obligationMonths, fee) {
+  const text = String(cell).replace(/\s+/g, ' ');
+  if (!obligationMonths || !/회차\s*1만원/.test(text)) return [];
+  const years = obligationMonths / 12;
+  const re = /의무\s*([\d\s/]+?)\s*\/?\s*년\s*:?\s*(\d+)\s*회차\s*1만원/g;
+  for (const m of text.matchAll(re)) {
+    const ys = m[1].split('/').map((v) => parseInt(v, 10)).filter(Boolean);
+    if (/\d\s*\/\s*년/.test(m[0])) { const last = ys[ys.length - 1]; if (last) ys.push(last + 1); }
+    if (ys.includes(years)) return [{ from: 1, to: parseInt(m[2], 10), fee: Math.max(0, fee - 10000) }];
+  }
+  return [];
+}
+
 function cuckooParse(rows, ctx, { tradeInSheet }) {
   const offers = [];
   const skipped = [];
@@ -187,7 +242,7 @@ function cuckooParse(rows, ctx, { tradeInSheet }) {
       contract_months: contract, obligation_months: obligation, ownership_months: toMonths(row[c.ownership]),
       care_type: careType, care_label: careRaw, cycle_months: cycle,
       offer_type: offerType, offer_tags: [...new Set(tags)], offer_label: label,
-      monthly_fee: fee, price_phases: halfM ? halfPhases(fee, parseInt(halfM[1], 10)) : [],
+      monthly_fee: fee, price_phases: halfM ? halfPhases(fee, parseInt(halfM[1], 10)) : extraPhase(String(row[c.model] || ''), obligation, fee),
       rebate: toWon(row[c.rebate]), rebate_basis: 'amount', rebate_detail: { total: toWon(row[c.rebate]), kind },
       notes: note, source: { sheet: ctx.sheetName, row: r + 1 },
     }));

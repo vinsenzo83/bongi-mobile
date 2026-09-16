@@ -155,13 +155,16 @@ export function makeOffer(o) {
     rebate_rate: o.rebate_rate ?? null,
     rebate_detail: o.rebate_detail || null,     // 원본 수수료 컬럼들(기본/추가/타사보상/반값 등)
     status: o.status || 'active',               // active | paused | discontinued
+    valid_from: o.valid_from ?? null,           // 엑셀에 적힌 판매·프로모션 기간 (예: 9월 월간 프로모션 → 2026-09-30)
+    valid_to: o.valid_to ?? null,
     notes: clean(o.notes) || null,
     source: o.source,                           // { sheet, row }  row = 엑셀 행번호(1-based)
   };
   const errors = [];
   if (!offer.supplier) errors.push('supplier');
   if (!offer.model_code && !offer.product_name) errors.push('model/product');
-  if (!offer.contract_months && offer.offer_type !== 'purchase') errors.push('contract_months');
+  // 약정이 없는 구독형(택배 주기 상품 등)은 어댑터가 '약정없음' 태그로 명시해야 통과
+  if (!offer.contract_months && offer.offer_type !== 'purchase' && !offer.offer_tags.includes('약정없음')) errors.push('contract_months');
   if (offer.monthly_fee == null && offer.offer_type !== 'purchase') errors.push('monthly_fee');
   if (!offer.source?.sheet || !offer.source?.row) errors.push('source');
   if (offer.care_type && !CARE_TYPES.includes(offer.care_type)) errors.push('care_type');

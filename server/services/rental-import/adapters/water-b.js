@@ -76,7 +76,9 @@ function skParse(rows, ctx) {
     const row = rows[i];
     if (!nonEmpty(row)) continue;
     const r = i + 1;
-    if (hasVal(row[c.promo])) bText = clean(row[c.promo]);
+    // B열 프로모션 안내는 병합셀(예: B278:B325 공기청정기 전체)이라 첫 행에만 값이 있다 → 병합 범위 전체에 적용
+    const bCell = ctx.mergedValue ? ctx.mergedValue(i, c.promo) : row[c.promo];
+    if (hasVal(bCell)) bText = clean(bCell);
     if (hasVal(row[c.model])) {
       const cl = lines(row[c.model]);
       group = null;
@@ -87,7 +89,7 @@ function skParse(rows, ctx) {
         const codeLine = cl.find((l) => CODE_LINE.test(l.replace(/\s+/g, '')) && !HANGUL.test(l));
         const nameLines = cl.filter((l) => l !== codeLine && !/^\d/.test(l) && (HANGUL.test(l) || /^\[/.test(l)));
         block = { code: codeLine ? codeLine.replace(/\s+/g, '') : null, name: nameLines.join(' ') || codeLine || null, program: null, programLines: [] };
-        if (!hasVal(row[c.promo])) bText = null; // 다른 모델 블록으로 B열 안내가 번지지 않게
+        if (!hasVal(bCell)) bText = null; // 다른 모델 블록으로 B열 안내가 번지지 않게 (병합 범위 밖일 때만)
       }
     }
     if (hasVal(row[c.detail])) group = clean(row[c.detail]);
@@ -132,6 +134,17 @@ function skParse(rows, ctx) {
     } else if (/할인/.test(g) || /원\s*할인/.test(text)) {
       offerType = 'promo'; tags.push('discount');
     }
+    // B열 안내에만 반값이 적힌 블록 (공기청정기 "의무5,6,7년 6개월 반값(1~6개월차)", WPUJCC104 "5년 6개월(1~6), 6·7년 12개월(1~12)",
+    // BIDS51D "5년 6개월반값할인") — 할인 행에만 반값 구간을 붙이고, 같은 블록 일반 행은 확인필요로 남긴다
+    const bHalf = offerType !== 'half' && offerType !== 'purchase' ? skHalfFromNotice(bText, toMonths(row[c.oblig])) : null;
+    let extraNote = null;
+    if (bHalf && offerType === 'promo') {
+      offerType = 'half';
+      phases = halfPhases(fee, bHalf.to - bHalf.from + 1, bHalf.from);
+      tags.push(`반값${bHalf.to - bHalf.from + 1}개월`);
+    } else if (bHalf && offerType === 'normal') {
+      extraNote = '확인필요: B열 반값 안내가 일반 행에도 적용되는지';
+    }
 
     offers.push(makeOffer({
       supplier: 'SK매직', brand: 'SK매직', category_raw: null,
@@ -142,11 +155,30 @@ function skParse(rows, ctx) {
       offer_type: offerType, offer_tags: tags, offer_label: [program, g].filter(Boolean).join(' / '),
       monthly_fee: monthly, price_phases: phases, prepay_amount: prepay, total_fee: total,
       rebate, rebate_basis: 'amount', rebate_detail: { total: row[c.rebate] },
-      notes: bText ? `프로모션안내: ${bText}` : null,
+      notes: [bText ? `프로모션안내: ${bText}` : null, extraNote].filter(Boolean).join(' / ') || null,
       source: { sheet: ctx.sheetName, row: r },
     }));
   }
   return { offers, skipped };
+}
+
+/** SK매직 B열 안내 문구 → 이 의무기간의 반값 구간 { from, to } */
+export function skHalfFromNotice(text, obligationMonths) {
+  if (!text || !obligationMonths || !/반값|\(\s*\d+\s*~\s*\d+\s*\)/.test(text)) return null;
+  const years = obligationMonths / 12;
+  const t = String(text).replace(/\s+/g, ' ');
+  // "5년 6개월(1~6), 6,7년 12개월(1~12)" / "의무5,6,7년 6개월 반값(1~6개월차)" / "5년 6개월반값할인"
+  const re = /(?:의무\s*)?((?:\d\s*[,·/]\s*)*\d)\s*년\s*(?:의무)?\s*(\d+)\s*개월\s*(?:반값)?\s*(?:할인)?\s*(?:\(\s*(\d+)\s*~\s*(\d+)\s*(?:개월차|회차|차월)?\s*\))?/g;
+  for (const m of t.matchAll(re)) {
+    const ys = m[1].split(/[,·/]/).map((v) => parseInt(v, 10));
+    if (!ys.includes(years)) continue;
+    const n = parseInt(m[2], 10);
+    const from = m[3] ? parseInt(m[3], 10) : 1;
+    const to = m[4] ? parseInt(m[4], 10) : from + n - 1;
+    if (!/반값/.test(t) && !m[3]) continue;   // 반값 표기도 회차 표기도 없으면 반값으로 보지 않는다
+    return { from, to };
+  }
+  return null;
 }
 
 // ==================================================================
@@ -331,8 +363,10 @@ function luhensParse(rows, ctx) {
       product_name: row[c.model], model_code: row[c.model],
       contract_months: toMonths(row[c.oblig]), obligation_months: toMonths(row[c.oblig]), ownership_months: toMonths(row[c.own]),
       care_type: care, care_label: cyc, cycle_months: cycle ? +cycle : null,
-      offer_type: offerType, offer_label: label, monthly_fee: fee, price_phases: phases, prepay_amount: prepay,
-      rebate, rebate_basis: 'amount', rebate_detail: { total: row[c.rebate] }, notes: note,
+      // 선납(8%) = 전 기간 렌탈료를 8% 할인해 한 번에 내는 조건 — 월요금 칸은 정상가라 상담원이 월 납부로 오해하지 않게 표시
+      offer_type: offerType, offer_label: offerType === 'prepay' ? `${label} (전 기간 일시 선납)` : label, monthly_fee: fee, price_phases: phases, prepay_amount: prepay,
+      rebate, rebate_basis: 'amount', rebate_detail: { total: row[c.rebate] },
+      notes: offerType === 'prepay' ? [note, '선납 후 월 납부 0원'].filter(Boolean).join(' / ') : note,
       source: { sheet: ctx.sheetName, row: r },
     }));
   }
@@ -361,7 +395,8 @@ function cumingName(raw) {
 function cumingCare(block) {
   const v = block.variant || '';
   let care = block.care; let cycle = block.cycle;
-  if (!care && /필터형/.test(v)) { care = 'self'; cycle = cycle || +((v.match(/(\d+)\s*개월/) || [])[1]) || null; }
+  // "필터형(12개월 주기)" = 고객이 필터를 갈아 끼우는 자가관리, 주기는 괄호 안 개월
+  if (/필터형/.test(v)) { care = 'self'; cycle = +((v.match(/(\d+)\s*개월/) || [])[1]) || cycle || null; }
   if (!care && /단독형/.test(v)) care = 'visit';
   const label = block.careLabel || (/필터형|단독형|관리형|셀프형/.test(v) ? v : null);
   return { care_type: care, care_label: label, cycle_months: cycle };
@@ -384,7 +419,7 @@ function cumingParse(rows, ctx) {
       const raw = String(row[c.name]);
       const { code, desc } = cumingName(raw);
       const flat = clean(raw);
-      const care = /셀프|자가관리/.test(flat) ? 'self' : /관리형|관리/.test(flat) ? 'visit' : null;
+      const care = /관리\s*없음/.test(flat) ? 'none' : /셀프|자가관리/.test(flat) ? 'self' : /관리형|관리/.test(flat) ? 'visit' : null;
       const cyc = (flat.match(/(\d+)\s*개월\s*(?:주기\s*)?관리/) || [])[1];
       const slurry = flat.match(/\(([^()]*포함)\s*\/\s*([^()]*미포함)\)/);
       block = { code, desc: code ? desc : null, name: code ? (desc || code) : flat, care, cycle: cyc ? +cyc : null, variant: null, careLabel: null, slurry: slurry ? [slurry[1].trim(), slurry[2].trim()] : null };
@@ -406,8 +441,27 @@ function cumingParse(rows, ctx) {
     }
     const feeRaw = row[c.fee]; const rebate = toWon(row[c.rebate]);
     if (!hasVal(feeRaw) && rebate == null) { skipped.push({ row: r, reason: '빈행/안내' }); continue; }
-    if (!contract) { skipped.push({ row: r, reason: '약정기간 미기재(해석불가)' }); continue; }
     const promo = hasVal(row[c.promo]) ? clean(row[c.promo]) : null;
+    if (!contract) {
+      // 약정 칸이 없는 행 — 결합가 행("결합시")·택배형 주기 상품(클린샤워 1/2/3개월)은 조건으로 살리고, 그 밖은 해석불가로 남긴다
+      const rowText = row.map((v) => clean(v)).filter(Boolean).join(' ');
+      const fee0 = toWon(typeof feeRaw === 'string' ? feeRaw.split('/')[0] : feeRaw);
+      const bundle = /결합/.test(rowText);
+      const cyc = rowText.match(/(\d+)\s*개월\s*(?:주기)?/);
+      if (fee0 != null && rebate != null && (bundle || /택배|주기/.test(rowText))) {
+        offers.push(makeOffer({
+          supplier: '큐밍', brand: null, category_raw: cat, product_name: block.name, model_code: block.code,
+          variant_code: [block.desc, block.variant, rowText.slice(0, 60)].filter(Boolean).join(' / '),
+          contract_months: null, obligation_months: null,
+          ...(bundle ? cumingCare(block) : { care_type: 'delivery', care_label: rowText.slice(0, 40), cycle_months: cyc ? +cyc[1] : null }),
+          offer_type: bundle ? 'bundle' : 'normal', offer_tags: bundle ? ['결합시', '약정없음'] : ['약정없음'], offer_label: bundle ? '결합시' : (cyc ? `${cyc[1]}개월 주기 택배형` : promo),
+          monthly_fee: fee0, rebate, rebate_basis: 'amount', rebate_detail: { total: row[c.rebate] },
+          notes: '확인필요: 약정기간 미기재 행', source: { sheet: ctx.sheetName, row: r },
+        }));
+        continue;
+      }
+      skipped.push({ row: r, reason: '약정기간 미기재(해석불가)' }); continue;
+    }
     const fees = typeof feeRaw === 'string' && feeRaw.includes('/') ? feeRaw.split('/').map(toWon) : [toWon(feeRaw)];
     fees.forEach((fee, k) => {
       const phases = promo ? (halfFromText(promo, fee) || []) : [];
@@ -422,7 +476,7 @@ function cumingParse(rows, ctx) {
         offer_type: phases.length ? 'half' : 'normal', offer_label: promo,
         monthly_fee: fee, price_phases: phases,
         rebate, rebate_basis: 'amount', rebate_detail: { total: row[c.rebate] },
-        notes: promo && !phases.length ? `프로모션원문: ${promo}` : (/^\d+\s*M/i.test(promo || '') ? `프로모션코드 ${promo} → 반값으로 해석(추정)` : null),
+        notes: promo && !phases.length ? `프로모션원문: ${promo}` : (/^\d+\s*M/i.test(promo || '') ? `확인필요: 프로모션코드 ${promo} → 반값으로 해석` : null),
         source: { sheet: ctx.sheetName, row: r },
       }));
     });
@@ -455,8 +509,9 @@ function ubusWaterParse(rows, ctx) {
     const isPurchase = /구매/.test(rule || '') || /구매/.test(obligRaw);
     if (!isPurchase && !toMonths(obligRaw)) { skipped.push({ row: r, reason: `약정기간 미기재(${obligRaw || '-'})` }); continue; }
     const svc = clean(row[c.svc]);
-    const care = /자가/.test(careRaw) ? 'self' : /방문/.test(careRaw) ? 'visit' : (careRaw === '' || !hasVal(row[c.care])) ? 'none' : null;
-    const cyc = (String(rule || '').match(/(\d+)\s*개월\s*방문/) || svc.match(/^(\d+)\s*개월/) || svc.match(/(\d+)\s*개월\s*(?:마다|주기)/) || [])[1];
+    const care = /자가|셀프/.test(careRaw) ? 'self' : /방문/.test(careRaw) ? 'visit' : (careRaw === '' || !hasVal(row[c.care])) ? 'none' : null;
+    // "셀프케어(12개월택배)" 처럼 주기 칸 안에 개월이 있으면 그 값
+    const cyc = (careRaw.match(/(\d+)\s*개월/) || `${name || ''} ${rule || ''}`.match(/(\d+)\s*개월\s*택배/) || String(rule || '').match(/(\d+)\s*개월\s*방문/) || svc.match(/^(\d+)\s*개월/) || svc.match(/(\d+)\s*개월\s*(?:마다|주기)/) || [])[1];
     let offerType = 'normal'; let phases = []; const tags = [];
     const half = promo ? halfFromText(promo, fee) : null;
     if (isPurchase) offerType = 'purchase';
@@ -482,6 +537,26 @@ function ubusWaterParse(rows, ctx) {
 // ==================================================================
 // LG구독(정수기) — 약정 블록 × 단품/신규결합/기존결합 가로형
 // ==================================================================
+// LG구독 정수기 9월 프로모션 — 시트에 붙은 이미지(전사판촉·전용판촉) + 시트 R5~R7 노트
+//   ① 반값(전사판촉): 반값 가능 모델은 '적용 수수료' 칸이 반값 차감 후 수수료다 → 이 모델들의 조건은 반값 조건으로 만든다
+//   ② 타사보상(전용판촉, 1년차 1~12회차 월 할인, 6·5년 약정만, 수동심사)
+//   ③ 전용 모델 할인(1년차): WU523AS 월 1만원 / 상하좌우 자가관리 12개월 반값(1~12회차)
+//   반값 금액은 시트 관례대로 100원 단위 반올림 (36,900 → 18,500)
+const LG_WATER_HALF = [
+  { re: /^WD722/, months: (m) => (m >= 60 ? 12 : 6), from: 2 },
+  { re: /^WD72[34]/, months: () => 12, from: 2 },
+  { re: /^WU[89]23|^WD524|^WD[35]23/, months: () => 6, from: 2 },
+  { re: /^WD520MC/, months: () => 6, from: 2 },
+  { re: /^WD[35]25/, months: () => 12, from: 1, selfOnly: true },
+];
+const LG_WATER_TRADE_IN = [
+  { re: /^WD72[234]/, won: 20000 },
+  { re: /^WU[89]23|^WU523|^WD524|^WD[35]23|^WD520VCT|^WS51/, won: 10000 },
+  { re: /^WD520MC/, won: 5000 },
+];
+const LG_WATER_EXCLUSIVE = [{ re: /^WU523AS/, won: 10000 }];
+const round100 = (v) => Math.round(v / 100) * 100;
+
 function lgWaterParse(rows, ctx) {
   const offers = []; const skipped = [];
   let header = null; let sub = null; let blocks = []; let c = null;
@@ -510,6 +585,10 @@ function lgWaterParse(rows, ctx) {
     const care = /자가/.test(cycRaw) ? 'self' : toMonths(cycRaw) ? 'visit' : null;
     const cycle = care === 'visit' ? toMonths(cycRaw) : null;
     const name = [clean(row[c.line]), clean(row[c.g1])].filter(Boolean).join(' ');
+    const code = clean(row[c.model]).replace(/\s/g, '');
+    const half = LG_WATER_HALF.find((h) => h.re.test(code) && (!h.selfOnly || care === 'self'));
+    const exclusive = LG_WATER_EXCLUSIVE.find((x) => x.re.test(code));
+    const tradeIn = LG_WATER_TRADE_IN.find((x) => x.re.test(code));
     let made = 0;
     for (const b of blocks) {
       const x = b.col;
@@ -528,19 +607,41 @@ function lgWaterParse(rows, ctx) {
         const fee = toWon(row[v.fee]);
         if (fee == null) continue;
         const fee1 = v.fee1 != null ? toWon(row[v.fee1]) : null;
-        offers.push(makeOffer({
+        const kindLabel = v.type === 'bundle' ? (v.tags[0] === 'new' ? `신규결합(${row[c.newRate]})` : `기존결합(${row[c.oldRate]})`) : '단품';
+        let phases = fee1 != null && fee1 !== fee ? [{ from: 1, to: 12, fee: fee1 }] : [];
+        let type = v.type; let label = kindLabel; const notes = [];
+        if (exclusive) {
+          phases = [{ from: 1, to: 12, fee: Math.max(0, fee - exclusive.won) }];
+          label = `${kindLabel} · 전용모델 할인 1년 월 ${exclusive.won / 10000}만원`;
+        }
+        if (half) {
+          const n = half.months(b.contract); const to = half.from + n - 1;
+          phases = [{ from: half.from, to, fee: round100(fee / 2) }];
+          type = 'half';
+          label = `${kindLabel} · ${n}개월 반값(${half.from}~${to}회차)`;
+          notes.push('반값 가능 모델 — 수수료는 시트 "적용 수수료"(반값 차감 후)');
+        }
+        const common = {
           supplier: 'LG구독', brand: 'LG전자', category_raw: row[c.cat],
           product_name: name, model_code: row[c.model], variant_code: clean(row[c.g2]) || null,
           contract_months: b.contract, obligation_months: b.oblig,
           care_type: care, care_label: cycRaw, cycle_months: cycle,
-          offer_type: v.type, offer_tags: v.tags,
-          offer_label: v.type === 'bundle' ? (v.tags[0] === 'new' ? `신규결합(${row[c.newRate]})` : `기존결합(${row[c.oldRate]})`) : '단품',
-          monthly_fee: fee, price_phases: fee1 != null && fee1 !== fee ? [{ from: 1, to: 12, fee: fee1 }] : [],
-          rebate: toWon(row[v.reb]), rebate_basis: 'amount',
+          monthly_fee: fee, rebate: toWon(row[v.reb]), rebate_basis: 'amount',
           rebate_detail: { applied: row[v.reb], basic: v.basic != null ? row[v.basic] : null },
           source: { sheet: ctx.sheetName, row: r },
-        }));
+        };
+        offers.push(makeOffer({ ...common, offer_type: type, offer_tags: v.tags, offer_label: label, price_phases: phases, notes: notes.join(' / ') || null }));
         made++;
+        // ② 타사보상 — 6·5년 약정만, 1~12회차 월 할인. 반값과 겹치는지·수수료 변동은 이미지에 없다
+        if (tradeIn && (b.contract === 72 || b.contract === 60)) {
+          offers.push(makeOffer({
+            ...common, offer_type: 'trade_in', offer_tags: [...v.tags, 'trade_in'],
+            offer_label: `${kindLabel} · 타사보상 1년 월 ${tradeIn.won / 10000}만원`,
+            price_phases: [{ from: 1, to: 12, fee: Math.max(0, fee - tradeIn.won) }],
+            notes: '수동심사 · 확인필요: 반값과 중복 여부, 타사보상 적용 시 수수료 변동 여부',
+          }));
+          made++;
+        }
       }
     }
     if (!made) skipped.push({ row: r, reason: '요금 없음' });

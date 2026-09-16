@@ -17,11 +17,21 @@ export function detectFileKind(sheetNames) {
   return /렌탈사별 수수료율|LG구독냉장고|LG헬로|스마트/.test(bases) ? 'appliance' : 'water';
 }
 
+/** (행 index, 열 index) 가 병합셀 안이면 병합 첫 칸 값, 아니면 그 칸 값 */
+function mergedValueFn(rows, merges) {
+  return (r, c) => {
+    const m = merges.find((x) => r >= x.s.r && r <= x.e.r && c >= x.s.c && c <= x.e.c);
+    return m ? rows[m.s.r]?.[m.s.c] ?? null : rows[r]?.[c] ?? null;
+  };
+}
+
 export function parseRentalWorkbook(input, { month = null, fileKind = null } = {}) {
   const wb = xlsx.read(input, { type: Buffer.isBuffer(input) ? 'buffer' : 'array' });
   const sheetsRows = {};
+  const sheetsMerges = {};
   for (const name of wb.SheetNames) {
     const ws = wb.Sheets[name];
+    sheetsMerges[name] = ws['!merges'] || [];   // 병합셀 — 값은 첫 칸에만 있으므로 어댑터가 범위를 보고 아래 행에 적용한다
     // 항상 A1 기준으로 읽는다 → rows[i] = 엑셀 i+1행, rows[r][0] = A열 (B1·B2 에서 시작하는 시트 행번호 밀림 방지)
     const ref = ws['!ref'] ? xlsx.utils.decode_range(ws['!ref']) : null;
     sheetsRows[name] = ref
@@ -59,7 +69,7 @@ export function parseRentalWorkbook(input, { month = null, fileKind = null } = {
 
     // 어댑터가 rows 를 변형(forwardFill)할 수 있으므로 복사본 전달
     const copy = rows.map((r) => (r ? r.slice() : r));
-    const { offers: sheetOffers = [], skipped = [] } = adapter.parse(copy, { sheetName: name, month, supplierRules, file });
+    const { offers: sheetOffers = [], skipped = [] } = adapter.parse(copy, { sheetName: name, month, supplierRules, file, merges: sheetsMerges[name], mergedValue: mergedValueFn(rows, sheetsMerges[name]) });
     const covered = new Set();
     const keys = new Map();
     for (const o of sheetOffers) {

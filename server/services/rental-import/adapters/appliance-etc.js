@@ -121,6 +121,7 @@ const smart = {
       if (i <= hdr + 1) { skipped.push({ row: r, reason: i < hdr ? '제목·색상범례' : '헤더' }); continue; }
       const state = clean(row[c.state]);
       const special = clean(row[c.gift + 1]) === '특가';
+      const noCms = c.cms != null && /^X$/i.test(clean(row[c.cms]));   // CMS(자동이체) 불가 = 카드결제만
       let made = 0;
       for (const t of terms) {
         const m = fee(row[t.fee]);
@@ -131,10 +132,11 @@ const smart = {
           product_name: row[c.name], model_code: row[c.model],
           contract_months: t.months, obligation_months: t.months,
           offer_type: special ? 'special' : 'normal', offer_label: special ? '특가' : null,
+          offer_tags: noCms ? ['CMS불가'] : [],
           monthly_fee: m, total_fee: total,
           ...rebateFields(rule, { monthly_fee: m, contract_months: t.months, total_fee: total }),
           status: state === '일시중단' ? 'paused' : 'active',
-          notes: joinNotes(state && state !== '운영' ? `상태:${state}` : '', row[c.gift] ? `사은품:${clean(row[c.gift])}` : '', row[c.note], row[c.expose] ? `노출:${clean(row[c.expose])}` : '', row[c.as] ? `AS:${clean(row[c.as])}` : ''),
+          notes: joinNotes(noCms ? '카드결제만(CMS 불가)' : '',state && state !== '운영' ? `상태:${state}` : '', row[c.gift] ? `사은품:${clean(row[c.gift])}` : '', row[c.note], row[c.expose] ? `노출:${clean(row[c.expose])}` : '', row[c.as] ? `AS:${clean(row[c.as])}` : ''),
           source: { sheet: ctx.sheetName, row: r },
         }));
         made++;
@@ -222,10 +224,13 @@ const rentana = {
         return;
       }
       if (!hasVal(row[c.model]) && !hasVal(row[c.name])) { skipped.push({ row: r, reason: '서브헤더(수거비 구분)' }); return; }
+      // 수거비·설치보장·비고 등은 병합셀(H142:H253 등)이라 첫 행에만 값이 있다 → 병합 범위 값을 읽는다
+      const mv = (col) => (col == null ? null : ctx.mergedValue ? ctx.mergedValue(i, col) : row[col]);
       for (const k of ['brand', 'cat', 'target', 'as']) {
         if (c[k] == null) continue;
-        if (hasVal(row[c[k]])) last[k] = clean(row[c[k]]);
+        if (hasVal(mv(c[k]))) last[k] = clean(mv(c[k]));
       }
+      const pickupVal = mv(c.pickup); const noteVal = mv(c.note); const infoVal = mv(c.info);
       const name = clean(row[c.name]);
       const special = section.includes('특가') || name.includes('특가');
       let made = 0;
@@ -239,7 +244,7 @@ const rentana = {
           offer_type: special ? 'special' : 'normal', offer_label: special ? (section.includes('특가') ? section : '한정수량특가') : null,
           monthly_fee: m, ...rebateFields(rule, { monthly_fee: m, contract_months: t.months }),
           status: discontinued ? 'discontinued' : 'active',
-          notes: joinNotes(last.target ? `접수대상:${last.target}` : '', last.as ? `AS:${last.as}` : '', c.pickup != null && hasVal(row[c.pickup]) ? `수거비:${clean(row[c.pickup])}` : '', c.note != null ? row[c.note] : '', discontinued ? '단종 구역' : ''),
+          notes: joinNotes(last.target ? `접수대상:${last.target}` : '', last.as ? `AS:${last.as}` : '', hasVal(pickupVal) ? `수거비:${clean(pickupVal)}` : '', noteVal, hasVal(infoVal) ? clean(infoVal) : '', discontinued ? '단종 구역' : ''),
           source: { sheet: ctx.sheetName, row: r },
         }));
         made++;
@@ -270,7 +275,8 @@ const carrier = {
     const offers = []; const skipped = [];
     const rule = findRule(ctx.supplierRules, ['캐리어'], '일반');
     const LABELS = { cat: '품목', group: '모델구분', grade: '등급', area: '사용면적', model: '모델명', care: '케어', term: '계약기간', fee: '월렌탈료', install: '기본설치비', note: '비고' };
-    const sides = [{ start: 0, end: 10 }, { start: 11, end: 21 }].map((s) => ({ ...s, c: null, st: {} }));
+    // 좌 A~K(0~10), 우 L~V(11~21) — 끝 열(K·V 비고)까지 포함해야 "* 정액 상품" 안내가 들어온다
+    const sides = [{ start: 0, end: 11 }, { start: 11, end: 22 }].map((s) => ({ ...s, c: null, st: {} }));
     rows.forEach((row, i) => {
       if (!nonEmpty(row)) return;
       const r = i + 1;
@@ -295,9 +301,11 @@ const carrier = {
           product_name: joinNotes(st.cat, st.group, st.grade, st.area), model_code: st.model,
           contract_months: months, obligation_months: months,
           care_type: care.care_type, care_label: st.care, cycle_months: care.cycle_months,
-          offer_type: 'normal', offer_tags: care.tags,
+          offer_type: 'normal', offer_tags: /정액/.test(clean(st.note)) ? [...care.tags, '정액'] : care.tags,
           monthly_fee: m, ...rebateFields(rule, { monthly_fee: m, contract_months: months }),
-          notes: joinNotes(st.install ? `기본설치비(면제):${clean(st.install)}` : '', st.note, side.start === 0 ? '' : '전문가전 표', '캐치서비스 건당 5,000원은 별도 규칙'),
+          notes: joinNotes(st.install ? `기본설치비(면제):${clean(st.install)}` : '', st.note, side.start === 0 ? '' : '전문가전 표', '캐치서비스 건당 5,000원은 별도 규칙',
+            /정액/.test(clean(st.note)) ? '확인필요: 정액 상품 — 수수료 금액 미기재(총렌탈료 11% 아닐 수 있음)' : '',
+            months === 72 ? '72개월 계약은 무상AS 60개월까지' : ''),
           source: { sheet: ctx.sheetName, row: r },
         }));
         made++;
@@ -339,12 +347,17 @@ const cesco = {
       const months = toMonths(row[c.term]);
       if (!base || !months) { skipped.push({ row: r, reason: '렌탈료/의무기간 없음' }); return; }
       const name = clean(row[c.name]);
-      const paren = (name.match(/\(([^)]+)\)\s*$/) || [])[1] || null;
-      const offerType = !paren || paren === '단품' ? 'normal' : 'bundle';
+      // 결합 표기가 "(결합)" 끝괄호 또는 "…판테온(25평형)_결합_화이트" 형태 둘 다 있다
+      const paren = (name.match(/\(([^)]+)\)\s*$/) || [])[1]?.replace(/\s/g, '') === '결합' || /_결합(_|$)/.test(name)
+        ? '결합' : ((name.match(/\(([^)]+)\)\s*$/) || [])[1] || null);
+      const offerType = paren === '결합' ? 'bundle' : !paren || paren === '단품' ? 'normal' : 'bundle';
       const cycle = toMonths(row[c.cycle]);
       const label = clean(row[c.note]);
       const extra = clean(row[extraCol]);
       const ended = /운영종료|단종/.test(label);
+      // "9월 렌탈료 할인", "해충 시즌 (3~9월)", "9월 3천원 추가할인" — 이번 달 한정
+      const monthOnly = /9월|시즌\s*\(\s*\d+\s*~\s*9월\s*\)/.test(`${label} ${extra}`);
+      const incentive = /추가\s*인센티브/.test(`${label} ${extra}`);
       const common = {
         supplier: '세스코', brand: '세스코', category_raw: row[c.gubun], product_name: name,
         model_code: row[c.model], variant_code: paren,
@@ -354,24 +367,29 @@ const cesco = {
         source: { sheet: ctx.sheetName, row: r },
       };
       const baseNotes = joinNotes(label, extra, row[c.code] ? `접수코드:${clean(row[c.code])}` : '');
+      const tagsFor = () => [...(paren && offerType === 'bundle' ? [paren] : []), ...(incentive ? ['추가인센티브'] : [])];
+      const incentiveNote = incentive ? '확인필요: 추가 인센티브 금액 미기재' : '';
       offers.push(makeOffer({
-        ...common, offer_type: offerType, offer_tags: paren && offerType === 'bundle' ? [paren] : [],
-        monthly_fee: base, ...rebateFields(rule, { monthly_fee: base, contract_months: months }), notes: baseNotes,
+        ...common, offer_type: offerType, offer_tags: tagsFor(),
+        monthly_fee: base, ...rebateFields(rule, { monthly_fee: base, contract_months: months }), notes: joinNotes(baseNotes, incentiveNote),
       }));
       const half = cescoHalf(label);
       if (half) {
         offers.push(makeOffer({
-          ...common, offer_type: 'half', offer_tags: paren && offerType === 'bundle' ? [paren] : [], offer_label: label,
+          ...common, offer_type: 'half', offer_tags: tagsFor(), offer_label: label,
           monthly_fee: base, price_phases: [{ from: half.from, to: half.to, fee: Math.round(base / 2) }],
-          ...rebateFields(rule, { monthly_fee: base, contract_months: months }), notes: joinNotes(extra),
+          ...rebateFields(rule, { monthly_fee: base, contract_months: months }),
+          valid_to: monthOnly ? '2026-09-30' : null,
+          notes: joinNotes(extra, incentiveNote, /혜택강화/.test(label) ? '확인필요: 반값 시작 회차(다른 세스코 프로모션은 2개월차부터)' : ''),
         }));
       }
       const disc = fee(row[c.disc]);
       if (disc && disc < base) {
         offers.push(makeOffer({
-          ...common, offer_type: 'promo', offer_tags: paren && offerType === 'bundle' ? [paren] : [], offer_label: label || '렌탈료 할인',
+          ...common, offer_type: 'promo', offer_tags: tagsFor(), offer_label: label || '렌탈료 할인',
           monthly_fee: disc, ...rebateFields(rule, { monthly_fee: disc, contract_months: months }),
-          notes: joinNotes(`기준 렌탈료 ${base}`, extra, '리베이트=할인 렌탈료×6 (기준요금 적용 여부 미확인)'),
+          valid_to: monthOnly ? '2026-09-30' : null,
+          notes: joinNotes(`기준 렌탈료 ${base}`, extra, incentiveNote, '확인필요: 수수료 기준(할인가×6 vs 정상가×6)'),
         }));
       }
     });
@@ -399,14 +417,18 @@ const bs = {
       const months = toMonths(row[c.term]);
       if (!m || !months) { skipped.push({ row: r, reason: '렌탈료/기간 없음' }); return; }
       const name = clean(row[c.name]);
-      const isConsole = /플스|플레이스테이션|PS5|엑스박스|XBOX/i.test(name);
+      // 게임기만 — '플스'는 "래플스 침대"에, 'PS5'는 냉장고 모델 "M451PS53"에 걸려 8% 로 잘못 계산됐다
+      const isConsole = /플레이스테이션|엑스박스|닌텐도|(?<![A-Za-z0-9])(PS5|PS4|XBOX)(?![A-Za-z0-9])/i.test(name) || /게임기|콘솔/.test(clean(row[c.cat]));
+      const bsText = joinNotes(row[c.note], row[c.gift]) || '';
+      const bsCare = /(1년에\s*1회|연\s*1회)\s*방문|케어서비스\s*총\s*\d+회/.test(bsText) ? { care_type: 'visit', cycle_months: 12 }
+        : /연\s*1회[^/]*택배\s*발송/.test(bsText) ? { care_type: 'delivery', cycle_months: 12 } : {};
       const rule = isConsole && console_?.subtype === '플스,엑박' ? console_ : general;
       const total = toWon(row[c.total]);
       const state = clean(row[c.state]);
       offers.push(makeOffer({
         supplier: 'BS', brand: clean(row[c.brand]) || null, category_raw: row[c.cat],
         product_name: name, model_code: row[c.model], variant_code: hasVal(row[c.code]) ? String(row[c.code]) : null,
-        contract_months: months, obligation_months: months, offer_type: 'normal',
+        contract_months: months, obligation_months: months, offer_type: 'normal', ...bsCare,
         monthly_fee: m, total_fee: total, ...rebateFields(rule, { monthly_fee: m, contract_months: months, total_fee: total }),
         status: state && state !== '판매중' ? 'paused' : 'active',
         notes: joinNotes(state && state !== '판매중' ? `운영:${state}` : '', row[c.gift] ? `사은품:${clean(row[c.gift])}` : '', row[c.note], row[c.channel] ? `채널:${clean(row[c.channel])}` : '', row[c.as] ? `AS:${clean(row[c.as])}` : ''),
@@ -440,6 +462,9 @@ function iniAdapter(id, sheet, brandFixed) {
         if (i <= hdr) { skipped.push({ row: r, reason: i === hdr ? '헤더' : '약정 라벨행' }); return; }
         const note = clean(row[c.note]);
         const category = c.gubun != null ? clean(row[c.gubun]) : clean(row[c.cat]);
+        // "연간1회 방문관리 3년간" 같은 관리 문구 (관리 칸이 없는 시트)
+        const rowText = row.map((v) => clean(v)).join(' ');
+        const iniCare = /(연간?\s*1회|1년에\s*1회)\s*방문/.test(rowText) ? { care_type: 'visit', cycle_months: 12 } : {};
         let made = 0;
         for (const t of terms) {
           const m = fee(row[t.fee]);
@@ -449,7 +474,7 @@ function iniAdapter(id, sheet, brandFixed) {
             supplier: '이니렌탈', brand: brandFixed || clean(row[c.brand]) || null,
             category_raw: joinNotes(category, c.gubun != null && c.cat != null ? row[c.cat] : ''),
             product_name: row[c.name], model_code: row[c.model],
-            contract_months: t.months, obligation_months: t.months, offer_type: 'normal',
+            contract_months: t.months, obligation_months: t.months, offer_type: 'normal', ...iniCare,
             monthly_fee: m, total_fee: total, ...rebateFields(rule, { monthly_fee: m, contract_months: t.months, total_fee: total }),
             status: /단종/.test(note) ? 'discontinued' : 'active',
             notes: joinNotes(`${month || '8월'} 자료`, note, c.main != null && hasVal(row[c.main]) ? `주력:${clean(row[c.main])}` : '', row[c.ship] ? `배송:${clean(row[c.ship])}` : '', prevCol >= 0 && hasVal(row[prevCol]) && typeof row[prevCol] !== 'number' ? `전월비교:${clean(row[prevCol])}` : '', row[c.as] ? `AS:${clean(row[c.as])}` : ''),

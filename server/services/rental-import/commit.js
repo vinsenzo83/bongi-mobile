@@ -29,7 +29,10 @@ const DATA_FIELDS = [
   'variant_code', 'contract_months', 'obligation_months', 'ownership_months', 'care_type', 'care_label',
   'cycle_months', 'offer_type', 'offer_tags', 'offer_label', 'monthly_fee', 'price_phases', 'display_fee',
   'prepay_amount', 'total_fee', 'rebate', 'rebate_basis', 'rebate_rate', 'rebate_detail', 'notes', 'source_status',
+  'valid_from', 'valid_to',
 ];
+// 기간은 관리자도 정한다 — 엑셀에 기간이 없으면(null) 기존 값을 지킨다
+const KEEP_IF_EMPTY = ['valid_from', 'valid_to'];
 // status(실제 판매상태)는 엑셀(source_status)에서 오지만, 관리자가 고정(status_locked)하면 import 가 바꾸지 않는다.
 
 export function displayFee(o) {
@@ -51,6 +54,7 @@ export function computeDiff(existingByKey, offers, parsedSheetBases) {
     seen.add(o.condition_key);
     const prev = existingByKey.get(o.condition_key);
     if (!prev) { result.new.push(row); continue; }
+    for (const f of KEEP_IF_EMPTY) if (row[f] == null) row[f] = prev[f] ?? null;
     const fields = DATA_FIELDS.filter((f) => !same(prev[f], row[f]));
     if (prev.status === 'discontinued' && !prev.status_locked && row.source_status !== 'discontinued') result.reappeared.push({ prev, row, fields });
     else if (fields.length) result.changed.push({ prev, row, fields });
