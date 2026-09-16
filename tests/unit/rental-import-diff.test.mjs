@@ -87,5 +87,9 @@ test('LG 하이드로타워·하이드로에센셜은 렌탈사 표기와 무관
   assert.equal(categorize('하이드로타워', 'LG 하이드로타워 25년형 하이드로타워'), 'humidifier');
   assert.equal(categorize('하이드로에센셜', 'LG 하이드로에센셜 25년형 하이드로타워 에센셜'), 'humidifier');
   assert.equal(categorize('공기청정기', 'LG 에어케어 하이드로타워 HY705RSUAB (36개월)'), 'humidifier');
-  assert.equal(categorize('선풍기', '[특가]샤크_무선 미스트 플렉스브리즈 하이드로고_FA050KR'), 'facility');
+  assert.equal(categorize('선풍기', '[특가]샤크_무선 미스트 플렉스브리즈 하이드로고_FA050KR'), 'fan');
+  assert.equal(categorize('선풍기', '신일_선풍기_SIF-K12RDK'), 'fan');
+  // 청소기에 서큘레이터 증정인 묶음은 청소기
+  assert.equal(categorize('무선청소기', '[특가]샤크 에보파워시스템 부스트+_LC150KRBL_써큘레이터 FA050KR 증정'), 'cleaner');
+  assert.equal(categorize('보일러', '귀뚜라미 보일러'), 'facility');
 });
