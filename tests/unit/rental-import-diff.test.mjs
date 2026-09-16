@@ -72,3 +72,12 @@ test('상품명 칸이 없는 시트는 브랜드+품목으로 이름을 만든�
   assert.equal(composeProductName({ product_name: '아이콘3.0', model_code: 'CHP-7220N', brand: '코웨이' }), '아이콘3.0');
   assert.equal(composeProductName({ product_name: '● 미니100', model_code: 'CP-AMS100EWH', brand: '쿠쿠' }), '미니100');
 });
+
+test('LG구독 이름 = 제품군 + 인치/평형 + 구분', async () => {
+  const { lgSubscribeName } = await import('../../server/services/rental-import/adapters/appliance-lg.js');
+  assert.equal(lgSubscribeName({ category: 'OLED', div1: 'OLED97G6KNA.AKR', div2: '벽걸이', model: 'OLED97G6KW.AKR' }), 'LG OLED 97형 벽걸이');
+  assert.equal(lgSubscribeName({ category: 'TV+스바미2', div2: '벽걸이', model: '100MRGB96WP.AKRG' }), 'LG TV+스바미2 100형 벽걸이');
+  assert.equal(lgSubscribeName({ category: '에어컨', div1: '쿨 1시리즈', model: 'FQ18GC1EA2M.AKOR' }), 'LG 에어컨 18평 쿨 1시리즈');
+  assert.equal(lgSubscribeName({ category: '식기세척기', div1: 'DUE5BGE.AKOR', div2: '빌트인', model: 'DUE5BGE.AKOR' }), 'LG 식기세척기 빌트인');
+  assert.equal(lgSubscribeName({ category: '스타일러', div1: '5벌', div2: '26년', model: 'SC5GMR81H.AKOR' }), 'LG 스타일러 5벌');
+});

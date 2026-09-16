@@ -36,7 +36,7 @@
         '<div class="sec-title"><span class="sec-icon">🧊</span>렌탈 계약 조건 <span style="font-size:10px;color:#94a3b8;margin-left:auto">계약 시점 스냅샷 · 가입기준 ' + esc(s.policy_as_of || '-') + '</span></div>' +
         '<div class="product-header"><div style="flex:1;min-width:280px">' +
           '<div class="ph-meta">[' + esc(s.supplier && s.supplier.name) + '] ' + esc(m.category || '') + ' · 티켓 <b>' + esc(o.ticket_number || c.rental_ticket_number) + '</b></div>' +
-          '<div class="ph-name">' + esc(m.product_name || m.model_code) + ' <span style="font-size:12px;color:#94a3b8">' + esc(m.model_code || '') + '</span></div>' +
+          '<div class="ph-name">' + esc(m.product_name || m.model_code) + ' <span style="font-size:12px;color:#94a3b8">' + esc(m.model_code && m.model_code !== m.product_name ? m.model_code : '') + '</span></div>' +
           '<div class="ph-tags"><span>약정 ' + esc(o.contract_months || '-') + '개월' + (o.ownership_months && o.ownership_months !== o.contract_months ? ' (소유권 ' + esc(o.ownership_months) + ')' : '') + '</span><span style="color:#64748b">·</span><span>' + esc(care) + '</span><span style="color:#64748b">·</span><span>' + esc(TYPE_LABEL[o.offer_type] || o.offer_type) + '</span>' +
           (o.offer_label ? '<span style="color:#64748b">·</span><span>' + esc(o.offer_label) + '</span>' : '') + '</div>' +
           (phases.length ? '<div style="margin-top:6px;font-size:12px;color:#fbbf24">' + esc(phases.join(' → ')) + '</div>' : '') +

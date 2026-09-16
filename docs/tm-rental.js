@@ -15,6 +15,8 @@
   var RT = { inited: false, models: [], model: null, offers: [], pick: {}, offer: null, form: null, searchSeq: 0, category: '', page: 1, total: 0 };
 
   var $ = function (id) { return document.getElementById(id); };
+  // 모델명 칸에 상품명이 통째로 든 시트(BS·유버스·큐밍)는 코드가 이름과 같다 — 같은 글을 두 번 보이지 않게
+  function codeIfDiff(m) { var c = m.model_code || m.model_key || ''; return c && c !== m.product_name ? c : ''; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function won(n) { return n == null ? '—' : Number(n).toLocaleString() + '원'; }
   function token() { return (typeof authGetToken === 'function') ? authGetToken() : localStorage.getItem('incentive-auth-token-v1'); }
@@ -64,7 +66,7 @@
       return '<div class="usim-card' + sel + '" data-mid="' + esc(m.id) + '">' +
         (m.image_url ? '<img class="rt-thumb" loading="lazy" src="' + esc(m.image_url) + '" alt="">' : '') +
         '<div class="un">' + esc(m.product_name || m.model_code || m.model_key) + '</div>' +
-        '<div class="uf"><span>' + esc(m.supplier_name) + '</span><b>' + esc(m.model_code || m.model_key) + '</b></div>' +
+        '<div class="uf"><span>' + esc(m.supplier_name) + '</span><b>' + esc(codeIfDiff(m)) + '</b></div>' +
         '<div class="uf"><span>조건 ' + m.offer_count + '개</span><span>가이드 설정 ' + (m.payout_set_count || 0) + '</span></div>' +
         '<div class="up"><span>월 ' + won(m.min_display_fee) + '~</span><span>' + (m.max_free_months ? '최대 ' + m.max_free_months + '개월 무료' : '') + '</span></div>' +
         '</div>';
@@ -271,7 +273,7 @@
     var fm = freeMonths(pay, o);
     return '<div style="padding:4px 2px">' +
       '<div style="font-size:10px;color:#fcd34d;font-weight:800;letter-spacing:.05em;margin-bottom:6px">🧊 렌탈 · ' + esc(m.supplier_name || '') + ' · ' + esc(o.ticket_number) + '</div>' +
-      '<div class="calc-line"><span class="l">' + esc(m.product_name || m.model_code || '') + '</span><span class="v" style="font-size:11px">' + esc(m.model_code || m.model_key || '') + '</span></div>' +
+      '<div class="calc-line"><span class="l">' + esc(m.product_name || m.model_code || '') + '</span><span class="v" style="font-size:11px">' + esc(codeIfDiff(m)) + '</span></div>' +
       '<div class="calc-line"><span class="l">조건</span><span class="v" style="font-size:11px">' + esc(contractText(o)) + ' · ' + esc(careText(o)) + ' · ' + esc(typeText(o)) + '</span></div>' +
       (o.price_phases && o.price_phases.length
         ? o.price_phases.map(function (p) { return '<div class="calc-line discount"><span class="l">' + p.from + '~' + p.to + '개월</span><span class="v">' + (p.fee === 0 ? '면제' : won(p.fee)) + '</span></div>'; }).join('') +

@@ -7,7 +7,7 @@
  *   KT가전구독 = 모델코드 "(R)" 이면 건당 금액, 아니면 총 렌탈료 × 율
  *   규칙 시트를 못 읽으면 rebate=null, rebate_basis 만 채운다.
  */
-import { clean, hasVal, toWon, toMonths, makeOffer, findRule, applyRule, conditionKey } from '../core.js';
+import { clean, hasVal, toWon, toMonths, makeOffer, findRule, applyRule, conditionKey, isCodeName } from '../core.js';
 
 const nospace = (v) => clean(v).replace(/\s/g, '');
 const isStr = (v) => typeof v === 'string' && v.trim() !== '';
@@ -181,7 +181,7 @@ function parseLgSubscription(rows, ctx) {
         supplier: 'LG전자구독',
         brand: 'LG전자',
         category_raw: category,
-        product_name: pick('div1') || pick('div2') || model,
+        product_name: lgSubscribeName({ category, div1: pick('div1'), div2: pick('div2'), model }),
         model_code: model,
         variant_code: [channel, svc].filter(Boolean).join('/'),
         contract_months: e.months,
@@ -492,6 +492,30 @@ function parseKtSubscribe(rows, ctx) {
 }
 
 const base = (n) => clean(n).replace(/\(\s*\d{1,2}월\s*\)/g, '').replace(/\s/g, '');
+
+/**
+ * LG구독 시트엔 상품명 칸이 없다 — 제품군 + 구분1·구분2(5벌·MX8(구.시드니)·빌트인·벽걸이 …) + TV 인치(모델코드 앞 숫자)로 이름을 만든다
+ *   구분1 이 단품 모델코드인 시트(냉장고·TV·쿠킹)는 코드를 빼고, '없음'·'26년' 같은 값도 뺀다
+ */
+export function lgSubscribeName({ category, div1, div2, model }) {
+  const parts = [];
+  const cat = clean(category);
+  if (cat) parts.push(cat);
+  if (/TV|OLED|QNED|MRGB|스바미|사운드바/i.test(cat)) {
+    const inch = String(model || '').match(/^[A-Z]*?(\d{2,3})(?=[A-Z])/);
+    if (inch && +inch[1] >= 24) parts.push(`${inch[1]}형`);
+  }
+  if (/에어컨/.test(cat)) {
+    const py = String(model || '').match(/^[A-Z]{2}(\d{2})[A-Z]/);   // FQ18… = 18평형, SW07… = 7평형
+    if (py && +py[1] > 0) parts.push(`${+py[1]}평`);
+  }
+  for (const d of [div1, div2]) {
+    const v = clean(d);
+    if (!v || v === '없음' || /^\d{2}년$/.test(v) || v === cat || isCodeName(v, model)) continue;
+    if (!parts.includes(v)) parts.push(v);
+  }
+  return parts.length ? `LG ${parts.join(' ')}` : model;
+}
 
 export default [
   { id: 'lg-subscription', file: 'appliance', match: (n) => /^LG구독(냉장고|쿠킹|TV|공청기|에어컨|리빙)$/.test(base(n)), parse: parseLgSubscription },

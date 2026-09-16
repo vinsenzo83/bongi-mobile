@@ -118,7 +118,7 @@
       return '<tr class="rp-model" data-id="' + esc(m.id) + '" style="cursor:pointer">' +
         '<td>' + (m.image_url ? '<img src="' + esc(m.image_url) + '" style="width:36px;height:36px;object-fit:contain;background:#fff;border-radius:4px">' : '') + '</td>' +
         '<td>' + esc(m.supplier_name) + '</td><td>' + esc((ST.categories.filter(function (c) { return c.slug === m.category; })[0] || {}).label || m.category || '') + '</td>' +
-        '<td><b>' + esc(m.product_name || '') + '</b><div style="font-size:10px;color:#94a3b8">' + esc(m.model_code || m.model_key) + '</div></td>' +
+        '<td><b>' + esc(m.product_name || m.model_code || m.model_key || '') + '</b><div style="font-size:10px;color:#94a3b8">' + esc((m.model_code || m.model_key) !== m.product_name ? (m.model_code || m.model_key || '') : '') + '</div></td>' +
         '<td>' + won(m.offer_count) + '</td><td>' + won(m.min_display_fee) + '</td>' +
         '<td>' + (unset > 0 ? '<span style="color:#fca5a5">미설정 ' + unset + '</span>' : '<span style="color:#86efac">완료</span>') + (m.rebate_changed_count ? ' <span style="color:#c4b5fd">리베이트변동 ' + m.rebate_changed_count + '</span>' : '') + '</td>' +
         '<td>' + (m.max_free_months != null ? '최대 ' + m.max_free_months + '개월' : '—') + '</td>' +
