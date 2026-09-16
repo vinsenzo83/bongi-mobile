@@ -85,6 +85,11 @@ try {
   const dup = await call('POST', '/api/incentive/sales', 'agent', { ...base, actual_payout: pay });
   if (dup.j?.sale?.id || (dup.s < 300 && dup.j?.id)) created.push(dup.j?.sale?.id || dup.j.id);
   check('연속 중복제출 409', dup.s === 409, `${dup.s}`);
+  const phone2 = phone.replace(/\d{4}$/, (d) => String((Number(d) + 1) % 10000).padStart(4, '0'));
+  const both = await Promise.all([1, 2].map(() => call('POST', '/api/incentive/sales', 'agent', { ...base, customer_phone: phone2, actual_payout: pay })));
+  both.forEach((r) => { const id = r.j?.sale?.id || (r.s < 300 && r.j?.id); if (id) created.push(id); });
+  const codes = both.map((r) => r.s).sort().join();
+  check('동시 중복제출 1건 성공+409', codes === '200,409' || codes === '201,409', codes);
 
   const { data: row } = await sb.from('incentive_sales').select('rebate_snapshot').eq('id', sale.id).single();
   check('DB 에는 리베이트 박제', row?.rebate_snapshot > 0, JSON.stringify(row));

@@ -151,12 +151,26 @@
   async function saveOffer(tr) {
     var g = tr.querySelector('.rp-g').value, m = tr.querySelector('.rp-m').value;
     var btn = tr.querySelector('.rp-save');
+    var bad = [['가이드', g], ['MAX', m]].filter(function (x) { return x[1] !== '' && (!/^\d+$/.test(x[1]) || (x[0] === '가이드' && Number(x[1]) % 10000)); });
+    if (bad.length) {
+      btn.textContent = bad[0][0] === '가이드' ? '만원단위' : '숫자만';
+      setTimeout(function () { btn.textContent = '저장'; }, 1800);
+      return;
+    }
+    if (m !== '' && g !== '' && Number(m) < Number(g)) { btn.textContent = 'MAX<가이드'; setTimeout(function () { btn.textContent = '저장'; }, 1800); return; }
     btn.textContent = '…';
     try {
       await call('/offers/' + tr.dataset.oid, { method: 'PATCH', json: { guide_payout: g === '' ? null : Number(g), max_payout: m === '' ? null : Number(m) } });
       btn.textContent = '✓'; setTimeout(function () { btn.textContent = '저장'; }, 1200);
+      tr.querySelector('.rp-g').defaultValue = g; tr.querySelector('.rp-m').defaultValue = m;
       loadStats();
-    } catch (e) { btn.textContent = '저장'; alert(e.message); }
+    } catch (e) {
+      // 거절된 값은 되돌린다 — 저장 안 된 숫자가 화면에 남아 저장된 것처럼 보이지 않게
+      tr.querySelector('.rp-g').value = tr.querySelector('.rp-g').defaultValue;
+      tr.querySelector('.rp-m').value = tr.querySelector('.rp-m').defaultValue;
+      btn.textContent = '실패'; btn.title = e.message;
+      setTimeout(function () { btn.textContent = '저장'; }, 2500);
+    }
   }
 
   // ─── 프로모션 ───

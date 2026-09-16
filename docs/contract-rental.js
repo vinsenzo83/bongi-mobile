@@ -51,7 +51,7 @@
         '</div></div>' +
       '</div>' +
       '<div class="sec-card acc-blue" id="rental-form-' + esc(c.id) + '">' +
-        '<div class="sec-title"><span class="sec-icon">📝</span>렌탈사 가입정보 · 계약 진행 체크</div>' +
+        '<div class="sec-title"><span class="sec-icon">📝</span>렌탈 계약정보 · 진행 체크</div>' +
         '<div style="color:#94a3b8;font-size:12px;padding:8px">렌탈사 가입기준 불러오는 중…</div>' +
       '</div>';
   };

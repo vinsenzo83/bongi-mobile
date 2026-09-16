@@ -1095,6 +1095,8 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       })
       .select('*, product:incentive_products(*)')
       .single();
+    // 동시 제출은 60초 검사를 함께 통과할 수 있다 — DB 중복 인덱스(incentive_sales_rental_dedupe_idx)가 막은 것은 409 로 알린다
+    if (error?.code === '23505' && kind === 'rental') return res.status(409).json({ error: '같은 날 같은 고객·같은 조건 계약이 이미 있습니다 (중복 제출)' });
     if (error) throw error;
     // 변경 감사 로그
     logSaleHistory({ sale_id: data.id, action: 'INSERT', before: null, after: data, user_id: req.user.id, user_name: me.name, user_role: me.role });
