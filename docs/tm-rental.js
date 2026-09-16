@@ -32,8 +32,10 @@
 
   // ─── 표시 헬퍼 ───
   function typeText(o) {
-    var tags = (o.offer_tags || []).filter(function (t) { return !/^rule:/.test(t); });
-    return (TYPE_LABEL[o.offer_type] || o.offer_type) + (tags.length ? ' · ' + tags.join('·') : '');
+    var base = TYPE_LABEL[o.offer_type] || o.offer_type;
+    if (o.offer_label && o.offer_label !== base) return base + ' · ' + o.offer_label;
+    var tags = (o.offer_tags || []).filter(function (t) { return !/^(rule|bundle|prepay):/.test(t); });
+    return base + (tags.length ? ' · ' + tags.join('·') : '');
   }
   function careText(o) {
     if (o.care_type === 'visit') return '방문' + (o.cycle_months ? ' ' + o.cycle_months + '개월' : '');

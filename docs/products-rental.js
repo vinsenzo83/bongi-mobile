@@ -127,6 +127,11 @@
     }).join('');
     if (ST.open) loadOffers(ST.open);
   }
+  // 유형 아래 설명 — 엑셀 원문 라벨(예: '특별할인(O) · 렌탈료할인', '18개월 반값')을 먼저, 내부 표식(rule:X·bundle:new…)은 숨긴다
+  function offerSub(o) {
+    if (o.offer_label) return o.offer_label;
+    return (o.offer_tags || []).filter(function (t) { return !/^(rule|bundle|prepay):/.test(t); }).join('·');
+  }
   async function loadOffers(modelId) {
     var box = $('rp-offers-' + modelId); if (!box) return;
     try {
@@ -137,7 +142,7 @@
           var care = o.care_type === 'visit' ? '방문' + (o.cycle_months ? ' ' + o.cycle_months + 'M' : '') : (CARE[o.care_type] || o.care_label || '—');
           return '<tr data-oid="' + esc(o.id) + '" style="' + (o.status === 'discontinued' ? 'opacity:.45' : '') + '">' +
             '<td style="font-family:monospace">' + esc(o.ticket_number) + '</td>' +
-            '<td>' + esc(TYPE[o.offer_type] || o.offer_type) + (o.offer_tags && o.offer_tags.length ? '<div style="font-size:9.5px;color:#94a3b8">' + esc(o.offer_tags.join('·')) + '</div>' : '') + '</td>' +
+            '<td>' + esc(TYPE[o.offer_type] || o.offer_type) + (offerSub(o) ? '<div style="font-size:9.5px;color:#94a3b8">' + esc(offerSub(o)) + '</div>' : '') + '</td>' +
             '<td>' + esc(o.contract_months || '—') + '</td><td>' + esc(care) + '</td><td style="font-size:11px">' + esc(fee) + '</td>' +
             '<td>' + won(o.rebate) + (o.rebate_changed ? ' <span style="color:#c4b5fd">변동</span>' : '') + '</td>' +
             '<td><input class="rp-g" type="number" step="10000" value="' + (o.guide_payout == null ? '' : o.guide_payout) + '" style="width:90px"></td>' +

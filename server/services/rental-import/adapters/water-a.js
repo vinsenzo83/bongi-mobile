@@ -213,6 +213,18 @@ const cuckooTradeIn = {
 // ------------------------------------------------------------------
 // 청호
 // ------------------------------------------------------------------
+// 청호 규정 알파벳 — 시트 상단 '특이사항' 원문
+//   S규정(신규) · P규정(패키지) · J규정(재렌탈, 타사보상 = 소유권만기 고객) · O,N,H규정(특별 할인렌탈료)
+//   A·Z 는 시트에 설명이 없어 '규정 코드'로만 보여준다
+const CHUNGHO_RULES = {
+  S: { label: '신규', type: 'normal' },
+  P: { label: '패키지', type: 'package' },
+  J: { label: '재렌탈·타사보상', type: 'trade_in' },
+  O: { label: '특별할인', type: 'special' },
+  N: { label: '특별할인', type: 'special' },
+  H: { label: '특별할인', type: 'special' },
+};
+
 const chungho = {
   id: 'chungho',
   file: 'water',
@@ -237,16 +249,20 @@ const chungho = {
       if (!code || fee == null) { skipped.push({ row: r + 1, reason: '상품코드·렌탈료 없음' }); continue; }
       const rule = clean(row[c.rule]);
       const cycle = toMonths(row[c.care]) ?? toWon(row[c.care]);
-      const careType = cycle === 0 ? 'self' : cycle != null ? 'visit' : null;
+      // 점검주기 0 = 관리 없음(매트리스·위탁판매). 상품명에 '자가관리'가 있으면 주기는 필터 교체 주기이고 관리는 자가.
+      const selfCare = /자가관리/.test(clean(row[c.product]));
+      const careType = cycle == null ? null : cycle === 0 ? 'none' : selfCare ? 'self' : 'visit';
       const p1 = clean(row[c.promo1]);
       const p2 = clean(row[c.promo2]);
       const tags = [];
-      const letter = rule.match(/^[A-Za-z]/);
-      if (letter) tags.push(`rule:${letter[0].toUpperCase()}`);
-      let offerType = 'normal';
-      const labels = [];
-      if (p2) { offerType = 'half'; labels.push(p2); }
-      if (p1) { if (offerType === 'normal') offerType = 'promo'; else tags.push(p1); labels.push(p1); }
+      const letter = (rule.match(/^[A-Za-z]/) || [])[0]?.toUpperCase();
+      if (letter) tags.push(`rule:${letter}`);
+      const ruleInfo = CHUNGHO_RULES[letter] || null;
+      let offerType = ruleInfo ? ruleInfo.type : 'normal';
+      // 라벨 = 규정 + 프로모션 칸 원문 (예: '특별할인 · 렌탈료할인', '신규 · 반값')
+      const labels = [ruleInfo ? `${ruleInfo.label}(${letter})` : letter ? `${letter}규정` : null];
+      if (p1) { labels.push(p1); tags.push(p1); if (offerType === 'normal') offerType = 'promo'; }
+      if (p2) { labels.push(p2); offerType = 'half'; }
       const obligation = toMonths(row[c.obligation]);
       offers.push(makeOffer({
         supplier: '청호', brand: '청호나이스', category_raw: row[c.category], product_name: row[c.product],
@@ -254,7 +270,7 @@ const chungho = {
         variant_code: `${code}-${rule}`,
         contract_months: obligation, obligation_months: obligation, ownership_months: toMonths(row[c.ownership]),
         care_type: careType, care_label: row[c.care], cycle_months: cycle || null,
-        offer_type: offerType, offer_tags: tags, offer_label: labels.join(' + ') || null,
+        offer_type: offerType, offer_tags: tags, offer_label: labels.filter(Boolean).join(' · ') || null,
         monthly_fee: fee, price_phases: [],
         rebate: toWon(row[c.rebate]), rebate_basis: 'amount', rebate_detail: { total: toWon(row[c.rebate]), rule },
         notes: p2 ? '반값 적용 개월수 시트에 없음 — 정책 공지 확인' : null,
