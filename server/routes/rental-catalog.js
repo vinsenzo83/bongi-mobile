@@ -16,6 +16,7 @@
  *   GET   /agent/models              검색 (리베이트 없음)
  *   GET   /agent/models/:id/offers   조건별 월요금·가격구간·가이드·MAX·N개월 (리베이트 없음)
  *   GET   /agent/tickets/:ticket     티켓번호(R000001)로 조건 조회
+ *   GET   /agent/offers/:id/form     렌탈사 가입기준에 맞춘 계약정보 입력폼 명세
  */
 import { Router } from 'express';
 import multer from 'multer';
@@ -24,6 +25,7 @@ import { supabase } from '../db/supabase.js';
 import { authenticateJWT } from '../middleware/auth.js';
 import { parseRentalWorkbook } from '../services/rental-import/index.js';
 import { previewImport, commitImport } from '../services/rental-import/commit.js';
+import { buildApplicationForm } from '../services/rental-application.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
@@ -307,6 +309,26 @@ router.get('/agent/tickets/:ticket', ...agent, async (req, res) => {
     const { data: model } = await supabase.from('rental_cat_model_summary')
       .select('id, supplier_id, supplier_name, model_key, model_code, product_name, brand, category, image_url, status').eq('id', offer.model_id).single().throwOnError();
     res.json({ offer, model, usable: offer.status === 'active' });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+/** 조건 + 모델 + 렌탈사(가입기준) → 계약정보 입력폼 명세 */
+export async function loadOfferContext(offerId) {
+  const { data: offer } = await supabase.from('rental_cat_offers').select(`${AGENT_OFFER_COLS}, source, rebate`).eq('id', offerId).maybeSingle().throwOnError();
+  if (!offer) return null;
+  const [{ data: model }, { data: supplier }] = await Promise.all([
+    supabase.from('rental_cat_models').select('id, model_key, model_code, product_name, brand, category, category_raw, image_url').eq('id', offer.model_id).single().throwOnError(),
+    supabase.from('rental_cat_suppliers').select('id, name, file_kind, signup_policy, signup_policy_as_of').eq('id', offer.supplier_id).single().throwOnError(),
+  ]);
+  return { offer, model, supplier, form: buildApplicationForm({ supplier, offer, model }) };
+}
+
+router.get('/agent/offers/:id/form', ...agent, async (req, res) => {
+  try {
+    const ctx = await loadOfferContext(req.params.id);
+    if (!ctx) return res.status(404).json({ error: '조건 없음' });
+    const { rebate, source, ...offer } = ctx.offer;
+    res.json({ offer, model: ctx.model, supplier: { id: ctx.supplier.id, name: ctx.supplier.name }, form: ctx.form });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 

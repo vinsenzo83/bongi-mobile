@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { supabase } from '../db/supabase.js';
 import { authenticateJWT, optionalAuth } from '../middleware/auth.js';
+import { loadOfferContext } from './rental-catalog.js';
+import { validateApplication } from '../services/rental-application.js';
 
 const router = Router();
 
@@ -884,6 +886,38 @@ router.get('/sales', authenticateJWT, async (req, res) => {
   }
 });
 
+// 렌탈 계약 스냅샷 — 계약 시점의 조건·요금·가이드·MAX·리베이트를 박제한다
+function rentalSaleColumns({ offer, model, supplier }, application, actualPayout) {
+  return {
+    rental_offer_id: offer.id,
+    rental_supplier_id: supplier.id,
+    rental_ticket_number: offer.ticket_number,
+    rental_application: application,
+    rental_process: {},
+    monthly_fee: offer.display_fee,
+    birth_date: application.birth_date || null,
+    customer_email: application.customer_email || null,
+    payment_method: application.payment_method || null,
+    guide_payout_snapshot: offer.guide_payout,
+    max_payout_snapshot: offer.max_payout,
+    rebate_snapshot: offer.rebate,
+    // 사은품 원장 트리거(trg_sales_to_gift)가 payback_snapshot 을 지급액으로 쓴다 → 렌탈은 실제 지급액을 넣는다
+    payback_snapshot: actualPayout,
+    rental_snapshot: {
+      supplier: { id: supplier.id, name: supplier.name },
+      model: { id: model.id, model_code: model.model_code || model.model_key, product_name: model.product_name, brand: model.brand, category: model.category_raw },
+      offer: {
+        ticket_number: offer.ticket_number, contract_months: offer.contract_months, obligation_months: offer.obligation_months,
+        ownership_months: offer.ownership_months, care_type: offer.care_type, care_label: offer.care_label, cycle_months: offer.cycle_months,
+        offer_type: offer.offer_type, offer_tags: offer.offer_tags, offer_label: offer.offer_label, variant_code: offer.variant_code,
+        monthly_fee: offer.monthly_fee, display_fee: offer.display_fee, price_phases: offer.price_phases, prepay_amount: offer.prepay_amount,
+        guide_payout: offer.guide_payout, max_payout: offer.max_payout, free_months: offer.free_months, source: offer.source,
+      },
+      policy_as_of: supplier.signup_policy_as_of,
+    },
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 8. POST /api/incentive/sales — 영업 추가
 // ═══════════════════════════════════════════════════════════════
@@ -917,6 +951,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       quote_full_html,
       monthly_fee,
       db_source_id,
+      rental_offer_id, rental_application,
     } = req.body || {};
 
     // product_id 필수 여부는 아래에서 sale_kind 로 판단한다 (유심 단독은 없다)
@@ -930,7 +965,27 @@ router.post('/sales', authenticateJWT, async (req, res) => {
     }
 
     // 유심 단독은 붙일 인터넷 상품이 없다. 둘 다 없으면 아무것도 아닌 계약이다.
-    const kind = (sale_kind === 'usim') ? 'usim' : 'internet';
+    const kind = (sale_kind === 'usim' || sale_kind === 'rental') ? sale_kind : 'internet';
+    if (kind === 'rental' && !rental_offer_id) {
+      return res.status(400).json({ error: '렌탈 계약은 rental_offer_id 가 필요합니다' });
+    }
+    // 렌탈: 조건이 판매중인지, 지급액이 가이드~MAX 안인지, 렌탈사 가입기준대로 입력됐는지 서버에서 다시 본다
+    let rentalCtx = null;
+    let rentalApp = null;
+    if (kind === 'rental') {
+      rentalCtx = await loadOfferContext(rental_offer_id);
+      if (!rentalCtx) return res.status(400).json({ error: '존재하지 않는 렌탈 조건' });
+      const o = rentalCtx.offer;
+      if (o.status !== 'active') return res.status(400).json({ error: `판매중이 아닌 조건입니다 (${o.ticket_number})` });
+      if (o.guide_payout == null || o.max_payout == null) return res.status(400).json({ error: `가이드·MAX 가 설정되지 않은 조건입니다 (${o.ticket_number})` });
+      const pay = actual_payout == null ? null : Number(actual_payout);
+      if (pay == null || pay < o.guide_payout || pay > o.max_payout) {
+        return res.status(400).json({ error: `지급액은 가이드 ${o.guide_payout.toLocaleString()} ~ MAX ${o.max_payout.toLocaleString()} 사이여야 합니다` });
+      }
+      const v = validateApplication(rentalCtx.form, { ...(rental_application || {}), customer_name, customer_phone, customer_address, customer_address_detail, installation_date, installation_time, notes });
+      if (!v.ok) return res.status(400).json({ error: '계약정보 확인 필요', fields: v.errors });
+      rentalApp = v.data;
+    }
     if (kind === 'usim' && !usim_plan_id) {
       return res.status(400).json({ error: '유심 단독 계약은 usim_plan_id 가 필요합니다' });
     }
@@ -1010,6 +1065,7 @@ router.post('/sales', authenticateJWT, async (req, res) => {
         usim_payout: (usim_payout == null) ? null : Number(usim_payout),
         usim_guide_snapshot: usimSnap ? usimSnap.guide_payout : null,
         usim_max_snapshot: usimSnap ? usimSnap.max_payout : null,
+        ...(rentalCtx ? rentalSaleColumns(rentalCtx, rentalApp, Number(actual_payout)) : {}),
       })
       .select('*, product:incentive_products(*)')
       .single();
