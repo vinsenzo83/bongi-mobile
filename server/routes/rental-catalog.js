@@ -35,6 +35,15 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 
 const _isProd = process.env.NODE_ENV === 'production';
 const errMsg = (e) => (_isProd ? '서버 오류 — 잠시 후 다시 시도하세요' : e?.message || '서버 오류');
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// :id 파라미터가 uuid 가 아니면 400 (DB 캐스팅 500 방지)
+function badId(req, res) {
+  if (UUID_RE.test(String(req.params.id || ''))) return false;
+  res.status(400).json({ error: '잘못된 id' });
+  return true;
+}
+
 // ─── 권한 ───
 async function currentAgent(userId) {
   if (!userId) return null;
@@ -101,16 +110,25 @@ router.post('/import/:batchId/commit', ...admin, async (req, res) => {
   try {
     const cached = previewCache.get(req.params.batchId);
     if (!cached || cached.expiresAt < Date.now()) return res.status(410).json({ error: '미리보기가 만료됐습니다. 파일을 다시 올려주세요' });
-    const { data: batch } = await supabase.from('rental_cat_batches').select('*').eq('id', req.params.batchId).single().throwOnError();
-    if (batch.status !== 'preview') return res.status(409).json({ error: `이미 ${batch.status} 상태입니다` });
     const blocking = cached.parsed.sheets.filter((s) => s.missingRows.length || s.errors.length);
-    if (blocking.length && !req.body?.force) {
+    if (blocking.length) {
       return res.status(422).json({ error: '누락 행 또는 오류가 있는 시트가 있습니다', sheets: blocking.map((s) => s.sheet) });
     }
-    const summary = await commitImport(supabase, {
-      batch, offers: cached.parsed.offers, sheets: cached.parsed.sheets,
-      supplierRules: cached.parsed.supplierRules, user: req.agent.name,
-    });
+    // 확정 선점 — 동시에 두 번 눌러도 한 번만 반영
+    const { data: claimed } = await supabase.from('rental_cat_batches').update({ status: 'committing' })
+      .eq('id', req.params.batchId).eq('status', 'preview').select('*').throwOnError();
+    if (!claimed?.length) return res.status(409).json({ error: '이미 반영 중이거나 반영된 파일입니다' });
+    const batch = claimed[0];
+    let summary;
+    try {
+      summary = await commitImport(supabase, {
+        batch, offers: cached.parsed.offers, sheets: cached.parsed.sheets,
+        supplierRules: cached.parsed.supplierRules, user: req.agent.name,
+      });
+    } catch (err) {
+      await supabase.from('rental_cat_batches').update({ status: 'failed' }).eq('id', batch.id);
+      throw err;
+    }
     previewCache.delete(req.params.batchId);
     res.json({ ok: true, summary });
   } catch (e) {
@@ -152,7 +170,9 @@ async function searchModels(q) {
   if (q.payout === 'unset') query = query.lt('payout_set_count', 1);
   if (q.rebate_changed === 'true') query = query.gt('rebate_changed_count', 0);
   query = query.gt('offer_count', 0).order('payout_set_count', { ascending: false }).order('supplier_id').order('model_key').range((page - 1) * size, page * size - 1);
-  const { data, count } = await query.throwOnError();
+  const { data, count, error } = await query;
+  if (error && /range/i.test(error.message || '') ) return { models: [], total: null, page, size };   // 범위 밖 페이지
+  if (error) throw error;
   return { models: data, total: count, page, size };
 }
 
@@ -162,7 +182,9 @@ router.get('/models', ...admin, async (req, res) => {
 
 router.get('/models/:id', ...admin, async (req, res) => {
   try {
-    const { data: model } = await supabase.from('rental_cat_model_summary').select('*').eq('id', req.params.id).single().throwOnError();
+    if (badId(req, res)) return;
+    const { data: model } = await supabase.from('rental_cat_model_summary').select('*').eq('id', req.params.id).maybeSingle().throwOnError();
+    if (!model) return res.status(404).json({ error: '모델 없음' });
     const { data: offers } = await supabase.from('rental_cat_offers').select('*').eq('model_id', req.params.id)
       .order('offer_type').order('contract_months').order('care_type').order('cycle_months').throwOnError();
     res.json({ model, offers });
@@ -171,6 +193,7 @@ router.get('/models/:id', ...admin, async (req, res) => {
 
 router.patch('/models/:id', ...admin, async (req, res) => {
   try {
+    if (badId(req, res)) return;
     const allowed = ['product_name', 'category', 'brand', 'image_url', 'specs', 'status', 'platform_linked'];
     const update = Object.fromEntries(allowed.filter((k) => req.body[k] !== undefined).map((k) => [k, req.body[k]]));
     if (!Object.keys(update).length) return res.status(400).json({ error: '변경할 필드가 없습니다' });
@@ -183,8 +206,9 @@ router.patch('/models/:id', ...admin, async (req, res) => {
 // ─── 가이드·MAX ───
 const GUIDE_UNIT = 10000;  // 가이드는 만원 단위 (대표 지시 2026-09-16)
 function validPayout(guide, max) {
-  const g = guide == null ? null : Number(guide);
-  const m = max == null ? null : Number(max);
+  const num = (v) => (v == null ? null : (typeof v === 'number' || (typeof v === 'string' && /^\d+$/.test(v))) ? Number(v) : NaN);
+  const g = num(guide);
+  const m = num(max);
   if ((g != null && (!Number.isInteger(g) || g < 0)) || (m != null && (!Number.isInteger(m) || m < 0))) return '가이드·MAX 는 0 이상의 원 단위 정수여야 합니다';
   if (g != null && g % GUIDE_UNIT !== 0) return `가이드는 ${GUIDE_UNIT.toLocaleString()}원 단위여야 합니다`;
   if (g != null && m != null && m < g) return 'MAX 는 가이드보다 작을 수 없습니다';
@@ -193,10 +217,20 @@ function validPayout(guide, max) {
 
 router.patch('/offers/:id', ...admin, async (req, res) => {
   try {
-    const allowed = ['guide_payout', 'max_payout', 'status', 'crm_enabled', 'notes', 'valid_from', 'valid_to'];
+    if (badId(req, res)) return;
+    const allowed = ['guide_payout', 'max_payout', 'status', 'status_locked', 'crm_enabled', 'admin_notes', 'valid_from', 'valid_to'];
     const update = Object.fromEntries(allowed.filter((k) => req.body[k] !== undefined).map((k) => [k, req.body[k]]));
     if (!Object.keys(update).length) return res.status(400).json({ error: '변경할 필드가 없습니다' });
-    const { data: prev } = await supabase.from('rental_cat_offers').select('guide_payout, max_payout').eq('id', req.params.id).single().throwOnError();
+    if (update.status !== undefined) {
+      if (!['active', 'paused', 'discontinued'].includes(update.status)) return res.status(400).json({ error: "status 는 active·paused·discontinued" });
+      if (update.status_locked === undefined) update.status_locked = true;   // 사람이 정한 상태는 월 import 가 덮지 않는다
+    }
+    if (update.status_locked !== undefined && typeof update.status_locked !== 'boolean') return res.status(400).json({ error: 'status_locked 는 true/false' });
+    if (update.crm_enabled !== undefined && typeof update.crm_enabled !== 'boolean') return res.status(400).json({ error: 'crm_enabled 는 true/false' });
+    for (const k of ['valid_from', 'valid_to']) if (update[k] != null && !DATE_RE.test(String(update[k]))) return res.status(400).json({ error: `${k} 는 YYYY-MM-DD` });
+    if (update.admin_notes != null && String(update.admin_notes).length > 1000) return res.status(400).json({ error: '메모는 1000자 이내' });
+    const { data: prev } = await supabase.from('rental_cat_offers').select('guide_payout, max_payout').eq('id', req.params.id).maybeSingle().throwOnError();
+    if (!prev) return res.status(404).json({ error: '조건 없음' });
     const guide = update.guide_payout !== undefined ? update.guide_payout : prev.guide_payout;
     const max = update.max_payout !== undefined ? update.max_payout : prev.max_payout;
     const bad = validPayout(guide, max);
@@ -205,6 +239,10 @@ router.patch('/offers/:id', ...admin, async (req, res) => {
     const payoutTouched = 'guide_payout' in update || 'max_payout' in update;
     if (payoutTouched) Object.assign(update, { payout_updated_by: req.agent.name, payout_updated_at: now, rebate_changed: false });
     update.updated_at = now;
+    if (payoutTouched) {
+      update.guide_payout = guide == null ? null : Number(guide);
+      update.max_payout = max == null ? null : Number(max);
+    }
     const { data } = await supabase.from('rental_cat_offers').update(update).eq('id', req.params.id).select().single().throwOnError();
     if (payoutTouched) {
       await supabase.from('rental_cat_offer_changes').insert({
@@ -277,7 +315,8 @@ router.post('/offers/bulk-payout', ...admin, async (req, res) => {
 // 마진율 규칙으로 가이드·MAX 일괄 (DB 함수 — 수만 건 한 번에, 이력 포함)
 router.post('/offers/apply-margin', ...admin, async (req, res) => {
   try {
-    const margin = Number(req.body?.margin_pct) / 100;                 // MAX 마진
+    if (req.body?.margin_pct == null || req.body.margin_pct === '') return res.status(400).json({ error: 'MAX 마진(margin_pct)을 입력하세요' });
+    const margin = Number(req.body.margin_pct) / 100;                  // MAX 마진
     if (!(margin >= 0 && margin < 1)) return res.status(400).json({ error: '마진율은 0~99%' });
     const guideMargin = req.body?.guide_margin_pct == null || req.body.guide_margin_pct === '' ? null : Number(req.body.guide_margin_pct) / 100;
     if (guideMargin != null && !(guideMargin >= margin && guideMargin < 1)) return res.status(400).json({ error: '가이드 마진은 MAX 마진 이상이어야 합니다' });
@@ -305,7 +344,7 @@ router.get('/promotions', ...agent, async (req, res) => {
     if (req.query.supplier) q = q.eq('supplier_id', req.query.supplier);
     if (req.query.active === 'true') {
       const today = new Date().toISOString().slice(0, 10);
-      q = q.eq('is_active', true).or(`period_to.is.null,period_to.gte.${today}`).or(`period_from.is.null,period_from.lte.${today}`);
+      q = q.eq('is_active', true).or(`and(or(period_to.is.null,period_to.gte.${today}),or(period_from.is.null,period_from.lte.${today}))`);
     }
     const { data } = await q.throwOnError();
     res.json({ promotions: data });
@@ -317,15 +356,20 @@ router.post('/promotions', ...admin, async (req, res) => {
   try {
     const row = Object.fromEntries(PROMO_FIELDS.filter((k) => req.body[k] !== undefined).map((k) => [k, req.body[k]]));
     if (!row.supplier_id || !row.title) return res.status(400).json({ error: 'supplier_id, title 필수' });
+    if (!DATE_RE.test(String(row.period_from || '')) || !DATE_RE.test(String(row.period_to || '')) || row.period_from > row.period_to) {
+      return res.status(400).json({ error: '프로모션 기간(period_from ≤ period_to, YYYY-MM-DD) 필수' });
+    }
     const { data } = await supabase.from('rental_cat_promotions').insert(row).select().single().throwOnError();
     res.json({ promotion: data });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 router.patch('/promotions/:id', ...admin, async (req, res) => {
   try {
+    if (badId(req, res)) return;
     const row = Object.fromEntries(PROMO_FIELDS.filter((k) => req.body[k] !== undefined).map((k) => [k, req.body[k]]));
     row.updated_at = new Date().toISOString();
-    const { data } = await supabase.from('rental_cat_promotions').update(row).eq('id', req.params.id).select().single().throwOnError();
+    const { data } = await supabase.from('rental_cat_promotions').update(row).eq('id', req.params.id).select().maybeSingle().throwOnError();
+    if (!data) return res.status(404).json({ error: '프로모션 없음' });
     res.json({ promotion: data });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
@@ -349,10 +393,11 @@ router.get('/agent/tickets/:ticket', ...agent, async (req, res) => {
 
 /** 조건 + 모델 + 렌탈사(가입기준) → 계약정보 입력폼 명세 */
 export async function loadOfferContext(offerId) {
-  const { data: offer } = await supabase.from('rental_cat_offers').select(`${AGENT_OFFER_COLS}, source, rebate`).eq('id', offerId).maybeSingle().throwOnError();
+  if (!UUID_RE.test(String(offerId || ''))) return null;
+  const { data: offer } = await supabase.from('rental_cat_offers').select(`${AGENT_OFFER_COLS}, source, rebate, crm_enabled`).eq('id', offerId).maybeSingle().throwOnError();
   if (!offer) return null;
   const [{ data: model }, { data: supplier }] = await Promise.all([
-    supabase.from('rental_cat_models').select('id, model_key, model_code, product_name, brand, category, category_raw, image_url').eq('id', offer.model_id).single().throwOnError(),
+    supabase.from('rental_cat_models').select('id, model_key, model_code, product_name, brand, category, category_raw, image_url, status').eq('id', offer.model_id).single().throwOnError(),
     supabase.from('rental_cat_suppliers').select('id, name, file_kind, signup_policy, signup_policy_as_of').eq('id', offer.supplier_id).single().throwOnError(),
   ]);
   return { offer, model, supplier, form: buildApplicationForm({ supplier, offer, model }) };
@@ -360,6 +405,7 @@ export async function loadOfferContext(offerId) {
 
 router.get('/agent/offers/:id/form', ...agent, async (req, res) => {
   try {
+    if (badId(req, res)) return;
     const ctx = await loadOfferContext(req.params.id);
     if (!ctx) return res.status(404).json({ error: '조건 없음' });
     const { rebate, source, ...offer } = ctx.offer;
@@ -397,6 +443,7 @@ router.get('/agent/models', ...agent, async (req, res) => {
 
 router.get('/agent/models/:id/offers', ...agent, async (req, res) => {
   try {
+    if (badId(req, res)) return;
     const today = new Date().toISOString().slice(0, 10);
     const { data } = await supabase.from('rental_cat_offers').select(AGENT_OFFER_COLS)
       .eq('model_id', req.params.id).eq('status', 'active').eq('crm_enabled', true)

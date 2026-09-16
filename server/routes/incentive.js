@@ -748,7 +748,7 @@ router.get('/dashboard/timeseries', authenticateJWT, async (req, res) => {
     const startStr = startDate.toISOString().slice(0,10);
 
     let q = supabase.from('incentive_sales')
-      .select('id, agent_id, product_id, contract_date, status, payback_snapshot, rebate_snapshot, add_payback, db_source_id, product:incentive_products(name), db_source:incentive_db_sources(name,color), agent:incentive_agents(name,role,center)')
+      .select('id, agent_id, product_id, sale_kind, rental_snapshot, contract_date, status, payback_snapshot, rebate_snapshot, add_payback, db_source_id, product:incentive_products(name), db_source:incentive_db_sources(name,color), agent:incentive_agents(name,role,center)')
       .gte('contract_date', startStr).is('deleted_at', null);
     if (me.role === 'agent') q = q.eq('agent_id', me.id);
     else if (me.role === 'manager') {
@@ -765,13 +765,15 @@ router.get('/dashboard/timeseries', authenticateJWT, async (req, res) => {
     for (const s of sales || []) {
       const ym = (s.contract_date || '').slice(0,7);
       const payback = (s.payback_snapshot || 0) + (s.add_payback || 0);
-      const rebate = s.rebate_snapshot || 0;
+      // 렌탈 리베이트는 계약 대상 수수료(관리자 정보)라 통신 매출 합계에 섞지 않는다
+      const rebate = s.sale_kind === 'rental' ? 0 : (s.rebate_snapshot || 0);
       const total = payback + rebate;
       byMonth[ym] = byMonth[ym] || { month: ym, count: 0, payback: 0, rebate: 0, total: 0 };
       byMonth[ym].count++; byMonth[ym].payback += payback; byMonth[ym].rebate += rebate; byMonth[ym].total += total;
       const st = s.status || 'unknown';
       byStatus[st] = (byStatus[st] || 0) + 1;
-      const pn = s.product?.name || '미상';
+      const pn = s.product?.name
+        || (s.sale_kind === 'rental' ? '🧊 ' + (s.rental_snapshot?.model?.product_name || s.rental_snapshot?.model?.model_code || '렌탈') : '미상');
       byProduct[pn] = byProduct[pn] || { name: pn, count: 0, total: 0 };
       byProduct[pn].count++; byProduct[pn].total += total;
       const an = s.agent?.name || '-';
@@ -989,6 +991,19 @@ router.post('/sales', authenticateJWT, async (req, res) => {
       const o = rentalCtx.offer;
       if (o.status !== 'active') return res.status(400).json({ error: `판매중이 아닌 조건입니다 (${o.ticket_number})` });
       if (o.guide_payout == null || o.max_payout == null) return res.status(400).json({ error: `가이드·MAX 가 설정되지 않은 조건입니다 (${o.ticket_number})` });
+      const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+      if (o.crm_enabled === false) return res.status(400).json({ error: `상담 판매가 꺼진 조건입니다 (${o.ticket_number})` });
+      if ((o.valid_to && o.valid_to < today) || (o.valid_from && o.valid_from > today)) return res.status(400).json({ error: `적용기간이 아닌 조건입니다 (${o.ticket_number})` });
+      if (rentalCtx.model.status && rentalCtx.model.status !== 'active') return res.status(400).json({ error: '판매중이 아닌 모델입니다' });
+      // 리베이트가 내려가 MAX 가 리베이트 공급가를 넘으면 손실 — 가이드·MAX 재설정 전까지 판매 금지
+      if (o.rebate != null && o.max_payout > Math.floor(o.rebate / 1.1)) return res.status(400).json({ error: `리베이트가 MAX 보다 낮습니다 — 상품관리에서 가이드·MAX 재설정 필요 (${o.ticket_number})` });
+      // 연속 제출(더블클릭·재시도) 방지 — 같은 조건·같은 고객 60초 내 중복
+      if (customer_phone) {
+        const since = new Date(Date.now() - 60_000).toISOString();
+        const { data: dup } = await supabase.from('incentive_sales').select('id').eq('sale_kind', 'rental')
+          .eq('rental_offer_id', o.id).eq('customer_phone', customer_phone).is('deleted_at', null).gte('created_at', since).limit(1);
+        if (dup?.length) return res.status(409).json({ error: '방금 같은 계약이 등록됐습니다 (중복 제출)', sale_id: dup[0].id });
+      }
       const pay = actual_payout == null || actual_payout === '' ? null : Number(actual_payout);
       if (!Number.isInteger(pay) || pay < o.guide_payout || pay > o.max_payout) {
         return res.status(400).json({ error: `지급액은 가이드 ${o.guide_payout.toLocaleString()} ~ MAX ${o.max_payout.toLocaleString()} 사이여야 합니다` });

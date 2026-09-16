@@ -93,6 +93,7 @@
 
   // ─── 상품 목록 ───
   async function loadModels(append) {
+    var seq = ST.seq = (ST.seq || 0) + 1;   // 늦게 온 이전 응답이 최신 필터 결과를 덮지 않게
     ST.page = append ? ST.page + 1 : 1;
     var qs = '?size=40&page=' + ST.page;
     var q = $('rp-q').value.trim(); if (q) qs += '&q=' + encodeURIComponent(q);
@@ -103,6 +104,7 @@
     if ($('rp-f-flag').value === 'linked') qs += '&linked=true';
     try {
       var j = await call('/models' + qs);
+      if (seq !== ST.seq) return;
       ST.models = append ? ST.models.concat(j.models) : j.models;
       ST.total = j.total;
       renderModels();
@@ -173,6 +175,8 @@
     var body = { supplier_id: $('rp-p-supplier').value, title: $('rp-p-title').value.trim(), summary: $('rp-p-summary').value.trim() || null,
       period_from: $('rp-p-from').value || null, period_to: $('rp-p-to').value || null, stacking: $('rp-p-stack').value.trim() ? { text: $('rp-p-stack').value.trim() } : null };
     if (!body.supplier_id || !body.title) return msg('rp-promo-msg', '렌탈사와 제목은 필수', true);
+    if (!body.period_from || !body.period_to) return msg('rp-promo-msg', '프로모션은 자주 바뀌므로 시작일·종료일이 필수입니다', true);
+    if (body.period_from > body.period_to) return msg('rp-promo-msg', '종료일이 시작일보다 빠릅니다', true);
     try { await call('/promotions', { method: 'POST', json: body }); msg('rp-promo-msg', '✅ 등록됨'); ['rp-p-title', 'rp-p-summary', 'rp-p-stack'].forEach(function (id) { $(id).value = ''; }); loadPromos(); }
     catch (e) { msg('rp-promo-msg', e.message, true); }
   }

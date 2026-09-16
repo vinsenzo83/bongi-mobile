@@ -490,7 +490,7 @@ body.cat-rental .tm-ticket-lookup { display:none; }
 <script src="/docs/_security.js" defer></script>
 <!-- 시드 데이터 동기화 공통 헬퍼 (calculator/tm/tm-counselor 공유) -->
 <script src="/docs/_calc-data-sync.js?v=4"></script>
-<script src="/docs/tm-rental.js?v=5" defer></script>
+<script src="/docs/tm-rental.js?v=7" defer></script>
 </head>
 <body>
 
@@ -1719,10 +1719,10 @@ function bindShortcutKeys() {
             <div><div style="font-size:9.5px;color:#78350f">현재 지급액</div><div id="rt-offer" style="font-size:18px;font-weight:900;color:#b45309">—</div></div>
             <div><div style="font-size:9.5px;color:#78350f">MAX <span style="font-size:8.5px;color:#b91c1c">고객 노출 금지</span></div><div id="rt-max" style="font-size:15px;font-weight:900;color:#6d28d9">—</div></div>
           </div>
-          <input type="range" id="rt-payout" min="0" max="0" step="10000" value="0" style="width:100%;accent-color:#d97706">
+          <input type="range" id="rt-payout" min="0" max="0" step="1000" value="0" style="width:100%;accent-color:#d97706">
           <div style="display:flex;align-items:center;gap:7px;margin-top:8px">
             <span style="font-size:10.5px;color:#78350f;font-weight:800;white-space:nowrap">지급액</span>
-            <input type="number" id="rt-payout-num" step="10000" style="flex:1;padding:6px 9px;border:1.5px solid #d97706;border-radius:6px;font-size:14px;font-weight:800;text-align:right;background:#fff;color:#b45309">
+            <input type="number" id="rt-payout-num" step="1000" style="flex:1;padding:6px 9px;border:1.5px solid #d97706;border-radius:6px;font-size:14px;font-weight:800;text-align:right;background:#fff;color:#b45309">
             <span style="font-size:11px;color:#78350f">원</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#92400e;margin-top:4px">
@@ -5847,7 +5847,10 @@ async function incRenderSales() {
     return;
   }
   list.innerHTML = sales.map(s => {
-    const p = s.product || {};
+    // 렌탈·유심 단독은 인터넷 상품이 없다 — 표시용 이름을 스냅샷에서 만든다
+    const p = s.product
+      || (s.sale_kind === 'rental' && s.rental_snapshot ? { carrier: (s.rental_snapshot.supplier || {}).name, name: ('🧊 ' + ((s.rental_snapshot.model || {}).product_name || (s.rental_snapshot.model || {}).model_code || '렌탈') + ' ' + (s.rental_ticket_number || '')).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }) }
+      : s.usim ? { carrier: s.usim.carrier, name: '📲 ' + (s.usim.plan_name || '유심') } : {});
     const dateShort = s.contract_date.slice(5); // MM-DD
     const statusBadge = s.status === 'cancelled'
       ? '<span style="background:#dc2626;color:#fff;padding:1px 5px;border-radius:3px;font-size:8px">취소</span>'

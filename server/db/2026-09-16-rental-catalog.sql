@@ -227,3 +227,11 @@ create or replace function rental_cat_stats() returns jsonb language sql securit
   from rental_cat_offers;
 $$;
 revoke all on function rental_cat_stats from public, anon, authenticated;
+
+-- 11. 관리자 상태 고정 · 엑셀 원본 상태 분리 · 관리자 메모 (월 import 가 사람 결정을 덮지 않게)
+alter table rental_cat_offers add column if not exists source_status text;          -- 엑셀 원본 판매상태
+alter table rental_cat_offers add column if not exists status_locked boolean not null default false;  -- true 면 import 가 status 를 바꾸지 않음
+alter table rental_cat_offers add column if not exists admin_notes text;            -- 관리자 메모 (notes 는 엑셀 비고)
+update rental_cat_offers set source_status = status where source_status is null;
+alter table rental_cat_offers drop constraint if exists rental_cat_offers_status_chk;
+alter table rental_cat_offers add constraint rental_cat_offers_status_chk check (status in ('active','paused','discontinued'));

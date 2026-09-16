@@ -181,14 +181,15 @@
   // 서버 buildProcessChecklist 와 같은 규칙 (명의·타명의납부로 서류 필터)
   function buildChecklist(j, app) {
     var base = (j.checklist || []).filter(function (i) { return i.group !== '서류'; });
-    var seen = {};
-    var docs = (j.form.documents || []).filter(function (d) {
-      if (d.holders && d.holders.indexOf(app.holder_type) < 0) return false;
-      if (d.flag && !app[d.flag]) return false;
-      if (seen[d.label]) return false;
-      seen[d.label] = true;
-      return true;
-    }).map(function (d) { return { key: 'doc:' + d.key, group: '서류', label: d.label, required: !d.situational, when: d.when }; });
+    // 서버 buildProcessChecklist 와 같은 규칙 — 같은 서류는 한 줄, 하나라도 무조건 필요하면 필수
+    var docs = [];
+    (j.form.documents || []).forEach(function (d) {
+      if (d.holders && d.holders.indexOf(app.holder_type) < 0) return;
+      if (d.flag && !app[d.flag]) return;
+      var prev = docs.filter(function (x) { return x.label === d.label; })[0];
+      if (prev) { if (!d.situational) { prev.required = true; prev.when = d.when; } return; }
+      docs.push({ key: 'doc:' + d.key, group: '서류', label: d.label, required: !d.situational, when: d.when });
+    });
     return docs.concat(base);
   }
 
@@ -281,8 +282,8 @@
     if (statusKey) body.status = statusKey; else delete body.status;
     if (!body.customer_name || !body.customer_phone) { msg.style.color = '#fca5a5'; msg.textContent = '이름·휴대폰은 필수'; return; }
     if (FORMS[id]) {
+      // 빈칸·체크 해제도 그대로 보낸다 — 지우는 것도 저장돼야 한다 (서버가 명세로 다시 검증)
       var app = readApp(id);
-      Object.keys(app).forEach(function (k) { if (app[k] === '' || app[k] === false) delete app[k]; });
       body.rental_application = app;
       body.rental_process = readProc(id);
     }

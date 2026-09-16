@@ -51,7 +51,7 @@ function conditionOf(appliesTo) {
   // "개인" 단독(개인사업자·개인/법인사업자 표기가 아닌 것)
   if (/^개인($|\(|\s|대표자|전입)/.test(t) || /^개인\(전입/.test(t)) holders.add('개인');
   if (/공통/.test(t)) HOLDER_ALL.forEach((h) => holders.add(h));
-  const situational = /필요\s*시|필요시|예외|≠|상이|대표자 통화 불가|단체주문|공동대표|4천만원|신용\s*미달|카드 선납|사전답사|장애인|관공서|국가기관|비영리|명의변경/.test(s);
+  const situational = /필요\s*시|필요시|예외|≠|상이|대표자 통화 불가|단체주문|공동대표|4천만원|신용\s*미달|카드 선납|사전답사|장애인|관공서|국가기관|비영리|명의변경|자동이체|지로|가상계좌/.test(s);   // 납부수단에 따라 갈리는 서류도 상황별
   return { holders: holders.size ? [...holders] : null, situational, text: s };
 }
 
@@ -275,13 +275,13 @@ export function validateApplication(form, input, { today = new Date() } = {}) {
 export function buildProcessChecklist(form, application = {}) {
   const holder = application.holder_type;
   const items = [];
-  const labels = new Set();
   for (const d of form.documents) {
     const holderMatch = !d.holders || d.holders.includes(holder);
     const flagMatch = !d.flag || application[d.flag];
     if (!holderMatch || !flagMatch) continue;
-    if (labels.has(d.label)) continue;
-    labels.add(d.label);
+    // 같은 서류가 여러 조건으로 나오면 한 줄로 — 하나라도 무조건 필요하면 필수
+    const prev = items.find((x) => x.group === '서류' && x.label === d.label);
+    if (prev) { if (!d.situational) { prev.required = true; prev.when = d.when; } continue; }
     items.push({ key: `doc:${d.key}`, group: '서류', label: d.label, required: !d.situational, when: d.when, note: d.note });
   }
   const contacts = form.supplier?.contacts;

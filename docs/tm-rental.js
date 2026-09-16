@@ -235,9 +235,9 @@
     card.style.display = '';
     var warn = $('rt-pay-warn');
     var body = $('rt-pay-body');
-    if (o.guide_payout == null || o.max_payout == null) {
+    if (o.guide_payout == null || o.max_payout == null || o.max_payout === 0) {
       warn.style.display = ''; body.style.display = 'none';
-      warn.textContent = '⚠ 이 조건은 가이드·MAX 가 아직 설정되지 않았습니다. 상품관리에서 설정해야 계약 등록이 됩니다.';
+      warn.textContent = o.max_payout === 0 ? '이 조건은 지원금이 없습니다 (가이드·MAX 0원).' : '⚠ 이 조건은 가이드·MAX 가 아직 설정되지 않았습니다. 상품관리에서 설정해야 계약 등록이 됩니다.';
       quote(o);
       return null;
     }
@@ -398,13 +398,13 @@
   function renderDocs(d) {
     var box = $('rt-docs');
     if (!box || !RT.form) return;
-    var seen = {};
-    var docs = (RT.form.documents || []).filter(function (doc) {
-      if (doc.holders && doc.holders.indexOf(d.holder_type) < 0) return false;
-      if (doc.flag && !d[doc.flag]) return false;
-      if (seen[doc.label]) return false;
-      seen[doc.label] = true;
-      return true;
+    var docs = [];
+    (RT.form.documents || []).forEach(function (doc) {
+      if (doc.holders && doc.holders.indexOf(d.holder_type) < 0) return;
+      if (doc.flag && !d[doc.flag]) return;
+      var prev = docs.filter(function (x) { return x.label === doc.label; })[0];
+      if (prev) { if (!doc.situational) { prev.situational = false; prev.when = doc.when; } return; }
+      docs.push({ label: doc.label, situational: doc.situational, when: doc.when });
     });
     if (!d.holder_type) { box.innerHTML = '<div class="rt-hint">가입 명의를 고르면 필요한 서류가 나옵니다.</div>'; return; }
     box.innerHTML = '<div class="rt-docs-title">📎 ' + esc(d.holder_type) + ' 필요 서류 <span class="rt-hint">계약처리에서 수령 체크합니다</span></div>' +
@@ -491,6 +491,9 @@
       quote_full_html: customerQuoteHtml(o, pay),
     };
     msg.className = 'rt-msg'; msg.textContent = '등록 중…';
+    var btn = $('rt-deal-submit');
+    if (btn.disabled) return;
+    btn.disabled = true;   // 더블클릭으로 같은 계약이 두 번 들어가지 않게
     try {
       var r = await fetch(INC_API + '/sales', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() }, body: JSON.stringify(body) });
       var j = await r.json().catch(function () { return {}; });
@@ -504,6 +507,7 @@
       msg.textContent = '✅ 등록됨 — 계약 처리로 넘어갔습니다 (ID ' + String(j.sale && j.sale.id || '').slice(0, 8) + ')';
       renderForm(RT.form);
     } catch (e) { msg.className = 'rt-msg err'; msg.textContent = '등록 실패: ' + e.message; }
+    finally { btn.disabled = false; }
   }
 
   // ─── 초기화 ───

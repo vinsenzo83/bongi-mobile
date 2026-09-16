@@ -316,7 +316,8 @@ function parseLgHello(rows, ctx) {
       for (const t of termCols(g)) {
         const monthly = toWon(row[t.monthly]);
         if (!monthly) continue;
-        const total = toWon(row[t.total]) ?? monthly * t.months;
+        const totalRaw = toWon(row[t.total]);
+        const total = totalRaw > 0 ? totalRaw : monthly * t.months;   // 원본 총액 칸이 0·공란이면 월요금×개월 (0 이 리베이트 0 으로 새지 않게)
         const offer_type = g.type === 'staff' ? 'staff' : path.includes('현장') ? 'field' : path.includes('콜특가') ? 'special' : 'normal';
         put({
           ...base,

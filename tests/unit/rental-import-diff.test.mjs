@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeDiff, displayFee, summarize } from '../../server/services/rental-import/commit.js';
 
-const base = { supplier: '코웨이', condition_key: 'k1', monthly_fee: 31900, price_phases: [{ from: 1, to: 18, fee: 15950 }], rebate: 579150, status: 'active', source: { sheet: '코웨이(9월)', row: 639, file_kind: 'water' } };
+const base = { supplier: '코웨이', condition_key: 'k1', monthly_fee: 31900, price_phases: [{ from: 1, to: 18, fee: 15950 }], rebate: 579150, status: 'active', source_status: 'active', source: { sheet: '코웨이(9월)', row: 639, file_kind: 'water' } };
 
 test('display_fee 는 1개월차 할인요금, 할인 없으면 기준요금', () => {
   assert.equal(displayFee(base), 15950);
@@ -46,4 +46,16 @@ test('jsonb 키 순서가 달라도 변경 아님', () => {
   const existing = new Map([['k1', { ...base, id: 'a', display_fee: 15950, price_phases: [{ to: 18, fee: 15950, from: 1 }], rebate_detail: { b: 1, a: 2 } }]]);
   const d = computeDiff(existing, [{ ...base, rebate_detail: { a: 2, b: 1 } }], new Set());
   assert.equal(d.changed.length, 0);
+});
+
+test('관리자가 고정한 판매종료(status_locked)는 엑셀에 다시 나와도 재판매로 되살리지 않는다', () => {
+  const existing = new Map([['k1', { ...base, id: 'a', display_fee: 15950, status: 'discontinued', status_locked: true }]]);
+  const d = computeDiff(existing, [base], new Set(['water|코웨이']));
+  assert.equal(d.reappeared.length, 0);
+});
+
+test('엑셀 원본 상태가 바뀌면 source_status 변경으로 잡힌다', () => {
+  const existing = new Map([['k1', { ...base, id: 'a', display_fee: 15950 }]]);
+  const d = computeDiff(existing, [{ ...base, status: 'paused' }], new Set());
+  assert.deepEqual(d.changed[0].fields, ['source_status']);
 });

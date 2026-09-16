@@ -1024,7 +1024,7 @@ async function init() {
     if (agent) {
       document.getElementById('auth-msg').textContent = '⚠️ admin 권한 필요 (현재 ' + agent.role + ')';
       document.getElementById('auth-msg').style.color = '#fbbf24';
-      clearToken();
+      // 토큰은 지우지 않는다 — TM상담·계약처리와 같은 로그인을 쓰므로 여기서 지우면 전부 로그아웃된다
     }
   }
   document.getElementById('auth-box').style.display = '';
@@ -1411,6 +1411,6 @@ async function showHistory(productId) {
 
 init();
 </script>
-<script src="/docs/products-rental.js?v=2"></script>
+<script src="/docs/products-rental.js?v=3"></script>
 </body>
 </html>
