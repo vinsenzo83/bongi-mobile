@@ -8,7 +8,7 @@
  *  - 반복행(#2 등)도 그대로 별도 조건으로 보존한다.
  */
 import { createHash } from 'crypto';
-import { sheetBase, categorize } from './core.js';
+import { sheetBase, categorize, isCodeName, composeProductName, tidyName } from './core.js';
 
 // 엑셀 렌탈사 표기 → 고정 id. 없는 이름은 해시 id 로 생성(첫 등장 시 보고됨)
 const SUPPLIER_IDS = {
@@ -128,16 +128,36 @@ export async function commitImport(supabase, { batch, offers, sheets, user, supp
     const sid = supplierId(o.supplier);
     const key = o.model_key || o.product_name;
     const k = `${sid}|${key}`;
-    if (!models.has(k)) models.set(k, {
+    const prev = models.get(k);
+    // 같은 모델의 여러 행 중 사람이 읽을 이름이 있는 행을 쓴다 (쿠쿠 타사보상 시트 설명 등)
+    if (!prev || (prev._codeName && !isCodeName(o.product_name, o.model_code, key))) models.set(k, {
       supplier_id: sid, model_key: key, model_code: o.model_code, product_name: o.product_name,
       brand: o.brand, category_raw: o.category_raw, last_batch_id: batch.id, updated_at: now,
       _category: categorize(o.category_raw, o.product_name),
+      _codeName: isCodeName(o.product_name, o.model_code, key),
     });
+  }
+  // 엑셀에 이름이 없으면 기존 이름(제품정보 적재·관리자 수정)을 지키고, 그것도 코드뿐이면 브랜드 + 품목으로 만든다
+  const existingModels = new Map();
+  await chunked([...new Set([...models.values()].map((m) => m.supplier_id))], 1, async ([sid]) => {
+    for (let from = 0; ; from += 1000) {
+      const { data } = await supabase.from('rental_cat_models').select('supplier_id, model_key, product_name, specs')
+        .eq('supplier_id', sid).range(from, from + 999).throwOnError();
+      for (const m of data) existingModels.set(`${m.supplier_id}|${m.model_key}`, m);
+      if (data.length < 1000) break;
+    }
+  });
+  for (const [k, m] of models) {
+    if (!m._codeName) { m.product_name = tidyName(m.product_name); continue; }
+    const ex = existingModels.get(k);
+    m.product_name = ex && !isCodeName(ex.product_name, m.model_code, m.model_key)
+      ? ex.product_name
+      : composeProductName({ ...m, spec_name: ex?.specs?.name });
   }
   const modelIds = new Map();
   await chunked([...models.values()], 500, async (chunk) => {
     const { data } = await supabase.from('rental_cat_models')
-      .upsert(chunk.map(({ _category, ...m }) => m), { onConflict: 'supplier_id,model_key' }).select('id, supplier_id, model_key, category').throwOnError();
+      .upsert(chunk.map(({ _category, _codeName, ...m }) => m), { onConflict: 'supplier_id,model_key' }).select('id, supplier_id, model_key, category').throwOnError();
     for (const m of data) modelIds.set(`${m.supplier_id}|${m.model_key}`, m.id);
     // 카테고리는 처음 들어온 모델에만 자동 분류 — 관리자가 고친 값은 import 가 덮지 않는다
     const byCat = new Map();

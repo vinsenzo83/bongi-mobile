@@ -59,3 +59,16 @@ test('엑셀 원본 상태가 바뀌면 source_status 변경으로 잡힌다', (
   const d = computeDiff(existing, [{ ...base, status: 'paused' }], new Set());
   assert.deepEqual(d.changed[0].fields, ['source_status']);
 });
+
+test('상품명 칸이 없는 시트는 브랜드+품목으로 이름을 만든다', async () => {
+  const { isCodeName, composeProductName } = await import('../../server/services/rental-import/core.js');
+  assert.equal(isCodeName('W2420WHNR.AKOR', 'W2420WHNR.AKOR'), true);
+  assert.equal(isCodeName('WHP-3020', 'WHP-3020'), true);
+  assert.equal(isCodeName('아이콘3.0', 'CHP-7220N'), false);
+  assert.equal(isCodeName('eversys legacy L2c', 'X1'), false);
+  assert.equal(composeProductName({ product_name: 'W2420WHNR.AKOR', model_code: 'W2420WHNR.AKOR', brand: 'LG전자', category_raw: '워시타워' }), 'LG전자 워시타워');
+  assert.equal(composeProductName({ product_name: 'WHP-3020', model_code: 'WHP-3020', brand: '루헨스', category_raw: '정수기', spec_name: '직수형 냉온정수기' }), '루헨스 직수형 냉온정수기');
+  assert.equal(composeProductName({ product_name: 'CP-QN3002S', model_code: 'CP-QN3002S', brand: '쿠쿠', category_raw: '쿠쿠 스탠드형  정수기' }), '쿠쿠 스탠드형 정수기');
+  assert.equal(composeProductName({ product_name: '아이콘3.0', model_code: 'CHP-7220N', brand: '코웨이' }), '아이콘3.0');
+  assert.equal(composeProductName({ product_name: '● 미니100', model_code: 'CP-AMS100EWH', brand: '쿠쿠' }), '미니100');
+});

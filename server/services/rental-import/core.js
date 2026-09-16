@@ -233,6 +233,29 @@ export const CATEGORIES = [
   ['pest', '해충방제·위생', /해충|방제|방역|에어커튼|핸드\s?드라이|안전용품|향기/],
   ['pet', '반려동물', /반려|펫|애완|리터로봇/],
 ];
+/** 셀 안 글머리표(● ■ ▶ ※ -)를 뗀다 — 쿠쿠 타사보상 시트는 '● 미니100' 처럼 적혀 있다 */
+export function tidyName(name) {
+  return clean(name).replace(/^[●•■□▶▷※★☆\-\s]+/, '').trim();
+}
+
+/** 상품명이 모델코드뿐인가 — 한글이 없고 코드와 같으면 사람이 읽을 이름이 아니다 */
+export function isCodeName(name, code, key) {
+  const n = clean(name);
+  if (!n) return true;
+  if (/[가-힣]/.test(n)) return false;
+  if (/\s/.test(n)) return false;   // 'Skycamp R' 같은 영문 상품명은 이름으로 둔다
+  return n === clean(code) || n === clean(key) || /\d/.test(n);   // 띄어쓰기 없는 영문+숫자 = 코드
+}
+
+/** 상품명 칸이 없는 시트(LG구독 TV·리빙·쿠킹·냉장고, 쿠쿠, 루헨스 …)는 브랜드 + 품목으로 이름을 만든다 */
+export function composeProductName({ product_name, model_code, model_key, brand, category_raw, spec_name }) {
+  if (!isCodeName(product_name, model_code, model_key)) return tidyName(product_name);
+  const kind = clean(spec_name) || clean(category_raw).replace(/\s+/g, ' ');
+  const b = clean(brand);
+  const composed = [b && !kind.startsWith(b) ? b : null, kind].filter(Boolean).join(' ');
+  return composed || clean(product_name) || clean(model_code) || null;
+}
+
 export function categorize(categoryRaw, productName) {
   const hay = `${categoryRaw || ''} ${productName || ''}`;
   for (const [slug, , re] of CATEGORIES) if (re.test(categoryRaw || '')) return slug;

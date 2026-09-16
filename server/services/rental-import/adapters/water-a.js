@@ -176,7 +176,13 @@ function cuckooParse(rows, ctx, { tradeInSheet }) {
 
     offers.push(makeOffer({
       supplier: '쿠쿠', brand: '쿠쿠', category_raw: row[c.category],
-      product_name: clean(String(row[c.model] || '').split(/\n/)[0]) || modelCode,
+      // 타사보상 시트 모델칸은 '● 미니100 / 초고온 직수 정수기 / (빈줄) / 코드들…' — 빈 줄·코드 전까지를 이름으로 쓴다
+      product_name: (() => {
+        const lines = String(row[c.model] || '').split(/\n/).map(clean);
+        const out = [];
+        for (const l of lines) { if (!l || /^[A-Z]{2,}-/.test(l) || /^※/.test(l)) break; out.push(l); }
+        return out.join(' ') || modelCode;
+      })(),
       model_code: modelCode, variant_code: detail,
       contract_months: contract, obligation_months: obligation, ownership_months: toMonths(row[c.ownership]),
       care_type: careType, care_label: careRaw, cycle_months: cycle,
