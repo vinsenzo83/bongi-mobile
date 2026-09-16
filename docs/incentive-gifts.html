@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사은품 지급 — V5</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'; background:#0f172a; color:#e2e8f0; padding:20px; min-height:100vh; }
+/* 읽기 전용 모드 — agent role */
+body.role-readonly select, body.role-readonly input:not([type="search"]):not([readonly]), body.role-readonly textarea { pointer-events:none !important; opacity:0.7 !important; background:#1e293b !important; }
+body.role-readonly button[data-mutate], body.role-readonly .btn-edit, body.role-readonly .btn-delete, body.role-readonly .btn-restore, body.role-readonly .btn-cancel-contract, body.role-readonly .status-change-btn { display:none !important; }
+body.role-readonly .row-edit-btn, body.role-readonly button:where([onclick*="edit"], [onclick*="delete"], [onclick*="cancel"], [onclick*="restore"], [onclick*="updateStatus"], [onclick*="patch"], [onclick*="save"]) { display:none !important; }
+/* data-act 기반 mutating 액션 일괄 숨김 (btn-action[data-act="soft-delete"] 등) */
+body.role-readonly .btn-action[data-act="edit"],
+body.role-readonly .btn-action[data-act="soft-delete"],
+body.role-readonly .btn-action[data-act="permanent-delete"],
+body.role-readonly .btn-action[data-act="restore"],
+body.role-readonly .btn-action[data-act="save-detail"] { display:none !important; }
+body.role-readonly tr[onclick] { cursor:default !important; }
+
+.wrap { max-width: 1400px; margin: 0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #334155; }
+h1 { font-size:22px; color:#f8fafc; letter-spacing:-0.02em; }
+.subtitle { font-size:12px; color:#94a3b8; margin-top:4px; }
+.badge-role { padding:4px 10px; border-radius:6px; font-size:11px; font-weight:800; letter-spacing:0.04em; }
+
+.auth-box { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:16px; margin-bottom:20px; }
+.auth-box input { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 10px; border-radius:6px; font-size:13px; width:200px; margin-right:8px; }
+.auth-box button { background:#3b82f6; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px; }
+.auth-box button:hover { background:#2563eb; }
+.auth-msg { font-size:11px; margin-top:6px; min-height:14px; }
+
+.toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:12px; flex-wrap:wrap; }
+.toolbar-left { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.toolbar select, .toolbar input { background:#1e293b; border:1px solid #475569; color:#e2e8f0; padding:6px 10px; border-radius:6px; font-size:12px; }
+.toolbar button { background:#3b82f6; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:700; cursor:pointer; font-size:12px; }
+
+.stats { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:20px; }
+.stat-card { background:linear-gradient(135deg,#1e293b,#334155); border:1px solid #475569; border-radius:10px; padding:14px; }
+.stat-label { font-size:10px; color:#94a3b8; font-weight:700; letter-spacing:0.04em; margin-bottom:4px; }
+.stat-val { font-size:22px; color:#f8fafc; font-weight:900; letter-spacing:-0.02em; }
+.stat-sub { font-size:10px; color:#64748b; margin-top:2px; }
+
+table { width:100%; border-collapse:collapse; background:#1e293b; border-radius:10px; overflow:hidden; }
+th { background:#334155; color:#f1f5f9; font-size:11px; padding:10px 8px; text-align:left; font-weight:700; letter-spacing:0.03em; border-bottom:2px solid #475569; }
+td { font-size:11.5px; color:#e2e8f0; padding:10px 8px; border-bottom:1px solid #334155; vertical-align:middle; }
+tr:hover { background:#334155; }
+tr.cancelled { opacity:0.5; }
+
+.tier { display:inline-block; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:800; letter-spacing:0.04em; }
+.tier-S { background:#fbbf24; color:#78350f; }
+.tier-A { background:#60a5fa; color:#1e3a8a; }
+.tier-B { background:#94a3b8; color:#0f172a; }
+.tier-C { background:#475569; color:#cbd5e1; }
+.prem-badge { background:#dc2626; color:#fff; padding:1px 5px; border-radius:3px; font-size:8px; margin-left:3px; }
+.status { padding:2px 6px; border-radius:4px; font-size:9px; font-weight:800; }
+.status-completed { background:#16a34a; color:#fff; }
+.status-pending { background:#f59e0b; color:#fff; }
+.status-in_progress { background:#3b82f6; color:#fff; }
+.status-cancelled { background:#dc2626; color:#fff; }
+
+.editable { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:4px 6px; border-radius:4px; font-size:11px; width:100%; }
+/* 모달 입력 강화 — 가독성 */
+.detail-input {
+  background:#0f172a !important;
+  border:1.5px solid #475569 !important;
+  color:#f8fafc !important;
+  padding:10px 14px !important;
+  border-radius:8px !important;
+  font-size:14px !important;
+  margin-top:5px !important;
+  width:100% !important;
+  transition: border-color 0.15s, background 0.15s;
+}
+.detail-input:focus {
+  outline:none;
+  border-color:#3b82f6 !important;
+  background:#1e293b !important;
+  box-shadow:0 0 0 3px rgba(59,130,246,0.15);
+}
+.detail-input::placeholder { color:#64748b; }
+textarea.detail-input { font-family:inherit; line-height:1.5; }
+.modal-section-title {
+  font-size:13px !important;
+  font-weight:800 !important;
+  letter-spacing:0.04em;
+  margin-bottom:10px !important;
+  padding:6px 10px;
+  border-radius:6px;
+  display:flex; align-items:center; gap:8px;
+}
+.modal-field-label {
+  font-size:11.5px !important;
+  font-weight:700 !important;
+  color:#cbd5e1 !important;
+  margin-bottom:4px !important;
+  display:block;
+}
+.modal-field-hint {
+  font-size:10px !important;
+  color:#94a3b8 !important;
+  margin-top:5px;
+  line-height:1.5;
+}
+
+.btn-action { padding:3px 8px; border-radius:4px; border:none; cursor:pointer; font-size:10px; font-weight:700; margin-right:4px; }
+.btn-save { background:#16a34a; color:#fff; }
+.btn-cancel { background:#dc2626; color:#fff; }
+.btn-call { background:#3b82f6; color:#fff; }
+.btn-edit { background:#3b82f6; color:#fff; }
+.detail-row td { padding: 0 !important; }
+
+.empty { text-align:center; padding:60px 20px; color:#64748b; font-size:13px; }
+.has-address { color:#16a34a; }
+.no-address { color:#dc2626; font-weight:700; }
+
+@media (max-width: 768px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  table { font-size:10px; }
+}
+
+/* 다크 테마 - 달력 아이콘 강제 표시 */
+input[type="date"], input[type="month"] { color-scheme: dark; }
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2);
+  cursor: pointer;
+  opacity: 1;
+}
+input[type="date"]:hover::-webkit-calendar-picker-indicator,
+input[type="month"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 0.8;
+}
+
+/* ═══ 모달 통일 카드 시스템 ═══ */
+.sec-card {
+  background: rgba(15,23,42,0.55);
+  border: 1px solid #334155;
+  border-left: 4px solid var(--acc, #60a5fa);
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+  contain: layout style;
+}
+.sec-card.acc-yellow { --acc: #fbbf24; }
+.sec-card.acc-blue   { --acc: #60a5fa; }
+.sec-card.acc-green  { --acc: #22c55e; }
+.sec-card.acc-cyan   { --acc: #22d3ee; }
+.sec-card.acc-purple { --acc: #a78bfa; }
+.sec-card.acc-slate  { --acc: #94a3b8; }
+.sec-card .sec-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.02em;
+}
+.sec-card .sec-title .sec-icon {
+  font-size: 18px;
+  color: var(--acc);
+}
+.sec-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sec-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.sec-grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.sec-grid-1-15 { display: grid; grid-template-columns: 1fr 1.5fr; gap: 16px; }
+.sec-row + .sec-row { margin-top: 14px; }
+
+/* 상품 정보 헤더 */
+.product-header {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 16px;
+  padding: 14px 18px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+.product-header .ph-meta { font-size: 11px; color: #94a3b8; margin-bottom: 4px; letter-spacing: 0.02em; }
+.product-header .ph-name { font-size: 17px; color: #f8fafc; font-weight: 900; letter-spacing: -0.01em; }
+.product-header .ph-tags { font-size: 11px; color: #cbd5e1; margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.product-header .ph-payback-label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+.product-header .ph-payback-val { font-size: 22px; font-weight: 900; color: #fca5a5; letter-spacing: -0.02em; }
+
+/* 견적서 박스 */
+.quote-box {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+.quote-box .quote-label {
+  font-size: 11px;
+  color: #fbbf24;
+  font-weight: 800;
+  margin-bottom: 12px;
+  letter-spacing: 0.04em;
+  display: flex; align-items: center; gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #334155;
+}
+.quote-box pre {
+  margin: 0;
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #e2e8f0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+/* ═══ 모달 내 견적서(quote_full_html) — TM 계산기와 동일하게 가독성 강화 ═══ */
+/* 인라인 style의 font-size를 .v는 inherit, 전체적으로 clamp 적용 */
+.quote-box .calc-line {
+  display: flex; justify-content: space-between;
+  padding: 3px 0; line-height: 1.5;
+  font-size: clamp(12px, 0.95vw, 14px) !important;
+}
+.quote-box .calc-line .l { color: rgba(226,232,240,0.7) !important; font-weight: 500 !important; font-size: inherit !important; }
+.quote-box .calc-line .v { font-weight: 700 !important; color: #f8fafc !important; font-size: inherit !important; }
+.quote-box .calc-line.discount .v { color: #4ade80 !important; }
+/* 합계 — 강조 */
+.quote-box .calc-line.total {
+  border-top: 1.5px solid rgba(255,255,255,0.2) !important;
+  margin-top: 9px !important; padding-top: 11px !important;
+  font-size: clamp(17px, 1.5vw, 22px) !important;
+  font-weight: 900 !important;
+}
+.quote-box .calc-line.total .l { color: #f8fafc !important; font-weight: 800 !important; }
+.quote-box .calc-line.total .v {
+  font-size: clamp(19px, 1.7vw, 26px) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
+}
+/* 부가 정보 (→ 결합가, └ 추가 할인) */
+.quote-box .calc-line.sub {
+  font-size: clamp(10.5px, 0.85vw, 12.5px) !important;
+  padding: 2px 0 2px 12px !important;
+}
+.quote-box .calc-line.sub .l { color: rgba(226,232,240,0.45) !important; font-weight: 500 !important; }
+.quote-box .calc-line.sub .v { color: rgba(226,232,240,0.55) !important; font-weight: 500 !important; }
+/* 🎁 현금 사은품 — class.gift (신규) + background:rgba(251,191,36 (옛 데이터) 둘 다 매치 */
+.quote-box .calc-line.gift,
+.quote-box .calc-line[style*="rgba(251,191,36"] {
+  padding: 6px 10px !important;
+}
+.quote-box .calc-line.gift .l,
+.quote-box .calc-line[style*="rgba(251,191,36"] .l {
+  font-size: clamp(13px, 1.1vw, 16px) !important;
+  font-weight: 800 !important;
+  color: #fbbf24 !important;
+}
+.quote-box .calc-line.gift .v,
+.quote-box .calc-line[style*="rgba(251,191,36"] .v {
+  font-size: clamp(19px, 1.7vw, 26px) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
+  color: #fbbf24 !important;
+}
+.quote-empty {
+  padding: 24px;
+  background: rgba(0,0,0,0.25);
+  border: 1.5px dashed #475569;
+  border-radius: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .sec-grid-2, .sec-grid-3, .sec-grid-2-1, .sec-grid-1-15 { grid-template-columns: 1fr; }
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>🎁 사은품 지급</h1><div class="subtitle">개통·설치가 확인된 계약의 현금·상품권 지급 원장 (bongi_gifts)</div></div>
+  </header>
+  <div id="need-login" style="display:none;padding:30px;text-align:center;color:#fca5a5">로그인이 필요합니다. 어드민에서 다시 열어주세요.</div>
+  <div id="main-area">
+    <!-- ═══════════ 사은품 지급 관리 ═══════════ -->
+    <div id="gifts-panel">
+
+      <div style="background:rgba(15,23,42,0.55);border:1.5px solid #475569;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+        <div style="font-size:12.5px;color:#cbd5e1;line-height:1.6">
+          <b style="color:#fbbf24">🎁 사은품 지급</b> — <b style="color:#e2e8f0">개통·설치가 확인된 건</b>에 현금·상품권을 지급한다.
+          원장은 <span style="font-family:'SF Mono',Monaco,monospace;font-size:11.5px">bongi_gifts</span> 이고 계약처리와 같은 DB를 본다.
+        </div>
+        <div style="font-size:11.5px;color:#fca5a5;margin-top:7px;padding-top:7px;border-top:1px solid #334155;line-height:1.6">
+          ⚠ <b>지급완료는 되돌릴 수 없다고 보고 다룬다.</b> 돈이 나간 뒤에 상태만 되돌리면 장부와 실제가 어긋난다 —
+          잘못 눌렀으면 <b>상태를 바꾸지 말고 메모에 남기고</b> 정산에서 조정한다.
+        </div>
+      </div>
+
+      <div class="stats" id="gifts-stats" style="grid-template-columns:repeat(5, 1fr)">
+        <div class="stat-card" style="border-color:#f59e0b"><div class="stat-label" style="color:#fbbf24">⏳ 지급대기</div><div class="stat-val" id="gstat-wait" style="color:#fbbf24">-</div><div class="stat-sub">개통 확인됨</div></div>
+        <div class="stat-card" style="border-color:#a855f7"><div class="stat-label" style="color:#c4b5fd">🔒 미인증</div><div class="stat-val" id="gstat-unauth" style="color:#c4b5fd">-</div><div class="stat-sub">본인확인 전 — 지급 불가</div></div>
+        <div class="stat-card" style="border-color:#22c55e"><div class="stat-label" style="color:#86efac">✅ 지급완료</div><div class="stat-val" id="gstat-paid" style="color:#86efac">-</div><div class="stat-sub">이번 달</div></div>
+        <div class="stat-card"><div class="stat-label">💰 지급대기 금액</div><div class="stat-val" id="gstat-amount">-</div><div class="stat-sub">나갈 돈</div></div>
+        <div class="stat-card" style="border-color:#dc2626"><div class="stat-label" style="color:#fca5a5">⛔ 보류</div><div class="stat-val" id="gstat-hold" style="color:#fca5a5">-</div><div class="stat-sub">사유 확인 필요</div></div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 10px">
+        <input type="text" id="gift-q" placeholder="이름·전화·티켓번호" style="min-width:190px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px">
+        <select id="gift-status" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px">
+          <option value="">상태 전체</option>
+          <option>지급대기</option><option>지급완료</option><option>보류</option><option>비회원대기</option>
+        </select>
+        <select id="gift-auth" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:12.5px">
+          <option value="">인증 전체</option><option>인증완료</option><option>미인증</option>
+        </select>
+        <button id="gift-refresh" style="background:#3b82f6;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">🔄 새로고침</button>
+        <span id="gift-count" style="margin-left:auto;font-size:12px;color:#64748b"></span>
+      </div>
+
+      <div style="background:rgba(15,23,42,0.55);border:1.5px solid #475569;border-radius:10px;overflow:hidden">
+        <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr>
+            <th style="width:9%">계약일</th><th style="width:11%">고객</th><th style="width:12%">전화</th>
+            <th style="width:15%">상품</th><th style="width:9%">티켓</th><th style="width:9%">금액</th>
+            <th style="width:14%">입금 계좌</th><th style="width:8%">인증</th><th style="width:8%">상태</th><th style="width:11%">지급</th>
+          </tr></thead>
+          <tbody id="gift-tbody"><tr><td colspan="10" style="padding:30px;text-align:center;color:#64748b">불러오는 중...</td></tr></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const won = (n) => (n == null || n === '' || n === 0) ? '-' : Number(n).toLocaleString('ko-KR') + '원';
+  const dt = (iso) => { const d = new Date(iso); if (isNaN(d)) return '-';
+    const p = (x) => String(x).padStart(2,'0');
+    return p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
+
+  const PILL = { '해피콜 대기':'a','계약대기':'a','미응대':'a','계약진행':'b','상담중':'b',
+                 '계약완료':'g','계약 전환':'g','계약취소':'r','미컨택 종결':'r' };
+
+  function pill(v) {
+    const c = PILL[v] || 'n';
+    const map = { a:['rgba(245,158,11,.16)','#fbbf24','rgba(245,158,11,.45)'],
+                  b:['rgba(59,130,246,.16)','#60a5fa','rgba(59,130,246,.45)'],
+                  g:['rgba(34,197,94,.16)','#86efac','rgba(34,197,94,.45)'],
+                  r:['rgba(220,38,38,.16)','#fca5a5','rgba(220,38,38,.45)'],
+                  n:['rgba(100,116,139,.18)','#94a3b8','#475569'] }[c];
+    return '<span style="display:inline-block;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:11px;'
+      + 'background:' + map[0] + ';color:' + map[1] + ';border:1px solid ' + map[2] + ';white-space:nowrap">' + esc(v) + '</span>';
+  }
+  function toast(msg, bad) {
+    const d = document.createElement('div');
+    d.textContent = msg;
+    d.style.cssText = 'position:fixed;left:50%;bottom:34px;transform:translateX(-50%);z-index:99999;'
+      + 'background:' + (bad ? '#7f1d1d' : '#166534') + ';color:#fff;padding:11px 20px;border-radius:8px;'
+      + 'font-size:13px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.45)';
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 2600);
+  }
+
+
+  // ══════════════════ 사은품 지급 (실데이터 — bongi_gifts) ══════════════════
+  const Gifts = (function () {
+    let rows = [];
+    const F = { q:'', status:'', auth:'' };
+
+    function tk() { return localStorage.getItem('incentive-auth-token-v1'); }
+
+    async function load() {
+      const tb = $('gift-tbody');
+      if (!tb) return;
+      tb.innerHTML = '<tr><td colspan="10" style="padding:30px;text-align:center;color:#64748b">불러오는 중...</td></tr>';
+      try {
+        const r = await fetch('/api/admin/platform/gifts', { headers: { Authorization: 'Bearer ' + tk() } });
+        if (!r.ok) throw new Error('조회 실패 (' + r.status + ')');
+        const j = await r.json();
+        rows = j.gifts || j.rows || (Array.isArray(j) ? j : []);
+      } catch (e) {
+        tb.innerHTML = '<tr><td colspan="10" style="padding:30px;text-align:center;color:#fca5a5">'
+          + esc(e.message) + '</td></tr>';
+        return;
+      }
+      render();
+    }
+
+    function filtered() {
+      const q = F.q.trim().toLowerCase();
+      return rows.filter(g =>
+        (!F.status || g.status === F.status) &&
+        (!F.auth   || g.auth_status === F.auth) &&
+        (!q || ((g.name||'') + (g.phone||'') + (g.ticket_no||'') + (g.account_holder||''))
+                 .toLowerCase().includes(q)));
+    }
+
+    function render() {
+      const list = filtered();
+      const n = (st) => rows.filter(g => g.status === st).length;
+      const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+      set('gstat-wait',  n('지급대기') + '건');
+      set('gstat-unauth', rows.filter(g => g.auth_status === '미인증' && g.status !== '지급완료').length + '건');
+      set('gstat-paid',  n('지급완료') + '건');
+      set('gstat-hold',  (n('보류') + n('비회원대기')) + '건');
+      const amt = rows.filter(g => g.status === '지급대기')
+                      .reduce((a, g) => a + (Number(g.amount) || 0), 0);
+      set('gstat-amount', amt ? (amt / 10000).toLocaleString('ko-KR') + '만' : '0');
+      const c = $('gift-count'); if (c) c.textContent = list.length + '건';
+
+      const tb = $('gift-tbody');
+      if (!list.length) {
+        tb.innerHTML = '<tr><td colspan="10" style="padding:34px;text-align:center;color:#64748b">해당하는 건이 없습니다.</td></tr>';
+        return;
+      }
+      tb.innerHTML = list.map((g, i) => {
+        const authed = g.auth_status === '인증완료';
+        const done   = g.status === '지급완료';
+        const acct = [g.bank, g.account_number].filter(Boolean).join(' ');
+        return '<tr>'
+          + '<td style="font-family:\'SF Mono\',Monaco,monospace;font-size:11px;color:#94a3b8">'
+            + esc(g.contract_date || (g.created_at ? dt(g.created_at) : '-')) + '</td>'
+          + '<td style="font-weight:600">' + esc(g.name || g.account_holder || '-') + '</td>'
+          + '<td style="font-family:\'SF Mono\',Monaco,monospace;font-size:11.5px">' + esc(g.phone || '-') + '</td>'
+          + '<td>' + esc(g.product_name || '-') + '</td>'
+          + '<td style="font-family:\'SF Mono\',Monaco,monospace;font-size:11px">' + esc(g.ticket_no || '-') + '</td>'
+          + '<td style="text-align:right;font-family:\'SF Mono\',Monaco,monospace;font-weight:700">' + won(g.amount) + '</td>'
+          + '<td style="font-size:11px">' + (acct ? esc(acct) : '<span style="color:#fca5a5">계좌 없음</span>')
+            + (g.account_holder ? '<div style="color:#64748b">예금주 ' + esc(g.account_holder) + '</div>' : '') + '</td>'
+          + '<td>' + (authed
+              ? '<span style="color:#86efac;font-size:11px;font-weight:700">인증완료</span>'
+              : '<span style="color:#c4b5fd;font-size:11px;font-weight:700">미인증</span>') + '</td>'
+          + '<td>' + pill(g.status || '-') + '</td>'
+          + '<td>' + (done
+              ? '<span style="font-size:11px;color:#64748b">' + (g.paid_at ? dt(g.paid_at) : '완료') + '</span>'
+              : '<div style="display:flex;gap:4px">'
+                + '<button data-pay="' + i + '"' + (authed ? '' : ' disabled')
+                  + ' title="' + (authed ? '지급 처리' : '본인확인 전에는 지급할 수 없습니다') + '"'
+                  + ' style="background:' + (authed ? '#22c55e' : '#334155') + ';color:' + (authed ? '#052e16' : '#64748b')
+                  + ';border:none;padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;'
+                  + 'cursor:' + (authed ? 'pointer' : 'not-allowed') + '">지급</button>'
+                + '<button data-hold="' + i + '" style="background:#475569;color:#e2e8f0;border:none;padding:5px 9px;'
+                  + 'border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">보류</button></div>')
+            + '</td></tr>';
+      }).join('');
+
+      tb.querySelectorAll('[data-pay]:not([disabled])').forEach(b =>
+        b.addEventListener('click', () => pay(list[+b.dataset.pay])));
+      tb.querySelectorAll('[data-hold]').forEach(b =>
+        b.addEventListener('click', () => hold(list[+b.dataset.hold])));
+    }
+
+    async function patch(g, body, okMsg) {
+      try {
+        const r = await fetch('/api/admin/platform/gifts/' + encodeURIComponent(g.id), {
+          method: 'PATCH',
+          headers: { Authorization: 'Bearer ' + tk(), 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!r.ok) throw new Error('처리 실패 (' + r.status + ')');
+        const j = await r.json();
+        Object.assign(g, j.gift || body);
+        toast(okMsg); render();
+      } catch (e) { toast(e.message, true); }
+    }
+
+    function pay(g) {
+      if (g.auth_status !== '인증완료') { toast('본인확인 전에는 지급할 수 없습니다', true); return; }
+      if (!g.bank || !g.account_number) { toast('입금 계좌가 없습니다', true); return; }
+      const msg = (g.name || g.account_holder) + ' · ' + won(g.amount) + '\n'
+        + g.bank + ' ' + g.account_number + ' (' + (g.account_holder || '-') + ')\n\n'
+        + '지급 처리합니다. 되돌릴 수 없습니다.';
+      if (!window.confirm(msg)) return;
+      patch(g, { status: '지급완료' }, '지급완료로 기록');
+    }
+
+    function hold(g) {
+      const why = window.prompt('보류 사유 (필수)', g.memo || '');
+      if (!why) { toast('사유가 없으면 보류할 수 없습니다', true); return; }
+      patch(g, { status: '보류', memo: why }, '보류로 기록');
+    }
+
+    function bind() {
+      const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
+      on('gift-q','input',       (e) => { F.q = e.target.value; render(); });
+      on('gift-status','change', (e) => { F.status = e.target.value; render(); });
+      on('gift-auth','change',   (e) => { F.auth = e.target.value; render(); });
+      on('gift-refresh','click', load);
+    }
+    return { load, bind };
+  })();
+
+
+  if (!localStorage.getItem('incentive-auth-token-v1')) {
+    $('main-area').style.display = 'none'; $('need-login').style.display = '';
+    return;
+  }
+  Gifts.bind();
+  Gifts.load();
+})();
+</script>
+</body>
+</html>
