@@ -29,6 +29,7 @@ import { parseRentalWorkbook } from '../services/rental-import/index.js';
 import { previewImport, commitImport } from '../services/rental-import/commit.js';
 import { buildApplicationForm } from '../services/rental-application.js';
 import { CATEGORIES, CATEGORY_LABEL } from '../services/rental-import/core.js';
+import { assist, assistantEnabled } from '../services/rental-assistant.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
@@ -454,6 +455,32 @@ router.get('/agent/offers/:id/form', ...agent, async (req, res) => {
     const { rebate, source, ...offer } = ctx.offer;
     res.json({ offer, model: ctx.model, supplier: { id: ctx.supplier.id, name: ctx.supplier.name }, form: ctx.form, cards: ctx.cards });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ─── 렌탈 상담 AI (상담원 보조) — DB 조회 도구로만 답한다 ───
+const assistHits = new Map();   // 상담원별 10분 30회
+router.post('/agent/assist', ...agent, async (req, res) => {
+  try {
+    if (!assistantEnabled()) return res.status(503).json({ error: '상담 AI 비활성화(API 키 없음)' });
+    const now = Date.now();
+    const hits = (assistHits.get(req.agent.id) || []).filter((t) => t > now - 10 * 60 * 1000);
+    if (hits.length >= 30) return res.status(429).json({ error: '잠시 후 다시 물어봐 주세요 (10분 30회)' });
+    hits.push(now); assistHits.set(req.agent.id, hits);
+    const messages = Array.isArray(req.body?.messages) ? req.body.messages.filter((m) => m && typeof m.content === 'string' && m.content.trim()) : [];
+    if (!messages.length || messages[messages.length - 1].role !== 'user') return res.status(400).json({ error: '질문이 없습니다' });
+    const ctx = req.body?.context || {};
+    const context = {
+      model_id: UUID_RE.test(String(ctx.model_id || '')) ? ctx.model_id : undefined,
+      ticket: /^R\d{6}$/.test(String(ctx.ticket || '')) ? ctx.ticket : undefined,
+    };
+    const out = await assist({ messages, context, agentName: req.agent.name });
+    res.json(out);
+  } catch (e) {
+    console.error('[rental-assist]', e?.status || '', e?.message);
+    if (/credit balance is too low/i.test(e?.message || '')) return res.status(503).json({ error: '상담 AI 사용 한도(API 크레딧) 부족 — 관리자에게 알려주세요' });
+    if (e?.status === 429 || e?.status === 529) return res.status(503).json({ error: '상담 AI 요청이 몰렸습니다 — 잠시 후 다시 시도' });
+    res.status(e?.status === 503 ? 503 : 500).json({ error: e?.status === 503 ? e.message : errMsg(e) });
+  }
 });
 
 // 카테고리별 판매중 모델 수 (5분 캐시)

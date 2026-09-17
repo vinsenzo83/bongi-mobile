@@ -369,6 +369,7 @@
       if (RT.offer !== o) return;
       RT.form = j.form;
       RT.cards = j.cards || [];
+      RT.cardsOffer = o.id;
       RT.card = null;
       renderForm(j.form);
       renderCardPick(o);
@@ -640,8 +641,109 @@
     } catch (e) { $('rt-search-msg').textContent = '⚠ ' + e.message; }
   }
 
+  // ─── 렌탈 상담 AI — 견적창에서 고객 상태·니즈를 말하면 자동 추천 (많이 팔리는 → 많이 남는 순) ───
+  var AI = { messages: [], busy: false, last: null };
+  function renderAiBox() {
+    var box = $('rt-ai'); if (!box || box.dataset.ready) return;
+    box.dataset.ready = '1';
+    box.innerHTML =
+      '<div style="font-size:12px;font-weight:800;color:#c4b5fd;margin-bottom:5px">🤖 상담 AI · 고객 니즈 → 자동 추천</div>' +
+      '<textarea id="rt-ai-q" placeholder="고객 상태·니즈를 적어주세요&#10;예) 4인 가족, 거실 정수기, 얼음 필요, 월 3만원 이하, 방문관리, 신한카드 있음"></textarea>' +
+      '<div class="rt-ai-btns"><button id="rt-ai-go">추천받기</button>' +
+      '<button class="ghost" data-aiq="지금 보고 있는 상품의 특징과 비슷한 대안을 알려줘">이 상품 요약·대안</button>' +
+      '<button class="ghost" data-aiq="지금 조건에서 제휴카드와 프로모션으로 월 요금을 가장 낮추는 방법">카드·프로모션 최저 설계</button>' +
+      '<button class="ghost" data-aiq="이 렌탈사 가입조건과 필요한 서류">가입조건·서류</button>' +
+      '<button class="ghost" id="rt-ai-reset">새 상담</button></div>' +
+      '<div id="rt-ai-out"></div>';
+    $('rt-ai-go').addEventListener('click', function () { askAi($('rt-ai-q').value); });
+    $('rt-ai-q').addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) askAi($('rt-ai-q').value); });
+    box.querySelectorAll('[data-aiq]').forEach(function (b) { b.addEventListener('click', function () { askAi(b.dataset.aiq); }); });
+    $('rt-ai-reset').addEventListener('click', function () { AI.messages = []; $('rt-ai-out').innerHTML = ''; $('rt-ai-q').value = ''; });
+    $('rt-ai-out').addEventListener('click', function (e) {
+      var ap = e.target.closest('[data-apply]'); if (ap) return applyRecommendation(Number(ap.dataset.apply));
+      var tk = e.target.closest('[data-tk]'); if (tk) openTicket(tk.dataset.tk);
+      var qq = e.target.closest('[data-follow]'); if (qq) { $('rt-ai-q').value = qq.dataset.follow + ' → '; $('rt-ai-q').focus(); }
+    });
+  }
+
+  async function askAi(text) {
+    text = String(text || '').trim();
+    var out = $('rt-ai-out');
+    if (!text || AI.busy) return;
+    AI.busy = true;
+    var btn = $('rt-ai-go'); btn.disabled = true;
+    AI.messages.push({ role: 'user', content: text });
+    out.innerHTML = '<div class="rt-ai-answer" style="color:#94a3b8">🔎 상품·조건·카드·프로모션 조회 중…</div>' + out.innerHTML;
+    try {
+      var r = await fetch(API + '/agent/assist', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() },
+        body: JSON.stringify({ messages: AI.messages, context: { model_id: RT.model && RT.model.id, ticket: RT.offer && RT.offer.ticket_number } }),
+      });
+      var j = await r.json().catch(function () { return {}; });
+      if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      AI.last = j;
+      var textOut = j.answer || (j.recommendation ? j.recommendation.summary : '');
+      AI.messages.push({ role: 'assistant', content: (textOut || '') + (j.recommendation ? '\n[추천] ' + j.recommendation.recommendations.map(function (x) { return x.ticket; }).join(', ') : '') });
+      $('rt-ai-q').value = '';
+      out.innerHTML = aiResultHtml(j);
+      // 최적 조건(1순위)을 계산기에 바로 띄운다 — 다른 추천은 '이 조건 적용'으로 바꿔 볼 수 있다
+      var first = j.recommendation && (j.recommendation.recommendations || []).findIndex(function (x) { return !x.invalid; });
+      if (first != null && first >= 0) applyRecommendation(first);
+    } catch (e) {
+      AI.messages.pop();
+      out.innerHTML = '<div class="rt-ai-answer" style="color:#fca5a5">⚠ ' + esc(e.message) + '</div>';
+    } finally { AI.busy = false; btn.disabled = false; }
+  }
+
+  function linkTickets(s) { return esc(s).replace(/R\d{6}/g, function (t) { return '<span class="tk" data-tk="' + t + '">' + t + '</span>'; }); }
+  function aiResultHtml(j) {
+    var html = '';
+    var rec = j.recommendation;
+    if (rec) {
+      html += '<div class="rt-ai-answer"><b>📋 ' + esc(rec.summary || '') + '</b></div>';
+      (rec.recommendations || []).forEach(function (x, i) {
+        if (x.invalid) { html += '<div class="rt-ai-rec" style="opacity:.6">' + esc(x.ticket) + ' — ' + esc(x.invalid) + '</div>'; return; }
+        var c = x.condition || {};
+        var ph = (c.price_phases || []).map(function (p) { return p.from + '~' + p.to + '회 ' + won(p.fee); }).join(' · ');
+        html += '<div class="rt-ai-rec">' + (x.image_url ? '<img src="' + esc(x.image_url) + '" alt="">' : '') +
+          '<div style="flex:1;min-width:0;font-size:11.5px">' +
+            '<div><b style="font-size:12.5px">' + (i + 1) + '. ' + esc(x.product_name || x.model_code) + '</b> <span style="color:#94a3b8">' + esc(x.supplier || '') + '</span></div>' +
+            '<div style="color:#fcd34d"><span class="tk" data-tk="' + esc(x.ticket) + '">' + esc(x.ticket) + '</span> · ' + esc(c.type || '') + (c.label ? ' ' + esc(c.label) : '') + ' · ' + esc(c.contract_months || '') + '개월 · ' + esc(c.care || '') + (c.cycle_months ? ' ' + c.cycle_months + '개월' : '') + '</div>' +
+            '<div>월 <b>' + won(c.display_fee) + '</b>' + (ph ? ' <span style="color:#94a3b8">(' + esc(ph) + ')</span>' : '') +
+              (x.card ? ' → 💳 ' + esc(x.card.card_name) + ' <b style="color:#86efac">월 ' + won(x.card.fee_with_card) + '</b>' : '') +
+              (c.free_months_at_guide ? ' · 가이드 ' + c.free_months_at_guide + '개월 무료' : '') + '</div>' +
+            '<div style="color:#cbd5e1;margin-top:2px">' + esc(x.why || '') + '</div>' +
+            (x.customer_script ? '<div style="margin-top:3px;padding:4px 6px;background:#0f172a;border-radius:5px">🗣 ' + esc(x.customer_script) + '</div>' : '') +
+            (x.cautions ? '<div style="color:#fca5a5;margin-top:2px">⚠ ' + esc(x.cautions) + '</div>' : '') +
+            '<button style="margin-top:5px" data-apply="' + i + '">이 조건 적용</button>' +
+          '</div></div>';
+      });
+      if (rec.questions && rec.questions.length) {
+        html += '<div class="rt-ai-answer"><b>❓ 고객에게 더 물어볼 것</b><br>' + rec.questions.map(function (q) { return '<span class="tk" data-follow="' + esc(q) + '">' + esc(q) + '</span>'; }).join('<br>') + '</div>';
+      }
+    }
+    if (j.answer) html += '<div class="rt-ai-answer">' + linkTickets(j.answer) + '</div>';
+    return html || '<div class="rt-ai-answer">답변이 비었습니다. 다시 물어봐 주세요.</div>';
+  }
+
+  // 추천 적용 — 계산기에 조건을 열고, 추천 카드가 있으면 카드·실적 구간까지 선택
+  async function applyRecommendation(i) {
+    var x = AI.last && AI.last.recommendation && AI.last.recommendation.recommendations[i];
+    if (!x || x.invalid) return;
+    await openTicket(x.ticket);
+    if (!x.card) return;
+    for (var k = 0; k < 40 && !(RT.offer && RT.offer.ticket_number === x.ticket && RT.cardsOffer === RT.offer.id); k++) await new Promise(function (res) { setTimeout(res, 150); });
+    var idx = (RT.cards || []).findIndex(function (c) { return c.card_name === x.card.card_name && c.card_issuer === x.card.card_issuer; });
+    if (idx < 0) return;
+    var tiers = RT.cards[idx].tiers || [];
+    var ti = tiers.findIndex(function (t) { return x.card.tier && t.min_spend === x.card.tier.min_spend; });
+    RT.card = { idx: idx, tier: ti >= 0 ? ti : 0 };
+    renderCardPick(RT.offer); quote(RT.offer);
+  }
+
   window.rentalInit = function () {
     quote(RT.offer);
+    renderAiBox();
     if (RT.inited) return;
     RT.inited = true;
     loadSuppliers();

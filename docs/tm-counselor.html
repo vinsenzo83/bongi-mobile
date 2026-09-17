@@ -415,6 +415,19 @@ body.cat-rental main.tm-panel > *:not(.tm-cat-tabs):not(.tm-rental-panel):not(#c
 .tm-rental-panel { display:none; }
 body.cat-rental .tm-rental-panel { display:block; }
 body.cat-rental .tm-ticket-lookup { display:none; }
+.rt-ai { display:none; margin-top:10px; background:#0f172a; border:1px solid rgba(167,139,250,0.4); border-radius:10px; padding:10px; color:#e2e8f0; }
+body.cat-rental .rt-ai { display:block; }
+.rt-ai textarea { width:100%; box-sizing:border-box; min-height:58px; background:#1e293b; color:#f1f5f9; border:1px solid #475569; border-radius:7px; padding:7px; font-size:12.5px; resize:vertical; }
+.rt-ai .rt-ai-btns { display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; }
+.rt-ai button { background:#7c3aed; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:12px; font-weight:700; cursor:pointer; }
+.rt-ai button.ghost { background:transparent; border:1px solid #475569; color:#cbd5e1; font-weight:500; }
+.rt-ai button:disabled { opacity:.5; cursor:wait; }
+.rt-ai-rec { background:#1e293b; border:1px solid #334155; border-radius:8px; padding:8px; margin-top:7px; display:flex; gap:8px; }
+.rt-ai-rec img { width:52px; height:52px; object-fit:contain; background:#fff; border-radius:6px; flex:none; }
+.rt-ai-rec .badge { display:inline-block; font-size:9.5px; padding:1px 5px; border-radius:4px; margin-right:3px; background:#334155; color:#e2e8f0; }
+.rt-ai-rec .badge.hot { background:#b45309; color:#fff; } .rt-ai-rec .badge.m-상 { background:#15803d; color:#fff; } .rt-ai-rec .badge.m-중 { background:#0369a1; color:#fff; }
+.rt-ai-answer { white-space:pre-wrap; font-size:12px; line-height:1.55; margin-top:7px; }
+.rt-ai-answer .tk { color:#fcd34d; cursor:pointer; text-decoration:underline; }
 .rt-empty { font-size:12px; color:#94a3b8; padding:8px 2px; }
 .rt-thumb { width:100%; height:92px; object-fit:contain; background:#f8fafc; border-radius:6px; margin-bottom:6px; }
 .rt-info { display:flex; gap:12px; padding:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:10px; }
@@ -490,7 +503,7 @@ body.cat-rental .tm-ticket-lookup { display:none; }
 <script src="/docs/_security.js" defer></script>
 <!-- 시드 데이터 동기화 공통 헬퍼 (calculator/tm/tm-counselor 공유) -->
 <script src="/docs/_calc-data-sync.js?v=4"></script>
-<script src="/docs/tm-rental.js?v=13" defer></script>
+<script src="/docs/tm-rental.js?v=14" defer></script>
 </head>
 <body>
 
@@ -2142,6 +2155,8 @@ function bindShortcutKeys() {
         <div id="c-ticket-lookup-msg" class="tm-ticket-lookup-msg"></div>
       </div>
       <div class="tm-result"><div id="c-result"></div></div>
+      <!-- 렌탈 상담 AI — 고객 상태·니즈를 말하면 많이 팔리는·많이 남는 조건을 자동 추천 (tm-rental.js) -->
+      <div id="rt-ai" class="rt-ai"></div>
     </div>
 
   </aside>
