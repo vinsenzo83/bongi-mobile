@@ -19,7 +19,7 @@ const CARE = { visit: '방문관리', self: '자가관리', delivery: '택배(�
 const clip = (s, n) => (s == null ? null : String(s).length > n ? `${String(s).slice(0, n)}…` : String(s));
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
 
-const SYSTEM = `당신은 봉이 콜센터 렌탈 상담원을 돕는 상담 AI입니다. 상담원이 고객과 통화하면서 묻습니다.
+export const SYSTEM = `당신은 봉이 콜센터 렌탈 상담원을 돕는 상담 AI입니다. 상담원이 고객과 통화하면서 묻습니다.
 
 ## 절대 규칙
 - 상품·요금·조건·카드·프로모션·가입기준은 반드시 도구로 조회한 결과만 근거로 말합니다. 기억·추측으로 사양이나 금액을 만들지 않습니다.
@@ -33,6 +33,8 @@ const SYSTEM = `당신은 봉이 콜센터 렌탈 상담원을 돕는 상담 AI�
 - 월 렌탈료 = display_fee(첫 달 요금). 반값·할인은 price_phases 구간(from~to 회차 fee)으로 설명합니다.
 - N개월 무료 = 지급액 ÷ display_fee (버림).
 - 제휴카드 적용 월 납부 = 월 렌탈료 − 카드의 전월실적 구간 할인액(total). 전월실적 미달이면 할인 없음을 함께 말합니다.
+- 실질 월 부담 = (약정 전체 렌탈료(반값·카드 할인 반영) − 우리 페이백 지급액) ÷ 약정 개월. effective_monthly_after_guide 로 제공된다.
+  고객 예산과 비교할 때는 첫 달 요금만이 아니라 할인 뒤 정상 요금과 실질 월 부담(페이백 반영)을 함께 보고, 추천 문장에도 "페이백까지 치면 한 달에 약 N원꼴"로 안내한다.
 - 프로모션은 기간·대상·중복 가능 여부를 확인하고 말합니다.
 
 ## 자동 추천
@@ -42,7 +44,7 @@ const SYSTEM = `당신은 봉이 콜센터 렌탈 상담원을 돕는 상담 AI�
 - margin_grade 는 내부 순위 정보다. 금액·리베이트로 바꿔 말하지 말고, 고객 안내 문장에는 절대 넣지 않는다.
 - 추천 조건은 판매중 티켓만. 예산이 있으면 월 요금(카드 할인 전·후)을 맞추고, 제휴카드로 예산을 맞출 수 있으면 card 에 카드사·카드명·전월실적 구간을 적습니다(get_cards 로 확인한 것만).
 - 정보가 모자라 추천 품질이 떨어지면 questions 에 고객에게 물어볼 질문 1~3개를 넣습니다.
-- 타사보상은 고객이 다른 브랜드 제품을 쓰고 있을 때만, 임직원·현장·일시불·선납은 고객 상황이 그럴 때만 offer_type 을 지정해 찾습니다.
+- 타사보상은 고객이 다른 브랜드 제품을 쓰고 있을 때만(그 브랜드 렌탈사는 exclude_supplier_id 로 빼고 — 코웨이 사용 고객에게 코웨이 타사보상은 안 됨), 임직원·현장·일시불·선납은 고객 상황이 그럴 때만 offer_type 을 지정해 찾습니다.
 - submit_recommendations 를 낼 때는 글 답변을 쓰지 않습니다(화면에 추천 카드로 나옴). 필요한 설명은 why·customer_script·cautions 에 짧게.
 - 상품 사양 질문은 get_ticket(상세 사양 포함)으로 확인합니다.
 - 일반 질문(사양·서류·프로모션 설명 등)은 submit_recommendations 없이 글로 짧게 답합니다.
@@ -52,7 +54,7 @@ const SYSTEM = `당신은 봉이 콜센터 렌탈 상담원을 돕는 상담 AI�
 - 고객에게 그대로 읽어줄 문장이 필요하면 "고객 안내:" 로 한두 문장 따로 적습니다.
 - 모르는 것은 모른다고 하고, 무엇을 확인해야 하는지 적습니다.`;
 
-const TOOLS = [
+export const TOOLS = [
   {
     name: 'search_products',
     description: '판매중 렌탈 상품(모델) 검색. 키워드는 상품명·브랜드·모델코드·제품설명에서 찾는다. 결과는 최대 limit 개로, 많이 팔리는·많이 남는 순. 각 상품에 조건 필터(예산·관리·약정·유형)에 맞는 best_conditions(티켓·월요금·구간·가이드) 상위 3개가 들어 있으니, 대부분은 get_conditions 없이 바로 추천할 수 있다.',
@@ -62,7 +64,8 @@ const TOOLS = [
         keywords: { type: 'string', description: '공백으로 구분한 검색어 (예: "얼음 정수기", "스타일러", "CHP-7220N")' },
         category: { type: 'string', enum: CATEGORIES.map(([slug]) => slug).filter((v, i, a) => a.indexOf(v) === i).concat('etc'), description: '카테고리 slug' },
         supplier_id: { type: 'string', description: '렌탈사 id (coway, cuckoo, chungho, skmagic, wells, luhens, cuming, ubus, lg-subscribe, lg-hello, kt, smart, bs, ini, rentana, carrier, cesco, renple)' },
-        max_monthly_fee: { type: 'integer', description: '월 렌탈료(첫 달) 상한(원) — 조건 단위로 거른다' },
+        max_monthly_fee: { type: 'integer', description: '월 렌탈료 예산 상한(원) — 할인 기간이 끝난 뒤 정상 요금까지 예산 안인 조건만' },
+        exclude_supplier_id: { type: 'string', description: '제외할 렌탈사 id (타사보상 추천 시 고객이 지금 쓰는 렌탈사)' },
         care_type: { type: 'string', enum: ['visit', 'self', 'delivery', 'none'], description: '관리방식' },
         contract_months: { type: 'integer', description: '약정 개월' },
         offer_type: { type: 'string', enum: Object.keys(TYPE), description: '할인유형' },
@@ -126,6 +129,30 @@ function slimModel(m, full = false) {
     size_mm: full ? sp.size_mm : undefined, notes: full ? clip(sp.spec_notes, 200) : undefined, product_url: full ? sp.product_url : undefined,
   };
 }
+/**
+ * 실질 월 부담 — 약정 전체 렌탈료(반값 구간·카드 할인 반영) − 우리 페이백(지급액) ÷ 약정 개월
+ *   카드 할인은 매달 전월실적을 채운다고 가정하고, 카드의 할인 개월(discount_months) 까지만 뺀다
+ */
+export function contractCost(o, { payout = null, cardDiscount = 0, cardMonths = null } = {}) {
+  const months = o.contract_months || 0;
+  if (!months || o.monthly_fee == null) return null;
+  const phases = o.price_phases || [];
+  let total = 0; let withCard = 0;
+  for (let m = 1; m <= months; m++) {
+    const p = phases.find((x) => m >= x.from && m <= x.to);
+    const fee = p ? p.fee : o.monthly_fee;
+    total += fee;
+    withCard += Math.max(0, fee - (cardDiscount && (!cardMonths || m <= cardMonths) ? cardDiscount : 0));
+  }
+  const pay = payout ?? o.guide_payout ?? 0;
+  return {
+    total_rent: total,
+    total_with_card: cardDiscount ? withCard : undefined,
+    payback: pay,
+    effective_monthly: Math.round(((cardDiscount ? withCard : total) - pay) / months),
+  };
+}
+
 function slimOffer(o) {
   return {
     ticket: o.ticket_number, type: TYPE[o.offer_type] || o.offer_type, label: o.offer_label, contract_months: o.contract_months,
@@ -133,6 +160,8 @@ function slimOffer(o) {
     care: CARE[o.care_type] || o.care_label || '미표기', cycle_months: o.cycle_months,
     display_fee: o.display_fee, monthly_fee_after: o.monthly_fee, price_phases: o.price_phases?.length ? o.price_phases : undefined,
     prepay_amount: o.prepay_amount || undefined, guide_payout: o.guide_payout, max_payout_counselor_only: o.max_payout, free_months_at_guide: o.free_months,
+    // 페이백(가이드) 반영 실질 월 부담 — 예산 비교는 이 값도 같이 본다
+    effective_monthly_after_guide: contractCost(o)?.effective_monthly, total_rent: contractCost(o)?.total_rent,
     notes: clip(o.notes, 200), valid_to: o.valid_to || undefined,
   };
 }
@@ -173,11 +202,12 @@ async function rankModels(models, mode, filter = {}) {
   // 타사보상·임직원·현장·일시불·선납은 고객 상황이 맞을 때만 — 유형을 지정하지 않으면 추천 후보에서 뺀다
   const SPECIAL = ['trade_in', 'staff', 'field', 'purchase', 'prepay'];
   const fits = (o) => o.crm_enabled !== false && (!o.valid_to || o.valid_to >= d)
-    && (filter.offer_type ? true : !SPECIAL.includes(o.offer_type))
+    && (filter.offer_type ? true : !SPECIAL.includes(o.offer_type) && !/타사/.test(`${o.offer_label || ''} ${(o.offer_tags || []).join(' ')}`))
     && (!filter.care_type || o.care_type === filter.care_type)
     && (!filter.contract_months || o.contract_months === filter.contract_months)
     && (!filter.offer_type || o.offer_type === filter.offer_type)
-    && (!filter.max_monthly_fee || (o.display_fee != null && o.display_fee <= filter.max_monthly_fee));
+    // 예산은 할인 끝난 뒤 요금까지 — 반값 첫 달만 싸고 이후 예산을 넘는 조건은 빼야 한다
+    && (!filter.max_monthly_fee || (o.display_fee != null && Math.max(o.display_fee, o.monthly_fee || 0) <= filter.max_monthly_fee));
   const best = new Map();
   for (const o of offers || []) {
     if (!fits(o)) continue;
@@ -186,7 +216,11 @@ async function rankModels(models, mode, filter = {}) {
   }
   const rows = models.map((m) => {
     const st = stat.get(m.id);
-    const top = (best.get(m.id) || []).sort((a, b) => b.m - a.m || (a.o.display_fee ?? 1e9) - (b.o.display_fee ?? 1e9)).slice(0, 3).map((x) => slimOffer(x.o));
+    // 요금·구간·약정·관리·유형이 같은 조건(색상·반복행 차이)은 하나만
+    const seenSig = new Set();
+    const top = (best.get(m.id) || []).sort((a, b) => b.m - a.m || (a.o.display_fee ?? 1e9) - (b.o.display_fee ?? 1e9))
+      .filter((x) => { const k = [x.o.offer_type, x.o.offer_label, x.o.contract_months, x.o.care_type, x.o.cycle_months, x.o.display_fee, x.o.monthly_fee, JSON.stringify(x.o.price_phases)].join('|'); if (seenSig.has(k)) return false; seenSig.add(k); return true; })
+      .slice(0, 3).map((x) => slimOffer(x.o));
     return { ...slimModel(m), sales_90d: st.sales, focus: [...st.focus], margin_grade: grade(st.margin), matching_conditions: (best.get(m.id) || []).length, best_conditions: top, _margin: st.margin ?? -Infinity };
   }).filter((r) => !(filter.care_type || filter.contract_months || filter.offer_type || filter.max_monthly_fee) || r.best_conditions.length);
   const popularity = (r) => r.sales_90d * 10 + r.focus.length * 3;
@@ -200,7 +234,7 @@ async function rankModels(models, mode, filter = {}) {
   return rows.map(({ _margin, ...r }) => r);
 }
 
-async function runTool(name, input) {
+export async function runTool(name, input) {
   switch (name) {
     case 'search_products': {
       const limit = Math.min(20, Math.max(1, input.limit || 8));
@@ -211,6 +245,7 @@ async function runTool(name, input) {
       }
       if (input.category) q = q.eq('category', input.category);
       if (input.supplier_id) q = q.eq('supplier_id', input.supplier_id);
+      if (input.exclude_supplier_id) q = q.neq('supplier_id', input.exclude_supplier_id);   // 타사보상: 고객이 지금 쓰는 렌탈사는 제외
       if (input.max_monthly_fee) q = q.lte('min_display_fee', input.max_monthly_fee);
       // 후보를 넉넉히 가져와 판매량·마진으로 다시 줄 세운다
       const { data, error } = await q.order('max_free_months', { ascending: false, nullsFirst: false }).limit(80);
@@ -269,7 +304,7 @@ async function runTool(name, input) {
   }
 }
 
-async function verifyRecommendations(input) {
+export async function verifyRecommendations(input) {
   const recs = [];
   for (const rec of (input.recommendations || []).slice(0, 3)) {
     const t = String(rec.ticket || '').toUpperCase();
@@ -278,10 +313,13 @@ async function verifyRecommendations(input) {
     const { data: m } = await supabase.from('rental_cat_model_summary').select('id, supplier_id, supplier_name, product_name, model_code, image_url, category').eq('id', o.model_id).maybeSingle();
     let card = null;
     if (rec.card?.card_name) {
-      const { data: cards } = await supabase.from('rental_cat_cards').select('card_issuer, card_name, tiers').eq('supplier_id', o.supplier_id).eq('is_active', true);
+      const { data: cards } = await supabase.from('rental_cat_cards').select('card_issuer, card_name, tiers, discount_months').eq('supplier_id', o.supplier_id).eq('is_active', true);
       const c = (cards || []).find((x) => x.card_name === rec.card.card_name || `${x.card_issuer} ${x.card_name}` === `${rec.card.card_issuer} ${rec.card.card_name}`);
       const tier = c && ((c.tiers || []).find((x) => x.min_spend === rec.card.min_spend) || (c.tiers || []).find((x) => x.total));
-      if (c && tier) card = { card_issuer: c.card_issuer, card_name: c.card_name, tier, fee_with_card: Math.max(0, (o.display_fee || 0) - (tier.total || 0)) };
+      if (c && tier) {
+        const cost = contractCost(o, { cardDiscount: tier.total || 0, cardMonths: c.discount_months });
+        card = { card_issuer: c.card_issuer, card_name: c.card_name, tier, discount_months: c.discount_months, fee_with_card: Math.max(0, (o.display_fee || 0) - (tier.total || 0)), effective_monthly_with_card: cost?.effective_monthly };
+      }
     }
     recs.push({
       ticket: t, model_id: o.model_id, supplier_id: o.supplier_id, supplier: m?.supplier_name, product_name: m?.product_name, model_code: m?.model_code, image_url: m?.image_url,

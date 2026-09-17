@@ -62,6 +62,20 @@
     return parts.join(' → ');
   }
   function freeMonths(pay, o) { return (pay && o && o.display_fee > 0) ? Math.floor(pay / o.display_fee) : 0; }
+  // 실질 월 부담 = (약정 전체 렌탈료(반값 구간·카드 할인 반영) − 우리 페이백) ÷ 약정 개월 — 서버 rental-assistant.contractCost 와 같은 식
+  function contractCost(o, pay, cardDiscount, cardMonths) {
+    var months = o && o.contract_months;
+    if (!months || o.monthly_fee == null) return null;
+    var total = 0, withCard = 0, ph = o.price_phases || [];
+    for (var m = 1; m <= months; m++) {
+      var p = ph.filter(function (x) { return m >= x.from && m <= x.to; })[0];
+      var fee = p ? p.fee : o.monthly_fee;
+      total += fee;
+      withCard += Math.max(0, fee - (cardDiscount && (!cardMonths || m <= cardMonths) ? cardDiscount : 0));
+    }
+    var base = cardDiscount ? withCard : total;
+    return { total: total, withCard: withCard, effective: Math.round((base - (pay || 0)) / months) };
+  }
 
   // ─── 1. 상품 검색 ───
   function renderModels() {
@@ -312,7 +326,20 @@
       (pay > 0 ? '<div class="calc-line gift" style="background:rgba(251,191,36,0.14);border-radius:6px;padding:7px 10px;margin-top:8px"><span class="l" style="color:#fbbf24">🎁 혜택 ' + fm + '개월 무료</span><span class="v" style="color:#fbbf24;font-size:17px">' + won(pay) + '</span></div>' : '') +
       (o.prepay_amount ? '<div class="calc-line"><span class="l">선납금</span><span class="v">' + won(o.prepay_amount) + '</span></div>' : '') +
       cardsHtml(o) +
+      effectiveHtml(o, pay) +
       '</div>';
+  }
+
+  // 페이백까지 반영한 실질 월 부담 — 고객 예산 비교용
+  function effectiveHtml(o, pay) {
+    var sel = cardSel();
+    var c = contractCost(o, pay, sel ? sel.tier.total : 0, sel ? sel.card.discount_months : null);
+    if (!c) return '';
+    return '<div style="margin-top:8px;padding:7px 10px;background:rgba(56,189,248,0.12);border:1px solid rgba(125,211,252,0.35);border-radius:6px;font-size:11px">' +
+      '<div class="calc-line" style="padding:1px 0"><span class="l">약정 ' + o.contract_months + '개월 총 렌탈료' + (sel ? ' (카드 할인 후)' : '') + '</span><span class="v">' + won(sel ? c.withCard : c.total) + '</span></div>' +
+      (pay ? '<div class="calc-line" style="padding:1px 0"><span class="l">− 페이백</span><span class="v">' + won(pay) + '</span></div>' : '') +
+      '<div class="calc-line" style="padding:2px 0"><span class="l" style="color:#7dd3fc;font-weight:800">💰 페이백 반영 실질 월 부담</span><span class="v" style="color:#7dd3fc;font-size:17px">' + won(c.effective) + '</span></div>' +
+      '<div style="font-size:9.5px;color:rgba(255,255,255,0.5)">(총 렌탈료' + (sel ? '·카드 할인' : '') + ' − 페이백) ÷ ' + o.contract_months + '개월' + (sel ? ' · 카드 전월실적 매달 충족 가정' : '') + '</div></div>';
   }
 
   // 제휴카드 — 카드로 자동이체하면 전월실적 구간별로 월 렌탈료에서 빠진다 (공개 정보라 고객 안내 가능)
@@ -712,6 +739,7 @@
             '<div>월 <b>' + won(c.display_fee) + '</b>' + (ph ? ' <span style="color:#94a3b8">(' + esc(ph) + ')</span>' : '') +
               (x.card ? ' → 💳 ' + esc(x.card.card_name) + ' <b style="color:#86efac">월 ' + won(x.card.fee_with_card) + '</b>' : '') +
               (c.free_months_at_guide ? ' · 가이드 ' + c.free_months_at_guide + '개월 무료' : '') + '</div>' +
+            '<div style="color:#7dd3fc">💰 페이백 반영 실질 월 ' + won(x.card && x.card.effective_monthly_with_card != null ? x.card.effective_monthly_with_card : c.effective_monthly_after_guide) + (x.card ? ' (카드 포함)' : '') + '</div>' +
             '<div style="color:#cbd5e1;margin-top:2px">' + esc(x.why || '') + '</div>' +
             (x.customer_script ? '<div style="margin-top:3px;padding:4px 6px;background:#0f172a;border-radius:5px">🗣 ' + esc(x.customer_script) + '</div>' : '') +
             (x.cautions ? '<div style="color:#fca5a5;margin-top:2px">⚠ ' + esc(x.cautions) + '</div>' : '') +
