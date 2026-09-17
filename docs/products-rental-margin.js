@@ -208,6 +208,65 @@
     finally { $('mg-optimize').disabled = false; }
   }
 
+
+  // ── AI 엔진 (자동 갱신) ──
+  var CAT_LABEL = function (slug) { var c = ST.categories.filter(function (x) { return x.slug === slug; })[0]; return c ? c.label : slug; };
+  function engPolicy() {
+    var n = function (id, scale) { return Number($(id).value) / (scale || 1); };
+    return { productivity: n('eg-prod'), discretion: n('eg-disc', 100), rate_tiers: [{ min: 0, rate: n('eg-rate', 100) }], current_rate: n('eg-cur-rate', 100),
+      competitor_guide_ratio: n('eg-guide-ratio', 100), top_sales_share: n('eg-top', 100), min_guide_delta: n('eg-dg'), min_max_delta: n('eg-dm'), min_band: 0.05 };
+  }
+  function engFill(settings) {
+    var p = settings.policy || {};
+    $('eg-auto').value = String(!!settings.auto_apply);
+    $('eg-prod').value = p.productivity ?? 50; $('eg-disc').value = Math.round((p.discretion ?? 0.3) * 100);
+    $('eg-rate').value = Math.round(((p.rate_tiers || [{ rate: 0.3 }])[0].rate) * 100); $('eg-cur-rate').value = Math.round((p.current_rate ?? 0.2) * 100);
+    $('eg-guide-ratio').value = Math.round((p.competitor_guide_ratio ?? 0.9) * 100); $('eg-top').value = Math.round((p.top_sales_share ?? 0.1) * 100);
+    $('eg-dg').value = p.min_guide_delta ?? 10000; $('eg-dm').value = p.min_max_delta ?? 5000;
+  }
+  function engRuns(runs) {
+    $('eg-runs').innerHTML = '<table class="mg-cmp"><thead><tr><th>실행</th><th>계기</th><th>상태</th><th class="num">변경</th><th class="num">1인당 회사 (전→후)</th><th class="num">상담사 월급 (전→후)</th><th>엔진</th><th>실행자</th><th></th></tr></thead><tbody>' +
+      (runs || []).map(function (r) {
+        var sm = r.summary || {}, nw = sm.now && sm.now.per_head, pl = sm.plan && sm.plan.per_head;
+        var st = { planned: '미리보기', applied: '✅ 적용', failed: '⚠ 실패', rolled_back: '↩ 되돌림' }[r.status] || r.status;
+        return '<tr><td>' + new Date(r.created_at).toLocaleString('ko-KR') + '</td><td>' + esc({ manual: '수동', weekly: '매주', import: '엑셀 확정', preview: '미리보기' }[r.trigger] || r.trigger) + '</td><td>' + st + (r.error ? ' <span style="color:#fca5a5">' + esc(r.error) + '</span>' : '') + '</td><td class="num">' + (r.changed || 0).toLocaleString() + '</td><td class="num">' + (nw && pl ? won(nw.company) + ' → <b>' + won(pl.company) + '</b>' : '—') + '</td><td class="num">' + (nw && pl ? won(nw.salary) + ' → ' + won(pl.salary) : '—') + '</td><td>' + esc(r.engine_version) + '</td><td>' + esc(r.created_by || '') + '</td><td>' + (r.status === 'applied' ? '<button class="btn-secondary" type="button" data-rollback="' + esc(r.id) + '">되돌리기</button>' : '') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+  async function engLoad() {
+    try { var j = await call('/margin/engine'); $('eg-schedule').textContent = 'v' + j.engine_version + ' · ' + j.schedule; engFill(j.settings); engRuns(j.runs); }
+    catch (e) { msg('eg-msg', e.message, true); }
+  }
+  async function engSave() {
+    try { await call('/margin/engine', { method: 'PATCH', json: { auto_apply: $('eg-auto').value === 'true', policy: engPolicy() } }); msg('eg-msg', '✅ 설정 저장 — 다음 실행부터 반영'); }
+    catch (e) { msg('eg-msg', e.message, true); }
+  }
+  async function engRun(apply) {
+    if (apply && !confirm('판매중 조건 전체의 가이드·MAX 를 엔진 계산값으로 바꿉니다. 실행 기록에서 되돌릴 수 있습니다. 진행할까요?')) return;
+    msg('eg-msg', apply ? '적용 중… (1분 안팎)' : '계산 중… (10초 안팎)');
+    $('eg-apply').disabled = $('eg-preview').disabled = true;
+    try {
+      var j = await call('/margin/engine/run', { method: 'POST', json: { apply: apply, policy: engPolicy() } });
+      var p = j.plan, st = p.stats, nw = p.summary.now, pl = p.summary.plan;
+      var reasons = Object.keys(st.by_reason || {}).map(function (k) { return k + ' ' + st.by_reason[k].toLocaleString(); }).join(' · ');
+      $('eg-result').innerHTML =
+        '<div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">조건 ' + st.total.toLocaleString() + ' · 변경 <b>' + st.changed.toLocaleString() + '</b> · 그대로 ' + st.unchanged.toLocaleString() + ' · 작은 변동 제외 ' + st.below_threshold.toLocaleString() + ' · 수동값 보호 ' + st.manual_locked.toLocaleString() + (reasons ? ' · 보정: ' + esc(reasons) : '') + ' · 경쟁사 벤치마크 ' + p.signals.benchmarks + ' (시장 지원 비율 ' + pct(p.signals.market_ratio) + ')</div>' +
+        '<div style="overflow-x:auto"><table class="mg-cmp"><thead><tr><th>건당 평균</th><th class="num">가이드</th><th class="num">MAX</th><th class="num">고객 지급</th><th class="num">상담사 인센티브</th><th class="num">회사 몫</th><th class="num">상담사 월급</th><th class="num">1인당 회사</th></tr></thead><tbody>' +
+        [['지금 (배분 ' + pct(nw.per_head.rate) + ')', nw], ['엔진 (배분 ' + pct(pl.per_head.rate) + ')', pl]].map(function (x) { var a = x[1]; return '<tr><td>' + x[0] + '</td><td class="num">' + won(a.guide) + '</td><td class="num">' + won(a.max) + '</td><td class="num">' + won(a.customer_pay) + '</td><td class="num">' + won(a.incentive) + '</td><td class="num">' + won(a.company) + '</td><td class="num">' + won(a.per_head.salary) + '</td><td class="num"><b>' + won(a.per_head.company) + '</b></td></tr>'; }).join('') + '</tbody></table></div>' +
+        '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:#7dd3fc">카테고리별 규칙</summary><div style="overflow-x:auto"><table class="mg-cmp"><thead><tr><th>카테고리</th><th class="num">조건</th><th>MAX 마진·최소 남김</th><th>가이드 마진·최소 남김</th><th class="num">가이드 (지금→엔진)</th><th class="num">회사 몫 (지금→엔진)</th><th>비고</th></tr></thead><tbody>' +
+        p.categories.map(function (c) { var r = c.rule || {}; return '<tr><td>' + esc(CAT_LABEL(c.category)) + '</td><td class="num">' + c.conditions.toLocaleString() + '</td><td>' + (c.rule ? pct(r.max_margin) + ' · ' + won(r.max_floor) : '—') + '</td><td>' + (c.rule ? pct(r.guide_margin) + (r.guide_floor ? ' · ' + won(r.guide_floor) : '') : '—') + '</td><td class="num">' + won(c.now && c.now.guide) + ' → ' + won(r.guide) + '</td><td class="num">' + won(c.now && c.now.company) + ' → ' + won(r.company) + '</td><td style="color:#fcd34d;font-size:11px">' + esc(c.note || '') + '</td></tr>'; }).join('') + '</tbody></table></div></details>' +
+        '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;color:#7dd3fc">변동 큰 조건 50</summary><div style="overflow-x:auto"><table class="mg-cmp"><thead><tr><th>티켓</th><th>카테고리</th><th class="num">가이드</th><th class="num">MAX</th><th class="num">무료개월</th><th>사유</th></tr></thead><tbody>' +
+        p.sample_changes.map(function (c) { return '<tr><td>' + esc(c.ticket) + '</td><td>' + esc(CAT_LABEL(c.category)) + '</td><td class="num">' + won(c.old_guide) + ' → <b>' + won(c.guide) + '</b></td><td class="num">' + won(c.old_max) + ' → ' + won(c.max) + '</td><td class="num">' + (c.free_months_old ?? '—') + ' → ' + (c.free_months_new ?? '—') + '</td><td style="font-size:11px">' + esc(c.reason) + '</td></tr>'; }).join('') + '</tbody></table></div></details>';
+      msg('eg-msg', apply ? '✅ ' + j.applied.toLocaleString() + '개 조건 반영' : '✅ 미리보기 — 아직 바뀐 것 없음');
+      engLoad();
+    } catch (e) { msg('eg-msg', e.message, true); }
+    finally { $('eg-apply').disabled = $('eg-preview').disabled = false; }
+  }
+  async function engRollback(id) {
+    if (!confirm('이 실행이 바꾼 가이드·MAX 를 직전 값으로 되돌립니다. (그 뒤 사람이 고친 조건은 그대로)')) return;
+    try { var j = await call('/margin/engine/runs/' + id + '/rollback', { method: 'POST' }); msg('eg-msg', '↩ ' + j.rolled_back.toLocaleString() + '개 조건 되돌림'); engLoad(); }
+    catch (e) { msg('eg-msg', e.message, true); }
+  }
+
   async function init() {
     if (ST.inited) return;
     ST.inited = true;
@@ -223,10 +282,14 @@
       $('mg-b-date').value = new Date().toISOString().slice(0, 10);
       $('mg-b-comp').value = '모요';
       setForm(d.defaults);
-      run(); loadScenarios();
+      run(); loadScenarios(); engLoad();
     } catch (e) { msg('mg-msg', e.message, true); }
     $('mg-run').addEventListener('click', run);
     $('mg-optimize').addEventListener('click', optimizeRun);
+    $('eg-save').addEventListener('click', engSave);
+    $('eg-preview').addEventListener('click', function () { engRun(false); });
+    $('eg-apply').addEventListener('click', function () { engRun(true); });
+    $('eg-runs').addEventListener('click', function (e) { var id = e.target.getAttribute('data-rollback'); if (id) engRollback(id); });
     $('mg-save').addEventListener('click', save);
     $('mg-to-rule').addEventListener('click', toRule);
     $('mg-b-add').addEventListener('click', addBenchmark);

@@ -333,6 +333,13 @@ cron.schedule('30 3 * * *', () => {
   runCardMaskingJob().catch(e => console.error('card-masking 에러:', e.message));
 }, { timezone: 'Asia/Seoul' });
 
+// 렌탈 가이드·MAX 엔진 (매주 월 06:00 KST) — 경쟁사·마진·판매순위로 전 조건 재계산, 자동 적용 설정일 때만 반영
+import { runIfAuto as runPayoutEngineIfAuto } from './services/rental-payout-runner.js';
+cron.schedule('0 6 * * 1', () => {
+  console.log('⏰ 렌탈 가이드·MAX 엔진 시작 (월 06:00 KST)');
+  runPayoutEngineIfAuto('weekly').catch(e => console.error('payout-engine 에러:', e.message));
+}, { timezone: 'Asia/Seoul' });
+
 // 정산은 RPC `incentive_calc_monthly_settlement(agent_id, ym)` 즉시 계산 — cron 불필요
 
 app.listen(PORT, () => {

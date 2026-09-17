@@ -77,6 +77,21 @@ try {
   const dry = await call('POST', '/api/rental-catalog/offers/apply-margin', 'admin', { margin_pct: 14, guide_margin_pct: 31, max_floor: 66000, dry_run: true });
   check('일괄규칙 금액하한 드라이런 = 엔진 식', dry.s === 200 && (dry.j.samples || []).every((x) => { const b = Math.round(x.rebate / 1.1 * 1e6) / 1e6; const km = Math.max(b * 0.14, 66000); const kg = Math.max(b * 0.31, km); return x.new_m === Math.max(0, Math.floor(Math.round((b - km) * 1e6) / 1e6 / 1000) * 1000) && x.new_g === Math.max(0, Math.min(x.new_m, Math.floor(Math.round((b - kg) * 1e6) / 1e6 / 10000) * 10000)); }), JSON.stringify(dry.j).slice(0, 200));
 
+  // ── 2-3. AI 가이드·MAX 엔진 · 공개 API · 렌탈 배분율
+  check('상담원 엔진 403', (await call('GET', '/api/rental-catalog/margin/engine', 'agent')).s === 403);
+  const eg = await call('GET', '/api/rental-catalog/margin/engine', 'admin');
+  check('엔진 설정·실행기록 200', eg.s === 200 && eg.j?.settings?.policy && Array.isArray(eg.j.runs), `${eg.s}`);
+  const ep = await call('POST', '/api/rental-catalog/margin/engine/run', 'admin', { apply: false });
+  check('엔진 미리보기 200·가이드 만원·MAX≥가이드', ep.s === 200 && ep.j.plan.sample_changes.every((c) => c.guide % 10000 === 0 && c.max >= c.guide), `${ep.s} ${JSON.stringify(ep.j).slice(0, 160)}`);
+  check('엔진 미리보기는 기준 대비 상담사 월급 유지', ep.s === 200 && ep.j.plan.summary.plan.per_head.salary + 1 >= ep.j.plan.summary.now.per_head.salary * 0.98);
+  check('엔진 되돌리기 uuid 아님 400', (await call('POST', '/api/rental-catalog/margin/engine/runs/abc/rollback', 'admin')).s === 400);
+  check('엔진 정책 잘못된 값 400', (await call('PATCH', '/api/rental-catalog/margin/engine', 'admin', { policy: { discretion: 5 } })).s === 400);
+  const pub = await fetch(BASE + '/api/rental-catalog/public/models?category=water-purifier').then(async (r) => ({ s: r.status, j: await r.json() }));
+  check('공개 모델 200 (로그인 없음)', pub.s === 200 && pub.j.models.length > 0, `${pub.s}`);
+  check('공개 모델에 금액 없음', pub.s === 200 && !hasKey(pub.j.models, /guide|max_payout|rebate|payout|support|amount/i) && pub.j.models.every((m) => Number.isInteger(m.free_months_up_to)));
+  const tr = await fetch(BASE + '/api/rental-catalog/public/trust').then(async (r) => ({ s: r.status, j: await r.json() }));
+  check('공개 신뢰지표 200·금액·연락처 없음', tr.s === 200 && !hasKey(tr.j, /amount|phone|account/i) && typeof tr.j.show === 'boolean', JSON.stringify(tr.j).slice(0, 120));
+
   // ── 3. 관리자 입력 검증
   check('가이드 만원단위 아님 400', (await call('PATCH', `/api/rental-catalog/offers/${offer.id}`, 'admin', { guide_payout: 371000 })).s === 400);
   check('MAX<가이드 400', (await call('PATCH', `/api/rental-catalog/offers/${offer.id}`, 'admin', { max_payout: 100000 })).s === 400);
@@ -158,6 +173,12 @@ try {
   check('사은품 원장 1건 생성', gift?.length === 1, JSON.stringify(gift));
   check('원장 금액·상품·티켓', gift?.[0]?.amount === pay2 && gift?.[0]?.ticket_no === 'R006159' && !!gift?.[0]?.product_name && gift?.[0]?.name === 'QA렌탈테스트', JSON.stringify(gift?.[0]));
   check('완료후 지급액 변경 400', (await P({ actual_payout: offer.guide_payout })).s === 400);
+  // 정산: 렌탈 잔존마진(MAX − 지급액)에 렌탈 배분율이 붙는다 (이번 달 이 상담원의 다른 완료 건이 없다는 가정 대신 차이로 확인)
+  const { data: saleRow } = await sb.from('incentive_sales').select('agent_id').eq('id', sale.id).single();
+  const { data: st2, error: stErr } = await sb.rpc('incentive_calc_monthly_settlement', { p_agent_id: saleRow.agent_id, p_year_month: new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 7) });
+  const srow = Array.isArray(st2) ? st2[0] : st2;
+  check('정산 렌탈 잔존마진·렌탈 배분율 반영', srow && srow.rental_residual_margin >= offer.max_payout - pay2 && Number(srow.rental_incentive_rate) === 30
+    && srow.incentive === Math.round((srow.total_residual_margin - srow.rental_residual_margin) * Number(srow.incentive_rate_applied) / 100 + srow.rental_residual_margin * 30 / 100), JSON.stringify(srow || stErr).slice(0, 200));
 
   // ── 6. 판매중지 조건은 계약 불가
   const { data: paused } = await sb.from('rental_cat_offers').select('id').neq('status', 'active').limit(1);

@@ -33,6 +33,7 @@ import { CATEGORIES, CATEGORY_LABEL } from '../services/rental-import/core.js';
 import { assist, assistantEnabled } from '../services/rental-assistant.js';
 import { recommend } from '../services/rental-recommend.js';
 import { simulate, optimize, loadDataset, resetDatasetCache, DEFAULTS as MARGIN_DEFAULTS, ENGINE_VERSION } from '../services/rental-margin-engine.js';
+import { runPayoutEngine, runIfAuto, getEngineSettings } from '../services/rental-payout-runner.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
@@ -134,7 +135,10 @@ router.post('/import/:batchId/commit', ...admin, async (req, res) => {
       throw err;
     }
     previewCache.delete(req.params.batchId);
-    res.json({ ok: true, summary });
+    resetDatasetCache();
+    // 리베이트가 바뀌었으니 가이드·MAX 엔진을 뒤에서 다시 돌린다 (자동 적용 설정일 때만)
+    runIfAuto('import').catch((e) => console.error('[payout-engine] import', e.message));
+    res.json({ ok: true, summary, engine: 'queued' });
   } catch (e) {
     console.error('[rental-catalog] commit', e);
     res.status(500).json({ error: errMsg(e) });
@@ -648,6 +652,111 @@ router.patch('/margin/benchmarks/:id', ...admin, async (req, res) => {
     resetDatasetCache();
     res.json({ benchmark: data });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ─── 가이드·MAX 엔진 (자동 갱신) ───
+router.get('/margin/engine', ...admin, async (req, res) => {
+  try {
+    const settings = await getEngineSettings();
+    const { data: runs } = await supabase.from('rental_payout_runs').select('id, engine_version, trigger, stats, summary, changed, status, error, created_by, created_at, applied_at').order('created_at', { ascending: false }).limit(20).throwOnError();
+    res.json({ engine_version: ENGINE_VERSION, settings, runs, schedule: '매주 월요일 06:00 (KST) + 빌리고 엑셀 확정 직후' });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+router.patch('/margin/engine', ...admin, async (req, res) => {
+  try {
+    const upd = { updated_by: req.agent.name, updated_at: new Date().toISOString() };
+    if (req.body?.auto_apply !== undefined) { if (typeof req.body.auto_apply !== 'boolean') return res.status(400).json({ error: 'auto_apply 는 true/false' }); upd.auto_apply = req.body.auto_apply; }
+    if (req.body?.policy !== undefined) {
+      const { normalizeParams } = await import('../services/rental-margin-engine.js');
+      const { errors } = normalizeParams(req.body.policy || {});
+      if (errors.length) return res.status(400).json({ error: errors.join(' · ') });
+      upd.policy = req.body.policy;
+    }
+    const { data } = await supabase.from('rental_engine_settings').update(upd).eq('id', 1).select().single().throwOnError();
+    res.json({ settings: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+router.post('/margin/engine/run', ...admin, async (req, res) => {
+  const apply = req.body?.apply === true;
+  const out = await runPayoutEngine({ trigger: 'manual', user: req.agent.name, apply, policy: req.body?.policy });
+  if (!out.ok) return res.status(out.busy ? 429 : 400).json({ error: out.error });
+  if (apply) _catCacheReset();
+  res.json(out);
+});
+router.post('/margin/engine/runs/:id/rollback', ...admin, async (req, res) => {
+  try {
+    if (badId(req, res)) return;
+    const { data: run } = await supabase.from('rental_payout_runs').select('id, status').eq('id', req.params.id).maybeSingle().throwOnError();
+    if (!run) return res.status(404).json({ error: '실행 기록 없음' });
+    if (run.status !== 'applied') return res.status(400).json({ error: '적용된 실행만 되돌릴 수 있습니다' });
+    const { data } = await supabase.rpc('rental_cat_rollback_payout_run', { p_run_id: run.id, p_user: req.agent.name }).throwOnError();
+    resetDatasetCache(); _catCacheReset();
+    res.json({ rolled_back: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ─── 앱·홈페이지 공개용 (로그인 없음) — 금액 노출 금지: 가이드·MAX·리베이트·지원금 원 단위는 내보내지 않는다 ───
+//   노출 = 월 렌탈료 · 카드 할인 적용 최저 월 요금 · 최대 N개월 무료(가이드 기준) · 현금혜택 여부
+const publicHits = new Map();
+function publicLimit(req, res, next) {
+  const ip = String(req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+  const now = Date.now(); const hits = (publicHits.get(ip) || []).filter((t) => t > now - 60000);
+  if (hits.length >= 120) return res.status(429).json({ error: '요청이 많습니다 — 잠시 후 다시 시도하세요' });
+  hits.push(now); publicHits.set(ip, hits);
+  if (publicHits.size > 5000) publicHits.clear();
+  next();
+}
+let publicCache = { at: 0, key: '', data: null };
+router.get('/public/models', publicLimit, async (req, res) => {
+  try {
+    const category = req.query.category ? String(req.query.category) : null;
+    const linkedOnly = req.query.linked === 'true';
+    const page = Math.max(1, Math.min(500, parseInt(req.query.page, 10) || 1)); const size = 40;
+    const key = `${category}|${linkedOnly}|${page}`;
+    if (publicCache.key === key && publicCache.at > Date.now() - 5 * 60 * 1000) return res.json(publicCache.data);
+    let q = supabase.from('rental_cat_model_summary').select('id, supplier_id, supplier_name, brand, product_name, model_code, category, image_url, min_display_fee, max_free_months, platform_linked', { count: 'exact' })
+      .eq('status', 'active').gt('offer_count', 0).not('min_display_fee', 'is', null);
+    if (category) q = q.eq('category', category);
+    if (linkedOnly) q = q.eq('platform_linked', true);
+    const { data, count } = await q.order('max_free_months', { ascending: false, nullsFirst: false }).range((page - 1) * size, page * size - 1).throwOnError();
+    const cardCache = new Map();
+    const models = [];
+    for (const m of data) {
+      if (!cardCache.has(m.supplier_id)) cardCache.set(m.supplier_id, await activeCards(m.supplier_id));
+      const cards = cardsFor(cardCache.get(m.supplier_id), m);
+      const best = cards.reduce((a, c) => Math.max(a, ...(c.tiers || []).map((t) => t.total || 0)), 0);
+      const card = best ? cards.find((c) => (c.tiers || []).some((t) => t.total === best)) : null;
+      models.push({
+        id: m.id, supplier: m.supplier_name, brand: m.brand, name: m.product_name, model_code: m.model_code, category: m.category, category_label: CATEGORY_LABEL[m.category] || m.category, image_url: m.image_url,
+        monthly_fee_from: m.min_display_fee,
+        card_monthly_fee_from: best ? Math.max(0, m.min_display_fee - best) : null,
+        card_name: card ? (card.card_name.includes(card.card_issuer) ? card.card_name : `${card.card_issuer} ${card.card_name}`) : null,
+        free_months_up_to: m.max_free_months || 0,
+        cash_benefit: (m.max_free_months || 0) > 0,
+      });
+    }
+    const out = { models, page, total: count, note: '금액(가이드·MAX·지원금)은 공개하지 않습니다. 혜택은 최대 N개월 무료로만 표기하세요.' };
+    publicCache = { at: Date.now(), key, data: out };
+    res.json(out);
+  } catch (e) { console.error('[public/models]', e.message); res.status(500).json({ error: '잠시 후 다시 시도하세요' }); }
+});
+
+// 신뢰 지표 — 이번 달 현금혜택 지급완료 건수·최근 지급(이름 마스킹·상품군·날짜) · 평균 지급 소요일. 금액·연락처 없음.
+router.get('/public/trust', publicLimit, async (req, res) => {
+  try {
+    const ym = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 7);
+    const { data } = await supabase.from('bongi_gifts').select('name, product_name, paid_at, contract_date, created_at').eq('status', '지급완료').not('paid_at', 'is', null)
+      .not('name', 'ilike', 'QA%').order('paid_at', { ascending: false }).limit(500).throwOnError();
+    const mask = (n) => { const t = String(n || '').trim(); return t.length <= 1 ? '*' : t[0] + '*'.repeat(Math.max(1, t.length - 2)) + (t.length > 2 ? t[t.length - 1] : ''); };
+    const month = data.filter((g) => new Date(g.paid_at).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).startsWith(ym));
+    const days = data.map((g) => { const from = new Date(g.contract_date || g.created_at); return (new Date(g.paid_at) - from) / 86400000; }).filter((d) => d >= 0 && d < 120);
+    const MIN = 10;   // 건수가 적으면 오히려 신뢰를 깎으니 노출하지 않는다
+    res.json({
+      show: month.length >= MIN, month: ym, paid_this_month: month.length, paid_total: data.length,
+      avg_days_to_pay: days.length >= MIN ? Math.round(days.reduce((a, b) => a + b, 0) / days.length) : null,
+      recent: month.length >= MIN ? data.slice(0, 10).map((g) => ({ name: mask(g.name), product: String(g.product_name || '').replace(/\s*\(.*$/, '').slice(0, 20), paid_date: new Date(g.paid_at).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }) })) : [],
+    });
+  } catch (e) { console.error('[public/trust]', e.message); res.status(500).json({ error: '잠시 후 다시 시도하세요' }); }
 });
 
 export default router;

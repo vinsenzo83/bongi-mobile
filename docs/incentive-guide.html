@@ -72,7 +72,8 @@ tr.hl td { background:rgba(34,197,94,0.10); font-weight:800; }
     <h2 style="color:#7dd3fc;border-bottom-color:#0e7490">👤 내 조건</h2>
     <div class="row">
       <div class="box"><div class="k">기본급</div><div class="v" id="my-base">—</div><div class="s">매월 고정</div></div>
-      <div class="box"><div class="k">개인 배분율</div><div class="v" id="my-rate">—</div><div class="s">잔존마진에서 내 몫</div></div>
+      <div class="box"><div class="k">개인 배분율</div><div class="v" id="my-rate">—</div><div class="s">인터넷·TV·유심 잔존마진에서 내 몫</div></div>
+      <div class="box"><div class="k">렌탈 배분율</div><div class="v" id="my-rental-rate">30%</div><div class="s">렌탈 잔존마진에서 내 몫</div></div>
       <div class="box"><div class="k">이번 달 잔존마진</div><div class="v" id="my-residual">—</div><div class="s" id="my-count">설치완료 기준</div></div>
     </div>
     <div style="font-size:10.5px;color:#94a3b8;margin-top:10px" id="my-note">로그인하면 본인 값이 표시됩니다.</div>
@@ -239,6 +240,7 @@ async function loadMine() {
     const st = (await r2.json()).settlement;
     if (!st) return;
     $('my-residual').textContent = fmt(st.total_residual_margin) + '원';
+    if (st.rental_incentive_rate != null) $('my-rental-rate').textContent = Number(st.rental_incentive_rate) + '%';
     $('my-count').textContent = '설치완료 ' + (st.total_count || 0) + '건 · 인센티브 ' + fmt(st.incentive) + '원';
   } catch (e) { /* 정산 조회 실패는 안내문에 영향 없다 */ }
 }

@@ -297,7 +297,7 @@
     var pay = Math.max(guide, Math.min(mx, Number(sl.value)));
     sl.value = pay;
     var residual = Math.max(0, mx - pay);
-    var rate = Number(window._incAgentRate); if (!rate || isNaN(rate)) rate = 20;
+    var rate = Number(window._incRentalRate); if (!rate || isNaN(rate)) rate = 30;   // 렌탈 전용 배분율
     $('rt-guide').textContent = won(guide);
     $('rt-offer').textContent = won(pay);
     $('rt-max').textContent = won(mx);
@@ -306,7 +306,7 @@
     $('rt-free-sub').textContent = won(pay) + ' ÷ 월 ' + won(o.display_fee) + ' (버림)';
     $('rt-residual').textContent = won(residual);
     $('rt-inc').textContent = won(Math.round(residual * rate / 100));
-    $('rt-inc-sub').textContent = won(residual) + ' × ' + rate + '% (내 배분율)';
+    $('rt-inc-sub').textContent = won(residual) + ' × ' + rate + '% (렌탈 배분율)';
     num.min = guide; num.max = mx;
     if (document.activeElement !== num) num.value = pay;
     quote(o);
@@ -387,7 +387,32 @@
         '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">가이드</span><span class="v">' + won(o.guide_payout) + '</span></div>' +
         '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">현재 지급액</span><span class="v">' + won(pay) + '</span></div>' +
         '<div class="calc-line" style="padding:1px 0;font-size:10.5px"><span class="l">MAX</span><span class="v" style="color:#c4b5fd">' + won(o.max_payout) + '</span></div>' +
-      '</div>';
+      '</div>' +
+      '<button type="button" id="rt-estimate-copy" style="margin-top:8px;width:100%;padding:8px;border-radius:6px;border:1px solid #38bdf8;background:rgba(56,189,248,0.12);color:#e0f2fe;font-weight:800;font-size:12px;cursor:pointer">📋 고객용 확정 견적서 복사</button>' +
+      '<div id="rt-estimate-msg" style="font-size:10.5px;color:#86efac;margin-top:3px;min-height:14px"></div>';
+    var btn = $('rt-estimate-copy');
+    if (btn) btn.onclick = function () { copyEstimate(o, pay); };
+  }
+
+  // 고객에게 보내는 확정 견적서 (문자·카톡 붙여넣기용) — 고객 1명에게 보내는 상담 확정 내용이라 지급액을 적는다. MAX 는 절대 넣지 않는다.
+  function estimateText(o, pay) {
+    var m = RT.model || {}; var sel = cardSel();
+    var lines = ['[봉이 렌탈 확정 견적서]', '상품: ' + (m.product_name || m.model_code || '') + (m.supplier_name ? ' (' + m.supplier_name + ')' : ''), '조건: ' + contractText(o) + ' · ' + careText(o) + ' · ' + typeText(o)];
+    if (o.price_phases && o.price_phases.length) {
+      o.price_phases.forEach(function (p) { lines.push('월 렌탈료 ' + p.from + '~' + p.to + '개월: ' + won(p.fee)); });
+      lines.push('월 렌탈료 이후: ' + won(o.monthly_fee));
+    } else lines.push('월 렌탈료: ' + won(o.display_fee));
+    if (sel) lines.push('제휴카드: ' + cardLabel(sel.card) + ' (' + tierText(sel.tier) + ') → 월 ' + won(Math.max(0, (o.display_fee || 0) - sel.tier.total)) + ', 전월실적 미달 달은 할인 없음');
+    if (pay > 0) lines.push('현금혜택: ' + won(pay) + ' (' + freeMonths(pay, o) + '개월 무료) — 설치 확인 후 지급');
+    if (o.prepay_amount) lines.push('선납금: ' + won(o.prepay_amount));
+    lines.push('견적번호: ' + o.ticket_number + ' · ' + new Date().toLocaleDateString('ko-KR'));
+    lines.push('렌탈료는 렌탈사 본사 가격 그대로이며, 혜택은 상담 확정 내용대로 지급됩니다.');
+    return lines.join('\n');
+  }
+  async function copyEstimate(o, pay) {
+    var text = estimateText(o, pay);
+    try { await navigator.clipboard.writeText(text); $('rt-estimate-msg').textContent = '✅ 복사됨 — 문자·카톡에 붙여넣어 고객에게 보내세요'; }
+    catch (e) { window.prompt('아래 내용을 복사하세요', text); }
   }
 
   // ─── 4. 계약정보 입력 (렌탈사 가입기준 기반 폼 명세) ───

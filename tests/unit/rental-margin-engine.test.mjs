@@ -77,3 +77,19 @@ test('최적화: 제약을 지키는 규칙 중 1인당 회사 이익 최대', a
   assert.ok(o.best.max_floor >= 46000);          // 인건비 ÷ 건수
   for (const a of o.alternatives) assert.ok(a.company_per_head <= o.best.company_per_head);
 });
+
+test('엔진 계획: 적용한 값으로 다시 돌리면 바꿀 것이 없다 (멱등) · 수동값 보호 · 가이드 만원 단위', async () => {
+  const { buildPayoutPlan } = await import('../../server/services/rental-margin-engine.js');
+  const rows = [];
+  for (let i = 0; i < 60; i++) rows.push({ id: 'o' + i, ticket: 'R' + i, model_id: 'm' + (i % 6), category: i % 2 ? 'tv' : 'bidet', rebate: 120000 + i * 15000, guide_payout: null, max_payout: null, display_fee: 30000, offer_tags: i === 3 ? ['집중모델'] : [], notes: '', payout_updated_by: '모요수준 · 가이드 마진 33%', sales: 0 });
+  for (const r of rows) { const b = Math.round(r.rebate / 1.1 * 1e6) / 1e6; r.max_payout = Math.floor(b * 0.9 / 1000) * 1000; r.guide_payout = Math.min(r.max_payout, Math.floor(Math.round(b * 0.67 * 1e6) / 1e6 / 10000) * 10000); }
+  rows[5].payout_updated_by = '홍길동'; // 사람이 고친 값
+  const policy = { productivity: 50, discretion: 0.3, rate_tiers: [{ min: 0, rate: 0.3 }], current_rate: 0.2 };
+  const p1 = buildPayoutPlan({ rows, benchmarks: [] }, policy);
+  assert.ok(p1.ok);
+  assert.equal(p1.stats.manual_locked, 1);
+  assert.ok(p1.changes.every((c) => c.guide % 10000 === 0 && c.max >= c.guide && c.id !== 'o5'));
+  const applied = rows.map((r) => { const c = p1.changes.find((x) => x.id === r.id); return c ? { ...r, guide_payout: c.guide, max_payout: c.max, payout_updated_by: 'AI 엔진 v1.3.0' } : r; });
+  const p2 = buildPayoutPlan({ rows: applied, benchmarks: [] }, policy);
+  assert.equal(p2.changes.length, 0);
+});

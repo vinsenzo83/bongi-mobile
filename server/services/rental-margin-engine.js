@@ -11,10 +11,12 @@
  * 버전 기록
  *   1.0.0  2026-09-17  균등/판매량 가중, 재량 사용률, 누진 배분율, 1인 생산성, 판매량 곡선, 손익분기, 카테고리별, 경쟁사 비교
  *   1.1.0  2026-09-17  금액 하한(max_floor·guide_floor) — 리베이트가 작은 조건도 건당 인건비를 남긴다 · optimize() 제약 최적화
+ *   1.2.0  2026-09-17  상품별 설계 초안
+ *   1.3.0  2026-09-17  buildPayoutPlan() 조건별 가이드·MAX — 카테고리 최적 규칙 + 경쟁사(동일 조건·동일 모델) + 판매순위·집중모델 우선 + 변동 임계값·수동값 보호
  */
 import { supabase } from '../db/supabase.js';
 
-export const ENGINE_VERSION = '1.1.0';
+export const ENGINE_VERSION = '1.3.0';
 
 export const DEFAULTS = {
   max_margin: 0.15,
@@ -182,7 +184,7 @@ export async function loadDataset() {
   const offers = [];
   for (let from = 0; ; from += 1000) {
     const { data } = await supabase.from('rental_cat_offers')
-      .select('id, ticket_number, model_id, supplier_id, rebate, guide_payout, max_payout, contract_months, care_type, display_fee, monthly_fee')
+      .select('id, ticket_number, model_id, supplier_id, rebate, guide_payout, max_payout, contract_months, care_type, display_fee, monthly_fee, offer_tags, notes, payout_updated_by')
       .eq('status', 'active').eq('crm_enabled', true).gt('rebate', 0).order('id').range(from, from + 999).throwOnError();
     offers.push(...data);
     if (data.length < 1000) break;
@@ -198,7 +200,7 @@ export async function loadDataset() {
   const { data: sold } = await supabase.from('incentive_sales').select('rental_ticket_number').eq('sale_kind', 'rental').neq('status', 'cancelled').not('rental_ticket_number', 'is', null).limit(50000);
   for (const s of sold || []) sales.set(s.rental_ticket_number, (sales.get(s.rental_ticket_number) || 0) + 1);
 
-  const rows = offers.map((o) => ({ rebate: o.rebate, supplier_id: o.supplier_id, category: cat.get(o.model_id)?.category || 'etc', guide_payout: o.guide_payout, max_payout: o.max_payout, sales: sales.get(o.ticket_number) || 0 }));
+  const rows = offers.map((o) => ({ id: o.id, ticket: o.ticket_number, model_id: o.model_id, model_code: cat.get(o.model_id)?.model_code || null, offer_tags: o.offer_tags || [], notes: o.notes || '', payout_updated_by: o.payout_updated_by || null, display_fee: o.display_fee, rebate: o.rebate, supplier_id: o.supplier_id, category: cat.get(o.model_id)?.category || 'etc', guide_payout: o.guide_payout, max_payout: o.max_payout, sales: sales.get(o.ticket_number) || 0 }));
 
   // 경쟁사 벤치마크 → 우리 조건 매칭 (같은 렌탈사·모델코드·약정·관리, 요금 구조 같으면 우선, 없으면 리베이트 최대)
   const { data: bms } = await supabase.from('rental_competitor_benchmarks').select('*').eq('is_active', true).order('support_amount', { ascending: false });
@@ -217,7 +219,7 @@ export async function loadDataset() {
       id: bm.id, competitor: bm.competitor, supplier_id: bm.supplier_id, model_code: bm.model_code, product_name: bm.product_name,
       contract_months: bm.contract_months, care_type: bm.care_type, monthly_fee: bm.monthly_fee, after_fee: bm.after_fee, half_months: bm.half_months,
       support_amount: bm.support_amount, observed_at: bm.observed_at, source_url: bm.source_url,
-      ticket: best?.ticket_number || null, same_fee: same.length > 0, rebate: best?.rebate || null, live_guide: best?.guide_payout ?? null, live_max: best?.max_payout ?? null,
+      offer_id: best?.id || null, model_id: best?.model_id || null, ticket: best?.ticket_number || null, same_fee: same.length > 0, rebate: best?.rebate || null, live_guide: best?.guide_payout ?? null, live_max: best?.max_payout ?? null,
     };
   });
   const data = { rows, benchmarks, loaded_at: new Date().toISOString() };
@@ -308,5 +310,146 @@ export function optimize(dataset, input = {}) {
     constraints: { salary_min: salaryMin, current_rate: currentRate, competitor_max_share: maxShare, competitor_guide_share: guideShare, competitor_guide_ratio: guideRatio, guide_avg_min: guideAvgMin, min_max_floor: minFloor, rate },
     current: live && { per_sale: live.per_sale, per_head: live.per_head, break_even: live.break_even },
     searched: { tried, feasible }, best, alternatives: top.slice(1, 6), detail,
+  };
+}
+
+
+/**
+ * 조건별 가이드·MAX 계획 — "AI 엔진"이 주기마다 전 조건을 다시 계산한다.
+ *
+ * 1) 카테고리 규칙: 카테고리마다 (MAX 마진%·MAX 최소 남김·가이드 마진%·가이드 최소 남김)을 탐색해 건당 회사 몫 최대
+ *    제약 ① MAX 최소 남김 ≥ 1인 인건비÷생산성 (안 되면 이 제약만 풀고 '인건비 하한 미달'로 표시)
+ *        ② 평균 가이드 ≥ 기준 규칙 평균 가이드   ③ 건당 상담사 인센티브(렌탈 배분율) ≥ 기준 규칙 인센티브(지금 배분율)
+ *        기준 규칙(baseline_rule, 기본 MAX 10%·가이드 33%)을 지금 리베이트로 계산 — 리베이트·경쟁사가 그대로면 몇 번 돌려도 같은 값 (멱등)
+ * 2) 조건별 보정 (인건비 하한 cap = 공급가 − 인건비÷생산성 안에서만)
+ *    a. 경쟁사 동일 조건: MAX ≥ 경쟁사 지원금, 가이드 ≥ 경쟁사 × guide_ratio
+ *    b. 경쟁사 동일 모델(약정·관리 다름): 그 경쟁사 지원 비율(지원금÷공급가)을 이 조건 공급가에 곱해 같은 방식으로
+ *    c. 판매 우선(집중모델·주력·우선판매 표시 또는 90일 판매 상위): 가이드 ≥ 공급가 × 시장 지원 비율 × guide_ratio
+ *       시장 지원 비율 = 그 카테고리 경쟁사 벤치마크 평균 (없으면 전체 평균)
+ * 3) 적용 제외: 사람이 직접 고친 값(payout_updated_by 가 규칙·엔진 표시가 아님) · 변동이 임계값 미만 (앱 노출값 흔들림 방지)
+ */
+const ENGINE_MARK = /엔진|engine|마진/;
+export function buildPayoutPlan(dataset, input = {}) {
+  const { params: p, errors } = normalizeParams(input);
+  if (errors.length) return { ok: false, errors };
+  const rate = rateFor(p.rate_tiers, p.productivity);
+  const curRate = p.current_rate;
+  const headCost = p.base_salary + p.overhead_per_head;
+  const minFloor = Math.ceil(headCost / p.productivity / 1000) * 1000;
+  const numIn = (k, d) => (input[k] != null && input[k] !== '' && Number.isFinite(Number(input[k])) ? Number(input[k]) : d);
+  const guideRatio = numIn('competitor_guide_ratio', 0.9);
+  const topSalesShare = numIn('top_sales_share', 0.1);            // 90일 판매 상위 몇 % 모델을 우선으로
+  const minGuideDelta = numIn('min_guide_delta', 10000);          // 이보다 작은 변동은 적용 안 함
+  const minMaxDelta = numIn('min_max_delta', 5000);
+  const minBand = numIn('min_band', 0.05);
+  const baselineRule = { max_margin: 0.10, max_floor: 0, guide_margin: 0.33, guide_floor: 0, ...(input.baseline_rule || {}) };   // 고객 혜택·상담사 몫의 기준 (모요수준 규칙)                         // 보정 후에도 가이드~MAX 폭 ≥ 공급가 × 5%
+  const range = (a, b, st) => { const o = []; for (let v = a; v <= b + 1e-9; v += st) o.push(Math.round(v * 1000) / 1000); return o; };
+
+  const rows = dataset.rows.filter((r) => r.rebate > 0);
+  const byCat = new Map();
+  for (const r of rows) { if (!byCat.has(r.category)) byCat.set(r.category, []); byCat.get(r.category).push(r); }
+
+  // ── 1) 카테고리 규칙
+  function searchCategory(list, floors) {
+    const buckets = new Map();
+    for (const r of list) buckets.set(r.rebate, (buckets.get(r.rebate) || 0) + 1);
+    const B = [...buckets].map(([rebate, n]) => ({ b: base({ rebate }, p.basis), n }));
+    const N = list.length;
+    let cg = 0, cinc = 0, cn = 0, crb = 0, cpay = 0;
+    for (const r of list) {
+      if (r.guide_payout == null || r.max_payout == null) continue;
+      const paid = r.guide_payout + (r.max_payout - r.guide_payout) * p.discretion;
+      cn++; cg += r.guide_payout; cinc += (r.max_payout - paid) * curRate; crb += base(r, p.basis); cpay += paid;
+    }
+    const now = cn ? { guide: cg / cn, incentive: cinc / cn, company: (crb - cpay - cinc) / cn } : null;
+    // 제약 기준선 = 기준 규칙(baseline_rule)을 지금 리베이트로 계산한 값 — 엔진이 바꾼 값을 기준으로 삼으면 매 실행마다 값이 계속 움직인다
+    let bg = 0, binc = 0;
+    for (const { b, n } of B) { const x = guideMaxFromBase(b, { ...p, ...baselineRule }); const paid = x.guide + (x.max - x.guide) * p.discretion; bg += x.guide * n; binc += (x.max - paid) * curRate * n; }
+    const baseline = { guide: bg / N, incentive: binc / N };
+    let best = null;
+    for (const mm of range(0, 0.25, 0.01)) for (const mf of floors) for (const gm of range(0.15, 0.5, 0.01)) {
+      if (gm < mm) continue;
+      for (const gf of [0, 20000, 40000]) {
+        const q = { ...p, max_margin: mm, max_floor: mf, guide_margin: gm, guide_floor: gf };
+        let g = 0, m = 0, pay = 0, inc = 0, rb = 0;
+        for (const { b, n } of B) { const x = guideMaxFromBase(b, q); const paid = x.guide + (x.max - x.guide) * p.discretion; g += x.guide * n; m += x.max * n; pay += paid * n; inc += (x.max - paid) * rate * n; rb += b * n; }
+        const avgGuide = g / N, avgInc = inc / N, company = (rb - pay - inc) / N;
+        if (avgGuide + 1e-6 < baseline.guide || avgInc + 1e-6 < baseline.incentive) continue;
+        if (!best || company > best.company) best = { max_margin: mm, max_floor: mf, guide_margin: gm, guide_floor: gf, guide: avgGuide, max: m / N, incentive: avgInc, company };
+      }
+    }
+    return { now, best, baseline };
+  }
+  const categories = [];
+  for (const [category, list] of byCat) {
+    let { now, best, baseline } = searchCategory(list, range(minFloor, minFloor + 60000, 10000));
+    let note = null;
+    if (!best) { ({ now, best, baseline } = searchCategory(list, range(0, minFloor, 5000))); note = best ? '인건비 하한 미달 — 지금 가이드·상담사 몫을 지키면 MAX 를 다 줄 때 건당 인건비를 못 남김' : '지금보다 나은 규칙 없음 — 유지'; }
+    categories.push({ category, conditions: list.length, now, baseline, rule: best, note });
+  }
+  categories.sort((a, b) => b.conditions - a.conditions);
+  const ruleOf = new Map(categories.filter((c) => c.rule).map((c) => [c.category, c.rule]));
+
+  // ── 2) 신호: 경쟁사·판매순위
+  const bms = (dataset.benchmarks || []).filter((b) => b.rebate && b.offer_id);
+  const bmByOffer = new Map(bms.map((b) => [b.offer_id, b]));
+  const bmByModel = new Map();
+  for (const b of bms) { const k = b.model_id; if (!k) continue; const ratio = b.support_amount / base({ rebate: b.rebate }, p.basis); if (!bmByModel.has(k) || bmByModel.get(k).ratio < ratio) bmByModel.set(k, { ratio, competitor: b.competitor, support_amount: b.support_amount }); }
+  const rowById = new Map(rows.map((r) => [r.id, r]));
+  const catRatio = new Map(); let allSum = 0, allN = 0;
+  for (const b of bms) { const r = rowById.get(b.offer_id); if (!r) continue; const ratio = b.support_amount / base(r, p.basis); allSum += ratio; allN++; const c = catRatio.get(r.category) || { s: 0, n: 0 }; c.s += ratio; c.n++; catRatio.set(r.category, c); }
+  const marketRatio = (cat) => { const c = catRatio.get(cat); return c ? c.s / c.n : (allN ? allSum / allN : null); };
+  const modelSales = new Map();
+  for (const r of rows) if (r.sales) modelSales.set(r.model_id, (modelSales.get(r.model_id) || 0) + r.sales);
+  const ranked = [...modelSales].sort((a, b) => b[1] - a[1]);
+  const topModels = new Set(ranked.slice(0, Math.max(0, Math.ceil(ranked.length * topSalesShare))).map(([id]) => id));
+  const isFocus = (r) => (r.offer_tags || []).includes('집중모델') || /주력|우선판매/.test(r.notes || '');
+
+  // ── 3) 조건별 값
+  const changes = []; const stats = { total: rows.length, changed: 0, unchanged: 0, below_threshold: 0, manual_locked: 0, no_rule: 0, by_reason: {} };
+  const sum = { now: { g: 0, m: 0, pay: 0, inc: 0, co: 0, n: 0 }, plan: { g: 0, m: 0, pay: 0, inc: 0, co: 0, n: 0 } };
+  const add = (acc, b, g, m, r) => { const paid = g + (m - g) * p.discretion; const inc = (m - paid) * r; acc.g += g; acc.m += m; acc.pay += paid; acc.inc += inc; acc.co += b - paid - inc; acc.n++; };
+  for (const r of rows) {
+    const b = base(r, p.basis);
+    const hasNow = r.guide_payout != null && r.max_payout != null;
+    const rule = ruleOf.get(r.category);
+    if (!rule) { stats.no_rule++; if (hasNow) { add(sum.now, b, r.guide_payout, r.max_payout, curRate); add(sum.plan, b, r.guide_payout, r.max_payout, rate); } continue; }
+    if (hasNow && r.payout_updated_by && !ENGINE_MARK.test(r.payout_updated_by)) { stats.manual_locked++; add(sum.now, b, r.guide_payout, r.max_payout, curRate); add(sum.plan, b, r.guide_payout, r.max_payout, rate); continue; }
+    const x = guideMaxFromBase(b, { ...p, ...rule });
+    let guide = x.guide, max = x.max; const reasons = ['카테고리 규칙'];
+    const cap = Math.max(0, Math.floor(r6(b - minFloor) / 1000) * 1000);
+    const lift = (targetSupport, why) => {
+      if (!(targetSupport > 0)) return;
+      const m2 = Math.min(Math.max(cap, max), Math.max(max, Math.ceil(targetSupport / 1000) * 1000));
+      // 가이드~MAX 사이 최소 폭(공급가의 min_band) — 상담사 재량·인센티브가 사라지지 않게
+      const bandCap = Math.floor((m2 - b * minBand) / 10000) * 10000;
+      const g2 = Math.max(guide, Math.min(bandCap, Math.ceil((targetSupport * guideRatio) / 10000) * 10000));
+      if (m2 !== max || g2 !== guide) { max = m2; guide = g2; reasons.push(why); }
+    };
+    const exact = bmByOffer.get(r.id);
+    if (exact) lift(exact.support_amount, `경쟁사 동일조건(${exact.competitor})`);
+    else if (bmByModel.has(r.model_id)) { const bm = bmByModel.get(r.model_id); lift(b * bm.ratio, `경쟁사 동일모델(${bm.competitor})`); }
+    else if (isFocus(r) || topModels.has(r.model_id)) { const mr = marketRatio(r.category); if (mr) lift(b * mr, isFocus(r) ? '집중·주력 모델' : '판매 상위'); }
+    const dg = hasNow ? guide - r.guide_payout : null, dm = hasNow ? max - r.max_payout : null;
+    if (hasNow) add(sum.now, b, r.guide_payout, r.max_payout, curRate);
+    if (hasNow && Math.abs(dg) < minGuideDelta && Math.abs(dm) < minMaxDelta) {
+      if (dg === 0 && dm === 0) stats.unchanged++; else stats.below_threshold++;
+      add(sum.plan, b, r.guide_payout, r.max_payout, rate); continue;
+    }
+    add(sum.plan, b, guide, max, rate);
+    stats.changed++;
+    for (const why of reasons.slice(1)) stats.by_reason[why.replace(/\(.*\)/, '')] = (stats.by_reason[why.replace(/\(.*\)/, '')] || 0) + 1;
+    changes.push({ id: r.id, ticket: r.ticket, category: r.category, old_guide: r.guide_payout, old_max: r.max_payout, guide, max, reason: reasons.join(' · '), free_months_old: hasNow && r.display_fee ? Math.floor(r.guide_payout / r.display_fee) : null, free_months_new: r.display_fee ? Math.floor(guide / r.display_fee) : null });
+  }
+  const avgOf = (x) => ({ guide: x.g / x.n, max: x.m / x.n, customer_pay: x.pay / x.n, incentive: x.inc / x.n, company: x.co / x.n, conditions: x.n });
+  const now = avgOf(sum.now), plan = avgOf(sum.plan);
+  const perHead = (a, r) => ({ salary: p.base_salary + a.incentive * p.productivity, company: a.company * p.productivity - headCost, rate: r });
+  return {
+    ok: true, engine_version: ENGINE_VERSION,
+    policy: { productivity: p.productivity, discretion: p.discretion, rate, current_rate: curRate, base_salary: p.base_salary, overhead_per_head: p.overhead_per_head, basis: p.basis,
+      min_max_floor: minFloor, competitor_guide_ratio: guideRatio, top_sales_share: topSalesShare, min_guide_delta: minGuideDelta, min_max_delta: minMaxDelta, min_band: minBand, baseline_rule: baselineRule },
+    signals: { benchmarks: bms.length, market_ratio: allN ? allSum / allN : null, top_models: topModels.size, sales_known: modelSales.size > 0 },
+    summary: { now: { ...now, per_head: perHead(now, curRate) }, plan: { ...plan, per_head: perHead(plan, rate) } },
+    stats, categories, changes,
   };
 }
