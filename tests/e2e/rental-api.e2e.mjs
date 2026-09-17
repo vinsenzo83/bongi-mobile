@@ -57,6 +57,26 @@ try {
   const rt = await call('POST', '/api/rental-catalog/agent/recommend', 'agent', { text: '코웨이 쓰는데 바꾸고 싶음 냉온 정수기' });
   check('타사보상 추천에 지금 쓰는 브랜드 제외', rt.s === 200 && rt.j.recommendations.length > 0 && rt.j.recommendations.every((x) => x.supplier_id !== 'coway'));
 
+  // ── 2-2. 마진 설계 엔진 (관리자 전용)
+  check('무토큰 마진계산 401', (await call('POST', '/api/rental-catalog/margin/simulate', null, {})).s === 401);
+  check('상담원 마진계산 403', (await call('POST', '/api/rental-catalog/margin/simulate', 'agent', {})).s === 403);
+  const md = await call('GET', '/api/rental-catalog/margin/defaults', 'admin');
+  check('마진 기본값 200·엔진버전', md.s === 200 && /^\d+\.\d+\.\d+$/.test(md.j?.engine_version || ''), JSON.stringify(md.j).slice(0, 120));
+  const ms = await call('POST', '/api/rental-catalog/margin/simulate', 'admin', { max_margin: 0.15, guide_margin: 0.33, productivity: 50, discretion: 0.3, rate_tiers: [{ min: 0, rate: 0.3 }] });
+  check('마진계산 200·설계안/지금/판매량', ms.s === 200 && ms.j?.proposed?.volumes?.length > 0 && ms.j?.live?.per_sale && ms.j.dataset.conditions > 1000, `${ms.s} ${JSON.stringify(ms.j).slice(0, 120)}`);
+  check('마진계산 회사몫 = 리베이트 − 고객지급 − 인센티브', ms.s === 200 && Math.abs(ms.j.proposed.per_sale.company - (ms.j.proposed.per_sale.rebate - ms.j.proposed.per_sale.customer_pay - ms.j.proposed.per_sale.counselor_incentive)) < 1);
+  check('마진계산 경쟁사 비교 매칭', ms.s === 200 && ms.j.benchmarks.filter((b) => b.matched).length >= 10, `${ms.j?.benchmarks?.filter?.((b) => b.matched).length}`);
+  check('가이드마진<MAX마진 400', (await call('POST', '/api/rental-catalog/margin/simulate', 'admin', { max_margin: 0.3, guide_margin: 0.2 })).s === 400);
+  const mopt = await call('POST', '/api/rental-catalog/margin/optimize', 'admin', { productivity: 50, discretion: 0.3, rate_tiers: [{ min: 0, rate: 0.35 }] });
+  check('최적화 200·제약 충족', mopt.s === 200 && mopt.j.best.salary >= mopt.j.constraints.salary_min && mopt.j.best.guide_avg >= mopt.j.constraints.guide_avg_min && mopt.j.best.max_floor >= mopt.j.constraints.min_max_floor, `${mopt.s} ${JSON.stringify(mopt.j).slice(0, 160)}`);
+  check('벤치마크 출처 없음 400', (await call('POST', '/api/rental-catalog/margin/benchmarks', 'admin', { competitor: 'QA', supplier_id: 'coway', model_code: 'X', contract_months: 60, care_type: 'visit', support_amount: 1, observed_at: '2026-09-17' })).s === 400);
+  const sc = await call('POST', '/api/rental-catalog/margin/scenarios', 'admin', { name: 'QA-시나리오', params: { max_margin: 0.15, guide_margin: 0.33 } });
+  check('시나리오 저장 200', sc.s === 200 && sc.j?.scenario?.summary?.proposed, `${sc.s} ${JSON.stringify(sc.j).slice(0, 120)}`);
+  if (sc.j?.scenario?.id) await sb.from('rental_margin_scenarios').delete().eq('id', sc.j.scenario.id).eq('name', 'QA-시나리오');
+  check('일괄규칙 금액하한 음수 400', (await call('POST', '/api/rental-catalog/offers/apply-margin', 'admin', { margin_pct: 10, max_floor: -1 })).s === 400);
+  const dry = await call('POST', '/api/rental-catalog/offers/apply-margin', 'admin', { margin_pct: 14, guide_margin_pct: 31, max_floor: 66000, dry_run: true });
+  check('일괄규칙 금액하한 드라이런 = 엔진 식', dry.s === 200 && (dry.j.samples || []).every((x) => { const b = Math.round(x.rebate / 1.1 * 1e6) / 1e6; const km = Math.max(b * 0.14, 66000); const kg = Math.max(b * 0.31, km); return x.new_m === Math.max(0, Math.floor(Math.round((b - km) * 1e6) / 1e6 / 1000) * 1000) && x.new_g === Math.max(0, Math.min(x.new_m, Math.floor(Math.round((b - kg) * 1e6) / 1e6 / 10000) * 10000)); }), JSON.stringify(dry.j).slice(0, 200));
+
   // ── 3. 관리자 입력 검증
   check('가이드 만원단위 아님 400', (await call('PATCH', `/api/rental-catalog/offers/${offer.id}`, 'admin', { guide_payout: 371000 })).s === 400);
   check('MAX<가이드 400', (await call('PATCH', `/api/rental-catalog/offers/${offer.id}`, 'admin', { max_payout: 100000 })).s === 400);

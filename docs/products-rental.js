@@ -79,8 +79,10 @@
 
   // ─── 마진 규칙 ───
   async function applyMargin(dry) {
-    var body = { margin_pct: Number($('rp-margin').value), guide_margin_pct: $('rp-guide-margin').value === '' ? null : Number($('rp-guide-margin').value), basis: $('rp-basis').value, supplier_id: $('rp-m-supplier').value || null, only_unset: $('rp-only-unset').checked, dry_run: dry };
-    if (!dry && !confirm((body.supplier_id ? $('rp-m-supplier').selectedOptions[0].text : '전체 렌탈사') + ' 조건의 가이드·MAX 를 가이드 마진 ' + body.guide_margin_pct + '% · MAX 마진 ' + body.margin_pct + '% 규칙으로 덮어씁니다.' + (body.only_unset ? ' (미설정 조건만)' : ''))) return;
+    var body = { margin_pct: Number($('rp-margin').value), guide_margin_pct: $('rp-guide-margin').value === '' ? null : Number($('rp-guide-margin').value), basis: $('rp-basis').value, supplier_id: $('rp-m-supplier').value || null, only_unset: $('rp-only-unset').checked, dry_run: dry,
+      max_floor: Number($('rp-max-floor').value || 0), guide_floor: Number($('rp-guide-floor').value || 0) };
+    var floors = (body.guide_floor ? ' (가이드 최소 ' + won(body.guide_floor) + '원 남김)' : '') + (body.max_floor ? ' (MAX 최소 ' + won(body.max_floor) + '원 남김)' : '');
+    if (!dry && !confirm((body.supplier_id ? $('rp-m-supplier').selectedOptions[0].text : '전체 렌탈사') + ' 조건의 가이드·MAX 를 가이드 마진 ' + body.guide_margin_pct + '% · MAX 마진 ' + body.margin_pct + '% 규칙으로 덮어씁니다.' + floors + (body.only_unset ? ' (미설정 조건만)' : ''))) return;
     msg('rp-margin-msg', dry ? '계산 중…' : '적용 중…');
     try {
       var j = await call('/offers/apply-margin', { method: 'POST', json: body });

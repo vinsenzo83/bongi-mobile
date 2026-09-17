@@ -12,6 +12,7 @@
  *   PATCH /offers/:id                가이드·MAX·상태·노출·메모·적용기간
  *   POST  /offers/bulk-payout        필터된 조건에 가이드·MAX 일괄(고정액 또는 리베이트 기준식), dry_run 지원
  *   POST  /offers/apply-margin       마진율 규칙으로 가이드·MAX 일괄 (DB 함수, 전체·렌탈사별)
+ *   GET   /margin/defaults · POST /margin/simulate · GET/POST /margin/scenarios · GET/POST/PATCH /margin/benchmarks   마진 설계 엔진
  *   GET   /stats                     상품관리 요약
  *   GET/POST/PATCH /promotions
  * 상담원(로그인 사용자)
@@ -31,6 +32,7 @@ import { buildApplicationForm } from '../services/rental-application.js';
 import { CATEGORIES, CATEGORY_LABEL } from '../services/rental-import/core.js';
 import { assist, assistantEnabled } from '../services/rental-assistant.js';
 import { recommend } from '../services/rental-recommend.js';
+import { simulate, optimize, loadDataset, resetDatasetCache, DEFAULTS as MARGIN_DEFAULTS, ENGINE_VERSION } from '../services/rental-margin-engine.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
@@ -323,11 +325,14 @@ router.post('/offers/apply-margin', ...admin, async (req, res) => {
     const guideMargin = req.body?.guide_margin_pct == null || req.body.guide_margin_pct === '' ? null : Number(req.body.guide_margin_pct) / 100;
     if (guideMargin != null && !(guideMargin >= margin && guideMargin < 1)) return res.status(400).json({ error: '가이드 마진은 MAX 마진 이상이어야 합니다' });
     const basis = req.body?.basis === 'vat' ? 'vat' : 'supply';
+    const floor = (v) => (v == null || v === '' ? 0 : Number(v));
+    const maxFloor = floor(req.body?.max_floor), guideFloor = floor(req.body?.guide_floor);
+    if (![maxFloor, guideFloor].every((v) => Number.isInteger(v) && v >= 0 && v <= 5000000)) return res.status(400).json({ error: '금액 하한은 0 이상 정수(원)' });
     const { data } = await supabase.rpc('rental_cat_apply_margin', {
       p_margin: margin, p_basis: basis, p_supplier: req.body?.supplier_id || null,
-      p_only_unset: !!req.body?.only_unset, p_dry_run: req.body?.dry_run !== false, p_user: req.agent.name, p_guide_margin: guideMargin,
+      p_only_unset: !!req.body?.only_unset, p_dry_run: req.body?.dry_run !== false, p_user: req.agent.name, p_guide_margin: guideMargin, p_max_floor: maxFloor, p_guide_floor: guideFloor,
     }).throwOnError();
-    _catCacheReset();
+    _catCacheReset(); resetDatasetCache();
     res.json(data);
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
@@ -540,6 +545,108 @@ router.get('/agent/models/:id/offers', ...agent, async (req, res) => {
       .or(`valid_to.is.null,valid_to.gte.${today}`)
       .order('contract_months').order('care_type').order('cycle_months').throwOnError();
     res.json({ offers: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+
+// ─── 마진 설계 엔진 (관리자 전용 — 리베이트 기반) ───
+router.get('/margin/defaults', ...admin, async (req, res) => {
+  try {
+    const { data: rule } = await supabase.from('incentive_rules').select('version, base_salary, residual_rates').eq('active', true).maybeSingle();
+    const { data: last } = await supabase.from('rental_cat_offers').select('payout_updated_by').not('payout_updated_by', 'is', null).order('payout_updated_at', { ascending: false }).limit(1);
+    res.json({ engine_version: ENGINE_VERSION, defaults: { ...MARGIN_DEFAULTS, base_salary: rule?.base_salary ?? MARGIN_DEFAULTS.base_salary },
+      settlement_rule: rule ? { version: rule.version, residual_rates: rule.residual_rates } : null, live_rule_label: last?.[0]?.payout_updated_by || null });
+  } catch (e) { console.error('[margin/defaults]', e.message); res.status(500).json({ error: errMsg(e) }); }
+});
+
+router.post('/margin/simulate', ...admin, async (req, res) => {
+  try {
+    const body = req.body || {};
+    if (body.refresh) resetDatasetCache();
+    const ds = await loadDataset();
+    const filter = {};
+    if (body.supplier_id) filter.supplier_id = String(body.supplier_id);
+    if (body.category) filter.category = String(body.category);
+    const out = simulate(ds, { ...body, filter });
+    if (!out.ok) return res.status(400).json({ error: out.errors.join(' · '), errors: out.errors });
+    res.json({ ...out, loaded_at: ds.loaded_at });
+  } catch (e) { console.error('[margin/simulate]', e.message); res.status(500).json({ error: errMsg(e) }); }
+});
+
+// 제약 최적화 — 탐색에 수 초 걸린다. 관리자만, 동시에 한 번씩
+let optimizing = false;
+router.post('/margin/optimize', ...admin, async (req, res) => {
+  if (optimizing) return res.status(429).json({ error: '다른 최적화가 진행 중입니다 — 잠시 후 다시 시도하세요' });
+  optimizing = true;
+  try {
+    const body = req.body || {};
+    const ds = await loadDataset();
+    const filter = {};
+    if (body.supplier_id) filter.supplier_id = String(body.supplier_id);
+    if (body.category) filter.category = String(body.category);
+    const out = optimize(ds, { ...body, filter });
+    if (!out.ok) return res.status(422).json({ error: out.errors.join(' · '), constraints: out.constraints });
+    res.json({ ...out, loaded_at: ds.loaded_at });
+  } catch (e) { console.error('[margin/optimize]', e.message); res.status(500).json({ error: errMsg(e) }); }
+  finally { optimizing = false; }
+});
+
+router.get('/margin/scenarios', ...admin, async (req, res) => {
+  try {
+    const { data } = await supabase.from('rental_margin_scenarios').select('*').order('created_at', { ascending: false }).limit(50).throwOnError();
+    res.json({ scenarios: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+router.post('/margin/scenarios', ...admin, async (req, res) => {
+  try {
+    const name = String(req.body?.name || '').trim().slice(0, 80);
+    if (!name) return res.status(400).json({ error: '시나리오 이름을 입력하세요' });
+    const ds = await loadDataset();
+    const out = simulate(ds, req.body?.params || {});
+    if (!out.ok) return res.status(400).json({ error: out.errors.join(' · ') });
+    const pick = (sc) => sc && { per_sale: sc.per_sale, per_head: sc.per_head, break_even: sc.break_even };
+    const summary = { proposed: pick(out.proposed), live: pick(out.live), competitor: out.competitor, dataset: out.dataset };
+    const { data } = await supabase.from('rental_margin_scenarios').insert({ name, engine_version: out.engine_version, params: out.params, summary, memo: String(req.body?.memo || '').slice(0, 500) || null, created_by: req.agent.name }).select().single().throwOnError();
+    res.json({ scenario: data });
+  } catch (e) { console.error('[margin/scenarios]', e.message); res.status(500).json({ error: errMsg(e) }); }
+});
+
+const CARE_TYPES = ['visit', 'self', 'delivery', 'none'];
+router.get('/margin/benchmarks', ...admin, async (req, res) => {
+  try {
+    const { data } = await supabase.from('rental_competitor_benchmarks').select('*').order('observed_at', { ascending: false }).order('support_amount', { ascending: false }).limit(500).throwOnError();
+    res.json({ benchmarks: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+router.post('/margin/benchmarks', ...admin, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const int = (v) => (v === '' || v == null ? null : Number(v));
+    const row = { competitor: String(b.competitor || '').trim(), supplier_id: String(b.supplier_id || ''), model_code: String(b.model_code || '').trim().toUpperCase(), product_name: b.product_name || null,
+      contract_months: int(b.contract_months), care_type: b.care_type, monthly_fee: int(b.monthly_fee), after_fee: int(b.after_fee), half_months: int(b.half_months),
+      support_amount: int(b.support_amount), observed_at: b.observed_at, source_url: String(b.source_url || '').trim(), notes: b.notes || null };
+    const bad = [];
+    if (!row.competitor) bad.push('경쟁사'); if (!row.supplier_id) bad.push('렌탈사'); if (!row.model_code) bad.push('모델코드');
+    if (!Number.isInteger(row.contract_months) || row.contract_months <= 0) bad.push('약정 개월');
+    if (!CARE_TYPES.includes(row.care_type)) bad.push('관리방식');
+    if (!Number.isInteger(row.support_amount) || row.support_amount < 0) bad.push('지원금');
+    if (!DATE_RE.test(String(row.observed_at || ''))) bad.push('확인일');
+    if (!/^https?:\/\//.test(row.source_url)) bad.push('출처 URL');
+    for (const k of ['monthly_fee', 'after_fee', 'half_months']) if (row[k] != null && !(Number.isInteger(row[k]) && row[k] >= 0)) bad.push(k);
+    if (bad.length) return res.status(400).json({ error: `입력 확인: ${bad.join(', ')}` });
+    const { data, error } = await supabase.from('rental_competitor_benchmarks').insert(row).select().single();
+    if (error) return res.status(error.code === '23505' ? 409 : 400).json({ error: error.code === '23505' ? '같은 날짜에 같은 조건이 이미 있습니다' : error.message });
+    resetDatasetCache();
+    res.json({ benchmark: data });
+  } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+});
+router.patch('/margin/benchmarks/:id', ...admin, async (req, res) => {
+  try {
+    if (badId(req, res)) return;
+    if (typeof req.body?.is_active !== 'boolean') return res.status(400).json({ error: 'is_active(true/false)만 바꿀 수 있습니다' });
+    const { data } = await supabase.from('rental_competitor_benchmarks').update({ is_active: req.body.is_active }).eq('id', req.params.id).select().maybeSingle().throwOnError();
+    if (!data) return res.status(404).json({ error: '없음' });
+    resetDatasetCache();
+    res.json({ benchmark: data });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
