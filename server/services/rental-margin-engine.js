@@ -197,7 +197,7 @@ export async function loadDataset() {
   }
   // 실제 렌탈 판매(티켓별 건수) — 판매량 가중용
   const sales = new Map();
-  const { data: sold } = await supabase.from('incentive_sales').select('rental_ticket_number').eq('sale_kind', 'rental').neq('status', 'cancelled').not('rental_ticket_number', 'is', null).limit(50000);
+  const { data: sold } = await supabase.from('incentive_sales').select('rental_ticket_number').eq('sale_kind', 'rental').neq('status', 'cancelled').not('rental_ticket_number', 'is', null).not('customer_name', 'ilike', 'QA%').limit(50000);   // 테스트 계약 제외
   for (const s of sold || []) sales.set(s.rental_ticket_number, (sales.get(s.rental_ticket_number) || 0) + 1);
 
   const rows = offers.map((o) => ({ id: o.id, ticket: o.ticket_number, model_id: o.model_id, model_code: cat.get(o.model_id)?.model_code || null, offer_tags: o.offer_tags || [], notes: o.notes || '', payout_updated_by: o.payout_updated_by || null, display_fee: o.display_fee, rebate: o.rebate, supplier_id: o.supplier_id, category: cat.get(o.model_id)?.category || 'etc', guide_payout: o.guide_payout, max_payout: o.max_payout, sales: sales.get(o.ticket_number) || 0 }));
