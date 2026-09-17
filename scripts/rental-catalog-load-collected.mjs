@@ -6,6 +6,8 @@
 //   · 페이지 공통 소개문("…소개합니다", "…확인해보세요")은 상품 설명으로 쓰지 않는다
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
+import { execFileSync } from 'child_process';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
@@ -59,7 +61,14 @@ for (const sup of suppliers) {
   if (!commit) continue;
 
   await inParallel(plan.filter((p) => p.needImage), async (p) => {
-    const ext = path.extname(p.imgPath).toLowerCase();
+    let ext = path.extname(p.imgPath).toLowerCase();
+    // 버킷 용량 제한 — 1MB 넘는 원본은 긴 변 1200px JPEG 로 줄여 올린다 (macOS sips)
+    if (fs.statSync(p.imgPath).size > 1024 * 1024) {
+      fs.mkdirSync(path.join(os.tmpdir(), 'rc-small', sup), { recursive: true });
+      const small = path.join(os.tmpdir(), 'rc-small', sup, `${path.basename(p.imgPath).replace(/\.[^.]+$/, '')}.jpg`);
+      execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '82', '-Z', '1200', p.imgPath, '--out', small], { stdio: 'ignore' });
+      p.imgPath = small; ext = '.jpg';
+    }
     const key = `rental-catalog/${sup}/${path.basename(p.imgPath).replace(/[^A-Za-z0-9._-]/g, '_')}`;
     if (!process.argv.includes('--no-upload')) await st.sb.storage.from(BUCKET).upload(key, fs.readFileSync(p.imgPath), { contentType: MIME[ext] || 'application/octet-stream', upsert: true, cacheControl: '31536000' }).then(({ error }) => { if (error) throw error; });
     p.image_url = st.sb.storage.from(BUCKET).getPublicUrl(key).data.publicUrl;
