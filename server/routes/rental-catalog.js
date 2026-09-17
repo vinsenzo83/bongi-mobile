@@ -386,7 +386,13 @@ router.patch('/promotions/:id', ...admin, async (req, res) => {
 });
 
 // ─── 상담원용 (리베이트 제외) ───
-const AGENT_OFFER_COLS = 'id, ticket_number, model_id, supplier_id, variant_code, contract_months, obligation_months, ownership_months, care_type, care_label, cycle_months, offer_type, offer_tags, offer_label, monthly_fee, price_phases, display_fee, prepay_amount, guide_payout, max_payout, free_months, status, notes, valid_from, valid_to';
+// 상담원 응답용: total_fee 는 렌탈사 수수료 계산 기준으로도 쓰여 그대로 내보내지 않는다 — 일시불 가격만 lump_price 로
+function agentOffer(o) {
+  if (!o) return o;
+  const { total_fee, ...rest } = o;
+  return { ...rest, lump_price: o.offer_type === 'purchase' ? total_fee ?? null : null };
+}
+const AGENT_OFFER_COLS = 'id, ticket_number, model_id, supplier_id, variant_code, contract_months, obligation_months, ownership_months, care_type, care_label, cycle_months, offer_type, offer_tags, offer_label, monthly_fee, price_phases, display_fee, prepay_amount, total_fee, guide_payout, max_payout, free_months, status, notes, valid_from, valid_to';
 
 // 티켓번호로 조건 바로 찾기 (고객이 불러주는 번호)
 router.get('/agent/tickets/:ticket', ...agent, async (req, res) => {
@@ -398,7 +404,7 @@ router.get('/agent/tickets/:ticket', ...agent, async (req, res) => {
     const { data: model } = await supabase.from('rental_cat_model_summary')
       .select('*').eq('id', offer.model_id).single().throwOnError();
     delete model.rebate_changed_count;
-    res.json({ offer, model, usable: offer.status === 'active' });
+    res.json({ offer: agentOffer(offer), model, usable: offer.status === 'active' });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
@@ -422,7 +428,9 @@ const CARD_CATEGORY = { 'water-purifier': '정수기', bidet: '비데', 'air-pur
 async function activeCards(supplierId) {
   const { data } = await supabase.from('rental_cat_cards').select(CARD_COLS).eq('supplier_id', supplierId).eq('is_active', true)
     .order('display_rank', { ascending: true, nullsFirst: false }).order('max_discount', { ascending: false }).throwOnError();
-  return data || [];
+  // 공식 안내에 최대 할인액만 있고 전월실적 구간이 없는 카드(KT 통신 제휴카드 등) → 최대 할인 1구간으로, 실적 조건은 확인필요 표시
+  return (data || []).map((c) => ((c.tiers || []).some((t) => t.total > 0) || !(c.max_discount > 0) ? c
+    : { ...c, tiers: [{ min_spend: null, base: c.max_discount, promo: null, total: c.max_discount, estimated: true }] }));
 }
 // 대상 품목이 적힌 카드는 그 품목 모델에만 — 품목 표기가 없거나 카드 품목표에 없는 카테고리면 렌탈사 전체 카드로 본다
 function cardsFor(cards, model) {
@@ -463,7 +471,7 @@ router.get('/agent/offers/:id/form', ...agent, async (req, res) => {
     const ctx = await loadOfferContext(req.params.id);
     if (!ctx) return res.status(404).json({ error: '조건 없음' });
     const { rebate, source, ...offer } = ctx.offer;
-    res.json({ offer, model: ctx.model, supplier: { id: ctx.supplier.id, name: ctx.supplier.name }, form: ctx.form, cards: ctx.cards });
+    res.json({ offer: agentOffer(offer), model: ctx.model, supplier: { id: ctx.supplier.id, name: ctx.supplier.name }, form: ctx.form, cards: ctx.cards });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 
@@ -548,7 +556,7 @@ router.get('/agent/models/:id/offers', ...agent, async (req, res) => {
       .eq('model_id', req.params.id).eq('status', 'active').eq('crm_enabled', true)
       .or(`valid_to.is.null,valid_to.gte.${today}`)
       .order('contract_months').order('care_type').order('cycle_months').throwOnError();
-    res.json({ offers: data });
+    res.json({ offers: data.map(agentOffer) });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
 

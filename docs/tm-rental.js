@@ -33,13 +33,16 @@
   // ─── 표시 헬퍼 ───
   function typeText(o) {
     var base = TYPE_LABEL[o.offer_type] || o.offer_type;
+    // 같은 약정·관리에서 선납금만 다른 조건이 있어 금액까지 붙여야 조건이 갈린다
+    if (o.prepay_amount) base += ' ' + won(o.prepay_amount);
+    if (o.offer_type === 'purchase' && o.lump_price) base += ' ' + won(o.lump_price);
     // 반값은 몇 개월·몇 회차인지 항상 보이게 — 라벨에 개월이 없으면 요금 구간에서 계산
     if (o.offer_type === 'half' && !/개월/.test(o.offer_label || '')) {
       var hp = (o.price_phases || []).filter(function (p) { return p.fee > 0 && p.fee < (o.monthly_fee || 0); })[0];
       base = hp ? '반값 ' + (hp.to - hp.from + 1) + '개월(' + hp.from + '~' + hp.to + '회차)' : '반값할인(개월 확인필요)';
     }
     if (o.offer_label && o.offer_label !== base) return base + ' · ' + o.offer_label;
-    var tags = (o.offer_tags || []).filter(function (t) { return !/^(rule|bundle|prepay):/.test(t); });
+    var tags = (o.offer_tags || []).filter(function (t) { return !/^[a-z][a-z-]*:/i.test(t); });   // rule:·kt:·line: 같은 내부 표시는 숨김
     return base + (tags.length ? ' · ' + tags.join('·') : '');
   }
   function careText(o) {
@@ -54,6 +57,7 @@
     return s;
   }
   function phasesText(o) {
+    if (o.offer_type === 'purchase') return '일시불 ' + won(o.lump_price);
     var ph = (o.price_phases || []).slice().sort(function (a, b) { return a.from - b.from; });
     if (!ph.length) return won(o.monthly_fee) + ' / 월';
     var parts = ph.map(function (p) { return p.from + (p.to !== p.from ? '~' + p.to : '') + '개월 ' + (p.fee === 0 ? '면제' : won(p.fee)); });
@@ -172,11 +176,13 @@
     try {
       var j = await api('/agent/models/' + modelId + '/offers');
       RT.offers = j.offers || [];
+      var target = null;
       if (offerId) {
-        var o = RT.offers.filter(function (x) { return x.id === offerId; })[0];
-        if (o) RT.pick = pickFor(o);
+        target = RT.offers.filter(function (x) { return x.id === offerId; })[0];
+        if (target) RT.pick = pickFor(target);
       }
       renderOffers();
+      forceOffer(target);
     } catch (e) { $('rt-axes').innerHTML = '<div class="rt-empty">⚠ ' + esc(e.message) + '</div>'; }
   }
 
@@ -233,6 +239,13 @@
         return '<tr data-oid="' + esc(o.id) + '"><td>' + esc(o.ticket_number) + '</td><td>' + esc(typeText(o)) + '</td><td>' + esc(contractText(o)) + '</td><td>' + esc(careText(o)) + '</td><td>' + esc(phasesText(o)) + '</td><td>' + (o.guide_payout != null ? '✓' : '<span style="color:#dc2626">미설정</span>') + '</td></tr>';
       }).join('') + '</tbody></table>' + (left.length > 80 ? '<div class="rt-empty">' + left.length + '개 중 80개 — 위에서 조건을 더 고르세요</div>' : '')
       : '';
+    renderSelected();
+  }
+
+  // 축(유형·약정·관리·세부)이 모두 같은 조건이 여럿이면 표에서 고른 그 조건으로 확정
+  function forceOffer(o) {
+    if (!o || RT.offer === o) return;
+    RT.offer = o;
     renderSelected();
   }
 
@@ -302,8 +315,13 @@
     $('rt-offer').textContent = won(pay);
     $('rt-max').textContent = won(mx);
     $('rt-room').textContent = '추가 지급 가능 ' + won(mx - pay);
-    $('rt-free').textContent = freeMonths(pay, o) + '개월 무료';
-    $('rt-free-sub').textContent = won(pay) + ' ÷ 월 ' + won(o.display_fee) + ' (버림)';
+    if (o.display_fee > 0) {
+      $('rt-free').textContent = freeMonths(pay, o) + '개월 무료';
+      $('rt-free-sub').textContent = won(pay) + ' ÷ 월 ' + won(o.display_fee) + ' (버림)';
+    } else {   // 일시불 등 월 요금이 없는 조건은 개월 수로 바꿀 수 없다
+      $('rt-free').textContent = '현금 ' + won(pay);
+      $('rt-free-sub').textContent = o.offer_type === 'purchase' ? '일시불 — 개월 환산 없음' : '월 요금 없음 — 개월 환산 없음';
+    }
     $('rt-residual').textContent = won(residual);
     $('rt-inc').textContent = won(Math.round(residual * rate / 100));
     $('rt-inc-sub').textContent = won(residual) + ' × ' + rate + '% (렌탈 배분율)';
@@ -325,8 +343,10 @@
         ? o.price_phases.map(function (p) { return '<div class="calc-line discount"><span class="l">' + p.from + '~' + p.to + '개월</span><span class="v">' + (p.fee === 0 ? '면제' : won(p.fee)) + '</span></div>'; }).join('') +
           '<div class="calc-line"><span class="l">이후</span><span class="v">' + won(o.monthly_fee) + '</span></div>'
         : '') +
-      '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l">✨ 월 렌탈료</span><span class="v" style="font-size:20px">' + won(o.display_fee) + '</span></div>' +
-      (pay > 0 ? '<div class="calc-line gift" style="background:rgba(251,191,36,0.14);border-radius:6px;padding:7px 10px;margin-top:8px"><span class="l" style="color:#fbbf24">🎁 혜택 ' + fm + '개월 무료</span><span class="v" style="color:#fbbf24;font-size:17px">' + won(pay) + '</span></div>' : '') +
+      (o.offer_type === 'purchase'
+        ? '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l">💵 일시불 가격</span><span class="v" style="font-size:20px">' + won(o.lump_price) + '</span></div>'
+        : '<div class="calc-line total" style="border-top:2px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px"><span class="l">✨ 월 렌탈료</span><span class="v" style="font-size:20px">' + won(o.display_fee) + '</span></div>') +
+      (pay > 0 ? '<div class="calc-line gift" style="background:rgba(251,191,36,0.14);border-radius:6px;padding:7px 10px;margin-top:8px"><span class="l" style="color:#fbbf24">🎁 혜택' + (o.display_fee > 0 ? ' ' + fm + '개월 무료' : ' 현금') + '</span><span class="v" style="color:#fbbf24;font-size:17px">' + won(pay) + '</span></div>' : '') +
       (o.prepay_amount ? '<div class="calc-line"><span class="l">선납금</span><span class="v">' + won(o.prepay_amount) + '</span></div>' : '') +
       cardsHtml(o) +
       effectiveHtml(o, pay) +
@@ -401,9 +421,10 @@
     if (o.price_phases && o.price_phases.length) {
       o.price_phases.forEach(function (p) { lines.push('월 렌탈료 ' + p.from + '~' + p.to + '개월: ' + won(p.fee)); });
       lines.push('월 렌탈료 이후: ' + won(o.monthly_fee));
-    } else lines.push('월 렌탈료: ' + won(o.display_fee));
+    } else if (o.offer_type === 'purchase') lines.push('일시불 가격: ' + won(o.lump_price));
+    else lines.push('월 렌탈료: ' + won(o.display_fee));
     if (sel) lines.push('제휴카드: ' + cardLabel(sel.card) + ' (' + tierText(sel.tier) + ') → 월 ' + won(Math.max(0, (o.display_fee || 0) - sel.tier.total)) + ', 전월실적 미달 달은 할인 없음');
-    if (pay > 0) lines.push('현금혜택: ' + won(pay) + ' (' + freeMonths(pay, o) + '개월 무료) — 설치 확인 후 지급');
+    if (pay > 0) lines.push('현금혜택: ' + won(pay) + (o.display_fee > 0 ? ' (' + freeMonths(pay, o) + '개월 무료)' : '') + ' — 설치 확인 후 지급');
     if (o.prepay_amount) lines.push('선납금: ' + won(o.prepay_amount));
     lines.push('견적번호: ' + o.ticket_number + ' · ' + new Date().toLocaleDateString('ko-KR'));
     lines.push('렌탈료는 렌탈사 본사 가격 그대로이며, 혜택은 상담 확정 내용대로 지급됩니다.');
@@ -454,7 +475,7 @@
 
   // ─── 제휴카드 — 계산기에서 카드·전월실적 구간을 골라 월 요금을 설계 ───
   function cardLabel(c) { return c.card_name.indexOf(c.card_issuer) >= 0 ? c.card_name : c.card_issuer + ' ' + c.card_name; }
-  function tierText(t) { return (t.min_spend ? '전월 ' + Math.round(t.min_spend / 10000) + '만원↑ ' : '') + '월 ' + won(t.total) + ' 할인'; }
+  function tierText(t) { return (t.min_spend ? '전월 ' + Math.round(t.min_spend / 10000) + '만원↑ ' : '') + (t.estimated ? '최대 ' : '') + '월 ' + won(t.total) + ' 할인' + (t.estimated ? ' (실적조건 확인필요)' : ''); }
   function cardSel() {
     if (!RT.card || !RT.cards) return null;
     var c = RT.cards[RT.card.idx]; if (!c) return null;
@@ -880,7 +901,7 @@
     $('rt-offer-table').addEventListener('click', function (e) {
       var tr = e.target.closest('[data-oid]'); if (!tr) return;
       var o = RT.offers.filter(function (x) { return x.id === tr.dataset.oid; })[0];
-      if (o) { RT.pick = pickFor(o); renderOffers(); }
+      if (o) { RT.pick = pickFor(o); renderOffers(); forceOffer(o); }
     });
     var sl = $('rt-payout'), num = $('rt-payout-num');
     sl.addEventListener('input', function () { payout(RT.offer); });
