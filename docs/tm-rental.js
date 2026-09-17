@@ -320,6 +320,15 @@
     var cards = (RT.offer === o && RT.cards) || [];
     if (!cards.length) return '';
     var fee = o.display_fee || o.monthly_fee || 0;
+    var sel = cardSel();
+    if (sel) {
+      var d = sel.tier.total;
+      return '<div class="calc-line discount" style="margin-top:6px"><span class="l">💳 ' + esc(cardLabel(sel.card)) + '<div style="font-size:9.5px;opacity:.7">' + esc(tierText(sel.tier)) + (sel.card.discount_months ? ' · ' + sel.card.discount_months + '개월' : '') + '</div></span><span class="v">−' + won(d) + '</span></div>' +
+        ((o.price_phases || []).length ? (o.price_phases || []).map(function (p) { return '<div class="calc-line" style="font-size:11px"><span class="l">' + p.from + '~' + p.to + '개월 카드 적용</span><span class="v">' + won(Math.max(0, p.fee - d)) + '</span></div>'; }).join('') +
+          '<div class="calc-line" style="font-size:11px"><span class="l">이후 카드 적용</span><span class="v">' + won(Math.max(0, o.monthly_fee - d)) + '</span></div>' : '') +
+        '<div class="calc-line total" style="background:rgba(34,197,94,0.14);border-radius:6px;padding:7px 10px;margin-top:4px"><span class="l" style="color:#86efac">✨ 카드 적용 월 납부</span><span class="v" style="color:#86efac;font-size:19px">' + won(Math.max(0, fee - d)) + '</span></div>' +
+        '<div style="font-size:9.5px;color:rgba(255,255,255,0.55);margin-top:2px">카드 전월실적 미달 달은 할인 없음</div>';
+    }
     var top = cards.slice(0, 5).map(function (c) {
       var tiers = (c.tiers || []).filter(function (t) { return t.total; });
       var best = tiers[tiers.length - 1];
@@ -360,7 +369,9 @@
       if (RT.offer !== o) return;
       RT.form = j.form;
       RT.cards = j.cards || [];
+      RT.card = null;
       renderForm(j.form);
+      renderCardPick(o);
       quote(o);
     } catch (e) { box.innerHTML = '<div class="rt-empty">⚠ ' + esc(e.message) + '</div>'; }
   }
@@ -375,7 +386,64 @@
         d[f.key] = f.type === 'checkbox' ? el.checked : el.value;
       });
     });
+    // 계산기에서 고른 제휴카드 (입력폼에는 그리지 않는 calc_only 항목)
+    var sel = cardSel();
+    if (sel) {
+      d.partner_card = cardLabel(sel.card);
+      d.partner_card_tier = tierText(sel.tier);
+      d.partner_card_discount = String(sel.tier.total || 0);
+    }
     return d;
+  }
+
+  // ─── 제휴카드 — 계산기에서 카드·전월실적 구간을 골라 월 요금을 설계 ───
+  function cardLabel(c) { return c.card_name.indexOf(c.card_issuer) >= 0 ? c.card_name : c.card_issuer + ' ' + c.card_name; }
+  function tierText(t) { return (t.min_spend ? '전월 ' + Math.round(t.min_spend / 10000) + '만원↑ ' : '') + '월 ' + won(t.total) + ' 할인'; }
+  function cardSel() {
+    if (!RT.card || !RT.cards) return null;
+    var c = RT.cards[RT.card.idx]; if (!c) return null;
+    var t = (c.tiers || [])[RT.card.tier]; if (!t || !t.total) return null;
+    return { card: c, tier: t };
+  }
+  function renderCardPick(o) {
+    var box = $('rt-card-pick'); if (!box) return;
+    var cards = (RT.offer === o && RT.cards) || [];
+    if (!cards.length) { box.innerHTML = ''; return; }
+    var sel = RT.card || { idx: -1, tier: -1 };
+    var c = cards[sel.idx];
+    var tiers = c ? (c.tiers || []).filter(function (t) { return t.total; }) : [];
+    var fee = o.display_fee || o.monthly_fee || 0;
+    var cur = cardSel();
+    box.innerHTML = '<div style="background:rgba(255,255,255,0.8);border:1px solid #86efac;border-radius:7px;padding:7px 9px">' +
+      '<div style="font-size:10.5px;font-weight:800;color:#15803d;margin-bottom:4px">💳 제휴카드로 월 요금 설계 <span style="font-weight:500;color:#64748b">(' + cards.length + '장)</span></div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        '<select id="rt-card-sel" style="flex:2;min-width:160px;padding:5px;border:1px solid #cbd5e1;border-radius:5px;font-size:12px"><option value="-1">카드 할인 없음</option>' +
+          cards.map(function (x, i) {
+            var best = (x.tiers || []).reduce(function (m, t) { return Math.max(m, t.total || 0); }, 0);
+            return '<option value="' + i + '"' + (i === sel.idx ? ' selected' : '') + '>' + esc(cardLabel(x)) + (best ? ' (최대 월 ' + won(best) + ')' : ' (구간 금액 미기재)') + '</option>';
+          }).join('') + '</select>' +
+        (c ? '<select id="rt-card-tier" style="flex:1;min-width:140px;padding:5px;border:1px solid #cbd5e1;border-radius:5px;font-size:12px">' +
+          (tiers.length ? tiers.map(function (t) { var k = (c.tiers || []).indexOf(t); return '<option value="' + k + '"' + (k === sel.tier ? ' selected' : '') + '>' + esc(tierText(t)) + '</option>'; }).join('') : '<option value="-1">구간 금액 미기재</option>') +
+        '</select>' : '') +
+      '</div>' +
+      (cur ? '<div style="display:flex;justify-content:space-between;margin-top:5px;font-size:12px"><span style="color:#475569">월 ' + won(fee) + ' − 카드 ' + won(cur.tier.total) + '</span><b style="color:#15803d">카드 적용 월 ' + won(Math.max(0, fee - cur.tier.total)) + '</b></div>' +
+        '<div style="font-size:9.5px;color:#64748b">' + esc([c.discount_months ? '할인 ' + c.discount_months + '개월' : '', c.annual_fee ? '연회비 ' + c.annual_fee : '', c.verify_status && c.verify_status !== 'verified' && c.verify_status !== 'changed' && c.verify_status !== 'new' ? '확인필요' : ''].filter(Boolean).join(' · ')) + ' — 전월실적 미달 시 할인 없음 안내</div>' : '') +
+      '</div>';
+    var s1 = $('rt-card-sel');
+    s1.addEventListener('change', function () {
+      var i = Number(s1.value);
+      if (i < 0) RT.card = null;
+      else {
+        var tl = (cards[i].tiers || []).map(function (t, k) { return t.total ? k : -1; }).filter(function (k) { return k >= 0; });
+        RT.card = { idx: i, tier: tl.length ? tl[0] : -1 };
+        // 카드 할인은 카드 자동이체일 때만 — 계약정보 납부방법을 카드로 맞춘다
+        var pm = $('rt-f-payment_method');
+        if (pm && [].some.call(pm.options, function (op) { return op.value === '카드'; })) { pm.value = '카드'; applyVisibility(); }
+      }
+      renderCardPick(o); quote(o);
+    });
+    var s2 = $('rt-card-tier');
+    if (s2) s2.addEventListener('change', function () { RT.card.tier = Number(s2.value); renderCardPick(o); quote(o); });
   }
   function isVisible(rule, d) {
     if (!rule) return true;
@@ -383,6 +451,7 @@
     return (rule.in || []).indexOf(d[rule.field]) >= 0;
   }
   function fieldHtml(f) {
+    if (f.calc_only) return '';   // 제휴카드 등 계산기에서 고르는 값
     var id = 'rt-f-' + f.key;
     var req = f.required ? ' <span class="rt-req">*</span>' : '';
     var hint = f.hint ? '<span class="rt-hint">' + esc(f.hint) + '</span>' : '';
@@ -540,7 +609,7 @@
       contract_date: new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }),
       monthly_fee: o.display_fee,
       rental_application: app,
-      quote_summary: '렌탈 · ' + (m.supplier_name || '') + ' · ' + (m.product_name || m.model_code || '') + ' · ' + o.ticket_number + ' · ' + contractText(o) + ' · ' + careText(o) + ' · ' + typeText(o) + ' · ' + freeMonths(pay, o) + '개월 무료',
+      quote_summary: '렌탈 · ' + (m.supplier_name || '') + ' · ' + (m.product_name || m.model_code || '') + ' · ' + o.ticket_number + ' · ' + contractText(o) + ' · ' + careText(o) + ' · ' + typeText(o) + ' · ' + freeMonths(pay, o) + '개월 무료' + (cardSel() ? ' · 제휴카드 ' + cardLabel(cardSel().card) + ' ' + tierText(cardSel().tier) : ''),
       quote_full_html: customerQuoteHtml(o, pay),
     };
     msg.className = 'rt-msg'; msg.textContent = '등록 중…';

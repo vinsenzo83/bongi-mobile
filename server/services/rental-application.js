@@ -135,10 +135,12 @@ export function buildApplicationForm({ supplier, offer, model, cards = [] }) {
     }
   }
   // 제휴카드 — 고객이 할인카드로 자동이체하면 렌탈사 접수 시 카드명을 알려야 한다 (카드번호는 받지 않음)
+  // 선택은 계산기(월 요금 설계)에서 한다 → calc_only: 입력폼에는 그리지 않고 계산기 선택값을 함께 저장·검증
   if (cards.length) {
-    payFields.push({ key: 'partner_card', label: '제휴카드 할인', type: 'select', required: false,
-      options: ['사용 안 함', ...cards.map((c) => (c.card_name.includes(c.card_issuer) ? c.card_name : `${c.card_issuer} ${c.card_name}`).trim())],
-      show_if: { field: 'payment_method', in: ['카드'] }, hint: '할인은 카드사 전월실적 기준 — 고객에게 실적 조건을 함께 안내' });
+    payFields.push({ key: 'partner_card', label: '제휴카드 할인', type: 'select', required: false, calc_only: true,
+      options: ['사용 안 함', ...cards.map((c) => (c.card_name.includes(c.card_issuer) ? c.card_name : `${c.card_issuer} ${c.card_name}`).trim())] });
+    payFields.push({ key: 'partner_card_tier', label: '제휴카드 전월실적 구간', type: 'text', required: false, calc_only: true });
+    payFields.push({ key: 'partner_card_discount', label: '제휴카드 월 할인액', type: 'text', required: false, calc_only: true, pattern: '^\\d{1,6}$' });
   }
   sections.push({ id: 'payment', title: '납부', fields: payFields, notice: '카드번호·계좌번호는 여기 적지 않습니다. 렌탈사 본인인증·해피콜에서 고객이 직접 등록합니다.' });
 
