@@ -7,12 +7,16 @@
  * 리베이트는 도구 결과에 넣지 않는다(상담원 권한 밖). MAX 는 상담원 전용으로 표시해 준다.
  */
 import Anthropic from '@anthropic-ai/sdk';
+import { spawn } from 'child_process';
+import os from 'os';
 import { supabase } from '../db/supabase.js';
 import { CATEGORIES, CATEGORY_LABEL } from './rental-import/core.js';
 
 const MODEL = process.env.RENTAL_ASSIST_MODEL || 'claude-sonnet-5';
-const client = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
-export const assistantEnabled = () => !!client;
+// RENTAL_ASSIST_PROVIDER=session → API 크레딧 대신 이 서버에 로그인된 Claude Code CLI(claude -p) 세션으로 호출
+const PROVIDER = process.env.RENTAL_ASSIST_PROVIDER === 'session' ? 'session' : 'api';
+const client = PROVIDER === 'api' && process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
+export const assistantEnabled = () => PROVIDER === 'session' || !!client;
 
 const TYPE = { normal: '일반', package: '패키지', bundle: '결합', trade_in: '타사보상', half: '반값할인', prepay: '선납', promo: '프로모션', special: '특가', field: '현장', staff: '임직원', purchase: '일시불' };
 const CARE = { visit: '방문관리', self: '자가관리', delivery: '택배(필터배송)', none: '관리없음' };
@@ -334,6 +338,7 @@ export async function verifyRecommendations(input) {
  * context: { model_id?, ticket? } 화면에서 보고 있는 상품·조건
  */
 export async function assist({ messages, context = {}, agentName }) {
+  if (PROVIDER === 'session') return assistViaSession({ messages, context, agentName });
   if (!client) throw Object.assign(new Error('AI 비활성화(ANTHROPIC_API_KEY 없음)'), { status: 503 });
   const ctxText = [
     context.ticket ? `상담원이 지금 보고 있는 조건 티켓: ${context.ticket}` : null,
@@ -373,4 +378,67 @@ export async function assist({ messages, context = {}, agentName }) {
     convo.push({ role: 'user', content: results });
   }
   return { answer: '조회가 길어져 중단했습니다. 질문을 좁혀 주세요(렌탈사·카테고리·월 요금 등).', tools: used, tickets: [] };
+}
+
+/**
+ * 세션 모드 — 도구 왕복 없이 한 번만 부른다 (CLI 호출은 느리니 조회는 서버가 먼저 끝낸다)
+ *   ① 최근 상담원 문장 → parseNeeds 로 필터 ② search_products(판매량·마진 순, best_conditions 포함) 후보 12개
+ *   ③ 카드 언급 시 후보 렌탈사 카드 ④ claude -p --json-schema 로 submit_recommendations 형식만 받는다 → verifyRecommendations
+ */
+const sessionSchema = TOOLS.find((t) => t.name === 'submit_recommendations').input_schema;
+
+function runClaudeCli(prompt, system) {
+  return new Promise((resolve, reject) => {
+    const args = ['-p', '--output-format', 'json', '--json-schema', JSON.stringify(sessionSchema), '--tools', '', '--strict-mcp-config',
+      '--setting-sources', '', '--no-session-persistence', '--model', process.env.RENTAL_ASSIST_SESSION_MODEL || 'sonnet', '--effort', process.env.RENTAL_ASSIST_SESSION_EFFORT || 'low', '--system-prompt', system];
+    const env = { ...process.env }; delete env.ANTHROPIC_API_KEY;   // 크레딧 키가 아니라 로그인 세션을 쓰게
+    const p = spawn(process.env.CLAUDE_CLI || 'claude', args, { cwd: os.tmpdir(), env, stdio: ['pipe', 'pipe', 'pipe'] });
+    let out = ''; let err = '';
+    const timer = setTimeout(() => { p.kill('SIGKILL'); reject(Object.assign(new Error('상담 AI(세션) 응답 시간 초과'), { status: 504 })); }, 120000);
+    p.stdout.on('data', (d) => { out += d; });
+    p.stderr.on('data', (d) => { err += d; });
+    p.on('error', (e) => { clearTimeout(timer); reject(Object.assign(new Error(`claude CLI 실행 실패: ${e.message}`), { status: 503 })); });
+    p.on('close', (code) => {
+      clearTimeout(timer);
+      try {
+        const j = JSON.parse(out);
+        if (j.is_error) return reject(Object.assign(new Error(`상담 AI(세션) 오류: ${clip(j.result, 200)}`), { status: 503 }));
+        const so = j.structured_output ?? (() => { try { return JSON.parse(j.result); } catch { return null; } })();
+        if (!so) return reject(Object.assign(new Error('상담 AI(세션) 구조화 응답 없음'), { status: 502 }));
+        resolve(so);
+      } catch { reject(Object.assign(new Error(`claude CLI 응답 해석 실패(code ${code}): ${clip(err || out, 200)}`), { status: 502 })); }
+    });
+    p.stdin.end(prompt);
+  });
+}
+
+async function assistViaSession({ messages, context = {}, agentName }) {
+  const { parseNeeds } = await import('./rental-recommend.js');
+  const userText = messages.filter((m) => m.role !== 'assistant').map((m) => String(m.content || '')).slice(-4).join('\n');
+  const need = parseNeeds(userText);
+  const filter = { category: need.category, max_monthly_fee: need.budget, care_type: need.care_type, contract_months: need.contract_months, limit: 8 };
+  if (need.current_brand) { filter.exclude_supplier_id = need.current_brand; filter.offer_type = 'trade_in'; }
+  let found = await runTool('search_products', { ...filter, keywords: (need.keywords || []).join(' ') });
+  if (!found.products?.length && need.keywords?.length) found = await runTool('search_products', filter);
+  if (!found.products?.length && filter.offer_type) { delete filter.offer_type; found = await runTool('search_products', filter); }
+  const products = found.products || [];
+  if (!products.length) return { answer: '조건에 맞는 판매중 상품을 찾지 못했습니다. 예산·카테고리를 넓혀 다시 말씀해 주세요.', tools: ['search_products'], recommendation: { summary: userText.slice(0, 80), questions: [], recommendations: [] } };
+  const cards = {};
+  if (need.card_issuer) for (const sid of [...new Set(products.map((p) => p.supplier_id))].slice(0, 6)) {
+    cards[sid] = ((await runTool('get_cards', { supplier_id: sid })).cards || []).filter((c) => String(c.card_issuer).includes(need.card_issuer));
+  }
+  const ctxText = [context.ticket && `보고 있는 조건 티켓: ${context.ticket}`, context.model_id && `보고 있는 모델 id: ${context.model_id}`, `오늘: ${today()}`, agentName && `상담원: ${agentName}`].filter(Boolean).join('\n');
+  const prompt = `## 상담원이 전한 고객 상태·니즈\n${clip(userText, 3000)}\n\n## 서버가 해석한 필터\n${JSON.stringify(need)}\n\n## 후보 상품 (DB 조회 결과 · 많이 팔리는·많이 남는 순)\n${JSON.stringify(products.map((p) => ({ supplier_id: p.supplier_id, supplier: p.supplier, product_name: p.product_name, description: p.description, features: p.features, sales_90d: p.sales_90d, focus: p.focus, margin_grade: p.margin_grade, conditions: (p.best_conditions || []).map((c) => ({ ticket: c.ticket, type: c.type, label: c.label, contract_months: c.contract_months, care: c.care, display_fee: c.display_fee, after: c.monthly_fee_after, phases: c.price_phases, guide: c.guide_payout, free_months: c.free_months_at_guide, effective_monthly: c.effective_monthly_after_guide, notes: c.notes })) }))).slice(0, 30000)}\n${need.card_issuer ? `\n## 고객 보유 카드사(${need.card_issuer}) 제휴카드\n${JSON.stringify(cards).slice(0, 15000)}\n` : ''}\n${ctxText}\n\n위 후보의 conditions 티켓 중에서만 1~3개를 골라 제출하세요. 같은 렌탈사는 최대 2개. 니즈 근거를 why 에, 고객 안내 문장을 customer_script 에(MAX 금액 금지). customer_script 에는 실질 월 부담·페이백 반영 금액을 쓰지 마세요(서버가 계산해 붙입니다). 부족한 정보는 questions 에.`;
+  const system = `${SYSTEM}\n\n## 이번 호출\n도구는 없습니다. 아래 제공된 조회 결과만 근거로, 지정된 JSON 스키마로만 답하세요.`;
+  const t0 = Date.now();
+  const out = await runClaudeCli(prompt, system);
+  const allowed = new Set(products.flatMap((p) => (p.best_conditions || []).map((c) => c.ticket || c.ticket_number)).filter(Boolean));
+  if (allowed.size) out.recommendations = (out.recommendations || []).filter((r) => allowed.has(r.ticket));   // 후보 밖 티켓(지어낸 것) 제거
+  const recommendation = await verifyRecommendations(out);
+  for (const r of recommendation.recommendations) {   // 실질 월 부담은 AI 가 아니라 서버 계산값으로
+    const eff = r.card?.effective_monthly_with_card ?? r.condition?.effective_monthly_after_guide;
+    if (eff != null && r.customer_script) r.customer_script = `${r.customer_script.trim()} 페이백까지 치면 한 달에 약 ${Number(eff).toLocaleString()}원꼴이에요.`;
+  }
+  console.log(`[rental-assist] session ${Date.now() - t0}ms recs=${recommendation.recommendations.length}`);
+  return { answer: out.summary || '', tools: ['search_products', ...(need.card_issuer ? ['get_cards'] : []), 'session'], recommendation };
 }

@@ -276,6 +276,15 @@ html, body { overflow:hidden; }
   .tm-result .calc-line.sub { font-size: 11px; }
 }
 
+/* 렌탈 견적 — 패널이 좁아(≈300px) 인터넷 견적용 큰 글씨·줄바꿈이 깨진다: 금액은 한 줄, 라벨만 줄바꿈 */
+.tm-result .rt-q .calc-line { gap:8px; align-items:baseline; }
+.tm-result .rt-q .calc-line .l { flex:1 1 auto; min-width:0; }
+.tm-result .rt-q .calc-line .v { flex:0 0 auto; white-space:nowrap; text-align:right; }
+.tm-result .rt-q .calc-line.wrap .l { flex:0 0 auto; }
+.tm-result .rt-q .calc-line.wrap .v { flex:1 1 auto; white-space:normal; word-break:keep-all; }
+.tm-result .rt-q .calc-line.total, .tm-result .rt-q .calc-line.gift .l { font-size:14px !important; }
+.tm-result .rt-q .calc-line.total .v, .tm-result .rt-q .calc-line.gift .v { font-size:18px !important; }
+
 /* 정보 카드 (요금 구조 한눈에 보기) */
 .tm-info-grid { display:grid; gap:8px; margin-bottom:12px; }
 .tm-info-row {
@@ -415,8 +424,11 @@ body.cat-rental main.tm-panel > *:not(.tm-cat-tabs):not(.tm-rental-panel):not(#c
 .tm-rental-panel { display:none; }
 body.cat-rental .tm-rental-panel { display:block; }
 body.cat-rental .tm-ticket-lookup { display:none; }
+body.cat-rental #tm-install-check-btn, body.cat-usim #tm-install-check-btn { display:none !important; }
 .rt-ai { display:none; margin-top:10px; background:#0f172a; border:1px solid rgba(167,139,250,0.4); border-radius:10px; padding:10px; color:#e2e8f0; }
 body.cat-rental .rt-ai { display:block; }
+.rt-ai select, .rt-ai input { width:100%; min-width:0; box-sizing:border-box; }
+.rt-ai > div[style*="grid"] { grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; }
 .rt-ai textarea { width:100%; box-sizing:border-box; min-height:58px; background:#1e293b; color:#f1f5f9; border:1px solid #475569; border-radius:7px; padding:7px; font-size:12.5px; resize:vertical; }
 .rt-ai .rt-ai-btns { display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; }
 .rt-ai button { background:#7c3aed; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:12px; font-weight:700; cursor:pointer; }
@@ -503,7 +515,7 @@ body.cat-rental .rt-ai { display:block; }
 <script src="/docs/_security.js" defer></script>
 <!-- 시드 데이터 동기화 공통 헬퍼 (calculator/tm/tm-counselor 공유) -->
 <script src="/docs/_calc-data-sync.js?v=4"></script>
-<script src="/docs/tm-rental.js?v=17" defer></script>
+<script src="/docs/tm-rental.js?v=21" defer></script>
 </head>
 <body>
 
@@ -3338,6 +3350,9 @@ function renderUsimPicker() {
 }
 
 function calc() {
+  // 견적 패널(c-result)은 탭이 같이 쓴다 — 렌탈·유심 탭에서는 인터넷 견적으로 덮어쓰지 않는다
+  if (document.body.classList.contains('cat-rental')) { if (window.rentalInit) window.rentalInit(); return; }
+  if (document.body.classList.contains('cat-usim')) return;
   var c = document.getElementById('c-carrier').value;
   var sp = document.getElementById('c-speed').value;
   var ti = parseInt(document.getElementById('c-tv').value) || 0;

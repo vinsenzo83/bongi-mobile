@@ -317,10 +317,10 @@
   function customerQuoteHtml(o, pay) {
     var m = RT.model || {};
     var fm = freeMonths(pay, o);
-    return '<div style="padding:4px 2px">' +
+    return '<div class="rt-q" style="padding:4px 2px">' +
       '<div style="font-size:10px;color:#fcd34d;font-weight:800;letter-spacing:.05em;margin-bottom:6px">🧊 렌탈 · ' + esc(m.supplier_name || '') + ' · ' + esc(o.ticket_number) + '</div>' +
       '<div class="calc-line"><span class="l">' + esc(m.product_name || m.model_code || '') + '</span><span class="v" style="font-size:11px">' + esc(codeIfDiff(m)) + '</span></div>' +
-      '<div class="calc-line"><span class="l">조건</span><span class="v" style="font-size:11px">' + esc(contractText(o)) + ' · ' + esc(careText(o)) + ' · ' + esc(typeText(o)) + '</span></div>' +
+      '<div class="calc-line wrap"><span class="l">조건</span><span class="v" style="font-size:11px">' + esc(contractText(o)) + ' · ' + esc(careText(o)) + ' · ' + esc(typeText(o)) + '</span></div>' +
       (o.price_phases && o.price_phases.length
         ? o.price_phases.map(function (p) { return '<div class="calc-line discount"><span class="l">' + p.from + '~' + p.to + '개월</span><span class="v">' + (p.fee === 0 ? '면제' : won(p.fee)) + '</span></div>'; }).join('') +
           '<div class="calc-line"><span class="l">이후</span><span class="v">' + won(o.monthly_fee) + '</span></div>'
@@ -339,7 +339,7 @@
     var c = contractCost(o, pay, sel ? sel.tier.total : 0, sel ? sel.card.discount_months : null);
     if (!c) return '';
     return '<div style="margin-top:8px;padding:7px 10px;background:rgba(56,189,248,0.12);border:1px solid rgba(125,211,252,0.35);border-radius:6px;font-size:11px">' +
-      '<div class="calc-line" style="padding:1px 0"><span class="l">약정 ' + o.contract_months + '개월 총 렌탈료' + (sel ? ' (카드 할인 후)' : '') + '</span><span class="v">' + won(sel ? c.withCard : c.total) + '</span></div>' +
+      '<div class="calc-line" style="padding:1px 0"><span class="l">총 렌탈료 ' + o.contract_months + '개월' + (sel ? ' · 카드 후' : '') + '</span><span class="v">' + won(sel ? c.withCard : c.total) + '</span></div>' +
       (pay ? '<div class="calc-line" style="padding:1px 0"><span class="l">− 페이백</span><span class="v">' + won(pay) + '</span></div>' : '') +
       '<div class="calc-line" style="padding:2px 0"><span class="l" style="color:#7dd3fc;font-weight:800">💰 페이백 반영 실질 월 부담</span><span class="v" style="color:#7dd3fc;font-size:17px">' + won(c.effective) + '</span></div>' +
       '<div style="font-size:9.5px;color:rgba(255,255,255,0.5)">(총 렌탈료' + (sel ? '·카드 할인' : '') + ' − 페이백) ÷ ' + o.contract_months + '개월' + (sel ? ' · 카드 전월실적 매달 충족 가정' : '') + '</div></div>';
@@ -740,8 +740,11 @@
     if (!text || AI.busy) return;
     AI.busy = true;
     var btn = $('rt-ai-go'); btn.disabled = true;
-    AI.messages.push({ role: 'user', content: text });
-    out.innerHTML = '<div class="rt-ai-answer" style="color:#94a3b8">🔎 상품·조건·카드·프로모션 조회 중…</div>' + out.innerHTML;
+    // 선택 칩도 문장으로 같이 보낸다 (서버가 같은 규칙으로 해석)
+    var chips = ['rt-rc-cat', 'rt-rc-care', 'rt-rc-contract', 'rt-rc-brand', 'rt-rc-card'].map(function (id) { var el = $(id); return el && el.value ? el.options[el.selectedIndex].text : ''; }).filter(Boolean);
+    if ($('rt-rc-budget') && $('rt-rc-budget').value) chips.push('월 ' + $('rt-rc-budget').value + '만원 이하');
+    AI.messages.push({ role: 'user', content: (chips.length ? '[선택: ' + chips.join(', ') + '] ' : '') + text });
+    out.innerHTML = '<div class="rt-ai-answer" style="color:#94a3b8">🤖 AI가 후보를 고르는 중… (20~40초)</div>' + out.innerHTML;
     try {
       var r = await fetch(API + '/agent/assist', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() },
@@ -759,6 +762,13 @@
       if (first != null && first >= 0) applyRecommendation(first);
     } catch (e) {
       AI.messages.pop();
+      AI.busy = false; btn.disabled = false;
+      // AI 를 못 쓰면(크레딧·장애) 내부 로직 추천으로 바로 대신한다
+      if (/한도|크레딧|몰렸|비활성/.test(e.message)) {
+        await runRecommend();
+        out.insertAdjacentHTML('afterbegin', '<div class="rt-ai-answer" style="color:#fcd34d">ℹ AI를 쓸 수 없어 자동 추천으로 대신했습니다 (' + esc(e.message) + ')</div>');
+        return;
+      }
       out.innerHTML = '<div class="rt-ai-answer" style="color:#fca5a5">⚠ ' + esc(e.message) + '</div>';
     } finally { AI.busy = false; btn.disabled = false; }
   }

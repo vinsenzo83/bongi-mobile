@@ -34,6 +34,12 @@ export function parseNeeds(text = '') {
   for (const [issuer, re] of ISSUERS) if (re.test(t) && /카드/.test(t)) { out.card_issuer = issuer; break; }
   const pyeong = t.match(/(\d+)\s*평/); if (pyeong) out.area_pyeong = +pyeong[1];
   out.keywords = FEATURES.filter((f) => t.includes(f));
+  // 카테고리를 말하지 않았어도 기능어로 짐작 — "얼음 나오는 거" = 정수기 (제빙기·냉장고 제외)
+  if (!out.category) {
+    if (/얼음|직수|냉온|온수|냉정|탄산|스파클링|정수/.test(t) && !/제빙기|냉장고|업소/.test(t)) out.category = 'water-purifier';
+    else if (/스타일러|의류/.test(t)) out.category = 'clothes-care';
+    else if (/비데/.test(t)) out.category = 'bidet';
+  }
   return out;
 }
 
