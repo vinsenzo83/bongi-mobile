@@ -93,7 +93,7 @@ function parseLgSubscription(rows, ctx) {
     else if (l.includes('모델명')) set('model');
     else if (l.includes('방문주기') || l.includes('방문/주기')) set('cycle');
     else if (l.includes('서비스/타입') || l.includes('서비스타입') || l.includes('케어십형태')) set('svc');
-    else if (l.includes('멤버십') || l === '|SIM' || l.endsWith('SIM')) set('member');
+    else if (l.includes('멤버십') || l.split('|').includes('SIM')) set('member');
     else if (l.includes('케어서비스/금액') || l.includes('케어십/요금') || l.includes('케어십요금')) set('careFee');
     else if (l.includes('비고')) set('note');
   }
@@ -148,9 +148,33 @@ function parseLgSubscription(rows, ctx) {
 
     const channel = pick('channel');
     const svc = pick('svc');
-    const change = pick('change');
-    const { care_type, cycle_months } = careFrom(cols.cycle != null ? row[cols.cycle] : null);
+    // 비고·전월대비(A·B열)는 병합셀("단종예정…", "종합몰/쿠팡", "공급은 9월15일이후…")이라 병합 범위 값을 읽는다
+    const merged = (k) => {
+      if (cols[k] == null) return null;
+      const v = ctx.mergedValue ? ctx.mergedValue(r, cols[k]) : row[cols[k]];
+      return hasVal(v) && nospace(v) !== '0' ? clean(v) : null;
+    };
+    const change = merged('change');
+    const note = merged('note');
+    let { care_type, cycle_months } = careFrom(cols.cycle != null ? row[cols.cycle] : null);
+    // 케어십형태 "베이직(자가)"·"자가관리"·"자가" 가 방문주기 숫자보다 우선 (주기 = 소모품 교체 주기)
+    if (/자가/.test(svc || '')) care_type = 'self';
+    // TV 는 방문주기·서비스타입이 비어 있어도 관리 없는 상품 ('-' 인 다른 TV 와 같게)
+    if (!care_type && /TV/i.test(sheet)) care_type = 'none';
     const category = pick('category');
+    const flags = { tags: [], notes: [], status: null };
+    if (/미운영/.test(change || '') || /전매미운영/.test(channel || '')) { flags.status = 'paused'; flags.notes.push('미운영'); }
+    if (/출시예정/.test(change || '')) { flags.status = 'paused'; flags.notes.push(change); }
+    if (/단종예정/.test(`${change || ''} ${note || ''}`)) { flags.tags.push('단종예정'); }
+    if (/전매전용/.test(channel || '')) { flags.tags.push('전매전용'); flags.notes.push('전매 채널 전용'); }
+    // 리빙 G1 범례 "집중모델(추가수수료)" — 분홍 칠 모델. 추가수수료 금액은 시트·수수료율표·이미지 어디에도 없다
+    if (/^(FH24ENE|W2320WANR|SC3GTE52)/.test(model)) { flags.tags.push('집중모델'); flags.notes.push('확인필요: 집중모델 추가수수료 금액 미기재'); }
+    const swing = pick('swing');
+    if (swing && swing !== model) flags.notes.push(`우선판매 스윙모델: ${swing}`);
+    // 리빙 "★ 6년계약한정 12개월 반값할인(2~13개월차 / 49.5천원 할인)" — 적힌 약정·회차·할인액 그대로
+    const halfNote = (note || '').match(/(\d)\s*년\s*계약\s*한정\s*(\d+)\s*개월\s*반값\s*할인\s*\(\s*(\d+)\s*~\s*(\d+)\s*개월차\s*\/?\s*([\d.]+)\s*천원/);
+    // 리빙 "~9월14일까지 3천원할인, 9/15~2천원할인" — 오늘(9/17) 기준 뒤 금액
+    const stepNote = (note || '').match(/(\d+)\s*천원\s*할인\s*,\s*9\/15~\s*(\d+)\s*천원\s*할인/);
     const subtype = /노트북/.test(category || '') ? '노트북' : /텀블러/.test(category || '') ? '텀블러세척기' : '일반';
     const discount = desc.filter((d) => d.kind === 'discount').reduce((m, d) => { if (hasVal(row[d.c])) m[d.label] = row[d.c]; return m; }, {});
 
@@ -167,14 +191,31 @@ function parseLgSubscription(rows, ctx) {
 
     let made = 0;
     let dupOf = null;
+    const baseFee = (m) => [...combos.values()].find((x) => x.months === m && x.kind === 'base' && !x.prepay);
     for (const e of combos.values()) {
-      const fee = e.promo ?? e.orig;
+      let fee = e.promo ?? e.orig;
       if (!fee || !e.months) continue;
+      const stepped = stepNote && e.promo != null && e.orig != null && e.orig - e.promo === +stepNote[1] * 1000;
+      if (stepped) fee = e.orig - +stepNote[2] * 1000;
       const offer_type = e.prepay ? 'prepay' : e.kind === 'base' ? 'normal' : 'bundle';
-      const offer_tags = [];
-      if (e.kind === 'new') offer_tags.push(`bundle:new${e.pct ? `:${e.pct}%` : ''}`);
-      if (e.kind === 'existing') offer_tags.push(`bundle:existing${e.pct ? `:${e.pct}%` : ''}`);
+      // TV "결합할인 선반영 / 구독료에 선반영" — 결합 칸이 기본 구독료와 같다 → 추가 % 할인이 있는 것처럼 보이지 않게
+      const b0 = baseFee(e.months);
+      const preApplied = e.kind !== 'base' && b0 && (b0.promo ?? b0.orig) === fee && /선반영/.test(`${note || ''} ${change || ''}`);
+      const offer_tags = [...flags.tags];
+      if (e.kind === 'new') offer_tags.push(preApplied ? 'bundle:new:선반영' : `bundle:new${e.pct ? `:${e.pct}%` : ''}`);
+      if (e.kind === 'existing') offer_tags.push(preApplied ? 'bundle:existing:선반영' : `bundle:existing${e.pct ? `:${e.pct}%` : ''}`);
       if (e.prepay) offer_tags.push(`prepay:${e.prepay}%`);
+      const isPromo = e.promo != null && e.orig != null && e.promo !== e.orig;
+      const half = halfNote && e.months === +halfNote[1] * 12
+        // 적힌 할인액(49.5천)은 기본 구독료 기준 — 선납·결합 조건은 그 조건 요금의 절반(100원 반올림)
+        ? [{ from: +halfNote[3], to: +halfNote[4], fee: Math.round(fee / 2 / 100) * 100 }] : [];
+      const labels = [preApplied ? '결합(할인 선반영)' : null, isPromo ? '9월 월간 프로모션 적용' : null, half.length ? `${halfNote[2]}개월 반값(${halfNote[3]}~${halfNote[4]}회차)` : null].filter(Boolean);
+      const extraNotes = [...flags.notes];
+      let status = flags.status;
+      if (/선납필수/.test(note || '') && !e.prepay) { status = 'paused'; extraNotes.push('선납필수 — 선납 조건으로만 판매'); }
+      if (isPromo) extraNotes.push('9월 월간 프로모션: 구매 9/1~9/30, 배송 10/31까지, 커머셜·납품·임직원·폐쇄몰·특별할인 제외');
+      if (stepped) extraNotes.push(`9/14까지 ${stepNote[1]}천원 할인 → 9/15부터 ${stepNote[2]}천원 할인 적용`);
+      if (half.length) extraNotes.push('확인필요: 반값 적용 시 수수료 변동');
       const total = fee * e.months + (e.prepayAmount || 0);
       const reb = ruleRebate(ctx, ['LG전자구독'], subtype, 'rate_total', { monthly_fee: fee, contract_months: e.months, total_fee: total });
       const dup = pushDedup(offers, seen, makeOffer({
@@ -191,8 +232,10 @@ function parseLgSubscription(rows, ctx) {
         cycle_months,
         offer_type,
         offer_tags,
-        offer_label: e.promo != null && e.orig != null && e.promo !== e.orig ? '9월 월간 프로모션 적용' : null,
+        offer_label: labels.join(' · ') || null,
         monthly_fee: fee,
+        price_phases: half,
+        valid_to: isPromo ? '2026-09-30' : null,
         prepay_amount: e.prepayAmount ?? null,
         total_fee: total,
         ...reb,
@@ -204,8 +247,8 @@ function parseLgSubscription(rows, ctx) {
           membership_base_price: cols.member != null ? row[cols.member] : null,
           install_type: pick('div2'),
         },
-        status: change && change.includes('단종') ? 'discontinued' : 'active',
-        notes: [change, pick('note')].filter(Boolean).join(' / '),
+        status: change && /단종(?!예정)/.test(change) ? 'discontinued' : status || 'active',
+        notes: [change, note, ...extraNotes].filter(Boolean).join(' / '),
         source: { sheet, row: excelRow },
       }));
       if (dup) dupOf = dup; else made++;
@@ -254,6 +297,8 @@ function parseLgHello(rows, ctx) {
     online: find(lab, (c) => c.includes('온라인')),
     note: find(lab, (c) => c === '비고'),
     vendorPromo: find(lab, (c) => c.includes('공급사프로모션')),
+    ship: find(lab, (c) => c.includes('배송방식')),
+    filter: find(lab, (c) => c.includes('필터')),
   };
   const general = find(lab, (c) => c.includes('일반가'));
   const staff = find(lab, (c) => c.includes('임직원가'));
@@ -281,6 +326,14 @@ function parseLgHello(rows, ctx) {
     const div = clean(row[col.div]);
     const status = /단종/.test(div) ? 'discontinued' : /판매중단/.test(div) ? 'paused' : 'active';
     const subtype = path.includes('현장') ? '현장' : '일반';
+    // 관리 칸이 없는 시트 — 배송방식 "설치배송(케어포함)" = 방문, "설치배송(자가관리)"·모델명 "(자가)" = 자가, 주기는 필터 칸 개월
+    const ship = col.ship >= 0 ? clean(row[col.ship]) : '';
+    const filterCyc = col.filter >= 0 ? toMonths(row[col.filter]) : null;
+    const helloCare = /자가관리/.test(ship) || /\(자가\)/.test(clean(row[col.name]))
+      ? { care_type: 'self', care_label: ship || '자가', cycle_months: filterCyc }
+      : /케어포함/.test(ship) ? { care_type: 'visit', care_label: ship, cycle_months: filterCyc } : {};
+    // D 무료개월 "[무2]" = 렌탈사가 주는 무료 개월(우리 'N개월 무료' 페이백과 다른 것)
+    const supplierFree = hasVal(row[col.free]) ? parseInt(String(row[col.free]).replace(/[^\d]/g, ''), 10) || null : null;
     const rebateFor = (amounts) => {
       if (policy === '정액') return { rebate: flatMax, rebate_basis: 'flat', rebate_rate: null };
       return ruleRebate(ctx, ['LG헬로비젼', 'LG헬로비전'], subtype, 'rate_total', amounts);
@@ -295,13 +348,15 @@ function parseLgHello(rows, ctx) {
       model_key: model.replace(/\s+/g, '').toUpperCase(),
       variant_code: path || null,
       status,
-      notes: [div, clean(row[col.detail]), clean(row[col.note])].filter(Boolean).join(' / '),
+      ...helloCare,
+      notes: [div, clean(row[col.detail]), clean(row[col.note]),
+        policy === '정액' ? '확인필요: 정액수수료(최대) 기준' : ''].filter(Boolean).join(' / '),
       source: { sheet, row: excelRow },
     };
     const detail = {
       fee_policy: policy || null,
       flat_fee_max: flatMax,
-      free_months: hasVal(row[col.free]) ? row[col.free] : null,
+      supplier_free_months: hasVal(row[col.free]) ? row[col.free] : null,
       path: path || null,
       online_exposure: clean(row[col.online]) || null,
       vendor: clean(row[col.vendor]) || null,
@@ -319,11 +374,17 @@ function parseLgHello(rows, ctx) {
         const totalRaw = toWon(row[t.total]);
         const total = totalRaw > 0 ? totalRaw : monthly * t.months;   // 원본 총액 칸이 0·공란이면 월요금×개월 (0 이 리베이트 0 으로 새지 않게)
         const offer_type = g.type === 'staff' ? 'staff' : path.includes('현장') ? 'field' : path.includes('콜특가') ? 'special' : 'normal';
+        const freeDeducted = supplierFree && totalRaw > 0 && totalRaw === monthly * (t.months - supplierFree);
         put({
           ...base,
           contract_months: t.months,
           obligation_months: t.months,
           offer_type,
+          offer_label: supplierFree ? `렌탈사 ${supplierFree}개월 무료` : null,
+          // 1개월차부터 0원 구간을 넣으면 표시 월요금이 0이 되어 페이백 개월 계산이 깨진다 → 라벨·태그로만 안내
+          offer_tags: supplierFree ? [`렌탈사무료${supplierFree}개월`] : [],
+          notes: [base.notes, supplierFree && !freeDeducted ? '확인필요: 렌탈사 무료개월이 총액에 반영됐는지' : '',
+            offer_type === 'staff' ? '확인필요: 임직원가 수수료 기준' : ''].filter(Boolean).join(' / '),
           monthly_fee: monthly,
           total_fee: total,
           ...rebateFor({ monthly_fee: monthly, contract_months: t.months, total_fee: total }),
@@ -333,7 +394,8 @@ function parseLgHello(rows, ctx) {
     }
     const lump = toWon(row[col.lump]);
     if (lump) {
-      put({ ...base, offer_type: 'purchase', total_fee: lump, ...rebateFor({ monthly_fee: null, contract_months: null, total_fee: lump }), rebate_detail: detail });
+      put({ ...base, offer_type: 'purchase', total_fee: lump, ...rebateFor({ monthly_fee: null, contract_months: null, total_fee: lump }), rebate_detail: detail,
+        notes: [base.notes, '확인필요: 일시불 수수료 기준'].filter(Boolean).join(' / ') });
     }
     if (!made) skipped.push({ row: excelRow, reason: dupOf ? `원본 중복행(${dupOf}행과 동일)` : '가격 없음' });
   }
@@ -380,12 +442,19 @@ function parseKtLine(rows, ctx) {
     if (labelRow < 0 || r <= labelRow + 2) { skipped.push({ row: excelRow, reason: '헤더' }); continue; }
     const model = hasVal(row[col.model]) ? clean(row[col.model]) : null;
     if (!model) { skipped.push({ row: excelRow, reason: '모델코드 없음' }); continue; }
+    const rowText = row.map((v) => clean(v)).join(' ');
+    // D열 등 "운영중단"·"미운영" → 일시중단, "단종" → 판매종료
+    const ktStatus = /단종/.test(rowText) ? 'discontinued' : /운영\s*중단|미운영/.test(rowText) ? 'paused' : 'active';
+    // "할부기간동안 4개월/12개월 1회 교체용 필터 제공" → 필터 배송
+    const filterM = rowText.match(/(\d+)\s*개월\s*1회\s*교체용\s*필터/);
     const base = {
       supplier: 'KT가전구독',
       product_name: clean(row[col.name]) || model,
       model_code: model,
       offer_tags: [line],
-      notes: [clean(row[col.note]), clean(row[col.install])].filter(Boolean).join(' / '),
+      status: ktStatus,
+      ...(filterM ? { care_type: 'delivery', care_label: '교체용 필터 제공', cycle_months: +filterM[1] } : {}),
+      notes: [clean(row[col.note]), clean(row[col.install]), ktStatus !== 'active' ? '운영중단' : ''].filter(Boolean).join(' / '),
       source: { sheet, row: excelRow },
     };
     const detail = { color: clean(row[col.note]) || null, install: clean(row[col.install]) || null, lump_price: toWon(row[lumpCol]) };
@@ -399,7 +468,8 @@ function parseKtLine(rows, ctx) {
     }
     const lump = toWon(row[lumpCol]);
     if (lump) {
-      offers.push(makeOffer({ ...base, offer_type: 'purchase', total_fee: lump, ...ktRebate(ctx, model, { monthly_fee: null, contract_months: null, total_fee: lump }), rebate_detail: detail }));
+      offers.push(makeOffer({ ...base, offer_type: 'purchase', total_fee: lump, ...ktRebate(ctx, model, { monthly_fee: null, contract_months: null, total_fee: lump }), rebate_detail: detail,
+        notes: [base.notes, /\(R\)/i.test(model) ? '' : '확인필요: 즉납 수수료 기준'].filter(Boolean).join(' / ') }));
       made++;
     }
     if (!made) skipped.push({ row: excelRow, reason: '가격 없음' });
@@ -440,6 +510,9 @@ function parseKtSubscribe(rows, ctx) {
   };
   const terms = [];
   lab.forEach((c, i) => { const m = /할부(\d+)개월/.exec(c); if (m) terms.push({ months: +m[1], c: i }); });
+  // 시트 상단 안내(B2·B3·J6·J7: 할부 불가 대상·미기재 모델 판매불가·사다리차 유상·소상공인 환급 등) — 조건 비고에 요약
+  const notice = rows.slice(0, Math.max(labelRow, 0)).flatMap((r) => (r || []).filter((v) => isStr(v)).map(clean))
+    .filter((s) => /할부|판매|사다리차|환급|법인|외국인|미성년|정책|ONLY/i.test(s)).join(' · ').slice(0, 300);
 
   for (let r = 0; r < rows.length; r++) {
     const row = rows[r];
@@ -454,7 +527,10 @@ function parseKtSubscribe(rows, ctx) {
       product_name: clean(row[col.name]) || model,
       model_code: model,
       offer_tags: [tag],
-      notes: clean(row[col.note]),
+      // "자가관리용 필터배송 포함 (3년간 6개월마다 1회)"
+      ...(/자가관리용\s*필터배송/.test(row.map((v) => clean(v)).join(' '))
+        ? { care_type: 'self', care_label: '자가관리용 필터배송', cycle_months: +((row.map((v) => clean(v)).join(' ').match(/(\d+)\s*개월마다/) || [])[1]) || null } : {}),
+      notes: [clean(row[col.note]), notice ? `안내: ${notice}` : ''].filter(Boolean).join(' / '),
       source: { sheet, row: excelRow },
     };
     const detail = {
