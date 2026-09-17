@@ -225,9 +225,31 @@
     box.innerHTML = '<div class="rt-picked"><b>' + esc(o.ticket_number) + '</b> · ' + esc(typeText(o)) + ' · ' + esc(contractText(o)) + ' · ' + esc(careText(o)) +
       '<div class="rt-picked-fee">' + esc(phasesText(o)) + '</div>' +
       (o.offer_label ? '<div class="rt-note">프로모션: ' + esc(o.offer_label) + '</div>' : '') +
-      (o.notes ? '<div class="rt-note">비고: ' + esc(o.notes) + '</div>' : '') + '</div>';
+      (o.notes ? '<div class="rt-note">비고: ' + esc(o.notes) + '</div>' : '') +
+      '<div id="rt-promos"></div></div>';
     payout(o);
     loadForm(o);
+    loadPromos(o);
+  }
+
+  // 이 렌탈사의 진행 중 프로모션 (기간 안인 것만) — 행사명·혜택·중복 조건
+  var PROMO_CACHE = {};
+  async function loadPromos(o) {
+    var box = $('rt-promos'); if (!box) return;
+    try {
+      var list = PROMO_CACHE[o.supplier_id];
+      if (!list) { list = (await api('/promotions?supplier=' + encodeURIComponent(o.supplier_id) + '&active=true')).promotions || []; PROMO_CACHE[o.supplier_id] = list; }
+      if (RT.offer !== o || !list.length) { if (RT.offer === o) box.innerHTML = ''; return; }
+      box.innerHTML = '<div style="margin-top:6px;padding:6px 8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px">' +
+        '<div style="font-size:11px;font-weight:800;color:#1d4ed8;margin-bottom:2px">📢 진행 중 프로모션 ' + list.length + '</div>' +
+        list.map(function (p) {
+          var st = p.stacking || {};
+          var stack = Object.keys(st).filter(function (k) { return k !== 'note' && k !== '제외'; }).map(function (k) { return k + (st[k] === true ? 'O' : st[k] === false ? 'X' : ':' + st[k]); }).join(' ');
+          return '<div style="font-size:11px;padding:3px 0;border-top:1px dashed #dbeafe"><b>' + esc(p.title) + '</b> <span style="color:#64748b">' + esc((p.period_from || '') + '~' + (p.period_to || '')) + '</span>' +
+            '<div style="color:#334155">' + esc(p.summary || '') + '</div>' +
+            (stack || st.note || st['제외'] ? '<div style="color:#64748b;font-size:10px">중복: ' + esc([stack, st.note, st['제외'] ? '제외 ' + st['제외'] : ''].filter(Boolean).join(' · ')) + '</div>' : '') + '</div>';
+        }).join('') + '</div>';
+    } catch (e) { box.innerHTML = ''; }
   }
 
   // ─── 3. 지급액 (가이드~MAX) ───

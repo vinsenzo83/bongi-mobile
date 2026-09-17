@@ -37,7 +37,7 @@ const allKeys = new Set(existing.map((e) => e.condition_key));
 
 const rowKey = (s) => `${s?.sheet}|${s?.row}`;
 const group = (list) => list.reduce((m, x) => { const k = rowKey(x.source); (m.get(k) || m.set(k, []).get(k)).push(x); return m; }, new Map());
-const oldByRow = group(mine.filter((e) => e.status !== 'discontinued'));
+const oldByRow = group(mine);   // 단종 조건도 포함 — 엑셀에 단종으로 계속 적혀 있으면 같은 티켓을 유지해야 한다
 const newByRow = group(offers);
 
 const same = (a, b) => (a ?? null) === (b ?? null);
@@ -85,8 +85,14 @@ for (const m of moves.slice(0, 6)) console.log(`  ${m.e.ticket_number} [${m.s}] 
 if (dupNew) { console.error('새 조건키 중복 — 중단'); process.exit(1); }
 if (!process.argv.includes('--commit')) process.exit(0);
 
-for (const m of moves) await sb.from('rental_cat_offers').update({ condition_key: `rekey:${m.e.id}` }).eq('id', m.e.id).throwOnError();
-for (const m of moves) await sb.from('rental_cat_offers').update({ condition_key: m.o.condition_key, updated_at: new Date().toISOString() }).eq('id', m.e.id).throwOnError();
+// 네트워크가 끊겨도 다시 돌리면 된다 — 임시키(rekey:id)로 남은 조건도 같은 엑셀 행 짝짓기로 다시 잡힌다. 건마다 3회 재시도
+async function retry(fn) {
+  for (let k = 1; ; k++) {
+    try { return await fn(); } catch (e) { if (k >= 3) throw e; await new Promise((res) => setTimeout(res, 2000 * k)); }
+  }
+}
+for (const m of moves) if (!m.e.condition_key.startsWith('rekey:')) await retry(() => sb.from('rental_cat_offers').update({ condition_key: `rekey:${m.e.id}` }).eq('id', m.e.id).throwOnError());
+for (const m of moves) await retry(() => sb.from('rental_cat_offers').update({ condition_key: m.o.condition_key, updated_at: new Date().toISOString() }).eq('id', m.e.id).throwOnError());
 for (let i = 0; i < moves.length; i += 500) {
   await sb.from('rental_cat_offer_changes').insert(moves.slice(i, i + 500).map((m) => ({
     offer_id: m.e.id, change_type: 'changed', changed_by: 'rekey(적재규칙 변경)', before: { condition_key: m.e.condition_key }, after: { condition_key: m.o.condition_key },

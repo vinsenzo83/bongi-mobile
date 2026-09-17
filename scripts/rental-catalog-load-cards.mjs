@@ -18,7 +18,7 @@ const SUPPLIER = {
   'LG전자구독': 'lg-subscribe', 'LG전자': 'lg-subscribe', '코웨이': 'coway', '청호나이스': 'chungho', '청호': 'chungho', '쿠쿠': 'cuckoo',
   '교원웰스': 'wells', '웰스': 'wells', 'LG헬로비전': 'lg-hello', 'SK매직': 'skmagic', '현대큐밍': 'cuming', '큐밍': 'cuming',
   '삼성전자(BS ON)': 'bs', 'BS ON': 'bs', 'BS': 'bs', '현대유버스': 'ubus', '유버스': 'ubus', '루헨스': 'luhens',
-  '세스코': 'cesco', 'KT가전구독': 'kt', '스마트렌탈': 'smart', '스마트': 'smart', '이니렌탈': 'ini', '렌타나': 'rentana', '캐리어': 'carrier', '렌플': 'renple',
+  '세스코': 'cesco', 'KT가전구독': 'kt', 'BS렌탈': 'bs', 'KT': 'kt', '오텍캐리어': 'carrier', '삼성BSON': 'bs', 'SK인텔릭스': 'skmagic', '스마트렌탈': 'smart', '스마트': 'smart', '이니렌탈': 'ini', '렌타나': 'rentana', '캐리어': 'carrier', '렌플': 'renple',
 };
 const num = (v) => (v == null || v === '' ? null : Number(String(v).replace(/[^\d.-]/g, '')) || null);
 
@@ -27,7 +27,8 @@ const list = Array.isArray(raw) ? raw : raw.cards || raw.rows || [];
 const rows = []; const skipped = [];
 for (const c of list) {
   const brand = c.supplier_name || c.brand || c.supplier;
-  const supplier_id = SUPPLIER[String(brand || '').trim()];
+  const bn = String(brand || '').replace(/\([^)]*\)/g, '').trim();   // "스마트렌탈(에넥스텔레콤)" → 스마트렌탈
+  const supplier_id = SUPPLIER[String(brand || '').trim()] || SUPPLIER[bn] || SUPPLIER[bn.replace(/\s+/g, '')] || SUPPLIER[bn.replace(/렌탈$/, '').trim()];
   if (!supplier_id || !c.card_name) { skipped.push(`${brand} / ${c.card_name}`); continue; }
   const tiers = [1, 2, 3].map((n) => ({
     min_spend: num(c[`tier${n}_min`]), base: num(c[`tier${n}_base`]), promo: num(c[`tier${n}_promo`]),
@@ -52,3 +53,11 @@ if (skipped.length) console.log('제외:', skipped.join(', '));
 if (!process.argv.includes('--commit')) process.exit(0);
 await sb.from('rental_cat_cards').upsert(rows, { onConflict: 'supplier_id,card_issuer,card_name' }).throwOnError();
 console.log('반영', rows.length);
+// --deactivate-missing: 이번 파일에 없는 기존 카드(카드명이 바뀌었거나 사라진 카드)는 사용 끔 — 지우지는 않는다
+if (process.argv.includes('--deactivate-missing')) {
+  const keep = new Set(rows.map((r) => `${r.supplier_id}|${r.card_issuer}|${r.card_name}`));
+  const { data: all } = await sb.from('rental_cat_cards').select('id, supplier_id, card_issuer, card_name, is_active').throwOnError();
+  const stale = all.filter((c) => c.is_active && !keep.has(`${c.supplier_id}|${c.card_issuer}|${c.card_name}`));
+  for (const c of stale) await sb.from('rental_cat_cards').update({ is_active: false, verify_status: 'not_found', notes: '공식 페이지 재확인 목록에 없음(카드명 변경·중단)', updated_at: new Date().toISOString() }).eq('id', c.id).throwOnError();
+  console.log('목록에 없는 카드 사용 끔', stale.length, stale.map((c) => `${c.supplier_id}/${c.card_name}`).join(', '));
+}
