@@ -223,9 +223,13 @@ function buildDocuments(appFields, { isTradeIn }) {
     const id = `${f.key}|${f.applies_to}`;
     if (seen.has(id)) continue;
     seen.add(id);
+    // 사업자 전용 서류는 원문이 "공통"이어도 개인·외국인에게 요구하지 않는다 (스마트렌탈 가입기준이 사업자 서류를 공통으로 표기)
+    const bizOnly = /사업자등록|인감증명|법인/.test(f.label);
+    let holders = cond.always || (bizOnly && !cond.holders) ? HOLDER_ALL : cond.holders;
+    if (bizOnly && holders) holders = holders.filter((h) => BIZ.includes(h));
     docs.push({
       key: f.key, label: f.label, when: f.applies_to === 'all' ? '공통' : f.applies_to,
-      holders: cond.always ? HOLDER_ALL : cond.holders, flag: cond.flag || null,
+      holders, flag: cond.flag || null,
       situational: !!cond.situational, note: f.note || null,
     });
   }
