@@ -91,8 +91,15 @@ async function retry(fn) {
     try { return await fn(); } catch (e) { if (k >= 3) throw e; await new Promise((res) => setTimeout(res, 2000 * k)); }
   }
 }
-for (const m of moves) if (!m.e.condition_key.startsWith('rekey:')) await retry(() => sb.from('rental_cat_offers').update({ condition_key: `rekey:${m.e.id}` }).eq('id', m.e.id).throwOnError());
-for (const m of moves) await retry(() => sb.from('rental_cat_offers').update({ condition_key: m.o.condition_key, updated_at: new Date().toISOString() }).eq('id', m.e.id).throwOnError());
+// 25건씩 동시에 — 한 건씩이면 수천 건에 수십 분 걸린다
+async function inParallel(list, fn, size = 25) {
+  for (let i = 0; i < list.length; i += size) {
+    await Promise.all(list.slice(i, i + size).map((x) => retry(() => fn(x))));
+    if ((i / size) % 20 === 0) console.log(`  ${Math.min(i + size, list.length)}/${list.length}`);
+  }
+}
+await inParallel(moves.filter((m) => !m.e.condition_key.startsWith('rekey:')), (m) => sb.from('rental_cat_offers').update({ condition_key: `rekey:${m.e.id}` }).eq('id', m.e.id).throwOnError());
+await inParallel(moves, (m) => sb.from('rental_cat_offers').update({ condition_key: m.o.condition_key, updated_at: new Date().toISOString() }).eq('id', m.e.id).throwOnError());
 for (let i = 0; i < moves.length; i += 500) {
   await sb.from('rental_cat_offer_changes').insert(moves.slice(i, i + 500).map((m) => ({
     offer_id: m.e.id, change_type: 'changed', changed_by: 'rekey(적재규칙 변경)', before: { condition_key: m.e.condition_key }, after: { condition_key: m.o.condition_key },

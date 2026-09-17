@@ -33,6 +33,11 @@
   // ─── 표시 헬퍼 ───
   function typeText(o) {
     var base = TYPE_LABEL[o.offer_type] || o.offer_type;
+    // 반값은 몇 개월·몇 회차인지 항상 보이게 — 라벨에 개월이 없으면 요금 구간에서 계산
+    if (o.offer_type === 'half' && !/개월/.test(o.offer_label || '')) {
+      var hp = (o.price_phases || []).filter(function (p) { return p.fee > 0 && p.fee < (o.monthly_fee || 0); })[0];
+      base = hp ? '반값 ' + (hp.to - hp.from + 1) + '개월(' + hp.from + '~' + hp.to + '회차)' : '반값할인(개월 확인필요)';
+    }
     if (o.offer_label && o.offer_label !== base) return base + ' · ' + o.offer_label;
     var tags = (o.offer_tags || []).filter(function (t) { return !/^(rule|bundle|prepay):/.test(t); });
     return base + (tags.length ? ' · ' + tags.join('·') : '');
