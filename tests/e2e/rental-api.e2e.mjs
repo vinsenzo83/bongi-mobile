@@ -47,6 +47,16 @@ try {
   const pg = await call('GET', '/api/rental-catalog/agent/models?page=99999', 'agent');
   check('범위밖 페이지 빈목록', pg.s === 200 && (pg.j.models || []).length === 0, `${pg.s}`);
 
+  // ── 2-1. 자동 추천(내부 로직, AI 없음)
+  check('무토큰 자동추천 401', (await call('POST', '/api/rental-catalog/agent/recommend', null, { text: '정수기' })).s === 401);
+  const rc = await call('POST', '/api/rental-catalog/agent/recommend', 'agent', { text: '얼음 정수기 4만원 이하 방문관리 신한카드', category: 'water-purifier' });
+  check('자동추천 200·추천 1~3개', rc.s === 200 && rc.j?.recommendations?.length >= 1 && rc.j.recommendations.length <= 3, JSON.stringify(rc.j).slice(0, 160));
+  check('자동추천 리베이트 없음', rc.s === 200 && !hasKey(rc.j, /^rebate$|total_fee|commission/i));
+  check('자동추천 예산 준수(할인 뒤 요금 ≤ 4만)', rc.s === 200 && rc.j.recommendations.every((x) => Math.max(x.condition.display_fee, x.condition.monthly_fee_after) <= 40000));
+  check('자동추천 실질 월 부담 계산', rc.s === 200 && rc.j.recommendations.every((x) => Number.isFinite(x.condition.effective_monthly_after_guide)));
+  const rt = await call('POST', '/api/rental-catalog/agent/recommend', 'agent', { text: '코웨이 쓰는데 바꾸고 싶음 냉온 정수기' });
+  check('타사보상 추천에 지금 쓰는 브랜드 제외', rt.s === 200 && rt.j.recommendations.length > 0 && rt.j.recommendations.every((x) => x.supplier_id !== 'coway'));
+
   // ── 3. 관리자 입력 검증
   check('가이드 만원단위 아님 400', (await call('PATCH', `/api/rental-catalog/offers/${offer.id}`, 'admin', { guide_payout: 371000 })).s === 400);
   check('MAX<가이드 400', (await call('PATCH', `/api/rental-catalog/offers/${offer.id}`, 'admin', { max_payout: 100000 })).s === 400);

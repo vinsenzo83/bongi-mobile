@@ -30,6 +30,7 @@ import { previewImport, commitImport } from '../services/rental-import/commit.js
 import { buildApplicationForm } from '../services/rental-application.js';
 import { CATEGORIES, CATEGORY_LABEL } from '../services/rental-import/core.js';
 import { assist, assistantEnabled } from '../services/rental-assistant.js';
+import { recommend } from '../services/rental-recommend.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
@@ -459,6 +460,25 @@ router.get('/agent/offers/:id/form', ...agent, async (req, res) => {
 
 // ─── 렌탈 상담 AI (상담원 보조) — DB 조회 도구로만 답한다 ───
 const assistHits = new Map();   // 상담원별 10분 30회
+// 자동 추천 (AI 없음 · 기본) — 칩/한 줄 입력 → 많이 팔리는·많이 남는 조건 + 카드·페이백 반영 실질 월
+router.post('/agent/recommend', ...agent, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const pick = (v, re) => (typeof v === 'string' && re.test(v) ? v : undefined);
+    const out = await recommend({
+      text: typeof b.text === 'string' ? b.text.slice(0, 300) : '',
+      category: pick(b.category, /^[a-z-]{2,30}$/),
+      budget: Number.isInteger(b.budget) && b.budget > 0 && b.budget < 10_000_000 ? b.budget : undefined,
+      care_type: pick(b.care_type, /^(visit|self|delivery|none)$/),
+      contract_months: Number.isInteger(b.contract_months) && b.contract_months > 0 && b.contract_months <= 120 ? b.contract_months : undefined,
+      current_brand: pick(b.current_brand, /^[a-z-]{2,20}$/),
+      card_issuer: pick(b.card_issuer, /^[가-힣A-Z]{1,6}$/),
+      keywords: Array.isArray(b.keywords) ? b.keywords.filter((k) => typeof k === 'string' && k.length <= 10).slice(0, 4) : [],
+    });
+    res.json(out);
+  } catch (e) { console.error('[rental-recommend]', e?.message); res.status(500).json({ error: errMsg(e) }); }
+});
+
 router.post('/agent/assist', ...agent, async (req, res) => {
   try {
     if (!assistantEnabled()) return res.status(503).json({ error: '상담 AI 비활성화(API 키 없음)' });

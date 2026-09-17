@@ -118,6 +118,9 @@
     try {
       var j = await api('/agent/categories');
       var cats = [{ slug: '', label: '전체', count: (j.categories || []).reduce(function (n, c) { return n + c.count; }, 0) }].concat(j.categories || []);
+      RT.cats = j.categories || [];
+      var rcCat = $('rt-rc-cat');   // 자동 추천 카테고리 칩 채우기
+      if (rcCat && rcCat.options.length <= 1) RT.cats.forEach(function (c) { var op = document.createElement('option'); op.value = c.slug; op.textContent = c.label; rcCat.appendChild(op); });
       $('rt-cats').innerHTML = cats.map(function (c) {
         return '<div class="tm-option' + (RT.category === c.slug ? ' selected' : '') + '" data-cat="' + esc(c.slug) + '">' + esc(c.label) + ' <span style="opacity:.55;font-size:10px">' + c.count.toLocaleString() + '</span></div>';
       }).join('');
@@ -673,24 +676,62 @@
   function renderAiBox() {
     var box = $('rt-ai'); if (!box || box.dataset.ready) return;
     box.dataset.ready = '1';
+    var sel = function (id, opts) { return '<select id="' + id + '" style="background:#1e293b;color:#f1f5f9;border:1px solid #475569;border-radius:6px;padding:4px;font-size:11.5px">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join('') + '</select>'; };
     box.innerHTML =
-      '<div style="font-size:12px;font-weight:800;color:#c4b5fd;margin-bottom:5px">🤖 상담 AI · 고객 니즈 → 자동 추천</div>' +
-      '<textarea id="rt-ai-q" placeholder="고객 상태·니즈를 적어주세요&#10;예) 4인 가족, 거실 정수기, 얼음 필요, 월 3만원 이하, 방문관리, 신한카드 있음"></textarea>' +
-      '<div class="rt-ai-btns"><button id="rt-ai-go">추천받기</button>' +
-      '<button class="ghost" data-aiq="지금 보고 있는 상품의 특징과 비슷한 대안을 알려줘">이 상품 요약·대안</button>' +
-      '<button class="ghost" data-aiq="지금 조건에서 제휴카드와 프로모션으로 월 요금을 가장 낮추는 방법">카드·프로모션 최저 설계</button>' +
-      '<button class="ghost" data-aiq="이 렌탈사 가입조건과 필요한 서류">가입조건·서류</button>' +
+      '<div style="font-size:12px;font-weight:800;color:#c4b5fd;margin-bottom:5px">🎯 자동 추천 <span style="font-weight:500;color:#94a3b8">많이 팔리는 → 많이 남는 순 · 페이백·카드 반영</span></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px">' +
+        sel('rt-rc-cat', [['', '카테고리(메모로 자동)']].concat((RT.cats || []).map(function (c) { return [c.slug, c.label]; }))) +
+        '<input id="rt-rc-budget" type="number" min="0" step="0.5" placeholder="월 예산(만원)" style="background:#1e293b;color:#f1f5f9;border:1px solid #475569;border-radius:6px;padding:4px;font-size:11.5px">' +
+        sel('rt-rc-care', [['', '관리 상관없음'], ['visit', '방문관리'], ['self', '자가관리']]) +
+        sel('rt-rc-contract', [['', '약정 상관없음'], ['36', '3년'], ['48', '4년'], ['60', '5년'], ['72', '6년'], ['84', '7년']]) +
+        sel('rt-rc-brand', [['', '지금 쓰는 제품 없음'], ['coway', '코웨이 사용중(타사보상)'], ['cuckoo', '쿠쿠 사용중'], ['chungho', '청호 사용중'], ['skmagic', 'SK매직 사용중'], ['wells', '웰스 사용중'], ['lg-subscribe', 'LG 사용중'], ['other', '기타 브랜드 사용중']]) +
+        sel('rt-rc-card', [['', '카드 할인 없음'], ['신한', '신한카드'], ['KB', 'KB국민카드'], ['삼성', '삼성카드'], ['현대', '현대카드'], ['롯데', '롯데카드'], ['하나', '하나카드'], ['우리', '우리카드'], ['NH', 'NH농협카드'], ['BC', 'BC카드'], ['IBK', 'IBK기업카드']]) +
+      '</div>' +
+      '<textarea id="rt-ai-q" style="min-height:40px" placeholder="한 줄 메모 (칩 대신 적어도 됨)&#10;예) 4인 가족 얼음정수기 4만원 이하 방문관리 신한카드"></textarea>' +
+      '<div class="rt-ai-btns"><button id="rt-rc-go">🎯 추천</button>' +
+      '<button class="ghost" id="rt-ai-go" title="긴 상담·사양 질문 등 필요할 때만 (API 사용)">🤖 AI에게 묻기</button>' +
       '<button class="ghost" id="rt-ai-reset">새 상담</button></div>' +
       '<div id="rt-ai-out"></div>';
+    $('rt-rc-go').addEventListener('click', runRecommend);
     $('rt-ai-go').addEventListener('click', function () { askAi($('rt-ai-q').value); });
-    $('rt-ai-q').addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) askAi($('rt-ai-q').value); });
-    box.querySelectorAll('[data-aiq]').forEach(function (b) { b.addEventListener('click', function () { askAi(b.dataset.aiq); }); });
+    $('rt-ai-q').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runRecommend(); } });
     $('rt-ai-reset').addEventListener('click', function () { AI.messages = []; $('rt-ai-out').innerHTML = ''; $('rt-ai-q').value = ''; });
     $('rt-ai-out').addEventListener('click', function (e) {
       var ap = e.target.closest('[data-apply]'); if (ap) return applyRecommendation(Number(ap.dataset.apply));
       var tk = e.target.closest('[data-tk]'); if (tk) openTicket(tk.dataset.tk);
       var qq = e.target.closest('[data-follow]'); if (qq) { $('rt-ai-q').value = qq.dataset.follow + ' → '; $('rt-ai-q').focus(); }
     });
+  }
+
+  // 내부 로직 추천 (AI 호출 없음)
+  async function runRecommend() {
+    var out = $('rt-ai-out'); var btn = $('rt-rc-go');
+    if (btn.disabled) return;
+    var brand = $('rt-rc-brand').value;
+    var body = {
+      text: $('rt-ai-q').value || '',
+      category: $('rt-rc-cat').value || undefined,
+      budget: $('rt-rc-budget').value ? Math.round(Number($('rt-rc-budget').value) * 10000) : undefined,
+      care_type: $('rt-rc-care').value || undefined,
+      contract_months: $('rt-rc-contract').value ? Number($('rt-rc-contract').value) : undefined,
+      current_brand: brand && brand !== 'other' ? brand : undefined,
+      card_issuer: $('rt-rc-card').value || undefined,
+    };
+    // 기타 브랜드 사용중 → 타사보상 조건을 찾도록 메모에 표시
+    if (brand === 'other') body.text += ' 타사 제품 사용중';
+    btn.disabled = true;
+    out.innerHTML = '<div class="rt-ai-answer" style="color:#94a3b8">🔎 조건 계산 중…</div>';
+    try {
+      var r = await fetch(API + '/agent/recommend', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() }, body: JSON.stringify(body) });
+      var j = await r.json().catch(function () { return {}; });
+      if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      AI.last = { recommendation: j };
+      out.innerHTML = aiResultHtml({ recommendation: j });
+      var first = (j.recommendations || []).findIndex(function (x) { return !x.invalid; });
+      if (first >= 0) applyRecommendation(first);
+    } catch (e) {
+      out.innerHTML = '<div class="rt-ai-answer" style="color:#fca5a5">⚠ ' + esc(e.message) + '</div>';
+    } finally { btn.disabled = false; }
   }
 
   async function askAi(text) {
@@ -735,6 +776,8 @@
         html += '<div class="rt-ai-rec">' + (x.image_url ? '<img src="' + esc(x.image_url) + '" alt="">' : '') +
           '<div style="flex:1;min-width:0;font-size:11.5px">' +
             '<div><b style="font-size:12.5px">' + (i + 1) + '. ' + esc(x.product_name || x.model_code) + '</b> <span style="color:#94a3b8">' + esc(x.supplier || '') + '</span></div>' +
+            '<div>' + (x.sales_90d ? '<span class="badge hot">판매 ' + x.sales_90d + '건</span>' : '') + (x.focus || []).map(function (f) { return '<span class="badge hot">' + esc(f) + '</span>'; }).join('') +
+              (x.margin_grade ? '<span class="badge m-' + esc(x.margin_grade) + '">마진 ' + esc(x.margin_grade) + '</span>' : '') + '</div>' +
             '<div style="color:#fcd34d"><span class="tk" data-tk="' + esc(x.ticket) + '">' + esc(x.ticket) + '</span> · ' + esc(c.type || '') + (c.label ? ' ' + esc(c.label) : '') + ' · ' + esc(c.contract_months || '') + '개월 · ' + esc(c.care || '') + (c.cycle_months ? ' ' + c.cycle_months + '개월' : '') + '</div>' +
             '<div>월 <b>' + won(c.display_fee) + '</b>' + (ph ? ' <span style="color:#94a3b8">(' + esc(ph) + ')</span>' : '') +
               (x.card ? ' → 💳 ' + esc(x.card.card_name) + ' <b style="color:#86efac">월 ' + won(x.card.fee_with_card) + '</b>' : '') +

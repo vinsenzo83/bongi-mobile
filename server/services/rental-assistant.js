@@ -171,7 +171,7 @@ function slimOffer(o) {
  *   판매: 최근 90일 우리 렌탈 계약 수(모델 기준) + 렌탈사 주력·집중모델·우선판매 표시
  *   마진: 조건별 (리베이트 공급가 − 가이드 지급액) 중 최댓값 → 상담원에게는 금액이 아니라 상/중/하 등급만
  */
-async function rankModels(models, mode, filter = {}) {
+export async function rankModels(models, mode, filter = {}) {
   if (!models.length) return [];
   const ids = models.map((m) => m.id);
   const { data: offers } = await supabase.from('rental_cat_offers').select(`${OFFER_COLS}, rebate, crm_enabled`)

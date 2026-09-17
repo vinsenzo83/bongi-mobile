@@ -264,6 +264,7 @@ export function composeProductName({ product_name, model_code, model_key, brand,
 //   LG 하이드로타워·하이드로에센셜 = 퓨리케어 가습기 (LG구독은 제품군을 '하이드로타워', BS 는 '공기청정기'로 적는다)
 const CATEGORY_OVERRIDES = [
   ['humidifier', /하이드로\s?(타워|에센셜)/],
+  ['massage', /안마\s*(의자|베드|기)|마사지\s*(체어|의자)/],   // '의자' 가구 규칙보다 먼저
 ];
 export function categorize(categoryRaw, productName) {
   const hay = `${categoryRaw || ''} ${productName || ''}`;
