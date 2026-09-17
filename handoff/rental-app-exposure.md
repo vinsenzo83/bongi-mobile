@@ -15,17 +15,19 @@
 {
   "id": "…", "supplier": "쿠쿠", "brand": "쿠쿠", "name": "쿠쿠 제로 100 슬림 얼음 정수기", "model_code": "CP-AHS101HEW",
   "category": "water-purifier", "category_label": "정수기", "image_url": "https://…",
-  "monthly_fee_from": 36500,          // 판매중 조건 중 최저 월 렌탈료
+  "monthly_fee_from": 36500,          // 일반 판매 조건 중 최저 첫 달 월 렌탈료 (결합·선납·현장·임직원·타사보상 제외)
+  "regular_fee": null,                // 반값 등 할인 기간이 끝난 뒤 월 요금 (할인 없으면 null)
+  "discount_months": null,            // 할인 요금 적용 개월 수
   "card_monthly_fee_from": 21500,     // 제휴카드 최대 할인 적용 시 최저 월 요금 (카드 없으면 null)
   "card_name": "쿠쿠 신한카드",
-  "free_months_up_to": 9,             // 최대 N개월 무료 (가이드 기준)
+  "free_months_up_to": 9,             // 최대 N개월 무료 (가이드 ÷ 할인 뒤 정상 요금)
   "cash_benefit": true
 }
 ```
 
 ## 화면 규칙
 **상품 카드 (목록)** — 숫자는 2개만
-- `월 {monthly_fee_from}원부터`
+- `월 {monthly_fee_from}원부터` (regular_fee 가 있으면 작은 글씨로 `{discount_months}개월 후 {regular_fee}원`)
 - `최대 {free_months_up_to}개월 무료` (cash_benefit=false 면 줄 자체를 숨김)
 - 이미지 · 브랜드 · 상품명
 

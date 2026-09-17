@@ -719,9 +719,31 @@ router.get('/public/models', publicLimit, async (req, res) => {
     if (category) q = q.eq('category', category);
     if (linkedOnly) q = q.eq('platform_linked', true);
     const { data, count } = await q.order('max_free_months', { ascending: false, nullsFirst: false }).range((page - 1) * size, page * size - 1).throwOnError();
+    // 요약 뷰의 최저 요금·최대 무료개월은 선납·현장가 같은 특수 조건까지 섞여 과장된다 → 일반 판매 조건으로 다시 계산
+    const ids = data.map((m) => m.id);
+    const { data: offs } = ids.length ? await supabase.from('rental_cat_offers').select('model_id, offer_type, offer_tags, display_fee, monthly_fee, price_phases, guide_payout, prepay_amount')
+      .in('model_id', ids).eq('status', 'active').eq('crm_enabled', true).not('offer_type', 'in', '(prepay,field,staff,purchase,trade_in,bundle)').is('prepay_amount', null)
+      .or(`valid_to.is.null,valid_to.gte.${new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' })}`).limit(20000).throwOnError() : { data: [] };
+    const agg = new Map();
+    for (const o of offs) {
+      if (!(o.display_fee > 0) || (o.offer_tags || []).includes('약정없음')) continue;
+      const a = agg.get(o.model_id) || { fee: Infinity, regular: null, discountMonths: null, free: 0 };
+      const regular = Math.max(o.monthly_fee || 0, o.display_fee);            // 반값 구간이 끝난 뒤 정상 요금 기준
+      if (o.display_fee < a.fee) {
+        a.fee = o.display_fee; a.regular = regular > o.display_fee ? regular : null;
+        const ph = (o.price_phases || []).filter((x) => x.fee === o.display_fee);
+        a.discountMonths = a.regular && ph.length ? Math.max(...ph.map((x) => x.to)) : null;
+      }
+      if (o.guide_payout > 0 && regular > 0) a.free = Math.max(a.free, Math.floor(o.guide_payout / regular));
+      agg.set(o.model_id, a);
+    }
     const cardCache = new Map();
     const models = [];
     for (const m of data) {
+      const a = agg.get(m.id);
+      if (!a || a.fee === Infinity) continue;                                   // 일반 판매 조건이 없는 모델은 앱에 내지 않는다
+      if (/^\s*\[?현장|현장에 제품X|\(현장/.test(m.product_name || '')) continue;       // 현장 전용 상품
+      m.min_display_fee = a.fee; m.max_free_months = a.free;
       if (!cardCache.has(m.supplier_id)) cardCache.set(m.supplier_id, await activeCards(m.supplier_id));
       const cards = cardsFor(cardCache.get(m.supplier_id), m);
       const best = cards.reduce((a, c) => Math.max(a, ...(c.tiers || []).map((t) => t.total || 0)), 0);
@@ -729,6 +751,8 @@ router.get('/public/models', publicLimit, async (req, res) => {
       models.push({
         id: m.id, supplier: m.supplier_name, brand: m.brand, name: m.product_name, model_code: m.model_code, category: m.category, category_label: CATEGORY_LABEL[m.category] || m.category, image_url: m.image_url,
         monthly_fee_from: m.min_display_fee,
+        regular_fee: a.regular,                                              // 할인 기간 뒤 월 요금 (없으면 null)
+        discount_months: a.discountMonths,                                   // 첫 N개월 할인 요금
         card_monthly_fee_from: best ? Math.max(0, m.min_display_fee - best) : null,
         card_name: card ? (card.card_name.includes(card.card_issuer) ? card.card_name : `${card.card_issuer} ${card.card_name}`) : null,
         free_months_up_to: m.max_free_months || 0,
