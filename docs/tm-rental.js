@@ -809,6 +809,8 @@
     var tiers = RT.cards[idx].tiers || [];
     var ti = tiers.findIndex(function (t) { return x.card.tier && t.min_spend === x.card.tier.min_spend; });
     RT.card = { idx: idx, tier: ti >= 0 ? ti : 0 };
+    var pm = $('rt-f-payment_method');   // 카드 할인은 카드 자동이체일 때만
+    if (pm && [].some.call(pm.options, function (op) { return op.value === '카드'; })) { pm.value = '카드'; applyVisibility(); }
     renderCardPick(RT.offer); quote(RT.offer);
   }
 
