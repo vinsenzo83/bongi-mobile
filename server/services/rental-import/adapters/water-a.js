@@ -1,6 +1,7 @@
 /**
  * 정수기 파일 어댑터 A — 코웨이 · 코웨이프로모션 · 쿠쿠 · 쿠쿠타사보상 · 청호
  */
+import fs from 'fs';
 import {
   clean, hasVal, toWon, toMonths, sheetBase, halfPhases, forwardFill,
   findHeaderRow, colMap, makeOffer, conditionKey,
@@ -271,6 +272,10 @@ const cuckooTradeIn = {
 // 청호 규정 알파벳 — 시트 상단 '특이사항' 원문
 //   S규정(신규) · P규정(패키지) · J규정(재렌탈, 타사보상 = 소유권만기 고객) · O,N,H규정(특별 할인렌탈료)
 //   A·Z 는 시트에 설명이 없어 '규정 코드'로만 보여준다
+const CHUNGHO_HALF_RULES = JSON.parse(fs.readFileSync(new URL('../data/chungho-half-rules.json', import.meta.url), 'utf8'));
+const CHUNGHO_HALF = CHUNGHO_HALF_RULES.rules;
+const CHUNGHO_HALF_AS_OF = CHUNGHO_HALF_RULES.collected_at;
+
 const CHUNGHO_RULES = {
   S: { label: '신규', type: 'normal' },
   P: { label: '패키지', type: 'package' },
@@ -319,6 +324,17 @@ const chungho = {
       if (p1) { labels.push(p1); tags.push(p1); if (offerType === 'normal') offerType = 'promo'; }
       if (p2) { labels.push(p2); offerType = 'half'; }
       const obligation = toMonths(row[c.obligation]);
+      // 시트에는 반값 개월이 없다 → 청호 공식몰 렌탈규칙표(zCode|RULE_CODE)로 채운다. 요금은 공식 반값요금 × 2 가 시트 월요금과 같을 때만 쓴다.
+      let phases = [];
+      let halfNote = p2 ? '반값 적용 개월수 시트에 없음 — 정책 공지 확인' : null;
+      if (p2) {
+        const hit = CHUNGHO_HALF[`${code}|${rule}`];
+        if (hit?.months) {
+          halfNote = `반값 ${hit.months}개월(1~${hit.months}회차) — 청호 공식몰 렌탈규칙 ${CHUNGHO_HALF_AS_OF} 기준`;
+          if (hit.fee && hit.fee * 2 === fee) phases = [{ from: 1, to: hit.months, fee: hit.fee }];
+          else { labels.push(`반값 ${hit.months}개월`); halfNote += ' · 반값 월 요금은 시트값과 달라 미반영'; }
+        }
+      }
       offers.push(makeOffer({
         supplier: '청호', brand: '청호나이스', category_raw: row[c.category], product_name: row[c.product],
         model_code: row[c.model] || null, model_key: clean(row[c.model]) ? undefined : code,
@@ -326,9 +342,9 @@ const chungho = {
         contract_months: obligation, obligation_months: obligation, ownership_months: toMonths(row[c.ownership]),
         care_type: careType, care_label: row[c.care], cycle_months: cycle || null,
         offer_type: offerType, offer_tags: tags, offer_label: labels.filter(Boolean).join(' · ') || null,
-        monthly_fee: fee, price_phases: [],
+        monthly_fee: fee, price_phases: phases,
         rebate: toWon(row[c.rebate]), rebate_basis: 'amount', rebate_detail: { total: toWon(row[c.rebate]), rule },
-        notes: p2 ? '반값 적용 개월수 시트에 없음 — 정책 공지 확인' : null,
+        notes: halfNote,
         source: { sheet: ctx.sheetName, row: r + 1 },
       }));
     }
