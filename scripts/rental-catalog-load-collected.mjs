@@ -20,7 +20,18 @@ const db = mk(envFile); const st = mk(storageEnvFile);
 const commit = process.argv.includes('--commit');
 console.log(`DB ${db.host} · 이미지 저장소 ${st.host}${commit ? '' : ' (미리보기)'}`);
 const BUCKET = 'product-images';
-const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif' };
+const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.jfif': 'image/jpeg', '.avif': 'image/avif', '.bmp': 'image/bmp', '.svg': 'image/svg+xml' };
+// 확장자가 없거나 낯선 파일은 헤더(매직 바이트)로 형식을 가린다 — 스토리지가 application/octet-stream 을 거부한다
+function sniffMime(file) {
+  const b = fs.readFileSync(file, { encoding: null }).subarray(0, 16);
+  if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
+  if (b[0] === 0x89 && b[1] === 0x50) return 'image/png';
+  if (b.subarray(0, 4).toString('ascii') === 'RIFF' && b.subarray(8, 12).toString('ascii') === 'WEBP') return 'image/webp';
+  if (b.subarray(0, 3).toString('ascii') === 'GIF') return 'image/gif';
+  if (b.subarray(4, 12).toString('ascii').includes('ftyp')) return 'image/avif';
+  if (b.subarray(0, 5).toString('ascii').startsWith('<svg') || b.subarray(0, 5).toString('ascii').startsWith('<?xml')) return 'image/svg+xml';
+  return null;
+}
 const GENERIC = /소개합니다|확인해\s*보세요|다양한 혜택|추천 상품부터/;
 
 async function retry(fn) { for (let k = 1; ; k++) { try { return await fn(); } catch (e) { if (k >= 3) throw e; await new Promise((r) => setTimeout(r, 1500 * k)); } } }
@@ -70,7 +81,17 @@ for (const sup of suppliers) {
       p.imgPath = small; ext = '.jpg';
     }
     const key = `rental-catalog/${sup}/${path.basename(p.imgPath).replace(/[^A-Za-z0-9._-]/g, '_')}`;
-    if (!process.argv.includes('--no-upload')) await st.sb.storage.from(BUCKET).upload(key, fs.readFileSync(p.imgPath), { contentType: MIME[ext] || 'application/octet-stream', upsert: true, cacheControl: '31536000' }).then(({ error }) => { if (error) throw error; });
+    let mime = MIME[ext] || sniffMime(p.imgPath);
+    if (!mime) { console.log('  건너뜀(이미지 형식 불명):', p.imgPath); return; }
+    // 버킷이 받지 않는 형식(avif 등)은 JPEG 로 변환해서 올린다
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(mime)) {
+      fs.mkdirSync(path.join(os.tmpdir(), 'rc-conv', sup), { recursive: true });
+      const conv = path.join(os.tmpdir(), 'rc-conv', sup, `${path.basename(p.imgPath).replace(/\.[^.]+$/, '')}.jpg`);
+      try { execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '85', p.imgPath, '--out', conv], { stdio: 'ignore' }); }
+      catch { console.log('  건너뜀(변환 실패):', p.imgPath); return; }
+      p.imgPath = conv; ext = '.jpg'; mime = 'image/jpeg';
+    }
+    if (!process.argv.includes('--no-upload')) await st.sb.storage.from(BUCKET).upload(key, fs.readFileSync(p.imgPath), { contentType: mime, upsert: true, cacheControl: '31536000' }).then(({ error }) => { if (error) throw error; });
     p.image_url = st.sb.storage.from(BUCKET).getPublicUrl(key).data.publicUrl;
   });
   await inParallel(plan, async (p) => {
