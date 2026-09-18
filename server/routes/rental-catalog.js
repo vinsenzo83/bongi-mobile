@@ -392,7 +392,7 @@ function agentOffer(o) {
   const { total_fee, ...rest } = o;
   return { ...rest, lump_price: o.offer_type === 'purchase' ? total_fee ?? null : null };
 }
-const AGENT_OFFER_COLS = 'id, ticket_number, model_id, supplier_id, variant_code, contract_months, obligation_months, ownership_months, care_type, care_label, cycle_months, offer_type, offer_tags, offer_label, monthly_fee, price_phases, display_fee, prepay_amount, total_fee, guide_payout, max_payout, free_months, status, notes, valid_from, valid_to';
+const AGENT_OFFER_COLS = 'id, ticket_number, model_id, supplier_id, variant_code, contract_months, obligation_months, ownership_months, care_type, care_label, cycle_months, offer_type, offer_tags, offer_label, color_name, monthly_fee, price_phases, display_fee, prepay_amount, total_fee, guide_payout, max_payout, free_months, status, notes, valid_from, valid_to';
 
 // 티켓번호로 조건 바로 찾기 (고객이 불러주는 번호)
 router.get('/agent/tickets/:ticket', ...agent, async (req, res) => {

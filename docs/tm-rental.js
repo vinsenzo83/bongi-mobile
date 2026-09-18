@@ -188,10 +188,16 @@
 
   // ─── 2. 조건 선택 (축별 칩 + 남은 조건 표) ───
   var AXES = [
+    { key: 'color', label: '색상', get: function (o) { return o.color_name || '색상 표기 없음'; } },
     { key: 'type', label: '할인유형', get: typeText },
     { key: 'contract', label: '약정', get: contractText },
     { key: 'care', label: '관리', get: careText },
-    { key: 'variant', label: '세부', get: function (o) { return o.variant_code || '기본'; } },
+    { key: 'variant', label: '세부', get: function (o) {
+      var v = o.variant_code || '';
+      // 색상이 따로 있으면 세부에서 색상 SKU 코드는 뺀다 (청호 Z10605-A0362 → A0362)
+      if (o.color_name && v.indexOf('-') > 0) v = v.slice(v.indexOf('-') + 1);
+      return v || '기본';
+    } },
   ];
   function axisValues(o) { var v = {}; AXES.forEach(function (a) { v[a.key] = a.get(o); }); return v; }
   // 조건 하나를 고를 때: 세부코드는 앞 세 축만으로 조건이 갈리지 않을 때만 고정한다
@@ -214,9 +220,13 @@
       var core = RT.offers.filter(function (o) { return AXES.slice(0, 3).every(function (a) { return !RT.pick[a.key] || a.get(o) === RT.pick[a.key]; }); });
       if (core.length <= 1) delete RT.pick.variant;
     }
+    var allColors = [];
+    RT.offers.forEach(function (o) { var c = o.color_name || '색상 표기 없음'; if (allColors.indexOf(c) < 0) allColors.push(c); });
     AXES.forEach(function (a) {
       var vals = [];
       RT.offers.forEach(function (o) { if (matches(o, a.key)) { var v = a.get(o); if (vals.indexOf(v) < 0) vals.push(v); } });
+      // 색상이 한 종류뿐이면 칩을 띄우지 않는다 (고를 게 없다)
+      if (a.key === 'color' && allColors.length <= 1) { delete RT.pick.color; return; }
       // 세부 칩은 할인유형·약정·관리를 다 고른 뒤에도 조건이 갈릴 때만 보인다
       if (a.key === 'variant' && (vals.length <= 1 || AXES.slice(0, 3).some(function (x) { return !RT.pick[x.key]; }))) {
         if (RT.pick.variant && vals.indexOf(RT.pick.variant) < 0) delete RT.pick.variant;
@@ -234,9 +244,9 @@
     var left = RT.offers.filter(function (o) { return matches(o); });
     RT.offer = left.length === 1 ? left[0] : null;
     var tbl = $('rt-offer-table');
-    tbl.innerHTML = left.length > 1 ? '<table class="rt-table"><thead><tr><th>티켓</th><th>유형</th><th>약정</th><th>관리</th><th>월요금</th><th>가이드</th></tr></thead><tbody>' +
+    tbl.innerHTML = left.length > 1 ? '<table class="rt-table"><thead><tr><th>티켓</th><th>색상</th><th>유형</th><th>약정</th><th>관리</th><th>월요금</th><th>가이드</th></tr></thead><tbody>' +
       left.slice(0, 80).map(function (o) {
-        return '<tr data-oid="' + esc(o.id) + '"><td>' + esc(o.ticket_number) + '</td><td>' + esc(typeText(o)) + '</td><td>' + esc(contractText(o)) + '</td><td>' + esc(careText(o)) + '</td><td>' + esc(phasesText(o)) + '</td><td>' + (o.guide_payout != null ? '✓' : '<span style="color:#dc2626">미설정</span>') + '</td></tr>';
+        return '<tr data-oid="' + esc(o.id) + '"><td>' + esc(o.ticket_number) + '</td><td>' + esc(o.color_name || '—') + '</td><td>' + esc(typeText(o)) + '</td><td>' + esc(contractText(o)) + '</td><td>' + esc(careText(o)) + '</td><td>' + esc(phasesText(o)) + '</td><td>' + (o.guide_payout != null ? '✓' : '<span style="color:#dc2626">미설정</span>') + '</td></tr>';
       }).join('') + '</tbody></table>' + (left.length > 80 ? '<div class="rt-empty">' + left.length + '개 중 80개 — 위에서 조건을 더 고르세요</div>' : '')
       : '';
     renderSelected();
@@ -257,7 +267,7 @@
       payout(null); quote(null); renderForm(null);
       return;
     }
-    box.innerHTML = '<div class="rt-picked"><b>' + esc(o.ticket_number) + '</b> · ' + esc(typeText(o)) + ' · ' + esc(contractText(o)) + ' · ' + esc(careText(o)) +
+    box.innerHTML = '<div class="rt-picked"><b>' + esc(o.ticket_number) + '</b> · ' + (o.color_name ? esc(o.color_name) + ' · ' : '') + esc(typeText(o)) + ' · ' + esc(contractText(o)) + ' · ' + esc(careText(o)) +
       '<div class="rt-picked-fee">' + esc(phasesText(o)) + '</div>' +
       (o.offer_label ? '<div class="rt-note">프로모션: ' + esc(o.offer_label) + '</div>' : '') +
       (o.notes ? '<div class="rt-note">비고: ' + esc(o.notes) + '</div>' : '') +
@@ -338,7 +348,7 @@
     return '<div class="rt-q" style="padding:4px 2px">' +
       '<div style="font-size:10px;color:#fcd34d;font-weight:800;letter-spacing:.05em;margin-bottom:6px">🧊 렌탈 · ' + esc(m.supplier_name || '') + ' · ' + esc(o.ticket_number) + '</div>' +
       '<div class="calc-line"><span class="l">' + esc(m.product_name || m.model_code || '') + '</span><span class="v" style="font-size:11px">' + esc(codeIfDiff(m)) + '</span></div>' +
-      '<div class="calc-line wrap"><span class="l">조건</span><span class="v" style="font-size:11px">' + esc(contractText(o)) + ' · ' + esc(careText(o)) + ' · ' + esc(typeText(o)) + '</span></div>' +
+      '<div class="calc-line wrap"><span class="l">조건</span><span class="v" style="font-size:11px">' + (o.color_name ? esc(o.color_name) + ' · ' : '') + esc(contractText(o)) + ' · ' + esc(careText(o)) + ' · ' + esc(typeText(o)) + '</span></div>' +
       (o.price_phases && o.price_phases.length
         ? o.price_phases.map(function (p) { return '<div class="calc-line discount"><span class="l">' + p.from + '~' + p.to + '개월</span><span class="v">' + (p.fee === 0 ? '면제' : won(p.fee)) + '</span></div>'; }).join('') +
           '<div class="calc-line"><span class="l">이후</span><span class="v">' + won(o.monthly_fee) + '</span></div>'
@@ -417,7 +427,7 @@
   // 고객에게 보내는 확정 견적서 (문자·카톡 붙여넣기용) — 고객 1명에게 보내는 상담 확정 내용이라 지급액을 적는다. MAX 는 절대 넣지 않는다.
   function estimateText(o, pay) {
     var m = RT.model || {}; var sel = cardSel();
-    var lines = ['[봉이 렌탈 확정 견적서]', '상품: ' + (m.product_name || m.model_code || '') + (m.supplier_name ? ' (' + m.supplier_name + ')' : ''), '조건: ' + contractText(o) + ' · ' + careText(o) + ' · ' + typeText(o)];
+    var lines = ['[봉이 렌탈 확정 견적서]', '상품: ' + (m.product_name || m.model_code || '') + (o.color_name ? ' / ' + o.color_name : '') + (m.supplier_name ? ' (' + m.supplier_name + ')' : ''), '조건: ' + contractText(o) + ' · ' + careText(o) + ' · ' + typeText(o)];
     if (o.price_phases && o.price_phases.length) {
       o.price_phases.forEach(function (p) { lines.push('월 렌탈료 ' + p.from + '~' + p.to + '개월: ' + won(p.fee)); });
       lines.push('월 렌탈료 이후: ' + won(o.monthly_fee));
