@@ -15,10 +15,19 @@ const QA_NAME = 'QA렌탈테스트';
 
 let pass = 0; const fails = [];
 const check = (name, ok, info = '') => { if (ok) pass++; else fails.push(`${name} ${info}`); if (!ok) console.log('❌', name, info); };
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 async function call(method, path, role, body) {
-  const r = await fetch(BASE + path, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${T[role]}` }, body: body ? JSON.stringify(body) : undefined });
-  let j = null; try { j = await r.json(); } catch { /* 본문 없음 */ }
-  return { s: r.status, j };
+  // 이 스위트는 요청 수가 분당 100회 제한(apiLimiter)을 넘는다 → 429 면 창이 리셋될 때까지 기다렸다 재시도
+  for (let attempt = 0; ; attempt++) {
+    const r = await fetch(BASE + path, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${T[role]}` }, body: body ? JSON.stringify(body) : undefined });
+    if (r.status === 429 && attempt < 3) {
+      const reset = Number(r.headers.get('ratelimit-reset')) || 60;
+      await wait((reset + 1) * 1000);
+      continue;
+    }
+    let j = null; try { j = await r.json(); } catch { /* 본문 없음 */ }
+    return { s: r.status, j };
+  }
 }
 const visible = (x, input) => {
   const c = x.show_if; if (!c) return true;
