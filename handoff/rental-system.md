@@ -47,7 +47,12 @@
 | `rental_margin_scenarios` | 마진 설계 저장본 | `params`, `summary`, `engine_version` |
 | `rental_engine_settings` | 엔진 정책(1행) | `policy`(jsonb), `auto_apply`, `cycle` |
 | `rental_payout_runs` | 엔진 실행 기록 | `trigger`, `stats`, `summary`, `changed`, `status` |
-| `rental_cat_model_summary` (view) | 모델+집계 | `offer_count`, `min_display_fee`, `max_free_months` |
+| `rental_cat_model_summary` (view) | 모델+공급사명 | 집계 컬럼은 `rental_cat_models` 에 상주 — 아래 참고 |
+
+**모델 집계 컬럼 (2026-09-21)** — `offer_count`, `payout_set_count`, `rebate_changed_count`, `min_display_fee`, `max_free_months` 는 `rental_cat_models` 의 실제 컬럼이다.
+조건이 바뀌면 `rental_cat_offers` 의 statement 트리거(`rental_cat_offers_counters_*`)가 `rental_cat_sync_model_counters(uuid[])` 를 호출해 해당 모델만 재계산한다(대량 적재·엔진 일괄 갱신도 statement 당 1회).
+뷰가 매 조회마다 8천 모델 × 5.6만 조건을 집계하던 구조라 필터 없는 목록이 8s statement_timeout 을 넘어 500 이 나던 문제를 없앴다(1,335ms → 96ms). 마이그레이션: `server/db/2026-09-21-rental-model-counters.sql`.
+직접 UPDATE 로 집계 컬럼을 건드리지 말 것 — 트리거가 재계산하므로 덮어써도 되돌아간다.
 
 ### rental_cat_offers 주요 컬럼
 
