@@ -1,0 +1,21 @@
+import fs from 'fs'; import dotenv from 'dotenv'; import { createClient } from '@supabase/supabase-js';
+const e = dotenv.parse(fs.readFileSync('.env')); const sb = createClient(e.SUPABASE_URL, e.SUPABASE_SERVICE_ROLE_KEY || e.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+let rows = []; for (let i = 0; ; i += 1000) { const { data } = await sb.from('rental_cat_offers').select('ticket_number, supplier_id, offer_type, offer_label, contract_months, care_type, care_label, display_fee, monthly_fee, price_phases, rebate, guide_payout, notes, source, model_id').eq('status', 'active').eq('crm_enabled', true).order('id').range(i, i + 999).throwOnError(); rows = rows.concat(data); if (data.length < 1000) break; }
+const g = (a, k) => a.reduce((m, o) => ((m[k(o)] = (m[k(o)] || 0) + 1), m), {});
+const out = {};
+out['반값인데 개월 없음'] = rows.filter((o) => (o.offer_type === 'half' || /반값/.test(o.offer_label || '')) && !(o.price_phases || []).length);
+out['리베이트·가이드 없음'] = rows.filter((o) => !(o.rebate > 0));
+out['월요금·일시불가 모두 없음'] = rows.filter((o) => !(o.display_fee > 0) && o.offer_type !== 'purchase');
+out['약정 없음(일시불 제외)'] = rows.filter((o) => !o.contract_months && o.offer_type !== 'purchase' && !/약정없음/.test((o.offer_label || '') + (o.notes || '')));
+out['관리방식 없음(정수기·비데·청정기)'] = [];
+const { data: mods } = await sb.from('rental_cat_models').select('id, category');
+const cat = new Map(mods.map((m) => [m.id, m.category]));
+out['관리방식 없음(정수기·비데·청정기)'] = rows.filter((o) => !o.care_type && !o.care_label && ['water-purifier', 'bidet', 'air-purifier', 'softener'].includes(cat.get(o.model_id)));
+for (const [k, v] of Object.entries(out)) console.log(k, v.length, JSON.stringify(g(v, (o) => o.supplier_id)));
+console.log('\n예시(리베이트 없음)', JSON.stringify(out['리베이트·가이드 없음'].slice(0, 5).map((o) => [o.ticket_number, o.supplier_id, o.offer_type, (o.notes || '').slice(0, 60), o.source?.sheet, o.source?.row])));
+console.log('예시(관리없음)', JSON.stringify(out['관리방식 없음(정수기·비데·청정기)'].slice(0, 5).map((o) => [o.ticket_number, o.supplier_id, (o.notes || '').slice(0, 50), o.source?.sheet])));
+const { data: cards } = await sb.from('rental_cat_cards').select('supplier_id, card_name, tiers, max_discount').eq('is_active', true);
+const supWith = new Set(cards.map((c) => c.supplier_id));
+console.log('\n카드 없는 렌탈사', [...new Set(rows.map((o) => o.supplier_id))].filter((s) => !supWith.has(s)).join(','));
+console.log('구간 없는 카드', cards.filter((c) => !(c.tiers || []).some((t) => t.total > 0)).length);
+process.exit(0);

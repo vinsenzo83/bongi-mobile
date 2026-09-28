@@ -1,0 +1,15 @@
+import fs from 'fs'; import dotenv from 'dotenv'; import { createClient } from '@supabase/supabase-js';
+const e = dotenv.parse(fs.readFileSync('.env')); const sb = createClient(e.SUPABASE_URL, e.SUPABASE_SERVICE_ROLE_KEY || e.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+const all = async (t, cols, f) => { let out = []; for (let i = 0; ; i += 1000) { const { data } = await f(sb.from(t).select(cols)).order('id').range(i, i + 999).throwOnError(); out = out.concat(data); if (data.length < 1000) break; } return out; };
+const offers = await all('rental_cat_offers', 'supplier_id, offer_type, offer_tags, display_fee, monthly_fee, prepay_amount, contract_months, care_type, care_label, model_id', (q) => q.eq('status', 'active').eq('crm_enabled', true));
+const g = (arr, key) => arr.reduce((a, o) => { const k = key(o); a[k] = (a[k] || 0) + 1; return a; }, {});
+const zero = offers.filter((o) => !(o.display_fee > 0));
+console.log('월요금0 유형', JSON.stringify(g(zero, (o) => `${o.supplier_id}/${o.offer_type}/${o.prepay_amount ? '선납' : ''}/${(o.offer_tags || []).includes('약정없음') ? '약정없음' : ''}`)));
+const noMonths = offers.filter((o) => !o.contract_months);
+console.log('약정없음 유형', JSON.stringify(g(noMonths, (o) => `${o.supplier_id}/${o.offer_type}/${(o.offer_tags || []).join('|')}`)));
+const noCare = offers.filter((o) => !o.care_type);
+console.log('관리없음 렌탈사', JSON.stringify(g(noCare, (o) => `${o.supplier_id}${o.care_label ? '(라벨있음)' : ''}`)));
+console.log('예 zero', JSON.stringify(zero.slice(0, 3)));
+const { data: cards } = await sb.from('rental_cat_cards').select('supplier_id, card_issuer, card_name, tiers, max_discount, notes').eq('is_active', true);
+console.log('구간없는 카드', JSON.stringify(cards.filter((c) => !(c.tiers || []).some((t) => t.total > 0)).map((c) => [c.supplier_id, c.card_name, c.max_discount, (c.notes || '').slice(0, 40)])));
+process.exit(0);

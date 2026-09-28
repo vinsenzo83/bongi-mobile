@@ -23,7 +23,8 @@ const TYPE_LABEL = { normal: '일반', package: '패키지', bundle: '결합', t
  *
  * 주의: LG 공식몰 스펙표의 '색상' 칸은 제품 색이 아니라 색상 심도(10bit (8 bit + FRC)) 인 경우가 있다 → 걸러낸다.
  */
-const NOT_A_COLOR = /\d\s*bit|frc|hz|nit|억\s*(컬러|색)|색상수|dci|srgb|ntsc|%|10\.7|16\.7/i;
+// 색상이 아닌 값 — 색상 심도(10bit), 그리고 부위별로 나눠 적은 값("프레임 : 차콜그레이 헤드 : …")
+const NOT_A_COLOR = /\d\s*bit|frc|hz|nit|억\s*(컬러|색)|색상수|dci|srgb|ntsc|%|10\.7|16\.7|[:：]|프레임|헤드|패널/i;
 export function colorOptions(model) {
   const raw = model?.specs?.specifications?.color;
   if (raw && typeof raw === 'string') {

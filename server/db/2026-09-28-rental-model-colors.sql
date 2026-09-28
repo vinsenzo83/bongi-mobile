@@ -14,3 +14,13 @@ comment on column rental_cat_models.color_names is '이 모델에서 고를 수 
 comment on column rental_cat_models.color_source is 'color_names 를 어디서 얻었는지 — 근거 없는 값 금지';
 
 create index if not exists rental_cat_models_color_idx on rental_cat_models using gin (color_names);
+
+-- 뷰 재생성 — 반드시 해야 한다.
+-- `create view … select m.*` 는 생성 시점에 컬럼 목록이 고정된다(PostgreSQL 이 * 를 즉시 전개).
+-- 컬럼을 추가하고 뷰를 그대로 두면 새 컬럼이 API 에 안 나온다 — 실제로 color_names 가 상담 화면에 안 보였다.
+drop view if exists rental_cat_model_summary;
+create view rental_cat_model_summary with (security_invoker = true) as
+select m.*, s.name as supplier_name
+from rental_cat_models m
+join rental_cat_suppliers s on s.id = m.supplier_id;
+grant all on rental_cat_model_summary to anon, authenticated, service_role;

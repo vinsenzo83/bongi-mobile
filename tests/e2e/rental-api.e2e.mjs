@@ -110,6 +110,12 @@ try {
   // ── 4. 계산기 → 렌탈 계약 등록
   const phone = `010-0000-${String(Date.now()).slice(-4)}`;
   const app = { holder_type: '개인', birth_date: '1990-01-01', payment_method: '카드', billing_day: '10', consent_privacy: true, consent_third_party: true, consent_credit: true };
+  // 색상이 둘 이상인 모델은 접수 폼에 product_color 필수 필드가 생긴다 → 폼 명세에서 읽어 채운다
+  {
+    const fr = await call('GET', `/api/rental-catalog/agent/offers/${offer.id}/form`, 'agent');
+    const cf = (fr.j?.form?.sections || []).flatMap((sec) => sec.fields).find((f) => f.key === 'product_color');
+    if (cf?.options?.length) app.product_color = cf.options[0];
+  }
   const base = { sale_kind: 'rental', rental_offer_id: offer.id, customer_name: 'QA렌탈테스트', customer_phone: phone, customer_address: 'QA 주소', customer_address_detail: '101호', notes: 'QA', rental_application: app };
   check('지급액 가이드 미만 400', (await call('POST', '/api/incentive/sales', 'agent', { ...base, actual_payout: offer.guide_payout - 1000 })).s === 400);
   check('지급액 MAX 초과 400', (await call('POST', '/api/incentive/sales', 'agent', { ...base, actual_payout: offer.max_payout + 1000 })).s === 400);
