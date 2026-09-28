@@ -43,9 +43,22 @@ test('색상이 둘 이상이면 접수 폼에 필수 선택 필드가 생긴다
   assert.deepEqual(f.options, ['화이트', '블랙']);
 });
 
-test('색상이 하나면 고를 게 없으므로 폼에 넣지 않는다 (표기만)', () => {
+test('색상이 하나면 그 색으로 고정해 폼에 세운다 (접수 데이터에 남아야 한다)', () => {
   const form = buildApplicationForm({ supplier, offer: { offer_type: 'normal' }, model: spec('화이트') });
-  assert.equal(sections(form).includes('product'), false);
+  const f = colorField(form);
+  assert.deepEqual(f.options, ['화이트']);
+  assert.equal(f.required, true);
+  assert.match(f.hint, /색상 1종/);
+});
+
+test('색상 정보가 아예 없으면 직접 입력칸을 준다 (상담사가 색을 남길 방법이 있어야 한다)', () => {
+  const form = buildApplicationForm({ supplier, offer: { offer_type: 'normal' }, model: {} });
+  const f = colorField(form);
+  assert.equal(f.key, 'product_color');
+  assert.equal(f.type, 'text');
+  assert.equal(f.required, false);
+  const sec = form.sections.find((s) => s.id === 'product');
+  assert.match(sec.notice, /공식 색상 정보가 없습니다/);
 });
 
 test('티켓이 색상을 확정한 조건(청호)은 폼에서 다시 묻지 않는다', () => {

@@ -554,7 +554,10 @@
     var hint = f.hint ? '<span class="rt-hint">' + esc(f.hint) + '</span>' : '';
     var input;
     if (f.type === 'select') {
-      input = '<select id="' + id + '"><option value="">— 선택 —</option>' + (f.options || []).map(function (op) { return '<option>' + esc(op) + '</option>'; }).join('') + '</select>';
+      // 선택지가 하나면 고를 게 없다 → 빈 항목 없이 그 값이 바로 선택되게 (접수 데이터에 남도록)
+      var one = (f.options || []).length === 1;
+      input = '<select id="' + id + '">' + (one ? '' : '<option value="">— 선택 —</option>') +
+        (f.options || []).map(function (op) { return '<option>' + esc(op) + '</option>'; }).join('') + '</select>';
     } else if (f.type === 'checkbox') {
       return '<label class="rt-field rt-check" data-key="' + f.key + '"><input type="checkbox" id="' + id + '"' + (f.disabled ? ' disabled' : '') + '> ' + esc(f.label) + req + hint + '</label>';
     } else if (f.type === 'textarea') {

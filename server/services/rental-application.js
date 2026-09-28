@@ -136,12 +136,24 @@ export function buildApplicationForm({ supplier, offer, model, cards = [] }) {
     });
   }
 
-  if (colors.length > 1) {
-    sections.push({
-      id: 'product', title: '상품',
-      fields: [{ key: 'product_color', label: '색상', type: 'select', required: true, options: colors,
-        hint: '색상에 따라 요금·지급액은 달라지지 않습니다' }],
-    });
+  // 색상은 상담사가 접수하려면 반드시 알아야 하는 값이라 세 경우를 모두 폼에 세운다.
+  //   2개 이상 → 필수 선택 · 1개 → 그 색으로 고정(자동 선택되어 접수 데이터에 남는다)
+  //   모름     → 자유 입력(선택) + 공식 정보가 없다는 안내. 값이 쌓이면 실제 판매 색상 자료가 된다.
+  if (!offer?.color_name) {
+    if (colors.length) {
+      sections.push({
+        id: 'product', title: '상품',
+        fields: [{ key: 'product_color', label: '색상', type: 'select', required: true, options: colors,
+          hint: colors.length === 1 ? '이 모델은 색상 1종 — 요금·지급액과 무관' : '색상에 따라 요금·지급액은 달라지지 않습니다' }],
+      });
+    } else {
+      sections.push({
+        id: 'product', title: '상품',
+        notice: '이 모델은 공식 색상 정보가 없습니다 — 고객과 확인한 색상을 적어주세요(렌탈사 발주에 필요).',
+        fields: [{ key: 'product_color', label: '색상(직접 입력)', type: 'text', required: false,
+          hint: '예: 화이트 · 실버. 모르면 비워두고 계약처리에서 확인' }],
+      });
+    }
   }
 
   sections.push({
