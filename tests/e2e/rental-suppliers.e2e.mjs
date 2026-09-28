@@ -86,7 +86,8 @@ try {
       check(`${tag} 폼 200`, fr.s === 200 && fr.j?.form?.sections?.length, `${fr.s}`);
       if (fr.s !== 200) continue;
       const form = fr.j.form;
-      const holderField = form.sections[0].fields.find((f) => f.key === 'holder_type');
+      const field = (key) => form.sections.flatMap((s) => s.fields).find((f) => f.key === key);   // 섹션 순서에 의존하지 않는다
+      const holderField = field('holder_type');
       const payField = form.sections.find((s) => s.id === 'payment')?.fields.find((f) => f.key === 'payment_method');
       const dayField = form.sections.find((s) => s.id === 'payment')?.fields.find((f) => f.key === 'billing_day');
       const row = {

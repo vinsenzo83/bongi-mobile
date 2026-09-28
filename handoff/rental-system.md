@@ -67,6 +67,7 @@ monthly_fee      할인 끝난 뒤 정상 월 요금
 price_phases     [{from,to,fee}] 반값·면제 구간
 display_fee      1개월차 대표 요금 (화면 "월 렌탈료")
 prepay_amount    선납금        total_fee  일시불 가격/총액
+color_name       이 조건이 특정 색상 SKU 일 때만 (청호 zCode) — §색상 참고
 rebate…          관리자 전용 (rebate, rebate_basis, rebate_rate, rebate_detail, rebate_changed)
 guide_payout     가이드 (만원 단위)    max_payout  MAX (천원 단위)
 free_months      generated: floor(guide_payout / display_fee)
@@ -76,6 +77,32 @@ status           active | paused | discontinued        crm_enabled  상담 노�
 계약 쪽(`incentive_sales`)에 남는 렌탈 컬럼: `sale_kind='rental'`, `rental_offer_id`, `rental_supplier_id`,
 `rental_ticket_number`, `rental_snapshot`(모델·조건 박제), `rental_application`(가입정보), `rental_process`(계약처리 체크),
 `guide_payout_snapshot`, `max_payout_snapshot`, `actual_payout`, `rebate_snapshot`(관리자 전용).
+
+---
+
+### 색상 (2026-09-28)
+
+**색상은 요금·지급액을 바꾸지 않는다.** 라이브의 색상 그룹 409개(조건이 같고 색만 다른 묶음)를 전수 대조해
+월 요금·기준 요금·리베이트가 색상별로 갈리는 건이 **0건**임을 확인했다. 그래서 색상은 조건(티켓)을 고르는 축이 아니라
+**접수할 때 고르는 옵션**으로 다룬다. 출처가 셋이고, 서버 `colorOptions(model)` 이 이 순서로 본다.
+
+| 출처 | 어디에 | 성격 |
+|---|---|---|
+| 1. 티켓이 색상 확정 | `rental_cat_offers.color_name` | 청호는 색상마다 zCode(=티켓)가 다르다. 조건을 고르면 색도 정해지므로 접수 폼에서 다시 묻지 않는다 |
+| 2. 공식몰 스펙 | `specs.specifications.color` | 코웨이·LG 등 수집분. 쉼표로 나눠 선택지가 된다 |
+| 3. 상품명·모델코드 추출 | `rental_cat_models.color_names` + `color_source` | 빌리고 엑셀 상품명에 박힌 색(`…19평_화이트`, `CWSM-830R_메탈`) |
+
+접수 폼: 색상이 **둘 이상일 때만** `product_color` 필수 select 가 '상품' 섹션에 생긴다(계약자 다음, 설치 앞).
+하나뿐이면 고를 게 없으니 표기만 한다(견적·견적서·quote_summary).
+
+**함정 두 개 — 단위 테스트 `tests/unit/rental-color.test.mjs` 로 고정했다.**
+- LG 공식몰 스펙표의 '색상' 칸이 **색상 심도**인 경우가 있다: `10bit (8 bit + FRC)` (전자칠판 4모델) → 걸러낸다.
+- 상품명에서 뽑을 때 `올레드OLED` 의 '레드', `블랙홀프로` 의 '블랙' 같은 오탐이 난다 → 토큰 차단어 필요.
+- 부위별로 길게 적힌 값(`프레임 : 차콜그레이 헤드(볼륨) : …`)은 쪼개면 엉뚱해지므로 쓰지 않는다.
+
+**커버리지(판매중 7,831 모델 기준)**: 티켓색상 249 + 공식몰스펙 2,127 + 상품명추출 1,456 = **3,832 (49%)**.
+나머지 약 3,999 중 LG헬로비전·LG전자몰 일부만 텍스트로 색상을 공개하고, 렌탈나라·BS-on·삼성·쿠쿠·우성·라셀르·스마트·하이얼은
+상품 페이지에 색상을 **글자로 적지 않는다**(호스트별 표본 4개씩 확인). 색상 견본 이미지만 있는 경우는 텍스트로 잡을 수 없다.
 
 ---
 

@@ -14,6 +14,27 @@ const BIZ = ['개인사업자', '법인사업자'];
 
 const TYPE_LABEL = { normal: '일반', package: '패키지', bundle: '결합', trade_in: '타사보상', half: '반값할인', prepay: '선납', promo: '프로모션', special: '특가', field: '현장', staff: '임직원', purchase: '일시불' };
 
+/**
+ * 모델 스펙에 적힌 색상 목록 → 선택지 배열.
+ * 공식몰 수집분은 `specs.specifications.color` 에 "포슬린 화이트, 샌드 베이지, 모던 블랙" 처럼 들어온다.
+ * 색상은 요금·리베이트를 바꾸지 않는다(라이브 409개 색상 그룹 전수 검증: 요금·리베이트 차이 0건)
+ * → 조건(티켓)을 가르는 축이 아니라 접수 시 고르는 옵션으로 다룬다.
+ * 청호처럼 색상마다 티켓이 따로인 렌탈사는 offer.color_name 이 이미 색상을 확정하므로 여기서 쓰지 않는다.
+ *
+ * 주의: LG 공식몰 스펙표의 '색상' 칸은 제품 색이 아니라 색상 심도(10bit (8 bit + FRC)) 인 경우가 있다 → 걸러낸다.
+ */
+const NOT_A_COLOR = /\d\s*bit|frc|hz|nit|억\s*(컬러|색)|색상수|dci|srgb|ntsc|%|10\.7|16\.7/i;
+export function colorOptions(model) {
+  const raw = model?.specs?.specifications?.color;
+  if (raw && typeof raw === 'string') {
+    const fromSpec = [...new Set(raw.split(/[,/·]|\s\/\s/).map((s) => s.trim())
+      .filter((s) => s && s.length <= 30 && !NOT_A_COLOR.test(s)))];
+    if (fromSpec.length) return fromSpec;
+  }
+  // 공식몰 스펙에 없으면 모델에 적재해 둔 색상(상품명·모델코드에서 뽑은 것) — color_source 에 근거가 남는다
+  return (model?.color_names || []).filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim());
+}
+
 /** 정수기·가전 파일 정책 중 이 조건에 해당하는 것 */
 export function pickPolicy(signupPolicy, fileKind) {
   if (!signupPolicy) return null;
@@ -76,6 +97,10 @@ export function buildApplicationForm({ supplier, offer, model, cards = [] }) {
   const sections = [];
   const bizShow = { field: 'holder_type', in: BIZ.filter((b) => holders.includes(b)) };
 
+  // 색상 — 티켓이 색상을 확정하지 않고(offer.color_name 없음) 스펙에 색상이 둘 이상일 때만 고른다.
+  // 요금·지급액은 색상과 무관하므로 계산에 끼지 않고, 접수·계약처리에 값만 실린다.
+  const colors = offer?.color_name ? [] : colorOptions(model);
+
   sections.push({
     id: 'customer', title: '계약자',
     fields: [
@@ -107,6 +132,14 @@ export function buildApplicationForm({ supplier, offer, model, cards = [] }) {
         { key: 'foreigner_visa', label: '체류자격(비자)', type: 'text', required: has('foreigner_visa') },
         { key: 'foreigner_stay_until', label: '체류 만료일', type: 'date', required: false },
       ],
+    });
+  }
+
+  if (colors.length > 1) {
+    sections.push({
+      id: 'product', title: '상품',
+      fields: [{ key: 'product_color', label: '색상', type: 'select', required: true, options: colors,
+        hint: '색상에 따라 요금·지급액은 달라지지 않습니다' }],
     });
   }
 

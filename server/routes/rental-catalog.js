@@ -28,7 +28,7 @@ import { supabase } from '../db/supabase.js';
 import { authenticateJWT } from '../middleware/auth.js';
 import { parseRentalWorkbook } from '../services/rental-import/index.js';
 import { previewImport, commitImport } from '../services/rental-import/commit.js';
-import { buildApplicationForm } from '../services/rental-application.js';
+import { buildApplicationForm, colorOptions } from '../services/rental-application.js';
 import { CATEGORIES, CATEGORY_LABEL } from '../services/rental-import/core.js';
 import { assist, assistantEnabled } from '../services/rental-assistant.js';
 import { recommend } from '../services/rental-recommend.js';
@@ -404,6 +404,7 @@ router.get('/agent/tickets/:ticket', ...agent, async (req, res) => {
     const { data: model } = await supabase.from('rental_cat_model_summary')
       .select('*').eq('id', offer.model_id).single().throwOnError();
     delete model.rebate_changed_count;
+    model.color_options = colorOptions(model);
     res.json({ offer: agentOffer(offer), model, usable: offer.status === 'active' });
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });
@@ -414,11 +415,14 @@ export async function loadOfferContext(offerId) {
   const { data: offer } = await supabase.from('rental_cat_offers').select(`${AGENT_OFFER_COLS}, source, rebate, crm_enabled`).eq('id', offerId).maybeSingle().throwOnError();
   if (!offer) return null;
   const [{ data: model }, { data: supplier }] = await Promise.all([
-    supabase.from('rental_cat_models').select('id, model_key, model_code, product_name, brand, category, category_raw, image_url, status').eq('id', offer.model_id).single().throwOnError(),
+    supabase.from('rental_cat_models').select('id, model_key, model_code, product_name, brand, category, category_raw, image_url, status, specs, color_names, color_source').eq('id', offer.model_id).single().throwOnError(),
     supabase.from('rental_cat_suppliers').select('id, name, file_kind, signup_policy, signup_policy_as_of').eq('id', offer.supplier_id).single().throwOnError(),
   ]);
   const cards = cardsFor(await activeCards(offer.supplier_id), model);
-  return { offer, model, supplier, cards, form: buildApplicationForm({ supplier, offer, model, cards }) };
+  const form = buildApplicationForm({ supplier, offer, model, cards });
+  const { specs, ...modelOut } = model;                     // 스펙 전문은 폼 응답에 싣지 않는다
+  modelOut.color_options = colorOptions(model);             // 색상 선택지(요금 무관)
+  return { offer, model: modelOut, supplier, cards, form };
 }
 
 // ─── 제휴카드 ───
@@ -543,7 +547,7 @@ router.get('/agent/categories', ...agent, async (req, res) => {
 router.get('/agent/models', ...agent, async (req, res) => {
   try {
     const out = await searchModels({ ...req.query, status: 'active' });
-    out.models = out.models.map(({ rebate_changed_count, ...m }) => m);
+    out.models = out.models.map(({ rebate_changed_count, ...m }) => ({ ...m, color_options: colorOptions(m) }));
     res.json(out);
   } catch (e) { res.status(500).json({ error: errMsg(e) }); }
 });

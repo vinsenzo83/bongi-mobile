@@ -186,6 +186,16 @@
     } catch (e) { $('rt-axes').innerHTML = '<div class="rt-empty">⚠ ' + esc(e.message) + '</div>'; }
   }
 
+  // 색상: 티켓이 색상을 확정한 경우(청호 등) > 접수폼에서 고른 색 > 스펙에 색이 하나뿐이면 그 색
+  //       색상은 요금·지급액을 바꾸지 않는다(가격 축이 아니라 표기·접수 값)
+  function colorText(o) {
+    if (o && o.color_name) return o.color_name;
+    var el = document.getElementById('rt-f-product_color');
+    if (el && el.value) return el.value;
+    var opts = (RT.model && RT.model.color_options) || [];
+    return opts.length === 1 ? opts[0] : '';
+  }
+
   // ─── 2. 조건 선택 (축별 칩 + 남은 조건 표) ───
   var AXES = [
     { key: 'color', label: '색상', get: function (o) { return o.color_name || '색상 표기 없음'; } },
@@ -267,7 +277,7 @@
       payout(null); quote(null); renderForm(null);
       return;
     }
-    box.innerHTML = '<div class="rt-picked"><b>' + esc(o.ticket_number) + '</b> · ' + (o.color_name ? esc(o.color_name) + ' · ' : '') + esc(typeText(o)) + ' · ' + esc(contractText(o)) + ' · ' + esc(careText(o)) +
+    box.innerHTML = '<div class="rt-picked"><b>' + esc(o.ticket_number) + '</b> · ' + (colorText(o) ? esc(colorText(o)) + ' · ' : '') + esc(typeText(o)) + ' · ' + esc(contractText(o)) + ' · ' + esc(careText(o)) +
       '<div class="rt-picked-fee">' + esc(phasesText(o)) + '</div>' +
       (o.offer_label ? '<div class="rt-note">프로모션: ' + esc(o.offer_label) + '</div>' : '') +
       (o.notes ? '<div class="rt-note">비고: ' + esc(o.notes) + '</div>' : '') +
@@ -348,7 +358,7 @@
     return '<div class="rt-q" style="padding:4px 2px">' +
       '<div style="font-size:10px;color:#fcd34d;font-weight:800;letter-spacing:.05em;margin-bottom:6px">🧊 렌탈 · ' + esc(m.supplier_name || '') + ' · ' + esc(o.ticket_number) + '</div>' +
       '<div class="calc-line"><span class="l">' + esc(m.product_name || m.model_code || '') + '</span><span class="v" style="font-size:11px">' + esc(codeIfDiff(m)) + '</span></div>' +
-      '<div class="calc-line wrap"><span class="l">조건</span><span class="v" style="font-size:11px">' + (o.color_name ? esc(o.color_name) + ' · ' : '') + esc(contractText(o)) + ' · ' + esc(careText(o)) + ' · ' + esc(typeText(o)) + '</span></div>' +
+      '<div class="calc-line wrap"><span class="l">조건</span><span class="v" style="font-size:11px">' + (colorText(o) ? esc(colorText(o)) + ' · ' : '') + esc(contractText(o)) + ' · ' + esc(careText(o)) + ' · ' + esc(typeText(o)) + '</span></div>' +
       (o.price_phases && o.price_phases.length
         ? o.price_phases.map(function (p) { return '<div class="calc-line discount"><span class="l">' + p.from + '~' + p.to + '개월</span><span class="v">' + (p.fee === 0 ? '면제' : won(p.fee)) + '</span></div>'; }).join('') +
           '<div class="calc-line"><span class="l">이후</span><span class="v">' + won(o.monthly_fee) + '</span></div>'
@@ -427,7 +437,7 @@
   // 고객에게 보내는 확정 견적서 (문자·카톡 붙여넣기용) — 고객 1명에게 보내는 상담 확정 내용이라 지급액을 적는다. MAX 는 절대 넣지 않는다.
   function estimateText(o, pay) {
     var m = RT.model || {}; var sel = cardSel();
-    var lines = ['[봉이 렌탈 확정 견적서]', '상품: ' + (m.product_name || m.model_code || '') + (o.color_name ? ' / ' + o.color_name : '') + (m.supplier_name ? ' (' + m.supplier_name + ')' : ''), '조건: ' + contractText(o) + ' · ' + careText(o) + ' · ' + typeText(o)];
+    var lines = ['[봉이 렌탈 확정 견적서]', '상품: ' + (m.product_name || m.model_code || '') + (colorText(o) ? ' / ' + colorText(o) : '') + (m.supplier_name ? ' (' + m.supplier_name + ')' : ''), '조건: ' + contractText(o) + ' · ' + careText(o) + ' · ' + typeText(o)];
     if (o.price_phases && o.price_phases.length) {
       o.price_phases.forEach(function (p) { lines.push('월 렌탈료 ' + p.from + '~' + p.to + '개월: ' + won(p.fee)); });
       lines.push('월 렌탈료 이후: ' + won(o.monthly_fee));
@@ -579,6 +589,9 @@
       el.addEventListener('input', applyVisibility);
       el.addEventListener('change', applyVisibility);
     });
+    // 색상을 고르면 견적·견적서에 바로 반영 (요금은 그대로)
+    var colorEl = $('rt-f-product_color');
+    if (colorEl) colorEl.addEventListener('change', function () { if (RT.offer) quote(RT.offer); });
     var phone = $('rt-f-customer_phone');
     if (phone && typeof formatPhoneAuto === 'function') phone.addEventListener('input', function () { phone.value = formatPhoneAuto(phone.value); });
     box.querySelectorAll('.rt-addr-btn').forEach(function (b) { b.addEventListener('click', function () { openAddress(b.dataset.target); }); });
@@ -696,7 +709,7 @@
       contract_date: new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }),
       monthly_fee: o.display_fee,
       rental_application: app,
-      quote_summary: '렌탈 · ' + (m.supplier_name || '') + ' · ' + (m.product_name || m.model_code || '') + ' · ' + o.ticket_number + ' · ' + contractText(o) + ' · ' + careText(o) + ' · ' + typeText(o) + ' · ' + freeMonths(pay, o) + '개월 무료' + (cardSel() ? ' · 제휴카드 ' + cardLabel(cardSel().card) + ' ' + tierText(cardSel().tier) : ''),
+      quote_summary: '렌탈 · ' + (m.supplier_name || '') + ' · ' + (m.product_name || m.model_code || '') + (colorText(o) ? ' · ' + colorText(o) : '') + ' · ' + o.ticket_number + ' · ' + contractText(o) + ' · ' + careText(o) + ' · ' + typeText(o) + ' · ' + freeMonths(pay, o) + '개월 무료' + (cardSel() ? ' · 제휴카드 ' + cardLabel(cardSel().card) + ' ' + tierText(cardSel().tier) : ''),
       quote_full_html: customerQuoteHtml(o, pay),
     };
     msg.className = 'rt-msg'; msg.textContent = '등록 중…';
